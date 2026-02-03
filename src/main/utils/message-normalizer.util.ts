@@ -1,5 +1,5 @@
 import { ChatMessage } from '@main/types/llm.types';
-import { Message } from '@shared/types/chat';
+import { Message, MessageContentPart } from '@shared/types/chat';
 import {
     AnthropicContentBlock,
     AnthropicMessage,
@@ -185,14 +185,14 @@ export class MessageNormalizer {
         }).filter(m => m.content.length > 0);
     }
 
-    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'], role: 'user' | 'assistant'): void {
+    private static addContentToOpenCodeParts(parts: OpenCodeContentPart[], content: string | Message['content'] | unknown[], role: 'user' | 'assistant'): void {
         const text = typeof content === 'string' ? content : '';
         const textType = role === 'assistant' ? 'output_text' : 'input_text';
 
         if (text) {
             parts.push({ type: textType as 'input_text', text });
         } else if (Array.isArray(content)) {
-            this.processOpenCodeArrayContent(parts, content, textType);
+            this.processOpenCodeArrayContent(parts, content as MessageContentPart[], textType);
         }
     }
 

@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { ProjectState } from '@shared/types/project-agent';
 import {
     addEdge,
@@ -12,7 +13,6 @@ import {
     useNodesState,
     useReactFlow
 } from '@xyflow/react';
-import { appLogger } from '@main/logging/logger';
 import {
     ChevronRight,
     Maximize,

@@ -1,7 +1,7 @@
-﻿import { ExternalLink, FolderOpen,Image, RefreshCw, Trash2 } from 'lucide-react';
+﻿import { appLogger } from '@main/logging/logger';
+import { ExternalLink, FolderOpen,Image, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect,useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { Language,useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 

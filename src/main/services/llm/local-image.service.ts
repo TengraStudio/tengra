@@ -4,12 +4,16 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { LinkedAccount } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
-import { QuotaService } from '@main/services/proxy/quota.service';
+import { QuotaModel, QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+
+interface AntigravityUpstreamQuotaResponse {
+    models: Record<string, QuotaModel>;
+}
 
 export interface ImageGenerationOptions {
     prompt: string
@@ -32,15 +36,6 @@ interface AntigravityAccount {
     quotaPercentage: number
 }
 
-interface QuotaModel {
-    displayName?: string;
-    quotaInfo?: {
-        remainingFraction?: number;
-        remainingQuota?: number;
-        totalQuota?: number;
-    }
-}
-
 export class LocalImageService {
     constructor(
         private settingsService: SettingsService,
@@ -59,7 +54,6 @@ export class LocalImageService {
 
         appLogger.info('local-image.service', `Generating image with preferred provider: ${preferredProvider}`);
 
-        // Try Antigravity first if available
         // Try Antigravity first if available
         if (this.authService && this.llmService && this.quotaService) {
             const result = await this.tryGenerateWithAntigravity(options);
@@ -86,9 +80,6 @@ export class LocalImageService {
         }
     }
 
-    /**
-     * Find an Antigravity account with available quota for gemini-3-pro-image
-     */
     /**
      * Find an Antigravity account with available quota for gemini-3-pro-image
      */
@@ -157,21 +148,21 @@ export class LocalImageService {
     private async fetchImageQuota(account: LinkedAccount): Promise<{ remainingFraction?: number; remainingQuota?: number; totalQuota?: number } | null> {
         try {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const quotaData = await this.quotaService!.fetchAntigravityUpstreamForToken(account);
+            const response = await this.quotaService!.fetchAntigravityUpstreamForToken(account) as AntigravityUpstreamQuotaResponse;
 
-            if (!quotaData?.models) {
+            if (!response?.models) {
                 appLogger.debug('local-image.service', `No quota data for account ${account.email ?? account.id}`);
                 return null;
             }
 
-            const models = quotaData.models as Record<string, QuotaModel>;
-
+            const models = response.models;
             const imageModel = this.extractImageModel(models);
 
             if (!imageModel) {
                 appLogger.debug('local-image.service', `Account ${account.email ?? account.id} doesn't have image model access`);
                 return null;
             }
+
             return imageModel.quotaInfo ?? null;
         } catch (error) {
             appLogger.error('local-image.service', `Failed to check quota for ${account.email ?? account.id}: ${getErrorMessage(error as Error)}`);
@@ -223,11 +214,9 @@ export class LocalImageService {
 
         try {
             const { prompt } = options;
-
             appLogger.info('local-image.service', `Calling Antigravity image generation with account ${account.email ?? account.id}`);
 
             // Call Antigravity image generation via LLMService
-            // LLMService.chat() handles image models and saves them automatically
             const response = await this.llmService.chat(
                 [{
                     role: 'user',
@@ -238,10 +227,9 @@ export class LocalImageService {
                 'antigravity'
             );
 
-            // LLMService automatically saves images and returns file paths in response.images
             if (response.images && response.images.length > 0) {
                 appLogger.info('local-image.service', `Antigravity generated ${response.images.length} image(s)`);
-                return response.images[0]; // Return first image path
+                return response.images[0];
             }
 
             throw new Error('No images returned from Antigravity');
@@ -253,12 +241,12 @@ export class LocalImageService {
 
     private async generateWithPollinations(options: ImageGenerationOptions): Promise<string> {
         const { prompt, width = 1024, height = 1024, seed = Math.floor(Math.random() * 1000000) } = options;
-        const model = 'flux'; // Default high quality model on Pollinations
+        const model = 'flux';
         const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
 
         try {
             const response = await axios.get(url, { responseType: 'arraybuffer' });
-            return this.saveTempImage(response.data);
+            return this.saveTempImage(Buffer.from(response.data));
         } catch (error) {
             appLogger.error('local-image.service', 'Pollinations generation failed', error as Error);
             throw new Error(`Pollinations failure: ${getErrorMessage(error as Error)}`);
@@ -268,20 +256,15 @@ export class LocalImageService {
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
         const settings = this.settingsService.getSettings();
         const model = settings.images?.ollamaModel ?? 'stable-diffusion-v1-5';
-        // ollama.url is always defined in Settings type
         const baseUrl = settings.ollama.url;
 
         try {
-            // Ollama image generation is usually via a POST to /api/generate or /api/chat if it's a multimodal model
-            // But for dedicated SD models in Ollama, it follows a specific schema
             await axios.post(`${baseUrl}/api/generate`, {
                 model,
                 prompt: options.prompt,
                 stream: false
             });
 
-            // This is a placeholder for Ollama's specific SD integration if/when finalized
-            // Currently, standard Ollama is primarily LLM.
             throw new Error('Ollama dedicated image generation is still in experimental community support. Please use SD-WebUI or Pollinations.');
         } catch (error) {
             appLogger.error('local-image.service', 'Ollama generation failed', error as Error);
@@ -322,7 +305,6 @@ export class LocalImageService {
     }
 
     private async generateWithComfyUI(_options: ImageGenerationOptions): Promise<string> {
-        // Implementation for ComfyUI API (WebSocket + HTTP)
         throw new Error('ComfyUI integration is coming soon.');
     }
 

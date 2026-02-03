@@ -66,7 +66,18 @@ export function registerLoggingIpc() {
     });
 }
 
-function handleLogWrite(_event: unknown, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) {
+function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) {
+    // SEC-013-4: Verify sender is a valid window
+    try {
+        if (!BrowserWindow.fromWebContents(event.sender)) {
+            appLogger.warn('Security', `Unauthorized log write attempt from sender ${event.sender.id}`);
+            return;
+        }
+    } catch {
+        // e.g. sender destroyed
+        return;
+    }
+
     let level: LogLevel = LogLevel.INFO;
     let message = '';
     let context = 'renderer';

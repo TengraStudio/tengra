@@ -1,5 +1,4 @@
 import { MemoryStatistics } from '@shared/types/advanced-memory';
-import React from 'react';
 
 import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
 import { Card } from '@/components/ui/card';

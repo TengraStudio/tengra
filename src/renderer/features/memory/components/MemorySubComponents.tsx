@@ -4,8 +4,7 @@ import {
     PendingMemory
 } from '@shared/types/advanced-memory';
 import { formatDistanceToNow } from 'date-fns';
-import { Archive, ArrowRight, Brain, CheckSquare, Edit3, GitMerge, HelpCircle, Lightbulb, LucideIcon, RefreshCw,Settings, Sparkles, Square, Trash2, Zap } from 'lucide-react';
-import React from 'react';
+import { Archive, ArrowRight, Brain, CheckSquare, Edit3, GitMerge, HelpCircle, Lightbulb, LucideIcon, RefreshCw, Settings, Sparkles, Square, Trash2, Zap } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

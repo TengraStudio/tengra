@@ -5,7 +5,6 @@ import path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
-import { LinkedAccount } from '@main/services/data/database.service';
 import { ProxyEmbedStatus, ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -14,8 +13,8 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { AuthenticationError } from '@main/utils/error.util';
 import { LocalAuthServer } from '@main/utils/local-auth-server.util';
-import { JsonObject, JsonValue } from '@shared/types';
-import { ClaudeQuota, CopilotQuota, ModelQuotaItem, QuotaResponse } from '@shared/types/quota';
+import { JsonObject, JsonValue } from '@shared/types/common';
+import { ClaudeQuota, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
@@ -32,12 +31,6 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-export type QuotaInfo = {
-  remainingQuota: number;
-  totalQuota: number;
-  remainingFraction: number;
-  resetTime?: string;
-}
 
 export interface ModelItem {
   id: string;
@@ -147,29 +140,6 @@ export class ProxyService extends BaseService {
     return Promise.resolve();
   }
 
-  private prepareTokenData(account: LinkedAccount, provider: string): JsonObject {
-    const tokenData: JsonObject = {
-      access_token: this.authService.decryptToken(account.accessToken ?? ''),
-      refresh_token: this.authService.decryptToken(account.refreshToken ?? ''),
-      scope: account.scope,
-      ...account.metadata
-    };
-
-    if (account.email) {
-      tokenData.email = account.email;
-    }
-
-    if (provider === 'claude' || provider === 'anthropic') {
-      tokenData.type = 'claude';
-      if (account.expiresAt) {
-        tokenData.expired = new Date(account.expiresAt).toISOString();
-      }
-    } else if (provider === 'antigravity') {
-      tokenData.type = 'antigravity';
-    }
-
-    return tokenData;
-  }
 
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
     return new Promise((resolve, reject) => {
@@ -409,9 +379,8 @@ export class ProxyService extends BaseService {
     return quota;
   }
 
-  async getCodexUsage(): Promise<Partial<QuotaResponse>> {
-    const res = await this.quotaService.getCodexUsage();
-    return { accounts: res.accounts } as Partial<QuotaResponse>;
+  async getCodexUsage(): Promise<{ accounts: Array<{ usage: JsonObject | { error: string }; accountId?: string; email?: string }> }> {
+    return this.quotaService.getCodexUsage();
   }
 
   async getAntigravityAvailableModels(): Promise<ModelQuotaItem[]> {
@@ -624,28 +593,6 @@ export class ProxyService extends BaseService {
     model.quota = { percentage: Math.round(fraction * 100), reset: resetStr };
   }
 
-  private async updateAuthFile(nameOrPrefix: string, data: JsonObject) {
-    try {
-      const dir = this.getAuthWorkDir();
-      let fileName: string;
-
-      if (nameOrPrefix.endsWith('.json')) {
-        fileName = nameOrPrefix;
-      } else {
-        const files = (await fs.promises.readdir(dir)).filter(f => f.startsWith(nameOrPrefix + '-') && f.endsWith('.json'));
-        fileName = files.length > 0 ? files[0] : `${nameOrPrefix}.json`;
-      }
-
-      const filePath = path.join(dir, fileName);
-      const contentString = JSON.stringify(data, null, 2);
-      const encrypted = this.securityService.encryptSync(contentString);
-      const persistedData = JSON.stringify({ encryptedPayload: encrypted, version: 1 });
-      await fs.promises.writeFile(filePath, persistedData);
-
-    } catch (e) {
-      this.logError(`Failed to update auth file ${nameOrPrefix}:`, e as Error);
-    }
-  }
 
   getAuthWorkDir(): string {
     return this.dataService.getPath('auth');

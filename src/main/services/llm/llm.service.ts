@@ -9,7 +9,7 @@ import { ConfigService } from '@main/services/system/config.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, NetworkError } from '@main/utils/error.util';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
-import { StreamParser } from '@main/utils/stream-parser.util';
+import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
 import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
@@ -17,9 +17,18 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Agent } from 'undici';
 
+import { getContextWindowService } from './context-window.service';
+
 // QUAL-002-3, QUAL-002-4: Extract configurable provider URLs
 const GROQ_API_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const OLLAMA_DEFAULT_BASE_URL = 'http://127.0.0.1:11434/v1';
+
+const DEFAULT_MODELS = {
+    OPENAI: 'gpt-4o',
+    ANTHROPIC: 'claude-3-5-sonnet-20240620',
+    GROQ: 'llama3-70b-8192',
+    EMBEDDING: 'text-embedding-3-small'
+} as const;
 
 export interface LLMChatOptions {
     model?: string;
@@ -31,6 +40,7 @@ export interface LLMChatOptions {
     temperature?: number; // Temperature for response randomness (0-2)
     systemMode?: SystemMode;
     projectRoot?: string;
+    signal?: AbortSignal;
 }
 
 export interface OpenAIModelDefinition {
@@ -119,6 +129,32 @@ export class LLMService {
         this.opencodeApiKey = this.configService.get('OPENCODE_API_KEY', 'public');
     }
 
+    /**
+     * SEC-013-2: Content Filtering
+     * Validate LLM output against safety policies
+     */
+    private validateContent(content: string): string {
+        // Basic filtering for sensitive patterns (placeholder)
+        // In fully implemented version, this would check for:
+        // - PII leaks
+        // - Malicious code injection patterns
+        // - System prompt leaks
+
+        const FORBIDDEN_PATTERNS = [
+            '<script>alert(',
+            'javascript:alert(',
+            '-----BEGIN RSA PRIVATE KEY-----'
+        ];
+
+        for (const pattern of FORBIDDEN_PATTERNS) {
+            if (content.includes(pattern)) {
+                appLogger.warn('LLMService', 'Content filtering blocked unsafe pattern');
+                return '[CONTENT BLOCKED BY SECURITY POLICY]';
+            }
+        }
+        return content;
+    }
+
     // --- Configuration ---
 
     // Note: Setters are kept for runtime updates from settings UI.
@@ -182,15 +218,21 @@ export class LLMService {
     }
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
-        const { model = 'gpt-4o', tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, n } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, n, signal } = options;
+
+        // LLM-001-3: Context overflow mitigation
+        const contextService = getContextWindowService();
+        const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
+
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
         await this.rateLimitService.waitForToken(provider ?? 'openai');
 
         const execute = async () => {
-            const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: false, n });
+            const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: false, n });
             const requestInit = this.createOpenAIRequest(body, config.apiKey);
+            if (signal) { requestInit.signal = signal; }
 
             const response = await this.breakers.openai.execute(() =>
                 this.httpService.fetch(endpoint, {
@@ -240,14 +282,19 @@ export class LLMService {
     }
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
-        const { model = 'gpt-4o', tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, signal } = options;
+
+        const contextService = getContextWindowService();
+        const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
+
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
         await this.rateLimitService.waitForToken(provider ?? 'openai');
 
-        const body = this.buildOpenAIBody(messages, { model, tools, provider, stream: true });
+        const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: true });
         const requestInit = this.createOpenAIRequest(body, config.apiKey);
+        if (signal) { requestInit.signal = signal; }
 
         const response = await this.httpService.fetch(endpoint, {
             ...requestInit,
@@ -256,50 +303,61 @@ export class LLMService {
         });
 
         if (!response.ok) {
-            // Seamless retry for 401/403
-            if ((response.status === 401 || response.status === 403) && provider && this.tokenService) {
-                appLogger.info('LLMService', `Unauthorized (${response.status}) for ${provider}, attempting proactive refresh and retry...`);
-                try {
-                    await this.tokenService.ensureFreshToken(provider, true);
-                    const retryResponse = await this.httpService.fetch(endpoint, {
-                        ...requestInit,
-                        retryCount: 1,
-                        timeoutMs: 300000
-                    });
-                    if (retryResponse.ok) {
-                        yield* this.handleOpenAIStreamResponse(retryResponse);
-                        return;
-                    }
-                    await this.handleOpenAIStreamError(retryResponse, model, provider);
-                } catch (err) {
-                    appLogger.error('LLMService', `Proactive refresh/retry failed: ${getErrorMessage(err)}`);
-                }
-            }
-            await this.handleOpenAIStreamError(response, model, provider);
+            yield* this.handleOpenAIStreamErrorRetry(response, endpoint, requestInit, model, provider);
+            return;
         }
 
         yield* this.handleOpenAIStreamResponse(response);
     }
 
+    private async *handleOpenAIStreamErrorRetry(response: Response, endpoint: string, requestInit: HttpRequestOptions, model: string, provider?: string) {
+        if ((response.status === 401 || response.status === 403) && provider && this.tokenService) {
+            appLogger.info('LLMService', `Unauthorized (${response.status}) for ${provider}, attempting proactive refresh and retry...`);
+            try {
+                await this.tokenService.ensureFreshToken(provider, true);
+                const retryResponse = await this.httpService.fetch(endpoint, {
+                    ...requestInit,
+                    retryCount: 1,
+                    timeoutMs: 300000
+                });
+                if (retryResponse.ok) {
+                    yield* this.handleOpenAIStreamResponse(retryResponse);
+                    return;
+                }
+                await this.handleOpenAIStreamError(retryResponse, model, provider);
+            } catch (err) {
+                appLogger.error('LLMService', `Proactive refresh/retry failed: ${getErrorMessage(err)}`);
+            }
+        }
+        await this.handleOpenAIStreamError(response, model, provider);
+    }
+
     private async *handleOpenAIStreamResponse(response: Response) {
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
-                const savedImages = await this.saveImagesFromStreamChunk(chunk.images);
-
-                yield {
-                    ...(chunk.index !== undefined ? { index: chunk.index } : {}),
-                    ...(chunk.content ? { content: chunk.content } : {}),
-                    ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
-                    images: savedImages,
-                    ...(chunk.type ? { type: chunk.type } : {}),
-                    ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
-                    ...(chunk.usage ? { usage: chunk.usage } : {})
-                };
+                const processedChunk = await this.processStreamChunk(chunk);
+                if (processedChunk.content) {
+                    processedChunk.content = this.validateContent(processedChunk.content);
+                }
+                yield processedChunk;
             }
         } catch (e) {
             appLogger.error('LLMService', `Stream Loop Error: ${getErrorMessage(e as Error)}`);
             throw e;
         }
+    }
+
+    private async processStreamChunk(chunk: StreamChunk) {
+        const savedImages = await this.saveImagesFromStreamChunk(chunk.images);
+        return {
+            ...(chunk.index !== undefined ? { index: chunk.index } : {}),
+            ...(chunk.content ? { content: chunk.content } : {}),
+            ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
+            images: savedImages,
+            ...(chunk.type ? { type: chunk.type } : {}),
+            ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
+            ...(chunk.usage ? { usage: chunk.usage } : {})
+        };
     }
 
     async chatOpenCode(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
@@ -370,13 +428,14 @@ export class LLMService {
 
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
-                yield {
-                    ...(chunk.content ? { content: chunk.content } : {}),
+                const processedChunk = {
+                    ...(chunk.content ? { content: this.validateContent(chunk.content) } : {}),
                     ...(chunk.reasoning ? { reasoning: chunk.reasoning } : {}),
                     ...(chunk.type ? { type: chunk.type } : {}),
                     ...(chunk.tool_calls ? { tool_calls: chunk.tool_calls } : {}),
                     ...(chunk.images ? { images: chunk.images.map(img => typeof img === 'string' ? img : img.image_url.url) } : {})
                 };
+                yield processedChunk;
             }
         } catch (e) {
             appLogger.error('LLMService', `[LLMService:OpenCode] Stream Loop Error: ${getErrorMessage(e as Error)}`);
@@ -384,7 +443,7 @@ export class LLMService {
         }
     }
 
-    async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = 'claude-3-5-sonnet-20240620'): Promise<OpenAIResponse> {
+    async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.ANTHROPIC): Promise<OpenAIResponse> {
         const key = this.keyRotationService.getCurrentKey('anthropic') ?? this.anthropicApiKey;
         if (!key) { throw new AuthenticationError('Anthropic API Key not set'); }
         await this.rateLimitService.waitForToken('anthropic');
@@ -413,12 +472,13 @@ export class LLMService {
             throw new ApiError((error['message'] as string) || 'Anthropic API Error', 'anthropic', response.status, false, { type: error['type'] ?? null });
         }
         const content = data['content'] as Array<{ text: string }> | undefined;
-        return { content: content?.[0]?.text ?? '', role: 'assistant' };
+        const validatedContent = this.validateContent(content?.[0]?.text ?? '');
+        return { content: validatedContent, role: 'assistant' };
     }
 
 
 
-    async chatGroq(messages: Array<Message | ChatMessage>, model: string = 'llama3-70b-8192'): Promise<OpenAIResponse> {
+    async chatGroq(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.GROQ): Promise<OpenAIResponse> {
         const key = this.getGroqKey();
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
         await this.rateLimitService.waitForToken('groq');
@@ -473,19 +533,20 @@ export class LLMService {
         }
     }
 
-    async *chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, temperature?: number }) {
+    async * chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, temperature?: number, signal?: AbortSignal }) {
         const p = (provider ?? '').toLowerCase();
         const temp = options?.temperature;
         const systemMode = options?.systemMode;
+        const signal = options?.signal;
 
         if (p.includes('opencode')) {
             yield* this.chatOpenCodeStream(messages, model, tools);
         } else if (p.includes('antigravity')) {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp, systemMode });
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp, systemMode, signal });
         } else if (p.includes('ollama')) {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp, systemMode });
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp, systemMode, signal });
         } else {
-            yield* this.chatOpenAIStream(messages, { model, tools, provider, temperature: temp, systemMode });
+            yield* this.chatOpenAIStream(messages, { model, tools, provider, temperature: temp, systemMode, signal });
         }
     }
 
@@ -539,7 +600,7 @@ export class LLMService {
         return m.cardData?.short_description ?? `A ${m.pipeline_tag ?? 'LLM'} model by ${m.author ?? 'unknown'}`;
     }
 
-    async getEmbeddings(input: string, model: string = 'text-embedding-3-small'): Promise<number[]> {
+    async getEmbeddings(input: string, model: string = DEFAULT_MODELS.EMBEDDING): Promise<number[]> {
         const key = this.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
         const baseUrl = this.openaiBaseUrl;
 
@@ -571,9 +632,7 @@ export class LLMService {
         return json.data[0].embedding;
     }
 
-    private throwNoEmbeddingError(): never {
-        throw new ApiError('No embedding data returned', 'openai-embeddings', 200);
-    }
+
 
     private handleEmbeddingError(error: unknown): Error {
         appLogger.error('LLMService', `Embedding Error: ${getErrorMessage(error as Error)}`);
@@ -792,7 +851,7 @@ export class LLMService {
         throw new ApiError(errorText || `HTTP ${response.status}`, 'openai-stream', response.status, response.status >= 500 || response.status === 429);
     }
 
-    private logDetailedQuotaError(response: Response, model: string, provider: string | undefined, errorText: string) {
+    private logDetailedQuotaError(_response: Response, model: string, provider: string | undefined, errorText: string) {
         appLogger.error('LLMService', `429 Error for model ${model}, provider ${provider}`);
         appLogger.error('LLMService', `Error details: ${errorText}`);
 
@@ -836,9 +895,10 @@ export class LLMService {
         }
 
         const { content, reasoning, tool_calls } = this.extractOpenCodeContent(output);
+        const validatedContent = this.validateContent(content || (output['text'] as string) || '');
 
         return {
-            content: content || (output['text'] as string) || '',
+            content: validatedContent,
             role: 'assistant',
             reasoning_content: reasoning || undefined,
             tool_calls: tool_calls.length > 0 ? tool_calls : undefined
@@ -897,8 +957,12 @@ export class LLMService {
             const choice = json.choices[0];
             const message = choice.message;
 
+            // Apply Content Filtering
+            const completion = this.extractTextFromOpenAIMessage(message);
+            const validatedCompletion = this.validateContent(completion);
+
             const savedImages = await this.saveImagesFromOpenAIMessage(message);
-            const messageContent = this.extractTextFromOpenAIMessage(message);
+            const messageContent = validatedCompletion;
 
 
             // Process all choices for variants

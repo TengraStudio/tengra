@@ -1,6 +1,5 @@
 import { MemoryCategory } from '@shared/types/advanced-memory';
 import { Plus, RefreshCw, Search, TrendingDown } from 'lucide-react';
-import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

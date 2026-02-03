@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { TerminalService } from '@main/services/project/terminal.service';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 let terminalService: TerminalService | null = null;
@@ -64,16 +65,17 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
 
     // Write to session
     ipcMain.handle('terminal:write', createSafeIpcHandler('terminal:write', async (_event: IpcMainInvokeEvent, sessionId: string, data: string) => {
-        if (!terminalService) { return false; }
-        // Validate data type
+        const service = terminalService;
+        if (!service) { return false; }
+
         if (typeof data !== 'string') {
             throw new Error('data must be a string');
         }
-        // Limit data size to prevent memory exhaustion
         if (data.length > 1024 * 1024) { // 1MB limit
             throw new Error('data exceeds maximum size of 1MB');
         }
-        return terminalService.write(sessionId, data);
+
+        return await withRateLimit('terminal', async () => service.write(sessionId, data));
     }, false));
 
     // Resize session

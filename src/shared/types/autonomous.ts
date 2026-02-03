@@ -18,21 +18,62 @@ export interface UACSuccessCriteria {
     errorMessage?: string;
 }
 
-export interface UACNode {
+export type UACNodeType = 'trigger' | 'action' | 'condition' | 'verification' | 'human_in_loop';
+
+export interface UACNodeBase {
     id: string;
-    type: 'trigger' | 'action' | 'condition' | 'verification' | 'human_in_loop';
+    type: UACNodeType;
     label: string;
     status: 'pending' | 'running' | 'success' | 'failed' | 'warning';
     domain: UACDomain;
-    data: {
-        thought?: string;
-        action?: string;
-        observation?: string;
-        progress?: number;
-        output?: unknown;
-    };
     position: { x: number; y: number };
 }
+
+export interface UACTriggerNode extends UACNodeBase {
+    type: 'trigger';
+    data: {
+        triggerType: 'manual' | 'schedule' | 'event';
+        config?: Record<string, unknown>;
+    };
+}
+
+export interface UACActionNode extends UACNodeBase {
+    type: 'action';
+    data: {
+        action: string;
+        params?: Record<string, unknown>;
+        progress?: number;
+        output?: unknown;
+        thought?: string;
+    };
+}
+
+export interface UACConditionNode extends UACNodeBase {
+    type: 'condition';
+    data: {
+        condition: string;
+        observation?: string;
+    };
+}
+
+export interface UACVerificationNode extends UACNodeBase {
+    type: 'verification';
+    data: {
+        criteriaId: string;
+        status?: 'passed' | 'failed';
+        observation?: string;
+    };
+}
+
+export interface UACHumanNode extends UACNodeBase {
+    type: 'human_in_loop';
+    data: {
+        prompt: string;
+        response?: string;
+    };
+}
+
+export type UACNode = UACTriggerNode | UACActionNode | UACConditionNode | UACVerificationNode | UACHumanNode;
 
 export interface UACEdge {
     id: string;

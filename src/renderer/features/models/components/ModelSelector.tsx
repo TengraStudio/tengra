@@ -7,7 +7,7 @@ import {
     useFloating,
 } from '@floating-ui/react';
 import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { Language, useTranslation } from '@/i18n';

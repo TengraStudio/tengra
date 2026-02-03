@@ -11,7 +11,7 @@
  */
 
 import { appLogger } from '@main/logging/logger';
-import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService, EntityKnowledge, EpisodicMemory } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ChatMessage } from '@main/types/llm.types';
@@ -31,6 +31,7 @@ import {
     RecallResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
+import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 const SERVICE_NAME = 'AdvancedMemoryService';
@@ -44,6 +45,20 @@ const PREFERRED_MODELS = [
 interface OllamaTagsResponse {
     models: { name: string }[];
 }
+
+export interface SummarizationResult {
+    summary: string;
+    title: string;
+    topics: string[];
+    pendingTasks: string[];
+}
+
+export type PersonalitySettings = {
+    traits: string[];
+    responseStyle: 'formal' | 'casual' | 'professional' | 'playful';
+    allowProfanity: boolean;
+    customInstructions: string;
+} & JsonObject;
 
 export class AdvancedMemoryService {
     private config: AdvancedMemoryConfig;
@@ -447,6 +462,162 @@ export class AdvancedMemoryService {
     }
 
     // ========================================================================
+    // EPISODIC MEMORY (Conversations)
+    // ========================================================================
+
+    async summarizeChat(chatId: string, provider?: string, model?: string): Promise<SummarizationResult> {
+        const messages = await this.db.getMessages(chatId);
+        if (messages.length === 0) {
+            return { summary: '', title: '', topics: [], pendingTasks: [] };
+        }
+
+        const transcript = messages
+            .slice(-20) // Summarize last 20 messages
+            .map(m => `${m.role}: ${m.content}`)
+            .join('\n');
+
+        const prompt = `Analyze the conversation transcript and provide:
+1. A concise summary (max 3 sentences).
+2. A short, descriptive title.
+3. Key topics discussed (comma-separated).
+4. Any unresolved tasks or questions.
+
+Format the output as JSON:
+{
+  "summary": "...",
+  "title": "...",
+  "topics": ["...", "..."],
+  "pendingTasks": ["...", "..."]
+}
+
+Transcript:
+${transcript}`;
+
+        try {
+            const res = await this.callLLM(
+                [{ role: 'system', content: 'You are an expert at analyzing and summarizing conversations.' }, { role: 'user', content: prompt }],
+                model ?? (await this.getAvailableModel()) ?? 'gpt-4o-mini',
+                provider
+            );
+
+            return safeJsonParse<SummarizationResult>(res.content.replace(/```json|```/g, '').trim(), {
+                topics: [],
+                summary: '',
+                title: '',
+                pendingTasks: []
+            });
+        } catch (error) {
+            appLogger.warn(SERVICE_NAME, `Summarization failed: ${error}`);
+            return {
+                summary: `Conversation with ${messages.length} messages.`,
+                title: `Chat Session ${new Date().toLocaleDateString()}`,
+                topics: [],
+                pendingTasks: []
+            };
+        }
+    }
+
+    async summarizeSession(chatId: string, provider?: string, model?: string): Promise<EpisodicMemory | null> {
+        const messages = await this.db.getMessages(chatId);
+        if (messages.length < 5) { return null; }
+
+        const analysis = await this.summarizeChat(chatId, provider, model);
+        const embedding = await this.embedding.generateEmbedding(analysis.summary);
+        const now = Date.now();
+
+        const memory = {
+            id: this.generateId(),
+            title: analysis.title,
+            summary: analysis.summary,
+            embedding,
+            startDate: (messages[0].timestamp as number) || now,
+            endDate: (messages[messages.length - 1].timestamp as number) || now,
+            chatId,
+            participants: ['user', 'assistant'],
+            createdAt: now,
+            timestamp: now
+        };
+
+        // Store topics as semantic fragments for better retrieval
+        if (Array.isArray(analysis.topics)) {
+            for (const topic of analysis.topics) {
+                await this.rememberExplicit(
+                    `In chat "${analysis.title}", we discussed: ${topic}`,
+                    chatId,
+                    'fact',
+                    ['topic', ...analysis.topics]
+                );
+            }
+        }
+
+        await this.db.storeEpisodicMemory(memory);
+
+        return memory;
+    }
+
+    async recallEpisodes(query: string, limit: number = 3): Promise<EpisodicMemory[]> {
+        const queryEmbedding = await this.embedding.generateEmbedding(query);
+        return await this.db.searchEpisodicMemories(queryEmbedding, limit);
+    }
+
+    // ========================================================================
+    // ENTITY KNOWLEDGE
+    // ========================================================================
+
+    async setEntityFact(entityType: string, entityName: string, key: string, value: string): Promise<EntityKnowledge> {
+        const id = `${entityType}:${entityName}:${key}`.replace(/\s+/g, '_').toLowerCase();
+        const knowledge = {
+            id,
+            entityType,
+            entityName,
+            key,
+            value,
+            confidence: 1.0,
+            source: 'manual',
+            updatedAt: Date.now()
+        };
+        await this.db.storeEntityKnowledge(knowledge);
+        return knowledge;
+    }
+
+    async getEntityFacts(entityName: string): Promise<EntityKnowledge[]> {
+        return await this.db.getEntityKnowledge(entityName);
+    }
+
+    // ========================================================================
+    // PERSONALITY & SYSTEM MEMORY
+    // ========================================================================
+
+    async getPersonality(): Promise<PersonalitySettings | null> {
+        const value = await this.db.recallMemory('system:personality');
+        if (value?.content) {
+            return safeJsonParse<PersonalitySettings | null>(value.content, null);
+        }
+        return null;
+    }
+
+    async updatePersonality(personality: PersonalitySettings): Promise<void> {
+        await this.db.storeMemory('system:personality', personality);
+    }
+
+    /**
+     * High-level context gathering combining fragments and episodes
+     */
+    async gatherContext(query: string): Promise<string> {
+        const facts = await this.recallRelevantFacts(query, 3);
+        const episodes = await this.recallEpisodes(query, 2);
+
+        let context = '';
+        if (facts.length > 0) {
+            context += 'Related Facts:\n' + facts.map(f => `- ${f.content}`).join('\n') + '\n\n';
+        }
+        if (episodes.length > 0) {
+            context += 'Related Episodes:\n' + episodes.map(e => `- ${e.summary}`).join('\n');
+        }
+        return context;
+    }
+
+    // ========================================================================
     // CONTRADICTION DETECTION
     // ========================================================================
 
@@ -813,7 +984,7 @@ Return only the merged fact, no explanation.`;
     /**
      * Calculate relevance score for a fact
      */
-    private async calculateRelevanceScore(content: string, category: MemoryCategory): Promise<number> {
+    private async calculateRelevanceScore(_content: string, category: MemoryCategory): Promise<number> {
         // Higher relevance for certain categories
         const categoryRelevance: Record<MemoryCategory, number> = {
             preference: 0.9,
@@ -832,7 +1003,7 @@ Return only the merged fact, no explanation.`;
     /**
      * Calculate novelty score (how new is this information?)
      */
-    private async calculateNoveltyScore(content: string, embedding: number[]): Promise<number> {
+    private async calculateNoveltyScore(_content: string, embedding: number[]): Promise<number> {
         const similar = await this.searchMemoriesByVector(embedding, 3);
 
         if (similar.length === 0) { return 1.0; } // Completely novel
@@ -1188,8 +1359,8 @@ If no facts worth remembering, return [].`;
         return null;
     }
 
-    private async callLLM(messages: ChatMessage[], model: string): Promise<{ content: string }> {
-        return this.llmService.chat(messages, model, [], 'ollama');
+    private async callLLM(messages: ChatMessage[], model: string, provider: string = 'ollama'): Promise<{ content: string }> {
+        return this.llmService.chat(messages, model, [], provider);
     }
 
     // ========================================================================

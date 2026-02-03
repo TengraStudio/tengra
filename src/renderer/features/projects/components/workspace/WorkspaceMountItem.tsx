@@ -1,10 +1,16 @@
 import { WorkspaceTreeItem } from '@renderer/features/projects/components/WorkspaceTreeItem';
 import { FileNode } from '@renderer/features/projects/components/WorkspaceTreeItem';
 import { ChevronDown, ChevronRight, Folder, Server, X } from 'lucide-react';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { List, RowComponentProps } from 'react-window';
 
 import { cn } from '@/lib/utils';
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+
+// PERF-001-3: Virtualization threshold and constants
+const VIRTUALIZATION_THRESHOLD = 50;
+const ITEM_HEIGHT = 28; // Height of each tree item in pixels
+const MAX_VISIBLE_HEIGHT = 400; // Maximum height for virtualized list
 
 interface WorkspaceMountItemProps {
     mount: WorkspaceMount;
@@ -129,6 +135,55 @@ const MountHeader: React.FC<MountHeaderProps> = ({
     );
 };
 
+// PERF-001-3: Props for virtualized row rendering
+interface VirtualizedRowProps {
+    nodes: FileNode[];
+    mount: WorkspaceMount;
+    refreshSignal: number;
+    onOpenFile: (entry: WorkspaceEntry) => void;
+    onSelectEntry: (entry: WorkspaceEntry) => void;
+    selectedEntry?: WorkspaceEntry | null;
+    onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
+    onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
+    t: (key: string) => string;
+}
+
+// PERF-001-3: Virtualized row component for large file lists
+const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
+    index,
+    style,
+    nodes,
+    mount,
+    refreshSignal,
+    onOpenFile,
+    onSelectEntry,
+    selectedEntry,
+    onEnsureMount,
+    onContextMenu,
+    t
+}) => {
+    const node = nodes[index];
+    if (!node) {
+        return null;
+    }
+    return (
+        <div style={style}>
+            <WorkspaceTreeItem
+                node={node}
+                mount={mount}
+                level={0}
+                refreshSignal={refreshSignal}
+                onOpenFile={onOpenFile}
+                onSelectEntry={onSelectEntry}
+                selectedEntry={selectedEntry}
+                onEnsureMount={onEnsureMount}
+                onContextMenu={onContextMenu}
+                t={t}
+            />
+        </div>
+    );
+};
+
 export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     mount,
     mountsCount,
@@ -148,6 +203,33 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     t
 }) => {
     const showHeader = mountsCount > 1 || mount.type !== 'local';
+
+    // PERF-001-3: Use virtualization for large root node lists
+    const shouldVirtualize = rootNodes.length > VIRTUALIZATION_THRESHOLD;
+
+    // PERF-001-3: Memoize row props to prevent re-renders
+    const rowProps = useMemo<VirtualizedRowProps>(() => ({
+        nodes: rootNodes,
+        mount,
+        refreshSignal,
+        onOpenFile,
+        onSelectEntry,
+        selectedEntry,
+        onEnsureMount,
+        onContextMenu: onTreeItemContextMenu,
+        t
+    }), [rootNodes, mount, refreshSignal, onOpenFile, onSelectEntry, selectedEntry, onEnsureMount, onTreeItemContextMenu, t]);
+
+    // PERF-001-3: Memoized row component that combines base props with rowProps
+    const RowComponent = useCallback(
+        (props: RowComponentProps<VirtualizedRowProps>) => <VirtualizedTreeRow {...props} />,
+        []
+    );
+
+    // PERF-001-3: Calculate list height based on item count
+    const listHeight = useMemo(() => {
+        return Math.min(rootNodes.length * ITEM_HEIGHT, MAX_VISIBLE_HEIGHT);
+    }, [rootNodes.length]);
 
     return (
         <div className="group/mount">
@@ -170,21 +252,33 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                 )}
             >
                 <div className="space-y-0 relative">
-                    {rootNodes.map((node) => (
-                        <WorkspaceTreeItem
-                            key={`${mount.id}:${node.path}`}
-                            node={node}
-                            mount={mount}
-                            level={0}
-                            refreshSignal={refreshSignal}
-                            onOpenFile={onOpenFile}
-                            onSelectEntry={onSelectEntry}
-                            selectedEntry={selectedEntry}
-                            onEnsureMount={onEnsureMount}
-                            onContextMenu={onTreeItemContextMenu}
-                            t={t}
+                    {/* PERF-001-3: Use virtualized list for large datasets */}
+                    {shouldVirtualize ? (
+                        <List
+                            style={{ height: listHeight }}
+                            rowCount={rootNodes.length}
+                            rowHeight={ITEM_HEIGHT}
+                            rowComponent={RowComponent}
+                            rowProps={rowProps}
+                            overscanCount={5}
                         />
-                    ))}
+                    ) : (
+                        rootNodes.map((node) => (
+                            <WorkspaceTreeItem
+                                key={`${mount.id}:${node.path}`}
+                                node={node}
+                                mount={mount}
+                                level={0}
+                                refreshSignal={refreshSignal}
+                                onOpenFile={onOpenFile}
+                                onSelectEntry={onSelectEntry}
+                                selectedEntry={selectedEntry}
+                                onEnsureMount={onEnsureMount}
+                                onContextMenu={onTreeItemContextMenu}
+                                t={t}
+                            />
+                        ))
+                    )}
                     {rootNodes.length === 0 && !loading && (
                         <div className="text-[11px] text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
                             {t('workspace.emptyFolder')}

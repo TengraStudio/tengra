@@ -1,5 +1,4 @@
 import { Archive, CheckCircle, CheckSquare, Clock, Gauge, X } from 'lucide-react';
-import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

@@ -5,6 +5,84 @@
 
 import { JsonObject } from '@shared/types/common';
 
+// SEC-015-3: Patterns that could indicate prompt injection attempts
+const PROMPT_INJECTION_PATTERNS = [
+    /ignore\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?)/i,
+    /disregard\s+(all\s+)?(previous|above|prior)/i,
+    /forget\s+(everything|all|what)/i,
+    /new\s+instructions?:/i,
+    /system\s*:\s*you\s+are/i,
+    /\[INST\]/i,
+    /\[\/INST\]/i,
+    /<\|im_start\|>/i,
+    /<\|im_end\|>/i,
+    /```system/i,
+    /\{\{.*\}\}/  // Nested template variables
+];
+
+/**
+ * SEC-015-3: Escape user input to prevent prompt injection
+ * @param input - Raw user input
+ * @param strict - If true, also removes suspicious patterns
+ * @returns Sanitized input
+ */
+export function escapePromptInput(input: string, strict: boolean = false): string {
+    if (typeof input !== 'string') {
+        return String(input);
+    }
+
+    let sanitized = input;
+
+    // Escape template variable syntax to prevent injection of new variables
+    sanitized = sanitized.replace(/\{\{/g, '{ {').replace(/\}\}/g, '} }');
+
+    // In strict mode, check for and neutralize injection patterns
+    if (strict) {
+        for (const pattern of PROMPT_INJECTION_PATTERNS) {
+            if (pattern.test(sanitized)) {
+                // Replace suspicious content with a marker
+                sanitized = sanitized.replace(pattern, '[FILTERED]');
+            }
+        }
+    }
+
+    return sanitized;
+}
+
+/**
+ * SEC-015-3: Check if input contains potential prompt injection
+ * @param input - User input to check
+ * @returns Object with detection result and matched patterns
+ */
+export function detectPromptInjection(input: string): {
+    detected: boolean;
+    patterns: string[];
+    riskLevel: 'low' | 'medium' | 'high';
+} {
+    if (typeof input !== 'string') {
+        return { detected: false, patterns: [], riskLevel: 'low' };
+    }
+
+    const matchedPatterns: string[] = [];
+
+    for (const pattern of PROMPT_INJECTION_PATTERNS) {
+        if (pattern.test(input)) {
+            matchedPatterns.push(pattern.source);
+        }
+    }
+
+    const detected = matchedPatterns.length > 0;
+    let riskLevel: 'low' | 'medium' | 'high' = 'low';
+
+    if (matchedPatterns.length >= 3) {
+        riskLevel = 'high';
+    } else if (matchedPatterns.length >= 1) {
+        riskLevel = 'medium';
+    }
+
+    return { detected, patterns: matchedPatterns, riskLevel };
+}
+
 export interface PromptTemplate {
     id: string
     name: string
@@ -34,12 +112,25 @@ export interface RenderResult {
 }
 
 /**
+ * Options for template rendering
+ */
+export interface RenderOptions {
+    /** Enable strict escaping to filter suspicious patterns (default: false) */
+    strictEscaping?: boolean;
+    /** Skip escaping entirely - only use for trusted inputs (default: false) */
+    skipEscaping?: boolean;
+}
+
+/**
  * Render a template with variables
+ * SEC-015-3: User inputs are escaped by default to prevent prompt injection
  */
 export function renderTemplate(
     template: string,
-    variables: JsonObject
+    variables: JsonObject,
+    options: RenderOptions = {}
 ): RenderResult {
+    const { strictEscaping = false, skipEscaping = false } = options;
     const missingVariables: string[] = [];
     const usedVariables: string[] = [];
 
@@ -49,7 +140,9 @@ export function renderTemplate(
     const content = template.replace(varPattern, (match, varName: string, defaultValue) => {
         if (variables[varName] !== undefined) {
             usedVariables.push(varName);
-            return String(variables[varName]);
+            const rawValue = String(variables[varName]);
+            // SEC-015-3: Escape user input unless explicitly skipped
+            return skipEscaping ? rawValue : escapePromptInput(rawValue, strictEscaping);
         }
 
         if (defaultValue !== undefined) {
@@ -344,14 +437,15 @@ export class TemplateManager {
 
     /**
      * Render a template by ID
+     * SEC-015-3: User inputs are escaped by default
      */
-    render(templateId: string, variables: JsonObject): RenderResult {
+    render(templateId: string, variables: JsonObject, options?: RenderOptions): RenderResult {
         const template = this.findById(templateId);
         if (!template) {
             throw new Error(`Template not found: ${templateId}`);
         }
 
-        return renderTemplate(template.template, variables);
+        return renderTemplate(template.template, variables, options);
     }
 
     /**

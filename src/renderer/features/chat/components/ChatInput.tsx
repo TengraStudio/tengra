@@ -1,5 +1,4 @@
-import { Bot,Cpu, Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap } from 'lucide-react';
-import { File as FileIcon, FileCode, FileText, Image as ImageIcon } from 'lucide-react';
+import { Bot, Cpu, File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
 import { ModelSelector } from '@/features/models/components/ModelSelector';
@@ -30,19 +29,19 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
     useEffect(() => {
         const area = textareaRef.current;
         if (!area) { return; }
-        
+
         // Auto-resize textarea
         area.style.height = 'auto';
         area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
-        
+
         // ResizeObserver for more robust resizing
         const resizeObserver = new ResizeObserver(() => {
             area.style.height = 'auto';
             area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
         });
-        
+
         resizeObserver.observe(area);
-        
+
         // Cleanup
         return () => {
             resizeObserver.disconnect();
@@ -269,9 +268,6 @@ const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
         { id: 'thinking', label: 'Thinking', icon: Cpu, color: 'text-purple' }
     ] as const;
 
-    const current = modes.find(m => m.id === ctrl.systemMode) ?? modes[1];
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _current = current; // Variable kept for future use
 
     return (
         <div className="flex items-center gap-1 mr-2">

@@ -7,7 +7,7 @@ import { FileChangeTracker } from '@main/services/data/file-change-tracker.servi
 import { BrowserWindow, ipcMain } from 'electron';
 
 export function registerFileDiffIpc(
-    getMainWindow: () => BrowserWindow | null,
+    _getMainWindow: () => BrowserWindow | null,
     fileChangeTracker: FileChangeTracker
 ) {
     // Get file history

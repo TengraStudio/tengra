@@ -30,6 +30,9 @@ import {
 const MAX_ITERATIONS = 100; // Maximum execution loop iterations
 const MAX_RECOVERY_ATTEMPTS = 3; // Maximum self-healing attempts
 const MAX_PROVIDER_ROTATIONS = 10; // Maximum provider switches per task
+const MAX_EVENT_HISTORY = 1000; // Maximum events to keep in history
+const MAX_MESSAGE_HISTORY = 100; // Maximum messages to keep in history
+const MAX_TASK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
 // ============================================================================
 // State Transition Guards
@@ -118,13 +121,41 @@ export const agentStateReducer: AgentStateReducer = (
     // Update event record with new state
     eventRecord.stateAfterTransition = nextState.state;
 
-    // Add event to history
+    return finalizeTransition(nextState, eventRecord);
+};
+
+/**
+ * Finalizes state transition by handling history and timeouts
+ * NASA Rule #4: Short functions
+ */
+function finalizeTransition(state: AgentTaskState, record: AgentEventRecord): AgentTaskState {
+    const newHistory = [...state.eventHistory, record];
+    const truncatedEventHistory = newHistory.length > MAX_EVENT_HISTORY
+        ? newHistory.slice(-MAX_EVENT_HISTORY)
+        : newHistory;
+
+    const truncatedMessageHistory = state.messageHistory.length > MAX_MESSAGE_HISTORY
+        ? state.messageHistory.slice(-MAX_MESSAGE_HISTORY)
+        : state.messageHistory;
+
     return {
-        ...nextState,
-        eventHistory: [...nextState.eventHistory, eventRecord],
+        ...state,
+        state: checkTaskTimeout(state),
+        eventHistory: truncatedEventHistory,
+        messageHistory: truncatedMessageHistory,
         updatedAt: new Date()
     };
-};
+}
+
+function checkTaskTimeout(state: AgentTaskState): AgentState {
+    if (state.startedAt && (new Date().getTime() - state.startedAt.getTime() > MAX_TASK_DURATION_MS)) {
+        if (!['failed', 'completed', 'idle'].includes(state.state)) {
+            appLogger.warn('AgentStateMachine', `Task ${state.taskId} timed out after ${MAX_TASK_DURATION_MS}ms`);
+            return 'failed';
+        }
+    }
+    return state.state;
+}
 
 function isLifecycleEvent(type: AgentEvent['type']): boolean {
     return ['START_TASK', 'TASK_VALIDATED', 'TASK_COMPLETE', 'TASK_FAILED', 'PAUSE', 'RESUME', 'STOP'].includes(type);
@@ -551,7 +582,7 @@ function handlePause(state: AgentTaskState): AgentTaskState {
 function handleResume(state: AgentTaskState): AgentTaskState {
     // Determine target state based on current state and context
     let targetState: AgentState = 'executing';
-    
+
     if (state.state === 'waiting_user' || state.state === 'paused') {
         // If paused or waiting for user, resume from where we were
         if (state.plan) {
@@ -571,10 +602,13 @@ function handleResume(state: AgentTaskState): AgentTaskState {
 }
 
 function handleStop(state: AgentTaskState): AgentTaskState {
+    appLogger.info('AgentStateMachine', `Stopping task ${state.taskId} and cleaning up resources`);
     return {
         ...state,
         state: 'idle',
-        completedAt: new Date()
+        completedAt: new Date(),
+        plan: null, // Cleanup resource-heavy plan on stop
+        messageHistory: state.messageHistory.length > 50 ? state.messageHistory.slice(-50) : state.messageHistory // Prune history
     };
 }
 

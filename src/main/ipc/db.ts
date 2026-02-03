@@ -4,6 +4,7 @@ import { Chat as DbChat, DatabaseService } from '@main/services/data/database.se
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { IpcValue, JsonObject } from '@shared/types/common';
 import { Project } from '@shared/types/project';
@@ -53,17 +54,17 @@ export function registerDbIpc(getWindow: () => Electron.BrowserWindow | null, da
 
     registerBatchableHandler('db:updateChat', async (_event, ...args): Promise<IpcValue> => {
         const [chatId, updates] = args as [string, Record<string, unknown>];
-        return await databaseService.updateChat(chatId, updates as JsonObject);
+        return await withRateLimit('db', () => databaseService.updateChat(chatId, updates as JsonObject));
     });
 
     registerBatchableHandler('db:deleteChat', async (_event, ...args): Promise<IpcValue> => {
         const chatId = args[0] as string;
-        return await databaseService.deleteChat(chatId);
+        return await withRateLimit('db', () => databaseService.deleteChat(chatId));
     });
 
     registerBatchableHandler('db:addMessage', async (_event, ...args): Promise<IpcValue> => {
         const message = args[0] as JsonObject;
-        return await databaseService.addMessage(message);
+        return await withRateLimit('db', () => databaseService.addMessage(message));
     });
 }
 
@@ -80,16 +81,16 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
             createdAt: chat.createdAt instanceof Date ? chat.createdAt : new Date(),
             updatedAt: chat.updatedAt instanceof Date ? chat.updatedAt : new Date()
         } as DbChat;
-        return await databaseService.createChat(dbChat);
+        return await withRateLimit('db', () => databaseService.createChat(dbChat));
     }, { success: false, id: '' }));
 
     ipcMain.handle('db:updateChat', createSafeIpcHandler('db:updateChat', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Chat>) => {
-        return await databaseService.updateChat(id, updates as JsonObject);
+        return await withRateLimit('db', () => databaseService.updateChat(id, updates as JsonObject));
     }, { success: false }));
 
     ipcMain.handle('db:deleteChat', createSafeIpcHandler('db:deleteChat', async (_event: IpcMainInvokeEvent, id: string) => {
         try {
-            const result = await databaseService.deleteChat(id);
+            const result = await withRateLimit('db', () => databaseService.deleteChat(id));
             if (auditLogService && result.success) {
                 await auditLogService.log({
                     action: 'deleteChat',
@@ -114,18 +115,18 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
     }, { success: false }));
 
     ipcMain.handle('db:duplicateChat', createSafeIpcHandler('db:duplicateChat', async (_event: IpcMainInvokeEvent, id: string) => {
-        return await databaseService.duplicateChat(id);
+        return await withRateLimit('db', () => databaseService.duplicateChat(id));
     }, null));
 
     ipcMain.handle('db:archiveChat', createSafeIpcHandler('db:archiveChat', async (_event: IpcMainInvokeEvent, id: string, isArchived: boolean) => {
-        return await databaseService.archiveChat(id, isArchived);
+        return await withRateLimit('db', () => databaseService.archiveChat(id, isArchived));
     }, { success: false }));
 
     // Note: db:getChat, db:getAllChats are registered as batch handlers for optimization
 
     ipcMain.handle('db:deleteAllChats', createSafeIpcHandler('db:deleteAllChats', async () => {
         try {
-            const result = await databaseService.deleteAllChats();
+            const result = await withRateLimit('db', () => databaseService.deleteAllChats());
             if (auditLogService && result.success) {
                 await auditLogService.log({
                     action: 'deleteAllChats',
@@ -150,7 +151,7 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
     }, { success: false }));
 
     ipcMain.handle('db:deleteChatsByTitle', createSafeIpcHandler('db:deleteChatsByTitle', async (_event: IpcMainInvokeEvent, title: string) => {
-        return await databaseService.deleteChatsByTitle(title);
+        return await withRateLimit('db', () => databaseService.deleteChatsByTitle(title));
     }, { success: false }));
 }
 
@@ -172,7 +173,7 @@ function registerMessageHandlers(databaseService: DatabaseService, embeddingServ
             toolResults: message.toolResults ? JSON.stringify(message.toolResults) : undefined,
             vector: message.vector
         } as JsonObject;
-        return await databaseService.addMessage(dbMessage);
+        return await withRateLimit('db', () => databaseService.addMessage(dbMessage));
     }, { success: false, id: '' }));
 
     ipcMain.handle('db:getMessages', createSafeIpcHandler('db:getMessages', async (_event: IpcMainInvokeEvent, chatId: string) => {
@@ -266,7 +267,7 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
     // Note: db:getProjects is registered as batch handler for optimization
 
     ipcMain.handle('db:createProject', createIpcHandler('db:createProject', async (_event: IpcMainInvokeEvent, name: string, path: string, desc: string, mountsJson?: string) => {
-        const result = await databaseService.createProject(name, path, desc, mountsJson, undefined);
+        const result = await withRateLimit('db', () => databaseService.createProject(name, path, desc, mountsJson, undefined));
         notifyUpdate();
         return result;
     }));
@@ -281,14 +282,14 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
                 dbUpdates[key] = value;
             }
         }
-        const result = await databaseService.updateProject(id, dbUpdates as JsonObject);
+        const result = await withRateLimit('db', () => databaseService.updateProject(id, dbUpdates as JsonObject));
         notifyUpdate(id);
         return result;
     }, undefined));
 
     ipcMain.handle('db:deleteProject', createIpcHandler('db:deleteProject', async (_event: IpcMainInvokeEvent, id: string, deleteFiles: boolean = false) => {
         try {
-            await databaseService.deleteProject(id, deleteFiles);
+            await withRateLimit('db', () => databaseService.deleteProject(id, deleteFiles));
             if (auditLogService) {
                 await auditLogService.log({
                     action: 'deleteProject',
@@ -313,14 +314,14 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
     }));
 
     ipcMain.handle('db:archiveProject', createIpcHandler('db:archiveProject', async (_event: IpcMainInvokeEvent, id: string, isArchived: boolean) => {
-        const result = await databaseService.archiveProject(id, isArchived);
+        const result = await withRateLimit('db', () => databaseService.archiveProject(id, isArchived));
         notifyUpdate(id);
         return result;
     }));
 
     ipcMain.handle('db:bulkDeleteProjects', createIpcHandler('db:bulkDeleteProjects', async (_event: IpcMainInvokeEvent, ids: string[], deleteFiles: boolean = false) => {
         try {
-            await databaseService.bulkDeleteProjects(ids, deleteFiles);
+            await withRateLimit('db', () => databaseService.bulkDeleteProjects(ids, deleteFiles));
             if (auditLogService) {
                 await auditLogService.log({
                     action: 'bulkDeleteProjects',
@@ -346,7 +347,7 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
 
     ipcMain.handle('db:bulkArchiveProjects', createIpcHandler('db:bulkArchiveProjects', async (_event: IpcMainInvokeEvent, ids: string[], isArchived: boolean) => {
         try {
-            await databaseService.bulkArchiveProjects(ids, isArchived);
+            await withRateLimit('db', () => databaseService.bulkArchiveProjects(ids, isArchived));
             if (auditLogService) {
                 await auditLogService.log({
                     action: 'bulkArchiveProjects',
@@ -373,11 +374,11 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
 
 function registerFolderHandlers(databaseService: DatabaseService) {
     ipcMain.handle('db:createFolder', createSafeIpcHandler('db:createFolder', async (_event: IpcMainInvokeEvent, name: string, color: string) => {
-        return await databaseService.createFolder(name, color);
+        return await withRateLimit('db', () => databaseService.createFolder(name, color));
     }, null));
 
     ipcMain.handle('db:deleteFolder', createIpcHandler('db:deleteFolder', async (_event: IpcMainInvokeEvent, id: string) => {
-        await databaseService.deleteFolder(id);
+        await withRateLimit('db', () => databaseService.deleteFolder(id));
         return { success: true };
     }));
 
@@ -391,7 +392,7 @@ function registerFolderHandlers(databaseService: DatabaseService) {
                 dbUpdates[key] = value;
             }
         }
-        return await databaseService.updateFolder(id, dbUpdates as JsonObject);
+        return await withRateLimit('db', () => databaseService.updateFolder(id, dbUpdates as JsonObject));
     }, null));
 
     // Note: db:getFolders is registered as batch handler for optimization
@@ -399,16 +400,16 @@ function registerFolderHandlers(databaseService: DatabaseService) {
 
 function registerPromptHandlers(databaseService: DatabaseService) {
     ipcMain.handle('db:createPrompt', createSafeIpcHandler('db:createPrompt', async (_event: IpcMainInvokeEvent, title: string, content: string, tags: string[]) => {
-        return await databaseService.createPrompt(title, content, tags);
+        return await withRateLimit('db', () => databaseService.createPrompt(title, content, tags));
     }, null));
 
     ipcMain.handle('db:deletePrompt', createSafeIpcHandler('db:deletePrompt', async (_event: IpcMainInvokeEvent, id: string) => {
-        await databaseService.deletePrompt(id);
+        await withRateLimit('db', () => databaseService.deletePrompt(id));
         return { success: true };
     }, { success: false }));
 
     ipcMain.handle('db:updatePrompt', createSafeIpcHandler('db:updatePrompt', async (_event: IpcMainInvokeEvent, id: string, updates: Partial<Prompt>) => {
-        return await databaseService.updatePrompt(id, updates);
+        return await withRateLimit('db', () => databaseService.updatePrompt(id, updates));
     }, null));
 
     ipcMain.handle('db:getPrompts', createSafeIpcHandler('db:getPrompts', async () => {
@@ -454,16 +455,18 @@ function registerStatsHandlers(databaseService: DatabaseService, _auditLogServic
         tokensReceived: number
         costEstimate?: number
     }) => {
-        await databaseService.addTokenUsage({
-            chatId: record.chatId,
-            messageId: record.messageId,
-            projectId: record.projectId,
-            provider: record.provider,
-            model: record.model,
-            tokensSent: record.tokensSent,
-            tokensReceived: record.tokensReceived,
-            costEstimate: record.costEstimate,
-            timestamp: Date.now()
+        await withRateLimit('db', async () => {
+            await databaseService.addTokenUsage({
+                chatId: record.chatId,
+                messageId: record.messageId,
+                projectId: record.projectId,
+                provider: record.provider,
+                model: record.model,
+                tokensSent: record.tokensSent,
+                tokensReceived: record.tokensReceived,
+                costEstimate: record.costEstimate,
+                timestamp: Date.now()
+            });
         });
         return { success: true };
     }, { success: false }));

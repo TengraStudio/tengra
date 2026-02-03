@@ -40,6 +40,21 @@ export interface ToolResult {
     error?: string | undefined
 }
 
+export interface TextContent {
+    type: 'text';
+    text: string;
+}
+
+export interface ImageContent {
+    type: 'image_url';
+    image_url: {
+        url: string;
+        detail?: 'auto' | 'low' | 'high';
+    };
+}
+
+export type MessageContentPart = TextContent | ImageContent;
+
 export interface MessageVariant {
     id: string
     content: string
@@ -54,7 +69,7 @@ export interface Message {
     id: string
     chatId?: string | undefined // Reference to parent chat
     role: 'user' | 'assistant' | 'system' | 'tool'
-    content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>
+    content: string | MessageContentPart[]
     timestamp: Date
     images?: string[] | undefined
     reasoning?: string | undefined

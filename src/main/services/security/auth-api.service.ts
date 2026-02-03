@@ -101,7 +101,7 @@ export class AuthAPIService extends BaseService {
         this.apiKey = key;
     }
 
-    private async handleGetAccounts(req: http.IncomingMessage, res: http.ServerResponse) {
+    private async handleGetAccounts(_req: http.IncomingMessage, res: http.ServerResponse) {
         try {
             const accounts = await this.authService.getAllAccountsFull();
             // Transform to format expected by Go proxy

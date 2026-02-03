@@ -31,7 +31,7 @@ describe('ModelRegistryService', () => {
         vi.clearAllMocks();
         mockProcessManager = {
             startService: vi.fn(),
-            sendRequest: vi.fn().mockImplementation((service, payload) => {
+            sendRequest: vi.fn().mockImplementation((_service, payload) => {
                 if (payload.provider === 'ollama') {
                     return Promise.resolve({ success: true, models: [{ name: 'llama3', description: 'Meta Llama 3', tags: ['7b'], pulls: '10M', provider: 'ollama' }] });
                 }

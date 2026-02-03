@@ -1,7 +1,7 @@
+import { appLogger } from '@main/logging/logger';
 import { Download, FileText, X } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 import { Chat, Message } from '@/types';
 

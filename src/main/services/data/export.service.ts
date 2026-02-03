@@ -472,8 +472,8 @@ export class ExportService {
 
         if (Array.isArray(msg.content)) {
             return msg.content
-                .filter(part => part.type === 'text' && !!part.text)
-                .map(part => part.text ?? '')
+                .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+                .map(part => part.text)
                 .join('\n');
         }
 

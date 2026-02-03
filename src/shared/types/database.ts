@@ -25,7 +25,7 @@ export interface DatabaseAdapter {
     exec(sql: string): Promise<void>
 
     /**
-     * Execute a raw query and return rows (for PGlite compatibility).
+     * Execute a raw query and return rows.
      */
     query<T = unknown>(sql: string, params?: SqlParams): Promise<{ rows: T[]; fields?: unknown[] }>
 

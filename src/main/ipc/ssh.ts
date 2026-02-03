@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 
-import { sshConnectionSchema, sshProfileSchema,validateIpc } from '@main/ipc/validation';
+import { sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/ipc/validation';
 import { SSHConnection, SSHService } from '@main/services/project/ssh.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { IpcValue, JsonValue } from '@shared/types/common';
@@ -15,16 +15,34 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
         }
     };
 
-    sshService.on('stdout', (payload) => send('ssh:stdout', payload));
-    sshService.on('stderr', (payload) => send('ssh:stderr', payload));
-    sshService.on('connected', (id) => send('ssh:connected', id));
-    sshService.on('disconnected', (id) => send('ssh:disconnected', id));
-    sshService.on('error', (payload) => send('ssh:error', payload));
+    // Store listener references for cleanup
+    const listeners = {
+        stdout: (payload: JsonValue) => send('ssh:stdout', payload),
+        stderr: (payload: JsonValue) => send('ssh:stderr', payload),
+        connected: (id: string) => send('ssh:connected', id),
+        disconnected: (id: string) => send('ssh:disconnected', id),
+        error: (payload: JsonValue) => send('ssh:error', payload)
+    };
+
+    sshService.on('stdout', listeners.stdout);
+    sshService.on('stderr', listeners.stderr);
+    sshService.on('connected', listeners.connected);
+    sshService.on('disconnected', listeners.disconnected);
+    sshService.on('error', listeners.error);
 
     registerConnectionHandlers(sshService);
     registerCommandHandlers(sshService, rateLimitService, send);
     registerFileSystemHandlers(sshService, send);
     registerSystemHandlers(sshService);
+
+    // Return dispose function
+    return () => {
+        sshService.off('stdout', listeners.stdout);
+        sshService.off('stderr', listeners.stderr);
+        sshService.off('connected', listeners.connected);
+        sshService.off('disconnected', listeners.disconnected);
+        sshService.off('error', listeners.error);
+    };
 }
 
 function registerConnectionHandlers(sshService: SSHService) {

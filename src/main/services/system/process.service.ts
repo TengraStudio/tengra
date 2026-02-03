@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import * as crypto from 'crypto';
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
 import * as os from 'os';
@@ -7,7 +8,7 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { quoteShellArg,safeJsonParse } from '@shared/utils/sanitize.util';
+import { quoteShellArg, safeJsonParse } from '@shared/utils/sanitize.util';
 import * as pty from 'node-pty';
 
 
@@ -38,7 +39,7 @@ export class ProcessService extends EventEmitter {
 
     // Spawn a process using node-pty for terminal integration
     spawn(command: string, args: string[], cwd: string): string {
-        const id = Math.random().toString(36).substring(7);
+        const id = crypto.randomUUID().substring(0, 8);
 
         appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `);
 

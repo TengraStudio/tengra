@@ -1,17 +1,6 @@
-export interface TodoItem {
-    id: string;
-    text: string;
-    completed: boolean;
-    line: number;
-    filePath: string;
-    relativePath: string;
-}
+import { TodoFile, TodoItem } from '@/types/project';
 
-export interface TodoFile {
-    path: string;
-    relativePath: string;
-    items: TodoItem[];
-}
+export type { TodoFile, TodoItem };
 
 export interface TodoStats {
     total: number;

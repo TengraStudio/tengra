@@ -342,7 +342,7 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
                         totalCount={logs.length}
                         atBottomStateChange={setAtBottom}
                         followOutput={'smooth'}
-                        itemContent={(index, log) => (
+                        itemContent={(_index, log) => (
                             <LogEntry
                                 key={log.id}
                                 log={log}
@@ -371,14 +371,14 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
 };
 
 // Helper to format content (handles string or array)
-function formatContent(content: string | Array<{ type: string; text?: string }>): string {
+function formatContent(content: Message['content']): string {
     if (typeof content === 'string') {
         return content;
     }
     if (Array.isArray(content)) {
         return content
             .filter(c => c.type === 'text')
-            .map(c => c.text ?? '')
+            .map(c => (c as { text: string }).text)
             .join(' ');
     }
     return '';

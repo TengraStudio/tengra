@@ -9,7 +9,6 @@ import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { AuthAPIService } from '@main/services/security/auth-api.service';
-import { SecurityService } from '@main/services/security/security.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -30,14 +29,12 @@ export class ProxyProcessManager {
     private currentPort: number = 8317;
     private stdoutBuffer = '';
     private stderrBuffer = '';
-    private startupTime: number = Date.now();
     private authApiKey: string = '';
     private isProxyRunning: boolean = false;
 
     constructor(
         private settingsService: SettingsService,
         private dataService: DataService,
-        private securityService: SecurityService,
         private authService: AuthService,
         private authAPIService: AuthAPIService
     ) { }

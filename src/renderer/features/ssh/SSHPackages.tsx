@@ -1,7 +1,7 @@
+import { appLogger } from '@main/logging/logger';
 import { Search } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@/i18n';
 import type { SSHPackageInfo } from '@/types/ssh';
 

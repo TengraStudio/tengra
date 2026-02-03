@@ -26,7 +26,7 @@ export const formatMessageContent = (msg: Message): Message['content'] => {
     const text = typeof msg.content === 'string' ? msg.content : '';
 
     if (msg.images && msg.images.length > 0) {
-        const contentParts: Array<{ type: string, text?: string, image_url?: { url: string } }> = [];
+        const contentParts: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [];
         if (text) { contentParts.push({ type: 'text', text }); }
         for (const img of msg.images) { contentParts.push({ type: 'image_url', image_url: { url: img } }); }
         content = contentParts;
@@ -92,16 +92,16 @@ export const processStreamChunk = (
     streamStartTime: number
 ): StreamChunkResult => {
     const chunkType = chunk.type ?? 'content';
-    
+
     if (chunkType in chunkHandlers) {
         const handler = chunkHandlers[chunkType];
         return handler(chunk, current, streamStartTime);
     }
-    
+
     // Default case: treat as content if there's content to append
     if (!chunk.type && chunk.content) {
         return handleContentChunk(chunk, current, streamStartTime);
     }
-    
+
     return { updated: false };
 };

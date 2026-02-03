@@ -38,11 +38,15 @@ export interface ProjectAnalysis {
 
 const LOG_CONTEXT = 'ProjectService';
 
-export class ProjectService {
+import { BaseService } from '@main/services/base.service';
+
+export class ProjectService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private analysisCache: Map<string, { data: ProjectAnalysis; timestamp: number }> = new Map();
 
-    constructor() { }
+    constructor() {
+        super('ProjectService');
+    }
 
     /**
      * Starts watching a project directory for changes.
@@ -50,7 +54,7 @@ export class ProjectService {
      * @param onChange Callback triggered on file change events.
      */
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
-        appLogger.info(LOG_CONTEXT, `Starting watch on ${rootPath}`);
+        this.logInfo(`Starting watch on ${rootPath}`);
 
         // Stop existing watcher if any
         if (this.watchers.has(rootPath)) {
@@ -69,18 +73,32 @@ export class ProjectService {
                 onChange(event, path.join(rootPath, filename.toString()));
             });
 
-            watcher.on('error', (err) => appLogger.error(LOG_CONTEXT, `Error on ${rootPath}:`, err));
+            watcher.on('error', (err) => this.logError(`Error on ${rootPath}:`, err));
             this.watchers.set(rootPath, watcher);
 
         } catch (e) {
-            appLogger.warn(LOG_CONTEXT, `Failed to watch ${rootPath}:`, getErrorMessage(e as Error));
+            this.logWarn(`Failed to watch ${rootPath}:`, getErrorMessage(e as Error));
         }
+    }
+
+    async cleanup(): Promise<void> {
+        this.logInfo('Cleaning up ProjectService watchers...');
+        for (const [path, watcher] of this.watchers) {
+            try {
+                watcher.close();
+            } catch (err) {
+                this.logWarn(`Error closing watcher for ${path}:`, err as Error);
+            }
+        }
+        this.watchers.clear();
+        this.analysisCache.clear();
     }
 
     async stopWatch(rootPath: string) {
         if (this.watchers.has(rootPath)) {
             this.watchers.get(rootPath)?.close();
             this.watchers.delete(rootPath);
+            this.logInfo(`Stopped watching ${rootPath}`);
         }
     }
 
@@ -100,25 +118,25 @@ export class ProjectService {
         // Cache Check (5 min TTL)
         const cached = this.analysisCache.get(rootPath);
         if (cached !== undefined && (Date.now() - cached.timestamp < 300000)) {
-            appLogger.debug(LOG_CONTEXT, 'Returning cached project analysis for:', rootPath);
+            this.logDebug('Returning cached project analysis for:', rootPath);
             return cached.data;
         }
 
-        appLogger.info(LOG_CONTEXT, 'Analyzing project at (normalized):', { rootPath });
+        this.logInfo('Analyzing project at (normalized):', { rootPath });
         const runStart = Date.now();
 
         const files = await this.scanFiles(rootPath, rootPath);
-        appLogger.info(LOG_CONTEXT, `Found ${files.length} files`);
+        this.logInfo(`Found ${files.length} files`);
         const type = await this.detectType(files);
         const { frameworks, dependencies, devDependencies } = await this.analyzeDependencies(rootPath, type, files);
         const stats = await this.calculateStats(files, runStart);
-        appLogger.info(LOG_CONTEXT, `Stats calculated:`, stats as unknown as JsonObject);
+        this.logInfo(`Stats calculated:`, stats as unknown as JsonObject);
         const languages = this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
         const todos = await this.findTodos(rootPath, files);
         const issues = await this.findIssues(rootPath, files);
 
-        appLogger.info(LOG_CONTEXT, `Analysis complete in ${Date.now() - runStart}ms`);
+        this.logInfo(`Analysis complete in ${Date.now() - runStart}ms`);
 
         const analysis: ProjectAnalysis = {
             type,
@@ -160,7 +178,7 @@ export class ProjectService {
             }
 
         } catch (e) {
-            appLogger.warn(LOG_CONTEXT, 'Monorepo detection failed:', getErrorMessage(e as Error));
+            this.logWarn('Monorepo detection failed:', getErrorMessage(e as Error));
         }
         return undefined;
     }
@@ -229,7 +247,7 @@ export class ProjectService {
             // If no checklist, just return first non-empty 10 lines
             return lines.filter(l => l.trim().length > 0).slice(0, 10);
         } catch (e) {
-            appLogger.warn(LOG_CONTEXT, 'Failed to read todo file:', getErrorMessage(e as Error));
+            this.logWarn('Failed to read todo file:', getErrorMessage(e as Error));
             return [];
         }
     }
@@ -322,7 +340,7 @@ export class ProjectService {
             hasPackageJson = true;
         } catch (error) {
             /* package.json not found or parse error */
-            appLogger.debug('project.service', `[ProjectService] package.json not found in ${dirPath}:`, getErrorMessage(error as Error));
+            this.logDebug(`[ProjectService] package.json not found in ${dirPath}:`, getErrorMessage(error as Error));
         }
 
         // 2. Check for README.md
@@ -332,7 +350,7 @@ export class ProjectService {
             readme = await fs.readFile(readmePath, 'utf-8');
         } catch (error) {
             /* README.md not found */
-            appLogger.debug(LOG_CONTEXT, `README.md not found in ${dirPath}:`, getErrorMessage(error as Error));
+            this.logDebug(`README.md not found in ${dirPath}:`, getErrorMessage(error as Error));
         }
 
         // 3. Stats for this folder
@@ -342,7 +360,7 @@ export class ProjectService {
             files = entries.map(e => path.join(dirPath, e));
         } catch (error) {
             /* Failed to read directory */
-            appLogger.warn(LOG_CONTEXT, `Failed to read directory ${dirPath}:`, getErrorMessage(error as Error));
+            this.logWarn(`Failed to read directory ${dirPath}:`, getErrorMessage(error as Error));
         }
 
         const stats = await this.calculateStats(files, Date.now());
@@ -436,7 +454,7 @@ export class ProjectService {
     }
 
     private async scanFiles(dir: string, rootPath: string, fileList: string[] = []): Promise<string[]> {
-        appLogger.info(LOG_CONTEXT, `Scanning directory: ${dir}`);
+        this.logInfo(`Scanning directory: ${dir}`);
         try {
             const entries = await fs.readdir(dir, { withFileTypes: true });
             for (const entry of entries) {
@@ -450,10 +468,10 @@ export class ProjectService {
                 }
             }
         } catch (error) {
-            appLogger.warn(LOG_CONTEXT, `Failed to scan directory ${dir}:`, getErrorMessage(error as Error));
+            this.logWarn(`Failed to scan directory ${dir}:`, getErrorMessage(error as Error));
         }
         if (dir === rootPath) {
-            appLogger.info(LOG_CONTEXT, `Project analysis started for ${rootPath}. Found ${fileList.slice(0, 3)}...`);
+            this.logInfo(`Project analysis started for ${rootPath}. Found ${fileList.slice(0, 3)}...`);
         }
         return fileList;
     }
@@ -532,7 +550,7 @@ export class ProjectService {
 
             this.detectNodeFrameworks(pkg, result.frameworks);
         } catch (error) {
-            appLogger.warn(LOG_CONTEXT, 'Failed to parse package.json:', getErrorMessage(error as Error));
+            this.logWarn('Failed to parse package.json:', getErrorMessage(error as Error));
         }
         return result;
     }
@@ -594,7 +612,7 @@ export class ProjectService {
                 }
             }
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, 'requirements.txt not found:', getErrorMessage(error as Error));
+            this.logDebug('requirements.txt not found:', getErrorMessage(error as Error));
         }
     }
 
@@ -606,7 +624,7 @@ export class ProjectService {
             this.parsePyProjectDependencies(content, dependencies);
             this.parsePoetryDependencies(content, dependencies);
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, 'pyproject.toml not found:', getErrorMessage(error as Error));
+            this.logDebug('pyproject.toml not found:', getErrorMessage(error as Error));
         }
     }
 
@@ -652,7 +670,7 @@ export class ProjectService {
             const content = await fs.readFile(goModPath, 'utf-8');
             this.parseGoMod(content, result.dependencies);
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, 'go.mod not found:', getErrorMessage(error as Error));
+            this.logDebug('go.mod not found:', getErrorMessage(error as Error));
         }
 
         const allDeps = Object.keys(result.dependencies);
@@ -688,7 +706,7 @@ export class ProjectService {
             const content = await fs.readFile(cargoPath, 'utf-8');
             this.parseCargoToml(content, result);
         } catch (error) {
-            appLogger.debug(LOG_CONTEXT, 'Cargo.toml not found:', getErrorMessage(error as Error));
+            this.logDebug('Cargo.toml not found:', getErrorMessage(error as Error));
         }
 
         const allDeps = Object.keys(result.dependencies);

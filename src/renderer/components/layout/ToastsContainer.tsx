@@ -1,4 +1,4 @@
-import React from 'react';
+// Toast container component
 
 import { cn } from '@/lib/utils';
 import { Toast } from '@/types';

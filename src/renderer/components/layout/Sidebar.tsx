@@ -9,6 +9,7 @@ import { useChat } from '@/context/ChatContext';
 import { useProject } from '@/context/ProjectContext';
 import { PromptManagerModal } from '@/features/prompts/components/PromptManagerModal';
 import { SettingsCategory } from '@/features/settings/types';
+import { AppView } from '@/hooks/useAppState';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
@@ -16,8 +17,8 @@ import { Chat } from '@/types';
 interface SidebarProps {
     isCollapsed: boolean
     toggleSidebar: () => void
-    currentView: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
-    onChangeView: (view: 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent') => void
+    currentView: AppView
+    onChangeView: (view: AppView) => void
     onOpenSettings: (category?: SettingsCategory) => void
     onSearch: (query: string) => void
 }

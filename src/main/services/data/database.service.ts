@@ -9,7 +9,8 @@ import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { FileDiff } from '@shared/types/file-diff';
 import { Project } from '@shared/types/project';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { AgentProfile } from '@shared/types/project-agent';
+
 import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
@@ -108,7 +109,7 @@ export class DatabaseService extends BaseService {
     get uac() { return this._uac; }
 
     constructor(
-        private dataService: DataService,
+        _dataService: DataService,
         private eventBus: EventBusService,
         private dbClient: DatabaseClientService
     ) {
@@ -233,13 +234,13 @@ export class DatabaseService extends BaseService {
     async updateProject(id: string, updates: Partial<Project>) { return this._projects.updateProject(id, updates); }
     async deleteProject(id: string, deleteFiles: boolean = false) { return this._projects.deleteProject(id, deleteFiles); }
     async archiveProject(id: string, isArchived: boolean) { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
-    
+
     async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
         for (const id of ids) {
             await this.deleteProject(id, deleteFiles);
         }
     }
-    
+
     async bulkArchiveProjects(ids: string[], isArchived: boolean) {
         for (const id of ids) {
             await this.archiveProject(id, isArchived);
@@ -326,11 +327,7 @@ export class DatabaseService extends BaseService {
     async deleteSemanticFragmentsForFile(projectPath: string, filePath: string) { return this._knowledge.deleteSemanticFragmentsForFile(projectPath, filePath); }
     async storeEpisodicMemory(m: EpisodicMemory) { return this._knowledge.storeEpisodicMemory(m); }
     async searchEpisodicMemories(e: number[], l: number = 10) {
-        // For episodic memories, use text search when no embedding, otherwise fallback to knowledge repo
-        if (e.length === 0) {
-            return this._knowledge.searchEpisodicMemories(e, l);
-        }
-        // TODO: Add dedicated episodic memory vector search endpoint to Rust service
+        // Delegate to repository which handles both vector search and fallback to recent memories
         return this._knowledge.searchEpisodicMemories(e, l);
     }
     async storeEntityKnowledge(k: EntityKnowledge) { return this._knowledge.storeEntityKnowledge(k); }
@@ -419,6 +416,12 @@ export class DatabaseService extends BaseService {
     }
     async saveLinkedAccount(account: LinkedAccount) { return this._system.saveLinkedAccount(account); }
     async deleteLinkedAccount(id: string) { return this._system.deleteLinkedAccount(id); }
+
+    // --- Agent Profile Methods ---
+
+    async getAgentProfiles(): Promise<AgentProfile[]> { return this._system.getAgentProfiles(); }
+    async saveAgentProfile(profile: AgentProfile): Promise<void> { return this._system.saveAgentProfile(profile); }
+    async deleteAgentProfile(id: string): Promise<void> { return this._system.deleteAgentProfile(id); }
 
     // --- Audit Log Methods ---
 
@@ -526,10 +529,5 @@ export class DatabaseService extends BaseService {
         return this._knowledge.deleteAdvancedMemory(id);
     }
 
-    // Helper
-    private parseJsonField<T>(json: string | null | undefined, defaultValue: T): T {
-        if (typeof json !== 'string' || json.trim() === '') { return defaultValue; }
-        const parsed = safeJsonParse<unknown>(json, defaultValue);
-        return (typeof parsed === 'string' ? safeJsonParse<T>(parsed, defaultValue) : parsed) as T;
-    }
+
 }

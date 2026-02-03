@@ -17,7 +17,6 @@ import { Message, ToolDefinition } from '@shared/types/chat';
 import { SystemMode } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
 import { estimateTokens } from '@shared/utils/token.util';
 import { app, ipcMain, IpcMainInvokeEvent, WebContents } from 'electron';
@@ -165,7 +164,7 @@ interface ChatIpcOptions {
 class ChatIpcManager {
     constructor(private options: ChatIpcOptions) { }
 
-    async handleOpenAIChat(event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, projectId?: string, systemMode?: SystemMode }) {
+    async handleOpenAIChat(_event: IpcMainInvokeEvent, params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, projectId?: string, systemMode?: SystemMode }) {
         const { messages, model, provider, tools, projectId, systemMode } = params;
         const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId, systemMode });
         let sources: string[] = [];
@@ -470,6 +469,7 @@ export function registerChatIpc(options: ChatIpcOptions) {
         manager.handleOpenAIChat(event, { messages: args[0] as Message[], model: args[1] as string, tools: args[2] as ToolDefinition[], provider: args[3] as string, projectId: args[4] as string, systemMode: args[5] as SystemMode }),
         { wrapResponse: true }
     ));
+
 
     ipcMain.handle('chat:stream', (event, ...args: unknown[]) =>
         manager.handleChatStream(event, { messages: args[0] as Message[], model: args[1] as string, tools: args[2] as ToolDefinition[], provider: args[3] as string, optionsJson: args[4] as JsonObject, chatId: args[5] as string, projectId: args[6] as string, systemMode: args[7] as SystemMode })

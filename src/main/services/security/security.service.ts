@@ -27,21 +27,70 @@ export class SecurityService extends BaseService implements ISecurityService {
     private loadOrCreateMasterKey() {
         try {
             if (fs.existsSync(this.keyPath)) {
-                const hexKey = fs.readFileSync(this.keyPath, 'utf8').trim();
-                this.masterKey = Buffer.from(hexKey, 'hex');
-                if (this.masterKey.length !== 32) {
-                    throw new Error('Invalid master key length');
+                const rawContent = fs.readFileSync(this.keyPath, 'utf8').trim();
+
+                if (rawContent.startsWith('v2:')) {
+                    // Encrypted format
+                    this.loadEncryptedKey(rawContent);
+                } else {
+                    // Legacy plain-text hex format
+                    this.migrateLegacyKey(rawContent);
                 }
-                appLogger.info('SecurityService', 'Master Key loaded successfully.');
             } else {
-                this.masterKey = crypto.randomBytes(32);
-                fs.writeFileSync(this.keyPath, this.masterKey.toString('hex'), 'utf8');
-                appLogger.info('SecurityService', 'New Master Key generated and saved.');
+                // New initialization
+                this.generateNewMasterKey();
             }
         } catch (e) {
             appLogger.error('SecurityService', `Failed to load/create Master Key: ${getErrorMessage(e)}`);
-            // Critical failure: we can't encrypt safely if we can't persist the key
             this.masterKey = null;
+        }
+    }
+
+    private loadEncryptedKey(encryptedContent: string) {
+        if (!safeStorage.isEncryptionAvailable()) {
+            throw new Error('safeStorage encryption not available - cannot decrypt master key');
+        }
+
+        const ciphertext = encryptedContent.substring(3);
+        const buffer = Buffer.from(ciphertext, 'base64');
+        const hexKey = safeStorage.decryptString(buffer);
+
+        this.masterKey = Buffer.from(hexKey, 'hex');
+        if (this.masterKey.length !== 32) {
+            throw new Error('Invalid master key length after decryption');
+        }
+        appLogger.info('SecurityService', 'Master Key (Encrypted V2) loaded successfully.');
+    }
+
+    private migrateLegacyKey(hexKey: string) {
+        this.masterKey = Buffer.from(hexKey, 'hex');
+        if (this.masterKey.length !== 32) {
+            throw new Error('Invalid legacy master key length');
+        }
+
+        appLogger.warn('SecurityService', 'Legacy plain-text Master Key detected. Migrating to encrypted format...');
+        this.saveMasterKeyEncrypted();
+        appLogger.info('SecurityService', 'Master Key migration complete.');
+    }
+
+    private generateNewMasterKey() {
+        this.masterKey = crypto.randomBytes(32);
+        this.saveMasterKeyEncrypted();
+        appLogger.info('SecurityService', 'New Master Key generated and saved securely.');
+    }
+
+    private saveMasterKeyEncrypted() {
+        if (!this.masterKey) { return; }
+
+        if (safeStorage.isEncryptionAvailable()) {
+            const hexKey = this.masterKey.toString('hex');
+            const encryptedBuffer = safeStorage.encryptString(hexKey);
+            const content = `v2:${encryptedBuffer.toString('base64')}`;
+            fs.writeFileSync(this.keyPath, content, 'utf8');
+        } else {
+            // Fallback to plain text if safeStorage is unavailable (e.g. some CI envs)
+            appLogger.warn('SecurityService', 'safeStorage not available for saving Master Key - falling back to plain text (CAUTION)');
+            fs.writeFileSync(this.keyPath, this.masterKey.toString('hex'), 'utf8');
         }
     }
 

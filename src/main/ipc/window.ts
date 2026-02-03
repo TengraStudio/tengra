@@ -16,40 +16,62 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
 }
 
 function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
-    ipcMain.on('window:minimize', () => getMainWindow()?.minimize());
-    ipcMain.on('window:maximize', () => {
+    const validateSender = (event: Electron.IpcMainEvent) => {
         const win = getMainWindow();
-        if (!win) { return; }
-        if (win.isMaximized()) {
-            win.unmaximize();
-        } else {
-            win.maximize();
+        // SEC-013-3: Auth check for window operations
+        if (event.sender.id !== win?.webContents.id) {
+            appLogger.warn('Security', `Unauthorized window operation attempt from sender ${event.sender.id}`);
+            throw new Error('Unauthorized window operation');
         }
-    });
-    ipcMain.on('window:close', () => getMainWindow()?.close());
-    ipcMain.on('window:toggle-compact', (_event, enabled) => {
-        const win = getMainWindow();
-        if (!win) { return; }
-        if (enabled) {
-            win.setSize(COMPACT_WIDTH, COMPACT_HEIGHT);
-        } else {
-            win.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-        }
-    });
-    ipcMain.on('window:resize', (_event, resolution: string) => {
-        const win = getMainWindow();
-        if (!win) { return; }
-        const [width, height] = resolution.split('x').map(Number);
-        if (width && height) {
-            win.setSize(width, height);
-            win.center();
-        }
+        return win;
+    };
+
+    ipcMain.on('window:minimize', (event) => {
+        try { validateSender(event).minimize(); } catch { /* ignore */ }
     });
 
-    ipcMain.on('window:toggle-fullscreen', () => {
-        const win = getMainWindow();
-        if (!win) { return; }
-        win.setFullScreen(!win.isFullScreen());
+    ipcMain.on('window:maximize', (event) => {
+        try {
+            const win = validateSender(event);
+            if (win.isMaximized()) {
+                win.unmaximize();
+            } else {
+                win.maximize();
+            }
+        } catch { /* ignore */ }
+    });
+
+    ipcMain.on('window:close', (event) => {
+        try { validateSender(event).close(); } catch { /* ignore */ }
+    });
+
+    ipcMain.on('window:toggle-compact', (event, enabled) => {
+        try {
+            const win = validateSender(event);
+            if (enabled) {
+                win.setSize(COMPACT_WIDTH, COMPACT_HEIGHT);
+            } else {
+                win.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            }
+        } catch { /* ignore */ }
+    });
+
+    ipcMain.on('window:resize', (event, resolution: string) => {
+        try {
+            const win = validateSender(event);
+            const [width, height] = resolution.split('x').map(Number);
+            if (width && height) {
+                win.setSize(width, height);
+                win.center();
+            }
+        } catch { /* ignore */ }
+    });
+
+    ipcMain.on('window:toggle-fullscreen', (event) => {
+        try {
+            const win = validateSender(event);
+            win.setFullScreen(!win.isFullScreen());
+        } catch { /* ignore */ }
     });
 }
 

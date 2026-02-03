@@ -1,6 +1,6 @@
-import { AdvancedSemanticFragment,MemoryCategory } from '@shared/types/advanced-memory';
+import { AdvancedSemanticFragment, MemoryCategory } from '@shared/types/advanced-memory';
 import { Edit3, Plus } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

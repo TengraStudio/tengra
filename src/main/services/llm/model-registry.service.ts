@@ -1,5 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { TokenService } from '@main/services/security/token.service';
@@ -76,6 +77,20 @@ export class ModelRegistryService extends BaseService {
         appLogger.info('ModelRegistry', 'Updating remote model cache...');
         this.cachedModels = await this.fetchRemoteModels();
         this.lastUpdate = Date.now();
+
+        // Push limits to TokenEstimationService
+        const tokenEstimator = getTokenEstimationService();
+        for (const model of this.cachedModels) {
+            if (model.contextWindow) {
+                tokenEstimator.registerModelLimit(model.id, model.contextWindow);
+                // Also register normalized name if it differs
+                const normalized = model.id.split('/').pop();
+                if (normalized && normalized !== model.id) {
+                    tokenEstimator.registerModelLimit(normalized, model.contextWindow);
+                }
+            }
+        }
+
         appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
         this.deps.eventBus.emit('model:updated', {
             provider: 'all',
@@ -214,16 +229,7 @@ export class ModelRegistryService extends BaseService {
         return [];
     }
 
-    private parseCount(str: string): number {
-        const lower = str.toLowerCase().trim();
-        let multiplier = 1;
-        if (lower.endsWith('k')) { multiplier = 1000; }
-        if (lower.endsWith('m')) { multiplier = 1000000; }
-        if (lower.endsWith('b')) { multiplier = 1000000000; }
 
-        const num = parseFloat(lower.replace(/[kmb]/g, ''));
-        return Math.floor(num * multiplier);
-    }
 
     /**
      * Get locally installed models

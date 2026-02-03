@@ -13,7 +13,7 @@ import { JsonObject } from '@shared/types/common';
 export class McpDispatcher {
     constructor(
         // we keep the services parameter for compatibility, but it's ignored if pluginService is used
-        private _ignoredServices: unknown[],
+        _ignoredServices: Set<string>,
         private settingsService: SettingsService,
         private pluginService?: McpPluginService
     ) { }

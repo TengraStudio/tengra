@@ -139,7 +139,7 @@ const processToolEvent = (type: string, data: EventData, ctrl: EventControllers)
     if (type === 'agent:tool_started' && data.toolName) {
         // Generate unique ID: use toolCallId if available, otherwise create one
         const toolId = data.toolCallId ?? `tool_${generateUniqueId()}`;
-        
+
         setToolExecutions(prev => {
             // Check if this tool execution already exists (prevent duplicates)
             const existingIndex = prev.findIndex(t => t.id === toolId);
@@ -230,7 +230,7 @@ const handleLlmResponse = (data: EventData, ctrl: EventControllers) => {
     }
 };
 
-const handlePlanAwaitingApproval = (data: EventData, ctrl: EventControllers) => {
+const handlePlanAwaitingApproval = (_data: EventData, ctrl: EventControllers) => {
     const { setStatus, setActivityLogs } = ctrl;
     setStatus(prev => ({ ...prev, state: 'waiting_approval' }));
     setActivityLogs(prev => [...prev, {
@@ -251,56 +251,56 @@ const handlePlanApproved = (ctrl: EventControllers) => {
     }]);
 };
 
-const handlePlanRejected = (data: EventData, ctrl: EventControllers) => {
+const handlePlanRejected = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
     setActivityLogs(prev => [...prev, {
         id: generateUniqueId(),
         type: 'error',
-        message: `✗ Plan rejected${data.reason ? `: ${data.reason}` : ''}`,
+        message: `✗ Plan rejected${_data.reason ? `: ${_data.reason}` : ''}`,
         timestamp: new Date()
     }]);
 };
 
-const handleStateChanged = (data: EventData, ctrl: EventControllers) => {
+const handleStateChanged = (_data: EventData, ctrl: EventControllers) => {
     const { setStatus } = ctrl;
-    if (data.state) {
-        setStatus(prev => ({ ...prev, state: data.state as string }));
+    if (_data.state) {
+        setStatus(prev => ({ ...prev, state: _data.state as string }));
     }
 };
 
-const handleLlmRequest = (data: EventData, ctrl: EventControllers) => {
+const handleLlmRequest = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
     setActivityLogs(prev => [...prev, {
         id: generateUniqueId(),
         type: 'llm',
-        message: `Calling LLM with ${data.provider ?? 'unknown'}...`,
+        message: `Calling LLM with ${_data.provider ?? 'unknown'}...`,
         timestamp: new Date()
     }]);
 };
 
-const handleProviderChanged = (data: EventData, ctrl: EventControllers) => {
+const handleProviderChanged = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
     setActivityLogs(prev => [...prev, {
         id: generateUniqueId(),
         type: 'info',
-        message: `Switched provider: ${data.fromProvider ?? 'unknown'} → ${data.toProvider ?? 'unknown'}${data.reason ? ` (${data.reason})` : ''}`,
+        message: `Switched provider: ${_data.fromProvider ?? 'unknown'} → ${_data.toProvider ?? 'unknown'}${_data.reason ? ` (${_data.reason})` : ''}`,
         timestamp: new Date()
     }]);
 };
 
-const handleErrorOccurred = (data: EventData, ctrl: EventControllers) => {
+const handleErrorOccurred = (_data: EventData, ctrl: EventControllers) => {
     const { setActivityLogs } = ctrl;
     setActivityLogs(prev => [...prev, {
         id: generateUniqueId(),
         type: 'error',
-        message: data.message ?? 'Unknown error',
+        message: _data.message ?? 'Unknown error',
         timestamp: new Date()
     }]);
 };
 
-const handleResourceError = (data: EventData, ctrl: EventControllers) => {
+const handleResourceError = (_data: EventData, ctrl: EventControllers) => {
     const { setStatus, setActivityLogs } = ctrl;
-    const errorMsg = data.message ?? 'Insufficient system resources';
+    const errorMsg = _data.message ?? 'Insufficient system resources';
     setActivityLogs(prev => [...prev, {
         id: generateUniqueId(),
         type: 'error',
@@ -314,7 +314,7 @@ type TelemetryEventHandler = (data: EventData, ctrl: EventControllers) => void;
 
 const telemetryEventHandlers: Record<string, TelemetryEventHandler> = {
     'agent:plan_awaiting_approval': handlePlanAwaitingApproval,
-    'agent:plan_approved': (data, ctrl) => handlePlanApproved(ctrl),
+    'agent:plan_approved': (_data, ctrl) => handlePlanApproved(ctrl),
     'agent:plan_rejected': handlePlanRejected,
     'agent:state_changed': handleStateChanged,
     'agent:llm_request': handleLlmRequest,

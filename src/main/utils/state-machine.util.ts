@@ -22,6 +22,14 @@ export class StateMachine<S extends string, E extends string> {
         return this.currentState;
     }
 
+    /**
+     * Force set state, useful for hydration or testing.
+     * @param newState State to force set
+     */
+    public setState(newState: S): void {
+        this.currentState = newState;
+    }
+
     public can(newState: S): boolean {
         return this.transitions.some(t => t.to === newState && t.from.includes(this.currentState));
     }

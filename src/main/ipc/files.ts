@@ -31,18 +31,22 @@ export function registerFilesIpc(
     });
 
     ipcMain.handle('files:listDirectory', async (_event, dirPath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.listDirectory(dirPath);
     });
 
     ipcMain.handle('files:readFile', async (_event, filePath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.readFile(filePath);
     });
 
     ipcMain.handle('files:readImage', async (_event, filePath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.readImage(filePath);
     });
 
     ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         if (context?.aiSystem) {
             return await fileSystemService.writeFileWithTracking(filePath, content, {
                 aiSystem: context.aiSystem as AISystemType,
@@ -55,22 +59,27 @@ export function registerFilesIpc(
     });
 
     ipcMain.handle('files:createDirectory', async (_event, dirPath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.createDirectory(dirPath);
     });
 
     ipcMain.handle('files:deleteFile', async (_event, filePath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.deleteFile(filePath);
     });
 
     ipcMain.handle('files:deleteDirectory', async (_event, dirPath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.deleteDirectory(dirPath);
     });
 
     ipcMain.handle('files:renamePath', async (_event, oldPath: string, newPath: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.moveFile(oldPath, newPath);
     });
 
     ipcMain.handle('files:searchFiles', async (_event, rootPath: string, pattern: string) => {
+        if (rateLimitService) { await rateLimitService.waitForToken('files:search'); }
         return await fileSystemService.searchFiles(rootPath, pattern);
     });
 

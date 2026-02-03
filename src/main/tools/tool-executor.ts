@@ -1,6 +1,23 @@
 import { appLogger } from '@main/logging/logger';
+import { McpDispatcher } from '@main/mcp/dispatcher';
+import { MonitoringService } from '@main/services/analysis/monitoring.service';
+import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
+import { FileManagementService } from '@main/services/data/file.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
+import { ContentService } from '@main/services/external/content.service';
+import { UtilityService } from '@main/services/external/utility.service';
+import { WebService } from '@main/services/external/web.service';
+import { LLMService } from '@main/services/llm/llm.service';
+import { LocalImageService } from '@main/services/llm/local-image.service';
+import { MemoryService } from '@main/services/llm/memory.service';
+import { GitService } from '@main/services/project/git.service';
+import { CommandService } from '@main/services/system/command.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
+import { NetworkService } from '@main/services/system/network.service';
+import { SystemService } from '@main/services/system/system.service';
+import { ClipboardService } from '@main/services/ui/clipboard.service';
+import { NotificationService } from '@main/services/ui/notification.service';
+import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
 
 export interface InternalToolResult {
@@ -12,12 +29,24 @@ export interface InternalToolResult {
 export interface ToolExecutorOptions {
     fileSystem: FileSystemService;
     eventBus: EventBusService;
-    command: { executeCommand: (cmd: string, opt?: { cwd?: string }) => Promise<{ success: boolean; stdout?: string; stderr?: string; error?: string }> };
-    web: { searchWeb: (q: string) => Promise<{ success: boolean; results?: unknown[]; error?: string }> };
-    memory: unknown;
-    localImage: unknown;
-    screenshot: unknown;
-    mcp: { dispatch: (s: string, t: string, a: JsonObject) => Promise<{ success: boolean; data?: unknown; error?: string }> };
+    command: CommandService;
+    web: WebService;
+    memory: MemoryService;
+    localImage: LocalImageService;
+    screenshot: ScreenshotService;
+    system: SystemService;
+    network: NetworkService;
+    notification: NotificationService;
+    utility: UtilityService;
+    content: ContentService;
+    file: FileManagementService;
+    monitor: MonitoringService;
+    clipboard: ClipboardService;
+    git: GitService;
+    security: unknown; // Still unknown but can be fixed if security service is needed
+    mcp: McpDispatcher;
+    llm: LLMService;
+    pageSpeed: PageSpeedService;
     [key: string]: unknown;
 }
 

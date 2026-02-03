@@ -32,6 +32,7 @@ import { registerPerformanceIpc } from '@main/ipc/performance';
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process';
 import { registerProjectIpc } from '@main/ipc/project';
 import { registerProjectAgentIpc } from '@main/ipc/project-agent';
+import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
 import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
@@ -170,9 +171,11 @@ export function registerIpcHandlers(
     // Register Idea Generator IPC
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService);
 
-    // Register Project Agent IPC & Inject dependencies
     services.projectAgentService.setToolExecutor(toolExecutor);
     registerProjectAgentIpc(services.projectAgentService, getMainWindow);
+
+    // Register Multi-Agent Orchestrator IPC
+    registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);
 
     // Browser Extension
     registerExtensionIpc(services.extensionDetectorService);

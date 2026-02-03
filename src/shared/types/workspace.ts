@@ -67,8 +67,4 @@ export interface MountForm {
     passphrase: string
 }
 
-export interface TodoItem {
-    file: string
-    line: number
-    text: string
-}
+

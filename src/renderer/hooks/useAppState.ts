@@ -8,7 +8,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent'
+export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent' | 'docker' | 'terminal'
 
 export interface AppState {
     // View state
@@ -76,7 +76,7 @@ export function useAppState(): AppState {
         const timer = setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== id));
         }, 5000);
-        
+
         // Store timer for cleanup if component unmounts
         return () => clearTimeout(timer);
     }, []);

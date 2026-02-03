@@ -3,10 +3,11 @@
  *
  * HTTP client for communicating with the standalone Rust database service.
  * This service provides the same interface as DatabaseService but uses
- * HTTP calls to the external db-service instead of direct PGlite access.
+ * HTTP calls to the external db-service.
  */
 
 import * as fs from 'fs';
+import * as http from 'http';
 import * as net from 'net';
 import * as path from 'path';
 
@@ -48,6 +49,15 @@ const SERVICE_NAME = 'db-service';
 const MAX_HEALTH_RETRIES = 30;
 const HEALTH_RETRY_DELAY_MS = 500;
 
+// PERF-003-4: HTTP agent configuration for connection pooling
+const HTTP_AGENT_CONFIG = {
+    keepAlive: true,           // Enable keep-alive connections
+    keepAliveMsecs: 1000,      // Initial delay for keep-alive probes
+    maxSockets: 10,            // Maximum concurrent sockets per host
+    maxFreeSockets: 5,         // Maximum idle sockets to keep in pool
+    timeout: 60000             // Socket timeout in ms
+};
+
 /**
  * Database Client Service - communicates with the standalone Rust database service
  */
@@ -55,17 +65,25 @@ export class DatabaseClientService extends BaseService {
     private apiClient: AxiosInstance;
     private servicePort: number | null = null;
     private isReady = false;
+    // PERF-003-4: HTTP agent for connection pooling
+    private httpAgent: http.Agent;
 
     constructor(
         private eventBus: EventBusService,
         private processManager: ProcessManagerService
     ) {
         super('DatabaseClientService');
+
+        // PERF-003-4: Create reusable HTTP agent with connection pooling
+        this.httpAgent = new http.Agent(HTTP_AGENT_CONFIG);
+
         this.apiClient = axios.create({
             timeout: 30000,
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            // PERF-003-4: Use connection pooling agent
+            httpAgent: this.httpAgent
         });
     }
 
@@ -467,6 +485,10 @@ export class DatabaseClientService extends BaseService {
     override async cleanup(): Promise<void> {
         this.logInfo('Cleaning up database client...');
         this.isReady = false;
+
+        // PERF-003-4: Destroy HTTP agent and close all pooled connections
+        this.httpAgent.destroy();
+
         // Note: We don't stop the service as it's persistent
     }
 }
