@@ -28,7 +28,7 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, 
             <CardHeader className="flex flex-row items-center justify-between relative z-10">
                 <div>
                     <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">{t('statistics.antigravityQuotas')}</CardTitle>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1 tracking-widest">{t('statistics.enterpriseStatus')}</p>
+                    <p className="text-xxs font-bold text-muted-foreground uppercase mt-1 tracking-widest">{t('statistics.enterpriseStatus')}</p>
                 </div>
                 {setReloadTrigger && (
                     <button onClick={() => setReloadTrigger((p: number) => p + 1)} className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all duration-300 border border-transparent hover:border-border shadow-lg">
@@ -44,17 +44,17 @@ export const AntigravityCard: React.FC<AntigravityCardProps> = ({ t, quotaData, 
                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                                 <div className="text-xs font-black text-foreground/90 uppercase tracking-widest">{acc.email ?? t('statistics.defaultAccount')}</div>
                             </div>
-                            <div className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-primary/20 text-primary-foreground border border-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.2)]">{t('statistics.active')}</div>
+                            <div className="text-xxxs font-bold py-0.5 px-2 rounded-full bg-primary/20 text-primary-foreground border border-primary/30 glow-primary">{t('statistics.active')}</div>
                         </div>
                         <div className="max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {acc.models.map((m: ModelQuotaItem) => (
                                     <div key={m.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 hover:bg-muted/40 hover:border-border transition-all duration-300 group/item">
                                         <div className="min-w-0 flex-1">
-                                            <div className="text-[11px] font-bold text-muted-foreground truncate group-hover/item:text-foreground transition-colors">{m.name || m.id}</div>
+                                            <div className="text-xxs font-bold text-muted-foreground truncate group-hover/item:text-foreground transition-colors">{m.name || m.id}</div>
                                             <div className="flex items-center gap-1.5 mt-1">
                                                 <Clock className="w-2.5 h-2.5 text-muted-foreground/60" />
-                                                <div className="text-[9px] font-medium text-muted-foreground/60 truncate">{formatReset(m.reset, locale)}</div>
+                                                <div className="text-xxxs font-medium text-muted-foreground/60 truncate">{formatReset(m.reset, locale)}</div>
                                             </div>
                                         </div>
                                         <div className="ml-3">

@@ -27,7 +27,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, projectRo
                     <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
                         <span className="font-mono">{res.file.replace(projectRoot, '')}:{res.line}</span>
                         {res.type && (
-                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-[10px] uppercase tracking-wider">
+                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
                                 {res.type}
                             </span>
                         )}

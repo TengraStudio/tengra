@@ -17,7 +17,8 @@ export function useDeviceAuth(
     settings: AppSettings | null,
     updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
     setAuthBusy: (busy: string | null) => void,
-    setAuthNotice: (msg: string, duration?: number) => void
+    setAuthNotice: (msg: string, duration?: number) => void,
+    onRefreshModels?: (bypassCache?: boolean) => void
 ) {
     const [deviceCodeModal, setDeviceCodeModal] = useState<DeviceCodeModalState>(INITIAL_MODAL_STATE);
 
@@ -48,6 +49,7 @@ export function useDeviceAuth(
                     github: { username: (settings.github as { username?: string }).username ?? 'GitHub User', token: pollResult.token }
                 };
                 await updateSettings(updated, true);
+                onRefreshModels?.(true);
                 setDeviceCodeModal(prev => ({ ...prev, status: 'success' }));
                 setTimeout(() => setDeviceCodeModal(INITIAL_MODAL_STATE), 2000);
             } else {
@@ -88,6 +90,7 @@ export function useDeviceAuth(
                     copilot: { ...(settings.copilot ?? { connected: false }), connected: true, token: pollResult.token }
                 };
                 await updateSettings(updated, true);
+                onRefreshModels?.(true);
                 setDeviceCodeModal(prev => ({ ...prev, status: 'success' }));
                 setTimeout(() => setDeviceCodeModal(INITIAL_MODAL_STATE), 2000);
             } else {
@@ -99,7 +102,7 @@ export function useDeviceAuth(
         } finally {
             setAuthBusy(null);
         }
-    }, [settings, updateSettings, setAuthBusy, setAuthNotice]);
+    }, [settings, updateSettings, setAuthBusy, setAuthNotice, onRefreshModels]);
 
     const closeDeviceCodeModal = useCallback(() => {
         setDeviceCodeModal(INITIAL_MODAL_STATE);

@@ -80,8 +80,7 @@
 /* Command Argument Style */
 .cmd-input {
     font-family: 'JetBrains Mono', monospace;
-    color: #10b981;
-    /* Emerald 500 */
+    color: hsl(var(--success));
     background: hsl(var(--background));
     padding: 8px 12px;
     border-radius: 6px;
@@ -111,8 +110,8 @@
 
 /* Standard Terminal Output (fallback if not using window) */
 .terminal-output {
-    background: #09090b;
-    color: #e4e4e7;
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
     font-family: 'JetBrains Mono', monospace;
     padding: 12px;
     border-radius: 6px;
@@ -120,15 +119,15 @@
 }
 
 .stdout {
-    color: #e4e4e7;
+    color: hsl(var(--foreground));
 }
 
 .stderr {
-    color: #ef4444;
+    color: hsl(var(--error));
 }
 
 .no-output {
-    color: #71717a;
+    color: hsl(var(--muted-foreground));
     font-style: italic;
 }
 

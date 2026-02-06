@@ -137,8 +137,8 @@ const ActivityLogEntry: React.FC<{ log: ActivityEntry }> = ({ log }) => (
         <div className={cn("shrink-0 w-1.5 h-1.5 mt-1.5 rounded-full", getLogDotColor(log))} />
         <div className="space-y-1 flex-1 min-w-0">
             <div className="flex items-center gap-2">
-                <span className={cn("uppercase font-bold tracking-wider text-[10px]", getAgentTitleColor(log))}>{log.agentId ?? log.title}</span>
-                <span className="text-[10px] text-zinc-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                <span className={cn("uppercase font-bold tracking-wider text-xxs", getAgentTitleColor(log))}>{log.agentId ?? log.title}</span>
+                <span className="text-xxs text-zinc-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
             </div>
             <div className="text-zinc-300 whitespace-pre-wrap leading-relaxed break-words">
                 {log.message.split('```').map((part: string, i: number) => (

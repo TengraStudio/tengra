@@ -42,13 +42,13 @@ export const ToolTracking: React.FC<ToolTrackingProps> = ({ executions, t }) => 
                                 )}
                             </div>
                             {tool.duration !== undefined && (
-                                <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <div className="text-xxs text-muted-foreground flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
                                     {((tool.duration ?? 0) / 1000).toFixed(2)}s
                                 </div>
                             )}
                             {tool.error && (
-                                <p className="text-[10px] text-destructive truncate">{tool.error}</p>
+                                <p className="text-xxs text-destructive truncate">{tool.error}</p>
                             )}
                         </div>
                     ))

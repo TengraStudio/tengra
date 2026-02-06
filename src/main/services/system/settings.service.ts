@@ -63,6 +63,10 @@ const DEFAULT_SETTINGS: AppSettings = {
         apiKey: '',
         model: 'llama3-70b-8192'
     },
+    nvidia: {
+        apiKey: '',
+        model: 'nvidia/llama3-chatqa-1.5-70b'
+    },
     antigravity: {
         connected: false
     },
@@ -122,6 +126,12 @@ export class SettingsService extends BaseService {
         }
         this.settings = await this.loadSettings();
         this.initialized = true;
+
+        // Proactively sync tokens from settings to AuthService
+        if (this.authService) {
+            await this.syncAllTokensToAuth();
+        }
+
         appLogger.info('SettingsService', 'Initialized successfully');
     }
 
@@ -223,6 +233,7 @@ export class SettingsService extends BaseService {
             antigravity: this.mergeProvider(authAccounts, 'antigravity', loaded.antigravity),
             copilot: this.mergeCopilot(authAccounts, loaded.copilot),
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
+            nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
             window: loaded.window ?? DEFAULT_SETTINGS.window
         };
@@ -401,6 +412,50 @@ export class SettingsService extends BaseService {
         }
     }
 
+    /**
+     * Proactively syncs all API keys/tokens from settings to AuthService.
+     * This ensures that providers configured via settings.json are available
+     * in the centralized account database.
+     */
+    private async syncAllTokensToAuth(): Promise<void> {
+        if (!this.authService) { return; }
+
+        const settings = this.getSettings();
+        const providers: Record<string, string | undefined> = {
+            'openai_key': settings.openai?.apiKey,
+            'anthropic_key': settings.anthropic?.apiKey,
+            'groq_key': settings.groq?.apiKey,
+            'nvidia_key': settings.nvidia?.apiKey,
+            'antigravity_token': (settings.antigravity as Record<string, unknown> | undefined)?.token as string | undefined,
+            'copilot_token': (settings.copilot as Record<string, unknown> | undefined)?.token as string | undefined,
+            'proxy_key': settings.proxy?.key
+        };
+
+        for (const [providerKey, token] of Object.entries(providers)) {
+            await this.syncProviderToken(providerKey, token);
+        }
+    }
+
+    private async syncProviderToken(providerKey: string, token: string | undefined): Promise<void> {
+        if (!this.authService || !token || token.length <= 5 || token === 'connected') {
+            return;
+        }
+
+        try {
+            const existingAccounts = await this.authService.getAccountsByProviderFull(providerKey);
+            const alreadyExists = existingAccounts.some(acc =>
+                acc.accessToken === token || acc.sessionToken === token
+            );
+
+            if (!alreadyExists) {
+                appLogger.info('SettingsService', `Syncing token for ${providerKey} to AuthService`);
+                await this.authService.linkAccount(providerKey, { accessToken: token });
+            }
+        } catch (error) {
+            appLogger.warn('SettingsService', `Failed to sync token for ${providerKey}: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
     private getTokenMappings(newSettings: Partial<AppSettings>, oldSettings: AppSettings): Record<string, string | undefined> {
         const mappings: Record<string, string | undefined> = {};
 
@@ -417,10 +472,14 @@ export class SettingsService extends BaseService {
     }
 
     private addProviderMappings(mappings: Record<string, string | undefined>, newSettings: Partial<AppSettings>, oldSettings: AppSettings): void {
-        this.checkTokenMapping(mappings, 'openai_key', newSettings.openai?.apiKey, oldSettings.openai?.apiKey);
-        this.checkTokenMapping(mappings, 'anthropic_key', newSettings.anthropic?.apiKey, oldSettings.anthropic?.apiKey);
-        this.checkTokenMapping(mappings, 'groq_key', newSettings.groq?.apiKey, oldSettings.groq?.apiKey);
-        this.checkTokenMapping(mappings, 'proxy_key', newSettings.proxy?.key, oldSettings.proxy?.key);
+        const { openai, anthropic, groq, nvidia, proxy } = newSettings;
+        const { openai: oO, anthropic: oA, groq: oG, nvidia: oN, proxy: oP } = oldSettings;
+
+        this.checkTokenMapping(mappings, 'openai_key', openai?.apiKey, oO?.apiKey);
+        this.checkTokenMapping(mappings, 'anthropic_key', anthropic?.apiKey, oA?.apiKey);
+        this.checkTokenMapping(mappings, 'groq_key', groq?.apiKey, oG?.apiKey);
+        this.checkTokenMapping(mappings, 'nvidia_key', nvidia?.apiKey, oN?.apiKey);
+        this.checkTokenMapping(mappings, 'proxy_key', proxy?.key, oP?.key);
     }
 
     private checkTokenMapping(mappings: Record<string, string | undefined>, key: string, newVal: string | undefined, oldVal: string | undefined): void {
@@ -458,6 +517,7 @@ export class SettingsService extends BaseService {
         if (openai) { openai.apiKey = ''; }
         if (anthropic) { anthropic.apiKey = ''; }
         if (groq) { groq.apiKey = ''; }
+        if (settings.nvidia) { settings.nvidia.apiKey = ''; }
 
         this.stripOtherSecrets(settings);
     }
@@ -501,6 +561,7 @@ export class SettingsService extends BaseService {
             openai: ['openai_key', 'openai'],
             anthropic: ['anthropic_key', 'anthropic'],
             groq: ['groq_key', 'groq'],
+            nvidia: ['nvidia_key', 'nvidia'],
             proxy: ['proxy_key', 'proxy']
         };
 
@@ -552,6 +613,7 @@ export class SettingsService extends BaseService {
         preserveToken('openai', 'apiKey');
         preserveToken('anthropic', 'apiKey');
         preserveToken('groq', 'apiKey');
+        preserveToken('nvidia', 'apiKey');
         preserveToken('proxy', 'key');
     }
 }

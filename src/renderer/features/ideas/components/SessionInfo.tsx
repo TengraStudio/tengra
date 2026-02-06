@@ -13,7 +13,7 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({ session, ideasCount, t
     <div className="bg-black/40 backdrop-blur-sm rounded-xl border border-white/10 p-4 flex items-center justify-between mb-6">
         <div>
             <p className="text-sm text-foreground/50">{session.categories.join(', ')}</p>
-            <p className="text-xs text-foreground/30 mt-1">{ideasCount} ideas generated</p>
+            <p className="text-xs text-foreground/30 mt-1">{t('ideas.history.ideasCount')}: {ideasCount}</p>
         </div>
         <span
             className={cn(

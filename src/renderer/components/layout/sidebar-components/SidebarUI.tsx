@@ -3,6 +3,7 @@ import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { AppView } from '@/hooks/useAppState';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface SidebarHeaderProps {
@@ -18,19 +19,10 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({ isCollapsed, toggl
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                     <span className="text-foreground font-black text-xs">O</span>
                 </div>
-                <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">TANDEM</span>
+                <SidebarAppName />
             </div>
         )}
-        <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="h-8 w-8 hover:bg-muted/10 text-muted-foreground hover:text-foreground transition-colors"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-            {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-        </Button>
+        <SidebarToggleButton isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
     </div>
 );
 
@@ -66,17 +58,43 @@ interface SidebarFooterProps {
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({ isCollapsed, onSearch }) => {
+    const { t } = useTranslation();
     if (isCollapsed) { return null; }
     return (
         <div className="p-4 border-t border-border/20 bg-muted/5">
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-bold uppercase tracking-widest px-1">
-                <span>V 1.2.0</span>
+            <div className="flex items-center justify-between text-xxs text-muted-foreground/40 font-bold uppercase tracking-widest px-1">
+                <span>{t('app.versionShort', { version: '1.2.0' })}</span>
                 <div className="flex items-center gap-2">
                     <Search className="w-3 h-3 hover:text-primary cursor-pointer transition-colors" onClick={onSearch} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse glow-success" />
                 </div>
             </div>
         </div>
+    );
+};
+
+const SidebarAppName = () => {
+    const { t } = useTranslation();
+    return (
+        <span className="text-sm font-black tracking-widest text-foreground uppercase animate-in fade-in slide-in-from-left-2">
+            {t('app.name')}
+        </span>
+    );
+};
+
+const SidebarToggleButton = ({ isCollapsed, toggleSidebar }: { isCollapsed: boolean; toggleSidebar: () => void }) => {
+    const { t } = useTranslation();
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 hover:bg-muted/10 text-muted-foreground hover:text-foreground transition-colors"
+            title={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+            aria-label={isCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+        >
+            {isCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+        </Button>
     );
 };
 

@@ -103,12 +103,12 @@ const MenuItemLabel: React.FC<MenuItemLabelProps> = ({ label, description, short
         <div className="flex items-center gap-2">
             <span className="truncate">{label}</span>
             {shortcut && (
-                <kbd className="hidden group-hover:inline-flex px-1.5 py-0.5 text-[10px] font-mono bg-muted rounded text-muted-foreground">
+                <kbd className="hidden group-hover:inline-flex px-1.5 py-0.5 text-xxs font-mono bg-muted rounded text-muted-foreground">
                     {shortcut}
                 </kbd>
             )}
         </div>
-        {description && <p className="text-[11px] text-muted-foreground/60 truncate">{description}</p>}
+        {description && <p className="text-xxs text-muted-foreground/60 truncate">{description}</p>}
     </div>
 );
 
@@ -117,7 +117,7 @@ interface MenuItemBadgeProps {
 }
 
 const MenuItemBadge: React.FC<MenuItemBadgeProps> = ({ badge }) => (
-    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground">
+    <span className="px-1.5 py-0.5 rounded-full text-xxs font-semibold bg-muted text-muted-foreground">
         {formatBadge(badge)}
     </span>
 );

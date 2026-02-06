@@ -85,8 +85,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({ files, onRemove }) => {
                         )}
                     </div>
                     <div className="min-w-0 max-w-[120px]">
-                        <p className="text-[10px] font-bold text-foreground truncate">{file.name}</p>
-                        <p className="text-[8px] text-muted-foreground uppercase">{formatFileSize(file.size)}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{file.name}</p>
+                        <p className="text-xxs text-muted-foreground uppercase">{formatFileSize(file.size)}</p>
                     </div>
                     <button
                         onClick={() => onRemove(file.id)}
@@ -132,10 +132,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     <Bot className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-foreground truncate">
+                    <p className="text-xs font-bold text-foreground truncate">
                         {selectedModel?.displayName ?? t('agent.selectModel')}
                     </p>
-                    <p className="text-[8px] text-muted-foreground uppercase leading-none">
+                    <p className="text-xxs text-muted-foreground uppercase leading-none">
                         {selectedModel?.provider ?? t('agent.aiProvider')}
                     </p>
                 </div>
@@ -159,7 +159,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                                 <p className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
                                     {model.displayName}
                                 </p>
-                                <p className="text-[9px] text-muted-foreground uppercase">
+                                <p className="text-xxs text-muted-foreground uppercase">
                                     {model.provider}
                                 </p>
                             </div>
@@ -202,7 +202,7 @@ const ControlButtons: React.FC<ControlButtonsProps> = ({
             <button
                 onClick={onPause}
                 disabled={!isRunning || isPaused}
-                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-yellow/10 hover:border-yellow/30 hover:text-yellow transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
+                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-secondary/10 hover:border-secondary/30 hover:text-secondary-foreground transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
                 title={t('agent.pause')}
             >
                 <Pause className="w-4 h-4" />
@@ -363,7 +363,7 @@ interface ActionButtonProps {
 }
 
 const LoadingButton: React.FC<{ t: (key: string, options?: Record<string, string | number>) => string }> = ({ t }) => (
-    <button disabled className="px-4 py-2 bg-muted text-muted-foreground rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2">
+    <button disabled className="px-4 py-2 bg-muted text-muted-foreground rounded-xl text-xs-bold flex items-center gap-2">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
         {t('agent.start')}
     </button>
@@ -389,8 +389,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({
             <button
                 onClick={onResume}
                 className={cn(
-                    "px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-[0.98] flex items-center gap-2 text-white",
-                    isStuck ? "bg-orange shadow-orange-500/20 hover:bg-orange-600" : "bg-yellow shadow-yellow-500/20 hover:bg-yellow-600"
+                    "px-4 py-2 rounded-xl text-xs-bold transition-all shadow-xl active:scale-[0.98] flex items-center gap-2 text-white",
+                    isStuck ? "bg-warning glow-warning hover:bg-warning/90" : "bg-secondary shadow-secondary/20 hover:bg-secondary/90"
                 )}
             >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -403,7 +403,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         return (
             <button
                 onClick={onResume}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:bg-destructive/90 transition-all shadow-xl shadow-destructive/20 active:scale-[0.98] flex items-center gap-2"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-xs-bold hover:bg-destructive/90 transition-all shadow-xl shadow-destructive/20 active:scale-[0.98] flex items-center gap-2"
             >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 {t('agent.retry')}
@@ -422,7 +422,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
                 onStart();
             }}
             disabled={!value.trim() || !selectedModel}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs-bold hover:bg-primary/90 transition-all glow-primary active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
         >
             <Play className="w-3.5 h-3.5 fill-current" />
             {t('agent.start')}

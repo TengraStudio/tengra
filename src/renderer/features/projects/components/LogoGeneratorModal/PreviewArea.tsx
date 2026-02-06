@@ -42,13 +42,13 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                             <p className="text-xs font-bold text-foreground uppercase tracking-widest">
                                 {translateKey('projects.generating')}
                             </p>
-                            <p className="text-[10px] text-muted-foreground italic">Bringing your vision to life</p>
+                            <p className="text-xxs text-muted-foreground italic">{translateKey('projects.logoGeneratingSubtitle')}</p>
                         </div>
                     </div>
                 ) : generatedLogo ? (
                     <img
                         src={`safe-file://${generatedLogo}`}
-                        alt="Generated"
+                        alt={translateKey('projects.generatedAlt')}
                         className="w-full h-full object-cover animate-in zoom-in-95 duration-500"
                     />
                 ) : (
@@ -59,7 +59,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                         </p>
                         <button
                             onClick={handleManualUploadClick}
-                            className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                            className="px-4 py-2 bg-muted/20 hover:bg-muted/30 border border-border/50 rounded-lg text-xxs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
                         >
                             {translateKey('projects.uploadOriginal')}
                         </button>

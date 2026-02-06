@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface OnboardingFlowProps {
     isOpen: boolean;
     onClose: () => void;
+    onStartTour?: () => void;
 }
 
 const STEPS = [
@@ -34,18 +36,32 @@ const STEPS = [
     }
 ];
 
-export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose }) => {
+export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose, onStartTour }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const { language } = useAuth();
     const { t } = useTranslation(language);
+
+    const completeOnboarding = () => {
+        localStorage.setItem('Tandem-onboarding-complete', 'true');
+        // Also update via IPC if available
+        window.electron?.ipcRenderer?.invoke?.('settings:update', {
+            general: { onboardingCompleted: true }
+        }).catch(() => { /* Settings update is optional */ });
+        onClose();
+    };
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
-            localStorage.setItem('Tandem-onboarding-complete', 'true');
-            onClose();
+            completeOnboarding();
+            // Optionally start the detailed tour
+            onStartTour?.();
         }
+    };
+
+    const handleSkip = () => {
+        completeOnboarding();
     };
 
     const handleBack = () => {
@@ -55,16 +71,29 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
     };
 
     const step = STEPS[currentStep];
+    // Use camelCase keys: welcome -> welcomeTitle, welcomeDescription
+    const titleKey = `onboarding.${step.title}Title` as const;
+    const descKey = `onboarding.${step.title}Description` as const;
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t(`onboarding.${step.title}.title`)}
+            title={t(titleKey)}
             className="max-w-2xl"
         >
             <div className="relative overflow-hidden min-h-[350px] flex flex-col">
+                {/* Skip button */}
+                <button
+                    onClick={handleSkip}
+                    className="absolute top-0 right-0 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-lg transition-all z-10"
+                    title={t('onboarding.skip')}
+                >
+                    <X className="w-5 h-5" />
+                </button>
+
                 {/* Progress bar */}
-                <div className="flex gap-1 mb-8">
+                <div className="flex gap-1 mb-8 pr-8">
                     {STEPS.map((_, i) => (
                         <div
                             key={i}
@@ -94,10 +123,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose 
 
                         <div className="space-y-4">
                             <h2 className="text-2xl font-black tracking-tight text-foreground">
-                                {t(`onboarding.${step.title}.title`)}
+                                {t(titleKey)}
                             </h2>
                             <p className="text-muted-foreground text-lg leading-relaxed max-w-md mx-auto">
-                                {t(`onboarding.${step.title}.description`)}
+                                {t(descKey)}
                             </p>
                         </div>
                     </motion.div>

@@ -71,7 +71,6 @@ export function registerSettingsIpc(options: {
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
         updateLlmCredentials(finalSettings, newSettings);
         updateCopilotCredentials(finalSettings);
-        updateProxyConfig(newSettings);
     }
 
     function updateLlmCredentials(finalSettings: AppSettings, newSettings: AppSettings) {
@@ -85,11 +84,7 @@ export function registerSettingsIpc(options: {
         if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }
     }
 
-    function updateProxyConfig(newSettings: AppSettings) {
-        const proxyUrl = newSettings.proxy?.url ?? 'http://localhost:8317/v1';
-        const proxyKey = newSettings.proxy?.key ?? 'connected';
-        llmService.setProxySettings(proxyUrl, proxyKey);
-    }
+
 
     ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
         const oldSettings = settingsService.getSettings();

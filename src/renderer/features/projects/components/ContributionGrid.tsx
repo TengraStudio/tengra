@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface ContributionGridProps {
@@ -8,6 +9,7 @@ interface ContributionGridProps {
 }
 
 export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts, className }) => {
+    const { t } = useTranslation();
     // Generate dates for the last 365 days
     const { gridData, maxCommits } = useMemo(() => {
         const today = new Date();
@@ -48,8 +50,21 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
 
     // Get month labels
     const monthLabels = useMemo(() => {
+        const monthNames = [
+            t('projectDashboard.contributions.months.jan'),
+            t('projectDashboard.contributions.months.feb'),
+            t('projectDashboard.contributions.months.mar'),
+            t('projectDashboard.contributions.months.apr'),
+            t('projectDashboard.contributions.months.may'),
+            t('projectDashboard.contributions.months.jun'),
+            t('projectDashboard.contributions.months.jul'),
+            t('projectDashboard.contributions.months.aug'),
+            t('projectDashboard.contributions.months.sep'),
+            t('projectDashboard.contributions.months.oct'),
+            t('projectDashboard.contributions.months.nov'),
+            t('projectDashboard.contributions.months.dec')
+        ];
         const labels: { month: string; index: number }[] = [];
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         let lastMonth = -1;
 
         weeks.forEach((week, weekIndex) => {
@@ -64,7 +79,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
         });
 
         return labels;
-    }, [weeks]);
+    }, [weeks, t]);
 
     // Get color intensity based on commit count
     const getColorIntensity = (count: number): string => {
@@ -84,7 +99,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
         <div className={cn("space-y-4", className)}>
             <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-foreground">
-                    {totalContributions} contributions in the last year
+                    {t('projectDashboard.contributions.lastYear', { count: totalContributions })}
                 </div>
             </div>
 
@@ -92,7 +107,15 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                 {/* Day labels */}
                 <div className="flex flex-col gap-1 pt-2.5 pr-2">
                     <div className="h-2.5" /> {/* Spacer for month labels */}
-                    {['Mon', '', 'Wed', '', 'Fri', '', 'Sun'].map((day, i) => (
+                    {[
+                        t('projectDashboard.contributions.days.mon'),
+                        '',
+                        t('projectDashboard.contributions.days.wed'),
+                        '',
+                        t('projectDashboard.contributions.days.fri'),
+                        '',
+                        t('projectDashboard.contributions.days.sun')
+                    ].map((day, i) => (
                         <div key={i} className="text-xs text-muted-foreground h-2.5 leading-tight">
                             {day}
                         </div>
@@ -116,7 +139,10 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                                             "w-2.5 h-2.5 rounded-sm transition-all hover:scale-125 hover:z-10 relative cursor-pointer",
                                             getColorIntensity(day.count)
                                         )}
-                                        title={`${day.count} contribution${day.count !== 1 ? 's' : ''} on ${day.date}`}
+                                        title={t('projectDashboard.contributions.tooltip', {
+                                            count: day.count,
+                                            date: day.date
+                                        })}
                                     />
                                 ))}
                                 {/* Fill remaining days if week is incomplete */}
@@ -131,7 +157,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
 
             {/* Legend */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Less</span>
+                <span>{t('projectDashboard.contributions.legendLess')}</span>
                 <div className="flex gap-0.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-muted/10 border border-muted/20" />
                     <div className="w-2.5 h-2.5 rounded-sm bg-success/20 border border-success/30" />
@@ -139,7 +165,7 @@ export const ContributionGrid: React.FC<ContributionGridProps> = ({ commitCounts
                     <div className="w-2.5 h-2.5 rounded-sm bg-success/60 border border-success/70" />
                     <div className="w-2.5 h-2.5 rounded-sm bg-success border border-emerald-400" />
                 </div>
-                <span>More</span>
+                <span>{t('projectDashboard.contributions.legendMore')}</span>
             </div>
         </div>
     );

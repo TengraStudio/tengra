@@ -56,14 +56,21 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
             attempts++;
             try {
                 const status = await window.electron.checkAuthStatus();
-                if (((status?.files ?? []) as AuthFile[]).some(f => matchesProvider(f, identifiers))) {
-                    setAuthNotice(`${provider} success!`); await window.electron.syncAuthFiles(); await refreshAuthStatus(); await onRefreshAccounts?.(); onRefreshModels?.(); setAuthBusy(null);
+                const matched = ((status?.files ?? []) as AuthFile[]).some(f => matchesProvider(f, identifiers));
+                if (matched) {
+                    setAuthNotice(`${provider} success!`);
+                    await window.electron.syncAuthFiles();
+                    await refreshAuthStatus();
+                    await onRefreshAccounts?.();
+                    onRefreshModels?.();
+                    setAuthBusy(null);
                     if (provider === 'claude') { await handleClaudeAccountShow(); }
                     return;
                 }
                 if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
                 else { setAuthNotice(`${provider} timeout`); setAuthBusy(null); }
-            } catch {
+            } catch (err) {
+                console.error('pollConnection error:', err);
                 if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
                 else { setAuthBusy(null); }
             }

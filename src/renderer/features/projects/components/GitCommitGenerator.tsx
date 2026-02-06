@@ -1,9 +1,9 @@
-﻿import { appLogger } from '@main/logging/logger';
-import { chatStream } from '@renderer/lib/chat-stream';
+﻿import { chatStream } from '@renderer/lib/chat-stream';
 import { Check, Copy, GitCommit, RefreshCw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface GitCommitGeneratorProps {
     projectPath?: string

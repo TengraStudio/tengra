@@ -1,5 +1,47 @@
 # Changelog & Updates
 
+## 2026-02-05 (Update 16): 🛡️ Codex Routing & Proxy Hardening
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Resolved "OpenAI API Key not set" error for Codex and Copilot providers by correctly routing them through the embedded proxy.
+
+### ✅ Fixes
+- [x] **LLM Routing**: Updated `LLMService` to route `codex` and `copilot` providers through the embedded proxy.
+- [x] **Model Normalization**: Fixed missing provider prefixes for `codex` and `copilot` models when hitting the proxy.
+- [x] **Code Quality**: Refactored `getRouteConfig` to reduce cyclomatic complexity and adhere to NASA Power of Ten rules.
+
+### 🧪 Testing
+- [x] Verified existing `LLMService` tests pass.
+- [x] Added new test case for Codex proxy routing in `llm.service.test.ts`.
+
+### 📝 Files Modified
+- `src/main/services/llm/llm.service.ts`
+- `src/tests/main/services/llm/llm.service.test.ts`
+- `docs/CHANGELOG.md`
+
+## 2026-02-04 (Update 15): 🟢 NVIDIA Stream & Code Quality Hardening
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Resolved critical termination errors during NVIDIA model streaming and performed project-wide code quality improvements.
+
+### ✅ Fixes
+- [x] Fix NVIDIA Stream: Corrected `Accept` header to `application/json` and fixed method corruption in `LLMService`.
+- [x] Fix NVIDIA Body: Removed non-standard `provider` field and added default `max_tokens: 4096`.
+- [x] Fix Model Logic: Refined `applyReasoningEffort` to target only reasoning-capable models (o1/o3).
+- [x] Fix Regression: Resolved `getReasoningEffort` scope error in `useChatGenerator.ts`.
+- [x] Fix Type Safety: Standardized `getCodexUsage` return types in `ProxyService`.
+- [x] Fix React Hooks: Resolved `set-state-in-effect` error in `ModelSelectorModal.tsx`.
+- [x] Cleanup: Finalized `LLMService` refactor to reduce complexity (NASA Power of Ten).
+
+### 📝 Files Modified
+- `src/main/services/llm/llm.service.ts`
+- `src/renderer/features/chat/hooks/useChatGenerator.ts`
+- `src/main/services/proxy/proxy.service.ts`
+- `src/renderer/features/models/components/ModelSelectorModal.tsx`
+
+
 Track the evolution of Tandem.
 
 ---

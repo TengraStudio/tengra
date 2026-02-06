@@ -124,7 +124,7 @@ export class QuotaService {
         return null;
     }
 
-    async getCodexUsage(): Promise<{ accounts: Array<{ usage: JsonObject | { error: string }; accountId?: string; email?: string }> }> {
+    async getCodexUsage(): Promise<{ accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> }> {
         const allAccounts = await this.authService.getAllAccountsFull();
         const codexAccounts = allAccounts.filter(a => a.provider === 'codex' || a.provider === 'openai');
 
@@ -132,7 +132,8 @@ export class QuotaService {
         for (const account of codexAccounts) {
             const usage = await this.codexHandler.fetchCodexUsage();
             if (usage) {
-                results.push({ usage, accountId: account.id, email: account.email });
+                const parsed = this.codexHandler.extractCodexUsageFromWham(usage);
+                results.push({ usage: parsed ?? { error: 'Failed to parse usage' }, accountId: account.id, email: account.email });
             }
         }
         return { accounts: results };

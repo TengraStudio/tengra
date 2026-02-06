@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 
 import 'katex/dist/katex.min.css';
 
+type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
+
 // Dynamic mermaid loader
 const loadMermaid = async () => {
     const mermaid = await import('mermaid');
@@ -34,7 +36,7 @@ const loadMermaid = async () => {
     return mermaid.default;
 };
 
-const MermaidDiagram = ({ code }: { code: string }) => {
+const MermaidDiagram = ({ code, t }: { code: string; t: TranslationFn }) => {
     const [svg, setSvg] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ const MermaidDiagram = ({ code }: { code: string }) => {
             <div className="my-4 flex justify-center bg-white/5 p-8 rounded-xl border border-white/10">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">Loading diagram...</span>
+                    <span className="text-sm">{t('markdown.loadingDiagram')}</span>
                 </div>
             </div>
         );
@@ -102,7 +104,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     code({ className, children, ...props }) {
                         const match = /language-(\w+)/.exec(className ?? '');
                         const codeString = String(children).replace(/\n$/, '');
-                        if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} />; }
+                        if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} t={t} />; }
 
                         return !match ? (
                             <code {...props}>
@@ -121,7 +123,7 @@ export const MarkdownRenderer = memo<MarkdownRendererProps>(({
                     },
                     img: ({ src, alt }) => (
                         <span className="block my-2 relative group/image">
-                            <img src={src} alt={alt ?? 'Image'} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+                            <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-white/10 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
                             {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
                             {src && !isUser && onCodeConvert && (
                                 <button

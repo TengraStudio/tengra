@@ -28,11 +28,11 @@ import { registerMigrationIpc } from '@main/ipc/migration';
 import { registerModelRegistryIpc } from '@main/ipc/model-registry';
 import { registerMultiModelIpc } from '@main/ipc/multi-model';
 import { registerOllamaIpc } from '@main/ipc/ollama';
+import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
 import { registerPerformanceIpc } from '@main/ipc/performance';
 import { registerProcessIpc, setupProcessEvents } from '@main/ipc/process';
 import { registerProjectIpc } from '@main/ipc/project';
 import { registerProjectAgentIpc } from '@main/ipc/project-agent';
-import { registerOrchestratorIpc } from '@main/ipc/orchestrator';
 import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
@@ -60,7 +60,7 @@ export function registerIpcHandlers(
 ) {
     // Registers
     registerWindowIpc(getMainWindow);
-    registerModelRegistryIpc(services.modelRegistryService);
+    registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
     registerMetricsIpc();
@@ -95,7 +95,8 @@ export function registerIpcHandlers(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
-        proxyService: services.proxyService
+        proxyService: services.proxyService,
+        rateLimitService: services.rateLimitService
     });
 
     registerProjectIpc(getMainWindow, {
@@ -154,7 +155,7 @@ export function registerIpcHandlers(
     registerLoggingIpc();
 
     // Terminal needs the instance - use getter for deferred access
-    registerTerminalIpc(getMainWindow);
+    registerTerminalIpc(getMainWindow, services.terminalService);
 
     registerDialogIpc(getMainWindow);
     registerHistoryIpc(services.historyImportService);

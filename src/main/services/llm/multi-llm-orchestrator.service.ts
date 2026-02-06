@@ -89,6 +89,11 @@ export class MultiLLMOrchestrator extends EventEmitter {
             priority: 8,
             rateLimitPerMinute: 30
         });
+        this.setProviderConfig('nvidia', {
+            maxConcurrent: 5,
+            priority: 9,
+            rateLimitPerMinute: 50
+        });
     }
 
     /**
@@ -142,9 +147,11 @@ export class MultiLLMOrchestrator extends EventEmitter {
             { pattern: /openai|gpt/, normalized: 'openai' },
             { pattern: /anthropic|claude/, normalized: 'anthropic' },
             { pattern: /groq/, normalized: 'groq' },
-            { pattern: /gemini|google|antigravity/, normalized: 'gemini' },
+            { pattern: /nvidia/, normalized: 'nvidia' },
+            { pattern: /antigravity/, normalized: 'antigravity' },
+            { pattern: /gemini|google/, normalized: 'gemini' },
             { pattern: /ollama/, normalized: 'ollama' },
-            { pattern: /^llama/, normalized: 'llama' }, // only starts with llama but not ollama (ollama check above captures ollama)
+            { pattern: /^llama/, normalized: 'llama' },
             { pattern: /copilot|github/, normalized: 'copilot' }
         ];
 

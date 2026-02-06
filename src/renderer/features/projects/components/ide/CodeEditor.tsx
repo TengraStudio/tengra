@@ -1,5 +1,7 @@
-import { appLogger } from '@main/logging/logger';
 import { useEffect, useRef, useState } from 'react';
+
+import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface CodeEditorProps {
     content: string
@@ -12,6 +14,7 @@ interface CodeEditorProps {
 type EditorView = import('@codemirror/view').EditorView
 
 export const CodeEditor = ({ content, language = 'javascript', onChange, readonly = false }: CodeEditorProps) => {
+    const { t } = useTranslation();
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -137,7 +140,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 setIsLoading(false);
             } catch (err) {
                 appLogger.error('CodeEditor', 'Failed to initialize CodeMirror', err as Error);
-                setError(err instanceof Error ? err.message : 'Failed to load editor');
+                setError(err instanceof Error ? err.message : t('projectDashboard.editor.failed'));
                 setIsLoading(false);
             }
         };
@@ -157,7 +160,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
     if (error) {
         return (
             <div className="h-full w-full flex items-center justify-center text-destructive text-sm">
-                <span>Editor error: {error}</span>
+                <span>{t('projectDashboard.editor.error', { error })}</span>
             </div>
         );
     }
@@ -168,7 +171,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span>Loading editor...</span>
+                        <span>{t('projectDashboard.editor.loading')}</span>
                     </div>
                 </div>
             )}

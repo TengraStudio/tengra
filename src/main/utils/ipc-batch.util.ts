@@ -35,13 +35,23 @@ const batchableHandlers = new Map<string, (event: IpcMainInvokeEvent, ...args: I
 
 /**
  * Register a handler as batchable
- * This allows it to be called via the batch:invoke channel
+ * This allows it to be called via the batch:invoke channel.
+ * Also registers it as a regular IPC handler if not already registered.
  */
 export function registerBatchableHandler(
     channel: string,
     handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>
 ): void {
     batchableHandlers.set(channel, handler);
+
+    // Also register as a regular handler so it can be called directly
+    try {
+        // We use .handle which will throw if already registered
+        ipcMain.handle(channel, handler);
+    } catch {
+        // If already registered (e.g. by a specialized handler in another file), that's fine
+        appLogger.debug('IpcBatch', `Channel ${channel} already has a regular handler, skipping automatic registration`);
+    }
 }
 
 /**

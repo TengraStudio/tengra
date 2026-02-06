@@ -112,6 +112,7 @@ export default defineConfig({
             '@main': resolve(__dirname, 'src/main'),
             '@renderer': resolve(__dirname, 'src/renderer'),
             '@shared': resolve(__dirname, 'src/shared'),
+            'path': 'path-browserify'
         },
         // Ensure ESM modules are resolved correctly
         conditions: ['import', 'module', 'browser', 'default'],
@@ -127,7 +128,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 // Better code splitting for faster builds
-                manualChunks: (id) => {
+                manualChunks: (id: string) => {
                     if (id.includes('node_modules')) {
                         return 'vendor';
                     }
@@ -181,4 +182,4 @@ export default defineConfig({
         include: ['src/tests/main/**/*.{test,spec}.{ts,tsx}'],
         exclude: ['src/tests/e2e/**', 'node_modules', 'dist']
     }
-});
+} as import('vite').UserConfig);

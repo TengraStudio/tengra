@@ -143,7 +143,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
         if (isInitializedRef.current || !terminalRef.current) {return;}
 
         isInitializedRef.current = true;
-        const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`;
         terminalIdRef.current = terminalId;
 
         const term = new Terminal(TERMINAL_CONFIG);

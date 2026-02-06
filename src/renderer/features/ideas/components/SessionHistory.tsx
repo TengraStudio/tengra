@@ -74,12 +74,14 @@ interface BulkDeleteControlsProps {
     selectedCount: number
     onClearSelection: () => void
     onDelete: () => void
+    t: (key: string, params?: Record<string, unknown>) => string
 }
 
 const BulkDeleteControls: React.FC<BulkDeleteControlsProps> = ({
     selectedCount,
     onClearSelection,
-    onDelete
+    onDelete,
+    t
 }) => {
     if (selectedCount === 0) {
         return null;
@@ -89,13 +91,13 @@ const BulkDeleteControls: React.FC<BulkDeleteControlsProps> = ({
         <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <p className="text-sm font-medium text-foreground">
-                    {selectedCount} idea{selectedCount !== 1 ? 's' : ''} selected
+                    {t('ideas.history.ideasSelected', { count: selectedCount })}
                 </p>
                 <button
                     onClick={onClearSelection}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                    Clear selection
+                    {t('ideas.history.clearSelection')}
                 </button>
             </div>
             <button
@@ -103,7 +105,7 @@ const BulkDeleteControls: React.FC<BulkDeleteControlsProps> = ({
                 className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
             >
                 <Trash2 className="w-4 h-4" />
-                Delete Selected
+                {t('ideas.history.deleteSelected')}
             </button>
         </div>
     );
@@ -181,27 +183,27 @@ const SearchAndFilterControls: React.FC<SearchAndFilterProps> = ({
             {/* Active Filters Indicator */}
             {hasActiveFilters && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>Active filters:</span>
+                    <span>{t('ideas.history.activeFilters')}</span>
                     {searchQuery && (
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded">
-                            Search: "{searchQuery}"
+                            {t('ideas.history.filter.searchLabel')}: "{searchQuery}"
                         </span>
                     )}
                     {statusFilter !== 'all' && (
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded">
-                            Status: {statusFilter}
+                            {t('ideas.history.filter.statusLabel')}: {t(`ideas.filter.${statusFilter}`)}
                         </span>
                     )}
                     {categoryFilter !== 'all' && (
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded">
-                            Category: {categoryFilter}
+                            {t('ideas.history.filter.categoryLabel')}: {categoryFilter}
                         </span>
                     )}
                     <button
                         onClick={onClearFilters}
                         className="ml-auto px-2 py-1 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        Clear all
+                        {t('ideas.history.clearFilters')}
                     </button>
                 </div>
             )}
@@ -215,25 +217,26 @@ SearchAndFilterControls.displayName = 'SearchAndFilterControls';
  */
 interface StatsOverviewProps {
     stats: SessionStats
+    t: (key: string) => string
 }
 
-const StatsOverview: React.FC<StatsOverviewProps> = ({ stats }) => (
+const StatsOverview: React.FC<StatsOverviewProps> = ({ stats, t }) => (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
             <p className="text-2xl font-bold text-foreground">{stats.totalSessions}</p>
-            <p className="text-xs text-muted-foreground mt-1">Total Sessions</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('ideas.history.totalSessions')}</p>
         </div>
         <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
             <p className="text-2xl font-bold text-primary">{stats.completedSessions}</p>
-            <p className="text-xs text-muted-foreground mt-1">Completed</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('ideas.history.completed')}</p>
         </div>
         <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
             <p className="text-2xl font-bold text-success">{stats.approved}</p>
-            <p className="text-xs text-muted-foreground mt-1">Approved Ideas</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('ideas.history.approvedIdeas')}</p>
         </div>
         <div className="bg-muted/30 backdrop-blur-sm rounded-xl border border-border/50 p-4">
-            <p className="text-2xl font-bold text-yellow">{stats.pending}</p>
-            <p className="text-xs text-muted-foreground mt-1">Pending Review</p>
+            <p className="text-2xl font-bold text-warning">{stats.pending}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('ideas.history.pendingReview')}</p>
         </div>
     </div>
 );
@@ -363,7 +366,7 @@ const IDEA_STATUS_BADGES: Record<IdeaStatus, IdeaStatusBadgeConfig> = {
         labelKey: 'ideas.status.rejected'
     },
     pending: {
-        className: 'bg-yellow/20 text-yellow',
+        className: 'bg-yellow/20 text-warning',
         icon: <Clock className="w-3 h-3" />,
         labelKey: 'ideas.status.pending'
     },
@@ -624,7 +627,7 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({
                     </span>
                     <span className="flex items-center gap-1">
                         <Lightbulb className="w-3 h-3" />
-                        {session.ideasGenerated} / {session.maxIdeas} {t('ideas.idea.viewDetails').split(' ')[0].toLowerCase()}
+                        {t('ideas.history.ideasGenerated', { current: session.ideasGenerated, total: session.maxIdeas })}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground/60">
                         {session.model}
@@ -881,6 +884,7 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
                 selectedCount={selectedIdeaIds.size}
                 onClearSelection={clearSelection}
                 onDelete={handleBulkDeleteClick}
+                t={t}
             />
 
             <SearchAndFilterControls
@@ -895,7 +899,7 @@ export const SessionHistory: React.FC<SessionHistoryProps> = ({
                 t={t}
             />
 
-            <StatsOverview stats={stats} />
+            <StatsOverview stats={stats} t={t} />
 
             <SessionsGroupDisplay
                 filteredGroupedSessions={filteredGroupedSessions}

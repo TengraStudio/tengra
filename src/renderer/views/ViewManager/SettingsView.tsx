@@ -9,7 +9,7 @@ const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then(
 interface SettingsViewProps {
     installedModels: ModelInfo[]
     proxyModels: ModelInfo[]
-    loadModels: () => void
+    loadModels: (bypassCache?: boolean) => void
     settingsCategory: SettingsCategory
     groupedModels?: GroupedModels | null
 }
@@ -21,8 +21,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     settingsCategory,
     groupedModels
 }) => {
-    const onRefreshModels = useCallback(() => {
-        void loadModels();
+    const onRefreshModels = useCallback((bypassCache?: boolean) => {
+        void loadModels(bypassCache);
     }, [loadModels]);
 
     return (

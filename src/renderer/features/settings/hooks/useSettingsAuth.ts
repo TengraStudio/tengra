@@ -11,7 +11,7 @@ import { useOllamaManager } from './useOllamaManager';
 export function useSettingsAuth(
     settings: AppSettings | null,
     updateSettings: (s: AppSettings, save: boolean) => Promise<void>,
-    onRefreshModels?: () => void,
+    onRefreshModels?: (bypassCache?: boolean) => void,
     onRefreshAccounts?: () => Promise<void>,
     onShowManualSession?: (accountId: string, email?: string) => void
 ) {
@@ -32,7 +32,8 @@ export function useSettingsAuth(
         settings,
         updateSettings,
         setAuthBusy,
-        setAuthNotice
+        setAuthNotice,
+        onRefreshModels
     );
 
     const {

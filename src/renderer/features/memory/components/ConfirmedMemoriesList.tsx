@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
@@ -60,6 +61,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
   onArchiveSelected,
   onDeleteSelected,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Bulk actions */}
@@ -68,11 +70,11 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
           {selectedIds.size > 0 ? (
             <>
               <span className="text-sm text-muted-foreground flex items-center">
-                {selectedIds.size} selected
+                {t('memory.selectedCount', { count: selectedIds.size })}
               </span>
               <Button variant="ghost" size="sm" onClick={onClearSelection} className="gap-2">
                 <X className="w-4 h-4" />
-                Clear
+                {t('common.clear')}
               </Button>
               {!isArchiveTab && (
                 <Button
@@ -82,7 +84,7 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
                   className="gap-2"
                 >
                   <Archive className="w-4 h-4" />
-                  Archive
+                  {t('memory.archive')}
                 </Button>
               )}
               <Button
@@ -92,13 +94,13 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
                 className="gap-2"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                {t('common.delete')}
               </Button>
             </>
           ) : (
             <Button variant="outline" size="sm" onClick={onSelectAll} className="gap-2">
               <CheckSquare className="w-4 h-4" />
-              Select All
+              {t('common.selectAll')}
             </Button>
           )}
         </div>
@@ -110,11 +112,11 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
           {memories.length === 0 ? (
             <EmptyState
               icon={isArchiveTab ? Archive : CheckCircle}
-              title={isArchiveTab ? 'No Archived Memories' : 'No Confirmed Memories'}
+              title={isArchiveTab ? t('memory.noArchivedTitle') : t('memory.noConfirmedTitle')}
               description={
                 isArchiveTab
-                  ? 'Low-importance memories will be archived over time.'
-                  : 'Confirm pending memories to see them here.'
+                  ? t('memory.noArchivedDesc')
+                  : t('memory.noConfirmedDesc')
               }
             />
           ) : (
@@ -156,6 +158,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
   onArchive,
   onRestore,
 }) => {
+  const { t } = useTranslation();
   const config = CATEGORY_CONFIG[memory.category];
 
   return (
@@ -187,20 +190,20 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               )}
             </button>
 
-            <Badge className={cn('border-none text-[10px] uppercase font-bold', config.color)}>
+            <Badge className={cn('border-none text-xxs uppercase font-bold', config.color)}>
               <config.icon className="w-3 h-3 mr-1" />
-              {config.label}
+              {t(config.labelKey)}
             </Badge>
             {memory.status === 'archived' && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-xxs">
                 <Archive className="w-3 h-3 mr-1" />
-                Archived
+                {t('memory.archived')}
               </Badge>
             )}
             {memory.validatedBy === 'user' && (
-              <Badge variant="outline" className="border-success/30 text-success text-[10px]">
+              <Badge variant="outline" className="border-success/30 text-success text-xxs">
                 <Check className="w-3 h-3 mr-1" />
-                User Verified
+                {t('memory.userVerified')}
               </Badge>
             )}
           </div>
@@ -212,7 +215,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               size="sm"
               onClick={onEdit}
               className="h-7 w-7 p-0"
-              title="Edit"
+              title={t('common.edit')}
             >
               <Edit3 className="w-3.5 h-3.5" />
             </Button>
@@ -222,7 +225,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
                 size="sm"
                 onClick={onRestore}
                 className="h-7 w-7 p-0"
-                title="Restore"
+                title={t('memory.restore')}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </Button>
@@ -232,7 +235,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
                 size="sm"
                 onClick={onArchive}
                 className="h-7 w-7 p-0"
-                title="Archive"
+                title={t('memory.archive')}
               >
                 <Archive className="w-3.5 h-3.5" />
               </Button>
@@ -242,7 +245,7 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               size="sm"
               onClick={onDelete}
               className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-              title="Delete"
+              title={t('common.delete')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
@@ -251,18 +254,18 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
 
         <p className="text-sm leading-relaxed">{memory.content}</p>
 
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-4 text-xxs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Gauge className="w-3 h-3" />
-            Importance: {(memory.importance * 100).toFixed(0)}%
+            {t('memory.importance', { percent: (memory.importance * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
-            Confidence: {(memory.confidence * 100).toFixed(0)}%
+            {t('memory.confidence', { percent: (memory.confidence * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            Accessed: {memory.accessCount}x
+            {t('memory.accessed', { count: memory.accessCount })}
           </span>
         </div>
 
@@ -271,15 +274,15 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
             {memory.tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 text-[10px] bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
+                className="flex items-center gap-1 text-xxs bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
               >
                 <Tag className="w-3 h-3" />
                 {tag}
               </span>
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground/50">
-            {formatDistanceToNow(new Date(memory.createdAt))} ago • {memory.source}
+          <span className="text-xxs text-muted-foreground/50">
+            {t('memory.timeAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })} • {memory.source}
           </span>
         </div>
       </div>

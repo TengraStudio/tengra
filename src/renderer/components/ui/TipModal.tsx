@@ -68,7 +68,7 @@ export function TipModal({ language = 'tr' }: { language?: Language }) {
 
                 <button
                     onClick={() => setIsOpen(false)}
-                    className="text-[10px] font-bold text-muted-foreground/40 hover:text-muted-foreground transition-colors uppercase tracking-widest pt-2"
+                    className="text-xxs font-bold text-muted-foreground/40 hover:text-muted-foreground transition-colors uppercase tracking-widest pt-2"
                 >
                     {t('tips.dontShowAgain')}
                 </button>

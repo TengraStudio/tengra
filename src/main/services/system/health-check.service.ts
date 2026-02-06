@@ -168,7 +168,7 @@ export class HealthCheckService extends BaseService {
 
             if (previous?.status !== 'unhealthy') {
                 this.emit('statusChange', status);
-                console.warn(`[HealthCheck] ${name} failed:`, status.error);
+                appLogger.warn('HealthCheckService', `Check failed for ${name}: ${status.error}`);
             }
         }
     }

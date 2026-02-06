@@ -5,6 +5,7 @@ import { IdeaCategory } from '@shared/types/ideas';
 import { ArrowRight, Loader2, TrendingUp, Users, X } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface MarketPreview {
@@ -33,7 +34,7 @@ const CompetitionBadge: React.FC<{ level: string }> = ({ level }) => {
             className={cn(
                 'px-2 py-1 rounded text-xs font-medium',
                 isHigh && 'bg-destructive/10 text-destructive',
-                isMedium && 'bg-yellow/10 text-yellow',
+                isMedium && 'bg-yellow/10 text-warning',
                 isLow && 'bg-success/10 text-success',
                 !isHigh && !isMedium && !isLow && 'bg-muted/50 text-muted-foreground'
             )}
@@ -49,15 +50,17 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
     isLoading,
     preview
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-background rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border border-border/50">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border/50">
                     <div>
-                        <h2 className="text-xl font-bold text-foreground">Market Research Preview</h2>
+                        <h2 className="text-xl font-bold text-foreground">{t('ideas.marketPreview.title')}</h2>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Quick market overview for your selected categories
+                            {t('ideas.marketPreview.subtitle')}
                         </p>
                     </div>
                     <button
@@ -74,7 +77,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                            <p className="text-muted-foreground">Analyzing market conditions...</p>
+                            <p className="text-muted-foreground">{t('ideas.marketPreview.loading')}</p>
                         </div>
                     ) : preview ? (
                         <div className="space-y-6">
@@ -98,7 +101,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                                                 <TrendingUp className="w-4 h-4" />
-                                                Key Trends
+                                                {t('ideas.marketPreview.keyTrends')}
                                             </div>
                                             <ul className="space-y-1.5">
                                                 {item.keyTrends.map((trend, i) => (
@@ -113,7 +116,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                                                 <Users className="w-4 h-4" />
-                                                Market Size
+                                                {t('ideas.marketPreview.marketSize')}
                                             </div>
                                             <p className="text-sm text-foreground/70">
                                                 {item.marketSize}
@@ -125,7 +128,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                         </div>
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
-                            No preview data available
+                            {t('ideas.marketPreview.empty')}
                         </div>
                     )}
                 </div>
@@ -137,7 +140,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg hover:bg-muted/30 text-foreground transition-colors"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         type="button"
@@ -150,7 +153,7 @@ export const MarketPreviewModal: React.FC<MarketPreviewModalProps> = ({
                                 : 'bg-muted/50 text-muted-foreground/40 cursor-not-allowed'
                         )}
                     >
-                        Continue with Full Research
+                        {t('ideas.marketPreview.continue')}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>

@@ -8,6 +8,7 @@ import { ToolResult } from '@/types';
 import { JsonObject, JsonValue } from '@/types/common';
 
 import { TerminalView } from './TerminalView';
+import { ToolOutputVirtualizer } from './ToolOutputVirtualizer';
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -193,13 +194,17 @@ function extractImageUrl(result: JsonValue): string | null {
 
 const FilePreview: React.FC<{ content: string; t: (key: string) => string }> = ({ content, t }) => (
     <div className="relative group">
-        <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50">{t('tools.filePreview')}</div>
-        <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{ code({ className, children, ...props }) { return <code className={className} {...props}>{children}</code>; } }}
-        >
-            {`\`\`\`\n${content}\n\`\`\``}
-        </ReactMarkdown>
+        <div className="absolute right-2 top-2 text-sm text-muted-foreground opacity-50 z-10">{t('tools.filePreview')}</div>
+        {content.length > 1000 ? (
+            <ToolOutputVirtualizer content={content} maxHeight="400px" isDark={false} className="mt-6" />
+        ) : (
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{ code({ className, children, ...props }) { return <code className={className} {...props}>{children}</code>; } }}
+            >
+                {`\`\`\`\n${content}\n\`\`\``}
+            </ReactMarkdown>
+        )}
     </div>
 );
 

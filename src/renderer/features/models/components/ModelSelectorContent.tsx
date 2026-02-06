@@ -76,7 +76,7 @@ export const ModelSelectorContent: React.FC<ModelSelectorContentProps> = ({
                 ) : (
                     categories.map(category => (
                         <div key={category.id} className="mb-1">
-                            <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2 bg-popover/95 sticky top-0 z-5 border-b border-border/50 shadow-sm">
+                            <div className="px-3 py-1.5 text-xxs font-black uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2 bg-popover/95 sticky top-0 z-5 border-b border-border/50 shadow-sm">
                                 <span>{category.name}</span>
                             </div>
                             <div className="px-1">

@@ -2,6 +2,7 @@ import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
 import { Edit2, MessageSquare, Pin, Trash2 } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Chat } from '@/types';
 
@@ -35,11 +36,13 @@ export const SidebarChatItem = React.memo(({
     editRef,
     cancelEdit
 }: SidebarChatItemProps) => {
+    const { t } = useTranslation();
+
     return (
         <div className="group relative">
             <SidebarItem
                 icon={MessageSquare}
-                label={chat.title || 'New Chat'}
+                label={chat.title || t('sidebar.newChat')}
                 active={isActive}
                 onClick={() => onSelect(chat.id)}
                 className="py-1.5"

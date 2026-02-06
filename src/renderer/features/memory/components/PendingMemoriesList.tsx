@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
@@ -35,6 +36,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
   onConfirm,
   onReject,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Bulk actions */}
@@ -48,7 +50,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
             className="gap-2"
           >
             <Check className="w-4 h-4" />
-            Confirm All
+            {t('memory.confirmAll')}
           </Button>
           <Button
             variant="ghost"
@@ -58,7 +60,7 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
             className="gap-2 text-destructive hover:text-destructive"
           >
             <X className="w-4 h-4" />
-            Reject All
+            {t('memory.rejectAll')}
           </Button>
         </div>
       )}
@@ -69,8 +71,8 @@ export const PendingMemoriesList: React.FC<PendingMemoriesListProps> = ({
           {memories.length === 0 ? (
             <EmptyState
               icon={Clock}
-              title="No Pending Memories"
-              description="Extracted facts will appear here for your validation."
+              title={t('memory.noPendingTitle')}
+              description={t('memory.noPendingDesc')}
             />
           ) : (
             memories.map((memory) => (
@@ -95,6 +97,7 @@ interface PendingMemoryCardProps {
 }
 
 const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm, onReject }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
@@ -115,53 +118,53 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge className={cn('border-none text-[10px] uppercase font-bold', config.color)}>
+            <Badge className={cn('border-none text-xxs uppercase font-bold', config.color)}>
               <config.icon className="w-3 h-3 mr-1" />
-              {config.label}
+              {t(config.labelKey)}
             </Badge>
             {memory.requiresUserValidation && (
-              <Badge variant="outline" className="border-yellow/30 text-yellow text-[10px]">
-                Needs Review
+              <Badge variant="outline" className="border-yellow/30 text-warning text-xxs">
+                {t('memory.needsReview')}
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onReject}
-              className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onConfirm}
-              className="h-8 px-3 gap-1"
-            >
-              <Check className="w-4 h-4" />
-              Confirm
-            </Button>
-          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onReject}
+                className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onConfirm}
+                className="h-8 px-3 gap-1"
+              >
+                <Check className="w-4 h-4" />
+                {t('memory.confirm')}
+              </Button>
+            </div>
         </div>
 
         {/* Content */}
         <p className="text-sm leading-relaxed">{memory.content}</p>
 
         {/* Scores */}
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-4 text-xxs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Gauge className="w-3 h-3" />
-            Confidence: {(memory.extractionConfidence * 100).toFixed(0)}%
+            {t('memory.confidence', { percent: (memory.extractionConfidence * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            Relevance: {(memory.relevanceScore * 100).toFixed(0)}%
+            {t('memory.relevance', { percent: (memory.relevanceScore * 100).toFixed(0) })}
           </span>
           <span className="flex items-center gap-1">
             <Lightbulb className="w-3 h-3" />
-            Novelty: {(memory.noveltyScore * 100).toFixed(0)}%
+            {t('memory.novelty', { percent: (memory.noveltyScore * 100).toFixed(0) })}
           </span>
         </div>
 
@@ -169,18 +172,17 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
         {(memory.potentialContradictions.length > 0 || memory.similarMemories.length > 0) && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1 text-xxs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
             {memory.potentialContradictions.length > 0 && (
               <span className="text-orange">
-                {memory.potentialContradictions.length} potential contradiction(s)
+                {memory.potentialContradictions.length === 1 ? t('memory.potentialContradiction', { count: memory.potentialContradictions.length }) : t('memory.potentialContradictions', { count: memory.potentialContradictions.length })}
               </span>
             )}
             {memory.similarMemories.length > 0 && (
               <span className="text-primary">
-                {memory.similarMemories.length} similar memor
-                {memory.similarMemories.length === 1 ? 'y' : 'ies'}
+                {memory.similarMemories.length === 1 ? t('memory.similarMemory', { count: memory.similarMemories.length }) : t('memory.similarMemories', { count: memory.similarMemories.length })}
               </span>
             )}
           </button>
@@ -189,16 +191,16 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
         {expanded && (
           <div className="space-y-2 pt-2 border-t border-white/5">
             {memory.potentialContradictions.map((c, i) => (
-              <div key={i} className="p-2 rounded bg-orange/10 text-[11px]">
-                <span className="text-orange font-bold">Contradiction: </span>
+              <div key={i} className="p-2 rounded bg-warning/10 text-xxs">
+                <span className="text-orange font-bold">{t('memory.contradictionLabel')}</span>
                 <span className="text-muted-foreground">{c.existingContent}</span>
                 <p className="mt-1 text-orange-300/70 italic">{c.conflictExplanation}</p>
               </div>
             ))}
             {memory.similarMemories.map((s, i) => (
-              <div key={i} className="p-2 rounded bg-primary/10 text-[11px]">
+              <div key={i} className="p-2 rounded bg-primary/10 text-xxs">
                 <span className="text-primary font-bold">
-                  Similar ({(s.similarityScore * 100).toFixed(0)}%):{' '}
+                  {t('memory.similarLabel', { percent: (s.similarityScore * 100).toFixed(0) })}{' '}
                 </span>
                 <span className="text-muted-foreground">{s.content}</span>
               </div>
@@ -212,15 +214,15 @@ const PendingMemoryCard: React.FC<PendingMemoryCardProps> = ({ memory, onConfirm
             {memory.suggestedTags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 text-[10px] bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
+                className="flex items-center gap-1 text-xxs bg-white/5 px-2 py-0.5 rounded-full text-muted-foreground"
               >
                 <Tag className="w-3 h-3" />
                 {tag}
               </span>
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground/50">
-            {formatDistanceToNow(new Date(memory.extractedAt))} ago
+          <span className="text-xxs text-muted-foreground/50">
+            {t('memory.timeAgo', { time: formatDistanceToNow(new Date(memory.extractedAt)) })}
           </span>
         </div>
       </div>

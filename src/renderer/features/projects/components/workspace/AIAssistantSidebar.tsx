@@ -60,7 +60,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             <div className="h-12 border-b border-white/5 flex items-center px-4 bg-white/[0.02] shrink-0 overflow-visible relative z-50">
                 <div className="flex items-center gap-2 shrink-0">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">AI</span>
+                    <span className="text-xxs font-bold uppercase tracking-widest text-muted-foreground">{t('workspace.aiLabel')}</span>
                 </div>
                 <div className="flex-1 flex justify-end">
                     <ModelSelector

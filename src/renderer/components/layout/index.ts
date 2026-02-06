@@ -19,7 +19,6 @@ export {
     ActivityBarLayout,
     ActivityBarProvider,
     type ActivityItem,
-    DEFAULT_ACTIVITIES,
     useActivityBar} from '@renderer/components/layout/ActivityBar';
 
 // Status Bar

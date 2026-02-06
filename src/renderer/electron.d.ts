@@ -141,6 +141,7 @@ export interface ElectronAPI {
     checkAuthStatus: () => Promise<AuthStatus>
     deleteProxyAuthFile: (name: string) => Promise<{ success: boolean }>
     syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
+    downloadAuthFile: (name: string) => Promise<Record<string, unknown> | null>
     saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
     triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>
 

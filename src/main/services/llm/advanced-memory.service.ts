@@ -1264,7 +1264,7 @@ If no facts worth remembering, return [].`;
     }
 
     private generateId(): string {
-        return `mem_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        return `mem_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
     }
 
     // ========================================================================

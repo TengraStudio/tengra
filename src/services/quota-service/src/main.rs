@@ -213,7 +213,7 @@ async fn get_quota(
                                     (100.0, 100.0)
                                 };
 
-                                Json(Response {
+                                let response = Response {
                                     success: true,
                                     quota: Some(QuotaInfo {
                                         remaining,
@@ -222,55 +222,61 @@ async fn get_quota(
                                     }),
                                     models: Some(models_quota),
                                     error: None,
-                                })
+                                };
+                                Json(response)
                             }
                             Err(e) => {
                                 eprintln!("Failed to parse Antigravity response: {}", e);
-                                Json(Response {
+                                let response = Response {
                                     success: false,
                                     quota: None,
                                     models: None,
                                     error: Some(format!("Parse error: {}", e)),
-                                })
+                                };
+                                Json(response)
                             }
                         }
                     } else {
                         let status = response.status();
                         let error_text = response.text().await.unwrap_or_default();
                         eprintln!("Antigravity API failed: {} - {}", status, error_text);
-                        Json(Response {
+                        let response = Response {
                             success: false,
                             quota: None,
                             models: None,
                             error: Some(format!("API Error {}: {}", status, error_text)),
-                        })
+                        };
+                        Json(response)
                     }
                 }
                 Err(e) => {
                     eprintln!("Request failed: {}", e);
-                    Json(Response {
+                    let response = Response {
                         success: false,
                         quota: None,
                         models: None,
                         error: Some(format!("Request failed: {}", e)),
-                    })
+                    };
+                    Json(response)
                 }
             }
         } else {
-             Json(Response {
+             let response = Response {
                 success: false,
                 quota: None,
                 models: None,
                 error: Some("Missing session token for Antigravity".into()),
-            })
+            };
+            Json(response)
         }
     } else {
-        Json(Response {
+        let response = Response {
             success: false,
             quota: None,
             models: None,
             error: Some("Unknown provider".into()),
-        })
+        };
+        Json(response)
     }
 }
 

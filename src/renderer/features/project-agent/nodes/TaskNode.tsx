@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { Message } from '@shared/types/chat';
 import { AgentProfile, AgentStartOptions, ProjectStep } from '@shared/types/project-agent';
@@ -14,6 +13,7 @@ import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { useLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export type TaskNodeData = {
     label: string;
@@ -43,6 +43,7 @@ interface TaskNodeActionProps {
 }
 
 const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, currentModelId, selectedProjectId }: TaskNodeActionProps) => {
+    const { t } = useLanguage();
     const handlePlan = useCallback(async () => {
         if (!data.title && !data.description) {
             return;
@@ -50,7 +51,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
         try {
             updateNodeData(id, { status: 'planning', isExpanded: true });
             const options: AgentStartOptions = {
-                task: data.title ?? data.description ?? 'New Task',
+                task: data.title ?? data.description ?? t('projectAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
                 projectId: selectedProjectId,
@@ -63,7 +64,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             appLogger.error('TaskNode', 'Failed to generate plan', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t]);
 
     const handleApprove = useCallback(async () => {
         if (!data.plan) {
@@ -91,7 +92,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
         try {
             updateNodeData(id, { status: 'running', activeTab: 'logs' });
             const options: AgentStartOptions = {
-                task: data.title ?? data.description ?? 'New Task',
+                task: data.title ?? data.description ?? t('projectAgent.newTask'),
                 nodeId: id,
                 model: { provider: currentProviderId, model: currentModelId },
                 projectId: selectedProjectId,
@@ -104,7 +105,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             appLogger.error('TaskNode', 'Failed to start task', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t]);
 
     const handleStop = useCallback(async () => {
         try {
@@ -201,8 +202,8 @@ const TaskMetaInfo = ({ status }: { status: string }) => {
         return null;
     }
     return (
-        <div className="h-1 w-full bg-blue-950 rounded-full overflow-hidden">
-            <div className={cn("h-full animate-shimmer w-[60%]", status === 'planning' ? "bg-purple-500" : "bg-blue-500")} />
+        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+            <div className={cn("h-full animate-shimmer w-[60%]", status === 'planning' ? "bg-primary" : "bg-info")} />
         </div>
     );
 };
@@ -215,31 +216,31 @@ interface TaskTabsProps {
     status?: string;
 }
 
-const TaskTabs = ({ id, activeTab, updateNodeData, planCount, status }: TaskTabsProps) => (
-    <div className="flex items-center gap-4 border-b border-white/5 pb-2">
+const TaskTabs = ({ id, activeTab, updateNodeData, planCount, status, t }: TaskTabsProps & { t: (key: string) => string }) => (
+    <div className="flex items-center gap-4 border-b border-border/20 pb-2">
         <button
             onClick={() => updateNodeData(id, { activeTab: 'plan' })}
             className={cn(
                 "flex items-center gap-1.5 text-xs font-medium transition-colors pb-1 border-b-2",
-                activeTab === 'plan' ? "text-foreground border-purple-500" : "text-muted-foreground border-transparent hover:text-foreground/80"
+                activeTab === 'plan' ? "text-foreground border-primary" : "text-muted-foreground border-transparent hover:text-foreground/80"
             )}
         >
             <ListTodo className="w-3.5 h-3.5" />
-            <span>Plan</span>
-            {planCount ? <span className="text-[10px] bg-white/10 px-1 rounded-full">{planCount}</span> : null}
+            <span>{t('projectAgent.planTab')}</span>
+            {planCount ? <span className="text-xxs bg-muted/20 px-1 rounded-full">{planCount}</span> : null}
         </button>
         <button
             onClick={() => updateNodeData(id, { activeTab: 'logs' })}
             className={cn(
                 "flex items-center gap-1.5 text-xs font-medium transition-colors pb-1 border-b-2",
-                activeTab === 'logs' ? "text-foreground border-blue-500" : "text-muted-foreground border-transparent hover:text-foreground/80"
+                activeTab === 'logs' ? "text-foreground border-info" : "text-muted-foreground border-transparent hover:text-foreground/80"
             )}
         >
             <Terminal className="w-3.5 h-3.5" />
-            <span>Console</span>
+            <span>{t('projectAgent.consoleTab')}</span>
         </button>
-        <span className="ml-auto text-[10px] text-muted-foreground">
-            {status === 'planning' ? 'Generating Plan...' : status === 'running' ? 'Executing Task...' : status === 'waiting_for_approval' ? 'Waiting for Approval' : ''}
+        <span className="ml-auto text-xxs text-muted-foreground">
+            {status === 'planning' ? t('projectAgent.generatingPlan') : status === 'running' ? t('projectAgent.executingTask') : status === 'waiting_for_approval' ? t('projectAgent.waitingApproval') : ''}
         </span>
     </div>
 );
@@ -253,7 +254,7 @@ interface PlanStageProps {
     activeStepRef: React.RefObject<HTMLDivElement>;
 }
 
-const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, activeStepRef }: PlanStageProps) => {
+const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, activeStepRef, t }: PlanStageProps & { t: (key: string, options?: Record<string, string | number>) => string }) => {
     return (
         <div ref={planContainerRef} className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
             {plan.map((step, idx) => {
@@ -264,14 +265,14 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
                         ref={isRunning ? activeStepRef : null}
                         className={cn(
                             "flex gap-2 items-start group/step p-1 rounded transition-all",
-                            isRunning && "bg-blue-500/10 border border-blue-500/20 ring-1 ring-blue-500/10"
+                            isRunning && "bg-info/10 border border-info/20 ring-1 ring-info/10"
                         )}
                     >
                         <div className="mt-1.5 shrink-0">
                             {step.status === 'completed' ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                             ) : isRunning ? (
-                                <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 text-info animate-spin" />
                             ) : step.status === 'failed' ? (
                                 <AlertCircle className="w-3.5 h-3.5 text-destructive" />
                             ) : (
@@ -281,9 +282,9 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
                         <div className="flex-1">
                             <textarea
                                 className={cn(
-                                    "w-full bg-black/10 border border-transparent hover:border-white/10 focus:border-primary/30 rounded px-2 py-1 text-xs text-foreground resize-none focus:outline-none focus:bg-black/30 transition-colors nodrag",
+                                    "w-full bg-card/20 border border-transparent hover:border-border/20 focus:border-primary/30 rounded px-2 py-1 text-xs text-foreground resize-none focus:outline-none focus:bg-card/40 transition-colors nodrag",
                                     step.status === 'completed' && "text-muted-foreground line-through opacity-50",
-                                    isRunning && "text-blue-100"
+                                    isRunning && "text-info"
                                 )}
                                 value={step.text}
                                 onChange={(e) => {
@@ -308,9 +309,9 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
                         {step.status === 'failed' && (
                             <button
                                 onClick={() => void onRetry(idx)}
-                                className="ml-2 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                className="ml-2 text-xs text-primary hover:text-primary/80 transition-colors"
                             >
-                                Retry
+                                {t('common.retry')}
                             </button>
                         )}
                     </div>
@@ -322,19 +323,19 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
                         const newPlan = [...plan];
                         newPlan.push({
                             id: Math.random().toString(36).substr(2, 9),
-                            text: "New step",
+                            text: t('projectAgent.newStep'),
                             status: 'pending'
                         });
                         onUpdatePlan(newPlan);
                     }}
-                    className="w-full py-1 text-[10px] text-muted-foreground hover:text-primary border border-dashed border-white/10 hover:border-primary/30 rounded-md transition-colors"
+                    className="w-full py-1 text-xxs text-muted-foreground hover:text-primary border border-dashed border-border/20 hover:border-primary/30 rounded-md transition-colors"
                 >
-                    + Add Step
+                    {t('projectAgent.addStep')}
                 </button>
             )}
             {!plan.length && status !== 'planning' && (
                 <div className="text-center py-8 text-muted-foreground/40 text-xs italic">
-                    No plan generated yet. Describe your task and click "Plan".
+                    {t('projectAgent.noPlan')}
                 </div>
             )}
         </div>
@@ -342,10 +343,10 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
 };
 
 const TaskExecutionDetails = ({
-    id, data, activeTab, updateNodeData, onRetry, planContainerRef, activeStepRef
-}: { id: string; data: TaskNodeData; activeTab: 'plan' | 'logs'; updateNodeData: (id: string, data: Partial<TaskNodeData>) => void; onRetry: (index: number) => void | Promise<void>; planContainerRef: React.RefObject<HTMLDivElement>; activeStepRef: React.RefObject<HTMLDivElement> }) => (
-    <div className="pt-2 border-t border-white/5 space-y-2">
-        <TaskTabs id={id} activeTab={activeTab} updateNodeData={updateNodeData} planCount={data.plan?.length} status={data.status} />
+    id, data, activeTab, updateNodeData, onRetry, planContainerRef, activeStepRef, t
+}: { id: string; data: TaskNodeData; activeTab: 'plan' | 'logs'; updateNodeData: (id: string, data: Partial<TaskNodeData>) => void; onRetry: (index: number) => void | Promise<void>; planContainerRef: React.RefObject<HTMLDivElement>; activeStepRef: React.RefObject<HTMLDivElement>; t: (key: string, options?: Record<string, string | number>) => string }) => (
+    <div className="pt-2 border-t border-border/20 space-y-2">
+        <TaskTabs id={id} activeTab={activeTab} updateNodeData={updateNodeData} planCount={data.plan?.length} status={data.status} t={t} />
         {activeTab === 'plan' ? (
             <PlanStage
                 plan={data.plan ?? []}
@@ -354,6 +355,7 @@ const TaskExecutionDetails = ({
                 onRetry={onRetry}
                 planContainerRef={planContainerRef}
                 activeStepRef={activeStepRef}
+                t={t}
             />
         ) : (
             <LogConsole logs={data.history ?? []} className="h-[300px]" />
@@ -362,17 +364,18 @@ const TaskExecutionDetails = ({
 );
 
 const ProgressBar = ({ plan }: { plan: ProjectStep[] }) => {
+    const { t } = useLanguage();
     const completed = plan.filter(s => s.status === 'completed').length;
     const total = plan.length;
     const percentage = Math.round((completed / Math.max(1, total)) * 100);
 
     return (
-        <div className="px-4 py-2 bg-black/5 border-t border-white/5">
+        <div className="px-4 py-2 bg-card/10 border-t border-border/20">
             <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Overall Progress</span>
-                <span className="text-[10px] font-mono text-primary">{percentage}%</span>
+                <span className="text-xxs font-medium text-muted-foreground uppercase tracking-wider">{t('projectAgent.overallProgress')}</span>
+                <span className="text-xxs font-mono text-primary">{percentage}%</span>
             </div>
-            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${percentage}%` }} />
             </div>
         </div>
@@ -380,6 +383,7 @@ const ProgressBar = ({ plan }: { plan: ProjectStep[] }) => {
 };
 
 const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: { profiles: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void }) => {
+    const { t } = useLanguage();
     const selectedProfile = profiles.find(p => p.id === selectedProfileId);
     return (
         <Popover>
@@ -387,29 +391,29 @@ const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: 
                 <button
                     className={cn(
                         "flex items-center justify-center p-1.5 rounded-md transition-colors",
-                        selectedProfile ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                        selectedProfile ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                     )}
-                    title={selectedProfile ? `Agent: ${selectedProfile.name}` : "Select Agent Profile"}
+                    title={selectedProfile ? t('projectAgent.agentSelected', { name: selectedProfile.name }) : t('projectAgent.selectAgentProfile')}
                 >
                     <User className="w-3.5 h-3.5" />
                 </button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-56 p-1 bg-popover/95 backdrop-blur-xl">
                 <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent Profile</div>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t('projectAgent.selectAgentProfile')}</div>
                     <button
                         onClick={() => onProfileSelect?.('')}
                         className={cn(
                             "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
-                            !selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                            !selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-muted/20 text-foreground"
                         )}
                     >
                         <div className="p-1 rounded bg-background/50">
                             <Sparkles className="w-3 h-3" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-medium">Default Agent</span>
-                            <span className="text-[10px] text-muted-foreground opacity-70">Standard system prompt</span>
+                            <span className="font-medium">{t('projectAgent.defaultAgent')}</span>
+                            <span className="text-xxs text-muted-foreground opacity-70">{t('projectAgent.defaultAgentDesc')}</span>
                         </div>
                     </button>
                     {profiles.map(p => (
@@ -418,7 +422,7 @@ const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: 
                             onClick={() => onProfileSelect?.(p.id)}
                             className={cn(
                                 "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
-                                p.id === selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground"
+                                p.id === selectedProfileId ? "bg-primary/20 text-primary" : "hover:bg-muted/20 text-foreground"
                             )}
                         >
                             <div className="p-1 rounded bg-background/50">
@@ -426,7 +430,7 @@ const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: 
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-medium truncate">{p.name}</span>
-                                <span className="text-[10px] text-muted-foreground opacity-70 truncate max-w-[140px]">{p.role}</span>
+                                <span className="text-xxs text-muted-foreground opacity-70 truncate max-w-[140px]">{p.role}</span>
                             </div>
                         </button>
                     ))}
@@ -439,50 +443,53 @@ const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: 
 const TaskHeader = ({
     isPlanner, isAction, label, selectedProject, projects,
     selectedProjectId, onProjectSelect, isExpanded, setIsExpanded, onDelete
-}: { isPlanner: boolean; isAction: boolean; label: string; selectedProject?: { title: string }; projects: Array<{ id: string; title: string }>; selectedProjectId?: string; onProjectSelect: (id: string) => void; isExpanded: boolean; setIsExpanded: (expanded: boolean) => void; onDelete: () => void }) => (
-    <div className="p-3 border-b border-white/5 flex items-center justify-between bg-white/5 rounded-t-lg">
-        <div className="flex items-center gap-2 overflow-hidden">
-            <div className={cn(
-                "p-1.5 rounded-lg shrink-0",
-                isPlanner ? "bg-purple-500/20 text-purple-400" : isAction ? "bg-yellow-500/20 text-yellow-400" : "bg-primary/20 text-primary"
-            )}>
-                {isPlanner ? <Sparkles className="w-4 h-4" /> : isAction ? <Zap className="w-4 h-4" /> : <Box className="w-4 h-4" />}
+}: { isPlanner: boolean; isAction: boolean; label: string; selectedProject?: { title: string }; projects: Array<{ id: string; title: string }>; selectedProjectId?: string; onProjectSelect: (id: string) => void; isExpanded: boolean; setIsExpanded: (expanded: boolean) => void; onDelete: () => void }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="p-3 border-b border-border/20 flex items-center justify-between bg-muted/10 rounded-t-lg">
+            <div className="flex items-center gap-2 overflow-hidden">
+                <div className={cn(
+                    "p-1.5 rounded-lg shrink-0",
+                    isPlanner ? "bg-primary/20 text-primary" : isAction ? "bg-warning/20 text-warning" : "bg-primary/20 text-primary"
+                )}>
+                    {isPlanner ? <Sparkles className="w-4 h-4" /> : isAction ? <Zap className="w-4 h-4" /> : <Box className="w-4 h-4" />}
+                </div>
+                {isPlanner ? (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <button className="flex items-center gap-1.5 text-xs font-medium hover:bg-muted/20 px-2 py-1 rounded-md transition-colors truncate max-w-[120px]">
+                                <FolderGit2 className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="truncate">{selectedProject?.title ?? t('projectAgent.selectProject')}</span>
+                                <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-48 p-1 bg-popover/95 backdrop-blur-xl">
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                                {projects.map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => onProjectSelect(p.id)}
+                                        className={cn("w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors", p.id === selectedProjectId ? "bg-primary/20 text-primary" : "hover:bg-muted/20 text-foreground")}
+                                    >
+                                        <span className="truncate">{p.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                ) : <span className="font-semibold text-sm tracking-tight truncate">{label}</span>}
             </div>
-            {isPlanner ? (
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <button className="flex items-center gap-1.5 text-xs font-medium hover:bg-white/10 px-2 py-1 rounded-md transition-colors truncate max-w-[120px]">
-                            <FolderGit2 className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="truncate">{selectedProject?.title ?? 'Select Project'}</span>
-                            <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-48 p-1 bg-popover/95 backdrop-blur-xl">
-                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                            {projects.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => onProjectSelect(p.id)}
-                                    className={cn("w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors", p.id === selectedProjectId ? "bg-primary/20 text-primary" : "hover:bg-white/10 text-foreground")}
-                                >
-                                    <span className="truncate">{p.title}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            ) : <span className="font-semibold text-sm tracking-tight truncate">{label}</span>}
+            <div className="flex items-center gap-1">
+                <button onClick={() => setIsExpanded(!isExpanded)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/20">
+                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <Maximize className="w-3.5 h-3.5" />}
+                </button>
+                <button onClick={onDelete} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded-md hover:bg-muted/20">
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            </div>
         </div>
-        <div className="flex items-center gap-1">
-            <button onClick={() => setIsExpanded(!isExpanded)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/10">
-                {isExpanded ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <Maximize className="w-3.5 h-3.5" />}
-            </button>
-            <button onClick={onDelete} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded-md hover:bg-white/10">
-                <Trash2 className="w-3.5 h-3.5" />
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 const TaskFooterButtons = ({
     status, isPlanner, canRun, onApprove, onStop, onPlan, onExecute
@@ -490,36 +497,37 @@ const TaskFooterButtons = ({
     status: string; isPlanner: boolean; canRun: boolean;
     onApprove: () => void; onStop: () => void; onPlan: () => void; onExecute: () => void;
 }) => {
+    const { t } = useLanguage();
     if (status === 'waiting_for_approval') {
         return (
-            <button onClick={onApprove} className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 hover:border-green-500/30 rounded-lg font-medium transition-all ml-auto">
+            <button onClick={onApprove} className="flex items-center gap-2 px-3 py-1.5 bg-success/10 text-success hover:bg-success/20 border border-success/20 hover:border-success/30 rounded-lg font-medium transition-all ml-auto">
                 <Play className="w-3 h-3 fill-current" />
-                <span>Approve & Run</span>
+                <span>{t('projectAgent.approveAndRun')}</span>
             </button>
         );
     }
     if (status === 'planning' || status === 'running') {
         return (
-            <button onClick={onStop} className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 rounded-lg font-medium ml-auto transition-colors group/stop">
+            <button onClick={onStop} className="flex items-center gap-2 px-3 py-1.5 bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 rounded-lg font-medium ml-auto transition-colors group/stop">
                 <div className="relative">
                     <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin group-hover/stop:opacity-0 transition-opacity absolute inset-0" />
                     <Square className="w-3 h-3 fill-current opacity-0 group-hover/stop:opacity-100 transition-opacity" />
                 </div>
-                <span>{status === 'planning' ? 'Planning...' : 'Running...'} (Stop)</span>
+                <span>{status === 'planning' ? t('projectAgent.planning') : t('projectAgent.running')} {t('projectAgent.stopLabel')}</span>
             </button>
         );
     }
     return (
         <div className="flex items-center gap-2 ml-auto">
             {isPlanner && (
-                <button onClick={onPlan} disabled={!canRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/30 rounded-lg font-medium transition-all">
+                <button onClick={onPlan} disabled={!canRun} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 hover:border-primary/30 rounded-lg font-medium transition-all">
                     <Sparkles className="w-3 h-3" />
-                    <span>Plan</span>
+                    <span>{t('projectAgent.planAction')}</span>
                 </button>
             )}
             <button onClick={onExecute} disabled={!canRun} className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 hover:border-primary/30 rounded-lg font-medium transition-all">
                 <Play className="w-3 h-3 fill-current" />
-                {isPlanner ? '' : <span>Execute</span>}
+                {isPlanner ? '' : <span>{t('projectAgent.executeAction')}</span>}
             </button>
         </div>
     );
@@ -535,11 +543,12 @@ const TaskFooterControls = ({
     onFileClick: () => void; onToggleThinking?: () => void;
     profiles?: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void;
 }) => {
+    const { t } = useLanguage();
     return (
         <>
             {isPlanner ? (
                 <div className="flex items-center gap-1">
-                    <button onClick={onFileClick} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-md transition-colors">
+                    <button onClick={onFileClick} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/20 rounded-md transition-colors">
                         <Paperclip className="w-3.5 h-3.5" />
                     </button>
                     <div className={cn("scale-90 origin-left transition-all", isModelOpen ? "z-50" : "")}>
@@ -550,7 +559,7 @@ const TaskFooterControls = ({
                 </div>
             ) : <div />}
             <div className="flex items-center gap-2">
-                <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/10">
+                <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/20">
                     <Settings2 className="w-3.5 h-3.5" />
                 </button>
                 {isPlanner && (
@@ -558,9 +567,9 @@ const TaskFooterControls = ({
                         onClick={onToggleThinking}
                         className={cn(
                             "flex items-center justify-center p-1 rounded-md transition-colors",
-                            systemMode === 'thinking' ? "bg-purple-500/20 text-purple-400" : "text-muted-foreground hover:text-foreground hover:bg-white/10"
+                            systemMode === 'thinking' ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                         )}
-                        title={systemMode === 'thinking' ? "Thinking Mode: On" : "Thinking Mode: Off"}
+                        title={systemMode === 'thinking' ? t('projectAgent.thinkingOn') : t('projectAgent.thinkingOff')}
                     >
                         <Brain className="w-3.5 h-3.5" />
                     </button>
@@ -581,7 +590,7 @@ const TaskFooter = ({
     canRun: boolean; isPlanner: boolean; systemMode?: string; onToggleThinking?: () => void;
     profiles?: AgentProfile[]; selectedProfileId?: string; onProfileSelect?: (id: string) => void;
 }) => (
-    <div className="px-3 py-2 bg-black/20 rounded-b-lg border-t border-white/5 flex justify-between items-center text-[10px]">
+    <div className="px-3 py-2 bg-card/20 rounded-b-lg border-t border-border/20 flex justify-between items-center text-xxs">
         <div className="flex items-center gap-2">
             <TaskFooterControls
                 isPlanner={isPlanner}
@@ -645,7 +654,7 @@ const TaskInput = ({
             {data.attachments && data.attachments.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                     {data.attachments.map((file, idx) => (
-                        <div key={idx} className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-md text-[10px] text-muted-foreground border border-white/5 group/file">
+                        <div key={idx} className="flex items-center gap-1 bg-muted/20 px-2 py-1 rounded-md text-xxs text-muted-foreground border border-border/20 group/file">
                             <span className="truncate max-w-[100px]">{file.name}</span>
                             <button onClick={() => removeAttachment(idx)} className="hover:text-destructive opacity-0 group-hover/file:opacity-100 transition-opacity">
                                 <X className="w-3 h-3" />
@@ -655,7 +664,7 @@ const TaskInput = ({
                 </div>
             )}
             <textarea
-                className="w-full bg-black/20 border border-white/10 rounded-md p-2 text-xs focus:outline-none focus:border-primary/50 resize-none nodrag"
+                className="w-full bg-card/20 border border-border/20 rounded-md p-2 text-xs focus:outline-none focus:border-primary/50 resize-none nodrag"
                 placeholder={t('tools.taskDescriptionPlaceholder')}
                 rows={3}
                 value={data.description ?? ''}
@@ -668,17 +677,18 @@ const TaskInput = ({
 const TaskBody = ({
     id, data, isPlanner, isAction, isExpanded, activeTab, updateNodeData, onRetry, planContainerRef, activeStepRef
 }: TaskBodyProps) => {
+    const { t } = useLanguage();
     return (
         <div className="p-4 space-y-3">
             {isPlanner ? (
                 <TaskInput id={id} data={data} updateNodeData={updateNodeData} />
             ) : isAction ? (
-                <div className="bg-black/20 border border-white/10 rounded-md p-2 text-xs text-muted-foreground">
-                    Select an action to execute...
+                <div className="bg-card/20 border border-border/20 rounded-md p-2 text-xs text-muted-foreground">
+                    {t('projectAgent.selectAction')}
                 </div>
             ) : (
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {data.description ?? "No description provided."}
+                    {data.description ?? t('projectAgent.noDescription')}
                 </p>
             )}
             {isPlanner && data.plan && data.plan.length > 0 && <ProgressBar plan={data.plan} />}
@@ -691,6 +701,7 @@ const TaskBody = ({
                     onRetry={onRetry}
                     planContainerRef={planContainerRef}
                     activeStepRef={activeStepRef}
+                    t={t}
                 />
             )}
             <TaskMetaInfo status={data.status ?? 'idle'} />
@@ -703,11 +714,11 @@ const getTaskNodeClasses = (isExpanded: boolean, selected: boolean, status: stri
         "bg-card/90 backdrop-blur-xl border-2 rounded-xl transition-all duration-300 group shadow-lg",
         isExpanded ? "w-[500px]" : "w-72",
         selected ? "border-primary shadow-primary/20 scale-[1.02]" : "border-border/50 hover:border-primary/50",
-        status === 'running' && "border-blue-500 shadow-blue-500/20 animate-pulse",
-        status === 'planning' && "border-purple-500 shadow-purple-500/20 animate-pulse",
-        status === 'waiting_for_approval' && "border-yellow-500 shadow-yellow-500/20",
-        status === 'completed' && "border-green-500 shadow-green-500/20",
-        status === 'failed' && "border-red-500 shadow-red-500/20"
+        status === 'running' && "border-info shadow-info/20 animate-pulse",
+        status === 'planning' && "border-primary shadow-primary/20 animate-pulse",
+        status === 'waiting_for_approval' && "border-warning shadow-warning/20",
+        status === 'completed' && "border-success shadow-success/20",
+        status === 'failed' && "border-destructive shadow-destructive/20"
     );
 };
 

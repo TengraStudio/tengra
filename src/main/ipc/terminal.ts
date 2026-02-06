@@ -4,26 +4,18 @@ import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
-let terminalService: TerminalService | null = null;
-
-export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
+export function registerTerminalIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
     ipcMain.setMaxListeners(50);
-    try {
-        terminalService = new TerminalService();
-        appLogger.info('terminal', '[IPC] Terminal service initialized');
-    } catch (error) {
-        appLogger.error('terminal', '[IPC] Failed to initialize terminal service:', error as Error);
-        terminalService = null;
-    }
+    appLogger.info('terminal', '[IPC] Terminal service registered');
 
     // Check availability
     ipcMain.handle('terminal:isAvailable', createIpcHandler('terminal:isAvailable', async () => {
-        return terminalService?.isAvailable() ?? false;
+        return terminalService.isAvailable();
     }));
 
     // Get available shells
     ipcMain.handle('terminal:getShells', createSafeIpcHandler('terminal:getShells', async () => {
-        return terminalService?.getAvailableShells() ?? [];
+        return terminalService.getAvailableShells();
     }, []));
 
     // Create session
@@ -35,9 +27,6 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
         rows?: number
     }) => {
         appLogger.info('ipc', `terminal:create called for session ${options.id}`);
-        if (!terminalService) {
-            throw new Error('Service not initialized');
-        }
 
         // Validate cols and rows
         if (options.cols !== undefined) {
@@ -65,9 +54,6 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
 
     // Write to session
     ipcMain.handle('terminal:write', createSafeIpcHandler('terminal:write', async (_event: IpcMainInvokeEvent, sessionId: string, data: string) => {
-        const service = terminalService;
-        if (!service) { return false; }
-
         if (typeof data !== 'string') {
             throw new Error('data must be a string');
         }
@@ -75,12 +61,11 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
             throw new Error('data exceeds maximum size of 1MB');
         }
 
-        return await withRateLimit('terminal', async () => service.write(sessionId, data));
+        return await withRateLimit('terminal', async () => terminalService.write(sessionId, data));
     }, false));
 
     // Resize session
     ipcMain.handle('terminal:resize', createSafeIpcHandler('terminal:resize', async (_event: IpcMainInvokeEvent, sessionId: string, cols: number, rows: number) => {
-        if (!terminalService) { return false; }
         // Validate cols and rows
         if (!Number.isInteger(cols) || cols < 1 || cols > 500) {
             throw new Error('cols must be an integer between 1 and 500');
@@ -93,19 +78,16 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null) {
 
     // Kill session
     ipcMain.handle('terminal:kill', createSafeIpcHandler('terminal:kill', async (_event: IpcMainInvokeEvent, sessionId: string) => {
-        if (!terminalService) { return false; }
         return terminalService.kill(sessionId);
     }, false));
 
     // Get active sessions
     ipcMain.handle('terminal:getSessions', createSafeIpcHandler('terminal:getSessions', async () => {
-        if (!terminalService) { return []; }
         return terminalService.getActiveSessions();
     }, []));
 
     // Read session buffer
     ipcMain.handle('terminal:readBuffer', createSafeIpcHandler('terminal:readBuffer', async (_event: IpcMainInvokeEvent, sessionId: string) => {
-        if (!terminalService) { return ''; }
         return terminalService.getSessionBuffer(sessionId);
     }, ''));
 }

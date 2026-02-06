@@ -19,7 +19,7 @@ const ContainerItem: React.FC<{
         switch (s) {
             case 'running': { return 'text-success bg-success/20'; }
             case 'exited': { return 'text-destructive bg-destructive/20'; }
-            case 'paused': { return 'text-yellow bg-yellow/20'; }
+            case 'paused': { return 'text-warning bg-yellow/20'; }
             default: { return 'text-muted-foreground bg-muted/20'; }
         }
     };

@@ -2,7 +2,7 @@
 import { LLMService } from '@main/services/llm/llm.service';
 import { ChatMessage } from '@main/types/llm.types';
 import { ApiError, AuthenticationError } from '@main/utils/error.util';
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 
@@ -36,12 +36,14 @@ describe('LLMService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        service = new LLMService(
-            mockHttpService as any,
-            mockConfigService as any,
-            mockKeyRotationService as any,
-            mockRateLimitService as any
-        );
+        service = new LLMService({
+            httpService: mockHttpService as any,
+            configService: mockConfigService as any,
+            keyRotationService: mockKeyRotationService as any,
+            rateLimitService: mockRateLimitService as any,
+            settingsService: { getSettings: vi.fn().mockReturnValue({}) } as any,
+            proxyService: { getEmbeddedProxyStatus: vi.fn().mockReturnValue({}), getProxyKey: vi.fn().mockResolvedValue('test-key') } as any
+        });
         // Inject mock image persistence (private property hack for testing)
         (service as any).imagePersistence = mockImagePersistence;
     });
@@ -104,6 +106,30 @@ describe('LLMService', () => {
     describe('chatAnthropic', () => {
         it('should throw AuthenticationError if API key is missing', async () => {
             await expect(service.chatAnthropic([])).rejects.toThrow(AuthenticationError);
+        });
+        describe('chat (routing)', () => {
+            it('should route codex provider to proxy', async () => {
+                const mockResponse = {
+                    ok: true,
+                    json: async () => ({
+                        choices: [{ message: { content: 'Proxy response', role: 'assistant' } }],
+                        usage: { completion_tokens: 5 }
+                    })
+                };
+                mockHttpService.fetch.mockResolvedValue(mockResponse);
+
+                const messages: ChatMessage[] = [{ role: 'user', content: 'Hi' }];
+                await service.chat(messages, 'gpt-4o', undefined, 'codex');
+
+                expect(mockHttpService.fetch).toHaveBeenCalledWith(
+                    expect.stringContaining('http://localhost:8317/v1/chat/completions'),
+                    expect.objectContaining({
+                        headers: expect.objectContaining({
+                            'Authorization': 'Bearer test-key'
+                        })
+                    })
+                );
+            });
         });
     });
 });

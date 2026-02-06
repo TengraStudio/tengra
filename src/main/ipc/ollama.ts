@@ -4,6 +4,7 @@ import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
+import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -36,8 +37,9 @@ export function registerOllamaIpc(options: {
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
     proxyService?: ProxyService
+    rateLimitService?: RateLimitService
 }) {
-    const { localAIService, ollamaService, ollamaHealthService } = options;
+    const { localAIService, ollamaService, ollamaHealthService, rateLimitService } = options;
 
     ipcMain.handle('ollama:tags', async () => []); // Moved to ModelRegistryService via Rust
 
@@ -85,10 +87,18 @@ export function registerOllamaIpc(options: {
     }
 
     ipcMain.handle('ollama:chat', async (_event, messages, model) => {
+        // SEC-011: Rate limit LLM chat calls
+        if (rateLimitService) {
+            await rateLimitService.waitForToken('ollama:chat');
+        }
         return await localAIService.ollamaChat(model, messages);
     });
 
     ipcMain.handle('ollama:chatStream', async (event, messages, model) => {
+        // SEC-011: Rate limit LLM chat stream calls
+        if (rateLimitService) {
+            await rateLimitService.waitForToken('ollama:chat');
+        }
         try {
             const res = await localAIService.ollamaChat(model, messages);
             if (res.message.content) {
@@ -103,6 +113,10 @@ export function registerOllamaIpc(options: {
     });
 
     ipcMain.handle('ollama:getLibraryModels', async () => {
+        // SEC-011: Rate limit model listing operations
+        if (rateLimitService) {
+            await rateLimitService.waitForToken('ollama:operation');
+        }
         try {
             if (ollamaService) {
                 return await ollamaService.getLibraryModels();

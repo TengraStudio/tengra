@@ -1,9 +1,9 @@
-﻿import { appLogger } from '@main/logging/logger';
-import { Speaker,Volume2 } from 'lucide-react';
+﻿import { Speaker,Volume2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo,useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
 import { AppSettings } from '@/types/settings';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface SpeechTabProps {
     settings: AppSettings | null
@@ -66,7 +66,7 @@ interface VoiceSectionProps {
 const VoiceSection: React.FC<VoiceSectionProps> = ({ settings, voices, updateSpeech, t }) => (
     <div className="space-y-4">
         <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">{t('speech.voiceSelection')}</label>
+            <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2 block">{t('speech.voiceSelection')}</label>
             <SelectDropdown
                 value={settings?.speech?.voiceURI ?? ''}
                 options={[
@@ -78,7 +78,7 @@ const VoiceSection: React.FC<VoiceSectionProps> = ({ settings, voices, updateSpe
         </div>
         <div>
             <div className="flex justify-between mb-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('speech.speed')}</label>
+                <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{t('speech.speed')}</label>
                 <span className="text-xs font-mono text-primary font-bold">{settings?.speech?.rate ?? 1}x</span>
             </div>
             <input type="range" min="0.5" max="2" step="0.1" value={settings?.speech?.rate ?? 1} onChange={e => updateSpeech({ rate: parseFloat(e.target.value) })} className="w-full accent-primary" />
@@ -97,7 +97,7 @@ interface DeviceSectionProps {
 const DeviceSection: React.FC<DeviceSectionProps> = ({ settings, inputDevices, outputDevices, updateSpeech, t }) => (
     <div className="space-y-4">
         <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-1.5">
+            <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-1.5">
                 <Speaker className="w-3 h-3" /> {t('speech.microphone')}
             </label>
             <SelectDropdown
@@ -107,7 +107,7 @@ const DeviceSection: React.FC<DeviceSectionProps> = ({ settings, inputDevices, o
             />
         </div>
         <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-1.5">
+            <label className="text-xxs font-black uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-1.5">
                 <Speaker className="w-3 h-3" /> {t('speech.speakerSelection')}
             </label>
             <SelectDropdown

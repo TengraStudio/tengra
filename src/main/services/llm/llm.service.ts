@@ -2,10 +2,12 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
+import { ProxyService } from '@main/services/proxy/proxy.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ConfigService } from '@main/services/system/config.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, NetworkError } from '@main/utils/error.util';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
@@ -21,7 +23,6 @@ import { getContextWindowService } from './context-window.service';
 
 // QUAL-002-3, QUAL-002-4: Extract configurable provider URLs
 const GROQ_API_BASE_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const OLLAMA_DEFAULT_BASE_URL = 'http://127.0.0.1:11434/v1';
 
 const DEFAULT_MODELS = {
     OPENAI: 'gpt-4o',
@@ -39,6 +40,7 @@ export interface LLMChatOptions {
     n?: number; // Number of completions to generate
     temperature?: number; // Temperature for response randomness (0-2)
     systemMode?: SystemMode;
+    reasoningEffort?: string;
     projectRoot?: string;
     signal?: AbortSignal;
 }
@@ -80,6 +82,16 @@ export interface HFModel {
     lastModified: string;
 }
 
+export interface LLMServiceDependencies {
+    httpService: HttpService;
+    configService: ConfigService;
+    keyRotationService: KeyRotationService;
+    rateLimitService: RateLimitService;
+    settingsService: SettingsService;
+    proxyService: ProxyService;
+    tokenService?: TokenService;
+}
+
 /**
  * Service for interacting with multiple Large Language Model providers.
  */
@@ -89,8 +101,7 @@ export class LLMService {
     private anthropicApiKey: string = '';
 
     private groqApiKey: string = '';
-    private proxyUrl: string = 'http://localhost:8317/v1';
-    private proxyKey: string = '';
+    private nvidiaApiKey: string = '';
     private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
     private imagePersistence: ImagePersistenceService;
@@ -98,13 +109,7 @@ export class LLMService {
     // Circuit Breakers
     private breakers: Record<string, CircuitBreaker>;
 
-    constructor(
-        private httpService: HttpService,
-        private configService: ConfigService,
-        private keyRotationService: KeyRotationService,
-        private rateLimitService: RateLimitService,
-        private tokenService?: TokenService
-    ) {
+    constructor(private deps: LLMServiceDependencies) {
         // The dataService parameter was removed, so we need to adjust the ImagePersistenceService initialization.
         // Assuming ImagePersistenceService can be initialized without dataService if it's truly unused by LLMService.
         // If dataService is still needed by ImagePersistenceService, it should not be removed from the constructor.
@@ -118,15 +123,17 @@ export class LLMService {
             groq: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 60000, serviceName: 'Groq' })
         };
 
-        // Initialize config from env if available (ConfigService waterfall)
-        this.openaiApiKey = this.configService.get('OPENAI_API_KEY', '');
-        this.anthropicApiKey = this.configService.get('ANTHROPIC_API_KEY', '');
+        const { configService } = this.deps;
 
-        this.groqApiKey = this.configService.get('GROQ_API_KEY', '');
+        // Initialize config from env if available (ConfigService waterfall)
+        this.openaiApiKey = configService.get('OPENAI_API_KEY', '');
+        this.anthropicApiKey = configService.get('ANTHROPIC_API_KEY', '');
+
+        this.groqApiKey = configService.get('GROQ_API_KEY', '');
+        this.nvidiaApiKey = configService.get('NVIDIA_API_KEY', '');
 
         // Internal default keys
-        this.proxyKey = this.configService.get('PROXY_API_KEY', 'connected');
-        this.opencodeApiKey = this.configService.get('OPENCODE_API_KEY', 'public');
+        this.opencodeApiKey = configService.get('OPENCODE_API_KEY', 'public');
     }
 
     /**
@@ -162,25 +169,26 @@ export class LLMService {
 
     setOpenAIApiKey(key: string) {
         this.openaiApiKey = key;
-        this.keyRotationService.initializeProviderKeys('openai', key);
+        this.deps.keyRotationService.initializeProviderKeys('openai', key);
     }
     setOpenAIBaseUrl(url: string) { this.openaiBaseUrl = url.replace(/\/$/, ''); }
     setAnthropicApiKey(key: string) {
         this.anthropicApiKey = key;
-        this.keyRotationService.initializeProviderKeys('anthropic', key);
+        this.deps.keyRotationService.initializeProviderKeys('anthropic', key);
     }
 
     setGroqApiKey(key: string) {
         this.groqApiKey = key;
-        this.keyRotationService.initializeProviderKeys('groq', key);
+        this.deps.keyRotationService.initializeProviderKeys('groq', key);
     }
-    setProxySettings(url: string, key: string) {
-        this.proxyUrl = url.replace(/\/$/, '');
-        this.proxyKey = key;
+
+    setNvidiaApiKey(key: string) {
+        this.nvidiaApiKey = key;
+        this.deps.keyRotationService.initializeProviderKeys('nvidia', key);
     }
 
     isOpenAIConnected(): boolean {
-        return !!this.openaiApiKey || !!this.keyRotationService.getCurrentKey('openai');
+        return !!this.openaiApiKey || !!this.deps.keyRotationService.getCurrentKey('openai');
     }
 
     private getDispatcher(): Agent | null {
@@ -218,24 +226,24 @@ export class LLMService {
     }
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, n, signal } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, n, signal, systemMode, reasoningEffort } = options;
 
         // LLM-001-3: Context overflow mitigation
         const contextService = getContextWindowService();
         const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
 
-        const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
+        const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken(provider ?? 'openai');
+        await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
         const execute = async () => {
-            const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: false, n });
+            const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: false, n, systemMode, reasoningEffort });
             const requestInit = this.createOpenAIRequest(body, config.apiKey);
             if (signal) { requestInit.signal = signal; }
 
             const response = await this.breakers.openai.execute(() =>
-                this.httpService.fetch(endpoint, {
+                this.deps.httpService.fetch(endpoint, {
                     ...requestInit,
                     retryCount: 2,
                     timeoutMs: 300000
@@ -244,11 +252,11 @@ export class LLMService {
 
             if (!response.ok) {
                 // Seamless retry for 401/403
-                if ((response.status === 401 || response.status === 403) && provider && this.tokenService) {
+                if ((response.status === 401 || response.status === 403) && provider && this.deps.tokenService) {
                     appLogger.info('LLMService', `Unauthorized (${response.status}) for ${provider}, attempting proactive refresh and retry...`);
                     try {
-                        await this.tokenService.ensureFreshToken(provider, true);
-                        const retryResponse = await this.httpService.fetch(endpoint, {
+                        await this.deps.tokenService.ensureFreshToken(provider, true);
+                        const retryResponse = await this.deps.httpService.fetch(endpoint, {
                             ...requestInit,
                             retryCount: 1,
                             timeoutMs: 300000
@@ -282,21 +290,22 @@ export class LLMService {
     }
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, signal } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, signal, systemMode, reasoningEffort } = options;
 
         const contextService = getContextWindowService();
         const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
 
-        const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride);
+        const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
-        await this.rateLimitService.waitForToken(provider ?? 'openai');
+        await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
-        const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: true });
-        const requestInit = this.createOpenAIRequest(body, config.apiKey);
+        const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: true, systemMode, reasoningEffort });
+        const acceptHeader = provider === 'nvidia' ? 'application/json' : 'text/event-stream';
+        const requestInit = this.createOpenAIRequest(body, config.apiKey, { 'Accept': acceptHeader });
         if (signal) { requestInit.signal = signal; }
 
-        const response = await this.httpService.fetch(endpoint, {
+        const response = await this.deps.httpService.fetch(endpoint, {
             ...requestInit,
             retryCount: 2,
             timeoutMs: 300000
@@ -310,12 +319,12 @@ export class LLMService {
         yield* this.handleOpenAIStreamResponse(response);
     }
 
-    private async *handleOpenAIStreamErrorRetry(response: Response, endpoint: string, requestInit: HttpRequestOptions, model: string, provider?: string) {
-        if ((response.status === 401 || response.status === 403) && provider && this.tokenService) {
+    private async * handleOpenAIStreamErrorRetry(response: Response, endpoint: string, requestInit: HttpRequestOptions, model: string, provider?: string) {
+        if ((response.status === 401 || response.status === 403) && provider && this.deps.tokenService) {
             appLogger.info('LLMService', `Unauthorized (${response.status}) for ${provider}, attempting proactive refresh and retry...`);
             try {
-                await this.tokenService.ensureFreshToken(provider, true);
-                const retryResponse = await this.httpService.fetch(endpoint, {
+                await this.deps.tokenService.ensureFreshToken(provider, true);
+                const retryResponse = await this.deps.httpService.fetch(endpoint, {
                     ...requestInit,
                     retryCount: 1,
                     timeoutMs: 300000
@@ -332,7 +341,7 @@ export class LLMService {
         await this.handleOpenAIStreamError(response, model, provider);
     }
 
-    private async *handleOpenAIStreamResponse(response: Response) {
+    private async * handleOpenAIStreamResponse(response: Response) {
         try {
             for await (const chunk of StreamParser.parseChatStream(response)) {
                 const processedChunk = await this.processStreamChunk(chunk);
@@ -361,7 +370,7 @@ export class LLMService {
     }
 
     async chatOpenCode(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
-        return this.chatOpenCodeRequest(messages, model, tools) as Promise<OpenAIResponse>;
+        return this.chatOpenCodeRequest(messages, model, tools);
     }
 
     private async chatOpenCodeRequest(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): Promise<OpenAIResponse> {
@@ -380,7 +389,7 @@ export class LLMService {
         const body = { model, input: normalized, stream: false };
 
         const response = await this.breakers.openai.execute(() =>
-            this.httpService.fetch(endpoint, {
+            this.deps.httpService.fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                 body: JSON.stringify(body),
@@ -397,28 +406,29 @@ export class LLMService {
         return this.parseOpenCodeResponse(json);
     }
 
-    async * chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[]): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
+    async * chatOpenCodeStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], signal?: AbortSignal): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
         const apiKey = this.opencodeApiKey;
         const baseUrl = 'https://opencode.ai/zen/v1';
 
         if (model === 'gpt-5-nano') {
-            yield* this.handleOpenCodeZenStream(messages, model, apiKey, baseUrl);
+            yield* this.handleOpenCodeZenStream(messages, model, apiKey, baseUrl, signal);
         } else {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl, apiKey, provider: 'opencode' });
+            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl, apiKey, provider: 'opencode', signal });
         }
     }
 
-    private async * handleOpenCodeZenStream(messages: Array<Message | ChatMessage>, model: string, apiKey: string, baseUrl: string): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
+    private async * handleOpenCodeZenStream(messages: Array<Message | ChatMessage>, model: string, apiKey: string, baseUrl: string, signal?: AbortSignal): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string }> {
         const endpoint = `${baseUrl}/responses`;
         const normalized = MessageNormalizer.normalizeOpenCodeResponsesMessages(messages);
         const body = { model, input: normalized, stream: true };
 
-        const response = await this.httpService.fetch(endpoint, {
+        const response = await this.deps.httpService.fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify(body),
             retryCount: 2,
-            timeoutMs: 300000
+            timeoutMs: 300000,
+            signal
         });
 
         if (!response.ok) {
@@ -444,14 +454,14 @@ export class LLMService {
     }
 
     async chatAnthropic(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.ANTHROPIC): Promise<OpenAIResponse> {
-        const key = this.keyRotationService.getCurrentKey('anthropic') ?? this.anthropicApiKey;
+        const key = this.deps.keyRotationService.getCurrentKey('anthropic') ?? this.anthropicApiKey;
         if (!key) { throw new AuthenticationError('Anthropic API Key not set'); }
-        await this.rateLimitService.waitForToken('anthropic');
+        await this.deps.rateLimitService.waitForToken('anthropic');
 
         try {
             const body = this.buildAnthropicBody(messages, model);
             const response = await this.breakers.anthropic.execute(() =>
-                this.httpService.fetch('https://api.anthropic.com/v1/messages', {
+                this.deps.httpService.fetch('https://api.anthropic.com/v1/messages', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
                     body: JSON.stringify(body),
@@ -468,7 +478,7 @@ export class LLMService {
         const data = await response.json() as JsonObject;
         const error = data['error'] as JsonObject | undefined;
         if (error) {
-            if (response.status === 401) { this.keyRotationService.rotateKey('anthropic'); }
+            if (response.status === 401) { this.deps.keyRotationService.rotateKey('anthropic'); }
             throw new ApiError((error['message'] as string) || 'Anthropic API Error', 'anthropic', response.status, false, { type: error['type'] ?? null });
         }
         const content = data['content'] as Array<{ text: string }> | undefined;
@@ -481,12 +491,12 @@ export class LLMService {
     async chatGroq(messages: Array<Message | ChatMessage>, model: string = DEFAULT_MODELS.GROQ): Promise<OpenAIResponse> {
         const key = this.getGroqKey();
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
-        await this.rateLimitService.waitForToken('groq');
+        await this.deps.rateLimitService.waitForToken('groq');
 
         try {
             const body = this.buildOpenAIBody(messages, { model, provider: 'groq' });
             const response = await this.breakers.groq.execute(() =>
-                this.httpService.fetch(GROQ_API_BASE_URL, {
+                this.deps.httpService.fetch(GROQ_API_BASE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
                     body: JSON.stringify(body),
@@ -506,8 +516,20 @@ export class LLMService {
         }
     }
 
+    async chatNvidia(messages: Array<Message | ChatMessage>, model: string): Promise<OpenAIResponse> {
+        const key = this.getNvidiaKey();
+        // Nvidia uses OpenAI compatible endpoint
+        return this.chatOpenAI(messages, { model, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: key, provider: 'nvidia' });
+    }
+
+    private getNvidiaKey(): string {
+        const key = this.deps.keyRotationService.getCurrentKey('nvidia') ?? this.nvidiaApiKey;
+        if (!key) { throw new AuthenticationError('Nvidia API Key not set'); }
+        return key;
+    }
+
     private getGroqKey(): string {
-        const key = this.keyRotationService.getCurrentKey('groq') ?? this.groqApiKey;
+        const key = this.deps.keyRotationService.getCurrentKey('groq') ?? this.groqApiKey;
         if (!key) { throw new AuthenticationError('Groq API Key not set'); }
         return key;
     }
@@ -517,37 +539,76 @@ export class LLMService {
         return new NetworkError(error instanceof Error ? error.message : String(error), { provider: 'groq' });
     }
 
-    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number }): Promise<OpenAIResponse> {
+    async * chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, reasoningEffort?: string, temperature?: number, signal?: AbortSignal, projectRoot?: string }) {
         const p = (provider ?? '').toLowerCase();
+        const config = await this.getRouteConfig(p, model, tools, options);
+
+        if (p.includes('opencode')) {
+            yield* this.chatOpenCodeStream(messages, model, tools);
+        } else {
+            yield* this.chatOpenAIStream(messages, {
+                model, tools,
+                baseUrl: config.baseUrl,
+                apiKey: config.apiKey,
+                provider: config.provider,
+                temperature: config.temperature,
+                systemMode: options?.systemMode,
+                reasoningEffort: options?.reasoningEffort,
+                signal: options?.signal,
+                projectRoot: options?.projectRoot
+            });
+        }
+    }
+
+    private async getRouteConfig(provider: string, model: string, tools?: ToolDefinition[], options?: { temperature?: number, projectRoot?: string }) {
+        const p = provider.toLowerCase();
         const temp = options?.temperature;
+        const projectRoot = options?.projectRoot;
+
+        if (p.includes('nvidia')) {
+            return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: this.getNvidiaKey(), provider: 'nvidia', temperature: temp, projectRoot };
+        }
+
+        if (p.includes('antigravity')) {
+            const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
+            const proxyUrl = `http://localhost:${proxyStatus.port ?? 8317}/v1`;
+            const proxyKey = await this.deps.proxyService.getProxyKey();
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+        }
+
+        if (p.includes('ollama')) {
+            const settings = this.deps.settingsService.getSettings();
+            const ollamaUrl = (settings['ollama'] as JsonObject | undefined)?.url ?? 'http://localhost:11434';
+            const ollamaBaseUrl = `${(ollamaUrl as string).replace(/\/$/, '')}/v1`;
+            return { model, tools, baseUrl: ollamaBaseUrl, apiKey: 'ollama', provider, temperature: temp, projectRoot };
+        }
+
+        // Route Codex/OpenAI through embedded proxy
+        if (p.includes('codex') || p.includes('openai')) {
+            const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
+            const proxyUrl = `http://localhost:${proxyStatus.port ?? 8317}/v1`;
+            const proxyKey = await this.deps.proxyService.getProxyKey();
+            return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
+        }
+
+        return { model, tools, provider, temperature: temp, projectRoot, baseUrl: undefined, apiKey: undefined };
+    }
+
+    async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number, projectRoot?: string }): Promise<OpenAIResponse> {
+        const p = (provider ?? '').toLowerCase();
+
         if (p.includes('anthropic') || p.includes('claude')) {
             return this.chatAnthropic(messages, model);
         } else if (p.includes('groq')) {
             return this.chatGroq(messages, model);
-        } else if (p.includes('antigravity')) {
-            return this.chatOpenAI(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp });
-        } else if (p.includes('ollama')) {
-            return this.chatOpenAI(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp });
-        } else {
-            return this.chatOpenAI(messages, { model, tools, provider, temperature: temp });
-        }
-    }
+        } else if (p.includes('opencode')) {
+            return this.chatOpenCode(messages, model, tools);
+        } else if (p.includes('nvidia')) {
+            return this.chatNvidia(messages, model);
+        } 
 
-    async * chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, temperature?: number, signal?: AbortSignal }) {
-        const p = (provider ?? '').toLowerCase();
-        const temp = options?.temperature;
-        const systemMode = options?.systemMode;
-        const signal = options?.signal;
-
-        if (p.includes('opencode')) {
-            yield* this.chatOpenCodeStream(messages, model, tools);
-        } else if (p.includes('antigravity')) {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: this.proxyUrl, apiKey: this.proxyKey, provider, temperature: temp, systemMode, signal });
-        } else if (p.includes('ollama')) {
-            yield* this.chatOpenAIStream(messages, { model, tools, baseUrl: OLLAMA_DEFAULT_BASE_URL, apiKey: 'ollama', provider, temperature: temp, systemMode, signal });
-        } else {
-            yield* this.chatOpenAIStream(messages, { model, tools, provider, temperature: temp, systemMode, signal });
-        }
+        const config = await this.getRouteConfig(p, model, tools, options);
+        return this.chatOpenAI(messages, config);
     }
 
     async searchHFModels(query: string = '', limit: number = 20, page: number = 0, sort: string = 'downloads'): Promise<{ models: HFModel[], total: number }> {
@@ -557,7 +618,7 @@ export class LLMService {
                 search: searchQuery, filter: 'gguf', limit: limit.toString(), full: 'true', sort: hfSort, direction: '-1', offset: (page * limit).toString()
             });
 
-            const response = await this.httpService.fetch(`https://huggingface.co/api/models?${params.toString()}`, { retryCount: 2 });
+            const response = await this.deps.httpService.fetch(`https://huggingface.co/api/models?${params.toString()}`, { retryCount: 2 });
             const totalCount = parseInt(response.headers.get('x-total-count') ?? '0');
             const data = await response.json() as HuggingFaceApiModel[];
 
@@ -601,7 +662,7 @@ export class LLMService {
     }
 
     async getEmbeddings(input: string, model: string = DEFAULT_MODELS.EMBEDDING): Promise<number[]> {
-        const key = this.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
+        const key = this.deps.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
         const baseUrl = this.openaiBaseUrl;
 
         if (!key && !baseUrl.match(/(localhost|127\.0\.0\.1)/)) {
@@ -609,7 +670,7 @@ export class LLMService {
         }
 
         try {
-            const response = await this.httpService.fetch(`${baseUrl}/embeddings`, {
+            const response = await this.deps.httpService.fetch(`${baseUrl}/embeddings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
                 body: JSON.stringify({ model, input }),
@@ -642,9 +703,9 @@ export class LLMService {
 
     async getOpenAIModels(): Promise<OpenAIModelDefinition[]> {
         try {
-            const key = this.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
+            const key = this.deps.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
             const headers: Record<string, string> = { 'Authorization': `Bearer ${key}` };
-            const response = await this.httpService.fetch(`${this.openaiBaseUrl}/models`, { method: 'GET', headers, retryCount: 1 });
+            const response = await this.deps.httpService.fetch(`${this.openaiBaseUrl}/models`, { method: 'GET', headers, retryCount: 1 });
             if (!response.ok) { return []; }
             const json = await response.json() as { data: OpenAIModelDefinition[] };
             return json.data;
@@ -665,6 +726,7 @@ export class LLMService {
             'claude': ['anthropic/', 'claude/'],
             'openai': ['openai/'],
             'google': ['google/', 'gemini/'],
+            'nvidia': ['nvidia/'],
             'gemini': ['google/', 'gemini/'],
             // 'antigravity': ['antigravity/']
         };
@@ -688,9 +750,10 @@ export class LLMService {
         return target;
     }
 
-    private getOpenAISettings(baseUrlOverride?: string, apiKeyOverride?: string) {
+    private getOpenAISettings(baseUrlOverride?: string, apiKeyOverride?: string, provider?: string) {
         const baseUrl = baseUrlOverride ?? this.openaiBaseUrl;
-        const apiKey = apiKeyOverride ?? this.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
+        const keyProvider = (provider === 'openai' || !provider) ? 'openai' : provider;
+        const apiKey = apiKeyOverride ?? this.deps.keyRotationService.getCurrentKey(keyProvider) ?? this.openaiApiKey;
 
         if (!apiKey && !baseUrl.match(/(localhost|127\.0\.0\.1)/)) {
             throw new AuthenticationError('OpenAI API Key not set');
@@ -707,51 +770,63 @@ export class LLMService {
         n?: number;
         temperature?: number;
         systemMode?: SystemMode;
+        reasoningEffort?: string;
     }) {
-        const { model, tools, provider, stream = false, n = 1, temperature, systemMode } = options;
+        const { model, tools, provider, stream = false, n = 1, temperature, systemMode, reasoningEffort } = options;
         const normalizedMessages = MessageNormalizer.normalizeOpenAIMessages(messages, model);
         const finalModel = this.getPreparedModelName(model, provider);
 
         const body: Record<string, unknown> = {
             model: finalModel,
             messages: normalizedMessages,
-            provider,
             stream
         };
 
-        this.applyReasoningEffort(body, finalModel, systemMode);
-
-        if (stream) {
-            body.stream_options = { include_usage: true };
-        }
-
-        if (temperature !== undefined) {
-            body.temperature = temperature;
-        }
-
-        if (n > 1) {
-            body.n = n;
-        }
-
-        if (tools && tools.length > 0) {
-            body.tools = this.sanitizeTools(tools);
-            body.tool_choice = 'auto';
-        }
+        this.applyReasoningEffort(body, finalModel, systemMode, reasoningEffort);
+        this.applyStreamOptions(body, stream, provider);
+        this.applyOptionalOpenAIParams(body, n, provider, temperature);
+        this.applyTools(body, tools);
 
         return body;
     }
 
-    private getPreparedModelName(model: string, provider?: string): string {
-        let finalModel = this.normalizeModelName(model, provider);
-        if (finalModel.endsWith('-thinking')) {
-            finalModel += '(8192)';
+    private applyStreamOptions(body: Record<string, unknown>, stream: boolean, provider?: string): void {
+        if (stream && provider !== 'nvidia') {
+            body.stream_options = { include_usage: true };
         }
-        return finalModel;
     }
 
-    private applyReasoningEffort(body: Record<string, unknown>, model: string, systemMode?: SystemMode): void {
+    private applyOptionalOpenAIParams(body: Record<string, unknown>, n: number, provider?: string, temperature?: number): void {
+        if (temperature !== undefined) {
+            body.temperature = temperature;
+        }
+        if (n > 1) {
+            body.n = n;
+        }
+        if (provider === 'nvidia' && !body.max_tokens) {
+            body.max_tokens = 4096;
+        }
+    }
+
+    private applyTools(body: Record<string, unknown>, tools?: ToolDefinition[]): void {
+        if (tools && tools.length > 0) {
+            body.tools = this.sanitizeTools(tools);
+            body.tool_choice = 'auto';
+        }
+    }
+
+    private getPreparedModelName(model: string, provider?: string): string {
+        return this.normalizeModelName(model, provider);
+    }
+
+    private applyReasoningEffort(body: Record<string, unknown>, model: string, systemMode?: SystemMode, reasoningEffort?: string): void {
         const isReasoningModel = model.startsWith('o1') || model.startsWith('o3');
         if (!isReasoningModel) { return; }
+
+        if (reasoningEffort) {
+            body.reasoning_effort = reasoningEffort;
+            return;
+        }
 
         const effortMap: Record<string, string> = {
             'thinking': 'high',
@@ -776,11 +851,12 @@ export class LLMService {
         });
     }
 
-    private createOpenAIRequest(body: unknown, apiKey: string) {
+    private createOpenAIRequest(body: unknown, apiKey: string, extraHeaders: Record<string, string> = {}) {
         const dispatcher = this.getDispatcher();
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${apiKey}`,
+            ...extraHeaders
         };
 
         const requestInit: RequestInit & { dispatcher?: Agent } = {
@@ -795,7 +871,7 @@ export class LLMService {
     private async handleOpenAIError(response: Response) {
         const errorText = await response.text();
         if (response.status === 401 || response.status === 403) {
-            this.keyRotationService.rotateKey('openai');
+            this.deps.keyRotationService.rotateKey('openai');
         }
         throw new ApiError(errorText || `HTTP ${response.status}`, 'openai', response.status, response.status >= 500 || response.status === 429);
     }
@@ -841,7 +917,7 @@ export class LLMService {
     private async handleOpenAIStreamError(response: Response, model: string, provider?: string) {
         const errorText = await response.text().catch(() => '');
         if (response.status === 401 || response.status === 403) {
-            this.keyRotationService.rotateKey('openai');
+            this.deps.keyRotationService.rotateKey('openai');
         }
 
         if (response.status === 429) {
@@ -927,7 +1003,7 @@ export class LLMService {
 
     private parseOpenCodeToolCall(call: JsonObject): ToolCall {
         return {
-            id: (call['id'] as string) || `call_${Math.random().toString(36).substring(2, 11)}`,
+            id: (call['id'] as string) || `call_${crypto.randomUUID().substring(0, 8)}`,
             type: 'function',
             function: {
                 name: call['name'] as string,

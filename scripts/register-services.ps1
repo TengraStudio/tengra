@@ -3,7 +3,8 @@
 
 param(
     [switch]$Uninstall,
-    [switch]$Status
+    [switch]$Status,
+    [switch]$Silent
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,129 +29,133 @@ if (-not (Test-Path $BinDir)) {
     $BinDir = Join-Path $LocalAppData "Programs\Tandem\resources\bin"
 }
 
+function Write-Log {
+    param([string]$Message, [string]$Color = "White")
+    if (-not $Silent) {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
+
 function Get-ServiceStatus {
-    Write-Host "`n=== Tandem Services Status ===" -ForegroundColor Cyan
-    
+    Write-Log "`n=== Tandem Services Status ===" "Cyan"
+
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
         $processName = $exe -replace '\.exe$',''
         $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
-        
+
         # Check registry
         $regValue = Get-ItemProperty -Path $RegistryPath -Name $name -ErrorAction SilentlyContinue
-        
-        Write-Host "`n$name :" -ForegroundColor Yellow
-        
+
+        Write-Log "`n$name :" "Yellow"
+
         if ($regValue) {
-            Write-Host "  Startup Entry: " -NoNewline
-            Write-Host "Registered" -ForegroundColor Green
+            Write-Log "  Startup Entry: Registered" "Green"
         } else {
-            Write-Host "  Startup Entry: " -NoNewline
-            Write-Host "Not Registered" -ForegroundColor Red
+            Write-Log "  Startup Entry: Not Registered" "Red"
         }
-        
+
         if ($process) {
-            Write-Host "  Process: " -NoNewline
-            Write-Host "Running (PID: $($process.Id))" -ForegroundColor Green
+            Write-Log "  Process: Running (PID: $($process.Id))" "Green"
         } else {
-            Write-Host "  Process: " -NoNewline
-            Write-Host "Not Running" -ForegroundColor Gray
+            Write-Log "  Process: Not Running" "Gray"
         }
-        
+
         # Check port file
         $AppData = [Environment]::GetFolderPath("ApplicationData")
         $serviceName = $exe -replace 'tandem-','' -replace '\.exe$',''
         $PortFile = Join-Path $AppData "Tandem\services\$serviceName.port"
         if (Test-Path $PortFile) {
             $port = Get-Content $PortFile
-            Write-Host "  Listening on: " -NoNewline
-            Write-Host "Port $port" -ForegroundColor Green
+            Write-Log "  Listening on: Port $port" "Green"
         }
     }
 }
 
 function Install-Services {
-    Write-Host "`n=== Installing Tandem Services ===" -ForegroundColor Cyan
-    
+    Write-Log "`n=== Installing Tandem Services ===" "Cyan"
+
     if (-not (Test-Path $BinDir)) {
-        Write-Host "Error: Binary directory not found at $BinDir" -ForegroundColor Red
+        Write-Log "Error: Binary directory not found at $BinDir" "Red"
         exit 1
     }
-    
+
     # Ensure services directory exists
     $AppData = [Environment]::GetFolderPath("ApplicationData")
     $ServicesDir = Join-Path $AppData "Tandem\services"
     if (-not (Test-Path $ServicesDir)) {
         New-Item -ItemType Directory -Force -Path $ServicesDir | Out-Null
     }
-    
+
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
         $exePath = Join-Path $BinDir $exe
-        
+
         if (-not (Test-Path $exePath)) {
-            Write-Host "Warning: $exe not found at $exePath" -ForegroundColor Yellow
+            Write-Log "Warning: $exe not found at $exePath" "Yellow"
             continue
         }
-        
-        Write-Host "`nRegistering $name..." -ForegroundColor Yellow
-        
+
+        Write-Log "`nRegistering $name..." "Yellow"
+
         # Add to registry (runs at login)
         Set-ItemProperty -Path $RegistryPath -Name $name -Value "`"$exePath`""
-        Write-Host "  Added to Windows Startup" -ForegroundColor Green
-        
-        # Start the service now
-        $processName = $exe -replace '\.exe$',''
-        $existing = Get-Process -Name $processName -ErrorAction SilentlyContinue
-        if (-not $existing) {
-            Write-Host "  Starting service..." -ForegroundColor Gray
-            Start-Process -FilePath $exePath -WindowStyle Hidden
-            Start-Sleep -Milliseconds 500
-            
-            $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
-            if ($process) {
-                Write-Host "  Service started (PID: $($process.Id))" -ForegroundColor Green
+        Write-Log "  Added to Windows Startup" "Green"
+
+        # Start the service now (skip in silent mode during installer)
+        if (-not $Silent) {
+            $processName = $exe -replace '\.exe$',''
+            $existing = Get-Process -Name $processName -ErrorAction SilentlyContinue
+            if (-not $existing) {
+                Write-Log "  Starting service..." "Gray"
+                Start-Process -FilePath $exePath -WindowStyle Hidden
+                Start-Sleep -Milliseconds 500
+
+                $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Log "  Service started (PID: $($process.Id))" "Green"
+                }
+            } else {
+                Write-Log "  Service already running (PID: $($existing.Id))" "Cyan"
             }
-        } else {
-            Write-Host "  Service already running (PID: $($existing.Id))" -ForegroundColor Cyan
         }
     }
-    
-    Write-Host "`n=== Installation Complete ===" -ForegroundColor Green
-    Write-Host "Services will start automatically on Windows login." -ForegroundColor Cyan
+
+    Write-Log "`n=== Installation Complete ===" "Green"
+    Write-Log "Services will start automatically on Windows login." "Cyan"
 }
 
 function Uninstall-Services {
-    Write-Host "`n=== Uninstalling Tandem Services ===" -ForegroundColor Cyan
-    
+    Write-Log "`n=== Uninstalling Tandem Services ===" "Cyan"
+
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
         $processName = $exe -replace '\.exe$',''
-        
+
         # Stop the process if running
         $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
         if ($process) {
-            Write-Host "Stopping $name (PID: $($process.Id))..." -ForegroundColor Yellow
+            Write-Log "Stopping $name (PID: $($process.Id))..." "Yellow"
             Stop-Process -Id $process.Id -Force
         }
-        
+
         # Remove from registry
         $regValue = Get-ItemProperty -Path $RegistryPath -Name $name -ErrorAction SilentlyContinue
         if ($regValue) {
             Remove-ItemProperty -Path $RegistryPath -Name $name
-            Write-Host "Removed $name from Windows Startup" -ForegroundColor Green
+            Write-Log "Removed $name from Windows Startup" "Green"
         }
     }
-    
+
     # Clean up port files
     $AppData = [Environment]::GetFolderPath("ApplicationData")
     $ServicesDir = Join-Path $AppData "Tandem\services"
     if (Test-Path $ServicesDir) {
         Remove-Item -Path "$ServicesDir\*.port" -Force -ErrorAction SilentlyContinue
-        Write-Host "Cleaned up port files" -ForegroundColor Gray
+        Write-Log "Cleaned up port files" "Gray"
     }
-    
-    Write-Host "`n=== Uninstallation Complete ===" -ForegroundColor Green
+
+    Write-Log "`n=== Uninstallation Complete ===" "Green"
 }
 
 # Main

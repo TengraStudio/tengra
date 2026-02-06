@@ -25,8 +25,8 @@ export function TitleBar({ children, leftContent, className }: TitleBarProps) {
         >
             <div className="flex items-center gap-4" style={noDragStyle}>
                 <div className="flex items-center gap-2">
-                    <img src="@renderer/assets/logo.png" alt="Tandem" className="w-8 h-8 object-contain" />
-                    <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">Tandem</span>
+                    <img src="@renderer/assets/logo.png" alt={t('app.name')} className="w-8 h-8 object-contain" />
+                    <span className="text-xs font-bold tracking-widest text-foreground/80 uppercase">{t('app.name')}</span>
                 </div>
                 {leftContent}
             </div>

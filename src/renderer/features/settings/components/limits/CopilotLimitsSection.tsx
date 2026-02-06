@@ -1,6 +1,7 @@
 import { TrendingUp } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { AppSettings } from '@/types/settings';
 
 import { CopilotLimitItem } from './CopilotLimitItem';
@@ -18,14 +19,15 @@ export const CopilotLimitsSection: React.FC<CopilotLimitsSectionProps> = ({
     copilotLimit,
     updateCopilotLimit
 }) => {
+    const { t } = useTranslation();
     return (
         <div className="bg-card p-6 rounded-xl border border-border">
             <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-bold uppercase text-muted-foreground">Copilot</h3>
+                <h3 className="text-sm font-bold uppercase text-muted-foreground">{t('settings.usageLimits.copilot.title')}</h3>
             </div>
             <div className="text-xs text-muted-foreground mb-4">
-                Current: {copilotRemaining} / {copilotLimit} remaining
+                {t('settings.usageLimits.copilot.current', { remaining: copilotRemaining, limit: copilotLimit })}
             </div>
 
             {(['hourly', 'daily', 'weekly'] as const).map((period) => {

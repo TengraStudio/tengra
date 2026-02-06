@@ -1,9 +1,9 @@
-import { appLogger } from '@main/logging/logger';
 import { Download, FileText, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { Chat, Message } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface ExportModalProps {
     isOpen: boolean
@@ -35,7 +35,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                         <head>
                             <style>
                                 body { font-family: sans-serif; padding: 20px; }
-                                .message { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+                                .message { margin-bottom: 20px; border-bottom: 1px solid border-border; padding-bottom: 10px; }
                                 .role { font-weight: bold; text-transform: capitalize; margin-bottom: 5px; }
                                 .content { white-space: pre-wrap; }
                             </style>
@@ -77,14 +77,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, chat,
                             className={`flex-1 p-3 border rounded-md flex flex-col items-center gap-2 ${format === 'markdown' ? 'border-primary bg-primary/5' : 'border-border'}`}
                         >
                             <FileText className="w-6 h-6" />
-                            <span className="text-sm">Markdown</span>
+                            <span className="text-sm">{t('export.formatMarkdown')}</span>
                         </button>
                         <button
                             onClick={() => setFormat('pdf')}
                             className={`flex-1 p-3 border rounded-md flex flex-col items-center gap-2 ${format === 'pdf' ? 'border-primary bg-primary/5' : 'border-border'}`}
                         >
                             <Download className="w-6 h-6" />
-                            <span className="text-sm">PDF</span>
+                            <span className="text-sm">{t('export.formatPdf')}</span>
                         </button>
                     </div>
 

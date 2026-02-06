@@ -28,11 +28,11 @@ interface AgentStatusFlags {
 
 const getStatusColor = (flags: AgentStatusFlags) => {
     if (flags.isRunning) { return "bg-primary text-primary-foreground animate-pulse shadow-primary/20"; }
-    if (flags.isCompleted) { return "bg-success text-white shadow-emerald-500/20"; }
-    if (flags.isFailed) { return "bg-destructive text-white shadow-destructive/20"; }
-    if (flags.isStuck) { return "bg-orange text-white animate-pulse shadow-orange-500/20"; }
-    if (flags.isInterrupted) { return "bg-warning text-white animate-bounce shadow-amber-500/20"; }
-    if (flags.isPaused) { return "bg-yellow text-white shadow-yellow-500/20"; }
+    if (flags.isCompleted) { return "bg-success text-success-foreground shadow-success/20"; }
+    if (flags.isFailed) { return "bg-destructive text-destructive-foreground shadow-destructive/20"; }
+    if (flags.isStuck) { return "bg-warning text-warning-foreground animate-pulse shadow-warning/20"; }
+    if (flags.isInterrupted) { return "bg-warning text-warning-foreground animate-bounce shadow-warning/20"; }
+    if (flags.isPaused) { return "bg-secondary text-secondary-foreground shadow-secondary/20"; }
     return "bg-muted text-muted-foreground";
 };
 
@@ -45,7 +45,7 @@ const getStatusIconElement = (flags: Omit<AgentStatusFlags, 'isPaused'>) => {
 
 const MetricItem = ({ icon: Icon, label, value, valueClassName }: { icon: React.ComponentType<{ className?: string }>, label: string, value: string | number, valueClassName?: string }) => (
     <div className="flex flex-col items-end">
-        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
             <Icon className="w-3 h-3 text-inherit" />
             {label}
         </span>
@@ -66,7 +66,7 @@ const ProgressBar = ({ progress, isCompleted, isFailed, isRunning }: { progress:
         <div
             className={cn(
                 "absolute inset-y-0 left-0 transition-all duration-1000 ease-out rounded-full",
-                isCompleted ? "bg-success" : isFailed ? "bg-destructive" : "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                isCompleted ? "bg-success" : isFailed ? "bg-destructive" : "bg-primary glow-primary"
             )}
             style={{ width: `${progress}%` }}
         />
@@ -129,14 +129,14 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({
                 </div>
                 <div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-black uppercase tracking-widest text-foreground">
+                        <span className="micro-label !text-foreground">
                             {t(`council.status.${state}`)}
                         </span>
                         {statusFlags.isRunning && (
-                            <span className="text-[10px] text-primary font-bold animate-pulse">{t('agent.live')}</span>
+                            <span className="text-xs text-primary font-bold animate-pulse">{t('agent.live')}</span>
                         )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase truncate max-w-[150px]">
+                    <p className="status-text truncate max-w-[150px]">
                         {getStatusMessage(error, currentStep, isCompleted, t)}
                     </p>
                 </div>

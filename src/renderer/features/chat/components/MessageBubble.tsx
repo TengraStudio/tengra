@@ -24,6 +24,8 @@ const COLLAPSE_THRESHOLD = 30;
 
 // --- Types ---
 
+type TranslationFn = (key: string, options?: Record<string, string | number>) => string;
+
 interface MessageProps {
     message: Message
     isLast: boolean
@@ -47,14 +49,14 @@ interface MessageProps {
 
 // --- Helper Functions ---
 
-const getSpecialModelLogo = (name: string) => {
+const getSpecialModelLogo = (name: string, t: TranslationFn) => {
     const families = [
-        { key: 'llama', short: 'LL', color: 'blue', title: 'Llama Family' },
-        { key: 'mistral', short: 'M', color: 'orange', title: 'Mistral Family' },
-        { key: 'mixtral', short: 'M', color: 'orange', title: 'Mistral Family' },
-        { key: 'deepseek', short: 'DS', color: 'indigo', title: 'DeepSeek' },
-        { key: 'qwen', short: 'Q', color: 'purple', title: 'Qwen' },
-        { key: 'phi', short: 'Φ', color: 'cyan', title: 'Phi' }
+        { key: 'llama', short: 'LL', color: 'blue', title: t('messageBubble.modelFamilies.llama') },
+        { key: 'mistral', short: 'M', color: 'orange', title: t('messageBubble.modelFamilies.mistral') },
+        { key: 'mixtral', short: 'M', color: 'orange', title: t('messageBubble.modelFamilies.mistral') },
+        { key: 'deepseek', short: 'DS', color: 'indigo', title: t('messageBubble.modelFamilies.deepseek') },
+        { key: 'qwen', short: 'Q', color: 'purple', title: t('messageBubble.modelFamilies.qwen') },
+        { key: 'phi', short: 'Φ', color: 'cyan', title: t('messageBubble.modelFamilies.phi') }
     ];
     const match = families.find(f => name.includes(f.key));
     if (match) {
@@ -97,18 +99,18 @@ const getProviderLogoInfo = (modelName: string, provider?: string, backend?: str
 
 const MessageIcon = ({ short, color, title }: { short: string; color: string; title: string }) => (
     <div className={cn("w-6 h-6 rounded-md border flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1", `bg-${color}-500/10 border-${color}-500/10`)} title={title}>
-        <span className={cn("font-black text-[10px]", `text-${color}-400`)}>{short}</span>
+        <span className={cn("font-black text-xxs", `text-${color}-400`)}>{short}</span>
     </div>
 );
 
-const TypingDots = ({ t }: { t: (key: string) => string }) => (
+const TypingDots = ({ t }: { t: TranslationFn }) => (
     <div className="flex gap-2 items-center px-2 py-3">
         <div className="flex gap-1.5 items-center">
-            <div className="w-2 h-2 bg-gradient-to-r from-primary to-purple-500 rounded-full animate-bounce [animation-delay:-0.3s] shadow-lg shadow-primary/30" />
-            <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce [animation-delay:-0.15s] shadow-lg shadow-purple-500/30" />
-            <div className="w-2 h-2 bg-gradient-to-r from-pink-500 to-primary rounded-full animate-bounce shadow-lg shadow-pink-500/30" />
+            <div className="w-2 h-2 bg-gradient-to-r from-primary to-accent-foreground rounded-full animate-bounce [animation-delay:-0.3s] shadow-lg shadow-primary/30" />
+            <div className="w-2 h-2 bg-gradient-to-r from-accent-foreground to-info rounded-full animate-bounce [animation-delay:-0.15s] shadow-lg shadow-accent-foreground/30" />
+            <div className="w-2 h-2 bg-gradient-to-r from-info to-primary rounded-full animate-bounce shadow-lg shadow-info/30" />
         </div>
-        <span className="text-[10px] text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
+        <span className="text-xxs text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
     </div>
 );
 
@@ -118,14 +120,14 @@ const ResponseProgress = () => (
     </div>
 );
 
-const ImageSkeleton = ({ t }: { t: (key: string) => string }) => (
+const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
     <div className="w-[300px] h-[300px] rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
         <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center animate-pulse">
             <Sparkles className="w-6 h-6 text-primary/40" />
         </div>
         <div className="space-y-2 text-center">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
+            <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
             <div className="flex gap-1 justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />
@@ -135,9 +137,9 @@ const ImageSkeleton = ({ t }: { t: (key: string) => string }) => (
     </div>
 );
 
-const AssistantLogo = memo(({ displayModel, provider, backend }: { displayModel?: string; provider?: string; backend?: string }) => {
+const AssistantLogo = memo(({ displayModel, provider, backend, t }: { displayModel?: string; provider?: string; backend?: string; t: TranslationFn }) => {
     const modelName = (displayModel ?? '').toString().toLowerCase();
-    const special = getSpecialModelLogo(modelName);
+    const special = getSpecialModelLogo(modelName, t);
     if (special) { return <MessageIcon {...special} />; }
     const info = getProviderLogoInfo(modelName, provider, backend);
     if (info.logo) {
@@ -151,8 +153,8 @@ const AssistantLogo = memo(({ displayModel, provider, backend }: { displayModel?
 });
 AssistantLogo.displayName = 'AssistantLogo';
 
-const QuotaErrorCard = memo(({ details, t }: { details: { message: string; resets_at: number | null; model: string | null }; t: (key: string) => string }) => (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-destructive/20 text-destructive max-w-md animate-in fade-in zoom-in duration-300">
+const QuotaErrorCard = memo(({ details, t }: { details: { message: string; resets_at: number | null; model: string | null }; t: TranslationFn }) => (
+    <div className="p-4 rounded-2xl bg-gradient-to-br from-destructive/10 to-warning/10 border border-destructive/20 text-destructive max-w-md animate-in fade-in zoom-in duration-300">
         <div className="flex items-center gap-3 mb-3">
             <div className="p-2 rounded-full bg-destructive/20"><AlertCircle className="w-5 h-5" /></div>
             <div>
@@ -176,7 +178,7 @@ const QuotaErrorCard = memo(({ details, t }: { details: { message: string; reset
 ));
 QuotaErrorCard.displayName = 'QuotaErrorCard';
 
-const CopyButton = memo(({ text, t }: { text: string; t: (key: string) => string }) => {
+const CopyButton = memo(({ text, t }: { text: string; t: TranslationFn }) => {
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
         await navigator.clipboard.writeText(text);
@@ -191,14 +193,14 @@ const CopyButton = memo(({ text, t }: { text: string; t: (key: string) => string
 });
 CopyButton.displayName = 'CopyButton';
 
-const BookmarkButton = memo(({ active, onClick, t }: { active: boolean; onClick: () => void; t: (key: string) => string }) => (
-    <button onClick={onClick} className={cn("p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300", active ? "text-warning bg-warning/10 shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "text-muted-foreground hover:text-foreground")} title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}>
+const BookmarkButton = memo(({ active, onClick, t }: { active: boolean; onClick: () => void; t: TranslationFn }) => (
+    <button onClick={onClick} className={cn("p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300", active ? "text-warning bg-warning/10 glow-warning" : "text-muted-foreground hover:text-foreground")} title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}>
         <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} />
     </button>
 ));
 BookmarkButton.displayName = 'BookmarkButton';
 
-const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void; t: (key: string) => string }) => (
+const RatingButtons = memo(({ rating, onRate, t }: { rating?: 1 | -1 | 0; onRate: (val: 1 | -1 | 0) => void; t: TranslationFn }) => (
     <div className="flex items-center gap-1 border-s border-border/50 ps-2 ms-1">
         <button onClick={() => onRate(rating === 1 ? 0 : 1)} className={cn("p-1.5 rounded-md transition-all duration-200", rating === 1 ? "text-success bg-success/10" : "text-muted-foreground hover:text-success hover:bg-success/5")} title={t('messageBubble.goodAnswer')}>
             <ThumbsUp className={cn("w-3.5 h-3.5", rating === 1 && "fill-current")} />
@@ -212,7 +214,7 @@ RatingButtons.displayName = 'RatingButtons';
 
 // --- Markdown Specifics ---
 
-const MermaidDiagram = memo(({ code }: { code: string }) => {
+const MermaidDiagram = memo(({ code, t }: { code: string; t: TranslationFn }) => {
     const [svg, setSvg] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const id = useId();
@@ -241,23 +243,23 @@ const MermaidDiagram = memo(({ code }: { code: string }) => {
         return () => { mounted = false; };
     }, [code, id]);
     if (error) { return <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded">{error}</pre>; }
-    if (!svg) { return <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-white/5 animate-pulse"><div className="text-xs text-muted-foreground">Rendering Diagram...</div></div>; }
+    if (!svg) { return <div className="my-4 h-32 flex items-center justify-center bg-accent/10 rounded-xl border border-white/5 animate-pulse"><div className="text-xs text-muted-foreground">{t('messageBubble.renderingDiagram')}</div></div>; }
     return <div dangerouslySetInnerHTML={{ __html: svg }} className="my-4 flex justify-center bg-accent/30 p-4 rounded-xl border border-border/50" />;
 });
 MermaidDiagram.displayName = 'MermaidDiagram';
 
 const CodeBlock = memo(({ className, children, isSpeaking, onStop, onSpeak, t }: {
-    className?: string; children?: React.ReactNode; isSpeaking?: boolean; onStop?: () => void; onSpeak?: (text: string) => void; t: (key: string) => string;
+    className?: string; children?: React.ReactNode; isSpeaking?: boolean; onStop?: () => void; onSpeak?: (text: string) => void; t: TranslationFn;
 }) => {
     const match = /language-(\w+)/.exec(className ?? '');
     const codeString = String(children).replace(/\n$/, '');
-    if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} />; }
+    if (match?.[1] === 'mermaid') { return <MermaidDiagram code={codeString} t={t} />; }
     if (!match) { return <code className="bg-muted/50 rounded px-1.5 py-0.5 font-mono text-xs font-semibold text-primary/80">{children}</code>; }
     const language = match[1];
     return (
         <div className="not-prose my-3 rounded-xl overflow-hidden border border-border/30 bg-muted/30 group/code transition-premium">
             <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/20 backdrop-blur-sm">
-                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">{language}</span>
+                <span className="text-xxs text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity">{language}</span>
                 <div className="flex items-center gap-1.5">
                     {isSpeaking ? (
                         <button onClick={onStop} className="p-1 px-1.5 hover:bg-accent/50 rounded-md transition-colors text-primary" title={t('messageBubble.stop')}><VolumeX className="w-3.5 h-3.5" /></button>
@@ -284,9 +286,9 @@ const CodeBlock = memo(({ className, children, isSpeaking, onStop, onSpeak, t }:
 });
 CodeBlock.displayName = 'CodeBlock';
 
-const MarkdownImage = memo(({ src, alt, onCodeConvert, t }: { src?: string; alt?: string; onCodeConvert?: (url: string) => void; t: (key: string) => string }) => (
+const MarkdownImage = memo(({ src, alt, onCodeConvert, t }: { src?: string; alt?: string; onCodeConvert?: (url: string) => void; t: TranslationFn }) => (
     <span className="block my-2 relative group/image">
-        <img src={src} alt={alt ?? 'Image'} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
+        <img src={src} alt={alt ?? t('messageBubble.imageAlt')} className="max-w-full max-h-96 rounded-lg border border-border/50 cursor-pointer hover:opacity-90 transition-opacity whitespace-pre-wrap" onClick={() => { if (src) { window.electron.openExternal(src); } }} />
         {alt && <span className="text-xs text-muted-foreground mt-1 block font-medium">{alt}</span>}
         {src && onCodeConvert && (
             <button
@@ -301,7 +303,7 @@ const MarkdownImage = memo(({ src, alt, onCodeConvert, t }: { src?: string; alt?
 MarkdownImage.displayName = 'MarkdownImage';
 
 const MarkdownContent = memo(({ content, onSpeak, onStop, isSpeaking, onCodeConvert, t }: {
-    content: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: (key: string) => string;
+    content: string; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; onCodeConvert?: (imageUrl: string) => void; t: TranslationFn;
 }) => (
     <div className="markdown-body">
         <ReactMarkdown
@@ -329,16 +331,16 @@ MarkdownContent.displayName = 'MarkdownContent';
 
 // --- Sections ---
 
-const ThoughtSection = memo(({ thought, isThoughtExpanded, setIsThoughtExpanded, t }: { thought: string | null; isThoughtExpanded: boolean; setIsThoughtExpanded: (expanded: boolean) => void; t: (key: string) => string; }) => {
+const ThoughtSection = memo(({ thought, isThoughtExpanded, setIsThoughtExpanded, t }: { thought: string | null; isThoughtExpanded: boolean; setIsThoughtExpanded: (expanded: boolean) => void; t: TranslationFn; }) => {
     if (!thought) { return null; }
     return (
         <div className="w-full mb-3">
             <button onClick={() => setIsThoughtExpanded(!isThoughtExpanded)} className={cn("flex items-center gap-2 group/thought transition-all duration-300", isThoughtExpanded ? "mb-2" : "mb-0")}>
                 <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 select-none", isThoughtExpanded ? "bg-primary/10 border-primary/20 text-primary shadow-sm shadow-primary/10" : "bg-accent/30 border-border/50 text-muted-foreground/60 hover:bg-accent/50 hover:border-border hover:text-primary/70")}>
                     <div className={cn("p-1 rounded-full", isThoughtExpanded ? "bg-primary/20" : "bg-accent/30")}><Brain className={cn("w-3.5 h-3.5", isThoughtExpanded ? "animate-pulse" : "")} /></div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? t('messageBubble.TandemThinking') : t('messageBubble.showThought')}</span>
+                    <span className="text-xxs font-black uppercase tracking-[0.15em]">{isThoughtExpanded ? t('messageBubble.TandemThinking') : t('messageBubble.showThought')}</span>
                     <Sparkles className={cn("w-3 h-3 transition-opacity duration-300", isThoughtExpanded ? "opacity-100" : "opacity-0")} />
-                    <span className={cn("text-[8px] transition-transform duration-300 ms-1", isThoughtExpanded ? "rotate-180" : "rotate-0")}>▼</span>
+                    <span className={cn("text-xxxs transition-transform duration-300 ms-1", isThoughtExpanded ? "rotate-180" : "rotate-0")}>▼</span>
                 </div>
             </button>
             {isThoughtExpanded && (
@@ -346,7 +348,7 @@ const ThoughtSection = memo(({ thought, isThoughtExpanded, setIsThoughtExpanded,
                     <div className="relative ps-4 border-s-2 border-primary/20 py-1">
                         <div className="absolute -start-[2px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary/40 via-primary/10 to-transparent" />
                         <div className="bg-gradient-to-br from-primary/[0.03] to-transparent rounded-2xl p-4 border border-border/20">
-                            <div className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">{thought}</div>
+                            <div className="whitespace-pre-wrap font-mono text-xxs leading-relaxed text-muted-foreground/80 selection:bg-primary/20 drop-shadow-sm">{thought}</div>
                         </div>
                     </div>
                 </div>
@@ -356,16 +358,16 @@ const ThoughtSection = memo(({ thought, isThoughtExpanded, setIsThoughtExpanded,
 });
 ThoughtSection.displayName = 'ThoughtSection';
 
-const PlanSection = memo(({ plan, isLast, isStreaming, onApprovePlan, t }: { plan: string | null; isLast: boolean; isStreaming?: boolean; onApprovePlan?: () => void; t: (key: string) => string; }) => {
+const PlanSection = memo(({ plan, isLast, isStreaming, onApprovePlan, t }: { plan: string | null; isLast: boolean; isStreaming?: boolean; onApprovePlan?: () => void; t: TranslationFn; }) => {
     if (!plan) { return null; }
     return (
-        <div className="w-full mb-4 bg-gradient-to-br from-primary/[0.07] to-purple-500/[0.02] border border-primary/20 rounded-2xl p-4 shadow-lg shadow-primary/5 animate-fade-in relative overflow-hidden group/plan">
+        <div className="w-full mb-4 bg-gradient-to-br from-primary/[0.07] to-accent-foreground/[0.02] border border-primary/20 rounded-2xl p-4 shadow-lg shadow-primary/5 animate-fade-in relative overflow-hidden group/plan">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/plan:opacity-20 transition-opacity"><ListTodo className="w-12 h-12" /></div>
             <div className="flex items-center gap-3 mb-3 pb-3 border-b border-primary/10">
                 <div className="p-1.5 rounded-lg bg-primary/20"><ListTodo className="w-4 h-4 text-primary" /></div>
                 <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">{t('chat.plan')}</span>
             </div>
-            <div className="text-[13px] text-foreground/90 leading-relaxed font-medium">
+            <div className="text-xs text-foreground/90 leading-relaxed font-medium">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ li: ({ children }) => (<li className="flex gap-2.5 my-1.5 items-start"><div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" /><span>{children}</span></li>), ul: ({ children }) => <ul className="space-y-1">{children}</ul> }}>{plan}</ReactMarkdown>
             </div>
             {isLast && !isStreaming && onApprovePlan && (
@@ -379,7 +381,7 @@ const PlanSection = memo(({ plan, isLast, isStreaming, onApprovePlan, t }: { pla
 PlanSection.displayName = 'PlanSection';
 
 const PlanAndThought = memo(({ plan, thought, isLast, isStreaming, onApprovePlan, isThoughtExpanded, setIsThoughtExpanded, t }: {
-    plan: string | null; thought: string | null; isLast: boolean; isStreaming?: boolean; onApprovePlan?: () => void; isThoughtExpanded: boolean; setIsThoughtExpanded: (v: boolean) => void; t: (key: string) => string;
+    plan: string | null; thought: string | null; isLast: boolean; isStreaming?: boolean; onApprovePlan?: () => void; isThoughtExpanded: boolean; setIsThoughtExpanded: (v: boolean) => void; t: TranslationFn;
 }) => (
     <>
         <PlanSection plan={plan} isLast={isLast} isStreaming={isStreaming} onApprovePlan={onApprovePlan} t={t} />
@@ -406,7 +408,7 @@ const MessageBubbleContent = memo(({ showRawMarkdown, quotaDetails, displayConte
 MessageBubbleContent.displayName = 'MessageBubbleContent';
 
 const MessageActions = memo(({ displayContent, message, isSpeaking, onStop, onSpeak, onBookmark, onReact, onRate, t }: {
-    displayContent: string; message: Message; isSpeaking?: boolean; onStop?: () => void; onSpeak?: (text: string) => void; onBookmark?: (isBookmarked: boolean) => void; onReact?: (emoji: string) => void; onRate?: (rating: 1 | -1 | 0) => void; t: (key: string) => string;
+    displayContent: string; message: Message; isSpeaking?: boolean; onStop?: () => void; onSpeak?: (text: string) => void; onBookmark?: (isBookmarked: boolean) => void; onReact?: (emoji: string) => void; onRate?: (rating: 1 | -1 | 0) => void; t: TranslationFn;
 }) => (
     <div className="absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
         {isSpeaking ? (
@@ -427,14 +429,14 @@ const MessageActions = memo(({ displayContent, message, isSpeaking, onStop, onSp
 ));
 MessageActions.displayName = 'MessageActions';
 
-const MessageImages = memo(({ images, t }: { images: string[]; t: (key: string) => string }) => {
+const MessageImages = memo(({ images, t }: { images: string[]; t: TranslationFn }) => {
     if (images.length === 0) { return null; }
     return (
         <div className="flex gap-3 flex-wrap mb-4">
             {images.map((img, i) => (
                 img === '__LOADING_IMAGE__' ? <ImageSkeleton key={i} t={t} /> : (
                     <div key={i} className="relative group/img-container">
-                        <img src={img} alt={`Attached ${i + 1}`} className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl" onClick={() => { window.electron.openExternal(img); }} />
+                        <img src={img} alt={t('messageBubble.attachedImage', { index: i + 1 })} className="max-w-full md:max-w-md max-h-[500px] object-contain rounded-xl border border-border/50 cursor-pointer hover:opacity-90 transition-all duration-300 shadow-2xl" onClick={() => { window.electron.openExternal(img); }} />
                         <div className="absolute inset-0 bg-background/40 opacity-0 group-hover/img-container:opacity-100 transition-opacity rounded-xl flex items-center justify-center pointer-events-none"><Eye className="w-6 h-6 text-foreground" /></div>
                     </div>
                 )
@@ -444,11 +446,11 @@ const MessageImages = memo(({ images, t }: { images: string[]; t: (key: string) 
 });
 MessageImages.displayName = 'MessageImages';
 
-const MessageSources = memo(({ sources, onSourceClick, t }: { sources: string[]; onSourceClick?: (p: string) => void; t: (key: string) => string }) => {
+const MessageSources = memo(({ sources, onSourceClick, t }: { sources: string[]; onSourceClick?: (p: string) => void; t: TranslationFn }) => {
     if (sources.length === 0) { return null; }
     return (
         <div className="flex flex-wrap gap-2 mt-3 animate-fade-in">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-[10px] text-primary font-bold uppercase tracking-wider mb-1"><Sparkles className="w-3 h-3" />{t('chat.sources')}</div>
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/5 border border-primary/10 text-xxs text-primary font-bold uppercase tracking-wider mb-1"><Sparkles className="w-3 h-3" />{t('chat.sources')}</div>
             <div className="flex flex-wrap gap-1.5">
                 {sources.map((path, idx) => (
                     <button key={idx} onClick={() => onSourceClick?.(path)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/30 border border-border/30 hover:border-primary/50 hover:bg-primary/5 transition-all text-xs text-muted-foreground hover:text-foreground group/chip" title={path}><FileCode className="w-3.5 h-3.5 text-primary/60 group-hover/chip:text-primary" /><span>{path.split(/[\\/]/).pop() ?? path}</span></button>
@@ -459,21 +461,21 @@ const MessageSources = memo(({ sources, onSourceClick, t }: { sources: string[];
 });
 MessageSources.displayName = 'MessageSources';
 
-const MessageVariants = memo(({ variants, variantIndex, setVariantIndex, t: _t }: { variants: MessageVariant[]; variantIndex: number; setVariantIndex: (idx: number) => void; t: (key: string) => string; }) => (
+const MessageVariants = memo(({ variants, variantIndex, setVariantIndex, t }: { variants: MessageVariant[]; variantIndex: number; setVariantIndex: (idx: number) => void; t: TranslationFn; }) => (
     <div className="flex flex-col gap-2 mt-3 select-none">
         <div className="flex items-center gap-1 flex-wrap bg-muted/10 rounded-lg p-1 border border-border/30">
-            {variants.map((v, idx) => (<button key={idx} onClick={() => setVariantIndex(idx)} className={cn("px-2.5 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-2 border", idx === variantIndex ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "hover:bg-accent/50 text-muted-foreground border-transparent")}>{(v.label ?? v.model ?? `Res ${idx + 1}`).slice(0, 20)} {idx === variantIndex && <Check className="w-2.5 h-2.5" />}</button>))}
+            {variants.map((v, idx) => (<button key={idx} onClick={() => setVariantIndex(idx)} className={cn("px-2.5 py-1 rounded-md text-xxs font-bold transition-all flex items-center gap-2 border", idx === variantIndex ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "hover:bg-accent/50 text-muted-foreground border-transparent")}>{(v.label ?? v.model ?? t('messageBubble.responseShort', { index: idx + 1 })).slice(0, 20)} {idx === variantIndex && <Check className="w-2.5 h-2.5" />}</button>))}
         </div>
         <div className="flex items-center gap-2 justify-center mt-1">
             <button disabled={variantIndex === 0} onClick={() => setVariantIndex(variantIndex - 1)} className="p-1 px-1.5 rounded bg-accent/30 hover:bg-accent/50 disabled:opacity-30 transition-colors"><ChevronLeft className="w-3 h-3" /></button>
-            <span className="text-[10px] text-muted-foreground/60 font-bold">{variantIndex + 1} / {variants.length}</span>
+            <span className="text-xxs text-muted-foreground/60 font-bold">{variantIndex + 1} / {variants.length}</span>
             <button disabled={variantIndex === variants.length - 1} onClick={() => setVariantIndex(variantIndex + 1)} className="p-1 px-1.5 rounded bg-accent/30 hover:bg-accent/50 disabled:opacity-30 transition-colors"><ChevronRight className="w-3 h-3" /></button>
         </div>
     </div>
 ));
 MessageVariants.displayName = 'MessageVariants';
 
-const RawToggle = memo(({ active, onClick, t }: { active: boolean; onClick: () => void; t: (key: string) => string }) => (
+const RawToggle = memo(({ active, onClick, t }: { active: boolean; onClick: () => void; t: TranslationFn }) => (
     <div className="flex items-center gap-2 mb-1">
         <button onClick={onClick} className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors", active ? "bg-primary/20 text-primary" : "bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50")}>
             {active ? <Eye className="w-3 h-3" /> : <Code2 className="w-3 h-3" />}
@@ -483,7 +485,7 @@ const RawToggle = memo(({ active, onClick, t }: { active: boolean; onClick: () =
 ));
 RawToggle.displayName = 'RawToggle';
 
-const MoreLines = memo(({ expanded, count, onClick, t }: { expanded: boolean; count: number; onClick: () => void; t: (key: string) => string }) => (
+const MoreLines = memo(({ expanded, count, onClick, t }: { expanded: boolean; count: number; onClick: () => void; t: TranslationFn }) => (
     <button onClick={onClick} className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all">
         {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         {expanded ? t('chat.collapse') : `${count} ${t('chat.moreLines')}`}
@@ -510,7 +512,7 @@ interface MessageBubbleContentProps {
     isSpeaking?: boolean
     onCodeConvert?: (imageUrl: string) => void
     onSourceClick?: (source: string) => void
-    t: (key: string) => string
+    t: TranslationFn
 }
 
 interface MessageActionsContextProps {
@@ -528,7 +530,7 @@ interface MessageActionsContextProps {
     lineCount: number
     showRawMarkdown: boolean
     setShowRawMarkdown: (val: boolean) => void
-    t: (key: string) => string
+    t: TranslationFn
 }
 
 interface MessageBubbleInnerProps {
@@ -555,7 +557,7 @@ const BubbleContentSection = memo(({ contentProps, message, showToggle, setShowR
     isContentExpanded: boolean
     setIsContentExpanded: (val: boolean) => void
     lineCount: number
-    t: (key: string) => string
+    t: TranslationFn
 }) => {
     const showMore = lineCount > COLLAPSE_THRESHOLD && !contentProps.isUser && !contentProps.quotaDetails;
     return (
@@ -575,7 +577,7 @@ const MessageBubbleInner = memo(({ isUser, isStreaming, displayContent, quotaDet
     const bubbleClass = isUser ? "bg-muted/10 px-4 py-3 rounded-tr-sm border border-border/50 text-foreground/90" : "bg-transparent";
 
     return (
-        <div className={cn("rounded-2xl px-0 py-1 text-[15px] leading-[1.65] whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden", bubbleClass)}>
+        <div className={cn("rounded-2xl px-0 py-1 text-base leading-[1.65] whitespace-pre-wrap break-words border-none relative group/bubble w-full overflow-hidden", bubbleClass)}>
             {isStreaming && <ResponseProgress />}
             <BubbleContentSection
                 contentProps={contentProps}
@@ -612,7 +614,7 @@ const useMessageContent = (raw: Message['content'], reasoning: string | undefine
     return { thought: streaming ?? r, plan: p, displayContent: content.trim() };
 }, [raw, reasoning, streaming]);
 
-const useQuotaDetails = (is429: boolean, content: string, t: (key: string) => string) => useMemo(() => {
+const useQuotaDetails = (is429: boolean, content: string, t: TranslationFn) => useMemo(() => {
     if (!is429) { return null; }
     try {
         const m = content.match(/\{[\s\S]*\}/);
@@ -633,20 +635,23 @@ interface MessageFooterProps {
     streamingSpeed?: number | null
 }
 
-const MessageFooter = memo(({ message, displayContent, language, isStreaming, streamingSpeed }: MessageFooterProps) => (
-    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground/40 font-medium">
-        <span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
-        <span>~{Math.ceil(displayContent.length / 4)} token</span>
-        {message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}
-        {message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-success/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}
-        {message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-warning/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /></span></>)}
-        {isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}
-    </div>
-));
+const MessageFooter = memo(({ message, displayContent, language, isStreaming, streamingSpeed }: MessageFooterProps) => {
+    const { t } = useTranslation(language);
+    return (
+        <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
+            <span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
+            <span>{t('messageBubble.tokenEstimate', { count: Math.ceil(displayContent.length / 4) })}</span>
+            {message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}
+            {message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-success/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}
+            {message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-warning/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /></span></>)}
+            {isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}
+        </div>
+    );
+});
 MessageFooter.displayName = 'MessageFooter';
 
-const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: (key: string) => string; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => {
+const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variant: MessageVariant; isSelected: boolean; onClick: () => void; t: TranslationFn; isUser: boolean; isStreaming?: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => {
     const { displayContent } = useMessageContent(variant.content, undefined, undefined);
     const [isContentExpanded, setIsContentExpanded] = useState(false);
     // PERF-002-2: Memoize expensive computations in variant card
@@ -673,10 +678,10 @@ const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isSt
         >
             <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/20">
                 <div className="flex items-center gap-2">
-                    <AssistantLogo displayModel={variant.model} provider={variant.provider} />
+                    <AssistantLogo displayModel={variant.model} provider={variant.provider} t={t} />
                     <div className="flex flex-col">
-                        <span className="text-xs font-bold text-foreground/90">{variant.model ?? 'Unknown Model'}</span>
-                        <span className="text-[10px] text-muted-foreground">{variant.provider}</span>
+                        <span className="text-xs font-bold text-foreground/90">{variant.model ?? t('messageBubble.unknownModel')}</span>
+                        <span className="text-xxs text-muted-foreground">{variant.provider}</span>
                     </div>
                 </div>
                 {isSelected && <div className="bg-primary/10 text-primary p-1 rounded-full"><Check className="w-3 h-3" /></div>}
@@ -698,7 +703,7 @@ const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isSt
                 />
             </div>
 
-            <div className="mt-2 text-[10px] text-muted-foreground/40 font-medium flex justify-between items-center">
+            <div className="mt-2 text-xxs text-muted-foreground/40 font-medium flex justify-between items-center">
                 <span>{new Date(variant.timestamp).toLocaleTimeString()}</span>
                 {lineCount > COLLAPSE_THRESHOLD && (
                     <button onClick={(e) => { e.stopPropagation(); setIsContentExpanded(!isContentExpanded); }} className="flex items-center gap-1 hover:text-primary transition-colors bg-accent/30 hover:bg-accent/50 px-2 py-1 rounded">
@@ -712,7 +717,7 @@ const MessageVariantCard = memo(({ variant, isSelected, onClick, t, isUser, isSt
 });
 MessageVariantCard.displayName = 'MessageVariantCard';
 
-const MessageVariantsGrid = memo(({ variants, selectedVariantId, onVariantClick, t, isUser, backend, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variants: MessageVariant[]; selectedVariantId: string | null; onVariantClick: (id: string) => void; t: (k: string) => string; isUser: boolean; backend?: string; isStreaming: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => (
+const MessageVariantsGrid = memo(({ variants, selectedVariantId, onVariantClick, t, isUser, backend, isStreaming, onSpeak, onStop, isSpeaking, showRawMarkdown }: { variants: MessageVariant[]; selectedVariantId: string | null; onVariantClick: (id: string) => void; t: TranslationFn; isUser: boolean; backend?: string; isStreaming: boolean; onSpeak?: (text: string) => void; onStop?: () => void; isSpeaking?: boolean; showRawMarkdown: boolean }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {variants.map((variant) => (
             <MessageVariantCard
@@ -744,7 +749,7 @@ const VariantsView = memo(({ message, backend, isStreaming, language: _language,
     onStop?: () => void
     isSpeaking?: boolean
     showRawMarkdown: boolean
-    t: (key: string) => string
+    t: TranslationFn
 }) => {
     const variants = message.variants ?? [];
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -812,7 +817,7 @@ interface ContentRenderContext {
         isSpeaking?: boolean
         onCodeConvert?: (imageUrl: string) => void
     }
-    t: (key: string) => string
+    t: TranslationFn
 }
 
 interface ActionsContext {
@@ -834,7 +839,7 @@ interface ActionsContext {
         showRawMarkdown: boolean
         setShowRawMarkdown: (val: boolean) => void
     }
-    t: (key: string) => string
+    t: TranslationFn
 }
 
 const buildMessageContentProps = (ctx: ContentRenderContext): MessageBubbleContentProps => ({
@@ -907,7 +912,7 @@ const SingleMessageViewContent = memo(({ message, backend, isUser, isStreaming, 
     isFocused?: boolean
     language: Language
     streamingSpeed?: number | null
-    t: (key: string) => string
+    t: TranslationFn
 }) => {
     const wrapperClasses = buildWrapperClasses(isUser, isFocused);
     const contentWrapperClasses = buildContentWrapperClasses(isUser);
@@ -916,14 +921,14 @@ const SingleMessageViewContent = memo(({ message, backend, isUser, isStreaming, 
     return (
         <div id={id} className={wrapperClasses}>
             <div className={contentWrapperClasses}>
-                {!isUser && <AssistantLogo displayModel={message.model} provider={message.provider} backend={backend} />}
+                {!isUser && <AssistantLogo displayModel={message.model} provider={message.provider} backend={backend} t={t} />}
                 <div className={columnWrapperClasses}>
                     <PlanAndThought plan={plan} thought={thought} isLast={isLast} isStreaming={isStreaming} onApprovePlan={onApprovePlan} isThoughtExpanded={isThoughtExpanded} setIsThoughtExpanded={setIsThoughtExpanded} t={t} />
                     <MessageBubbleInner isUser={isUser} isStreaming={isStreaming} displayContent={displayContent} quotaDetails={quotaDetails} message={message} contentProps={contentProps} actionsContextProps={actionsContextProps} />
                     {hasReactions && (
                         <div className="flex flex-wrap gap-1 mt-1 mb-1 px-1">
                             {message.reactions?.map((e, idx) => (
-                                <button key={idx} onClick={() => onReact?.(e)} className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] hover:bg-primary/20 transition-colors">
+                                <button key={idx} onClick={() => onReact?.(e)} className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-xxs hover:bg-primary/20 transition-colors">
                                     {e}
                                 </button>
                             ))}
@@ -1039,14 +1044,12 @@ SingleMessageView.displayName = 'SingleMessageView';
 
 const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
     // 1. Primitive props check
-    if (prev.isLast !== next.isLast ||
-        prev.isStreaming !== next.isStreaming ||
-        prev.isFocused !== next.isFocused ||
-        prev.backend !== next.backend ||
-        prev.language !== next.language ||
-        prev.streamingSpeed !== next.streamingSpeed ||
-        prev.streamingReasoning !== next.streamingReasoning ||
-        prev.id !== next.id) {
+    const primitiveKeys: (keyof MessageProps)[] = [
+        'isLast', 'isStreaming', 'isFocused', 'backend',
+        'language', 'streamingSpeed', 'streamingReasoning', 'id'
+    ];
+
+    if (primitiveKeys.some(key => prev[key] !== next[key])) {
         return false;
     }
 
@@ -1057,37 +1060,24 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
     if (pm === nm) { return true; } // Reference equality
 
     // Field-level check for relevant properties
-    if (pm.id !== nm.id ||
-        pm.role !== nm.role ||
-        pm.timestamp !== nm.timestamp ||
-        pm.model !== nm.model ||
-        pm.provider !== nm.provider ||
-        pm.isBookmarked !== nm.isBookmarked ||
-        pm.rating !== nm.rating) {
+    const messageFields: (keyof Message)[] = [
+        'id', 'role', 'timestamp', 'model', 'provider', 'isBookmarked', 'rating'
+    ];
+
+    if (messageFields.some(key => pm[key] !== nm[key])) {
         return false;
     }
 
     // Deep check for content (string or array of parts)
     if (typeof pm.content === 'string' && typeof nm.content === 'string') {
         if (pm.content !== nm.content) { return false; }
-    } else {
-        if (JSON.stringify(pm.content) !== JSON.stringify(nm.content)) { return false; }
+    } else if (JSON.stringify(pm.content) !== JSON.stringify(nm.content)) {
+        return false;
     }
 
-    // Deep check for Arrays
-    if (JSON.stringify(pm.images) !== JSON.stringify(nm.images)) { return false; }
-    if (JSON.stringify(pm.sources) !== JSON.stringify(nm.sources)) { return false; }
-
-    // Check reactions length (optimization) or deep check
-    if ((pm.reactions?.length ?? 0) !== (nm.reactions?.length ?? 0)) { return false; }
-    if (JSON.stringify(pm.reactions) !== JSON.stringify(nm.reactions)) { return false; }
-
-    // Check variants length
-    if ((pm.variants?.length ?? 0) !== (nm.variants?.length ?? 0)) { return false; }
-
-    // We intentionally ignore callback prop changes (onSpeak, etc) assuming they are stable
-    // or that their instability should not force a re-render if data is same.
-    return true;
+    // Deep check for arrays
+    const deepFields: (keyof Message)[] = ['images', 'sources', 'reactions', 'variants'];
+    return deepFields.every(key => JSON.stringify(pm[key]) === JSON.stringify(nm[key]));
 };
 
 export const MessageBubble = memo(({ message, isLast, backend, isStreaming, language, onSpeak, onStop, isSpeaking, onCodeConvert, onReact, onBookmark, onRate, onApprovePlan, streamingSpeed, streamingReasoning, id, isFocused, onSourceClick }: MessageProps) => {
@@ -1137,4 +1127,5 @@ export const MessageBubble = memo(({ message, isLast, backend, isStreaming, lang
     );
 }, areMessagePropsEqual);
 MessageBubble.displayName = 'MessageBubble';
+
 

@@ -41,7 +41,8 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
 const PROVIDER_INSTRUCTIONS: Record<string, string> = {
     'antigravity': "Ben, **Antigravity** tarafından **Tandem** platformu üzerinden sağlanan gelişmiş bir yapay zeka asistanıyım. Size en iyi şekilde yardımcı olmak için buradayım.",
     'copilot': "Ben GitHub Copilot tarafından sağlanan bir yapay zeka programlama asistanıyım.",
-    'ollama': "Ben yerel olarak çalışan bir Ollama modeliyim."
+    'ollama': "Ben yerel olarak çalışan bir Ollama modeliyim.",
+    'nvidia': "Ben NVIDIA NIM API üzerinden sağlanan bir yapay zeka asistanıyım."
 };
 
 class ChatUtils {
@@ -190,9 +191,8 @@ class ChatIpcManager {
             return { content: res.content, reasoning: res.reasoning_content, images: res.images, role: 'assistant', sources };
         }
 
-        const { url: proxyUrl, key: proxyKey } = await ChatUtils.getProxySettings(sanitized.provider, this.options.settingsService, this.options.proxyService);
-        const res = await this.options.llmService.chatOpenAI(finalMessages, {
-            model: sanitized.model, tools: sanitized.tools, baseUrl: proxyUrl, apiKey: proxyKey, provider: sanitized.provider
+        const res = await this.options.llmService.chat(finalMessages, sanitized.model, sanitized.tools, sanitized.provider, {
+            projectRoot: sanitized.projectId ? undefined : path.join(app.getPath('userData'), 'runtime', 'sessions', sanitized.chatId ?? 'default')
         });
 
         await this.recordTokens(sanitized, res, finalMessages);
@@ -236,6 +236,7 @@ class ChatIpcManager {
         }
 
         const sanitized = this.sanitizeStreamInputs(params);
+        const reasoningEffort = this.extractReasoningEffort(params.optionsJson);
         const settings = this.options.settingsService.getSettings();
         const ollamaSettings = settings['ollama'] as JsonObject | undefined;
         const orchestrationPolicy = (ollamaSettings?.['orchestrationPolicy'] as OrchestrationPolicy | undefined) ?? 'auto';
@@ -244,21 +245,36 @@ class ChatIpcManager {
         let finalMessages = await this.injectRAGContextForStream(sanitized.messages, sanitized.projectId, sanitized.chatId, event);
         finalMessages = ChatUtils.injectSystemPrompt(finalMessages, sanitized.provider, sanitized.model, this.options.settingsService);
 
+        const controller = new AbortController();
+        const { signal } = controller;
+
+        const cancelHandler = (_: unknown, { chatId }: { chatId: string }) => {
+            if (chatId === params.chatId) {
+                controller.abort();
+            }
+        };
+        ipcMain.on('chat:cancel', cancelHandler);
+
         try {
             if (sanitized.provider === 'copilot') {
                 const body = await this.options.copilotService.streamChat(finalMessages, sanitized.model, sanitized.tools);
                 if (!body) { throw new Error('Failed to start Copilot stream'); }
                 await this.handleCopilotStream(body as ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, sanitized.chatId, sanitized.model, event);
             } else if (sanitized.provider === 'opencode') {
-                await this.handleOpencodeStream(finalMessages, sanitized.model, sanitized.tools, sanitized.chatId, event);
+                await this.handleOpencodeStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, chatId: sanitized.chatId, event, signal });
             } else {
-                await this.handleProxyStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, provider: sanitized.provider, chatId: sanitized.chatId, event, systemMode: sanitized.systemMode, projectId: sanitized.projectId });
+                await this.handleProxyStream({ messages: finalMessages, model: sanitized.model, tools: sanitized.tools, provider: sanitized.provider, chatId: sanitized.chatId, event, systemMode: sanitized.systemMode, projectId: sanitized.projectId, signal, reasoningEffort });
             }
         } catch (error) {
-            const msg = getErrorMessage(error as Error);
-            appLogger.error('Chat', `[ChatStream] Error: ${msg}`);
-            safeSend(event.sender, 'ollama:streamChunk', { chatId: sanitized.chatId, type: 'error', content: msg });
+            if ((error as Error).name === 'AbortError') {
+                appLogger.info('Chat', `[ChatStream] Stream aborted by user: ${sanitized.chatId}`);
+            } else {
+                const msg = getErrorMessage(error as Error);
+                appLogger.error('Chat', `[ChatStream] Error: ${msg}`);
+                safeSend(event.sender, 'ollama:streamChunk', { chatId: sanitized.chatId, type: 'error', content: msg });
+            }
         } finally {
+            ipcMain.removeListener('chat:cancel', cancelHandler);
             safeSend(event.sender, 'ollama:streamChunk', { chatId: sanitized.chatId, done: true });
         }
     }
@@ -330,6 +346,12 @@ class ChatIpcManager {
         return messages;
     }
 
+    private extractReasoningEffort(optionsJson?: JsonObject): string | undefined {
+        const raw = optionsJson?.['reasoningEffort'];
+        if (typeof raw !== 'string') { return undefined; }
+        return sanitizeString(raw, { maxLength: 20, allowNewlines: false });
+    }
+
 
     private async handleCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, model: string, event: IpcMainInvokeEvent) {
         try {
@@ -380,12 +402,13 @@ class ChatIpcManager {
         return { totalPrompt, totalCompletion };
     }
 
-    private async handleOpencodeStream(messages: Message[], model: string, tools: ToolDefinition[] | undefined, chatId: string, event: IpcMainInvokeEvent) {
+    private async handleOpencodeStream(params: { messages: Message[], model: string, tools: ToolDefinition[] | undefined, chatId: string, event: IpcMainInvokeEvent, signal?: AbortSignal }) {
+        const { messages, model, tools, chatId, event, signal } = params;
         let totalPrompt = 0;
         let totalCompletion = 0;
         let fullContent = '';
 
-        for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools)) {
+        for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools, signal)) {
             if (chunk.usage) {
                 totalPrompt = chunk.usage.prompt_tokens;
                 totalCompletion = chunk.usage.completion_tokens;
@@ -412,36 +435,22 @@ class ChatIpcManager {
         }
     }
 
-    private async handleProxyStream(params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, chatId: string, event: IpcMainInvokeEvent, systemMode?: SystemMode, projectId?: string }) {
-        const { messages, model, tools: providedTools, provider, chatId, event, systemMode, projectId } = params;
-        const { url, key } = await ChatUtils.getProxySettings(provider, this.options.settingsService, this.options.proxyService);
+    private async handleProxyStream(params: { messages: Message[], model: string, tools?: ToolDefinition[], provider: string, chatId: string, event: IpcMainInvokeEvent, systemMode?: SystemMode, projectId?: string, signal?: AbortSignal, reasoningEffort?: string }) {
+        const { messages, model, tools: providedTools, provider, chatId, event, systemMode, projectId, signal, reasoningEffort } = params;
 
-        const tools = providedTools;
         let runtimeProjectRoot: string | undefined;
-
-        // Ensure robust default path for FileSystem/Coding tools if no project is active
-        // This applies to ALL modes where coding might happen (Thinking, Fast, Agent) if tools are enabled
-        if (!projectId) { // Assuming projectId correlates with active workspace presence
+        if (!projectId) {
             runtimeProjectRoot = path.join(app.getPath('userData'), 'runtime', 'sessions', chatId);
-            // We can pass this explicit path to LLMService to be injected into tool calls context if needed
-            // Or we rely on the filesystem MCP to be initialized with this root?
-            // MCP initialization is usually separate. 
-            // Here we might need to instruct the LLMService to assume this CWD.
         }
-
-        // Logic to force-enable tools for Agent mode if supported
-        // If systemMode is 'agent' or 'thinking', we might want to ensure tools are present
-        // But for now, let's assume the frontend passed available tools, or we fetch them here if missing?
-        // The frontend `useChatGenerator` fetches `getToolDefinitions`.
-        // If we want to force specific behavior we can modify `tools` here.
 
         let totalPrompt = 0;
         let totalCompletion = 0;
 
-        for await (const chunk of this.options.llmService.chatOpenAIStream(messages, {
-            model, tools, baseUrl: url, apiKey: key, provider,
+        for await (const chunk of this.options.llmService.chatStream(messages, model, providedTools, provider, {
             systemMode,
-            projectRoot: runtimeProjectRoot // Pass this new param to LLMService
+            projectRoot: runtimeProjectRoot,
+            signal,
+            reasoningEffort
         })) {
             if (chunk.usage) {
                 totalPrompt = chunk.usage.prompt_tokens;

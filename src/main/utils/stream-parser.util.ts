@@ -96,17 +96,22 @@ export class StreamParser {
     private static *processBuffer(buffer: string, updateBuffer: (b: string) => void): Generator<StreamChunk> {
         const lines = buffer.split('\n');
         const lastLine = lines.pop();
+        appLogger.info('stream-parser.util', `[StreamParser] Processing buffer, lines: ${lines.length}, remaining: ${lastLine?.length ?? 0}`);
         updateBuffer(lastLine ?? '');
 
         for (const line of lines) {
             const data = this.extractDataPayload(line);
-            if (!data || data === '[DONE]') { continue; }
+            if (!data) { continue; }
+            if (data === '[DONE]') {
+                appLogger.info('stream-parser.util', '[StreamParser] Received [DONE] signal');
+                continue;
+            }
 
             try {
                 const json = safeJsonParse<StreamPayload>(data, { choices: [] });
                 yield* this.handlePayload(json);
             } catch (error) {
-                appLogger.debug('stream-parser.util', '[StreamParser] Skipping malformed chunk:', getErrorMessage(error));
+                appLogger.error('stream-parser.util', `[StreamParser] Error parsing JSON: ${getErrorMessage(error)}, data: ${data.slice(0, 50)}...`);
             }
         }
     }

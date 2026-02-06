@@ -57,12 +57,12 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({
         </button>
 
         {incompatibleWithLabel && !isSelected && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-[10px] text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-xxs text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
                 Incompatible with {incompatibleWithLabel}
             </div>
         )}
         {isAtLimit && !incompatibleWithLabel && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-[10px] text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background text-xxs text-foreground rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-10">
                 Max 3 categories
             </div>
         )}
@@ -136,7 +136,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             </div>
 
             {selected.length > 0 && (
-                <p className="text-[10px] text-muted-foreground/40 italic">
+                <p className="text-xxs text-muted-foreground/40 italic">
                     {selected.length}/3 categories selected
                 </p>
             )}

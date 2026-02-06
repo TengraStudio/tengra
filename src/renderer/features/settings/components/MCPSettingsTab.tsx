@@ -3,9 +3,11 @@ import { Server, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 
 import { MCPStore } from '@/features/mcp/MCPStore';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export const MCPSettingsTab = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<'servers' | 'marketplace'>('servers');
 
     return (
@@ -13,8 +15,8 @@ export const MCPSettingsTab = () => {
             {/* Sub-tab Navigation */}
             <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-bold">Model Context Protocol</h1>
-                    <p className="text-sm text-muted-foreground">Manage your MCP servers and install new tools</p>
+                    <h1 className="text-xl font-bold">{t('settings.mcp.title')}</h1>
+                    <p className="text-sm text-muted-foreground">{t('settings.mcp.subtitle')}</p>
                 </div>
 
                 <div className="flex bg-muted/40 p-1 rounded-lg border border-border/40">
@@ -28,7 +30,7 @@ export const MCPSettingsTab = () => {
                         )}
                     >
                         <Server className="w-4 h-4" />
-                        Servers
+                        {t('settings.mcp.tabs.servers')}
                     </button>
                     <button
                         onClick={() => setActiveTab('marketplace')}
@@ -40,7 +42,7 @@ export const MCPSettingsTab = () => {
                         )}
                     >
                         <ShoppingBag className="w-4 h-4" />
-                        Marketplace
+                        {t('settings.mcp.tabs.marketplace')}
                     </button>
                 </div>
             </div>

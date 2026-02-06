@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { Check, Plus, RefreshCw, User, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { LinkedAccountInfo } from '@/electron.d';
 import { useTranslation } from '@/i18n';
 import { CommonBatches } from '@/utils/ipc-batch.util';
+import { appLogger } from '@/utils/renderer-logger';
 
 export const AccountManager: React.FC = () => {
     const { t } = useTranslation();

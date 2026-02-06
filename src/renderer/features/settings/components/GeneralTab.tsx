@@ -95,7 +95,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                 <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
                         <Download className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-bold uppercase text-muted-foreground">Updates</span>
+                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.updates')}</span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,6 +139,45 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                                     if (!settings) { return; }
                                     const current = settings.crashReporting ?? { enabled: false };
                                     void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } });
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Startup Section */}
+                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.startup')}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+                            <div>
+                                <span className="text-sm font-medium">{t('general.startOnStartup')}</span>
+                                <p className="text-xs text-muted-foreground mt-1">{t('general.startOnStartupDesc')}</p>
+                            </div>
+                            <ToggleSwitch
+                                enabled={settings?.window?.startOnStartup ?? false}
+                                onToggle={() => {
+                                    if (!settings) { return; }
+                                    const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
+                                    void handleSave({ ...settings, window: { ...currentWindow, startOnStartup: !currentWindow.startOnStartup } });
+                                }}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+                            <div>
+                                <span className="text-sm font-medium">{t('general.workAtBackground')}</span>
+                                <p className="text-xs text-muted-foreground mt-1">{t('general.workAtBackgroundDesc')}</p>
+                            </div>
+                            <ToggleSwitch
+                                enabled={settings?.window?.workAtBackground ?? false}
+                                onToggle={() => {
+                                    if (!settings) { return; }
+                                    const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
+                                    void handleSave({ ...settings, window: { ...currentWindow, workAtBackground: !currentWindow.workAtBackground } });
                                 }}
                             />
                         </div>

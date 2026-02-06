@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as net from 'net';
 import path from 'path';
 
+import { LifecycleAware } from '@main/core/container';
 import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
@@ -16,7 +17,7 @@ interface ProcessOptions {
     persistent?: boolean // If true, process won't be killed on app exit
 }
 
-export class ProcessManagerService extends EventEmitter {
+export class ProcessManagerService extends EventEmitter implements LifecycleAware {
     private processes: Map<string, ChildProcess> = new Map();
     private persistentServices: Set<string> = new Set();
     private servicePorts: Map<string, number> = new Map();
@@ -25,6 +26,15 @@ export class ProcessManagerService extends EventEmitter {
     constructor() {
         super();
         this.isDev = !app.isPackaged;
+    }
+
+    async initialize(): Promise<void> {
+        appLogger.info('ProcessManagerService', 'Initializing ProcessManagerService');
+    }
+
+    async cleanup(): Promise<void> {
+        appLogger.info('ProcessManagerService', 'Cleaning up ProcessManagerService...');
+        this.killAll(true);
     }
 
     private getPortFilePath(name: string): string {
@@ -184,10 +194,10 @@ export class ProcessManagerService extends EventEmitter {
         this.persistentServices.delete(name);
     }
 
-    killAll() {
-        appLogger.info('ProcessManager', 'Stopping all non-persistent services for shutdown');
+    killAll(force = false) {
+        appLogger.info('ProcessManager', `Stopping all ${force ? '' : 'non-persistent '}services for shutdown`);
         for (const [name, child] of this.processes) {
-            if (this.persistentServices.has(name)) {
+            if (!force && this.persistentServices.has(name)) {
                 appLogger.info('ProcessManager', `Skipping persistent service: ${name}`);
                 continue;
             }

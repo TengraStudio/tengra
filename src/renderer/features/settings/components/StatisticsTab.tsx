@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { Loader2 } from 'lucide-react';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 
@@ -7,6 +6,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types';
 import { CodexUsage, CopilotQuota, QuotaResponse } from '@/types/quota';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { AccountWrapper, DetailedStats, TimeStats } from '../types';
 

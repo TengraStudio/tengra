@@ -216,11 +216,15 @@ export class ProxyProcessManager {
     async generateProxyConfigFile(port: number): Promise<string> {
         const settings = this.settingsService.getSettings();
         const proxyKey = settings.proxy?.key ?? '';
+        const authDir = this.dataService.getPath('auth');
+        const authDirNormalized = authDir.replace(/\\/g, '/');
+        await fs.promises.mkdir(authDir, { recursive: true });
 
         const yamlConfig = `host: "127.0.0.1"
 port: ${port}
 api-keys:
   - "${proxyKey}"
+auth-dir: "${authDirNormalized}"
 remote-management:
   secret-key: "${proxyKey}"
 debug: false

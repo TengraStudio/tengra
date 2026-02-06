@@ -72,10 +72,11 @@ export function useChatInputController() {
     const {
         selectedModel, selectedProvider, selectedModels,
         handleSelectModel, removeSelectedModel, groupedModels,
-        setIsModelMenuOpen, toggleFavorite, isFavorite
+        setIsModelMenuOpen, toggleFavorite, isFavorite,
+        getModelReasoningLevel, setModelReasoningLevel
     } = useModel();
 
-    const { appSettings, quotas, codexUsage, language } = useAuth();
+    const { appSettings, quotas, codexUsage, claudeQuota, language } = useAuth();
     const { t } = useTranslation(language);
 
     const [isDragging, setIsDragging] = useState(false);
@@ -163,9 +164,10 @@ export function useChatInputController() {
         isLoading, sendMessage, stopGeneration, isListening, startListening, stopListening,
         contextTokens, selectedModel, selectedProvider, selectedModels,
         handleSelectModel, removeSelectedModel, groupedModels, setIsModelMenuOpen,
-        toggleFavorite, isFavorite, appSettings, quotas, codexUsage,
+        toggleFavorite, isFavorite, appSettings, quotas, codexUsage, claudeQuota,
         language, t, isDragging, setIsDragging, isEnhancing, handleEnhancePrompt, onDrop,
         systemMode, setSystemMode,
+        getModelReasoningLevel, setModelReasoningLevel,
         ...cmd
     };
 }

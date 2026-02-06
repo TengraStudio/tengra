@@ -30,7 +30,7 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
                     <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">
                         {t('projectWizard.alreadyExists')}
                     </h3>
-                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
+                    <p className="text-xxs text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
                         {t('projectWizard.alreadyExistsDesc')}
                     </p>
                     <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
@@ -49,7 +49,7 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
                     <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">
                         {t('projectWizard.sshTodo')}
                     </h3>
-                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
+                    <p className="text-xxs text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
                         {t('projectWizard.sshTodoDesc')}
                     </p>
                 </button>
@@ -65,7 +65,7 @@ export const WizardSelectionStep: React.FC<WizardSelectionStepProps> = ({
                     <h3 className="font-black text-2xl text-foreground tracking-tight leading-none">
                         {t('projectWizard.newCreateTodo')}
                     </h3>
-                    <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
+                    <p className="text-xxs text-muted-foreground mt-4 leading-relaxed font-medium uppercase tracking-wider opacity-70">
                         {t('projectWizard.newCreateTodoDesc')}
                     </p>
                     <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">

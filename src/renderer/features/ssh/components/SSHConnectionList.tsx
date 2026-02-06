@@ -65,7 +65,7 @@ const ConnectionCard = memo(({
         <div style={{ fontSize: '0.8em', opacity: 0.7 }}>{conn.username}@{conn.host}</div>
         <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className={cn(
-                "text-[10px] font-bold uppercase tracking-wider",
+                "text-xxs font-bold uppercase tracking-wider",
                 conn.status === 'connected' ? "text-primary" :
                     conn.status === 'connecting' ? "text-warning" : "text-muted-foreground"
             )}>

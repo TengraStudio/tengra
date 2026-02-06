@@ -29,7 +29,7 @@ const StatCard: React.FC<StatCardProps> = ({ Icon, iconColor, title, children })
         </div>
         <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{title}</CardTitle>
+                <CardTitle className="text-xxs font-black uppercase tracking-[0.2em] text-muted-foreground">{title}</CardTitle>
                 <Icon className={`w-4 h-4 ${iconColor}`} />
             </div>
         </CardHeader>
@@ -40,14 +40,14 @@ const StatCard: React.FC<StatCardProps> = ({ Icon, iconColor, title, children })
 const MessagesCard: React.FC<{ t: (k: string) => string; count: number }> = ({ t, count }) => (
     <StatCard Icon={MessageSquare} iconColor="text-primary/50" title={t('statistics.messages')}>
         <div className="text-4xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">Total messages</p>
+        <p className="text-xxs font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">{t('statistics.totalMessages')}</p>
     </StatCard>
 );
 
 const ChatsCard: React.FC<{ t: (k: string) => string; count: number }> = ({ t, count }) => (
     <StatCard Icon={Activity} iconColor="text-success/50" title={t('statistics.chats')}>
         <div className="text-4xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">Active threads</p>
+        <p className="text-xxs font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">{t('statistics.activeThreads')}</p>
     </StatCard>
 );
 
@@ -66,11 +66,11 @@ const TokensCard: React.FC<TokensCardProps> = ({ t, total, prompt, completion })
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
                 <div>
-                    <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">In</div>
+                    <div className="text-xxxs font-black text-muted-foreground uppercase tracking-widest">{t('statistics.tokensIn')}</div>
                     <div className="text-xs font-bold text-primary tabular-nums">{formatNumber(prompt)}</div>
                 </div>
                 <div>
-                    <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Out</div>
+                    <div className="text-xxxs font-black text-muted-foreground uppercase tracking-widest">{t('statistics.tokensOut')}</div>
                     <div className="text-xs font-bold text-success tabular-nums">{formatNumber(completion)}</div>
                 </div>
             </div>
@@ -85,7 +85,7 @@ interface TimeCardProps {
 }
 
 const TimeCard: React.FC<TimeCardProps> = ({ t, loading, timeStats }) => (
-    <StatCard Icon={Clock} iconColor="text-purple/50" title={t('statistics.onlineTime')}>
+    <StatCard Icon={Clock} iconColor="text-info/50" title={t('statistics.onlineTime')}>
         <div className="pt-2">
             {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -94,7 +94,7 @@ const TimeCard: React.FC<TimeCardProps> = ({ t, loading, timeStats }) => (
                     value={timeStats?.totalOnlineTime ?? 0}
                     maxValue={Math.max(timeStats?.totalOnlineTime ?? 0, 86400000)}
                     label={t('statistics.totalAppUsage')}
-                    color="linear-gradient(90deg, #a855f7, #ec4899)"
+                    color="linear-gradient(90deg, hsl(var(--info)), hsl(var(--primary)))"
                 />
             )}
         </div>

@@ -8,10 +8,10 @@ import { AgentTaskStatus } from './useAgentTask';
 
 /**
  * Generate a unique ID for logs and activities
- * Combines timestamp with random string to ensure uniqueness
+ * Uses crypto.randomUUID() for secure random ID generation
  */
 const generateUniqueId = (): string => {
-    return `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    return `${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
 };
 
 interface UseAgentEventsProps {

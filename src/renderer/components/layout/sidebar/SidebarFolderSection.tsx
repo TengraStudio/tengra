@@ -2,6 +2,7 @@ import { SidebarItem } from '@renderer/components/layout/sidebar/SidebarItem';
 import { Folder as FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { Chat, Folder } from '@/types';
 
 interface SidebarFolderSectionProps {
@@ -23,6 +24,8 @@ export const SidebarFolderSection = React.memo(({
     deleteFolder,
     renderChatItem
 }: SidebarFolderSectionProps) => {
+    const { t } = useTranslation();
+
     return (
         <div>
             <SidebarItem
@@ -46,7 +49,7 @@ export const SidebarFolderSection = React.memo(({
                 <div className="ml-3 pl-2 border-l border-border/30 space-y-0.5 mt-0.5">
                     {folderChats.map(chat => renderChatItem(chat))}
                     {folderChats.length === 0 && (
-                        <p className="text-[10px] text-muted-foreground/50 py-1 px-2 italic">Empty folder</p>
+                        <p className="text-xxs text-muted-foreground/50 py-1 px-2 italic">{t('sidebar.emptyFolder')}</p>
                     )}
                 </div>
             )}

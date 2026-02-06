@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import React from 'react';
 
 import logo from '@/assets/logo.png';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface SidebarHeaderProps {
@@ -15,6 +16,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     newChatLabel,
     onClickNewChat
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="p-3 space-y-4">
             {/* Tandem Branding */}
@@ -22,10 +25,10 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 "flex items-center gap-3 px-2 py-1",
                 isCollapsed ? "justify-center" : "justify-start"
             )}>
-                <img src={logo} className="w-8 h-8 min-w-[32px]" alt="Tandem" />
+                <img src={logo} className="w-8 h-8 min-w-[32px]" alt={t('app.name')} />
                 {!isCollapsed && (
                     <span className="font-black text-xl tracking-tighter text-primary uppercase">
-                        Tandem
+                        {t('app.name')}
                     </span>
                 )}
             </div>
@@ -39,7 +42,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
                 )}
             >
                 <Plus className="w-4 h-4 stroke-[3]" />
-                {!isCollapsed && <span className="uppercase tracking-widest text-[10px]">{newChatLabel}</span>}
+                {!isCollapsed && <span className="uppercase tracking-widest text-xxs">{newChatLabel}</span>}
             </button>
         </div>
     );

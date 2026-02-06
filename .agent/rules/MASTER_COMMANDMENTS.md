@@ -13,7 +13,8 @@ As an AI Agent on Tandem, you ARE these rules. They are your core logic.
 4.  **LAZINESS**: No placeholders (`// ...`). No truncated logic.
 5.  **DESTRUCTION**: No full file overwrites for minor changes.
 6.  **MESS**: No relative paths for internal modules. Use `@/` aliases.
-7.  **BLINDNESS**: No commits without building (`npm run build`) and linting (`npm run lint`).
+7.  **CLUTTER**: No debug files in root/src. Use `logs/` for all temporary output.
+8.  **BLINDNESS**: No commits without building (`npm run build`) and linting (`npm run lint`).
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
 1.  **BOY SCOUT RULE**: Leave the code cleaner. If you edit a file, you MUST fix at least one existing lint warning or type issue in that file.

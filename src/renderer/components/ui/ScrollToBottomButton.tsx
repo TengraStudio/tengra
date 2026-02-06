@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface ScrollToBottomButtonProps {
@@ -30,7 +31,12 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
     className,
     newMessageCount
 }) => {
-    if (!visible) {return null;}
+    const { t } = useTranslation();
+    if (!visible) { return null; }
+
+    const label = newMessageCount && newMessageCount > 0
+        ? t('chat.scrollToBottomWithCount', { count: newMessageCount })
+        : t('chat.scrollToBottom');
 
     return (
         <button
@@ -44,7 +50,7 @@ export const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = React.m
                 'focus-ring',
                 className
             )}
-            aria-label={newMessageCount ? `Scroll to bottom (${newMessageCount} new messages)` : 'Scroll to bottom'}
+            aria-label={label}
         >
             <div className="relative">
                 <ChevronDown className="w-5 h-5" />

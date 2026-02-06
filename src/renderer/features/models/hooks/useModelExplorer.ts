@@ -4,7 +4,7 @@ import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface UseModelExplorerProps {
-    onRefreshModels?: () => void;
+    onRefreshModels?: (bypassCache?: boolean) => void;
     installedModels: ModelInfo[];
 }
 
@@ -78,7 +78,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         window.electron.onPullProgress((progress) => {
             if (progress.status === 'success') {
                 setPullingOllama(null);
-                onRefreshModels?.();
+                onRefreshModels?.(true);
             }
         });
 
@@ -135,7 +135,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         setPullingOllama(fullModelName);
         try {
             await window.electron.pullModel(fullModelName);
-            onRefreshModels?.();
+            onRefreshModels?.(true);
         } catch (e) { console.error(e); } finally { setPullingOllama(null); }
     };
 
@@ -154,7 +154,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                 delete next[universalPath];
                 return next;
             });
-            if (res.success) { onRefreshModels?.(); }
+            if (res.success) { onRefreshModels?.(true); }
         } catch (e) { console.error(e); }
     };
 

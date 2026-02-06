@@ -45,7 +45,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         </div>
                         <div className="space-y-0.5">
                             <div className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{template.title}</div>
-                            <div className="text-[11px] text-muted-foreground leading-relaxed">{template.description}</div>
+                            <div className="text-xxs text-muted-foreground leading-relaxed">{template.description}</div>
                         </div>
                     </button>
                 ))}

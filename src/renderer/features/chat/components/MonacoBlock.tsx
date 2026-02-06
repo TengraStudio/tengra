@@ -35,7 +35,7 @@ export const MonacoBlock = memo<MonacoBlockProps>(({
         setExecutionResult(null);
         setTimeout(() => {
             setIsExecuting(false);
-            setExecutionResult({ output: `Executed ${language} block successfully.` });
+            setExecutionResult({ output: t('chat.codeBlock.executed', { language }) });
         }, 1500);
     };
 
@@ -48,9 +48,9 @@ export const MonacoBlock = memo<MonacoBlockProps>(({
             <BlockHeader language={language} isSpeaking={isSpeaking} onSpeak={onSpeak} onStop={onStop} handleCopy={handleCopy} copied={copied} t={t} />
             <div style={{ height: `${height}px` }} className="relative w-full overflow-hidden">
                 <CodeEditor value={code} language={normalizeLanguage(language)} readOnly={true} showMinimap={lines > 25} theme="vs-dark" fontSize={13} className="bg-card" />
-                <FloatingActions canExecute={canExecute} isExecuting={isExecuting} handleExecute={handleExecute} />
+                <FloatingActions canExecute={canExecute} isExecuting={isExecuting} handleExecute={handleExecute} t={t} />
             </div>
-            <ExecutionOverlay result={executionResult} onClose={() => setExecutionResult(null)} />
+            <ExecutionOverlay result={executionResult} onClose={() => setExecutionResult(null)} t={t} />
         </div>
     );
 });
@@ -71,8 +71,8 @@ const BlockHeader: React.FC<{
                 <div className="w-2.5 h-2.5 rounded-full bg-warning/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-success/50" />
             </div>
-            <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5">
-                {language || 'plaintext'}
+            <span className="text-xxs text-muted-foreground uppercase font-black tracking-widest opacity-60 group-hover/code:opacity-100 transition-opacity flex items-center gap-1.5">
+                {language || t('chat.codeBlock.plaintext')}
             </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -96,17 +96,18 @@ const FloatingActions: React.FC<{
     canExecute: boolean
     isExecuting: boolean
     handleExecute: () => void
-}> = ({ canExecute, isExecuting, handleExecute }) => (
+    t: (key: string) => string
+}> = ({ canExecute, isExecuting, handleExecute, t }) => (
     <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover/code:opacity-100 transition-all duration-300 transform translate-x-2 group-hover/code:translate-x-0 z-10">
         <AnimatePresence>
             {canExecute && (
-                <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onClick={isExecuting ? undefined : handleExecute} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-xl border transition-all shadow-lg", isExecuting ? "bg-warning/20 border-warning/30 text-amber-200" : "bg-success/20 border-success/30 text-emerald-200 hover:bg-success/30 active:scale-95")}>
+                <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onClick={isExecuting ? undefined : handleExecute} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider backdrop-blur-xl border transition-all shadow-lg", isExecuting ? "bg-warning/20 border-warning/30 text-amber-200" : "bg-success/20 border-success/30 text-emerald-200 hover:bg-success/30 active:scale-95")}>
                     {isExecuting ? <Square className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
-                    <span>{isExecuting ? 'Running...' : 'Execute'}</span>
+                    <span>{isExecuting ? t('chat.codeBlock.running') : t('chat.codeBlock.execute')}</span>
                 </motion.button>
             )}
-            <ActionButton icon={<Save className="w-3 h-3" />} label="Add to Project" delay={0.05} primary />
-            <ActionButton icon={<ExternalLink className="w-3 h-3" />} label="Open in Editor" delay={0.1} />
+            <ActionButton icon={<Save className="w-3 h-3" />} label={t('chat.codeBlock.addToProject')} delay={0.05} primary />
+            <ActionButton icon={<ExternalLink className="w-3 h-3" />} label={t('chat.codeBlock.openInEditor')} delay={0.1} />
         </AnimatePresence>
     </div>
 );
@@ -117,7 +118,7 @@ const ActionButton: React.FC<{
     delay: number
     primary?: boolean
 }> = ({ icon, label, delay, primary }) => (
-    <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg", primary ? "bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30" : "bg-white/5 border-white/10 text-foreground/70 hover:bg-white/10")}>
+    <motion.button initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-xxs font-bold uppercase tracking-wider backdrop-blur-xl border active:scale-95 transition-all shadow-lg", primary ? "bg-primary/20 border-primary/30 text-primary-foreground hover:bg-primary/30" : "bg-white/5 border-white/10 text-foreground/70 hover:bg-white/10")}>
         {icon}
         <span>{label}</span>
     </motion.button>
@@ -126,12 +127,13 @@ const ActionButton: React.FC<{
 const ExecutionOverlay: React.FC<{
     result: { output: string; error?: boolean } | null
     onClose: () => void
-}> = ({ result, onClose }) => (
+    t: (key: string) => string
+}> = ({ result, onClose, t }) => (
     <AnimatePresence>
         {result && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className={cn("px-4 py-3 text-xs font-mono border-t backdrop-blur-md", result.error ? "bg-destructive/10 border-destructive/20 text-red-300" : "bg-success/5 border-success/10 text-emerald-300/80")}>
                 <div className="flex items-center justify-between mb-1 opacity-40">
-                    <span className="text-[9px] uppercase font-bold tracking-widest">Output</span>
+                    <span className="text-xxxs uppercase font-bold tracking-widest">{t('chat.codeBlock.output')}</span>
                     <button onClick={onClose} className="hover:text-foreground transition-colors"><Square className="w-3 h-3" /></button>
                 </div>
                 <div className="whitespace-pre-wrap leading-relaxed">{result.output}</div>

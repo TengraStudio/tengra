@@ -2,6 +2,7 @@ import { FileCode, X } from 'lucide-react';
 import React from 'react';
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 import { OpenFile } from '../../hooks/useProjectDashboard';
@@ -26,6 +27,7 @@ export const FilesTab: React.FC<FilesTabProps> = ({
     selectedFolder,
     projectRoot
 }) => {
+    const { t } = useTranslation();
     const activeFileObj = openFiles.find(f => f.path === activeFile);
 
     return (
@@ -75,29 +77,29 @@ export const FilesTab: React.FC<FilesTabProps> = ({
                             <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center mb-6">
                                 <FileCode className="w-8 h-8 text-primary/40" />
                             </div>
-                            <h3 className="text-lg font-semibold text-foreground mb-2">No File Selected</h3>
+                            <h3 className="text-lg font-semibold text-foreground mb-2">{t('projectDashboard.filesTab.noFileSelected')}</h3>
                             <p className="text-sm text-muted-foreground text-center max-w-sm mb-8 leading-relaxed">
-                                Select a file from the explorer to view and edit its contents.
+                                {t('projectDashboard.filesTab.noFileDesc')}
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
                                 <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col items-center gap-2">
-                                    <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/50">Shortcuts</span>
+                                    <span className="text-xxs uppercase tracking-wider font-bold text-muted-foreground/50">{t('projectDashboard.filesTab.shortcuts')}</span>
                                     <div className="flex items-center gap-2">
-                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border">Ctrl</kbd>
-                                        <span className="text-[10px] text-muted-foreground">+</span>
-                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border">P</kbd>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">Ctrl</kbd>
+                                        <span className="text-xxs text-muted-foreground">+</span>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">P</kbd>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground">Quick Search</span>
+                                    <span className="text-xxs text-muted-foreground">{t('projectDashboard.filesTab.quickSearch')}</span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-background/50 border border-border/50 flex flex-col items-center gap-2">
-                                    <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/50">Navigation</span>
+                                    <span className="text-xxs uppercase tracking-wider font-bold text-muted-foreground/50">{t('projectDashboard.filesTab.navigation')}</span>
                                     <div className="flex items-center gap-2">
-                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border">Ctrl</kbd>
-                                        <span className="text-[10px] text-muted-foreground">+</span>
-                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border">B</kbd>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">Ctrl</kbd>
+                                        <span className="text-xxs text-muted-foreground">+</span>
+                                        <kbd className="px-1.5 py-0.5 rounded bg-muted text-xxs border border-border">B</kbd>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground">Toggle Explorer</span>
+                                    <span className="text-xxs text-muted-foreground">{t('projectDashboard.filesTab.toggleExplorer')}</span>
                                 </div>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-
+import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { IpcValue } from '@shared/types';
@@ -7,7 +7,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 
-export class UpdateService {
+export class UpdateService extends BaseService {
     private settingsService: SettingsService;
     private window: BrowserWindow | null = null;
 
@@ -15,6 +15,7 @@ export class UpdateService {
         settingsService: SettingsService,
         dataService: DataService
     ) {
+        super('UpdateService');
         this.settingsService = settingsService;
 
         // Configure electron-log
@@ -25,6 +26,11 @@ export class UpdateService {
         // Disable auto-download if configured (we'll handle it manually based on settings)
         autoUpdater.autoDownload = false;
         autoUpdater.autoInstallOnAppQuit = true;
+    }
+
+    override async cleanup(): Promise<void> {
+        this.logInfo('Cleaning up update service, clearing window reference');
+        this.window = null;
     }
 
     init(window: BrowserWindow) {

@@ -63,7 +63,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
                     <span className="flex-1 text-left truncate">{label}</span>
                     {badge !== undefined && (
                         <span className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded-full",
+                            "text-xxs px-1.5 py-0.5 rounded-full",
                             active ? "bg-primary/20 text-primary" : "bg-muted/50 text-muted-foreground"
                         )}>
                             {badge}

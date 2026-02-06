@@ -58,7 +58,7 @@ export function ProjectOverviewHeader({
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
+                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
                     </button>
                 </div>
             </div>
@@ -120,9 +120,9 @@ export function ProjectOverviewHeader({
                 <div className="flex items-center gap-4 pt-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[10px] font-bold text-success uppercase tracking-wider">{analysis.type}</span>
+                        <span className="text-xxs font-bold text-success uppercase tracking-wider">{analysis.type}</span>
                     </div>
-                    <div className="text-[10px] font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
+                    <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {projectRoot}
                     </div>
                     <button
@@ -151,15 +151,15 @@ export function ProjectStatsCards({ stats, analysis, t, formatBytes }: ProjectSt
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.fileCount')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.fileCount')}</div>
                 <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.loc')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.loc')}</div>
                 <div className="text-2xl font-black text-foreground">~{stats?.loc ?? 0}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.totalSize')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.totalSize')}</div>
                 <div className="text-2xl font-black text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
@@ -167,7 +167,7 @@ export function ProjectStatsCards({ stats, analysis, t, formatBytes }: ProjectSt
                 <div className="text-2xl font-black text-foreground">{analysis.monorepo?.packages.length ?? Object.keys(analysis.dependencies).length}</div>
             </div>
             <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
-                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
+                <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">{t('projectDashboard.type')}</div>
                 <div className="text-2xl font-black text-primary capitalize">{analysis.type}</div>
             </div>
         </div>

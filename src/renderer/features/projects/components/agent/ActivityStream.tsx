@@ -19,15 +19,15 @@ interface ActivityStreamProps {
 }
 
 const ActivityItem = memo(({ log }: { log: ActivityLog }) => (
-    <div className="flex gap-2 text-[11px] leading-relaxed py-0.5 animate-in fade-in slide-in-from-left-1 duration-300">
+    <div className="flex gap-2 text-xxs leading-relaxed py-0.5 animate-in fade-in slide-in-from-left-1 duration-300">
         <span className="text-muted-foreground/50 whitespace-nowrap font-mono">
             {log.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </span>
         <span className={cn(
-            "font-black uppercase tracking-tighter text-[9px]",
+            "font-black uppercase tracking-tighter text-xxxs",
             log.type === 'info' && "text-primary",
             log.type === 'llm' && "text-purple",
-            log.type === 'tool' && "text-yellow",
+            log.type === 'tool' && "text-warning",
             log.type === 'success' && "text-success",
             log.type === 'error' && "text-destructive"
         )}>
@@ -57,7 +57,7 @@ export const ActivityStream: React.FC<ActivityStreamProps> = ({ logs }) => {
                         <div className="w-16 h-16 rounded-3xl bg-primary/5 flex items-center justify-center mb-6 border border-primary/10">
                             <Bot className="w-8 h-8 text-primary/40" />
                         </div>
-                        <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/40">{t('agent.waitingActivity')}</p>
+                        <p className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40">{t('agent.waitingActivity')}</p>
                     </div>
                 ) : (
                     <Virtuoso

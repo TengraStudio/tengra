@@ -60,7 +60,7 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                         className="absolute inset-0 bg-primary/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2 text-primary-foreground"
                     >
                         <Camera className="w-6 h-6" />
-                        <span className="text-[10px] font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
+                        <span className="text-xxs font-bold uppercase tracking-tighter">{t('projects.changeLogo') || 'Change Logo'}</span>
                     </button>
                 </div>
             </div>
@@ -122,9 +122,9 @@ export const ProjectDashboardHeader: React.FC<ProjectDashboardHeaderProps> = ({
                 <div className="flex items-center gap-4 pt-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-success/10 border border-success/20 rounded-md">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-[10px] font-bold text-success uppercase tracking-wider">{type}</span>
+                        <span className="text-xxs font-bold text-success uppercase tracking-wider">{type}</span>
                     </div>
-                    <div className="text-[10px] font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
+                    <div className="text-xxs font-medium text-muted-foreground font-mono bg-accent/50 px-2 py-1 rounded border border-border">
                         {projectRoot}
                     </div>
                     <button

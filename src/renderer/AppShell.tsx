@@ -11,6 +11,7 @@ import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 import { OnboardingFlow } from '@renderer/features/onboarding/OnboardingFlow';
+import { OnboardingTour } from '@renderer/features/onboarding/OnboardingTour';
 import { SettingsCategory } from '@renderer/features/settings/types';
 import { useAppState } from '@renderer/hooks/useAppState';
 import { AppView } from '@renderer/hooks/useAppState';
@@ -58,6 +59,7 @@ export function AppShell() {
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
         return !localStorage.getItem('Tandem-onboarding-complete');
     });
+    const [isTourOpen, setIsTourOpen] = useState(false);
 
     // Handle navigation to a newly created project from Ideas page
     const handleNavigateToProject = useCallback(async (projectId: string) => {
@@ -160,7 +162,7 @@ export function AppShell() {
                     }
                 }}
                 onOpenSSHManager={() => setShowSSHManager(true)}
-                onRefreshModels={() => { void loadModels(); }}
+                onRefreshModels={(bypassCache) => { void loadModels(bypassCache); }}
                 models={models}
                 onSelectModel={(model: string) => setSelectedModel(model)}
                 selectedModel={selectedModel}
@@ -175,6 +177,8 @@ export function AppShell() {
                 setShowShortcuts={setShowShortcuts}
                 isOnboardingOpen={isOnboardingOpen}
                 setIsOnboardingOpen={setIsOnboardingOpen}
+                isTourOpen={isTourOpen}
+                setIsTourOpen={setIsTourOpen}
             />
         </div>
     );
@@ -196,7 +200,7 @@ interface AppOverlaysProps {
     onSelectProject: (id: string) => void;
     onOpenSettings: (cat?: SettingsCategory) => void;
     onOpenSSHManager: () => void;
-    onRefreshModels: () => void;
+    onRefreshModels: (bypassCache?: boolean) => void;
     models: ModelInfo[];
     onSelectModel: (model: string) => void;
     selectedModel: string;
@@ -211,6 +215,8 @@ interface AppOverlaysProps {
     setShowShortcuts: (show: boolean) => void;
     isOnboardingOpen: boolean;
     setIsOnboardingOpen: (show: boolean) => void;
+    isTourOpen: boolean;
+    setIsTourOpen: (show: boolean) => void;
 }
 
 function AppOverlays({
@@ -219,7 +225,7 @@ function AppOverlays({
     onSelectProject, onOpenSettings, onOpenSSHManager, onRefreshModels, models,
     onSelectModel, selectedModel, onClearChat, t, isAuthModalOpen, setIsAuthModalOpen,
     handleAntigravityLogout, setSettingsCategory, setCurrentView, showShortcuts,
-    setShowShortcuts, isOnboardingOpen, setIsOnboardingOpen
+    setShowShortcuts, isOnboardingOpen, setIsOnboardingOpen, isTourOpen, setIsTourOpen
 }: AppOverlaysProps) {
     return (
         <>
@@ -276,7 +282,7 @@ function AppOverlays({
                         }}
                         className="w-full py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors font-bold uppercase tracking-wider"
                     >
-                        LOGOUT
+                        {t('auth.logout')}
                     </button>
                 </div>
             </Modal>
@@ -291,6 +297,13 @@ function AppOverlays({
             <OnboardingFlow
                 isOpen={isOnboardingOpen}
                 onClose={() => setIsOnboardingOpen(false)}
+                onStartTour={() => setIsTourOpen(true)}
+            />
+            <OnboardingTour
+                isOpen={isTourOpen}
+                onClose={() => setIsTourOpen(false)}
+                onComplete={() => setIsTourOpen(false)}
+                language={language === 'tr' ? 'tr' : 'en'}
             />
         </>
     );

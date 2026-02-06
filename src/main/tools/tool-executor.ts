@@ -2,15 +2,20 @@ import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
 import { PageSpeedService } from '@main/services/analysis/pagespeed.service';
+import { ScannerService } from '@main/services/analysis/scanner.service';
 import { FileManagementService } from '@main/services/data/file.service';
 import { FileSystemService } from '@main/services/data/filesystem.service';
 import { ContentService } from '@main/services/external/content.service';
 import { UtilityService } from '@main/services/external/utility.service';
 import { WebService } from '@main/services/external/web.service';
+import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MemoryService } from '@main/services/llm/memory.service';
+import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
+import { SSHService } from '@main/services/project/ssh.service';
+import { SecurityService } from '@main/services/security/security.service';
 import { CommandService } from '@main/services/system/command.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { NetworkService } from '@main/services/system/network.service';
@@ -31,6 +36,10 @@ export interface ToolExecutorOptions {
     eventBus: EventBusService;
     command: CommandService;
     web: WebService;
+    docker: DockerService;
+    ssh: SSHService;
+    scanner: ScannerService;
+    embedding: EmbeddingService;
     memory: MemoryService;
     localImage: LocalImageService;
     screenshot: ScreenshotService;
@@ -43,11 +52,10 @@ export interface ToolExecutorOptions {
     monitor: MonitoringService;
     clipboard: ClipboardService;
     git: GitService;
-    security: unknown; // Still unknown but can be fixed if security service is needed
+    security: SecurityService;
     mcp: McpDispatcher;
     llm: LLMService;
     pageSpeed: PageSpeedService;
-    [key: string]: unknown;
 }
 
 export class ToolExecutor {
@@ -120,8 +128,11 @@ export class ToolExecutor {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
         const path = args['path'];
         try {
-            const content = await this.options.fileSystem.readFile(path);
-            return { success: true, result: content as unknown as JsonValue };
+            const response = await this.options.fileSystem.readFile(path);
+            if (!response.success || typeof response.data !== 'string') {
+                return { success: false, error: response.error ?? 'Failed to read file' };
+            }
+            return { success: true, result: response.data };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -144,8 +155,11 @@ export class ToolExecutor {
         if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
         const path = args['path'];
         try {
-            const files = await this.options.fileSystem.listDirectory(path);
-            return { success: true, result: files as unknown as JsonValue };
+            const response = await this.options.fileSystem.listDirectory(path);
+            if (!response.success || !response.data) {
+                return { success: false, error: response.error ?? 'Failed to list directory' };
+            }
+            return { success: true, result: response.data };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -157,7 +171,11 @@ export class ToolExecutor {
         const cwd = (typeof args['cwd'] === 'string') ? args['cwd'] : undefined;
         try {
             const result = await this.options.command.executeCommand(command, { cwd });
-            return { success: result.success, result: result.stdout as JsonValue, error: (result.stderr ?? result.error) ?? undefined };
+            return {
+                success: result.success,
+                result: result.stdout ?? '',
+                error: (result.stderr ?? result.error) ?? undefined
+            };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -168,7 +186,7 @@ export class ToolExecutor {
         const query = args['query'];
         try {
             const result = await this.options.web.searchWeb(query);
-            return { success: result.success, result: result.results as JsonValue, error: result.error ?? undefined };
+            return { success: result.success, result: result.results ?? [], error: result.error ?? undefined };
         } catch (e) {
             return { success: false, error: String(e) };
         }
@@ -188,7 +206,7 @@ export class ToolExecutor {
             const result = await this.options.mcp.dispatch(server, tool, args);
             return {
                 success: result.success,
-                result: result.data as JsonValue,
+                result: result.data ?? null,
                 error: result.error ?? undefined
             };
         } catch (e) {

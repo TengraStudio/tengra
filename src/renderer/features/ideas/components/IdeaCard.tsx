@@ -62,7 +62,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onClick }) => {
                     {/* Status badge */}
                     <div className="mt-3 flex items-center justify-between">
                         <span className={cn(
-                            'text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full',
+                            'text-xxs uppercase tracking-wider font-bold px-2 py-1 rounded-full',
                             idea.status === 'pending' && 'bg-muted text-muted-foreground',
                             idea.status === 'approved' && 'bg-primary/20 text-primary border border-primary/20',
                             idea.status === 'rejected' && 'bg-destructive/20 text-destructive border border-destructive/20'

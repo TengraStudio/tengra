@@ -76,6 +76,17 @@ export class QuotaUtils {
         return null;
     }
 
+    static calculatePercentage(usage: number | null, limit: number | null): number | null {
+        if (usage === null || limit === null || limit <= 0) { return null; }
+        return Math.min(100, Math.max(0, (usage / limit) * 100));
+    }
+
+    static normalizePercent(value: number | null): number | null {
+        if (value === null || !Number.isFinite(value)) { return null; }
+        if (value >= 0 && value <= 1) { return value * 100; }
+        return value;
+    }
+
     static asObject(value: JsonValue | undefined): JsonObject | null {
         if (!value || typeof value !== 'object' || Array.isArray(value)) { return null; }
         return value as JsonObject;

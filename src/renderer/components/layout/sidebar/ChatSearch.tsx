@@ -32,7 +32,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsCreatingFolder(true)}
-                className="w-full h-7 text-[10px] font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2"
+                className="w-full h-7 text-xxs font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 justify-start px-2"
             >
                 <FolderPlus className="w-3.5 h-3.5 mr-2" />
                 {t('sidebar.newFolder')}

@@ -55,8 +55,8 @@ const ThemeSection: React.FC<ThemeSectionProps> = ({ currentTheme, onThemeChange
                                 <span className="h-2 w-6 rounded-full" style={{ background: 'hsl(var(--primary))' }} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[11px] font-bold text-foreground truncate">{theme.label}</div>
-                                <div className="text-[10px] text-muted-foreground truncate">{theme.id}</div>
+                                <div className="text-xxs font-bold text-foreground truncate">{theme.label}</div>
+                                <div className="text-xxs text-muted-foreground truncate">{theme.id}</div>
                             </div>
                             {isActive && <div className="h-2 w-2 rounded-full bg-primary" />}
                         </div>
@@ -87,7 +87,7 @@ const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, font
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('appearance.fontFamily')}</div>
+                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{t('appearance.fontFamily')}</div>
                 <div className="grid gap-2">
                     {fontOptions.map((font) => (
                         <button
@@ -102,7 +102,7 @@ const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, font
                 </div>
             </div>
             <div className="space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex justify-between">
+                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex justify-between">
                     <span>{t('appearance.fontSize')}</span>
                     <span className="text-primary">{fontSize}px</span>
                 </div>
@@ -148,7 +148,7 @@ interface AccessibilitySectionProps {
 const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({ highContrast, reduceMotion, onHighContrastChange, onReduceMotionChange, t }) => (
     <div className="bg-card p-6 rounded-2xl border border-border space-y-6">
         <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange/10 text-orange"><Type className="w-5 h-5" /></div>
+            <div className="p-2 rounded-xl bg-warning/10 text-orange"><Type className="w-5 h-5" /></div>
             <div>
                 <div className="text-sm font-bold text-foreground">{t('appearance.accessibility')}</div>
                 <div className="text-xs text-muted-foreground">{t('appearance.accessibilityDesc')}</div>

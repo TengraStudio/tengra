@@ -10,6 +10,7 @@ import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 import { Message } from '@/types';
 
 interface MultiModelCollaborationProps {
@@ -44,11 +45,11 @@ interface ModelItemProps {
     disabled: boolean
 }
 
-const ModelItem: React.FC<ModelItemProps> = ({ model, onRemove, disabled }) => (
+const ModelItem: React.FC<ModelItemProps & { t: (key: string) => string }> = ({ model, onRemove, disabled, t }) => (
     <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
         <span className="flex-1 text-sm">{model.provider}/{model.model}</span>
         <Button variant="ghost" size="sm" onClick={onRemove} disabled={disabled}>
-            Remove
+            {t('chat.collaboration.remove')}
         </Button>
     </div>
 );
@@ -71,18 +72,18 @@ interface FinalResultProps {
     results: CollaborationResult
 }
 
-const FinalResult: React.FC<FinalResultProps> = ({ results }) => {
+const FinalResult: React.FC<FinalResultProps & { t: (key: string, options?: Record<string, string | number>) => string }> = ({ results, t }) => {
     if (!results.consensus && !results.bestResponse) { return null; }
 
     return (
         <div className="space-y-2">
-            <label className="text-sm font-medium">Final Result</label>
+            <label className="text-sm font-medium">{t('chat.collaboration.finalResult')}</label>
             <Card className="p-4 bg-primary/5">
                 {results.consensus && (
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <CheckCircle2 className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">Consensus</span>
+                            <span className="text-sm font-medium">{t('chat.collaboration.consensus')}</span>
                         </div>
                         <p className="text-sm">{results.consensus}</p>
                     </div>
@@ -91,11 +92,11 @@ const FinalResult: React.FC<FinalResultProps> = ({ results }) => {
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <CheckCircle2 className="w-4 h-4 text-primary" />
-                            <span className="text-sm font-medium">Best Response</span>
+                            <span className="text-sm font-medium">{t('chat.collaboration.bestResponse')}</span>
                         </div>
                         <p className="text-sm mb-2">{results.bestResponse.content}</p>
                         <p className="text-xs text-muted-foreground">
-                            From: {results.bestResponse.provider}/{results.bestResponse.model}
+                            {t('chat.collaboration.from', { provider: results.bestResponse.provider, model: results.bestResponse.model })}
                         </p>
                     </div>
                 )}
@@ -109,6 +110,7 @@ export function MultiModelCollaboration({
     onResult,
     availableModels = []
 }: MultiModelCollaborationProps) {
+    const { t } = useTranslation();
     const [selectedModels, setSelectedModels] = useState<Array<{ provider: string; model: string }>>([]);
     const [strategy, setStrategy] = useState<Strategy>('consensus');
     const [isRunning, setIsRunning] = useState(false);
@@ -131,7 +133,7 @@ export function MultiModelCollaboration({
 
     const handleRun = async () => {
         if (selectedModels.length === 0) {
-            setError('Please select at least one model');
+            setError(t('chat.collaboration.selectModelError'));
             return;
         }
 
@@ -152,7 +154,7 @@ export function MultiModelCollaboration({
                 onResult?.(result.response);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to run collaboration');
+            setError(err instanceof Error ? err.message : t('chat.collaboration.runFailed'));
         } finally {
             setIsRunning(false);
         }
@@ -163,18 +165,19 @@ export function MultiModelCollaboration({
             <Card className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Multi-Model Collaboration</h3>
+                    <h3 className="text-lg font-semibold">{t('chat.collaboration.title')}</h3>
                 </div>
 
                 {/* Model Selection */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Selected Models</label>
+                    <label className="text-sm font-medium">{t('chat.collaboration.selectedModels')}</label>
                     {selectedModels.map((model, index) => (
                         <ModelItem
                             key={index}
                             model={model}
                             onRemove={() => handleRemoveModel(index)}
                             disabled={isRunning}
+                            t={t}
                         />
                     ))}
                     <Button
@@ -183,13 +186,13 @@ export function MultiModelCollaboration({
                         onClick={handleAddModel}
                         disabled={isRunning || availableModels.length === 0}
                     >
-                        Add Model
+                        {t('chat.collaboration.addModel')}
                     </Button>
                 </div>
 
                 {/* Strategy Selection */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Collaboration Strategy</label>
+                    <label className="text-sm font-medium">{t('chat.collaboration.strategy')}</label>
                     <Select
                         value={strategy}
                         onValueChange={(value) => setStrategy(value as Strategy)}
@@ -199,10 +202,10 @@ export function MultiModelCollaboration({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="consensus">Consensus (Find Common Themes)</SelectItem>
-                            <SelectItem value="vote">Vote (Majority Wins)</SelectItem>
-                            <SelectItem value="best-of-n">Best of N (Quality Score)</SelectItem>
-                            <SelectItem value="chain-of-thought">Chain of Thought (Sequential Refinement)</SelectItem>
+                            <SelectItem value="consensus">{t('chat.collaboration.strategyConsensus')}</SelectItem>
+                            <SelectItem value="vote">{t('chat.collaboration.strategyVote')}</SelectItem>
+                            <SelectItem value="best-of-n">{t('chat.collaboration.strategyBestOfN')}</SelectItem>
+                            <SelectItem value="chain-of-thought">{t('chat.collaboration.strategyChain')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -216,12 +219,12 @@ export function MultiModelCollaboration({
                     {isRunning ? (
                         <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Running Collaboration...
+                            {t('chat.collaboration.running')}
                         </>
                     ) : (
                         <>
                             <Sparkles className="w-4 h-4 mr-2" />
-                            Run Collaboration
+                            {t('chat.collaboration.run')}
                         </>
                     )}
                 </Button>
@@ -237,18 +240,18 @@ export function MultiModelCollaboration({
                 {/* Results Display */}
                 {results && (
                     <div className="space-y-4 mt-4 pt-4 border-t">
-                        <h4 className="font-semibold">Results</h4>
+                        <h4 className="font-semibold">{t('chat.collaboration.results')}</h4>
                         
                         {/* Individual Responses */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Individual Responses</label>
+                            <label className="text-sm font-medium">{t('chat.collaboration.individualResponses')}</label>
                             {results.responses.map((response, index: number) => (
                                 <ResponseCard key={index} response={response} />
                             ))}
                         </div>
 
                         {/* Consensus/Best Response */}
-                        <FinalResult results={results} />
+                        <FinalResult results={results} t={t} />
                     </div>
                 )}
             </Card>

@@ -7,7 +7,7 @@ import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import React, { lazy, Suspense, useEffect } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
-import { Language } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -108,7 +108,7 @@ const SettingsSection: React.FC = () => {
         <SettingsView
             installedModels={installedModels}
             proxyModels={proxyModels}
-            loadModels={() => void loadModels()}
+            loadModels={(bypassCache) => void loadModels(bypassCache)}
             settingsCategory={settingsCategory}
             groupedModels={groupedModels}
         />
@@ -118,6 +118,7 @@ const SettingsSection: React.FC = () => {
 export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView, onNavigateToProject } = props;
     const { language } = useAuth();
+    const { t } = useTranslation(language);
     const { stopListening, isListening } = useChat();
     const { setIsModelMenuOpen } = useModel();
     const { handleOpenTerminal } = useProject();
@@ -152,7 +153,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             case 'terminal': return (
                 <div className="h-full p-6 flex flex-col items-center justify-center bg-tech-grid opacity-50">
                     <div className="text-muted-foreground text-sm font-mono border border-border/50 p-4 rounded-xl">
-                        [ Terminal Dashboard Placeholder ]
+                        {t('terminal.dashboardPlaceholder')}
                     </div>
                 </div>
             );
@@ -175,7 +176,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
             {isListening && (
                 <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-current animate-ping" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-[10px]">Listening</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-xxs">{t('audioChat.listeningLabel')}</span>
                 </div>
             )}
         </AnimatePresence>

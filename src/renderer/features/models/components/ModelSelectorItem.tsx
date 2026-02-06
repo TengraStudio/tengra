@@ -28,7 +28,7 @@ const ModelLabelSection: React.FC<{ model: ModelItem }> = ({ model }) => (
         {model.label}
         {model.type === 'image' && <ImageIcon className="w-3.5 h-3.5 text-success" />}
         {(model.contextWindow ?? 0) > 0 && (
-            <span className="text-[9px] text-muted-foreground bg-muted/50 px-1 rounded border border-border/50">
+            <span className="text-xxxs text-muted-foreground bg-muted/50 px-1 rounded border border-border/50">
                 {(model.contextWindow ?? 0) >= 1000000 ? `${(model.contextWindow ?? 0) / 1000000}m` : `${(model.contextWindow ?? 0) / 1000}k`}
             </span>
         )}
@@ -38,12 +38,12 @@ const ModelLabelSection: React.FC<{ model: ModelItem }> = ({ model }) => (
 const ModelInfoBadges: React.FC<{ model: ModelItem, t: (k: string) => string }> = ({ model, t }) => (
     <>
         {model.type === 'image' && (
-            <span className="text-[9px] font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">
+            <span className="text-xxxs font-black text-success bg-success/10 px-1.5 py-0.5 rounded leading-none mr-1">
                 {t('modelSelector.image')}
             </span>
         )}
         {model.disabled && (
-            <span className="text-[9px] font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none">
+            <span className="text-xxxs font-black text-destructive flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded leading-none">
                 <Info className="w-2.5 h-2.5" />
                 {t('modelSelector.limit')}
             </span>
@@ -67,7 +67,7 @@ const ModelActions: React.FC<{
                 }}
                 className={cn(
                     "p-1 rounded hover:bg-muted/50 transition-colors cursor-pointer mr-1",
-                    model.pinned ? "text-yellow opacity-100" : "text-muted-foreground/50 opacity-0 group-hover:opacity-100"
+                    model.pinned ? "text-warning opacity-100" : "text-muted-foreground/50 opacity-0 group-hover:opacity-100"
                 )}
             >
                 <Pin className={cn("w-3 h-3", model.pinned && "fill-current")} />
@@ -75,7 +75,7 @@ const ModelActions: React.FC<{
         )}
         {(isPrimary || isSelected) && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
         {isSelected && modelIndex !== undefined && modelIndex >= 0 && (
-            <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+            <span className="text-xxxs font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded leading-none">
                 {modelIndex + 1}
             </span>
         )}

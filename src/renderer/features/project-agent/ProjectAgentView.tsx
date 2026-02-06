@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { ProjectState } from '@shared/types/project-agent';
 import {
     addEdge,
@@ -11,7 +10,7 @@ import {
     ReactFlowProvider,
     useEdgesState,
     useNodesState,
-    useReactFlow
+    useReactFlow,
 } from '@xyflow/react';
 import {
     ChevronRight,
@@ -22,12 +21,14 @@ import {
     Sparkles,
     Zap,
     ZoomIn,
-    ZoomOut
+    ZoomOut,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 
@@ -105,7 +106,7 @@ const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
                             onClick={() => onAddNode('action')}
                             className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
                         >
-                            <Zap className="w-4 h-4 text-yellow-400" />
+                            <Zap className="w-4 h-4 text-warning" />
                             <span>{t('agents.addAction')}</span>
                         </button>
                     </PopoverContent>
@@ -181,7 +182,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
                                     onClick={() => handleAddNode('action')}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
                                 >
-                                    <Zap className="w-4 h-4 text-yellow-400" />
+                                    <Zap className="w-4 h-4 text-warning-400" />
                                     <span>{t('agents.addAction')}</span>
                                 </button>
                             </motion.div>
@@ -309,6 +310,10 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
 };
 
 const InternalProjectAgentView: React.FC = () => {
+    const { appSettings } = useAuth();
+    const theme = appSettings?.general.theme ?? 'black';
+    const isDark = theme !== 'white';
+
     const nodeTypes = React.useMemo(() => ({ task: TaskNode }), []);
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -363,7 +368,7 @@ const InternalProjectAgentView: React.FC = () => {
                 onConnect={onConnect}
                 onPaneContextMenu={onPaneContextMenu}
                 className="bg-tech-grid"
-                colorMode="dark"
+                colorMode={isDark ? 'dark' : 'light'}
                 fitView
                 proOptions={{ hideAttribution: true }}
             >
@@ -371,7 +376,7 @@ const InternalProjectAgentView: React.FC = () => {
                     id="1"
                     gap={40}
                     size={1}
-                    color="hsl(var(--primary) / 0.2)"
+                    color="hsl(var(--border) / 0.2)"
                 />
                 <CommandCenter onAddNode={onAddNode} />
             </ReactFlow>

@@ -75,6 +75,10 @@ export type AppSettings = {
         apiKey: string
         model: string
     }
+    nvidia?: {
+        apiKey: string
+        model: string
+    }
     huggingface?: {
         apiKey: string
     }
@@ -121,6 +125,7 @@ export type AppSettings = {
     modelSettings?: Record<string, {
         systemPrompt?: string
         presetId?: string
+        reasoningLevel?: string
     }>
     presets?: Array<{
         id: string

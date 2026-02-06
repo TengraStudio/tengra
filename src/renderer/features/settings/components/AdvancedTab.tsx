@@ -66,7 +66,7 @@ const IntervalSelect: React.FC<IntervalSelectProps> = ({ icon, label, descriptio
             {icon}
             {label}
         </label>
-        <p className="text-[10px] text-muted-foreground">{description}</p>
+        <p className="text-xxs text-muted-foreground">{description}</p>
         <select
             value={value}
             onChange={(e) => onChange(parseInt(e.target.value))}
@@ -90,12 +90,12 @@ const BenchmarkResults: React.FC<BenchmarkResultsProps> = ({ result, t }) => (
         <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
             <Thermometer className="w-5 h-5 text-primary" />
             <div className="text-xl font-black text-foreground">{result.tokensPerSec} t/s</div>
-            <div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.tokensPerSec')}</div>
+            <div className="text-xxs text-muted-foreground uppercase font-bold">{t('advanced.tokensPerSec')}</div>
         </div>
         <div className="p-4 rounded-xl bg-muted/30 border border-border/50 flex flex-col items-center justify-center gap-1">
             <Activity className="w-5 h-5 text-success" />
             <div className="text-xl font-black text-foreground">{result.latency}ms</div>
-            <div className="text-[10px] text-muted-foreground uppercase font-bold">{t('advanced.latency')}</div>
+            <div className="text-xxs text-muted-foreground uppercase font-bold">{t('advanced.latency')}</div>
         </div>
     </div>
 );
@@ -125,7 +125,7 @@ const PresetButton: React.FC<{
     >
         <div>
             <div className="text-xs font-bold">{preset.name}</div>
-            <div className="text-[10px] opacity-60">Temp: {preset.temperature} • TopP: {preset.topP}</div>
+            <div className="text-xxs opacity-60">Temp: {preset.temperature} • TopP: {preset.topP}</div>
         </div>
         {isSelected && <Zap className="w-4 h-4 animate-pulse" />}
     </button>

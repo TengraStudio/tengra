@@ -4,11 +4,17 @@
  */
 
 import {
-AlertCircle, Bell,
-    GitBranch, Loader2,     Wifi, WifiOff, Zap
+    AlertCircle,
+    Bell,
+    GitBranch,
+    Loader2,
+    Wifi,
+    WifiOff,
+    Zap
 } from 'lucide-react';
-import React, { createContext, useCallback,useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export interface StatusBarItem {
@@ -33,7 +39,7 @@ const StatusBarContext = createContext<StatusBarContextType | null>(null);
 
 export const useStatusBar = () => {
     const context = useContext(StatusBarContext);
-    if (!context) {throw new Error('useStatusBar must be used within StatusBarProvider');}
+    if (!context) { throw new Error('useStatusBar must be used within StatusBarProvider'); }
     return context;
 };
 
@@ -79,14 +85,14 @@ export const StatusBarProvider: React.FC<{
 const StatusBarItemView: React.FC<{
     item: StatusBarItem
 }> = ({ item }) => {
-    if (item.visible === false) {return null;}
+    if (item.visible === false) { return null; }
 
     return (
         <div
             onClick={item.onClick}
             title={item.tooltip}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-[11px] transition-colors",
+                "flex items-center gap-1 px-2 py-0.5 text-xxs transition-colors",
                 item.onClick && "cursor-pointer hover:bg-white/10",
                 item.backgroundColor
             )}
@@ -143,7 +149,7 @@ export const GitBranchStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-[11px]",
+            "flex items-center gap-1 px-2 py-0.5 text-xxs",
             onClick && "cursor-pointer hover:bg-white/10"
         )}
     >
@@ -161,7 +167,7 @@ export const ConnectionStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-[11px]",
+            "flex items-center gap-1 px-2 py-0.5 text-xxs",
             onClick && "cursor-pointer hover:bg-white/10"
         )}
     >
@@ -187,7 +193,7 @@ export const NotificationBell: React.FC<{
     >
         <Bell className="w-3.5 h-3.5" />
         {count > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 flex items-center justify-center text-[9px] font-bold bg-destructive rounded-full px-1">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 flex items-center justify-center text-xxxs font-bold bg-destructive rounded-full px-1">
                 {count > 99 ? '99+' : count}
             </span>
         )}
@@ -198,10 +204,10 @@ export const LoadingStatus: React.FC<{
     loading: boolean
     label?: string
 }> = ({ loading, label }) => {
-    if (!loading) {return null;}
+    if (!loading) { return null; }
 
     return (
-        <div className="flex items-center gap-1 px-2 py-0.5 text-[11px]">
+        <div className="flex items-center gap-1 px-2 py-0.5 text-xxs">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             {label && <span>{label}</span>}
         </div>
@@ -212,18 +218,20 @@ export const ErrorStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) {return null;}
+    const { t } = useTranslation();
+    if (count === 0) { return null; }
+    const label = count === 1 ? t('statusBar.error') : t('statusBar.errors');
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-[11px] bg-red-600/50",
+                "flex items-center gap-1 px-2 py-0.5 text-xxs bg-red-600/50",
                 onClick && "cursor-pointer hover:bg-red-600/70"
             )}
         >
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>{count} {count === 1 ? 'Error' : 'Errors'}</span>
+            <span>{count} {label}</span>
         </div>
     );
 };
@@ -232,18 +240,20 @@ export const WarningStatus: React.FC<{
     count: number
     onClick?: () => void
 }> = ({ count, onClick }) => {
-    if (count === 0) {return null;}
+    const { t } = useTranslation();
+    if (count === 0) { return null; }
+    const label = count === 1 ? t('statusBar.warning') : t('statusBar.warnings');
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-[11px] bg-amber-600/50",
+                "flex items-center gap-1 px-2 py-0.5 text-xxs bg-amber-600/50",
                 onClick && "cursor-pointer hover:bg-amber-600/70"
             )}
         >
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>{count} {count === 1 ? 'Warning' : 'Warnings'}</span>
+            <span>{count} {label}</span>
         </div>
     );
 };
@@ -255,7 +265,7 @@ export const ModelStatus: React.FC<{
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-[11px]",
+            "flex items-center gap-1 px-2 py-0.5 text-xxs",
             onClick && "cursor-pointer hover:bg-white/10"
         )}
     >

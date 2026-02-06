@@ -2,11 +2,15 @@ import { CommandItem } from '@renderer/components/layout/CommandPalette';
 import { Command } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
+
 interface PreviewPanelProps {
     selectedItem?: CommandItem | undefined;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="w-[300px] bg-muted/5 p-6 flex flex-col gap-4 overflow-y-auto hidden md:flex">
             {selectedItem?.preview ? (
@@ -21,7 +25,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
                         <div className="space-y-3">
                             {Object.entries(selectedItem.preview.metadata).map(([key, value]) => (
                                 <div key={key} className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">{key}</span>
+                                    <span className="text-xxs font-bold text-muted-foreground/30 uppercase tracking-widest">{key}</span>
                                     <span className="text-xs text-foreground font-medium">{value}</span>
                                 </div>
                             ))}
@@ -31,7 +35,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ selectedItem }) => {
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                     <Command className="w-12 h-12 mb-4" />
-                    <p className="text-xs font-medium uppercase tracking-widest">Select an item to view details</p>
+                    <p className="text-xs font-medium uppercase tracking-widest">{t('commandPalette.previewEmpty')}</p>
                 </div>
             )}
         </div>

@@ -57,7 +57,7 @@ const TaskItem = memo(({
         switch (s) {
             case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
             case 'failed': return <XCircle className="w-4 h-4 text-destructive" />;
-            case 'paused': return <Pause className="w-4 h-4 text-yellow" />;
+            case 'paused': return <Pause className="w-4 h-4 text-secondary-foreground" />;
             default: return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
         }
     };
@@ -103,7 +103,7 @@ const TaskItem = memo(({
             </div>
 
             <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                     <span className="flex items-center gap-1 opacity-60">
                         <Clock className="w-3 h-3" />
                         {formatTime(task.createdAt)}
@@ -112,8 +112,8 @@ const TaskItem = memo(({
                     <span className="truncate max-w-[80px] opacity-60">{task.model}</span>
                 </div>
                 {task.metrics && task.metrics.tokensUsed > 0 && (
-                    <div className="text-[10px] font-mono text-primary/40 group-hover:text-primary transition-colors">
-                        {Math.round(task.metrics.tokensUsed / 1000)}k tkn
+                    <div className="text-xs font-mono text-primary/40 group-hover:text-primary transition-colors">
+                        {t('agent.tokensShort', { count: Math.round(task.metrics.tokensUsed / 1000) })}
                     </div>
                 )}
             </div>
@@ -192,7 +192,7 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
                         <div className="w-20 h-20 rounded-[2.5rem] bg-muted/5 flex items-center justify-center border border-muted/10">
                             <Bot className="w-10 h-10 text-muted-foreground/10" />
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/30 leading-relaxed">
+                        <p className="text-xxs font-black uppercase tracking-widest text-muted-foreground/30 leading-relaxed">
                             {t('agent.no_tasks_yet')}
                         </p>
                     </div>
@@ -214,10 +214,10 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
                                                 <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
                                             )}
                                         </div>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-foreground transition-colors">
+                                        <span className="text-xxs font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-foreground transition-colors">
                                             {item.provider}
                                         </span>
-                                        <span className="ml-auto text-[9px] font-black font-mono text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity">
+                                        <span className="ml-auto text-xxxs font-black font-mono text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity">
                                             {item.count.toString().padStart(2, '0')}
                                         </span>
                                     </button>

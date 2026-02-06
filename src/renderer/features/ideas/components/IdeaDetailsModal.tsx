@@ -5,7 +5,9 @@ import { ProjectIdea } from '@shared/types/ideas';
 import { Briefcase, Code2, Globe, Map, Sparkles, Target, Trash2, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { getCategoryMeta } from '../utils/categories';
 
@@ -59,58 +61,66 @@ interface RejectConfirmationProps {
     isRejecting: boolean;
 }
 
-const SIDE_NAV_TABS: { id: TabId, label: string, icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Overview', icon: Sparkles },
-    { id: 'market', label: 'Market Analysis', icon: Globe },
-    { id: 'strategy', label: 'Strategy', icon: Target },
-    { id: 'users', label: 'User Profiles', icon: Users },
-    { id: 'business', label: 'Business Case', icon: Briefcase },
-    { id: 'technology', label: 'Technology', icon: Code2 },
-    { id: 'roadmap', label: 'Roadmap', icon: Map }
+const SIDE_NAV_TABS: { id: TabId, labelKey: string, icon: React.ElementType }[] = [
+    { id: 'overview', labelKey: 'ideas.details.tabs.overview', icon: Sparkles },
+    { id: 'market', labelKey: 'ideas.details.tabs.market', icon: Globe },
+    { id: 'strategy', labelKey: 'ideas.details.tabs.strategy', icon: Target },
+    { id: 'users', labelKey: 'ideas.details.tabs.users', icon: Users },
+    { id: 'business', labelKey: 'ideas.details.tabs.business', icon: Briefcase },
+    { id: 'technology', labelKey: 'ideas.details.tabs.technology', icon: Code2 },
+    { id: 'roadmap', labelKey: 'ideas.details.tabs.roadmap', icon: Map }
 ];
 
-const SideNav: React.FC<SideNavProps> = ({ activeTab, setActiveTab, ideaStatus }) => (
-    <div className="w-64 border-r border-border/50 p-4 flex flex-col gap-1 bg-muted/10">
-        {SIDE_NAV_TABS.map((tab) => {
-            const TabIcon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                        'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group',
-                        isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/30'
-                    )}
-                >
-                    <TabIcon className={cn(
-                        'w-4 h-4 transition-colors',
-                        isActive ? 'text-primary' : 'text-muted-foreground/30 group-hover:text-muted-foreground/50'
-                    )} />
-                    {tab.label}
-                    {isActive && (
-                        <div className="ml-auto w-1 h-4 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
-                    )}
-                </button>
-            );
-        })}
+const SideNav: React.FC<SideNavProps> = ({ activeTab, setActiveTab, ideaStatus }) => {
+    const { t } = useTranslation();
+    const statusText = ideaStatus === 'pending'
+        ? t('ideas.details.readyForPilot')
+        : t('ideas.details.projectCreated');
 
-        <div className="mt-auto pt-4 border-t border-border/50">
-            <div className="px-4 py-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20">
-                <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-relaxed">
-                    Status
-                </p>
-                <p className="text-foreground font-bold text-sm mt-0.5">
-                    {ideaStatus === 'pending' ? 'Ready for Pilot' : 'Project Created'}
-                </p>
+    return (
+        <div className="w-64 border-r border-border/50 p-4 flex flex-col gap-1 bg-muted/10">
+            {SIDE_NAV_TABS.map((tab) => {
+                const TabIcon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                            'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group',
+                            isActive
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/30'
+                        )}
+                    >
+                        <TabIcon className={cn(
+                            'w-4 h-4 transition-colors',
+                            isActive ? 'text-primary' : 'text-muted-foreground/30 group-hover:text-muted-foreground/50'
+                        )} />
+                        {t(tab.labelKey)}
+                        {isActive && (
+                            <div className="ml-auto w-1 h-4 bg-primary rounded-full glow-primary" />
+                        )}
+                    </button>
+                );
+            })}
+
+            <div className="mt-auto pt-4 border-t border-border/50">
+                <div className="px-4 py-2 bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl border border-primary/20">
+                    <p className="text-xxs font-bold text-primary uppercase tracking-widest leading-relaxed">
+                        {t('ideas.details.statusLabel')}
+                    </p>
+                    <p className="text-foreground font-bold text-sm mt-0.5">
+                        {statusText}
+                    </p>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelectedName, onRegenerate, isRegenerating, onDelete, onClose, meta }) => {
+    const { t } = useTranslation();
     const Icon = meta.icon;
     return (
         <div className="flex items-center gap-4 p-6 border-b border-border/50 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
@@ -124,10 +134,12 @@ const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelected
                         value={selectedName}
                         onChange={(e) => setSelectedName(e.target.value)}
                         className="bg-transparent border-none p-0 text-2xl font-black text-foreground placeholder:text-muted-foreground/20 focus:ring-0 outline-none w-full max-w-md"
-                        placeholder="Project Name"
+                        placeholder={t('ideas.details.projectNamePlaceholder')}
                     />
                     {selectedName !== idea.title && (
-                        <button onClick={() => setSelectedName(idea.title)} className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold">Reset</button>
+                        <button onClick={() => setSelectedName(idea.title)} className="text-xxs text-primary hover:text-primary/80 uppercase tracking-widest font-bold">
+                            {t('common.reset')}
+                        </button>
                     )}
                 </div>
                 <p className="text-muted-foreground/60 text-xs font-medium uppercase tracking-[0.15em] mt-1 flex items-center gap-2">
@@ -141,16 +153,16 @@ const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelected
                         onClick={() => void onRegenerate()}
                         disabled={isRegenerating}
                         className="px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
-                        title="Regenerate this idea"
+                        title={t('ideas.details.regenerateTitle')}
                     >
                         <Sparkles className={cn("w-4 h-4", isRegenerating && "animate-pulse")} />
-                        {isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                        {isRegenerating ? t('ideas.details.regenerating') : t('ideas.details.regenerate')}
                     </button>
                 )}
-                <button type="button" onClick={onDelete} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors group relative" title="Delete Idea">
+                <button type="button" onClick={onDelete} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors group relative" title={t('ideas.details.deleteTitle')}>
                     <Trash2 className="w-5 h-5" />
                 </button>
-                <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors group relative" title="Close (Esc)">
+                <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors group relative" title={t('ideas.details.closeTitle')}>
                     <X className="w-5 h-5" />
                 </button>
             </div>
@@ -158,44 +170,47 @@ const IdeaHeader: React.FC<IdeaHeaderProps> = ({ idea, selectedName, setSelected
     );
 };
 
-const RejectConfirmation: React.FC<RejectConfirmationProps> = ({ ideaTitle, rejectReason, setRejectReason, onCancel, onConfirm, isRejecting }) => (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <div className="bg-background border border-destructive/30 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-foreground mb-2">Reject this idea?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-                Are you sure you want to reject "{ideaTitle}"? This action cannot be undone.
-            </p>
-            <div className="mb-4">
-                <label className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider mb-2 block">
-                    Reason (Optional)
-                </label>
-                <textarea
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Why are you rejecting this idea?"
-                    className="w-full px-3 py-2 bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder-muted-foreground/30 focus:outline-none focus:border-destructive/50 transition-all text-sm resize-none"
-                    rows={3}
-                />
-            </div>
-            <div className="flex gap-2 justify-end">
-                <button
-                    onClick={onCancel}
-                    disabled={isRejecting}
-                    className="px-4 py-2 bg-muted/30 hover:bg-muted/50 text-foreground rounded-lg transition-colors text-sm font-medium"
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={() => { void onConfirm(); }}
-                    disabled={isRejecting}
-                    className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-lg transition-colors disabled:opacity-50 text-sm font-bold"
-                >
-                    {isRejecting ? 'Rejecting...' : 'Reject Idea'}
-                </button>
+const RejectConfirmation: React.FC<RejectConfirmationProps> = ({ ideaTitle, rejectReason, setRejectReason, onCancel, onConfirm, isRejecting }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="bg-background border border-destructive/30 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                <h3 className="text-lg font-bold text-foreground mb-2">{t('ideas.details.rejectTitle')}</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    {t('ideas.details.rejectBody', { title: ideaTitle })}
+                </p>
+                <div className="mb-4">
+                    <label className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider mb-2 block">
+                        {t('ideas.details.rejectReasonLabel')}
+                    </label>
+                    <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder={t('ideas.details.rejectReasonPlaceholder')}
+                        className="w-full px-3 py-2 bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder-muted-foreground/30 focus:outline-none focus:border-destructive/50 transition-all text-sm resize-none"
+                        rows={3}
+                    />
+                </div>
+                <div className="flex gap-2 justify-end">
+                    <button
+                        onClick={onCancel}
+                        disabled={isRejecting}
+                        className="px-4 py-2 bg-muted/30 hover:bg-muted/50 text-foreground rounded-lg transition-colors text-sm font-medium"
+                    >
+                        {t('common.cancel')}
+                    </button>
+                    <button
+                        onClick={() => { void onConfirm(); }}
+                        disabled={isRejecting}
+                        className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 rounded-lg transition-colors disabled:opacity-50 text-sm font-bold"
+                    >
+                        {isRejecting ? t('ideas.details.rejecting') : t('ideas.details.rejectAction')}
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface ModalKeyboardHandlerOptions {
     isApproving: boolean;
@@ -310,7 +325,7 @@ export const IdeaDetailsModal: React.FC<IdeaDetailsModalProps> = ({
             }
         } catch (err) {
             if (err instanceof Error) {
-                console.warn('Folder selection failed:', err.message);
+                appLogger.warn('IdeaDetailsModal', `Folder selection failed: ${err.message}`);
             }
         }
     };

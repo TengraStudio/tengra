@@ -69,14 +69,22 @@ export class CodexHandler {
         const primaryWindow = QuotaUtils.asObject(rateLimit?.primary_window);
         const secondaryWindow = QuotaUtils.asObject(rateLimit?.secondary_window);
         const planType = typeof data.plan_type === 'string' ? data.plan_type : '';
+        const dailyUsedPercent = QuotaUtils.calculatePercentage(
+            QuotaUtils.toNumber(primaryWindow?.used ?? null),
+            QuotaUtils.toNumber(primaryWindow?.limit ?? null)
+        ) ?? QuotaUtils.normalizePercent(QuotaUtils.toNumber(primaryWindow?.used_percent ?? null)) ?? 0;
+        const weeklyUsedPercent = QuotaUtils.calculatePercentage(
+            QuotaUtils.toNumber(secondaryWindow?.used ?? null),
+            QuotaUtils.toNumber(secondaryWindow?.limit ?? null)
+        ) ?? QuotaUtils.normalizePercent(QuotaUtils.toNumber(secondaryWindow?.used_percent ?? null)) ?? 0;
         return {
             success: true,
             status: 'ChatGPT Usage',
             next_reset: primaryWindow?.reset_at ? String(primaryWindow.reset_at) : '-',
             models: [],
             usage: {
-                dailyUsedPercent: QuotaUtils.toNumber(primaryWindow?.used_percent ?? null) ?? 0,
-                weeklyUsedPercent: QuotaUtils.toNumber(secondaryWindow?.used_percent ?? null) ?? 0,
+                dailyUsedPercent,
+                weeklyUsedPercent,
                 dailyResetAt: primaryWindow?.reset_at ? String(primaryWindow.reset_at) : undefined,
                 weeklyResetAt: secondaryWindow?.reset_at ? String(secondaryWindow.reset_at) : undefined,
                 planType: String(planType || 'Free').toLowerCase().includes('plus') ? 'Plus' : (planType ? planType.charAt(0).toUpperCase() + planType.slice(1) : 'Free')
@@ -91,6 +99,17 @@ export class CodexHandler {
         const primaryWindow = rateLimit ? QuotaUtils.asObject(rateLimit.primary_window) : null;
         const secondaryWindow = rateLimit ? QuotaUtils.asObject(rateLimit.secondary_window) : null;
 
+        const dailyUsedPercent = QuotaUtils.calculatePercentage(
+            QuotaUtils.toNumber(primaryWindow?.used ?? null),
+            QuotaUtils.toNumber(primaryWindow?.limit ?? null)
+        ) ?? QuotaUtils.normalizePercent(QuotaUtils.toNumber(primaryWindow?.used_percent ?? null)) ??
+            QuotaUtils.normalizePercent(QuotaUtils.findNumberByKeys(d, ['rate_limit.primary_window.used_percent']));
+        const weeklyUsedPercent = QuotaUtils.calculatePercentage(
+            QuotaUtils.toNumber(secondaryWindow?.used ?? null),
+            QuotaUtils.toNumber(secondaryWindow?.limit ?? null)
+        ) ?? QuotaUtils.normalizePercent(QuotaUtils.toNumber(secondaryWindow?.used_percent ?? null)) ??
+            QuotaUtils.normalizePercent(QuotaUtils.findNumberByKeys(d, ['rate_limit.secondary_window.used_percent']));
+
         const result: Record<string, number | string | undefined | null> = {
             totalRequests: QuotaUtils.findNumberByKeys(d, ['total_requests', 'totalRequests', 'request_count', 'requests_used', 'requests']),
             totalTokens: QuotaUtils.findNumberByKeys(d, ['total_tokens', 'totalTokens', 'token_count', 'tokens_used', 'tokens']),
@@ -100,8 +119,8 @@ export class CodexHandler {
             dailyLimit: QuotaUtils.findNumberByKeys(d, ['daily_limit', 'dailyLimit', 'limit_daily', 'daily_quota', 'cap_limit', 'limit']),
             weeklyUsage: QuotaUtils.findNumberByKeys(d, ['weekly_usage', 'weeklyUsage', 'weekly_used', 'usage_weekly', 'requests_weekly']),
             weeklyLimit: QuotaUtils.findNumberByKeys(d, ['weekly_limit', 'weeklyLimit', 'limit_weekly', 'weekly_quota']),
-            dailyUsedPercent: QuotaUtils.toNumber(primaryWindow?.used_percent ?? null) ?? QuotaUtils.findNumberByKeys(d, ['rate_limit.primary_window.used_percent']),
-            weeklyUsedPercent: QuotaUtils.toNumber(secondaryWindow?.used_percent ?? null) ?? QuotaUtils.findNumberByKeys(d, ['rate_limit.secondary_window.used_percent']),
+            dailyUsedPercent,
+            weeklyUsedPercent,
             dailyResetAt: QuotaUtils.normalizeResetAt(primaryWindow?.reset_at ?? QuotaUtils.findNumberByKeys(d, ['rate_limit.primary_window.reset_at'])),
             weeklyResetAt: QuotaUtils.normalizeResetAt(secondaryWindow?.reset_at ?? QuotaUtils.findNumberByKeys(d, ['rate_limit.secondary_window.reset_at'])),
             resetAt: QuotaUtils.normalizeResetAt(

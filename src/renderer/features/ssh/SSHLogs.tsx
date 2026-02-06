@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
+
 interface SSHLogsProps {
     connectionId: string
     active: boolean
 }
 
 export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
+    const { t } = useTranslation();
     const [logFiles, setLogFiles] = useState<string[]>([]);
     const [selectedLog, setSelectedLog] = useState<string | null>(null);
     const [content, setContent] = useState('');
@@ -40,7 +43,7 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             const data = await window.electron.ssh.readLogFile(connectionId, path, 100);
             setContent(data);
         } catch {
-            setContent('Failed to read log file (Permissions denied or empty).');
+            setContent(t('ssh.logReadFailed'));
         } finally {
             setLoading(false);
         }
@@ -53,8 +56,8 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             {/* Sidebar list */}
             <div className="w-1/3 border-r border-border bg-muted/20 flex flex-col">
                 <div className="p-3 border-b border-border font-medium text-sm flex justify-between items-center">
-                    <span>Log Files</span>
-                    <button onClick={() => void loadFiles()} className="text-xs opacity-70 hover:opacity-100">Refresh</button>
+                    <span>{t('ssh.logFiles')}</span>
+                    <button onClick={() => void loadFiles()} className="text-xs opacity-70 hover:opacity-100">{t('common.refresh')}</button>
                 </div>
                 <div className="overflow-y-auto flex-1">
                     {logFiles.map(file => (
@@ -72,8 +75,8 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
             {/* Viewer */}
             <div className="flex-1 flex flex-col bg-background text-foreground">
                 <div className="p-2 bg-muted/30 border-b border-border text-xs font-mono text-muted-foreground flex justify-between">
-                    <span>{selectedLog ?? 'Select a log file'}</span>
-                    <span>{loading ? 'Reading...' : 'Last 100 lines'}</span>
+                    <span>{selectedLog ?? t('ssh.selectLogFile')}</span>
+                    <span>{loading ? t('ssh.reading') : t('ssh.lastLines', { count: 100 })}</span>
                 </div>
                 <pre className="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
                     {content}

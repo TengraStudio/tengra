@@ -26,7 +26,12 @@
       "Bash(powershell:*)",
       "Bash(ls:*)",
       "Bash(cargo check:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm run test:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(npm run build:vite:*)"
     ]
   },
   "mcpServers": {

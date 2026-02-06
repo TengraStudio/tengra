@@ -37,7 +37,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         <div className="p-2 border-t border-border/30 space-y-1">
             {selectedProject && !isCollapsed && (
                 <div className="px-2 py-1.5 bg-muted/30 rounded-md mb-1">
-                    <p className="text-[10px] text-muted-foreground/50 uppercase">Project</p>
+                    <p className="text-xxs text-muted-foreground/50 uppercase">{t('sidebar.project')}</p>
                     <p className="text-xs font-medium truncate">{selectedProject.title}</p>
                 </div>
             )}

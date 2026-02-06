@@ -26,7 +26,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                 <Activity className="w-12 h-12 text-orange" />
             </div>
             <CardHeader>
-                <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">Anthropic Claude</CardTitle>
+                <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">{t('statistics.claudeTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 {claudeQuota.accounts.map((acc, idx: number) => {
@@ -34,7 +34,7 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                         return (
                             <div key={acc.accountId ?? idx} className={cn("space-y-4", idx > 0 && "pt-6 border-t border-border/50")}>
                                 <div className="text-xs font-bold text-orange truncate">{acc.email ?? t('statistics.claudeAccount')}</div>
-                                <div className="text-[10px] font-medium p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
+                                <div className="text-xxs font-medium p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
                                     <div className="w-1 h-1 rounded-full bg-destructive" />
                                     {t('common.error')}: {acc.error}
                                 </div>
@@ -49,9 +49,9 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                     <div className="flex items-center gap-4">
                                         <QuotaRing value={100 - acc.fiveHour.utilization} color="hsl(var(--purple))" size="sm" />
                                         <div>
-                                            <div className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.fiveHourStatus')}</div>
-                                            <div className="text-[10px] font-bold text-foreground/80 tabular-nums">{100 - acc.fiveHour.utilization}% {t('statistics.left')}</div>
-                                            <div className="text-[9px] text-muted-foreground/60 mt-0.5">{formatReset(acc.fiveHour.resetsAt, locale)}</div>
+                                            <div className="text-xxs font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.fiveHourStatus')}</div>
+                                            <div className="text-xxs font-bold text-foreground/80 tabular-nums">{100 - acc.fiveHour.utilization}% {t('statistics.left')}</div>
+                                            <div className="text-xxxs text-muted-foreground/60 mt-0.5">{formatReset(acc.fiveHour.resetsAt, locale)}</div>
                                         </div>
                                     </div>
                                 )}
@@ -59,9 +59,9 @@ export const ClaudeCard: React.FC<ClaudeCardProps> = ({ claudeQuota, locale = 'e
                                     <div className="flex items-center gap-4">
                                         <QuotaRing value={100 - acc.sevenDay.utilization} color="hsl(var(--purple))" size="sm" />
                                         <div>
-                                            <div className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.sevenDayStatus')}</div>
-                                            <div className="text-[10px] font-bold text-foreground/80 tabular-nums">{100 - acc.sevenDay.utilization}% {t('statistics.left')}</div>
-                                            <div className="text-[9px] text-muted-foreground/60 mt-0.5">{formatReset(acc.sevenDay.resetsAt, locale)}</div>
+                                            <div className="text-xxs font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.sevenDayStatus')}</div>
+                                            <div className="text-xxs font-bold text-foreground/80 tabular-nums">{100 - acc.sevenDay.utilization}% {t('statistics.left')}</div>
+                                            <div className="text-xxxs text-muted-foreground/60 mt-0.5">{formatReset(acc.sevenDay.resetsAt, locale)}</div>
                                         </div>
                                     </div>
                                 )}

@@ -6,7 +6,7 @@ interface CommandFooterProps {
 
 export const CommandFooter: React.FC<CommandFooterProps> = ({ t }) => {
     return (
-        <div className="px-4 py-3 border-t border-white/5 bg-muted/5 flex items-center gap-6 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+        <div className="px-4 py-3 border-t border-white/5 bg-muted/5 flex items-center gap-6 text-xxxs font-bold text-muted-foreground/40 uppercase tracking-widest">
             <span className="flex items-center gap-1.5">
                 {t('commandPalette.navigate')}
             </span>
@@ -19,7 +19,7 @@ export const CommandFooter: React.FC<CommandFooterProps> = ({ t }) => {
                 {t('commandPalette.close')}
             </span>
             <div className="ml-auto flex items-center gap-2">
-                <span>Tandem Command Engine</span>
+                <span>{t('commandPalette.engineLabel')}</span>
                 <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
             </div>
         </div>

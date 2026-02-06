@@ -10,7 +10,6 @@ import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
 import { FileDiff } from '@shared/types/file-diff';
 import { Project } from '@shared/types/project';
 import { AgentProfile } from '@shared/types/project-agent';
-
 import { v4 as uuidv4 } from 'uuid';
 
 import { ChatRepository } from './repositories/chat.repository';
@@ -259,6 +258,17 @@ export class DatabaseService extends BaseService {
     async searchChats(options: SearchChatsOptions) { return this._chats.searchChats(options); }
     async deleteAllChats() { return this._chats.deleteAllChats(); }
     async deleteChatsByTitle(title: string) { return this._chats.deleteChatsByTitle(title); }
+    async bulkDeleteChats(ids: string[]) {
+        for (const id of ids) {
+            await this.deleteChat(id);
+        }
+    }
+
+    async bulkArchiveChats(ids: string[], isArchived: boolean) {
+        for (const id of ids) {
+            await this.archiveChat(id, isArchived);
+        }
+    }
 
     // Knowledge & Memories
     async findCodeSymbolsByName(projectPath: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectPath, name); }

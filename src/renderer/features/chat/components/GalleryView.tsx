@@ -1,39 +1,207 @@
-﻿import { appLogger } from '@main/logging/logger';
-import { ExternalLink, FolderOpen,Image, RefreshCw, Trash2 } from 'lucide-react';
-import { useEffect,useState } from 'react';
+﻿import { Calendar, ExternalLink, FolderOpen, Image, Info, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
-import { Language,useTranslation } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
+
+interface GalleryItemMetadata {
+    prompt?: string;
+    negative_prompt?: string;
+    seed?: number;
+    steps?: number;
+    cfg_scale?: number;
+    width?: number;
+    height?: number;
+    model?: string;
+    created_at?: number;
+}
+
+interface GalleryItem {
+    name: string;
+    path: string;
+    url: string;
+    mtime: number;
+    type?: 'image' | 'video';
+    metadata?: GalleryItemMetadata;
+}
 
 interface GalleryViewProps {
     language: Language;
 }
 
+const formatDate = (timestamp: number, language: Language): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+interface MetadataDisplayProps {
+    metadata?: GalleryItemMetadata;
+    mtime: number;
+    language: Language;
+    t: (key: string) => string;
+}
+
+const MetadataDisplay = memo(({ metadata, mtime, language, t }: MetadataDisplayProps) => {
+    const hasPrompt = metadata?.prompt && metadata.prompt.length > 0;
+    const hasDimensions = metadata?.width && metadata?.height;
+
+    return (
+        <div className="space-y-2 text-xxs">
+            {/* Date */}
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(mtime, language)}</span>
+            </div>
+
+            {/* Dimensions */}
+            {hasDimensions && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Image className="w-3 h-3" />
+                    <span>{metadata.width} × {metadata.height}</span>
+                </div>
+            )}
+
+            {/* Model */}
+            {metadata?.model && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Sparkles className="w-3 h-3" />
+                    <span className="truncate">{metadata.model}</span>
+                </div>
+            )}
+
+            {/* Prompt */}
+            {hasPrompt && (
+                <div className="mt-2 pt-2 border-t border-border/20">
+                    <div className="text-xxxs text-muted-foreground uppercase font-bold mb-1">{t('gallery.prompt')}</div>
+                    <div className="text-foreground/80 line-clamp-3 leading-relaxed">{metadata.prompt}</div>
+                </div>
+            )}
+
+            {/* Generation params */}
+            {(metadata?.steps ?? metadata?.cfg_scale ?? metadata?.seed) && (
+                <div className="flex flex-wrap gap-2 text-xxxs text-muted-foreground">
+                    {metadata?.steps && <span>Steps: {metadata.steps}</span>}
+                    {metadata?.cfg_scale && <span>CFG: {metadata.cfg_scale}</span>}
+                    {metadata?.seed && <span>Seed: {metadata.seed}</span>}
+                </div>
+            )}
+        </div>
+    );
+});
+MetadataDisplay.displayName = 'MetadataDisplay';
+
+interface GalleryCardProps {
+    img: GalleryItem;
+    language: Language;
+    deleting: string | null;
+    onDelete: (path: string) => void;
+    onOpen: (path: string) => void;
+    onReveal: (path: string) => void;
+    t: (key: string) => string;
+}
+
+const GalleryCard = memo(({ img, language, deleting, onDelete, onOpen, onReveal, t }: GalleryCardProps) => {
+    const [showDetails, setShowDetails] = useState(false);
+
+    return (
+        <div
+            key={img.path}
+            className="group relative aspect-square bg-card/40 rounded-xl overflow-hidden border border-border/20 hover:border-primary/50 transition-all"
+            onMouseEnter={() => setShowDetails(true)}
+            onMouseLeave={() => setShowDetails(false)}
+        >
+            <img
+                src={img.url}
+                alt={img.name}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+            />
+
+            {/* Hover Overlay with Details */}
+            <div className={cn(
+                "absolute inset-0 bg-gradient-to-t from-background/90 via-background/60 to-transparent transition-opacity flex flex-col justify-end p-3",
+                showDetails ? "opacity-100" : "opacity-0"
+            )}>
+                {/* File name */}
+                <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
+
+                {/* Metadata */}
+                <MetadataDisplay metadata={img.metadata} mtime={img.mtime} language={language} t={t} />
+
+                {/* Actions */}
+                <div className="flex gap-2 justify-end mt-3 pt-2 border-t border-border/20">
+                    {img.metadata?.prompt && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); }}
+                            className="p-1.5 bg-info/20 hover:bg-info/40 text-info rounded-lg backdrop-blur-sm transition-colors"
+                            title={t('gallery.viewPrompt')}
+                        >
+                            <Info className="w-4 h-4" />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => onReveal(img.path)}
+                        className="p-1.5 bg-muted/20 hover:bg-muted/40 text-foreground rounded-lg backdrop-blur-sm transition-colors"
+                        title={t('gallery.openLocation')}
+                    >
+                        <FolderOpen className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onOpen(img.path)}
+                        className="p-1.5 bg-primary/20 hover:bg-primary/40 text-primary rounded-lg backdrop-blur-sm transition-colors"
+                        title={t('gallery.open')}
+                    >
+                        <ExternalLink className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onDelete(img.path)}
+                        disabled={!!deleting}
+                        className="p-1.5 bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-lg backdrop-blur-sm transition-colors"
+                        title={t('gallery.delete')}
+                    >
+                        {deleting === img.path ? (
+                            <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Trash2 className="w-4 h-4" />
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+});
+GalleryCard.displayName = 'GalleryCard';
+
 export function GalleryView({ language }: GalleryViewProps) {
     const { t } = useTranslation(language);
-    const [images, setImages] = useState<Array<{ name: string; path: string; url: string; mtime: number }>>([]);
+    const [images, setImages] = useState<GalleryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
 
-    useEffect(() => {
-        void loadImages();
-    }, []);
-
-    const loadImages = async () => {
+    const loadImages = useCallback(async () => {
         setLoading(true);
         try {
             const list = await window.electron.gallery.list();
-            // Sort by modification time (newest first)
-            setImages(list.sort((a, b) => b.mtime - a.mtime));
+            setImages(list.sort((a: GalleryItem, b: GalleryItem) => b.mtime - a.mtime));
         } catch (error) {
             appLogger.error('GalleryView', 'Failed to load gallery', error as Error);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleDelete = async (path: string) => {
-        console.warn(t('gallery.deleteConfirm'));
+    useEffect(() => {
+        void loadImages();
+    }, [loadImages]);
+
+    const handleDelete = useCallback(async (path: string) => {
         setDeleting(path);
         try {
             await window.electron.gallery.delete(path);
@@ -43,34 +211,34 @@ export function GalleryView({ language }: GalleryViewProps) {
         } finally {
             setDeleting(null);
         }
-    };
+    }, [loadImages]);
 
-    const handleOpen = async (path: string) => {
+    const handleOpen = useCallback(async (path: string) => {
         try {
             await window.electron.gallery.open(path);
         } catch (error) {
             appLogger.error('GalleryView', 'Failed to open image', error as Error);
         }
-    };
+    }, []);
 
-    const handleReveal = async (path: string) => {
+    const handleReveal = useCallback(async (path: string) => {
         try {
             await window.electron.gallery.reveal(path);
         } catch (error) {
             appLogger.error('GalleryView', 'Failed to reveal image', error as Error);
         }
-    };
+    }, []);
 
     return (
         <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+            <div className="p-4 border-b border-border/20 flex items-center justify-between bg-muted/5">
                 <div className="flex items-center gap-3">
                     <h3 className="text-foreground font-medium">{t('gallery.title')}</h3>
-                    <span className="text-xs text-muted-foreground bg-zinc-800 px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
                 </div>
                 <button
                     onClick={() => void loadImages()}
-                    className="p-1.5 hover:bg-white/10 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-1.5 hover:bg-muted/20 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                     title={t('gallery.refresh')}
                 >
                     <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
@@ -87,47 +255,16 @@ export function GalleryView({ language }: GalleryViewProps) {
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {images.map((img) => (
-                            <div key={img.path} className="group relative aspect-square bg-black/40 rounded-xl overflow-hidden border border-white/5 hover:border-purple/50 transition-all">
-                                <img
-                                    src={img.url}
-                                    alt={img.name}
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    loading="lazy"
-                                />
-
-                                {/* Overlay */}
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                    <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
-                                    <div className="flex gap-2 justify-end">
-                                        <button
-                                            onClick={() => void handleReveal(img.path)}
-                                            className="p-1.5 bg-white/10 hover:bg-white/20 text-foreground rounded-lg backdrop-blur-sm transition-colors"
-                                            title={t('gallery.openLocation')}
-                                        >
-                                            <FolderOpen className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => void handleOpen(img.path)}
-                                            className="p-1.5 bg-primary/20 hover:bg-primary/40 text-blue-300 rounded-lg backdrop-blur-sm transition-colors"
-                                            title={t('gallery.open')}
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => void handleDelete(img.path)}
-                                            disabled={!!deleting}
-                                            className="p-1.5 bg-destructive/20 hover:bg-destructive/40 text-red-300 rounded-lg backdrop-blur-sm transition-colors"
-                                            title={t('gallery.delete')}
-                                        >
-                                            {deleting === img.path ? (
-                                                <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <Trash2 className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <GalleryCard
+                                key={img.path}
+                                img={img}
+                                language={language}
+                                deleting={deleting}
+                                onDelete={(path) => void handleDelete(path)}
+                                onOpen={(path) => void handleOpen(path)}
+                                onReveal={(path) => void handleReveal(path)}
+                                t={t}
+                            />
                         ))}
                     </div>
                 )}

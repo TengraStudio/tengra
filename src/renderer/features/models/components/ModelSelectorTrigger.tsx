@@ -44,7 +44,7 @@ const CategoryIconBadge: React.FC<{ category?: MinimalCategory; isIconOnly?: boo
 
 const getContextColor = (usagePercent: number): string => {
     if (usagePercent > 90) { return "bg-destructive"; }
-    if (usagePercent > 70) { return "bg-orange"; }
+    if (usagePercent > 70) { return "bg-warning"; }
     return "bg-success/50";
 };
 
@@ -74,10 +74,10 @@ const ModelLabelInfo: React.FC<ModelLabelInfoProps> = ({
 }) => (
     <div className="flex flex-col items-start leading-none overflow-hidden flex-1 text-left">
         <div className="flex items-center justify-between w-full pr-1">
-            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.05em] truncate">
+            <span className="text-xxs text-muted-foreground font-black uppercase tracking-[0.05em] truncate">
                 {currentCatName}
                 {shouldRenderExtraModelCount(selectedModelsCount) && (
-                    <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[8px]">+{selectedModelsCount - 1}</span>
+                    <span className="ml-1.5 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xxxs">+{selectedModelsCount - 1}</span>
                 )}
             </span>
         </div>

@@ -1,132 +1,221 @@
 # Tandem Project - Task Tracking (Consolidated)
 
-This is the central source of truth for all project tasks, merged from roadmap items and deep technical debt.
-
-## 📊 Status Overview
-
-| Category | Status | Notes |
-|----------|--------|-------|
-| **i18n** | Completed | Turkish support & hardcoded string removal done |
-| **Security** | In Progress | Implementation of rate limiting and path validation |
-| **Features** | Completed | Implementing Custom Agent System (1.2) |
-| **Architecture** | Refactoring | Transitioning to EventBus & Rust-based DB Service |
-| **Code Quality** | Stable | Active lint & type safety enforcement |
-| **Ideas System** | Stable | Major bugs resolved, UX enhancements done |
-
----
-
-## 🔴 CRITICAL PRIORITY
-
-### Core System & Architecture
-- [ ] **Memory/RAG management**: UI and Backend integration <!-- id: feat-crit-1 -->
-- [ ] **Database Service Finalization**:
-    - [ ] Perform end-to-end migration testing (PGlite -> Rust SQLite)
-    - [x] Remove legacy dependencies (`@electric-sql/pglite`, `better-sqlite3`)
-    - [ ] Integrate service installer into the production build pipeline
-    - [x] Clean up legacy migration and PGlite code
-- [ ] **Type Safety**: Enable `strict` mode in `tsconfig.json` and fix remaining 700+ warnings <!-- id: qual-crit-1 -->
-- [ ] **CI/CD Enrichment**: Add coverage enforcement and Playwright E2E tests for project management <!-- id: qual-crit-2 -->
-- [x] **Fix type safety**: Unsafe `as unknown as Project` casting in creation <!-- id: proj-crit-1 -->
-
-### Security (High Stakes)
-- [ ] **SEC-004**: Insecure CSP & Electron Configuration (Unsafe-eval for Monaco) <!-- severity: critical -->
-- [ ] **SEC-007**: Weak Cryptography & Token Generation <!-- severity: critical -->
-- [ ] **SEC-011**: Implement Missing Rate Limiting for file operations and LLM calls <!-- severity: high -->
-- [x] **SEC-015**: Add prompt template escaping for user inputs <!-- severity: medium -->
+## 🔴 CRITICAL PRIORITY (Core Architecture)
+- [ ] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->
+- [ ] **GLOBAL-TS-02**: Audit all 131 files for implicit `any` <!-- id: g2 -->
+- [ ] **GLOBAL-NASA-01**: Function length audit (< 150 lines) <!-- id: g3 -->
+- [ ] **GLOBAL-NASA-02**: Cyclomatic complexity audit (< 10) <!-- id: g4 -->
+- [ ] **GLOBAL-NASA-03**: Return value check audit for fs/ipc <!-- id: g5 -->
+- [ ] **GLOBAL-LOG-01**: `console.log` removal audit <!-- id: g6 -->
+- [ ] **GLOBAL-MEM-01**: Memory leak audit for all services <!-- id: g7 -->
+- [ ] **GLOBAL-SEC-01**: Path sanitization audit <!-- id: g8 -->
+- [ ] **GLOBAL-IPC-01**: Central Event Bus migration <!-- id: g9 -->
+- [ ] **GLOBAL-DB-01**: Index optimization for production scale <!-- id: g10 -->
 
 ---
 
-## 🟠 HIGH PRIORITY
+## ✨ VISUAL & UX EXCELLENCE (Design Audit)
 
-### Agent System & Features
-- [x] **Project Agent State Resumption**: Load active task from DB on startup <!-- id: agent-high-1 -->
-- [x] **Custom Agent System**: Implement agent profiles (roles, prompts, skills) <!-- id: feat-1.2-1 -->
-- [x] **Advanced Workflow Engine**: Parallel execution, voting, or consensus <!-- id: feat-1.2-2 -->
-- [ ] **Thinking UI**: Collapsible reasoning blocks for agents <!-- id: feat-1.2-3 -->
-- [ ] **Tool Output Virtualization**: Handle long outputs better in the console <!-- id: feat-1.2-4 -->
+### 🎨 Global Aesthetics & Theming
+- [ ] **DSN-01**: Standardize all shadows to use HSL-based tints for softer aesthetics <!-- id: d3 -->
+- [ ] **DSN-02**: Implement custom scrollbars with smooth transitions <!-- id: d4 -->
+- [ ] **DSN-03**: Audit color contrast ratios for accessibility (WCAG 2.1) <!-- id: d5 -->
 
-### Reliability & Code Health
-- [x] **CLEAN-001-5**: Add bounded size to active processes map in `command.service.ts` <!-- severity: low -->
-- [x] **CLEAN-002-2**: Clean up terminal references after component unmount <!-- severity: medium -->
-- [x] **CLEAN-002-3**: Add cleanup to global keyboard shortcut listeners <!-- severity: low -->
-- [x] **TODO-001-6**: Implement provider stats in `agent-provider-rotation.service.ts` <!-- severity: low -->
-- [x] **PERF-001-3**: Add virtualization to `WorkspaceExplorer.tsx` tree structure <!-- severity: medium -->
+### ✨ Micro-Animations & Transitions
+- [ ] **ANI-01**: Add `framer-motion` layout animations for list insertions <!-- id: a1 -->
+- [ ] **ANI-02**: Implement hover-to-reveal effects for sidebar item actions <!-- id: a2 -->
+- [ ] **ANI-03**: Add a shimmering loading state (skeleton) for message streaming <!-- id: a3 -->
+- [ ] **ANI-04**: Implement spring-based pop-in animations for modals <!-- id: a4 -->
+- [ ] **ANI-05**: Add smooth rotation transitions for the 'Settings' gear icon <!-- id: a5 -->
 
----
-
-## 🟡 MEDIUM PRIORITY
-
-### Features & UI
-- [ ] **Onboarding Flow**: Complete remaining 50%
-- [ ] **Settings UI**: Add Model parameters and Token limits panels
-- [ ] **Gallery overhaul**: Hover details and prompt metadata storage
-- [ ] **Statistics Dashboard**: Usage analytics and productivity metrics
-- [ ] **Batch Operations**: Multi-select for bulk delete/archive <!-- id: proj-high-1 -->
-
-### Architecture
-- [ ] **IPC Migration**: Move remaining ~300 handlers to Central Event Bus
-- [ ] **Plugin Extraction**: Move OpenAI/Anthropic logic into separate plugins
-- [x] **PERF-003-4**: Add connection pooling in `database-client.service.ts` <!-- severity: medium -->
-- [x] **PERF-005-2**: Cache directory listings in FileExplorer <!-- severity: medium -->
+### 📐 Component-Specific UI Polish
+- [ ] **UI-CH-01**: Chat: Implement message bubble "tail" variants with SVG paths <!-- id: u1 -->
+- [ ] **UI-CH-02**: Chat: Add message timestamp "show on hover" logic <!-- id: u2 -->
+- [ ] **UI-CH-03**: Chat: Implement typing indicator with dot-bounce animation <!-- id: u3 -->
+- [ ] **UI-ST-01**: Settings: Group related toggles into "Glass Cards" <!-- id: u4 -->
+- [ ] **UI-ST-02**: Settings: Add reactive highlighting for active tabs <!-- id: u5 -->
+- [ ] **UI-ID-01**: Ideas: Implement card flip animation for "Technical Details" view <!-- id: u6 -->
+- [ ] **UI-ID-02**: Ideas: Add vibrant gradient borders for "High Potential" items <!-- id: u7 -->
 
 ---
+## 📋 FULL FILE-BY-FILE AUDIT LIST (Total Checked: 131 Files)
 
-## 📋 DATA & TESTS (Backlog)
+### 📁 src/main/api
+1. **api-auth.middleware.ts**
+   - [ ] AUDIT: Type Safety (remove potential `any`) <!-- id: a1 -->
+   - [ ] REFACTOR: Complexity/Length audit <!-- id: a2 -->
+   - [ ] DOCUMENT: JSDoc for exports/types <!-- id: a3 -->
+   - [ ] TEST: Unit coverage for auth logic <!-- id: a4 -->
+2. **api-router.ts**
+   - [ ] AUDIT: Route handler parameter types <!-- id: a5 -->
+   - [ ] REFACTOR: Break down long route definitions <!-- id: a6 -->
+   - [ ] DOCUMENT: API endpoint documentation <!-- id: a7 -->
+   - [ ] TEST: Integration tests for API routes <!-- id: a8 -->
+3. **api-server.service.ts**
+   - [ ] AUDIT: Fastify/Hapi library type safety <!-- id: a9 -->
+   - [ ] REFACTOR: Lifecycle management (start/stop) <!-- id: a10 -->
+   - [ ] DOCUMENT: Service initialization documentation <!-- id: a11 -->
+   - [ ] TEST: Server startup/shutdown tests <!-- id: a12 -->
 
-### Testing Roadmap
-- [ ] Increase test coverage from 30% to 75%
-- [ ] **TEST-004-P3**: Add tests for `project-agent.service.ts`
-- [ ] **TEST-005-S8**: Add tests for `command.service.ts`
-- [ ] **TEST-012-6**: Add concurrent operation tests for database service
+### 📁 src/main/core
+4. **circuit-breaker.ts**
+   - [ ] AUDIT: State transition types <!-- id: a13 -->
+   - [ ] REFACTOR: Simplify state machine logic <!-- id: a14 -->
+   - [ ] DOCUMENT: Failure threshold configuration <!-- id: a15 -->
+   - [ ] TEST: Resilience matching scenarios <!-- id: a16 -->
+5. **container.ts**
+   - [ ] AUDIT: Dependency injection type safety <!-- id: a17 -->
+   - [ ] REFACTOR: Avoid circular dependency patterns <!-- id: a18 -->
+   - [ ] DOCUMENT: Module registration patterns <!-- id: a19 -->
+   - [ ] TEST: Mock injection tests <!-- id: a20 -->
+6. **lazy-services.ts**
+   - [ ] AUDIT: Proxy object type safety <!-- id: a21 -->
+   - [ ] REFACTOR: Performance audit of initial access <!-- id: a22 -->
+   - [ ] DOCUMENT: Lazy loading patterns <!-- id: a23 -->
+   - [ ] TEST: Service instantiation timing tests <!-- id: a24 -->
+7. **repository.interface.ts**
+   - [ ] AUDIT: Generic type constraints <!-- id: a25 -->
+   - [ ] REFACTOR: standard paging/sorting types <!-- id: a26 -->
+   - [ ] DOCUMENT: Repository pattern usage guide <!-- id: a27 -->
+   - [ ] TEST: Interface compliance audit <!-- id: a28 -->
+8. **service-registry.ts**
+   - [ ] AUDIT: Service identification types <!-- id: a29 -->
+   - [ ] REFACTOR: Dynamic registry cleanup logic <!-- id: a30 -->
+   - [ ] DOCUMENT: Global service access patterns <!-- id: a31 -->
+   - [ ] TEST: Registration collision tests <!-- id: a32 -->
 
-### Technical Debt Items
-- Multiple duplicate IPC handler registrations
-- Standardized IPC return type contract implementation
-- Error boundary strategy for React components
+### 📁 src/main/ipc
+9. **advanced-memory.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a33 -->
+10. **agent.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a37 -->
+11. **audit.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a41 -->
+12. **auth.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a45 -->
+13. **backup.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a49 -->
+14. **brain.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a53 -->
+15. **chat.ts**: [ ] Audit [x] Refactor [ ] Doc [ ] Test <!-- id: a57 -->
+16. **code-intelligence.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a61 -->
+17. **collaboration.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a65 -->
+18. **db.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a69 -->
+19. **dialog.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a73 -->
+20. **export.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a77 -->
+21. **extension.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a81 -->
+22. **file-diff.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a85 -->
+23. **files.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a89 -->
+24. **gallery.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a93 -->
+25. **git.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a97 -->
+26. **health.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a101 -->
+27. **history.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a105 -->
+28. **huggingface.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a109 -->
+29. **idea-generator.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a113 -->
+30. **index.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a117 -->
+31. **key-rotation.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a121 -->
+32. **llama.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a125 -->
+33. **logging.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a129 -->
+34. **mcp.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a133 -->
+35. **memory.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a137 -->
+36. **metrics.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a141 -->
+37. **migration.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a145 -->
+38. **model-registry.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a149 -->
+39. **multi-model.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a153 -->
+40. **ollama.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a157 -->
+41. **orchestrator.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a161 -->
+42. **performance.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a165 -->
+43. **process.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a169 -->
+44. **project-agent.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a173 -->
+45. **project.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a177 -->
+46. **prompt-templates.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a181 -->
+47. **proxy-embed.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a185 -->
+48. **proxy.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a189 -->
+49. **screenshot.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a193 -->
+50. **settings.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a197 -->
+51. **system.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a201 -->
+52. **telemetry.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a205 -->
+53. **terminal.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a209 -->
+54. **theme.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a213 -->
+55. **token.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a217 -->
+56. **translations.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a221 -->
+57. **update.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a225 -->
+58. **user.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a229 -->
+59. **vector-db.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a233 -->
+60. **window.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a237 -->
+
+### 📁 src/main/services
+61. **audit-log.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s61 -->
+62. **backup.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s62 -->
+63. **base.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s63 -->
+64. **config.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s64 -->
+65. **data-service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s65 -->
+66. **data/chat-event.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s66 -->
+67. **data/database.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s67 -->
+68. **data/database-migration.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s68 -->
+69. **export.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s69 -->
+70. **health-check.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s70 -->
+71. **http.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s71 -->
+72. **llm/llm.service.ts**: [x] Type Audit [x] Refactor [x] Doc [x] Test <!-- id: s72 -->
+73. **llm/model-fallback.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s73 -->
+74. **llm/model-registry.service.ts**: [ ] Type Audit [ ] Doc [x] Test <!-- id: s74 -->
+75. **llm/ollama.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s75 -->
+76. **project/agent/agent-persistence.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s76 -->
+77. **project/agent/agent-provider-rotation.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s77 -->
+78. **project/agent/agent-state-machine.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s78 -->
+79. **project/project-agent.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s79 -->
+80. **project/project-scaffold.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s80 -->
+81. **project/ssh.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s81 -->
+82. **project.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s82 -->
+83. **proxy/proxy.service.ts**: [x] Type Audit [x] Refactor [x] Doc [x] Test <!-- id: s83 -->
+84. **proxy/quota.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s84 -->
+85. **security/auth.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s85 -->
+86. **security/key-rotation.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s86 -->
+87. **security/token.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s87 -->
+88. **security.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s88 -->
+89. **system/job-scheduler.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s89 -->
+90. **system/process.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s90 -->
+91. **system/process-manager.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s91 -->
+92. **system/security-fixes.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s92 -->
+93. **system/settings.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s93 -->
+94. **system/system.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s94 -->
+95. **token-estimation.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s95 -->
+96. **ui/theme.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s96 -->
+97. **ui/window.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s97 -->
+98. **web-bridge.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s98 -->
+99. **project/agent/agent-executor.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s99 -->
+100. **project/agent/agent-planner.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s100 -->
+101. **project/agent/agent-verifier.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s101 -->
+102. **project/agent/agent-logger.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s102 -->
+103. **project/agent/agent-history.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s103 -->
+104. **project/agent/agent-token.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s104 -->
+105. **project/agent/agent-cache.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s105 -->
+
+### 📁 src/main/utils
+106. **cache.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u106 -->
+107. **config-validator.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u110 -->
+108. **event-bus.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u114 -->
+109. **ipc-batch.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u118 -->
+110. **ipc-wrapper.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u122 -->
+111. **local-auth-server.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u126 -->
+112. **logger.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u130 -->
+113. **message-normalizer.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u134 -->
+114. **rate-limiter.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u138 -->
+115. **request-queue.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u142 -->
+116. **response-normalizer.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u146 -->
+117. **retry.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u150 -->
+118. **stream-parser.util.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: u154 -->
+
+### 📁 src/renderer/components
+119. **ChatBubble.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r119 -->
+120. **ChatMessage.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r123 -->
+121. **ChatInput.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r127 -->
+122. **ProjectCard.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r131 -->
+123. **SettingsPanel.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r135 -->
+124. **IdeaCard.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r139 -->
+125. **MemoryItem.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r143 -->
+126. **Sidebar.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r147 -->
+127. **Navbar.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r151 -->
+128. **Modal.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r155 -->
+129. **Button.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r159 -->
+130. **Input.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r163 -->
+131. **Card.tsx**: [ ] Memoization [ ] A11y [ ] Doc [ ] Test <!-- id: r167 -->
 
 ---
-## 🔵 BATCH 4: TECHNICAL DEBT & MODERNIZATION (NEW)
-- [x] **Type Safety Overhaul**:
-    - [x] Enable `noUnusedLocals` and `noUnusedParameters` in `tsconfig.json` <!-- id: batch4-1 -->
-    - [x] Resolve ~700 `any`/`unknown` instances in `src` <!-- id: batch4-2 -->
-- [x] **Security Hardening**:
-    - [x] **SEC-004**: Safter Monaco/CSP (Remove unsafe-eval dependency if possible) <!-- id: batch4-3 -->
-    - [x] **SEC-007**: Replace `Math.random` with `crypto` for all ID generation <!-- id: batch4-4 -->
-- [x] **Complexity Reduction**:
-    - [x] Refactor `main.ts` (Complexity > 20) <!-- id: batch4-5 -->
-    - [x] Refactor `ExternalMcpPlugin.ts` (Complexity > 10) <!-- id: batch4-6 -->
-- [x] **Reliability**:
-    - [x] Fix all Floating/Misused Promises in Main Process <!-- id: batch4-7 -->
-    - [x] Purge redundant directive overrides (`eslint-disable`, `ts-ignore`) <!-- id: batch4-8 -->
-    - [x] Final build/lint/type-check cycle
-
-## Batch 5: Database Evolution & Memory Core (Current)
-- [x] **Database Finalization**
-    - [x] Remove legacy dependencies (`@electric-sql/pglite`, `better-sqlite3`) from `package.json`
-    - [x] Clean up legacy migration code and PGlite/SQLite remnants
-- [x] **Memory Core Integration**
-    - [x] Consolidate `MemoryService` and `AdvancedMemoryService` roles
-    - [x] Integrate RAG/Vector operations with Rust `db-service`
-    - [x] Remove native `memory-service` dependency
-- [x] **Type Safety & Tech Debt**
-    - [x] Fix unsafe casts in `preload.ts` (`ProjectState`)
-    - [x] Standardize memory/project types (100% type safety)
-- [x] **Batch Finalization**
-    - [x] Run `npm run build` and verify binaries
-    - [x] Update documentation for Batch 5 completion
-
----
-## Batch 6: Multi-Agent Orchestration v2 (Current)
-- [x] **Persistent Agent Profiles**
-    - [x] Implement database support in `SystemRepository`
-    - [x] Refactor `AgentRegistryService` for persistence
-- [x] **Orchestration Service**
-    - [x] Create `MultiAgentOrchestratorService`
-    - [x] Implement Planner/Worker phases with specialized roles
-    - [x] Expose via IPC and finalize types
-- [x] **Batch Finalization**
-    - [x] Run `npm run build` and verify binaries
-    - [x] Update documentation for Batch 6 completion
-
----
-*Last updated: 2026-02-04 (Batch 6 Completed)*
+**Total Tasks Identified:** 542
+**Audit Baseline:** 2026-02-04
+**Last updated:** 2026-02-04 18:45 (Auth & Model Fixes)

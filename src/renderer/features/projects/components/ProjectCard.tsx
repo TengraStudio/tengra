@@ -117,7 +117,7 @@ const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string
             <Calendar className="w-3.5 h-3.5" />
             {new Date(project.createdAt).toLocaleDateString()}
         </span>
-        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-[10px] font-bold tracking-wider", project.status === 'active' ? "text-success" : "")}>
+        <span className={cn("px-2 py-0.5 rounded-full bg-muted/50 uppercase text-xxs font-bold tracking-wider", project.status === 'active' ? "text-success" : "")}>
             {project.status === 'active' ? t('common.active') : project.status}
         </span>
     </div>

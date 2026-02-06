@@ -17,38 +17,38 @@ import {
 
 export const CATEGORY_CONFIG: Record<
   MemoryCategory,
-  { label: string; color: string; icon: LucideIcon }
+  { labelKey: string; color: string; icon: LucideIcon }
 > = {
   preference: {
-    label: 'Preference',
+    labelKey: 'memory.categories.preference',
     color: 'bg-primary/10 text-primary',
     icon: Settings,
   },
-  personal: { label: 'Personal', color: 'bg-pink/10 text-pink', icon: Brain },
+  personal: { labelKey: 'memory.categories.personal', color: 'bg-pink/10 text-pink', icon: Brain },
   project: {
-    label: 'Project',
+    labelKey: 'memory.categories.project',
     color: 'bg-success/10 text-success',
     icon: Lightbulb,
   },
-  technical: { label: 'Technical', color: 'bg-orange/10 text-orange', icon: Zap },
+  technical: { labelKey: 'memory.categories.technical', color: 'bg-warning/10 text-orange', icon: Zap },
   workflow: {
-    label: 'Workflow',
+    labelKey: 'memory.categories.workflow',
     color: 'bg-purple/10 text-purple',
     icon: ArrowRight,
   },
   relationship: {
-    label: 'Relationship',
+    labelKey: 'memory.categories.relationship',
     color: 'bg-cyan/10 text-cyan',
     icon: GitMerge,
   },
   fact: {
-    label: 'Fact',
+    labelKey: 'memory.categories.fact',
     color: 'bg-muted/10 text-muted-foreground',
     icon: HelpCircle,
   },
   instruction: {
-    label: 'Instruction',
-    color: 'bg-yellow/10 text-yellow',
+    labelKey: 'memory.categories.instruction',
+    color: 'bg-yellow/10 text-warning',
     icon: Sparkles,
   },
 };

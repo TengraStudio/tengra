@@ -40,7 +40,7 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({ plan, onAp
                     <div key={step.id} className="flex gap-2">
                         <div className="flex flex-col items-center pt-1">
                             <div className={cn(
-                                "w-4 h-4 rounded-full border-2 flex items-center justify-center text-[8px] font-bold",
+                                "w-4 h-4 rounded-full border-2 flex items-center justify-center text-xxxs font-bold",
                                 step.status === 'completed' && "bg-success border-success text-white",
                                 step.status === 'executing' && "border-primary text-primary animate-pulse",
                                 step.status === 'pending' && "border-muted text-muted-foreground"
@@ -77,7 +77,7 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({ plan, onAp
                     </button>
                     <button
                         onClick={onApprove}
-                        className="flex-1 py-2 px-4 bg-success hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-2 px-4 bg-success hover:bg-success/90 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2"
                     >
                         <CheckCircle className="w-4 h-4" />
                         {t('agent.approveExecute')}

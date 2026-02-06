@@ -58,7 +58,7 @@ export class HttpService extends BaseService {
             return deduplicated;
         }
 
-        const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        const requestId = `${Date.now()}-${crypto.randomUUID().substring(0, 8)}`;
         this.logRequest(requestId, url, normalized.fetchOptions);
 
         const startTime = Date.now();

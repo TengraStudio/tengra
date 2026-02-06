@@ -2,15 +2,17 @@ import { MemoryStatistics } from '@shared/types/advanced-memory';
 
 import { AnimatedProgressBar } from '@/components/ui/AnimatedProgressBar';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/i18n';
 
-import { CATEGORY_CONFIG } from './MemorySubComponents';
+import { CATEGORY_CONFIG } from './constants';
 
 export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
+    const { t } = useTranslation();
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="p-6 bg-muted/20 border-white/5 space-y-4">
-                    <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">Category Distribution</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">{t('memory.stats.categoryDistribution')}</h3>
                     <div className="space-y-3">
                         {Object.entries(stats.byCategory).map(([category, count]) => {
                             const config = CATEGORY_CONFIG[category as keyof typeof CATEGORY_CONFIG];
@@ -20,9 +22,9 @@ export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
                                     <div className="flex justify-between text-xs font-medium">
                                         <div className="flex items-center gap-2">
                                             <config.icon className="w-3 h-3" />
-                                            {config.label}
+                                            {t(config.labelKey)}
                                         </div>
-                                        <span>{count} memories ({percentage.toFixed(0)}%)</span>
+                                        <span>{t('memory.stats.memoriesCount', { count, percent: percentage.toFixed(0) })}</span>
                                     </div>
                                     <AnimatedProgressBar value={percentage} size="sm" />
                                 </div>
@@ -32,12 +34,12 @@ export const StatsPanel = ({ stats }: { stats: MemoryStatistics }) => {
                 </Card>
 
                 <Card className="p-6 bg-muted/20 border-white/5 space-y-4">
-                    <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">Global Context Balance</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">{t('memory.stats.globalContext')}</h3>
                     <div className="flex flex-col items-center justify-center h-48 space-y-4">
                         {/* Placeholder for a chart or visualization */}
                         <div className="text-center">
                             <p className="text-2xl font-black text-primary">{stats.total}</p>
-                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Active Fragments</p>
+                            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{t('memory.stats.totalActiveFragments')}</p>
                         </div>
                     </div>
                 </Card>

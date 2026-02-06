@@ -821,6 +821,11 @@ To ensure a "best performance" experience, agents MUST follow these 12 rules:
 11. **Render Optimization**: Use `content-visibility: auto` CSS for off-screen UI sections to reduce initial paint costs.
 12. **State Granularity**: Keep React state as local as possible to prevent deep re-render trees in the application layout.
 
+### Logging Standards
+- **Use `logs/` Directory**: All debug logs, temporary dumps, or text outputs produced by scripts or agents must be written to the `logs/` directory. Do not clutter the root or source directories with debug files.
+- **Use `appLogger`**: For application code, always use the structured `appLogger` instead of `console.log`.
+
+## Enforcement
 If a task requires accessing a forbidden path, stop and ask the user.
 ```
 
