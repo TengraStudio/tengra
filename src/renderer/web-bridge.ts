@@ -38,6 +38,7 @@ export const webElectronMock: ElectronAPI = {
     } as AuthStatus),
     deleteProxyAuthFile: async (_name: string) => ({ success: true }),
     syncAuthFiles: async () => ({ success: true }),
+    downloadAuthFile: async (_name: string) => null,
     saveClaudeSession: async () => ({ success: true }),
     triggerClaudeSessionCapture: async () => ({ success: true }),
 

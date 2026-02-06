@@ -61,8 +61,8 @@ export const SidebarChatList = React.memo(({
                 {/* Pinned */}
                 {pinnedChats.length > 0 && !isCollapsed && (
                     <div>
-                        <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider flex items-center gap-1">
-                            <Pin className="w-3 h-3" /> Pinned
+                        <p className="px-2 py-1 text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider flex items-center gap-1">
+                            <Pin className="w-3 h-3" /> {t('sidebar.pinned')}
                         </p>
                         <div className="space-y-0.5">
                             {pinnedChats.map(renderChatItem)}
@@ -74,9 +74,9 @@ export const SidebarChatList = React.memo(({
                 {activeFolders.length > 0 && !isCollapsed && (
                     <div>
                         <div className="flex items-center justify-between px-2 py-1">
-                            <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Folders</p>
+                            <p className="text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider">{t('sidebar.folders')}</p>
                             <button
-                                onClick={() => createFolder('New Folder')}
+                                onClick={() => createFolder(t('sidebar.newFolder'))}
                                 className="p-0.5 text-muted-foreground/50 hover:text-foreground"
                             >
                                 <FolderPlus className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export const SidebarChatList = React.memo(({
                 {/* Recent */}
                 {recentChats.length > 0 && !isCollapsed && (
                     <div>
-                        <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Recent</p>
+                        <p className="px-2 py-1 text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider">{t('sidebar.recent')}</p>
                         <div className="space-y-0.5">
                             {recentChats.map(renderChatItem)}
                         </div>

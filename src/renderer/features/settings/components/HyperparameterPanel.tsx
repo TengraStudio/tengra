@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -25,44 +26,45 @@ export function HyperparameterPanel({
     onTopKChange,
     onRepeatPenaltyChange
 }: HyperparameterPanelProps) {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
 
     const sliders = [
         {
-            label: 'Temperature',
+            labelKey: 'settings.hyperparameters.temperature.label',
             value: temperature,
             onChange: onTemperatureChange,
             min: 0,
             max: 2,
             step: 0.1,
-            description: 'YaratÄ±cÄ±lÄ±k seviyesi (0: deterministik, 2: Ã§ok yaratÄ±cÄ±)'
+            descriptionKey: 'settings.hyperparameters.temperature.description'
         },
         {
-            label: 'Top-P',
+            labelKey: 'settings.hyperparameters.topP.label',
             value: topP,
             onChange: onTopPChange,
             min: 0,
             max: 1,
             step: 0.05,
-            description: 'Nucleus sampling olasÄ±lÄ±k eÅŸiÄŸi'
+            descriptionKey: 'settings.hyperparameters.topP.description'
         },
         {
-            label: 'Top-K',
+            labelKey: 'settings.hyperparameters.topK.label',
             value: topK,
             onChange: onTopKChange,
             min: 1,
             max: 100,
             step: 1,
-            description: 'En olasÄ± token sayÄ±sÄ±'
+            descriptionKey: 'settings.hyperparameters.topK.description'
         },
         {
-            label: 'Repeat Penalty',
+            labelKey: 'settings.hyperparameters.repeatPenalty.label',
             value: repeatPenalty,
             onChange: onRepeatPenaltyChange,
             min: 1,
             max: 2,
             step: 0.05,
-            description: 'Tekrar cezasÄ± (1: yok, 2: yÃ¼ksek)'
+            descriptionKey: 'settings.hyperparameters.repeatPenalty.description'
         }
     ];
 
@@ -74,7 +76,7 @@ export function HyperparameterPanel({
             >
                 <div className="flex items-center gap-2">
                     <Settings2 className="w-4 h-4 text-purple" />
-                    <span className="text-sm font-medium">Hiperparametreler</span>
+                    <span className="text-sm font-medium">{t('settings.hyperparameters.title')}</span>
                 </div>
                 {isExpanded ? (
                     <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -91,10 +93,10 @@ export function HyperparameterPanel({
             >
                 <div className="px-4 pb-4 pt-2 space-y-4">
                     {sliders.map((slider) => (
-                        <div key={slider.label} className="space-y-2">
+                        <div key={slider.labelKey} className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-medium text-muted-foreground">
-                                    {slider.label}
+                                    {t(slider.labelKey)}
                                 </label>
                                 <span className="text-xs font-mono bg-muted/30 px-2 py-0.5 rounded">
                                     {slider.value.toFixed(slider.step < 1 ? 2 : 0)}
@@ -121,7 +123,7 @@ export function HyperparameterPanel({
                                 )}
                             />
                             <p className="text-sm text-muted-foreground/60">
-                                {slider.description}
+                                {t(slider.descriptionKey)}
                             </p>
                         </div>
                     ))}

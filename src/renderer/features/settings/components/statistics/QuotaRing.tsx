@@ -10,8 +10,8 @@ interface SizeConfig {
 }
 
 const SIZE_CONFIGS: Record<'sm' | 'md', SizeConfig> = {
-    sm: { containerClass: 'h-10 w-10', textSize: 'text-[9px]', strokeWidth: 3, radius: 18, viewBox: '0 0 40 40', center: '20' },
-    md: { containerClass: 'h-14 w-14', textSize: 'text-[11px]', strokeWidth: 4, radius: 25, viewBox: '0 0 60 60', center: '30' }
+    sm: { containerClass: 'h-10 w-10', textSize: 'text-xxxs', strokeWidth: 3, radius: 18, viewBox: '0 0 40 40', center: '20' },
+    md: { containerClass: 'h-14 w-14', textSize: 'text-xxs', strokeWidth: 4, radius: 25, viewBox: '0 0 60 60', center: '30' }
 };
 
 export const QuotaRing = ({ value, color, size = 'md' }: { value: number; color: string; size?: 'sm' | 'md' }) => {

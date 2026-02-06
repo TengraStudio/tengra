@@ -22,21 +22,22 @@ interface ModelDetailsPanelProps {
 
 interface HFMetadataProps {
     model: HFModel;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }
 
-const HFMetadata: React.FC<HFMetadataProps> = ({ model }) => (
-    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+const HFMetadata: React.FC<HFMetadataProps> = ({ model, t }) => (
+    <div className="flex items-center gap-2 text-xxs font-black uppercase tracking-widest text-muted-foreground">
         <span className="text-foreground">{model.author}</span>
         <span className="opacity-30 px-1">•</span>
-        <span>{model.likes} Likes</span>
+        <span>{t('modelExplorer.likes', { count: model.likes })}</span>
         <span className="opacity-30 px-1">•</span>
         <span>{model.lastModified.split('T')[0]}</span>
     </div>
 );
 
-const OllamaMetadata: React.FC = () => (
-    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-        <span className="text-foreground">Ollama Library</span>
+const OllamaMetadata: React.FC<{ t: (key: string) => string }> = ({ t }) => (
+    <div className="flex items-center gap-2 text-xxs font-black uppercase tracking-widest text-muted-foreground">
+        <span className="text-foreground">{t('modelExplorer.ollamaLibrary')}</span>
     </div>
 );
 
@@ -50,31 +51,31 @@ const MetadataGrid: React.FC<MetadataGridProps> = ({ model, t }) => {
     const modelName = isOllama ? (model as OllamaLibraryModel).name : (model as HFModel).name;
     
     const architecture = isOllama
-        ? (modelName.toLowerCase().includes('llama') ? 'Llama 3' : 'Transformer')
-        : 'GGUF / Transformer';
+        ? (modelName.toLowerCase().includes('llama') ? t('modelExplorer.architectureLlama3') : t('modelExplorer.architectureTransformer'))
+        : t('modelExplorer.architectureGguf');
     
     const context = isOllama
-        ? (modelName.includes('3.2') || modelName.includes('3.1') ? '128K' : '8K')
-        : 'Variable';
+        ? (modelName.includes('3.2') || modelName.includes('3.1') ? t('modelExplorer.context128k') : t('modelExplorer.context8k'))
+        : t('modelExplorer.contextVariable');
     
-    const updated = isOllama ? 'Library Latest' : (model as HFModel).lastModified.split('T')[0];
+    const updated = isOllama ? t('modelExplorer.updatedLibraryLatest') : (model as HFModel).lastModified.split('T')[0];
 
     return (
         <div className="grid grid-cols-2 gap-4">
             <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.architecture')}</span>
+                <span className="text-xxxs font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.architecture')}</span>
                 <span className="text-xs font-bold text-foreground">{architecture}</span>
             </div>
             <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.context')}</span>
+                <span className="text-xxxs font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.context')}</span>
                 <span className="text-xs font-bold text-foreground">{context}</span>
             </div>
             <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.updated')}</span>
+                <span className="text-xxxs font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.updated')}</span>
                 <span className="text-xs font-bold text-foreground">{updated}</span>
             </div>
             <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.provider')}</span>
+                <span className="text-xxxs font-black uppercase tracking-[0.2em] text-muted-foreground/60">{t('modelExplorer.provider')}</span>
                 <span className="text-xs font-bold text-foreground uppercase">{model.provider}</span>
             </div>
         </div>
@@ -100,7 +101,7 @@ const HardwareStats: React.FC<HardwareStatsProps> = ({ model, t }) => {
 
     return (
         <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center gap-3">
+            <h3 className="text-xxs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-3">
                 <Database className="w-4 h-4" /> {t('modelExplorer.hardwareReq')}
             </h3>
             <div className="space-y-3">
@@ -125,7 +126,7 @@ interface DownloadProgressProps {
 
 const DownloadProgress: React.FC<DownloadProgressProps> = ({ downloading, universalPath, t }) => (
     <div className="space-y-2">
-        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary">
+        <div className="flex justify-between text-xxs font-black uppercase tracking-widest text-primary">
             <span>{t('modelExplorer.downloading')}</span>
             <span>{Math.round((downloading[universalPath].received / downloading[universalPath].total) * 100)}%</span>
         </div>
@@ -155,17 +156,17 @@ const HFFileItem: React.FC<HFFileItemProps> = ({ file, model, modelsDir, downloa
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                     <BadgeQ quantization={file.quantization} />
-                    {isRecommendation && <span className="text-[9px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-black tracking-widest uppercase">{t('modelExplorer.bestChoice')}</span>}
+                    {isRecommendation && <span className="text-xxxs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-black tracking-widest uppercase">{t('modelExplorer.bestChoice')}</span>}
                 </div>
                 <span className="text-xs text-foreground font-black font-mono">{formatSize(file.size)}</span>
             </div>
-            <div className="text-[10px] text-muted-foreground/50 mb-4 truncate font-mono">{file.path}</div>
+            <div className="text-xxs text-muted-foreground/50 mb-4 truncate font-mono">{file.path}</div>
             {isDownloading ? (
                 <DownloadProgress downloading={downloading} universalPath={universalPath} t={t} />
             ) : (
                 <button
                     onClick={() => void handleDownloadHF(file)}
-                    className="w-full py-3 bg-foreground text-background text-[11px] font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg group-hover:shadow-primary/20"
+                    className="w-full py-3 bg-foreground text-background text-xxs font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg group-hover:shadow-primary/20"
                 >
                     <Download className="w-4 h-4" /> {t('modelExplorer.downloadPackage')}
                 </button>
@@ -189,7 +190,7 @@ const HFFilesList: React.FC<HFFilesListProps> = ({ files, model, modelsDir, down
         return (
             <div className="flex flex-col items-center justify-center p-12 space-y-4">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-[10px] font-bold text-muted-foreground animate-pulse">{t('modelExplorer.scanningFiles')}</p>
+                <p className="text-xxs font-bold text-muted-foreground animate-pulse">{t('modelExplorer.scanningFiles')}</p>
             </div>
         );
     }
@@ -217,11 +218,11 @@ const OllamaTagItem: React.FC<OllamaTagItemProps> = ({ tag, model, pullingOllama
     const isPulling = pullingOllama === fullModelName;
 
     return (
-        <div key={tag} className="p-5 rounded-2xl border border-border/50 bg-muted/20 hover:border-orange/40 hover:bg-orange/5 transition-all group">
+        <div key={tag} className="p-5 rounded-2xl border border-border/50 bg-muted/20 hover:border-orange/40 hover:bg-warning/5 transition-all group">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 bg-orange/20 text-orange rounded-lg text-xs font-black uppercase tracking-widest font-mono">{tag}</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-50">{t('modelExplorer.localPull')}</span>
+                    <span className="px-3 py-1 bg-warning/20 text-orange rounded-lg text-xs font-black uppercase tracking-widest font-mono">{tag}</span>
+                    <span className="text-xxs text-muted-foreground font-medium uppercase tracking-widest opacity-50">{t('modelExplorer.localPull')}</span>
                 </div>
                 <Database className="w-4 h-4 text-orange/50" />
             </div>
@@ -229,8 +230,8 @@ const OllamaTagItem: React.FC<OllamaTagItemProps> = ({ tag, model, pullingOllama
                 onClick={() => void handlePullOllama(model.name, tag)}
                 disabled={!!pullingOllama}
                 className={cn(
-                    "w-full py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50",
-                    isPulling ? "bg-orange text-foreground animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-orange-600 group-hover:text-foreground"
+                    "w-full py-3 text-xxs font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50",
+                    isPulling ? "bg-warning text-foreground animate-pulse" : "bg-foreground text-background hover:scale-[1.02] group-hover:bg-warning-600 group-hover:text-foreground"
                 )}
             >
                 {isPulling ? (
@@ -291,9 +292,9 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
             </div>
 
             <div className="p-8 space-y-4 border-b border-border/50 bg-white/5">
-                {isHF ? <HFMetadata model={selectedModel as HFModel} /> : <OllamaMetadata />}
+                {isHF ? <HFMetadata model={selectedModel as HFModel} t={t} /> : <OllamaMetadata t={t} />}
                 <p className="text-sm text-muted-foreground leading-relaxed max-h-[120px] overflow-y-auto pr-4 scrollbar-thin">
-                    {selectedModel.description || 'This versatile model is optimized for high-performance inference and can handle a wide variety of tasks with precision.'}
+                    {selectedModel.description || t('modelExplorer.defaultDescription')}
                 </p>
             </div>
 
@@ -302,7 +303,7 @@ export const ModelDetailsPanel: React.FC<ModelDetailsPanelProps> = ({
                 <HardwareStats model={selectedModel} t={t} />
 
                 <div className="space-y-6">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-3">
+                    <h3 className="text-xxs font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-3">
                         <Server className="w-4 h-4 text-muted-foreground/50" /> {t('modelExplorer.availableVersions')}
                     </h3>
 

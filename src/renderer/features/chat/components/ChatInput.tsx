@@ -94,7 +94,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
             onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); ctrl.setIsDragging(false); }}
             onDrop={ctrl.onDrop}
         >
-            <AttachmentList attachments={ctrl.attachments} onRemove={ctrl.removeAttachment} />
+            <AttachmentList attachments={ctrl.attachments} onRemove={ctrl.removeAttachment} t={ctrl.t} />
 
             <PromptCommandMenu
                 show={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
@@ -107,6 +107,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                     ctrl.setInput(newText);
                     ctrl.setShowCommandMenu(false);
                 }}
+                t={ctrl.t}
             />
 
             <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
@@ -167,7 +168,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
                 <SendButton ctrl={ctrl} />
             </div>
 
-            <div className="absolute bottom-1 right-4 text-[10px] text-muted-foreground/30 pointer-events-none select-none">
+            <div className="absolute bottom-1 right-4 text-xxs text-muted-foreground/30 pointer-events-none select-none">
                 {ctrl.selectedProvider}
             </div>
         </div>
@@ -181,7 +182,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 
 ChatInput.displayName = 'ChatInput';
 
-const AttachmentList: React.FC<{ attachments: Attachment[], onRemove: (i: number) => void }> = ({ attachments, onRemove }) => {
+const AttachmentList: React.FC<{ attachments: Attachment[], onRemove: (i: number) => void; t: (key: string, options?: Record<string, string | number>) => string }> = ({ attachments, onRemove, t }) => {
     const getFileIcon = (type: string) => {
         if (type.startsWith('image/')) { return <ImageIcon size={14} />; }
         if (type.includes('text') || type.includes('json') || type.includes('md')) { return <FileText size={14} />; }
@@ -202,11 +203,11 @@ const AttachmentList: React.FC<{ attachments: Attachment[], onRemove: (i: number
                                 {getFileIcon(att.type)}
                             </span>
                             <span className="truncate max-w-[150px]">{att.name}</span>
-                            <span className="text-zinc-600 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
+                            <span className="text-zinc-600 text-xxs">({(att.size / 1024).toFixed(1)} {t('common.kb')})</span>
                             <button
                                 onClick={() => onRemove(i)}
                                 className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                aria-label={`Remove ${att.name}`}
+                                aria-label={t('input.removeAttachment', { name: att.name })}
                             >
                                 <X size={12} aria-hidden="true" />
                             </button>
@@ -221,23 +222,24 @@ const AttachmentList: React.FC<{ attachments: Attachment[], onRemove: (i: number
 const PromptCommandMenu: React.FC<{
     show: boolean; prompts: Array<{ id: string; title: string; content: string }>;
     selectedIndex: number; onSelect: (prompt: { id: string; title: string; content: string }) => void;
-}> = ({ show, prompts, selectedIndex, onSelect }) => (
+    t: (key: string, options?: Record<string, string | number>) => string;
+}> = ({ show, prompts, selectedIndex, onSelect, t }) => (
     <AnimatePresence>
         {show && (
             <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                 className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border/50 rounded-lg shadow-xl overflow-hidden z-50"
-                role="listbox" aria-label="Prompt suggestions"
+                role="listbox" aria-label={t('input.promptSuggestions')}
             >
-                <div className="text-[10px] uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30" role="heading" aria-level={3}>Prompts</div>
+                <div className="text-xxs uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30" role="heading" aria-level={3}>{t('input.prompts')}</div>
                 {prompts.map((prompt, i) => (
                     <button
                         key={prompt.id} onClick={() => onSelect(prompt)}
                         className={cn("w-full text-left px-3 py-2 text-xs transition-colors block", i === selectedIndex ? "bg-primary/20 text-primary" : "hover:bg-accent/50 text-foreground")}
-                        aria-label={`Use prompt: ${prompt.title}`} aria-selected={i === selectedIndex} role="option"
+                        aria-label={t('input.usePrompt', { title: prompt.title })} aria-selected={i === selectedIndex} role="option"
                     >
                         <div className="font-medium">{prompt.title}</div>
-                        <div className="text-[10px] text-muted-foreground truncate">{prompt.content}</div>
+                        <div className="text-xxs text-muted-foreground truncate">{prompt.content}</div>
                     </button>
                 ))}
             </motion.div>
@@ -254,18 +256,21 @@ const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
             selectedModels={ctrl.selectedModels} onSelect={ctrl.handleSelectModel}
             onRemoveModel={ctrl.removeSelectedModel} settings={ctrl.appSettings ?? undefined}
             groupedModels={ctrl.groupedModels ?? undefined} quotas={ctrl.quotas}
-            codexUsage={ctrl.codexUsage} onOpenChange={ctrl.setIsModelMenuOpen}
+            codexUsage={ctrl.codexUsage} claudeQuota={ctrl.claudeQuota}
+            onOpenChange={ctrl.setIsModelMenuOpen}
             contextTokens={ctrl.contextTokens} language={ctrl.language}
             toggleFavorite={ctrl.toggleFavorite} isFavorite={ctrl.isFavorite}
+            thinkingLevel={ctrl.getModelReasoningLevel?.(ctrl.selectedModel)}
+            onThinkingLevelChange={(level) => ctrl.setModelReasoningLevel?.(ctrl.selectedModel, level)}
         />
     </div>
 );
 
 const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const modes = [
-        { id: 'fast', label: 'Fast', icon: Zap, color: 'text-yellow' },
-        { id: 'agent', label: 'Agent', icon: Bot, color: 'text-primary' },
-        { id: 'thinking', label: 'Thinking', icon: Cpu, color: 'text-purple' }
+        { id: 'fast', label: ctrl.t('input.systemModes.fast'), icon: Zap, color: 'text-warning' },
+        { id: 'agent', label: ctrl.t('input.systemModes.agent'), icon: Bot, color: 'text-primary' },
+        { id: 'thinking', label: ctrl.t('input.systemModes.thinking'), icon: Cpu, color: 'text-purple' }
     ] as const;
 
 
@@ -280,12 +285,12 @@ const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
                             key={mode.id}
                             onClick={() => ctrl.setSystemMode(mode.id)}
                             className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-xxs font-medium transition-all",
                                 isActive
                                     ? "bg-background shadow-sm text-foreground ring-1 ring-border/5"
                                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                             )}
-                            title={`${mode.label} Mode`}
+                            title={ctrl.t('input.systemModes.modeTitle', { mode: mode.label })}
                         >
                             <Icon size={12} className={isActive ? mode.color : ""} />
                             {isActive && <span>{mode.label}</span>}

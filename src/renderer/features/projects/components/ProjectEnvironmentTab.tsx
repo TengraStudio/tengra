@@ -1,9 +1,9 @@
-import { appLogger } from '@main/logging/logger';
 import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface EnvVar {
     key: string
@@ -156,7 +156,7 @@ export const ProjectEnvironmentTab: React.FC<ProjectEnvironmentTabProps> = ({ pr
             {/* Variables Table */}
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
-                    <div className="grid grid-cols-12 gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                    <div className="grid grid-cols-12 gap-4 text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">
                         <div className="col-span-4">{t('projectDashboard.envKey')}</div>
                         <div className="col-span-6">{t('projectDashboard.envValue')}</div>
                         <div className="col-span-2 text-right">{t('projectDashboard.envActions')}</div>

@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
@@ -6,6 +5,7 @@ import { FitAddon } from 'xterm-addon-fit';
 
 import { useTranslation } from '@/i18n';
 import { getTerminalTheme } from '@/lib/terminal-theme';
+import { appLogger } from '@/utils/renderer-logger';
 
 import 'xterm/css/xterm.css';
 

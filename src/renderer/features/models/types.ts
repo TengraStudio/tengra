@@ -12,6 +12,8 @@ export interface ModelListItem {
         output?: number;
     };
     pinned?: boolean;
+    thinkingLevels?: string[];
+    description?: string;
 }
 
 export interface ModelCategory {

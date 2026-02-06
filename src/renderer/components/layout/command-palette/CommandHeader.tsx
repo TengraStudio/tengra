@@ -25,7 +25,7 @@ export const CommandHeader: React.FC<CommandHeaderProps> = ({
                 placeholder={t('commandPalette.searchPlaceholder')}
                 className="flex-1 bg-transparent text-foreground placeholder-foreground/40 outline-none text-sm"
             />
-            <div className="flex items-center gap-1 text-foreground/30 text-[10px] uppercase font-bold tracking-widest border border-white/10 px-1.5 py-0.5 rounded bg-white/5">
+            <div className="flex items-center gap-1 text-foreground/30 text-xxs uppercase font-bold tracking-widest border border-white/10 px-1.5 py-0.5 rounded bg-white/5">
                 <Command className="w-3 h-3" />
                 <span>K</span>
             </div>

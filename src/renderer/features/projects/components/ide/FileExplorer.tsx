@@ -1,10 +1,10 @@
-﻿import { appLogger } from '@main/logging/logger';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+﻿import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { renderIcon } from '@/lib/file-icons';
 import { cn } from '@/lib/utils';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface FileNode {
     name: string
@@ -69,6 +69,7 @@ interface FileExplorerProps {
 }
 
 const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: FileNode, depth?: number, onSelect: (path: string) => void, onFolderSelect?: (path: string) => void }) => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [children, setChildren] = useState<FileNode[]>([]);
     const [loading, setLoading] = useState(false);
@@ -176,7 +177,7 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
             {isOpen && (
                 <div>
                     {loading ? (
-                        <div className="pl-8 py-1 text-xs text-muted-foreground">Loading...</div>
+                        <div className="pl-8 py-1 text-xs text-muted-foreground">{t('common.loading')}</div>
                     ) : (
                         children.map(child => (
                             <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onFolderSelect={onFolderSelect} />

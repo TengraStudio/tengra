@@ -110,7 +110,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
-                    <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-indigo-300 text-[9px] font-bold border border-indigo/30">
+                    <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-indigo-300 text-xxxs font-bold border border-indigo/30">
                         SSH
                     </span>
                 )}
@@ -280,7 +280,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                         ))
                     )}
                     {rootNodes.length === 0 && !loading && (
-                        <div className="text-[11px] text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
+                        <div className="text-xxs text-muted-foreground/40 pl-4 py-2 italic flex items-center gap-2">
                             {t('workspace.emptyFolder')}
                         </div>
                     )}

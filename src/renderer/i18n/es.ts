@@ -23,7 +23,16 @@ export const es = {
         hour: 'hora',
         hours: 'horas',
         clear: 'Limpiar',
-        add: 'Añadir'
+        add: 'Añadir',
+        confirm: 'Confirmar',
+        processing: 'Procesando...'
+    },
+    app: {
+        name: 'Tandem'
+    },
+    errors: {
+        unexpected: 'Lo sentimos, ocurrió un error.',
+        somethingWentWrong: 'Algo salió mal:'
     },
     languages: {
         tr: 'Turco',
@@ -92,6 +101,19 @@ export const es = {
         model: 'Modelo',
         selectModel: 'Seleccionar modelo'
     },
+    assistantIdentity: {
+        openai: 'OpenAI',
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        copilot: 'GitHub Copilot',
+        groq: 'Groq',
+        ollama: 'Ollama',
+        llama: 'Llama',
+        mistral: 'Mistral',
+        deepseek: 'DeepSeek',
+        qwen: 'Qwen',
+        phi: 'Phi'
+    },
     settings: {
         searchPlaceholder: 'Buscar configuración...',
         searchResults: '{count} configuraciones encontradas',
@@ -110,7 +132,88 @@ export const es = {
         gallery: 'Galería',
         about: 'Acerca de',
         personas: 'Personas',
-        factoryResetConfirm: '¿Estás seguro de que deseas eliminar todos los datos?'
+        factoryResetConfirm: '¿Estás seguro de que deseas eliminar todos los datos?',
+        usageLimits: {
+            title: 'Límites de uso del modelo',
+            enable: 'Habilitar',
+            maxPercentQuota: 'Porcentaje máximo de la cuota restante (%)',
+            maxPercentPlaceholder: '50',
+            maxRequests: 'Máximo de solicitudes',
+            maxPercentage: 'Porcentaje máximo (%)',
+            maxRequestsPlaceholder: '5',
+            maxPercentagePlaceholder: '50',
+            typeLabel: 'Tipo:',
+            limitLabel: 'Límite {{period}}',
+            percentHint: 'Se limitará a {{count}} solicitudes ({{percentage}} % de {{remaining}} restantes)',
+            types: {
+                requests: 'Solicitudes',
+                percentage: 'Porcentaje'
+            },
+            periods: {
+                hourly: 'Por hora',
+                daily: 'Diario',
+                weekly: 'Semanal'
+            },
+            copilot: {
+                title: 'Copilot',
+                current: 'Actual: {{remaining}} / {{limit}} restantes'
+            },
+            antigravity: {
+                title: 'Modelos Antigravity',
+                description: 'Establece un límite porcentual según la cuota restante de cada modelo'
+            },
+            codex: {
+                title: 'Codex',
+                description: 'Establece límites porcentuales según la cuota diaria/semanal restante'
+            }
+        },
+        browserClosure: {
+            title: 'Se requiere cerrar el navegador',
+            description: 'Para autenticar con {{provider}}, Tandem necesita leer cookies protegidas.',
+            warningPrefix: 'Debemos',
+            warningEmphasis: 'cerrar automáticamente tu navegador',
+            warningSuffix: 'para liberar el bloqueo de archivos.',
+            saveWork: 'Guarda tu trabajo en el navegador antes de continuar. Lo reabriremos de forma invisible para extraer la clave de sesión.',
+            confirm: 'Cerrar navegador y conectar'
+        },
+        hyperparameters: {
+            title: 'Hiperparámetros',
+            temperature: {
+                label: 'Temperatura',
+                description: 'Nivel de creatividad (0: determinista, 2: muy creativo)'
+            },
+            topP: {
+                label: 'Top-P',
+                description: 'Umbral de probabilidad de nucleus sampling'
+            },
+            topK: {
+                label: 'Top-K',
+                description: 'Número de tokens más probables'
+            },
+            repeatPenalty: {
+                label: 'Penalización por repetición',
+                description: 'Penalización por repetición (1: ninguna, 2: alta)'
+            }
+        },
+        mcp: {
+            title: 'Protocolo de contexto de modelo',
+            subtitle: 'Gestiona tus servidores MCP e instala nuevas herramientas',
+            tabs: {
+                servers: 'Servidores',
+                marketplace: 'Marketplace'
+            },
+            servers: {
+                title: 'Servidores configurados',
+                subtitle: 'Gestiona tus conexiones de servidores MCP',
+                connect: 'Conectar servidor',
+                empty: 'No hay servidores conectados'
+            },
+            status: {
+                connected: 'Conectado',
+                disconnected: 'Desconectado',
+                error: 'Error'
+            }
+        }
     },
     projects: {
         newProject: 'Nuevo proyecto',
@@ -618,7 +721,9 @@ export const es = {
         render: 'Renderizar',
         expand: 'Expandir',
         collapse: 'Colapsar',
-        moreLines: 'más líneas'
+        moreLines: 'más líneas',
+        scrollToBottom: 'Desplazar al final',
+        scrollToBottomWithCount: 'Desplazar al final ({{count}} mensajes nuevos)'
     },
     welcome: {
         title: 'Tandem',
@@ -1201,11 +1306,56 @@ export const es = {
         system: 'Sistema',
         navigate: 'Navegar',
         select: 'Seleccionar',
-        close: 'Cerrar'
+        close: 'Cerrar',
+        engineLabel: 'Motor de comandos de Tandem',
+        previewEmpty: 'Selecciona un elemento para ver detalles',
+        noResultsHint: 'Intenta buscar chats, modelos o ajustes'
     },
     quickAction: {
         explain: 'Explicar',
         translate: 'Traducir'
+    },
+    activityBar: {
+        chat: 'Chat',
+        explorer: 'Explorador',
+        search: 'Buscar',
+        sourceControl: 'Control de código fuente',
+        debug: 'Depurar',
+        extensions: 'Extensiones',
+        settings: 'Configuración'
+    },
+    statusBar: {
+        error: 'Error',
+        errors: 'Errores',
+        warning: 'Advertencia',
+        warnings: 'Advertencias'
+    },
+    updateNotification: {
+        checkingTitle: 'Buscando actualizaciones...',
+        availableTitle: 'Actualización disponible: v{{version}}',
+        availableContent: 'Hay una nueva versión de Tandem disponible.',
+        downloadingTitle: 'Descargando actualización...',
+        downloadedTitle: 'Actualización lista',
+        downloadedContent: 'Reinicia Tandem para aplicar la última actualización.',
+        errorTitle: 'La actualización falló',
+        uptodateTitle: 'Estás al día',
+        downloadAction: 'Descargar',
+        restartAction: 'Reiniciar ahora'
+    },
+    panelLayout: {
+        expand: 'Expandir',
+        collapse: 'Contraer',
+        maximize: 'Maximizar'
+    },
+    diffViewer: {
+        loading: 'Cargando diferencias...'
+    },
+    fab: {
+        openMenu: 'Abrir menú',
+        closeMenu: 'Cerrar menú'
+    },
+    modal: {
+        close: 'Cerrar modal'
     },
     titleBar: {
         minimize: 'Minimizar',
@@ -1307,6 +1457,35 @@ export const es = {
         output: 'SALIDA',
         filePreview: 'Vista previa del archivo',
         path: 'Ruta:'
+    },
+    extensionPrompt: {
+        title: 'Mejora tu experiencia',
+        subtitle: 'Instala la extensión de navegador de Tandem',
+        infoTitle: '¿Qué es la extensión del navegador?',
+        infoBody: 'La extensión de navegador de Tandem permite que la IA interactúe directamente con páginas web. Puede leer contenido, completar formularios, hacer clic en botones y realizar acciones automatizadas según tus comandos.',
+        featuresTitle: 'Funciones:',
+        features: {
+            aiChatTitle: 'Chat de IA en el navegador:',
+            aiChatDesc: 'Chatea con la IA directamente desde cualquier página web',
+            pageInteractionTitle: 'Interacción con páginas:',
+            pageInteractionDesc: 'La IA puede leer, hacer clic y completar formularios automáticamente',
+            contentExtractionTitle: 'Extracción de contenido:',
+            contentExtractionDesc: 'Extrae y resume el contenido de una página con un clic',
+            secureConnectionTitle: 'Conexión segura:',
+            secureConnectionDesc: 'Toda la comunicación se mantiene local en tu ordenador'
+        },
+        installTitle: 'Instalación rápida:',
+        steps: {
+            step1: 'Abre Chrome y ve a chrome://extensions/',
+            step2: 'Activa el "modo desarrollador" (interruptor arriba a la derecha)',
+            step3: 'Haz clic en "Cargar descomprimida"',
+            step4Prefix: 'Selecciona la carpeta',
+            step4Suffix: 'del directorio Tandem'
+        },
+        openFolder: 'Abrir carpeta de la extensión',
+        viewInstructions: 'Ver instrucciones',
+        dismiss: 'No volver a mostrar',
+        remindLater: 'Recuérdamelo más tarde'
     }
 };
 

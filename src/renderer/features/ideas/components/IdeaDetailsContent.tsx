@@ -178,12 +178,12 @@ const RoadmapSection: React.FC<{ roadmap?: ProjectRoadmap }> = ({ roadmap }) => 
                 <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-4 border border-primary/20">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-bold text-primary uppercase tracking-wider">{roadmap.mvp.name}</span>
-                        <span className="text-[10px] font-bold text-muted-foreground/60 bg-muted/50 px-2 py-0.5 rounded border border-border/50">{roadmap.mvp.duration}</span>
+                        <span className="text-xxs font-bold text-muted-foreground/60 bg-muted/50 px-2 py-0.5 rounded border border-border/50">{roadmap.mvp.duration}</span>
                     </div>
                     <p className="text-xs text-foreground/70 mb-2 leading-relaxed">{roadmap.mvp.description}</p>
                     <div className="flex flex-wrap gap-1.5">
                         {roadmap.mvp.deliverables.map((d: string, i: number) => (
-                            <span key={i} className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/20">
+                            <span key={i} className="text-xxs font-bold bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/20">
                                 {d}
                             </span>
                         ))}
@@ -230,10 +230,11 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
     const { t } = useTranslation();
     if (!techStack) { return null; }
 
+    const altLabel = t('ideas.details.altLabel');
     const categories = [
         { key: 'frontend', label: t('ideas.techStack.frontend'), icon: Globe, color: 'text-primary', items: techStack.frontend },
         { key: 'backend', label: t('ideas.techStack.backend'), icon: Server, color: 'text-success', items: techStack.backend },
-        { key: 'database', label: t('ideas.techStack.database'), icon: Database, color: 'text-yellow', items: techStack.database },
+        { key: 'database', label: t('ideas.techStack.database'), icon: Database, color: 'text-warning', items: techStack.database },
         { key: 'infrastructure', label: t('ideas.techStack.infrastructure'), icon: Cpu, color: 'text-purple', items: techStack.infrastructure },
         { key: 'other', label: t('ideas.techStack.other'), icon: Wrench, color: 'text-orange', items: techStack.other }
     ].filter(c => c.items.length > 0);
@@ -260,7 +261,7 @@ const TechStackSection: React.FC<{ techStack?: TechStack }> = ({ techStack }) =>
                                         <span className="text-sm font-medium text-foreground">{tech.name}</span>
                                         {tech.alternatives && tech.alternatives.length > 0 && (
                                             <span className="text-xs text-muted-foreground/40">
-                                                Alt: {tech.alternatives.slice(0, 2).join(', ')}
+                                                {altLabel} {tech.alternatives.slice(0, 2).join(', ')}
                                             </span>
                                         )}
                                     </div>
@@ -344,10 +345,10 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
                                 {/* Missing Features */}
                                 {comp.missingFeatures.length > 0 && (
                                     <div>
-                                        <span className="text-xs font-semibold text-yellow">{t('ideas.competitor.missingFeatures')}</span>
+                                        <span className="text-xs font-semibold text-warning">{t('ideas.competitor.missingFeatures')}</span>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {comp.missingFeatures.map((f, i) => (
-                                                <span key={i} className="text-xs bg-yellow/20 text-yellow-300 px-2 py-0.5 rounded">
+                                                <span key={i} className="text-xs bg-yellow/20 text-warning-300 px-2 py-0.5 rounded">
                                                     {f}
                                                 </span>
                                             ))}
@@ -371,6 +372,7 @@ const IdeaCompetitorsSection: React.FC<{ competitors?: IdeaCompetitor[] }> = ({ 
 };
 
 const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneyStep[] }> = ({ personas, journey }) => {
+    const { t } = useTranslation();
     if (!personas || personas.length === 0) { return null; }
 
     return (
@@ -378,7 +380,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
             <div>
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                     <Users className="w-4 h-4 text-primary" />
-                    Target Personas
+                    {t('ideas.details.targetPersonas')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {personas.map((p, i) => (
@@ -389,15 +391,15 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-foreground">{p.name}</p>
-                                    <p className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">{p.role}</p>
+                                    <p className="text-xxs text-muted-foreground/40 uppercase tracking-wider">{p.role}</p>
                                 </div>
                             </div>
                             <div className="space-y-3 flex-1">
                                 <div>
-                                    <p className="text-[10px] font-bold text-primary uppercase mb-1">Pain Points</p>
+                                    <p className="text-xxs font-bold text-primary uppercase mb-1">{t('ideas.details.painPoints')}</p>
                                     <ul className="space-y-1">
                                         {p.painPoints.slice(0, 2).map((pt, j) => (
-                                            <li key={j} className="text-[11px] text-foreground/80 leading-tight flex items-start gap-1">
+                                            <li key={j} className="text-xxs text-foreground/80 leading-tight flex items-start gap-1">
                                                 <span className="text-primary font-bold">•</span> {pt}
                                             </li>
                                         ))}
@@ -413,7 +415,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Map className="w-4 h-4 text-primary" />
-                        User Journey Map
+                        {t('ideas.details.userJourney')}
                     </h3>
                     <div className="relative flex flex-col space-y-4">
                         <div className="absolute left-4 top-2 bottom-2 w-px bg-border/50" />
@@ -428,10 +430,10 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
                                 <div className="bg-muted/30 rounded-lg p-3 border border-border/20">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-xs font-bold text-foreground uppercase tracking-wider">{step.stage}</span>
-                                        <span className="text-[10px] text-muted-foreground/30">{step.emotion}</span>
+                                        <span className="text-xxs text-muted-foreground/30">{step.emotion}</span>
                                     </div>
                                     <p className="text-sm text-foreground/80 mb-1">{step.action}</p>
-                                    <p className="text-[11px] text-primary/80 font-medium italic">Benefit: {step.benefit}</p>
+                                    <p className="text-xxs text-primary/80 font-medium italic">{t('ideas.details.benefitLabel', { benefit: step.benefit })}</p>
                                 </div>
                             </div>
                         ))}
@@ -443,6 +445,7 @@ const PersonasSection: React.FC<{ personas?: UserPersona[], journey?: JourneySte
 };
 
 const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: BusinessModel, marketingPlan?: MarketingPlan }> = ({ swot, businessModel, marketingPlan }) => {
+    const { t } = useTranslation();
 
     return (
         <div className="space-y-10">
@@ -451,17 +454,17 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Target className="w-4 h-4 text-orange" />
-                        SWOT Analysis
+                        {t('ideas.details.swot.title')}
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                         {[
-                            { label: 'Strengths', items: swot.strengths, color: 'text-primary', bg: 'bg-primary/5', border: 'border-primary/20' },
-                            { label: 'Weaknesses', items: swot.weaknesses, color: 'text-destructive', bg: 'bg-destructive/5', border: 'border-destructive/20' },
-                            { label: 'Opportunities', items: swot.opportunities, color: 'text-accent', bg: 'bg-accent/5', border: 'border-accent/20' },
-                            { label: 'Threats', items: swot.threats, color: 'text-warning', bg: 'bg-warning/5', border: 'border-warning/20' }
+                            { label: t('ideas.details.swot.strengths'), items: swot.strengths, color: 'text-primary', bg: 'bg-primary/5', border: 'border-primary/20' },
+                            { label: t('ideas.details.swot.weaknesses'), items: swot.weaknesses, color: 'text-destructive', bg: 'bg-destructive/5', border: 'border-destructive/20' },
+                            { label: t('ideas.details.swot.opportunities'), items: swot.opportunities, color: 'text-accent', bg: 'bg-accent/5', border: 'border-accent/20' },
+                            { label: t('ideas.details.swot.threats'), items: swot.threats, color: 'text-warning', bg: 'bg-warning/5', border: 'border-warning/20' }
                         ].map((cell, i) => (
                             <div key={i} className={cn("p-4 rounded-xl border", cell.bg, cell.border)}>
-                                <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-3", cell.color)}>{cell.label}</p>
+                                <p className={cn("text-xxs font-black uppercase tracking-[0.2em] mb-3", cell.color)}>{cell.label}</p>
                                 <ul className="space-y-2">
                                     {cell.items.slice(0, 3).map((item, j) => (
                                         <li key={j} className="text-xs text-foreground/70 flex items-start gap-2">
@@ -480,8 +483,8 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
             {businessModel && (
                 <div className="bg-muted/20 border border-border/50 rounded-2xl p-6">
                     <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
-                        Revenue Model
-                        <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] normal-case tracking-normal border border-primary/20">
+                        {t('ideas.details.revenueModel')}
+                        <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xxs normal-case tracking-normal border border-primary/20">
                             {businessModel.monetizationType}
                         </span>
                     </h3>
@@ -498,15 +501,15 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                             ))}
                         </div>
                         <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
-                            <p className="text-[10px] font-bold text-primary uppercase mb-3">Break-even Strategy</p>
+                            <p className="text-xxs font-bold text-primary uppercase mb-3">{t('ideas.details.breakEvenStrategy')}</p>
                             <p className="text-xs text-foreground/70 leading-relaxed font-sans italic">
                                 "{businessModel.breakEvenStrategy}"
                             </p>
                             <div className="mt-4 pt-4 border-t border-border/20">
-                                <p className="text-[10px] font-bold text-foreground/40 uppercase mb-2">Cost Structure</p>
+                                <p className="text-xxs font-bold text-foreground/40 uppercase mb-2">{t('ideas.details.costStructure')}</p>
                                 <div className="flex flex-wrap gap-2">
                                     {businessModel.costStructure.map((c, i) => (
-                                        <span key={i} className="text-[10px] bg-muted/50 text-muted-foreground/50 px-2 py-1 rounded border border-border/10">
+                                        <span key={i} className="text-xxs bg-muted/50 text-muted-foreground/50 px-2 py-1 rounded border border-border/10">
                                             {c}
                                         </span>
                                     ))}
@@ -522,14 +525,14 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-4">
                         <Globe className="w-4 h-4 text-success" />
-                        Go-To-Market Plan
+                        {t('ideas.details.goToMarket')}
                     </h3>
                     <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
-                        <p className="text-[10px] font-bold text-primary uppercase mb-4 tracking-widest">First 100 Users Strategy</p>
+                        <p className="text-xxs font-bold text-primary uppercase mb-4 tracking-widest">{t('ideas.details.first100Users')}</p>
                         <div className="space-y-3">
                             {marketingPlan.first100UsersActionableSteps.map((step, i) => (
                                 <div key={i} className="flex items-center gap-3 bg-muted/20 p-3 rounded-lg group border border-border/5">
-                                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xxs font-bold text-primary shrink-0">
                                         {i + 1}
                                     </div>
                                     <p className="text-xs text-foreground/80">{step}</p>
@@ -544,6 +547,7 @@ const BusinessCaseSection: React.FC<{ swot?: SWOTAnalysis, businessModel?: Busin
 };
 
 const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
+    const { t } = useTranslation();
     const [question, setQuestion] = useState('');
     const [chat, setChat] = useState<Array<{ q: string, a?: string }>>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -559,7 +563,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
             const result = await window.electron.ideas.queryResearch(ideaId, currentQ);
             setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: result.answer } : item));
         } catch {
-            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: "I'm sorry, I couldn't reach the research laboratory right now." } : item));
+            setChat(prev => prev.map(item => item.q === currentQ ? { ...item, a: t('ideas.details.researchError') } : item));
         } finally {
             setIsLoading(false);
         }
@@ -569,14 +573,14 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
         <div className="bg-muted/30 border border-border/50 rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
             <div className="p-4 border-b border-border/50 bg-muted/30 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple" />
-                <span className="text-xs font-bold text-foreground/80 uppercase tracking-widest">Research Assistant</span>
+                <span className="text-xs font-bold text-foreground/80 uppercase tracking-widest">{t('ideas.details.researchAssistant')}</span>
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
                 {chat.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
                         <p className="text-muted-foreground/60 text-xs leading-relaxed max-w-[200px] font-medium italic">
-                            Ask me anything about the market research, competition, or tech stack for this idea!
+                            {t('ideas.details.researchEmpty')}
                         </p>
                     </div>
                 )}
@@ -610,7 +614,7 @@ const ResearchChat: React.FC<{ ideaId: string }> = ({ ideaId }) => {
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && void handleAsk()}
-                        placeholder="Ask about competitors, gaps, or logic..."
+                        placeholder={t('ideas.details.researchPlaceholder')}
                         className="w-full bg-muted/20 border border-border/50 rounded-xl py-2.5 pl-4 pr-12 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                     <button
@@ -630,19 +634,22 @@ const CoreConceptHeader: React.FC<{
     isPending: boolean
     isDifferent: boolean
     onReset: () => void
-}> = ({ isPending, isDifferent, onReset }) => (
-    <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
-        Core Concept
-        {isPending && isDifferent && (
-            <button
-                onClick={onReset}
-                className="text-[10px] text-primary hover:text-primary/80 uppercase tracking-widest font-bold normal-case"
-            >
-                Reset
-            </button>
-        )}
-    </h3>
-);
+}> = ({ isPending, isDifferent, onReset }) => {
+    const { t } = useTranslation();
+    return (
+        <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
+            {t('ideas.details.coreConcept')}
+            {isPending && isDifferent && (
+                <button
+                    onClick={onReset}
+                    className="text-xxs text-primary hover:text-primary/80 uppercase tracking-widest font-bold normal-case"
+                >
+                    {t('common.reset')}
+                </button>
+            )}
+        </h3>
+    );
+};
 
 const LogoGeneratorSection: React.FC<{
     ideaId: string
@@ -655,7 +662,7 @@ const LogoGeneratorSection: React.FC<{
     <div className="space-y-3">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground/80">
             <Sparkles className="w-4 h-4 text-primary" />
-            Visual Identity
+            {t('ideas.details.visualIdentity')}
         </h3>
         {showLogoGenerator ? (
             <LogoGenerator ideaId={ideaId} ideaTitle={selectedName || ideaTitle} onClose={() => setShowLogoGenerator(false)} />
@@ -695,7 +702,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         onChange={(e) => onDescriptionChange(e.target.value)}
                         className="w-full bg-transparent border border-border/30 rounded-lg px-3 py-2 text-lg text-foreground font-bold leading-relaxed relative z-10 focus:outline-none focus:border-primary/50 transition-all resize-none"
                         rows={3}
-                        placeholder="Edit description..."
+                        placeholder={t('ideas.details.editDescriptionPlaceholder')}
                     />
                 ) : (
                     <p className="text-lg text-foreground font-bold leading-relaxed relative z-10">{idea.description}</p>
@@ -721,17 +728,20 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     );
 };
 
-const MarketTab: React.FC<{ idea: ProjectIdea; trends: MarketTrend[] }> = ({ idea, trends }) => (
-    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-        <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
-            <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">Category Analysis</h3>
-            <p className="text-sm text-foreground/70 leading-relaxed font-sans">
-                {idea.marketResearch?.categoryAnalysis ?? 'Analysis pending deep dive...'}
-            </p>
+const MarketTab: React.FC<{ idea: ProjectIdea; trends: MarketTrend[] }> = ({ idea, trends }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="bg-muted/30 border border-border/50 rounded-2xl p-6">
+                <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-4">{t('ideas.details.categoryAnalysis')}</h3>
+                <p className="text-sm text-foreground/70 leading-relaxed font-sans">
+                    {idea.marketResearch?.categoryAnalysis ?? t('ideas.details.analysisPending')}
+                </p>
+            </div>
+            <MarketTrends trends={trends} />
         </div>
-        <MarketTrends trends={trends} />
-    </div>
-);
+    );
+};
 
 const StrategyTab: React.FC<{ advantages: string[]; competitors: IdeaCompetitor[] }> = ({ advantages, competitors }) => (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">

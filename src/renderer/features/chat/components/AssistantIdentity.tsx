@@ -5,6 +5,7 @@ import LogoOpenAI from '@/assets/chatgpt.svg';
 import LogoClaude from '@/assets/claude.svg';
 import LogoCopilot from '@/assets/copilot.png';
 import LogoOllama from '@/assets/ollama.svg';
+import { useTranslation } from '@/i18n';
 
 interface AssistantIdentityProps {
     model?: string
@@ -15,8 +16,8 @@ interface AssistantIdentityProps {
 interface BrandConfig {
     bgClass: string
     borderClass: string
-    title: string
-    content: React.ReactNode
+    titleKey: string
+    content: (label: string) => React.ReactNode
     extraImgClass?: string
 }
 
@@ -24,20 +25,20 @@ type ProviderKey = 'openai' | 'anthropic' | 'antigravity' | 'copilot' | 'groq' |
 type ModelKey = 'llama' | 'mistral' | 'deepseek' | 'qwen' | 'phi';
 
 const PROVIDER_CONFIGS: Record<ProviderKey, BrandConfig> = {
-    openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', title: 'OpenAI', content: <img src={LogoOpenAI} className="w-full h-full opacity-70" alt="OpenAI" /> },
-    anthropic: { bgClass: 'bg-orange/10', borderClass: 'border-orange/10', title: 'Claude', content: <img src={LogoClaude} className="w-full h-full opacity-70" alt="Claude" /> },
-    antigravity: { bgClass: 'bg-yellow/10', borderClass: 'border-yellow/10', title: 'Antigravity', content: <img src={LogoAntigravity} className="w-full h-full opacity-70" alt="Antigravity" /> },
-    copilot: { bgClass: 'bg-background', borderClass: 'border-white/5', title: 'Copilot', content: <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt="Copilot" /> },
-    groq: { bgClass: 'bg-orange/10', borderClass: 'border-orange/10', title: 'Groq', content: <span className="font-bold text-orange text-[10px]">G</span> },
-    ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', title: 'Ollama/Local', content: <img src={LogoOllama} className="w-full h-full opacity-50" alt="Ollama" /> },
+    openai: { bgClass: 'bg-success/10', borderClass: 'border-success/10', titleKey: 'assistantIdentity.openai', content: (label) => <img src={LogoOpenAI} className="w-full h-full opacity-70" alt={label} /> },
+    anthropic: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.anthropic', content: (label) => <img src={LogoClaude} className="w-full h-full opacity-70" alt={label} /> },
+    antigravity: { bgClass: 'bg-yellow/10', borderClass: 'border-yellow/10', titleKey: 'assistantIdentity.antigravity', content: (label) => <img src={LogoAntigravity} className="w-full h-full opacity-70" alt={label} /> },
+    copilot: { bgClass: 'bg-background', borderClass: 'border-white/5', titleKey: 'assistantIdentity.copilot', content: (label) => <img src={LogoCopilot} className="w-full h-full object-cover opacity-70" alt={label} /> },
+    groq: { bgClass: 'bg-warning/10', borderClass: 'border-orange/10', titleKey: 'assistantIdentity.groq', content: () => <span className="font-bold text-orange text-xxs">G</span> },
+    ollama: { bgClass: 'bg-muted/30', borderClass: 'border-border/50', titleKey: 'assistantIdentity.ollama', content: (label) => <img src={LogoOllama} className="w-full h-full opacity-50" alt={label} /> },
 };
 
 const MODEL_CONFIGS: Record<ModelKey, BrandConfig> = {
-    llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', title: 'Llama Family', content: <span className="font-black text-primary text-[10px]">LL</span> },
-    mistral: { bgClass: 'bg-orange/20', borderClass: 'border-orange/20', title: 'Mistral Family', content: <span className="font-black text-orange text-[10px]">M</span> },
-    deepseek: { bgClass: 'bg-indigo/20', borderClass: 'border-indigo/20', title: 'DeepSeek', content: <span className="font-black text-indigo text-[10px]">DS</span> },
-    qwen: { bgClass: 'bg-purple/20', borderClass: 'border-purple/20', title: 'Qwen', content: <span className="font-black text-purple text-[10px]">Q</span> },
-    phi: { bgClass: 'bg-cyan/20', borderClass: 'border-cyan/20', title: 'Phi', content: <span className="font-black text-cyan text-[10px]">Φ</span> },
+    llama: { bgClass: 'bg-primary/10', borderClass: 'border-primary/10', titleKey: 'assistantIdentity.llama', content: () => <span className="font-black text-primary text-xxs">LL</span> },
+    mistral: { bgClass: 'bg-warning/20', borderClass: 'border-orange/20', titleKey: 'assistantIdentity.mistral', content: () => <span className="font-black text-orange text-xxs">M</span> },
+    deepseek: { bgClass: 'bg-indigo/20', borderClass: 'border-indigo/20', titleKey: 'assistantIdentity.deepseek', content: () => <span className="font-black text-indigo text-xxs">DS</span> },
+    qwen: { bgClass: 'bg-purple/20', borderClass: 'border-purple/20', titleKey: 'assistantIdentity.qwen', content: () => <span className="font-black text-purple text-xxs">Q</span> },
+    phi: { bgClass: 'bg-cyan/20', borderClass: 'border-cyan/20', titleKey: 'assistantIdentity.phi', content: () => <span className="font-black text-cyan text-xxs">Φ</span> },
 };
 
 const PROVIDER_MATCHERS: { keywords: string[]; key: ProviderKey }[] = [
@@ -74,11 +75,16 @@ function findConfig(provider: string, modelName: string): BrandConfig {
     return PROVIDER_CONFIGS.ollama;
 }
 
-const BrandIcon: React.FC<{ config: BrandConfig }> = ({ config }) => (
-    <div className={`w-6 h-6 rounded-md ${config.bgClass} border ${config.borderClass} flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1`} title={config.title}>
-        {config.content}
-    </div>
-);
+const BrandIcon: React.FC<{ config: BrandConfig }> = ({ config }) => {
+    const { t } = useTranslation();
+    const label = t(config.titleKey);
+
+    return (
+        <div className={`w-6 h-6 rounded-md ${config.bgClass} border ${config.borderClass} flex items-center justify-center shrink-0 mt-1.5 overflow-hidden p-1`} title={label}>
+            {config.content(label)}
+        </div>
+    );
+};
 
 export const AssistantIdentity: React.FC<AssistantIdentityProps> = ({ model, provider, backend }) => {
     const modelName = (model ?? '').toLowerCase();

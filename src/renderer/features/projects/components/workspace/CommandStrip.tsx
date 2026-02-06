@@ -25,7 +25,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
 
     return (
         <div className={cn(
-            "h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-white/5 select-none text-[11px] font-medium text-muted-foreground",
+            "h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-white/5 select-none text-xxs font-medium text-muted-foreground",
             className
         )}>
             {/* Left: Context */}
@@ -53,7 +53,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
             >
                 <Command className="w-3 h-3 text-primary group-hover:text-foreground transition-colors" />
                 <span className="text-muted-foreground group-hover:text-foreground transition-colors">{t('workspace.typeCommand')}</span>
-                <span className="flex items-center gap-0.5 text-[9px] bg-black/20 px-1 rounded border border-white/5 text-muted-foreground/50">
+                <span className="flex items-center gap-0.5 text-xxxs bg-black/20 px-1 rounded border border-white/5 text-muted-foreground/50">
                     <span>⌘</span><span>K</span>
                 </span>
             </button>

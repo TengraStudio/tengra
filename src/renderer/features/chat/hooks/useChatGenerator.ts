@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { useState } from 'react';
 
@@ -7,6 +6,7 @@ import { getSystemPrompt } from '@/lib/identity';
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message, ToolDefinition } from '@/types';
 import { CatchError } from '@/types/common';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { processChatStream, StreamStreamingState } from './process-stream';
 import { formatMessageContent, getPresetOptions } from './utils';
@@ -58,6 +58,10 @@ interface ChatStreamChunk {
     reasoning?: string;
 }
 
+const getReasoningEffort = (modelId: string, appSettings: AppSettings | undefined) => {
+    return appSettings?.modelSettings?.[modelId]?.reasoningLevel;
+};
+
 const prepareMessages = (options: PrepareMessagesOptions) => {
     const { chatId, chats, userMessage, appSettings, selectedModel, selectedProvider, language, selectedPersona } = options;
     const dbRefChat = chats.find(c => c.id === chatId);
@@ -92,6 +96,8 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
         sources?: string[] | undefined,
         variants?: Record<number, { content: string, reasoning: string }>
     }>>({});
+
+
 
     const generateResponse = async (chatId: string, userMessage: Message, retryModel?: string) => {
         setStreamingStates(prev => ({ ...prev, [chatId]: { content: '', reasoning: '', speed: null } }));
@@ -151,7 +157,8 @@ export const useChatGenerator = (props: UseChatGeneratorProps & { selectedPerson
                     selectedProvider, language, selectedPersona, systemMode
                 });
 
-                const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath, systemMode };
+                const reasoningEffort = getReasoningEffort(activeModel, appSettings);
+                const fullOptions = { ...presetOptions, projectRoot: activeWorkspacePath, systemMode, reasoningEffort };
                 await executeToolTurnLoop({
                     chatId, assistantId, activeModel, selectedProvider,
                     tools, fullOptions, projectId, autoReadEnabled, handleSpeak, t,
@@ -408,6 +415,8 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
                 selectedProvider: modelInfo.provider, language, selectedPersona, systemMode
             });
 
+            const reasoningEffort = getReasoningEffort(modelInfo.model, appSettings);
+
             const tools = allTools.filter((tDefinition: ToolDefinition) => {
                 if (!tDefinition.function.name) { return false; }
                 if (modelInfo.provider === 'opencode') { return true; }
@@ -416,7 +425,7 @@ async function orchestrationMultiModelStreams(params: OrchestrationParams) {
 
             const stream = chatStream({
                 messages: allMessages, model: modelInfo.model, tools,
-                provider: modelInfo.provider, options: { ...presetOptions, projectRoot: activeWorkspacePath, systemMode },
+                provider: modelInfo.provider, options: { ...presetOptions, projectRoot: activeWorkspacePath, systemMode, reasoningEffort },
                 chatId: streamId, projectId, systemMode
             });
 

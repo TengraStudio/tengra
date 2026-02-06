@@ -14,7 +14,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { AuthenticationError } from '@main/utils/error.util';
 import { LocalAuthServer } from '@main/utils/local-auth-server.util';
 import { JsonObject, JsonValue } from '@shared/types/common';
-import { ClaudeQuota, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
+import { ClaudeQuota, CodexUsage, CopilotQuota, ModelQuotaItem, QuotaInfo, QuotaResponse } from '@shared/types/quota';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
@@ -276,35 +276,42 @@ export class ProxyService extends BaseService {
   }
 
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
-    return this.makeRequest('/v0/management/codex-auth-url?is_webui=true', await this.getProxyKey());
+    const response = await this.makeRequest('/v0/management/codex-auth-url?is_webui=true', await this.getProxyKey());
+    this.logDebug('getCodexAuthUrl response:', response);
+    return response;
   }
 
   async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
     const dir = this.getAuthWorkDir();
     const exists = await fileExists(dir);
-    const filesMap = new Map<string, { name: string, provider: string }>();
+    const filesList: { name: string, provider: string }[] = [];
 
+    this.logDebug(`getAuthFiles: checking dir ${dir}, exists=${exists}`);
+
+    // Include file-based auth tokens with file: prefix for identification
     if (exists) {
       const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
+      this.logDebug(`getAuthFiles: found ${files.length} files in dir:`, files);
       files.forEach(f => {
         const raw = f.replace(/\.(json|enc)$/, '');
         const provider = this.normalizeProviderName(raw);
-        filesMap.set(provider, { name: f, provider });
+        filesList.push({ name: f, provider });
       });
     }
 
-    // Include tokens from Database - These take precedence and ensure uniqueness by provider
+    // Include tokens from Database with db: prefix
     const accounts = await this.authService.getAllAccountsFull();
+    this.logDebug(`getAuthFiles: found ${accounts.length} accounts in DB`);
     for (const account of accounts) {
       const normalized = this.normalizeProviderName(account.provider);
-      // Always add database tokens with db: prefix
-      filesMap.set(normalized, {
+      filesList.push({
         name: `db:${normalized}`,
         provider: normalized
       });
     }
 
-    return { files: Array.from(filesMap.values()) };
+    this.logDebug(`getAuthFiles: returning ${filesList.length} total files:`, filesList.map(f => f.name));
+    return { files: filesList };
   }
 
   private normalizeProviderName(provider: string): string {
@@ -379,7 +386,7 @@ export class ProxyService extends BaseService {
     return quota;
   }
 
-  async getCodexUsage(): Promise<{ accounts: Array<{ usage: JsonObject | { error: string }; accountId?: string; email?: string }> }> {
+  async getCodexUsage(): Promise<{ accounts: Array<{ usage: CodexUsage | { error: string }; accountId?: string; email?: string }> }> {
     return this.quotaService.getCodexUsage();
   }
 

@@ -133,7 +133,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                 {node.isDirectory
                     ? <FolderIcon folderName={node.name} isOpen={expanded} className="w-3.5 h-3.5" />
                     : <FileIcon fileName={node.name} className="w-3.5 h-3.5" />}
-                <span className="truncate text-[13px] font-normal tracking-tight">{node.name}</span>
+                <span className="truncate text-xs font-normal tracking-tight">{node.name}</span>
             </div>
 
             {expanded && (
@@ -154,7 +154,7 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                         />
                     ))}
                     {children.length === 0 && loaded && (
-                        <div className="text-[11px] text-muted-foreground/40 pl-8 py-0.5 italic">{t('workspace.emptyFolder')}</div>
+                        <div className="text-xxs text-muted-foreground/40 pl-8 py-0.5 italic">{t('workspace.emptyFolder')}</div>
                     )}
                 </div>
             )}

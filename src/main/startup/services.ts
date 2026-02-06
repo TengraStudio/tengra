@@ -49,7 +49,7 @@ import { ModelRegistryDependencies, ModelRegistryService } from '@main/services/
 import { MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
 import { MultiModelComparisonService } from '@main/services/llm/multi-model-comparison.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
-import { getOllamaHealthService } from '@main/services/llm/ollama-health.service';
+import { getOllamaHealthService, OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
@@ -57,10 +57,11 @@ import { CodeIntelligenceService } from '@main/services/project/code-intelligenc
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
 import { MultiAgentOrchestratorService } from '@main/services/project/orchestrator.service';
+import { ProjectService } from '@main/services/project/project.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
-import { ProjectService } from '@main/services/project/project.service';
 import { SSHService } from '@main/services/project/ssh.service';
+import { TerminalService } from '@main/services/project/terminal.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { QuotaService } from '@main/services/proxy/quota.service';
@@ -123,6 +124,7 @@ export interface Services {
     llamaService: LlamaService;
     huggingFaceService: HuggingFaceService;
     projectService: ProjectService;
+    terminalService: TerminalService;
     logoService: LogoService;
     processService: ProcessService;
     codeIntelligenceService: CodeIntelligenceService;
@@ -209,8 +211,7 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
 
     // 4. Post-Init Setup
     const settingsService = container.resolve<SettingsService>('settingsService');
-    const settings = settingsService.getSettings();
-    const ollamaHealthService = initOllamaHealth(settings);
+    const ollamaHealthService = container.resolve<OllamaHealthService>('ollamaHealthService');
 
     // 5. Build Services Map
     const services = buildServicesMap(dataService, settingsService, ollamaHealthService);
@@ -254,6 +255,17 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
 
     // Extension detector service
     container.register('extensionDetectorService', (ss) => new ExtensionDetectorService(ss as SettingsService), ['settingsService']);
+
+    // Health Check Service
+    container.register('healthCheckService', () => getHealthCheckService());
+
+    // Ollama Health Service
+    container.register('ollamaHealthService', (ss) => {
+        const settings = (ss as SettingsService).getSettings();
+        const ollamaSettings = settings['ollama'] as JsonObject | undefined;
+        const ollamaUrl = (ollamaSettings?.['url'] as string | undefined) ?? 'http://localhost:11434';
+        return getOllamaHealthService(ollamaUrl);
+    }, ['settingsService']);
 }
 
 function registerDataServices() {
@@ -292,11 +304,22 @@ function registerSecurityServices() {
 }
 
 function registerLLMServices() {
-    container.register('settingsService', (ds) => new SettingsService(ds as DataService), ['dataService']);
+    container.register('settingsService', (ds, as) => new SettingsService(ds as DataService, as as AuthService), ['dataService', 'authService']);
     container.register('localAIService', (ss) => new LocalAIService(ss as SettingsService), ['settingsService']);
     container.register('llamaService', (ds) => new LlamaService(ds as DataService), ['dataService']);
     container.register('ollamaService', (ss) => new OllamaService(ss as SettingsService), ['settingsService']);
-    container.register('llmService', (hs, cs, krs, rls, ts) => new LLMService(hs as HttpService, cs as ConfigService, krs as KeyRotationService, rls as RateLimitService, ts as TokenService), ['httpService', 'configService', 'keyRotationService', 'rateLimitService', 'tokenService']);
+    container.register('llmService', (...args: unknown[]) => {
+        const [hs, cs, krs, rls, ss, ps, ts] = args;
+        return new LLMService({
+            httpService: hs as HttpService,
+            configService: cs as ConfigService,
+            keyRotationService: krs as KeyRotationService,
+            rateLimitService: rls as RateLimitService,
+            settingsService: ss as SettingsService,
+            proxyService: ps as ProxyService,
+            tokenService: ts as TokenService
+        });
+    }, ['httpService', 'configService', 'keyRotationService', 'rateLimitService', 'settingsService', 'proxyService', 'tokenService']);
     container.register('embeddingService', (os, ls, lms, ss) => new EmbeddingService(os as OllamaService, ls as LLMService, lms as LlamaService, ss as SettingsService), ['ollamaService', 'llmService', 'llamaService', 'settingsService']);
     container.register('advancedMemoryService', (dbs, es, ls) => new AdvancedMemoryService(dbs as DatabaseService, es as EmbeddingService, ls as LLMService), ['databaseService', 'embeddingService', 'llmService']);
     container.register('memoryService', (ams) => new MemoryService(ams as AdvancedMemoryService), ['advancedMemoryService']);
@@ -374,6 +397,7 @@ function registerLazyProxies() {
 
 function registerProjectServices() {
     container.register('projectService', () => new ProjectService());
+    container.register('terminalService', () => new TerminalService());
     container.register('gitService', () => new GitService());
     // SSH and Docker services are now lazy-loaded
     container.register('codeIntelligenceService', (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService), ['databaseService', 'embeddingService']);
@@ -480,18 +504,6 @@ function registerMcpServices() {
     container.register('mcpPluginService', (ss, deps) => new McpPluginService(ss as SettingsService, deps as McpDeps), ['settingsService', 'mcpDeps']);
 }
 
-function initOllamaHealth(settings: Record<string, unknown>) {
-    try {
-        const ollamaSettings = settings['ollama'] as JsonObject | undefined;
-        const ollamaUrl = (ollamaSettings?.['url'] as string | undefined) ?? 'http://localhost:11434';
-        const health = getOllamaHealthService(ollamaUrl);
-        health.start();
-        return health;
-    } catch (e) {
-        appLogger.error('Startup', `Failed to start Ollama health service: ${e}`);
-        return { start: () => { }, stop: () => { }, checkHealth: async () => ({ online: false }) } as ReturnType<typeof getOllamaHealthService>;
-    }
-}
 
 function buildServicesMap(dataService: DataService, settingsService: SettingsService, ollamaHealthService: ReturnType<typeof getOllamaHealthService>): Services {
     return {
@@ -527,6 +539,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
+        terminalService: container.resolve<TerminalService>('terminalService'),
         logoService: createLazyServiceProxy<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         processManagerService: container.resolve<ProcessManagerService>('processManagerService'),

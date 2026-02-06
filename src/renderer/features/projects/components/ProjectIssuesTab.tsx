@@ -34,7 +34,7 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
 
             <div className="flex-1 min-h-0 bg-card/40 backdrop-blur-sm rounded-3xl border border-border/50 overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-6 border-b border-border/50 bg-muted/20">
-                    <div className="grid grid-cols-12 gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                    <div className="grid grid-cols-12 gap-4 text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">
                         <div className="col-span-1">{t('projectDashboard.issueType')}</div>
                         <div className="col-span-7">{t('projectDashboard.issueMessage')}</div>
                         <div className="col-span-4">{t('projectDashboard.issueLocation')}</div>
@@ -65,7 +65,7 @@ export const ProjectIssuesTab: React.FC<ProjectIssuesTabProps> = ({
                                     </div>
                                 </div>
                                 <div className="col-span-4 flex flex-col justify-center">
-                                    <div className="text-[11px] font-mono whitespace-nowrap overflow-hidden text-ellipsis text-muted-foreground group-hover:text-foreground transition-colors">
+                                    <div className="text-xxs font-mono whitespace-nowrap overflow-hidden text-ellipsis text-muted-foreground group-hover:text-foreground transition-colors">
                                         {issue.file}:{issue.line}
                                     </div>
                                 </div>

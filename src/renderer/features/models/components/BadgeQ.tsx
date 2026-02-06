@@ -8,7 +8,7 @@ export function BadgeQ({ quantization }: { quantization: string }) {
     else if (quantization.includes("Q2") || quantization.includes("Q3")) { color = "bg-destructive/10 text-destructive"; }
 
     return (
-        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", color)}>
+        <span className={cn("text-xxs font-bold px-1.5 py-0.5 rounded", color)}>
             {quantization}
         </span>
     );

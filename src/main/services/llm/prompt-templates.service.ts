@@ -76,7 +76,7 @@ export class PromptTemplatesService extends BaseService {
     async createTemplate(template: Omit<PromptTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<PromptTemplate> {
         const newTemplate: PromptTemplate = {
             ...template,
-            id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: `custom-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
             createdAt: Date.now(),
             updatedAt: Date.now()
         };

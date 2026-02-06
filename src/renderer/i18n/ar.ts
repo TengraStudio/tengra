@@ -23,8 +23,17 @@ export const ar = {
         add: 'إضافة',
         done: 'تم',
         pending: 'قيد الانتظار',
+        confirm: 'تأكيد',
+        processing: 'جارٍ المعالجة...',
         selectAll: 'تحديد الكل',
         itemsSelected: 'تم تحديد {{count}} عناصر'
+    },
+    app: {
+        name: 'Tandem'
+    },
+    errors: {
+        unexpected: 'عذراً، حدث خطأ.',
+        somethingWentWrong: 'حدث خطأ ما:'
     },
     languages: {
         tr: 'التركية',
@@ -620,7 +629,9 @@ export const ar = {
         render: 'عرض',
         expand: 'توسيع',
         collapse: 'طي',
-        moreLines: 'أسطر إضافية'
+        moreLines: 'أسطر إضافية',
+        scrollToBottom: 'التمرير إلى الأسفل',
+        scrollToBottomWithCount: 'التمرير إلى الأسفل ({{count}} رسالة جديدة)'
     },
     welcome: {
         title: 'Tandem',
@@ -1089,11 +1100,56 @@ export const ar = {
         system: 'النظام',
         navigate: 'تصفح',
         select: 'اختر',
-        close: 'إغلاق'
+        close: 'إغلاق',
+        engineLabel: 'محرك أوامر Tandem',
+        previewEmpty: 'اختر عنصراً لعرض التفاصيل',
+        noResultsHint: 'جرّب البحث عن الدردشات أو النماذج أو الإعدادات'
     },
     quickAction: {
         explain: 'شرح',
         translate: 'ترجمة'
+    },
+    activityBar: {
+        chat: 'محادثة',
+        explorer: 'المستكشف',
+        search: 'بحث',
+        sourceControl: 'التحكم بالمصدر',
+        debug: 'تصحيح',
+        extensions: 'الإضافات',
+        settings: 'الإعدادات'
+    },
+    statusBar: {
+        error: 'خطأ',
+        errors: 'أخطاء',
+        warning: 'تحذير',
+        warnings: 'تحذيرات'
+    },
+    updateNotification: {
+        checkingTitle: 'جارٍ التحقق من التحديثات...',
+        availableTitle: 'تحديث متاح: v{{version}}',
+        availableContent: 'يتوفر إصدار جديد من Tandem.',
+        downloadingTitle: 'جارٍ تنزيل التحديث...',
+        downloadedTitle: 'التحديث جاهز',
+        downloadedContent: 'أعد تشغيل Tandem لتطبيق أحدث تحديث.',
+        errorTitle: 'فشل التحديث',
+        uptodateTitle: 'أنت محدّث',
+        downloadAction: 'تنزيل',
+        restartAction: 'إعادة التشغيل الآن'
+    },
+    panelLayout: {
+        expand: 'توسيع',
+        collapse: 'طي',
+        maximize: 'تكبير'
+    },
+    diffViewer: {
+        loading: 'جارٍ تحميل الفروقات...'
+    },
+    fab: {
+        openMenu: 'فتح القائمة',
+        closeMenu: 'إغلاق القائمة'
+    },
+    modal: {
+        close: 'إغلاق النافذة'
     },
     titleBar: {
         minimize: 'تصغير',
@@ -1339,6 +1395,35 @@ export const ar = {
         output: 'إخراج',
         filePreview: 'معاينة الملف',
         path: 'المسار:'
+    },
+    extensionPrompt: {
+        title: 'حسّن تجربتك',
+        subtitle: 'ثبّت إضافة متصفح Tandem',
+        infoTitle: 'ما هي إضافة المتصفح؟',
+        infoBody: 'تتيح إضافة متصفح Tandem للذكاء الاصطناعي التفاعل مباشرة مع صفحات الويب. يمكنها قراءة المحتوى وملء النماذج والنقر على الأزرار وتنفيذ إجراءات تلقائية بناءً على أوامرك.',
+        featuresTitle: 'الميزات:',
+        features: {
+            aiChatTitle: 'محادثة الذكاء الاصطناعي في المتصفح:',
+            aiChatDesc: 'تحدث مع الذكاء الاصطناعي مباشرة من أي صفحة ويب',
+            pageInteractionTitle: 'تفاعل الصفحة:',
+            pageInteractionDesc: 'يمكن للذكاء الاصطناعي القراءة والنقر وملء النماذج تلقائياً',
+            contentExtractionTitle: 'استخراج المحتوى:',
+            contentExtractionDesc: 'استخرج محتوى الصفحة ولخصه بنقرة واحدة',
+            secureConnectionTitle: 'اتصال آمن:',
+            secureConnectionDesc: 'تبقى جميع الاتصالات محلية على جهازك'
+        },
+        installTitle: 'تثبيت سريع:',
+        steps: {
+            step1: 'افتح Chrome وانتقل إلى chrome://extensions/',
+            step2: 'فعّل "وضع المطوّر" (المفتاح أعلى اليمين)',
+            step3: 'انقر على "تحميل إضافة غير معبأة"',
+            step4Prefix: 'اختر مجلد',
+            step4Suffix: 'من دليل Tandem'
+        },
+        openFolder: 'فتح مجلد الإضافة',
+        viewInstructions: 'عرض التعليمات',
+        dismiss: 'لا تعرض هذا مرة أخرى',
+        remindLater: 'ذكرني لاحقاً'
     }
 };
 

@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 interface ModelExplorerProps {
     onClose?: () => void
-    onRefreshModels?: () => void
+    onRefreshModels?: (bypassCache?: boolean) => void
     installedModels?: ModelInfo[]
     language?: Language
 }
@@ -45,7 +45,7 @@ const ExplorerHeader: React.FC<ExplorerHeaderProps> = ({ query, totalHf, onSearc
                 <p className="text-sm text-muted-foreground">{t('modelExplorer.subtitle')}</p>
                 <div className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-1.5">
                     <Box className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] font-bold text-primary tracking-wide uppercase">
+                    <span className="text-xxs font-bold text-primary tracking-wide uppercase">
                         {totalHf > 0 ? `${totalHf.toLocaleString()} ` : ''}{t('modelExplorer.ggufCompatible')}
                     </span>
                 </div>
@@ -74,19 +74,19 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
     <div className="flex items-center justify-between">
         <div className="flex gap-3">
             <button onClick={() => setActiveSource('all')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border", activeSource === 'all' ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>{t('modelExplorer.allSources')}</button>
-            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-orange/10 text-orange border-orange/20" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('ollama')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'ollama' ? "bg-warning/10 text-orange border-orange/20" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Database className="w-3.5 h-3.5" />
-                <span>Ollama</span>
+                <span>{t('modelExplorer.sourceOllama')}</span>
             </button>
-            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-yellow/10 text-yellow-600 border-yellow/20 dark:text-yellow" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
+            <button onClick={() => setActiveSource('huggingface')} className={cn("px-6 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", activeSource === 'huggingface' ? "bg-yellow/10 text-warning-600 border-yellow/20 dark:text-warning" : "bg-muted/20 border-border/50 hover:bg-muted/40")}>
                 <Box className="w-3.5 h-3.5" />
-                <span>HuggingFace</span>
+                <span>{t('modelExplorer.sourceHuggingFace')}</span>
             </button>
         </div>
 
         <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-muted/10 px-3 py-1 rounded-xl border border-border/30">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
+                <span className="text-xxs font-black uppercase tracking-widest text-muted-foreground/50 whitespace-nowrap">{t('modelExplorer.sort')}</span>
                 <SelectDropdown
                     value={sortBy}
                     options={[
@@ -101,7 +101,7 @@ const ExplorerActions: React.FC<ExplorerActionsProps> = ({ activeSource, setActi
 
             <div className="flex items-center bg-muted/20 rounded-xl p-1 border border-border/50">
                 <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} className="p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
+                <span className="px-4 text-xxs font-black uppercase tracking-widest text-muted-foreground border-x border-border/30">{t('modelExplorer.page')} {page + 1}</span>
                 <button onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg hover:bg-muted transition-all"><ChevronRight className="w-4 h-4" /></button>
             </div>
         </div>

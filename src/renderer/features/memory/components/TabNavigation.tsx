@@ -8,6 +8,7 @@ import { Archive, CheckCircle, Clock, Gauge } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats';
@@ -27,16 +28,17 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   confirmedCount,
   archivedCount,
 }) => {
+  const { t } = useTranslation();
   const tabs: Array<{
     id: TabType;
     label: string;
     icon: LucideIcon;
     count?: number;
   }> = [
-    { id: 'pending', label: 'Pending', icon: Clock, count: pendingCount },
-    { id: 'confirmed', label: 'Confirmed', icon: CheckCircle, count: confirmedCount },
-    { id: 'archived', label: 'Archived', icon: Archive, count: archivedCount },
-    { id: 'stats', label: 'Statistics', icon: Gauge },
+    { id: 'pending', label: t('memory.tabs.pending'), icon: Clock, count: pendingCount },
+    { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: CheckCircle, count: confirmedCount },
+    { id: 'archived', label: t('memory.tabs.archived'), icon: Archive, count: archivedCount },
+    { id: 'stats', label: t('memory.tabs.stats'), icon: Gauge },
   ];
 
   return (
@@ -57,7 +59,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           {tab.count !== undefined && tab.count > 0 && (
             <span
               className={cn(
-                'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                'ml-1 px-1.5 py-0.5 rounded-full text-xxs font-bold',
                 activeTab === tab.id ? 'bg-white/20' : 'bg-primary/20 text-primary'
               )}
             >

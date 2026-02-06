@@ -7,7 +7,7 @@ import { AppSettings } from '@/types/settings';
 interface DeveloperTabProps {
     settings: AppSettings | null
     setStatusMessage: (m: string) => void
-    onRefreshModels: () => void
+    onRefreshModels: (bypassCache?: boolean) => void
     loadSettings: () => Promise<void>
     setIsLoading: (v: boolean) => void
     t: (key: string) => string
@@ -28,7 +28,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.refreshData')}</div><div className="text-xs text-muted-foreground">{t('developer.refreshDataDesc')}</div></div>
-                        <button onClick={() => { void (async () => { try { setIsLoading(true); onRefreshModels(); await loadSettings(); setStatusMessage(t('developer.dataRefreshed')); setTimeout(() => setStatusMessage(''), 3000); } finally { setIsLoading(false); } })(); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-2"><RefreshCw className="w-3.5 h-3.5" /> {t('common.refresh')}</button>
+                        <button onClick={() => { void (async () => { try { setIsLoading(true); onRefreshModels(true); await loadSettings(); setStatusMessage(t('developer.dataRefreshed')); setTimeout(() => setStatusMessage(''), 3000); } finally { setIsLoading(false); } })(); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-2"><RefreshCw className="w-3.5 h-3.5" /> {t('common.refresh')}</button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.exportSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.exportSettingsDesc')}</div></div>

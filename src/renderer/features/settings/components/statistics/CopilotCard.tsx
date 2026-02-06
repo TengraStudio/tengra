@@ -24,7 +24,7 @@ interface AccountData {
 const AccountError: React.FC<{ email?: string; error: string; t: (k: string) => string }> = ({ email, error, t }) => (
     <div className="space-y-4">
         <div className="text-xs font-bold text-success truncate">{email ?? t('statistics.copilotAccount')}</div>
-        <div className="text-[10px] font-medium p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
+        <div className="text-xxs font-medium p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
             <div className="w-1 h-1 rounded-full bg-destructive" />
             {t('common.error')}: {error}
         </div>
@@ -44,18 +44,18 @@ const AccountStats: React.FC<{ acc: ExtendedCopilotQuota; t: (k: string) => stri
                 <div className="flex items-center gap-4">
                     <QuotaRing value={percent} color={getQuotaColor(percent)} size="sm" />
                     <div>
-                        <div className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{seatInfo ? t('statistics.seatsStatus') : t('statistics.usageStatus')}</div>
-                        <div className="text-[10px] font-bold text-foreground/80 tabular-nums">{remaining} / {limit} {t('statistics.left')}</div>
-                        <div className="text-[9px] text-muted-foreground/50 uppercase mt-0.5 tracking-wide">{seatInfo?.plan_type ?? acc.copilot_plan ?? t('statistics.individual')}</div>
+                        <div className="text-xxs font-black uppercase text-muted-foreground tracking-tighter">{seatInfo ? t('statistics.seatsStatus') : t('statistics.usageStatus')}</div>
+                        <div className="text-xxs font-bold text-foreground/80 tabular-nums">{remaining} / {limit} {t('statistics.left')}</div>
+                        <div className="text-xxxs text-muted-foreground/50 uppercase mt-0.5 tracking-wide">{seatInfo?.plan_type ?? acc.copilot_plan ?? t('statistics.individual')}</div>
                     </div>
                 </div>
                 {acc.rate_limit && (
                     <div className="flex items-center gap-4">
                         <QuotaRing value={Math.round((acc.rate_limit.remaining / acc.rate_limit.limit) * 100)} color="hsl(var(--success))" size="sm" />
                         <div>
-                            <div className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.rateLimit')}</div>
-                            <div className="text-[10px] font-bold text-foreground/80 tabular-nums">{acc.rate_limit.remaining} / {acc.rate_limit.limit}</div>
-                            <div className="text-[9px] text-muted-foreground/50 uppercase mt-0.5 tracking-wide">{t('statistics.apiUsage')}</div>
+                            <div className="text-xxs font-black uppercase text-muted-foreground tracking-tighter">{t('statistics.rateLimit')}</div>
+                            <div className="text-xxs font-bold text-foreground/80 tabular-nums">{acc.rate_limit.remaining} / {acc.rate_limit.limit}</div>
+                            <div className="text-xxxs text-muted-foreground/50 uppercase mt-0.5 tracking-wide">{t('statistics.apiUsage')}</div>
                         </div>
                     </div>
                 )}
@@ -83,7 +83,7 @@ export const CopilotCard: React.FC<CopilotCardProps> = ({ copilotQuota }) => {
                 <Activity className="w-12 h-12 text-success" />
             </div>
             <CardHeader>
-                <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">GitHub Copilot</CardTitle>
+                <CardTitle className="text-sm font-black text-foreground/90 uppercase tracking-tighter">{t('statistics.copilotTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 {copilotQuota.accounts.map((acc, idx: number) => (

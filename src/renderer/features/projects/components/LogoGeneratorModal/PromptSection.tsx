@@ -29,14 +29,14 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
+                <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
                     {translateKey('projects.prompt')}
                 </label>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleImproveClick}
                         disabled={isAnalyzing || !prompt}
-                        className="text-[10px] font-bold text-success hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        className="text-xxs font-bold text-success hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
                         title={translateKey('workspace.improvePromptWithAI')}
                     >
                         <Sparkles className="w-3 h-3" />
@@ -45,7 +45,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
                     <button
                         onClick={handleAnalyzeClick}
                         disabled={isAnalyzing}
-                        className="text-[10px] font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        className="text-xxs font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 disabled:opacity-50"
                     >
                         {isAnalyzing ? (
                             <Loader2 className="w-3 h-3 animate-spin" />

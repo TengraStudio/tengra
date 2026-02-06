@@ -29,7 +29,7 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
         <span className="text-sm text-muted-foreground/60">{description}</span>
         <div className="flex gap-1.5">
             {keys.map((key, i) => (
-                <kbd key={i} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-[10px] font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm">
+                <kbd key={i} className="px-2 py-1 bg-muted/50 border border-border/50 rounded text-xxs font-mono text-muted-foreground/80 min-w-[24px] text-center shadow-sm">
                     {key}
                 </kbd>
             ))}
@@ -177,7 +177,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = Rea
 
                 {/* Footer */}
                 <div className="p-4 bg-muted/20 border-t border-border/50 text-center">
-                    <p className="text-[10px] text-muted-foreground/40">{t('shortcuts.footer')}</p>
+                    <p className="text-xxs text-muted-foreground/40">{t('shortcuts.footer')}</p>
                 </div>
             </div>
         </div>

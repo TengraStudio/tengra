@@ -43,7 +43,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({ onClick, disabled, Icon, la
         <Icon className="w-4 h-4" />
         {isLoading ? loadingLabel : label}
         {shortcut && !isLoading && (
-            <kbd className={`hidden group-hover:inline-block ml-1 px-1.5 py-0.5 text-[10px] bg-${colorScheme}/20 rounded font-mono`}>{shortcut}</kbd>
+            <kbd className={`hidden group-hover:inline-block ml-1 px-1.5 py-0.5 text-xxs bg-${colorScheme}/20 rounded font-mono`}>{shortcut}</kbd>
         )}
     </button>
 );
@@ -65,7 +65,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
         <div className="p-6 border-t border-border/50 bg-background/50 backdrop-blur-md">
             <div className="flex items-end gap-4">
                 <div className="flex-1">
-                    <label className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] mb-2 block">
+                    <label className="text-xxs font-bold text-muted-foreground/40 uppercase tracking-[0.2em] mb-2 block">
                         {t('ideas.idea.selectPath')}
                     </label>
                     <div className="flex gap-2">
@@ -73,7 +73,7 @@ export const ApprovalFooter: React.FC<ApprovalFooterProps> = ({
                             type="text"
                             value={projectPath}
                             onChange={e => setProjectPath(e.target.value)}
-                            placeholder="C:\Projects\my-project"
+                            placeholder={t('ideas.idea.pathPlaceholder')}
                             className="flex-1 px-4 py-2 bg-muted/20 border border-border/50 rounded-lg text-foreground placeholder-muted-foreground/30 focus:outline-none focus:border-primary/50 transition-all font-mono text-xs"
                         />
                         <button

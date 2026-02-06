@@ -55,7 +55,7 @@ const ModelItem = memo(({ model: m, isSelected, onSelect }: {
                 <p className="text-xs font-bold text-foreground">
                     {m.model}
                 </p>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">
+                <p className="text-xxs text-muted-foreground uppercase font-medium">
                     {m.provider}
                 </p>
             </div>
@@ -127,7 +127,7 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
                 <ReasonSection reason={reason} t={t} />
 
                 <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">
+                    <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest pl-1">
                         {t('agent.selectAlternativeModel')}
                     </label>
 
@@ -160,7 +160,7 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
                     )}
                 </div>
 
-                <p className="text-[11px] text-muted-foreground italic leading-relaxed px-1">
+                <p className="text-xxs text-muted-foreground italic leading-relaxed px-1">
                     {t('agent.interruptionHelp')}
                 </p>
 

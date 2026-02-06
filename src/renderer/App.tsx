@@ -131,7 +131,7 @@ export default function App() {
                         if (cat) { setSettingsCategory(cat); }
                     }}
                     onOpenSSHManager={() => { appState.setShowSSHManager(true); }}
-                    onRefreshModels={() => { void loadModels(); }} models={models} onSelectModel={(m) => { setSelectedModel(m); }}
+                    onRefreshModels={(bypassCache) => { void loadModels(bypassCache); }} models={models} onSelectModel={(m) => { setSelectedModel(m); }}
                     selectedModel={selectedModel} onClearChat={handleClearChat} t={t}
                 />
                 <div className="absolute inset-0 flex flex-col overflow-hidden">

@@ -47,7 +47,7 @@ export const CATEGORY_METADATA: Record<IdeaCategory, CategoryMeta> = {
         label: 'CLI Tool',
         icon: Code,
         color: 'text-orange',
-        bgColor: 'bg-orange/20'
+        bgColor: 'bg-warning/20'
     },
     'desktop': {
         id: 'desktop',
@@ -60,7 +60,7 @@ export const CATEGORY_METADATA: Record<IdeaCategory, CategoryMeta> = {
         id: 'other',
         label: 'Other',
         icon: Sparkles,
-        color: 'text-yellow',
+        color: 'text-warning',
         bgColor: 'bg-yellow/20'
     }
 };

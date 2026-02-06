@@ -17,7 +17,7 @@ import '@renderer/features/settings/SettingsPage.css';
 export interface SettingsPageProps {
     installedModels: ModelInfo[]
     proxyModels?: ModelInfo[]
-    onRefreshModels: () => void
+    onRefreshModels: (bypassCache?: boolean) => void
     activeTab?: SettingsCategory
     groupedModels?: GroupedModels | null
 }

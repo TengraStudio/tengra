@@ -104,7 +104,7 @@ export const SidebarStatusIndicator: React.FC<SidebarStatusIndicatorProps> = ({
             </div>
             
             {label && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xxs text-muted-foreground">
                     {label}
                 </span>
             )}

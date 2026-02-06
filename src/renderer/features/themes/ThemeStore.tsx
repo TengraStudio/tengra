@@ -34,7 +34,7 @@ const BUILT_IN_THEMES: Theme[] = [
         author: 'Tandem Team',
         description: 'The default pure black theme',
         preview: '#000000',
-        colors: { primary: '#0ea5e9', background: '#000000', foreground: '#ffffff', accent: '#0c4a6e' },
+        colors: { primary: '#0ea5e9', background: '#000000', foreground: 'white', accent: '#0c4a6e' },
         downloads: 0,
         rating: 5.0,
         isInstalled: true
@@ -44,8 +44,8 @@ const BUILT_IN_THEMES: Theme[] = [
         name: 'Tandem White',
         author: 'Tandem Team',
         description: 'Clean and minimal white theme',
-        preview: '#ffffff',
-        colors: { primary: '#4f46e5', background: '#ffffff', foreground: '#000000', accent: '#eef2ff' },
+        preview: 'white',
+        colors: { primary: '#4f46e5', background: 'white', foreground: '#000000', accent: '#eef2ff' },
         downloads: 0,
         rating: 5.0,
         isInstalled: true
@@ -70,8 +70,8 @@ const ThemeCard: React.FC<{
         >
             <div className="h-32 w-full" style={{ background: theme.preview }}>
                 <div className="absolute top-2 right-2 flex gap-1">
-                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-[10px] font-bold rounded-full">{t('themeStore.pro')}</span>}
-                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> {t('themeStore.active')}</span>}
+                    {theme.isPremium && <span className="px-2 py-0.5 bg-warning/90 text-primary-foreground text-xxs font-bold rounded-full">{t('themeStore.pro')}</span>}
+                    {isActive && <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xxs font-bold rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> {t('themeStore.active')}</span>}
                 </div>
                 <div className="absolute bottom-2 left-2 flex gap-1">
                     {Object.values(theme.colors).map((color, i) => (
@@ -86,11 +86,11 @@ const ThemeCard: React.FC<{
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{theme.author}</p>
                 <div className="flex items-center justify-between mt-2">
-                    <span className="text-[10px] text-muted-foreground/60"><Download className="w-3 h-3 inline mr-1" />{theme.downloads.toLocaleString()}</span>
+                    <span className="text-xxs text-muted-foreground/60"><Download className="w-3 h-3 inline mr-1" />{theme.downloads.toLocaleString()}</span>
                     {!isActive && (
                         <button
                             onClick={(e) => { e.stopPropagation(); void onApplyTheme?.(theme.id); }}
-                            className="px-2 py-1 text-[10px] font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
+                            className="px-2 py-1 text-xxs font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded transition-colors"
                         >{t('themeStore.apply')}</button>
                     )}
                 </div>
@@ -119,7 +119,7 @@ const ThemePreviewModal: React.FC<{
                     {Object.entries(theme.colors).map(([name, color]) => (
                         <div key={name} className="flex flex-col items-center">
                             <div className="w-8 h-8 rounded-lg border border-border/30 shadow-sm" style={{ background: color }} />
-                            <span className="text-[10px] text-muted-foreground mt-1 capitalize">{name}</span>
+                            <span className="text-xxs text-muted-foreground mt-1 capitalize">{name}</span>
                         </div>
                     ))}
                 </div>
@@ -153,9 +153,9 @@ const useThemeStoreLogic = (language: Language) => {
         if (filter === 'installed') {
             themes = themes.filter(t => t.isInstalled);
         } else if (filter === 'dark') {
-            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.colors.background.startsWith('#0') || t.colors.background.startsWith('#1') || t.colors.background.startsWith('#2'));
+            themes = themes.filter(t => t.id.includes('dark') || t.name.toLowerCase().includes('dark') || t.id === 'black');
         } else if (filter === 'light') {
-            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.colors.background.startsWith('#f') || t.colors.background.startsWith('#e'));
+            themes = themes.filter(t => t.id.includes('light') || t.name.toLowerCase().includes('light') || t.id === 'white');
         }
         return themes;
     }, [searchQuery, filter, builtInThemes]);

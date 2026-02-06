@@ -94,11 +94,14 @@ func (s *HTTPAuthStore) List(ctx context.Context) ([]*coreauth.Auth, error) {
 
 // Save pushes an auth update back to the Electron app
 func (s *HTTPAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, error) {
+	log.Printf("[DEBUG] HTTPAuthStore.Save called for ID=%s, Provider=%s", auth.ID, auth.Provider)
 	if auth == nil || auth.ID == "" {
+		log.Printf("[DEBUG] HTTPAuthStore.Save: invalid auth - nil or missing ID")
 		return "", fmt.Errorf("invalid auth: nil or missing ID")
 	}
 
 	url := fmt.Sprintf("%s/%s", s.apiURL, auth.ID)
+	log.Printf("[DEBUG] HTTPAuthStore.Save: POSTing to URL=%s", url)
 
 	// Map coreauth.Auth back to the format expected by the API
 	// Note: We use auth.Metadata and top-level fields
@@ -127,14 +130,18 @@ func (s *HTTPAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, 
 
 	resp, err := s.client.Do(req)
 	if err != nil {
+		log.Printf("[DEBUG] HTTPAuthStore.Save: HTTP error: %v", err)
 		return "", fmt.Errorf("failed to send sync update: %w", err)
 	}
 	defer resp.Body.Close()
 
+	log.Printf("[DEBUG] HTTPAuthStore.Save: Response status=%d", resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
+		log.Printf("[DEBUG] HTTPAuthStore.Save: Error response: %s", string(respBody))
 		return "", fmt.Errorf("sync update failed with status %d: %s", resp.StatusCode, string(respBody))
 	}
+	log.Printf("[DEBUG] HTTPAuthStore.Save: Success! Token saved to database")
 
 	// Update local cache
 	s.mu.Lock()
@@ -152,6 +159,12 @@ func (s *HTTPAuthStore) Delete(ctx context.Context, id string) error {
 // PersistConfig is not needed for HTTP auth store
 func (s *HTTPAuthStore) PersistConfig(ctx context.Context) error {
 	return nil
+}
+
+// IsHTTPBacked returns true to indicate this store communicates via HTTP API
+// This is used as a marker interface to detect database-backed stores
+func (s *HTTPAuthStore) IsHTTPBacked() bool {
+	return true
 }
 
 // PersistAuthFiles triggers a sync when auth files would have been persisted
@@ -244,6 +257,8 @@ func (s *HTTPAuthStore) sync(ctx context.Context) error {
 			prefix = "antigravity"
 		case "anthropic", "claude":
 			prefix = "anthropic"
+		case "codex", "openai":
+			prefix = "codex"
 		}
 
 		auth := &coreauth.Auth{

@@ -135,7 +135,14 @@ export class AuthAPIService extends BaseService {
             appLogger.info('AuthAPIService', `Received update for account ${accountId}`);
 
             const tokenData = this.mapToTokenData(data);
-            await this.authService.updateToken(accountId, tokenData);
+            const provider = this.normalizeProviderName(accountId.split('-')[0]);
+
+            // linkAccount handles both updating existing accounts (by email) and creating new ones
+            await this.authService.linkAccount(provider, {
+                ...tokenData,
+                // Ensure accessToken is present as it's required for linkAccount type
+                accessToken: tokenData.accessToken ?? ''
+            });
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));

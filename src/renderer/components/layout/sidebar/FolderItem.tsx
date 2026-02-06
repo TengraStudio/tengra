@@ -59,7 +59,7 @@ export const FolderItem: React.FC<FolderItemProps> = ({
                     ) : (
                         <span className="text-xs font-medium truncate">{folder.name}</span>
                     )}
-                    <span className="text-[10px] text-muted-foreground/40">{chats.length}</span>
+                    <span className="text-xxs text-muted-foreground/40">{chats.length}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Edit2 className="w-3 h-3 hover:text-primary" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} />

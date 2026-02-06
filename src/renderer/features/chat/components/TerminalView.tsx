@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -6,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ToolResult } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface CommandExecutionResult {
     stdout?: string;
@@ -62,9 +62,9 @@ const TerminalHeader: React.FC<TerminalHeaderProps> = ({ hasOutput, showMarkdown
                 <div className="terminal-dot bg-success border-success" />
             </div>
             <div className="text-sm text-muted-foreground font-medium select-none flex-1 text-center font-mono flex items-center justify-center gap-2">
-                <span className="opacity-50">admin@macbook</span>
+                <span className="opacity-50">{t('tools.terminalHost')}</span>
                 <span className="text-zinc-600">~</span>
-                <span>zsh</span>
+                <span>{t('tools.terminalShell')}</span>
             </div>
             {hasOutput && (
                 <button
@@ -113,12 +113,12 @@ const OutputContent: React.FC<OutputContentProps> = ({ stdout, stderr, error, sh
             {stdout && <div className="text-zinc-300 whitespace-pre-wrap leading-6 tracking-wide">{stdout}</div>}
             {stderr && (
                 <div className="text-destructive whitespace-pre-wrap mt-2 leading-6">
-                    <span className="inline-block mr-2">stderr:</span>{stderr}
+                    <span className="inline-block mr-2">{t('tools.stderrLabel')}</span>{stderr}
                 </div>
             )}
             {error && (
                 <div className="text-destructive font-bold whitespace-pre-wrap mt-2 leading-6 bg-destructive/10 p-2 rounded">
-                    <span className="inline-block mr-2">error:</span>{error}
+                    <span className="inline-block mr-2">{t('tools.errorLabel')}</span>{error}
                 </div>
             )}
             {!hasOutput && !isExecuting && <div className="text-zinc-600 italic text-xs mt-1 opacity-50">{t('tools.noOutput')}</div>}

@@ -1,6 +1,7 @@
 import { Calendar, Clock, Hash, Percent, TrendingUp } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface CopilotLimitItemProps {
@@ -13,7 +14,8 @@ interface CopilotLimitItemProps {
 export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
     period, periodLimit, copilotRemaining, updateCopilotLimit
 }) => {
-    const periodLabel = period.charAt(0).toUpperCase() + period.slice(1);
+    const { t } = useTranslation();
+    const periodLabel = t(`settings.usageLimits.periods.${period}`);
     const Icon = period === 'hourly' ? Clock : period === 'daily' ? Calendar : TrendingUp;
 
     return (
@@ -21,7 +23,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-primary" />
-                    <label className="text-sm font-bold">{periodLabel} Limit</label>
+                    <label className="text-sm font-bold">{t('settings.usageLimits.limitLabel', { period: periodLabel })}</label>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -30,14 +32,14 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                         onChange={(e) => updateCopilotLimit(period, 'enabled', e.target.checked)}
                         className="w-4 h-4 rounded border-border"
                     />
-                    <span className="text-xs text-muted-foreground">Enable</span>
+                    <span className="text-xs text-muted-foreground">{t('settings.usageLimits.enable')}</span>
                 </label>
             </div>
 
             {periodLimit.enabled && (
                 <div className="space-y-3 mt-3">
                     <div className="flex items-center gap-3">
-                        <label className="text-xs text-muted-foreground">Type:</label>
+                        <label className="text-xs text-muted-foreground">{t('settings.usageLimits.typeLabel')}</label>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => updateCopilotLimit(period, 'type', 'requests')}
@@ -49,7 +51,7 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 )}
                             >
                                 <Hash className="w-3 h-3 inline mr-1" />
-                                Requests
+                                {t('settings.usageLimits.types.requests')}
                             </button>
                             <button
                                 onClick={() => updateCopilotLimit(period, 'type', 'percentage')}
@@ -61,14 +63,14 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                                 )}
                             >
                                 <Percent className="w-3 h-3 inline mr-1" />
-                                Percentage
+                                {t('settings.usageLimits.types.percentage')}
                             </button>
                         </div>
                     </div>
 
                     <div>
                         <label className="text-xs text-muted-foreground block mb-1">
-                            {periodLimit.type === 'requests' ? 'Max Requests' : 'Max Percentage (%)'}
+                            {periodLimit.type === 'requests' ? t('settings.usageLimits.maxRequests') : t('settings.usageLimits.maxPercentage')}
                         </label>
                         <input
                             type="number"
@@ -77,11 +79,15 @@ export const CopilotLimitItem: React.FC<CopilotLimitItemProps> = ({
                             value={periodLimit.value}
                             onChange={(e) => updateCopilotLimit(period, 'value', Number.parseInt(e.target.value, 10) || 0)}
                             className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 font-mono text-sm"
-                            placeholder={periodLimit.type === 'requests' ? '5' : '50'}
+                            placeholder={periodLimit.type === 'requests' ? t('settings.usageLimits.maxRequestsPlaceholder') : t('settings.usageLimits.maxPercentagePlaceholder')}
                         />
                         {periodLimit.type === 'percentage' && (
                             <div className="text-xs text-muted-foreground mt-1">
-                                Will limit to {Math.round(copilotRemaining * (periodLimit.value / 100))} requests ({periodLimit.value}% of {copilotRemaining} remaining)
+                                {t('settings.usageLimits.percentHint', {
+                                    count: Math.round(copilotRemaining * (periodLimit.value / 100)),
+                                    percentage: periodLimit.value,
+                                    remaining: copilotRemaining
+                                })}
                             </div>
                         )}
                     </div>

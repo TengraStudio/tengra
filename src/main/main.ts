@@ -18,7 +18,7 @@ import { ToolExecutor } from '@main/tools/tool-executor';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
 
 import { registerLifecycleHandlers } from './startup/lifecycle';
-import { registerProtocols } from './startup/protocols';
+import { preRegisterProtocols, registerProtocols } from './startup/protocols';
 import { createWindow, getMainWindow, setupTray } from './startup/window';
 
 /**
@@ -37,6 +37,9 @@ app.commandLine.appendSwitch('disable-site-isolation-trials');
 if (process.platform === 'win32') {
     app.setAppUserModelId('com.tandem.app');
 }
+
+// Security: Pre-register schemes before app is ready
+preRegisterProtocols();
 
 app.whenReady().then(async () => {
     appLogger.setLevel(LogLevel.DEBUG);
@@ -103,6 +106,11 @@ app.whenReady().then(async () => {
         rateLimitService: services.rateLimitService
     });
     services.apiServerService = apiServerService;
+
+    // Manual registration so Container.dispose() finds it and calls cleanup()
+    const { container } = await import('@main/startup/services');
+    container.registerInstance('apiServerService', apiServerService);
+
     await apiServerService.initialize();
 
     // Register IPC & Lifecycle

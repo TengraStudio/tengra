@@ -22,7 +22,7 @@ export const GitCommitCard: React.FC<CommitCardProps> = ({ commit, isSelected, o
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
                 {commit.author[0].toUpperCase()}
             </div>
-            <div className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded group-hover:text-primary transition-colors">
+            <div className="text-xxs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded group-hover:text-primary transition-colors">
                 {commit.hash.substring(0, 7)}
             </div>
         </div>

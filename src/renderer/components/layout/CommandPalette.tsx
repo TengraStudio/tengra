@@ -36,7 +36,7 @@ interface CommandPaletteProps {
     onSelectProject: (id: string) => void;
     onOpenSettings: (category?: SettingsCategory) => void;
     onOpenSSHManager: () => void;
-    onRefreshModels: () => void;
+    onRefreshModels: (bypassCache?: boolean) => void;
     models: ModelInfo[];
     onSelectModel: (name: string) => void;
     selectedModel: string | null;
@@ -72,7 +72,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         }));
 
         const modelCmds: CommandItem[] = [
-            { id: 'refresh-models', label: t('commandPalette.refreshModels'), description: t('commandPalette.refreshModelsDesc'), icon: <RefreshCw className="w-4 h-4" />, action: () => { onRefreshModels(); onClose(); }, category: 'model' as const },
+            { id: 'refresh-models', label: t('commandPalette.refreshModels'), description: t('commandPalette.refreshModelsDesc'), icon: <RefreshCw className="w-4 h-4" />, action: () => { onRefreshModels(true); onClose(); }, category: 'model' as const },
             ...models.map(m => {
                 const name = m.name ?? m.id ?? 'Unknown';
                 return {

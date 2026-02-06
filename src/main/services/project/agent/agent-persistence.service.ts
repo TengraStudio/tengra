@@ -21,6 +21,7 @@ import {
     ToolExecutionStatus
 } from '@shared/types/agent-state';
 import { Message } from '@shared/types/chat';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 /**
  * Database row type for agent_tasks table
@@ -775,10 +776,28 @@ export class AgentPersistenceService extends BaseService {
             `CREATE INDEX IF NOT EXISTS idx_agent_events_task ON agent_events(task_id, timestamp)`
         );
 
-        await db.exec(`ALTER TABLE agent_tasks ADD COLUMN estimated_cost REAL DEFAULT 0`).catch(() => { });
-        await db.exec(`ALTER TABLE agent_messages ADD COLUMN images TEXT`).catch(() => { });
+        await this.tryAddColumn(db, 'agent_tasks', 'estimated_cost', 'ALTER TABLE agent_tasks ADD COLUMN estimated_cost REAL DEFAULT 0');
+        await this.tryAddColumn(db, 'agent_messages', 'images', 'ALTER TABLE agent_messages ADD COLUMN images TEXT');
 
         this.logInfo('Agent schema migrations completed');
+    }
+
+    private async tryAddColumn(
+        db: ReturnType<DatabaseService['getDatabase']>,
+        tableName: string,
+        columnName: string,
+        sql: string
+    ): Promise<void> {
+        try {
+            await db.exec(sql);
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            if (message.includes('duplicate column') || message.includes('already exists')) {
+                this.logInfo(`Column ${tableName}.${columnName} already exists, skipping`);
+                return;
+            }
+            this.logWarn(`Failed to add column ${tableName}.${columnName}: ${message}`);
+        }
     }
 
     /**

@@ -1,23 +1,14 @@
-import {
-    autoUpdate,
-    flip,
-    FloatingPortal,
-    offset,
-    shift,
-    useFloating,
-} from '@floating-ui/react';
 import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { Language, useTranslation } from '@/i18n';
-import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
-import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
+import { AppSettings, ClaudeQuota, CodexUsage, QuotaResponse } from '@/types';
 
 import { useModelCategories } from '../hooks/useModelCategories';
 import { useModelSelectorLogic } from '../hooks/useModelSelectorLogic';
 
-import { ModelSelectorContent } from './ModelSelectorContent';
+import { ModelSelectorModal } from './ModelSelectorModal';
 import { ModelSelectorTrigger } from './ModelSelectorTrigger';
 
 interface ModelSelectorProps {
@@ -29,6 +20,7 @@ interface ModelSelectorProps {
     groupedModels?: GroupedModels;
     quotas?: { accounts: QuotaResponse[] } | null;
     codexUsage?: { accounts: { usage: CodexUsage }[] } | null;
+    claudeQuota?: { accounts: ClaudeQuota[] } | null;
     onOpenChange?: (isOpen: boolean) => void;
     contextTokens?: number;
     language?: Language;
@@ -36,6 +28,8 @@ interface ModelSelectorProps {
     isFavorite?: (modelId: string) => boolean;
     toggleFavorite?: (modelId: string) => void;
     isIconOnly?: boolean;
+    thinkingLevel?: string;
+    onThinkingLevelChange?: (level: string) => void;
 }
 
 export function ModelSelector({
@@ -47,58 +41,56 @@ export function ModelSelector({
     groupedModels,
     quotas = null,
     codexUsage = null,
+    claudeQuota = null,
     onOpenChange,
     contextTokens = 0,
     language = 'en',
     onRemoveModel,
     isFavorite,
     toggleFavorite,
-    isIconOnly
+    isIconOnly,
+    thinkingLevel,
+    onThinkingLevelChange
 }: ModelSelectorProps) {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery] = useState('');
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
-    const { x, y, strategy, refs, placement } = useFloating({
-        open: isOpen,
-        onOpenChange: setIsOpen,
-        middleware: [offset(8), flip({ fallbackAxisSideDirection: 'end' }), shift({ padding: 16 })],
-        whileElementsMounted: autoUpdate,
-    });
-
-    const { setReference, setFloating } = refs;
 
     useEffect(() => { onOpenChange?.(isOpen); }, [isOpen, onOpenChange]);
 
-    useEffect(() => {
-        if (!isOpen) { return; }
-        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-            const ref1 = refs.domReference.current;
-            const ref2 = refs.floating.current;
-            if (ref1 && !ref1.contains(event.target as Node) && ref2 && !ref2.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchstart', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
-        };
-    }, [isOpen, refs.domReference, refs.floating]);
-
-    const { isModelDisabled } = useModelSelectorLogic({ settings, groupedModels, quotas, codexUsage });
+    const { isModelDisabled } = useModelSelectorLogic({ settings, groupedModels, quotas, codexUsage, claudeQuota });
     const categories = useModelCategories({ groupedModels, debouncedSearchQuery, settings, selectedModel, isModelDisabled, t });
+
+    const normalizeProvider = useCallback((provider?: string) => {
+        const p = (provider ?? '').toLowerCase();
+        if (p === 'codex') { return 'openai'; }
+        if (p === 'github') { return 'copilot'; }
+        if (p === 'anthropic') { return 'claude'; }
+        return p;
+    }, []);
+
+    const normalizedSelectedProvider = useMemo(() => {
+        return normalizeProvider(selectedProvider);
+    }, [selectedProvider, normalizeProvider]);
 
     const currentModelInfo = useMemo(() => {
         const normalized = selectedModel.toLowerCase();
+        if (normalizedSelectedProvider) {
+            for (const cat of categories) {
+                const m = cat.models.find(m =>
+                    (m.id === selectedModel || m.id.toLowerCase() === normalized) &&
+                    normalizeProvider(m.provider) === normalizedSelectedProvider
+                );
+                if (m) { return m; }
+            }
+        }
         for (const cat of categories) {
             const m = cat.models.find(m => m.id === selectedModel || m.id.toLowerCase() === normalized);
             if (m) { return m; }
         }
         return null;
-    }, [categories, selectedModel]);
+    }, [categories, selectedModel, normalizedSelectedProvider, normalizeProvider]);
 
     const contextLimit = useMemo(() => {
         if (currentModelInfo?.contextWindow) { return currentModelInfo.contextWindow; }
@@ -111,17 +103,34 @@ export function ModelSelector({
 
     const contextUsagePercent = Math.min(100, (contextTokens / contextLimit) * 100);
 
-    const handleModelSelect = useCallback((p: string, id: string, m: boolean) => {
+    const effectiveThinkingLevel = useMemo(() => {
+        const levels = currentModelInfo?.thinkingLevels;
+        if (!levels || levels.length === 0) { return undefined; }
+        if (thinkingLevel && levels.includes(thinkingLevel)) { return thinkingLevel; }
+        if (levels.includes('medium')) { return 'medium'; }
+        return levels[0];
+    }, [currentModelInfo, thinkingLevel]);
+
+    const handleModelSelect = useCallback((p: string, id: string, m?: boolean, keepOpen?: boolean) => {
         onSelect(p, id, m);
-        if (!m) { setIsOpen(false); setSearchQuery(''); }
+        if (!m && !keepOpen) { setIsOpen(false); }
     }, [onSelect]);
 
-    const currentCat = categories.find(c => c.models.some(m => m.id === selectedModel)) ?? categories.find(c => c.id === selectedProvider);
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+    }, []);
+
+    const currentCat = categories.find(c => c.models.some(m =>
+        m.id === selectedModel &&
+        (!normalizedSelectedProvider || normalizeProvider(m.provider) === normalizedSelectedProvider)
+    )) ?? categories.find(c => c.models.some(m => m.id === selectedModel)) ?? categories.find(c => c.id === normalizedSelectedProvider);
+
+    // Get recent models from settings
+    const recentModels = settings?.general?.recentModels ?? [];
 
     return (
         <div className="relative">
             <ModelSelectorTrigger
-                ref={setReference}
                 isOpen={isOpen}
                 setIsOpen={setIsOpen}
                 currentCategory={currentCat}
@@ -134,36 +143,22 @@ export function ModelSelector({
                 isIconOnly={isIconOnly}
             />
 
-            <AnimatePresence>
-                {isOpen && (
-                    <FloatingPortal>
-                        <motion.div
-                            ref={setFloating}
-                            initial={{ opacity: 0, y: placement.startsWith('top') ? 5 : -5, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: placement.startsWith('top') ? 5 : -5, scale: 0.95 }}
-                            transition={{ duration: 0.1 }}
-                            style={{ position: strategy, top: y, left: x, zIndex: 9999 }}
-                            className="w-72 max-h-[70vh] flex flex-col bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
-                            onMouseDown={e => e.stopPropagation()}
-                        >
-                            <ModelSelectorContent
-                                searchQuery={searchQuery}
-                                setSearchQuery={setSearchQuery}
-                                categories={categories}
-                                selectedModels={selectedModels}
-                                selectedModel={selectedModel}
-                                selectedProvider={selectedProvider}
-                                onSelect={handleModelSelect}
-                                onRemoveModel={onRemoveModel}
-                                isFavorite={isFavorite}
-                                toggleFavorite={toggleFavorite}
-                                t={t}
-                            />
-                        </motion.div>
-                    </FloatingPortal>
-                )}
-            </AnimatePresence>
+            <ModelSelectorModal
+                isOpen={isOpen}
+                onClose={handleClose}
+                categories={categories}
+                selectedModels={selectedModels}
+                selectedModel={selectedModel}
+                selectedProvider={selectedProvider}
+                onSelect={handleModelSelect}
+                onRemoveModel={onRemoveModel}
+                isFavorite={isFavorite}
+                toggleFavorite={toggleFavorite}
+                recentModels={recentModels}
+                t={t}
+                thinkingLevel={effectiveThinkingLevel}
+                onThinkingLevelChange={onThinkingLevelChange}
+            />
         </div>
     );
 }

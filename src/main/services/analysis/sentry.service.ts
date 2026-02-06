@@ -6,8 +6,8 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
 import { app } from 'electron';
 
-// IMPORTANT: Replace this with your actual Sentry DSN
-const SENTRY_DSN = 'https://YOUR_DSN_HERE@o000000.ingest.sentry.io/0000000';
+// Sentry DSN loaded from environment variable for security
+const SENTRY_DSN = process.env.SENTRY_DSN ?? '';
 
 export class SentryService {
     private settingsService: SettingsService;
@@ -23,6 +23,12 @@ export class SentryService {
         // Respect user privacy settings
         if (!settings.crashReporting?.enabled) {
             appLogger.info('SentryService', 'Crash reporting is disabled by user.');
+            return;
+        }
+
+        // Validate DSN is configured
+        if (!SENTRY_DSN) {
+            appLogger.info('SentryService', 'Sentry DSN not configured (set SENTRY_DSN environment variable).');
             return;
         }
 

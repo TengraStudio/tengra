@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import React from 'react';
 
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/i18n';
 
 interface DiffViewerProps {
     original: string;
@@ -20,6 +21,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
     readOnly = true
 }) => {
     const { isLight } = useTheme();
+    const { t } = useTranslation();
 
     return (
         <div className={`relative w-full h-full overflow-hidden ${className}`}>
@@ -32,7 +34,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                 loading={
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        Loading Diff...
+                        {t('diffViewer.loading')}
                     </div>
                 }
                 options={{

@@ -32,7 +32,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<BadgeSize, { dot: string; badge: string }> = {
-    sm: { dot: 'w-2 h-2', badge: 'min-w-[18px] h-[18px] px-1.5 text-[10px]' },
+    sm: { dot: 'w-2 h-2', badge: 'min-w-[18px] h-[18px] px-1.5 text-xxs' },
     md: { dot: 'w-2.5 h-2.5', badge: 'min-w-[22px] h-[22px] px-2 text-xs' }
 };
 

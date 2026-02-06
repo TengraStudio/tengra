@@ -18,7 +18,7 @@ let streamingEnabled = false;
  */
 export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source: string, message: string) {
     const entry = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         timestamp: new Date(),
         level,
         source,

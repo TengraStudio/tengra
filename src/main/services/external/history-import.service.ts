@@ -413,7 +413,7 @@ export class HistoryImportService {
     private async importSingleJsonMessage(chatId: string, msg: ImportJsonMessage): Promise<boolean> {
         try {
             await this.databaseService.addMessage({
-                id: msg.id ?? Math.random().toString(36).substring(7),
+                id: msg.id ?? crypto.randomUUID(),
                 chatId,
                 role: msg.role,
                 content: msg.content,

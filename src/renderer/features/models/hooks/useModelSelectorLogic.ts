@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
+import { AppSettings, ClaudeQuota, CodexUsage, QuotaResponse } from '@/types';
 
 import type { GroupedModels } from '../utils/model-fetcher';
 
@@ -9,6 +9,7 @@ interface UseModelSelectorLogicProps {
     groupedModels?: GroupedModels;
     quotas?: { accounts: QuotaResponse[] } | null;
     codexUsage?: { accounts: { usage: CodexUsage }[] } | null;
+    claudeQuota?: { accounts: ClaudeQuota[] } | null;
 }
 
 const ANTIGRAVITY_QUOTA_GROUPS = {
@@ -143,7 +144,8 @@ export function useModelSelectorLogic({
     settings,
     groupedModels,
     quotas,
-    codexUsage
+    codexUsage,
+    claudeQuota
 }: UseModelSelectorLogicProps) {
     const [usageLimitChecks, setUsageLimitChecks] = useState<Record<string, { allowed: boolean; reason?: string }>>({});
 
@@ -188,16 +190,54 @@ export function useModelSelectorLogic({
     }, [quotas]);
 
     const isClaudeDisabled = useCallback(() => {
-        if (!quotas) { return false; }
-        const claudeQuota = quotas.accounts.find(a => a.claudeQuota)?.claudeQuota;
-        if (claudeQuota) {
-            const q = claudeQuota as { fiveHour?: { utilization: number }; sevenDay?: { utilization: number } };
-            if ((q.fiveHour && q.fiveHour.utilization >= 1.0) || (q.sevenDay && q.sevenDay.utilization >= 1.0)) {
+        const UTILIZATION_THRESHOLD = 99; // 99% = effectively exhausted
+
+        const checkClaudeQuotaExhausted = (quota: ClaudeQuota): boolean => {
+            const now = Date.now();
+
+            // Check if 5-hour quota is exhausted
+            const fiveHourExhausted = quota.fiveHour && quota.fiveHour.utilization >= UTILIZATION_THRESHOLD;
+            const fiveHourResetPassed = quota.fiveHour?.resetsAt ? new Date(quota.fiveHour.resetsAt).getTime() <= now : false;
+
+            // Check if 7-day quota is exhausted
+            const sevenDayExhausted = quota.sevenDay && quota.sevenDay.utilization >= UTILIZATION_THRESHOLD;
+            const sevenDayResetPassed = quota.sevenDay?.resetsAt ? new Date(quota.sevenDay.resetsAt).getTime() <= now : false;
+
+            // If 7-day quota is exhausted and reset hasn't passed, model is disabled
+            if (sevenDayExhausted && !sevenDayResetPassed) {
+                return true;
+            }
+
+            // If 5-hour quota is exhausted but reset has passed, model is available
+            if (fiveHourExhausted && fiveHourResetPassed) {
+                return false;
+            }
+
+            // If 5-hour quota is exhausted and reset hasn't passed, disabled until reset
+            if (fiveHourExhausted && !fiveHourResetPassed) {
+                return true;
+            }
+
+            return false;
+        };
+
+        // First check dedicated claudeQuota prop (preferred source)
+        if (claudeQuota?.accounts && claudeQuota.accounts.length > 0) {
+            for (const quota of claudeQuota.accounts) {
+                if (checkClaudeQuotaExhausted(quota)) {
+                    return true;
+                }
+            }
+        }
+        // Fallback: check claudeQuota embedded in quotas.accounts
+        if (quotas?.accounts) {
+            const embeddedQuota = quotas.accounts.find(a => a.claudeQuota)?.claudeQuota;
+            if (embeddedQuota && checkClaudeQuotaExhausted(embeddedQuota as ClaudeQuota)) {
                 return true;
             }
         }
         return false;
-    }, [quotas]);
+    }, [claudeQuota, quotas]);
 
     const isAntigravityDisabled = useCallback((modelId: string, lowerModelId: string) => {
         if (!quotas) { return false; }

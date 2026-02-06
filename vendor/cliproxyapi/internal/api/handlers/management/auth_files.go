@@ -813,10 +813,34 @@ func (h *Handler) saveTokenRecord(ctx context.Context, record *coreauth.Auth) (s
 	if record == nil {
 		return "", fmt.Errorf("token record is nil")
 	}
+
 	store := h.tokenStoreWithBaseDir()
 	if store == nil {
 		return "", fmt.Errorf("token store unavailable")
 	}
+
+	// Check if using HTTP auth store (database-backed) - no stdout needed
+	// HTTPAuthStore implements IsHTTPBacked() bool as a marker interface
+	if httpStore, ok := store.(interface{ IsHTTPBacked() bool }); ok && httpStore.IsHTTPBacked() {
+		// HTTPAuthStore handles everything via HTTP API to Electron
+		return store.Save(ctx, record)
+	}
+
+	// Legacy: Direct communication with Tandem Electron via stdout for file-based stores
+	if record.Metadata != nil {
+		update := make(map[string]any)
+		for k, v := range record.Metadata {
+			update[k] = v
+		}
+		update["type"] = record.Provider
+		if record.Label != "" {
+			update["label"] = record.Label
+		}
+		if jsonBytes, err := json.Marshal(update); err == nil {
+			fmt.Printf("__TANDEM_AUTH_UPDATE__:%s\n", string(jsonBytes))
+		}
+	}
+
 	return store.Save(ctx, record)
 }
 
@@ -1464,14 +1488,24 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 
 		// Create token storage and persist
 		tokenStorage := openaiAuth.CreateTokenStorage(bundle)
+
+		// Calculate expiration timestamp for database storage
+		expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Unix() * 1000
+
 		record := &coreauth.Auth{
-			ID:       fmt.Sprintf("codex-%s.json", tokenStorage.Email),
+			ID:       fmt.Sprintf("codex-%s", tokenStorage.Email),
 			Provider: "codex",
 			FileName: fmt.Sprintf("codex-%s.json", tokenStorage.Email),
 			Storage:  tokenStorage,
 			Metadata: map[string]any{
-				"email":      tokenStorage.Email,
-				"account_id": tokenStorage.AccountID,
+				"email":         tokenStorage.Email,
+				"account_id":    tokenStorage.AccountID,
+				"access_token":  tokenResp.AccessToken,
+				"refresh_token": tokenResp.RefreshToken,
+				"id_token":      tokenResp.IDToken,
+				"expires_at":    expiresAt,
+				"type":          "codex",
+				"auth_type":     "oauth",
 			},
 		}
 		savedPath, errSave := h.saveTokenRecord(ctx, record)

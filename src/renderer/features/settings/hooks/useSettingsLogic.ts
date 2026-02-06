@@ -8,7 +8,7 @@ import { useSettingsAuth } from './useSettingsAuth';
 import { useSettingsPersonas } from './useSettingsPersonas';
 import { useSettingsStats } from './useSettingsStats';
 
-export function useSettingsLogic(onRefreshModels?: () => void) {
+export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => void) {
     const { settings, updateSettings } = useSettings();
 
     // Wrapper for backward compatibility
@@ -40,7 +40,7 @@ export function useSettingsLogic(onRefreshModels?: () => void) {
         setIsLoading(true);
         try {
             await updateSettings(toSave, true);
-            onRefreshModels?.();
+            onRefreshModels?.(true);
             setStatusMessage('Kaydedildi!');
             setTimeout(() => setStatusMessage(''), 2000);
         } finally { setIsLoading(false); }

@@ -1,26 +1,17 @@
 import {
     AdvancedSemanticFragment,
-    MemoryCategory,
     PendingMemory
 } from '@shared/types/advanced-memory';
 import { formatDistanceToNow } from 'date-fns';
-import { Archive, ArrowRight, Brain, CheckSquare, Edit3, GitMerge, HelpCircle, Lightbulb, LucideIcon, RefreshCw, Settings, Sparkles, Square, Trash2, Zap } from 'lucide-react';
+import { Archive, CheckSquare, Edit3, LucideIcon, RefreshCw, Square, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-export const CATEGORY_CONFIG: Record<MemoryCategory, { label: string; color: string; icon: LucideIcon }> = {
-    preference: { label: 'Preference', color: 'bg-primary/10 text-primary', icon: Settings },
-    personal: { label: 'Personal', color: 'bg-pink/10 text-pink', icon: Brain },
-    project: { label: 'Project', color: 'bg-success/10 text-success', icon: Lightbulb },
-    technical: { label: 'Technical', color: 'bg-orange/10 text-orange', icon: Zap },
-    workflow: { label: 'Workflow', color: 'bg-purple/10 text-purple', icon: ArrowRight },
-    relationship: { label: 'Relationship', color: 'bg-cyan/10 text-cyan', icon: GitMerge },
-    fact: { label: 'Fact', color: 'bg-muted/10 text-muted-foreground', icon: HelpCircle },
-    instruction: { label: 'Instruction', color: 'bg-yellow/10 text-yellow', icon: Sparkles },
-};
+import { CATEGORY_CONFIG } from './constants';
 
 export const StatCard = ({
     label,
@@ -39,7 +30,7 @@ export const StatCard = ({
         "p-4 bg-muted/30 border-white/5 flex flex-col gap-1 transition-all",
         highlight && "border-primary/30 bg-primary/5"
     )}>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
+        <p className="text-xxs font-bold uppercase tracking-widest text-muted-foreground/60">{label}</p>
         <div className="flex items-end gap-2">
             <span className="text-2xl font-black">{value}</span>
             <Icon className={cn("w-4 h-4 mb-1", color)} />
@@ -76,6 +67,7 @@ export const PendingMemoryCard = ({
     onConfirm: () => void;
     onReject: () => void;
 }) => {
+    const { t } = useTranslation();
     const config = CATEGORY_CONFIG[memory.suggestedCategory];
 
     return (
@@ -92,21 +84,21 @@ export const PendingMemoryCard = ({
             <div className="flex flex-col gap-3 pl-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Badge className={cn("border-none text-[10px] uppercase font-bold", config.color)}>
+                        <Badge className={cn("border-none text-xxs uppercase font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
-                            {config.label}
+                            {t(config.labelKey)}
                         </Badge>
                         {memory.requiresUserValidation && (
-                            <Badge variant="outline" className="border-yellow/30 text-yellow text-[10px]">
-                                Needs Review
+                            <Badge variant="outline" className="border-yellow/30 text-warning text-xxs">
+                                {t('memory.needsReview')}
                             </Badge>
                         )}
                     </div>
                 </div>
                 <p className="text-sm leading-relaxed">{memory.content}</p>
                 <div className="flex items-center justify-between mt-2">
-                    <button className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md text-xs font-bold" onClick={onConfirm}>Confirm</button>
-                    <button className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-bold" onClick={onReject}>Reject</button>
+                    <button className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md text-xs font-bold" onClick={onConfirm}>{t('memory.confirm')}</button>
+                    <button className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-bold" onClick={onReject}>{t('memory.reject')}</button>
                 </div>
             </div>
         </Card>
@@ -130,6 +122,7 @@ export const ConfirmedMemoryCard = ({
     onArchive: () => void;
     onRestore: () => void;
 }) => {
+    const { t } = useTranslation();
     const config = CATEGORY_CONFIG[memory.category];
     const isArchived = memory.status === 'archived';
 
@@ -145,15 +138,15 @@ export const ConfirmedMemoryCard = ({
                         <button onClick={onToggleSelect}>
                             {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground/30" />}
                         </button>
-                        <Badge className={cn("border-none text-[10px] uppercase font-bold", config.color)}>
+                        <Badge className={cn("border-none text-xxs uppercase font-bold", config.color)}>
                             <config.icon className="w-3 h-3 mr-1" />
-                            {config.label}
+                            {t(config.labelKey)}
                         </Badge>
                     </div>
                 </div>
                 <p className="text-sm leading-relaxed">{memory.content}</p>
                 <div className="flex items-center justify-between mt-4">
-                    <div className="text-[10px] text-muted-foreground">Stored {formatDistanceToNow(new Date(memory.createdAt))} ago</div>
+                    <div className="text-xxs text-muted-foreground">{t('memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
                     <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={onEdit}><Edit3 className="w-4 h-4" /></Button>
                         {!isArchived ? <Button variant="ghost" size="sm" onClick={onArchive}><Archive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" onClick={onRestore}><RefreshCw className="w-4 h-4" /></Button>}

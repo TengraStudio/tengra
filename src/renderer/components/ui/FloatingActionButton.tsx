@@ -1,6 +1,7 @@
 import { Plus, X } from 'lucide-react';
 import React, { useEffect,useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface FabAction {
@@ -40,6 +41,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     mainIcon = <Plus className="w-6 h-6" />,
     closeIcon = <X className="w-6 h-6" />
 }) => {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -161,7 +163,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     'hover:scale-105 hover:shadow-xl ripple',
                     isOpen && 'rotate-45 bg-destructive'
                 )}
-                aria-label={isOpen ? 'Close menu' : 'Open menu'}
+                aria-label={isOpen ? t('fab.closeMenu') : t('fab.openMenu')}
                 aria-expanded={isOpen}
             >
                 {isOpen ? closeIcon : mainIcon}

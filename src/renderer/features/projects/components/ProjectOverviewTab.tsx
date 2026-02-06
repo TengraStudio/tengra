@@ -109,7 +109,7 @@ export const ProjectOverviewTab = ({
                                 const percentage = stats ? Math.round(((count as number) / stats.fileCount) * 100) : 0;
                                 return (
                                     <div key={lang} className="space-y-1">
-                                        <div className="flex justify-between text-[10px] uppercase font-bold tracking-tight">
+                                        <div className="flex justify-between text-xxs uppercase font-bold tracking-tight">
                                             <span className="text-foreground/80">{lang}</span>
                                             <span className="text-muted-foreground">{percentage}%</span>
                                         </div>

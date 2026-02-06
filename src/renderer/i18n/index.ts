@@ -17,9 +17,9 @@ export type TranslationKeys = typeof tr
 const translations: Partial<Record<Language, TranslationKeys>> = {
     tr,
     en,
-    de: de as TranslationKeys,
-    fr: fr as TranslationKeys,
-    es: es as TranslationKeys,
+    de: de as unknown as TranslationKeys,
+    fr: fr as unknown as TranslationKeys,
+    es: es as unknown as TranslationKeys,
     ja: ja as unknown as TranslationKeys,
     zh: zh as unknown as TranslationKeys,
     ar: ar as unknown as TranslationKeys

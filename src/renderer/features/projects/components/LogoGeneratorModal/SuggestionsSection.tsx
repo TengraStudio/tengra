@@ -17,7 +17,7 @@ export const SuggestionsSection: React.FC<SuggestionsProps> = ({
 
     return (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-            <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
+            <label className="text-xxs font-bold uppercase text-muted-foreground tracking-widest">
                 {translateKey('projects.ideas')}
             </label>
             <div className="flex flex-col gap-2">
@@ -25,7 +25,7 @@ export const SuggestionsSection: React.FC<SuggestionsProps> = ({
                     <button
                         key={i}
                         onClick={() => onSelectIdea(s)}
-                        className="text-left p-2 bg-muted/20 hover:bg-muted/30 rounded-lg text-[11px] text-muted-foreground/60 hover:text-foreground transition-all border border-transparent hover:border-border/50"
+                        className="text-left p-2 bg-muted/20 hover:bg-muted/30 rounded-lg text-xxs text-muted-foreground/60 hover:text-foreground transition-all border border-transparent hover:border-border/50"
                     >
                         {s}
                     </button>

@@ -23,8 +23,8 @@ export const GitRemotes: React.FC<RemotesProps> = ({ remotes, t }) => {
                             <div className="text-xs text-muted-foreground">{remote.url}</div>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {remote.fetch && <span>fetch</span>}
-                            {remote.push && <span>push</span>}
+                            {remote.fetch && <span>{t('projectDashboard.fetch')}</span>}
+                            {remote.push && <span>{t('projectDashboard.push')}</span>}
                         </div>
                     </div>
                 ))}

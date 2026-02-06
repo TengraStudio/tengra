@@ -51,7 +51,7 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
             label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
             onClick={onClick}
             active={active}
-            activeClassName="text-warning bg-warning/10 border-amber-400/20 shadow-[0_0_10px_rgba(251,191,36,0.1)]"
+            activeClassName="text-warning bg-warning/10 border-amber-400/20 glow-warning"
         >
             <Bookmark className={cn("w-3.5 h-3.5", active && "fill-current")} aria-hidden="true" />
         </ActionButton>

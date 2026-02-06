@@ -297,12 +297,47 @@ export class AuthService extends BaseService {
         const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined);
 
         const existing = await this.findExistingAccount(normalized, email);
-        const account = this.createNewAccountObject(normalized, tokenData, existing, now, email);
+        const account = this.createNewAccountObject({ provider: normalized, tokenData, existing, now, email });
 
         await this.ensureActivation(normalized, account, !!existing);
 
         await this.databaseService.saveLinkedAccount(account);
         this.emitLinkEvents(normalized, account, tokenData);
+
+        return this.toPublicAccount(account);
+    }
+
+    /**
+     * Link or update an account using a caller-provided ID.
+     * Used by the proxy auth store to persist OAuth tokens directly to the database.
+     */
+    async linkAccountWithId(provider: string, accountId: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
+        const normalized = this.normalizeProvider(provider);
+        const now = Date.now();
+        const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined);
+
+        if (!accountId) {
+            return this.linkAccount(provider, tokenData);
+        }
+
+        const existing = await this.databaseService.getLinkedAccount(accountId);
+        const resolvedProvider = existing?.provider ?? normalized;
+        if (existing?.provider && existing.provider !== normalized) {
+            appLogger.warn('AuthService', `Provider mismatch for account ${accountId}: ${existing.provider} vs ${normalized}. Keeping existing.`);
+        }
+
+        const account = this.createNewAccountObject({
+            provider: resolvedProvider,
+            tokenData,
+            existing: existing ?? undefined,
+            now,
+            email,
+            preferredId: accountId
+        });
+
+        await this.ensureActivation(resolvedProvider, account, !!existing);
+        await this.databaseService.saveLinkedAccount(account);
+        this.emitLinkEvents(resolvedProvider, account, tokenData);
 
         return this.toPublicAccount(account);
     }
@@ -318,16 +353,18 @@ export class AuthService extends BaseService {
         return existing;
     }
 
-    private createNewAccountObject(
+    private createNewAccountObject(params: {
         provider: string,
         tokenData: TokenData,
         existing: LinkedAccount | undefined,
         now: number,
-        email?: string
-    ): LinkedAccount {
+        email?: string,
+        preferredId?: string
+    }): LinkedAccount {
+        const { provider, tokenData, existing, now, email, preferredId } = params;
         const metadata = tokenData.metadata as JsonObject | undefined;
         return {
-            id: existing?.id ?? uuidv4(),
+            id: existing?.id ?? preferredId ?? uuidv4(),
             provider,
             email,
             displayName: tokenData.displayName ?? (metadata?.displayName as string | undefined),
@@ -574,11 +611,13 @@ export class AuthService extends BaseService {
             'anthropic': 'claude',
             'anthropic_key': 'claude',
             'claude': 'claude',
-            'openai': 'codex',
-            'openai_key': 'codex',
+            'openai': 'openai',
+            'openai_key': 'openai',
             'codex': 'codex',
             'gemini': 'gemini',
-            'gemini_key': 'gemini'
+            'gemini_key': 'gemini',
+            'nvidia': 'nvidia',
+            'nvidia_key': 'nvidia'
         };
 
         return mappings[p] ?? p;

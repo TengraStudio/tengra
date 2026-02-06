@@ -33,7 +33,7 @@ export const TodoItemCard = ({ todo, onToggle }: TodoItemCardProps) => (
                 {todo.text}
             </p>
             <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[10px] font-mono text-muted-foreground/40 text-primary/40">
+                <span className="text-xxs font-mono text-muted-foreground/40 text-primary/40">
                     Line {todo.line}
                 </span>
             </div>

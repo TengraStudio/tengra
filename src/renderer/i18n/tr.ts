@@ -20,10 +20,16 @@ export const tr = {
         hour: 'saat',
         hours: 'saat',
         clear: 'Temizle',
+        details: 'Detaylar',
+        hide: 'Gizle',
+        showMore: 'Daha fazla göster...',
+        kb: 'KB',
         add: 'Ekle',
         done: 'Tamamlandı',
         close: 'Kapat',
         pending: 'Beklemede',
+        confirm: 'Onayla',
+        processing: 'İşleniyor...',
         selectAll: 'Tümünü Seç',
         itemsSelected: '{{count}} öğe seçildi',
         // Hata mesajları
@@ -31,7 +37,40 @@ export const tr = {
         operationFailed: 'İşlem başarısız',
         invalidInput: 'Geçersiz giriş',
         networkError: 'Ağ hatası',
-        permissionDenied: 'İzin reddedildi'
+        permissionDenied: 'İzin reddedildi',
+        // Ek common keys
+        authType: 'Kimlik Doğrulama Türü',
+        back: 'Geri',
+        commands: 'Komutlar',
+        connect: 'Bağlan',
+        favorites: 'Favoriler',
+        fitView: 'Görünüme Sığdır',
+        host: 'Sunucu',
+        next: 'İleri',
+        passphrase: 'Parola',
+        password: 'Şifre',
+        port: 'Port',
+        privateKey: 'Özel Anahtar',
+        reset: 'Sıfırla',
+        resetZoom: 'Yakınlaştırmayı Sıfırla',
+        resume: 'Devam Et',
+        searching: 'Aranıyor...',
+        send: 'Gönder',
+        stop: 'Durdur',
+        unarchive: 'Arşivden Çıkar',
+        update: 'Güncelle',
+        username: 'Kullanıcı Adı',
+        zoomIn: 'Yakınlaştır',
+        zoomOut: 'Uzaklaştır',
+        toClose: 'kapatmak için'
+    },
+    app: {
+        name: 'Tandem',
+        versionShort: 'V {{version}}'
+    },
+    errors: {
+        unexpected: 'Üzgünüz, bir hata oluştu.',
+        somethingWentWrong: 'Bir şeyler yanlış gitti:'
     },
     languages: {
         tr: 'Türkçe',
@@ -99,6 +138,11 @@ export const tr = {
         proxyCustom: 'Özel Proxy / Diğer',
         model: 'Model',
         selectModel: 'Model Seçin',
+        recentModels: 'Son Kullanılanlar',
+        noModelsFound: 'Model bulunamadı',
+        shiftClickMulti: 'Birden fazla model seçmek için Shift+tıklayın',
+        mode: 'Mod',
+        reasoning: 'Düşünme',
         providerLabels: {
             ollama: 'Ollama',
             codex: 'OpenAI',
@@ -109,7 +153,32 @@ export const tr = {
             openai: 'OpenAI'
         }
     },
+    assistantIdentity: {
+        openai: 'OpenAI',
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        copilot: 'GitHub Copilot',
+        groq: 'Groq',
+        ollama: 'Ollama',
+        llama: 'Llama',
+        mistral: 'Mistral',
+        deepseek: 'DeepSeek',
+        qwen: 'Qwen',
+        phi: 'Phi'
+    },
     settings: {
+        tabs: {
+            general: 'Genel',
+            appearance: 'Görünüm',
+            models: 'Modeller',
+            accounts: 'Bağlı Hesaplar',
+            personas: 'Personalar',
+            speech: 'Konuşma',
+            statistics: 'İstatistikler',
+            advanced: 'Gelişmiş',
+            developer: 'Geliştirici',
+            about: 'Hakkında'
+        },
         searchPlaceholder: 'Ayarlarda ara...',
         searchResults: '{count} ayar bulundu',
         noResults: 'Ayar bulunamadı',
@@ -127,7 +196,92 @@ export const tr = {
         gallery: 'Galeri',
         about: 'Hakkında',
         personas: 'Kişilikler',
-        factoryResetConfirm: 'Tüm verileri silmek istediğinize emin misiniz?'
+        factoryResetConfirm: 'Tüm verileri silmek istediğinize emin misiniz?',
+        language: 'Dil',
+        theme: 'Tema',
+        mcpServers: 'MCP Sunucuları',
+        factoryReset: 'Fabrika Ayarlarına Sıfırla',
+        usageLimits: {
+            title: 'Model Kullanım Limitleri',
+            enable: 'Etkinleştir',
+            maxPercentQuota: 'Kalan Kota Maksimum Yüzde (%)',
+            maxPercentPlaceholder: '50',
+            maxRequests: 'Azami İstek',
+            maxPercentage: 'Azami Yüzde (%)',
+            maxRequestsPlaceholder: '5',
+            maxPercentagePlaceholder: '50',
+            typeLabel: 'Tür:',
+            limitLabel: '{{period}} Limiti',
+            percentHint: '{{remaining}} kalanın {{percentage}}%’i olarak {{count}} istekle sınırlandırır',
+            types: {
+                requests: 'İstekler',
+                percentage: 'Yüzde'
+            },
+            periods: {
+                hourly: 'Saatlik',
+                daily: 'Günlük',
+                weekly: 'Haftalık'
+            },
+            copilot: {
+                title: 'Copilot',
+                current: 'Mevcut: {{remaining}} / {{limit}} kaldı'
+            },
+            antigravity: {
+                title: 'Antigravity Modelleri',
+                description: 'Her modelin kalan kotasına göre yüzde limit belirleyin'
+            },
+            codex: {
+                title: 'Codex',
+                description: 'Günlük/haftalık kalan kotaya göre yüzde limitleri belirleyin'
+            }
+        },
+        browserClosure: {
+            title: 'Tarayıcıyı Kapatmak Gerekli',
+            description: '{{provider}} ile kimlik doğrulamak için Tandem korumalı çerezleri okumalı.',
+            warningPrefix: 'Dosya kilidini kaldırmak için',
+            warningEmphasis: 'tarayıcınızı otomatik olarak kapatmamız',
+            warningSuffix: 'gerekiyor.',
+            saveWork: 'Lütfen devam etmeden önce tarayıcıdaki çalışmanızı kaydedin. Oturum anahtarını almak için tarayıcıyı görünmez şekilde yeniden açacağız.',
+            confirm: 'Tarayıcıyı Kapat ve Bağlan'
+        },
+        hyperparameters: {
+            title: 'Hiperparametreler',
+            temperature: {
+                label: 'Sıcaklık',
+                description: 'Yaratıcılık seviyesi (0: deterministik, 2: çok yaratıcı)'
+            },
+            topP: {
+                label: 'Top-P',
+                description: 'Nucleus sampling olasılık eşiği'
+            },
+            topK: {
+                label: 'Top-K',
+                description: 'Dikkate alınacak en olası token sayısı'
+            },
+            repeatPenalty: {
+                label: 'Tekrar Cezası',
+                description: 'Tekrar cezası (1: yok, 2: yüksek)'
+            }
+        },
+        mcp: {
+            title: 'Model Bağlam Protokolü',
+            subtitle: 'MCP sunucularını yönetin ve yeni araçlar yükleyin',
+            tabs: {
+                servers: 'Sunucular',
+                marketplace: 'Pazar'
+            },
+            servers: {
+                title: 'Yapılandırılmış Sunucular',
+                subtitle: 'Model Bağlam Protokolü sunucu bağlantılarını yönetin',
+                connect: 'Sunucu Bağla',
+                empty: 'Bağlı sunucu yok'
+            },
+            status: {
+                connected: 'Bağlı',
+                disconnected: 'Bağlı değil',
+                error: 'Hata'
+            }
+        }
     },
     projects: {
         newProject: 'Yeni Proje',
@@ -170,6 +324,8 @@ export const tr = {
         noProjects: 'Henüz proje bulunmuyor.',
         startNewProject: 'Yeni bir proje oluşturarak başlayın.',
         aiLogoGenerator: 'AI Logo Oluşturucu',
+        logoGeneratingSubtitle: 'Vizyonunuzu hayata geçiriyoruz...',
+        generatedAlt: 'Oluşturulan logo önizlemesi',
         prompt: 'LOGO KONSEPTİ',
         analyzeContext: 'Fikir Öner',
         logoPromptPlaceholder: 'İstediğiniz maskot veya ikonu tarif edin...',
@@ -180,9 +336,54 @@ export const tr = {
         preview: 'ÖNİZLEME',
         generate: 'LOGO OLUŞTUR',
         changeLogo: 'Logoyu Değiştir',
+        improvePrompt: 'İstemi İyileştir',
+        uploadOriginal: 'Orijinali Yükle',
         noDescription: 'Açıklama belirtilmedi',
         todoPlaceholder: 'Yapılması gereken nedir? (Enter\'a basın)',
-        willActOn: 'Hedef:'
+        willActOn: 'Hedef:',
+        statusActive: 'Aktif',
+        statusArchived: 'Arşivli',
+        statusDraft: 'Taslak',
+        councilEnabledLabel: 'Etkin',
+        councilThresholdHint: 'Daha yüksek eşikler, bir adımın kesin sayılması için daha fazla ajanın onayını gerektirir.',
+        generalAI: 'Genel AI',
+        projectSettings: 'Proje Ayarları',
+        projectTitle: 'Proje',
+        basicInfo: 'Temel Bilgiler',
+        basicInfoDesc: 'Ad, açıklama ve kategori düzenleyin.',
+        general: 'Genel',
+        workspace: 'Çalışma Alanı',
+        mounts: 'Bağlantılar',
+        mountsDesc: 'Proje için bağlanan klasörleri yönetin.',
+        addMount: 'Bağlantı Ekle',
+        noMounts: 'Bağlantı yok',
+        selectedAgents: 'Seçilen Ajanlar',
+        status: 'Durum',
+        autoStart: 'Hizmetleri otomatik başlat',
+        autoSave: 'Otomatik kaydet',
+        autoSaveDesc: 'Proje değişikliklerini otomatik kaydet.',
+        fileWatching: 'Dosya İzleme',
+        fileWatchingDesc: 'Dosya değişikliklerini izle.',
+        envFile: 'Ortam Dosyası',
+        indexing: 'İndeksleme',
+        indexingDesc: 'Projeyi arama için indeksle.',
+        build: 'Derleme',
+        buildDesc: 'Derleme komutları ve çıktı ayarları.',
+        buildAndTest: 'Derle ve Test Et',
+        buildCommand: 'Derleme Komutu',
+        startCommand: 'Başlatma Komutu',
+        testCommand: 'Test Komutu',
+        lintCommand: 'Lint Komutu',
+        outputDir: 'Çıktı Dizini',
+        devServer: 'Geliştirme Sunucusu',
+        devServerDesc: 'Proje için geliştirme sunucusu çalıştır.',
+        port: 'Port',
+        advanced: 'Gelişmiş',
+        advancedDesc: 'Gelişmiş proje ayarlarını düzenleyin.',
+        dangerZone: 'Tehlikeli Bölge',
+        consensusThreshold: 'Uzlaşma Eşiği',
+        councilAI: 'Konsey AI',
+        councilAIDesc: 'Konseye katılacak ajanları seçin.'
     },
     projectWizard: {
         title: 'Proje Sihirbazı',
@@ -296,10 +497,14 @@ export const tr = {
         upToDate: 'Güncel',
         noRemote: 'Uzak sunucu yok',
         pull: 'Çek',
+        fetch: 'fetch',
         push: 'İt',
         commit: 'Commit',
         remotes: 'Uzaklar',
         noDiffData: 'Bu commit için diff verisi yok.',
+        commitChangesTitle: 'Commit Değişiklikleri {{hash}}',
+        unifiedDiff: 'Birleştirilmiş Diff',
+        analyzingCommit: 'Commit değişiklikleri analiz ediliyor...',
         changesStats: 'Değişiklik İstatistikleri',
         filesChanged: 'Değişen Dosyalar',
         linesAdded: 'Eklenen Satırlar',
@@ -314,10 +519,13 @@ export const tr = {
             pushing: 'İtiliyor...'
         },
         noIssues: 'Projede önemli bir sorun bulunamadı. Tebrikler!',
+        noIssuesDesc: 'Proje analizinde kritik sorun bulunmadı.',
         issuesDescription: 'Tandem, projenizi potansiyel hatalar, uyarılar ve kod kokuları için tarar.',
         issueType: 'TÜR',
         issueMessage: 'MESAJ',
         issueLocation: 'KONUM',
+        settings: 'Ayarlar',
+        updateFailed: 'Ayarlar güncellenemedi',
         // Environment Tab
         envDescription: 'Proje ortam değişkenlerini yönetin.',
         envKey: 'ANAHTAR',
@@ -333,7 +541,58 @@ export const tr = {
         logsDescription: 'Gerçek zamanlı uygulama logları.',
         logsEmpty: 'Log bulunamadı. Log çıktısı oluşturmak için projenizi çalıştırın.',
         logsClear: 'Logları Temizle',
-        logsFilter: 'Logları filtrele...'
+        logsFilter: 'Logları filtrele...',
+        editor: {
+            loading: 'Editör yükleniyor...',
+            error: 'Editör hatası: {{error}}',
+            failed: 'Editör yüklenemedi'
+        },
+        filesTab: {
+            noFileSelected: 'Dosya Seçilmedi',
+            noFileDesc: 'İçeriğini görüntülemek ve düzenlemek için gezginden bir dosya seçin.',
+            shortcuts: 'Kısayollar',
+            quickSearch: 'Hızlı Arama',
+            navigation: 'Gezinme',
+            toggleExplorer: 'Gezgini Aç/Kapat'
+        },
+        folderInspector: {
+            files: 'Dosyalar',
+            size: 'Boyut',
+            scripts: 'Betikler',
+            moreScripts: '+ {{count}} ek betik',
+            dependencies: 'Bağımlılıklar',
+            packageTitle: 'NPM Paketi',
+            packageName: 'Ad:',
+            packageVersion: 'Sürüm:',
+            readme: 'Readme',
+            root: 'Kök'
+        },
+        contributions: {
+            lastYear: 'Son bir yılda {{count}} katkı',
+            legendLess: 'Az',
+            legendMore: 'Çok',
+            tooltip: '{{date}} tarihinde {{count}} katkı',
+            months: {
+                jan: 'Oca',
+                feb: 'Şub',
+                mar: 'Mar',
+                apr: 'Nis',
+                may: 'May',
+                jun: 'Haz',
+                jul: 'Tem',
+                aug: 'Ağu',
+                sep: 'Eyl',
+                oct: 'Eki',
+                nov: 'Kas',
+                dec: 'Ara'
+            },
+            days: {
+                mon: 'Pts',
+                wed: 'Çar',
+                fri: 'Cum',
+                sun: 'Paz'
+            }
+        }
     },
     git: {
         commitGenerator: 'Git Commit Oluşturucu',
@@ -374,6 +633,13 @@ export const tr = {
         port: 'Port',
         username: 'Kullanıcı Adı',
         password: 'Şifre',
+        logFiles: 'Günlük Dosyaları',
+        selectLogFile: 'Bir günlük dosyası seçin',
+        reading: 'Okunuyor...',
+        lastLines: 'Son {{count}} satır',
+        logReadFailed: 'Günlük dosyası okunamadı',
+        loading: 'Yükleniyor...',
+        privateKey: 'Özel Anahtar',
         saveProfile: 'Bağlantı Profilini Kaydet',
         confirmDelete: 'Bu profili silmek istediğinize emin misiniz?',
         deleteProfile: 'Profili Sil',
@@ -485,6 +751,7 @@ export const tr = {
         activeAccounts: 'Aktif Hesaplar',
         addNewAccount: 'Yeni Hesap Ekle',
         accountNamePlaceholder: 'Hesap Adı (Örn. İş, Kişisel)',
+        unnamed: 'Adsız Hesap',
         create: 'Oluştur',
         switch: 'Değiştir',
         loadFailed: 'Hesaplar yüklenemedi',
@@ -525,6 +792,10 @@ export const tr = {
             ollama: {
                 name: 'Ollama',
                 description: 'AI modellerini yerel olarak çalıştırın'
+            },
+            nvidia: {
+                name: 'NVIDIA',
+                description: 'Yerel GPU hızlandırma ve model çalışma zamanı'
             }
         },
 
@@ -607,6 +878,8 @@ export const tr = {
     sidebar: {
         chats: 'Sohbetler',
         projects: 'Projeler',
+        expand: 'Kenar çubuğunu genişlet',
+        collapse: 'Kenar çubuğunu daralt',
         mcp: 'MCP Sunucuları',
         mcpServices: 'MCP Servisleri',
         mcpDescription: 'Model Context Protocol',
@@ -673,15 +946,18 @@ export const tr = {
         searchPlaceholder: 'Servis veya araç keşfet...',
         searchTools: 'Araçları ara...',
         storeTitle: 'MCP Araç Mağazası',
+        storeSubtitle: 'MCP sunucularınız için araçlara göz atın ve yükleyin.',
         toolsInstalled: '{{count}} araç yüklü • Model Bağlam Protokolü sunucularına göz atın',
         noTools: 'Araç bulunamadı',
         noServers: 'Bağlı sunucu yok',
         features: 'ÖZELLİKLER',
         rating: 'puan',
         downloads: 'indirme',
+        version: 'sürüm',
         configure: 'Yapılandır',
         uninstall: 'Kaldır',
         install: 'Aracı Yükle',
+        installTool: 'Yükle',
         close: 'Kapat',
         remove: 'Kaldır',
         official: 'Resmi',
@@ -707,6 +983,7 @@ export const tr = {
         logs: 'Günlükler',
         terminal: 'Terminal',
         files: 'Dosyalar',
+        toggleAgentPanel: 'Ajan panelini aç/kapat',
         addMount: 'Dizin Ekle',
         addConnection: 'Bağlantı Ekle',
         noMounts: 'Bağlı klasör yok',
@@ -739,12 +1016,19 @@ export const tr = {
         run: 'Projeyi Çalıştır',
         toggleSidebar: 'Kenar Çubuğunu Aç/Kapat',
         aiAssistant: 'AI Asistan',
+        aiLabel: 'YZ',
         online: 'Çevrimiçi',
         dev: 'GELİŞTİRME'
     },
     chat: {
         placeholder: 'Bir mesaj yazın...',
         streaming: 'Yazıyor...',
+        clear: 'Temizle',
+        error: 'Hata',
+        modelComparison: 'Model Karşılaştırması',
+        readMore: 'Devamını oku',
+        searchMessages: 'Mesajları ara...',
+        sources: 'Kaynaklar',
         thought: 'Derin Düşünce',
         plan: 'Stratejik Plan',
         raw: 'Ham',
@@ -752,6 +1036,38 @@ export const tr = {
         expand: 'Genişlet',
         collapse: 'Daralt',
         moreLines: 'satır daha',
+        scrollToBottom: 'En alta kaydır',
+        scrollToBottomWithCount: 'En alta kaydır ({{count}} yeni mesaj)',
+        codeBlock: {
+            plaintext: 'düz metin',
+            running: 'Çalışıyor...',
+            execute: 'Çalıştır',
+            addToProject: 'Projeye Ekle',
+            openInEditor: 'Düzenleyicide Aç',
+            output: 'Çıktı',
+            executed: '{{language}} bloğu başarıyla çalıştırıldı.'
+        },
+        collaboration: {
+            title: 'Çoklu Model İşbirliği',
+            selectedModels: 'Seçilen Modeller',
+            addModel: 'Model Ekle',
+            strategy: 'İşbirliği Stratejisi',
+            strategyConsensus: 'Uzlaşma (Ortak Temalar)',
+            strategyVote: 'Oylama (Çoğunluk)',
+            strategyBestOfN: 'N İçinden En İyisi (Kalite Puanı)',
+            strategyChain: 'Düşünce Zinciri (Sıralı İyileştirme)',
+            running: 'İşbirliği Çalışıyor...',
+            run: 'İşbirliğini Çalıştır',
+            results: 'Sonuçlar',
+            individualResponses: 'Bireysel Yanıtlar',
+            finalResult: 'Nihai Sonuç',
+            consensus: 'Uzlaşma',
+            bestResponse: 'En İyi Yanıt',
+            from: 'Kaynak: {{provider}}/{{model}}',
+            selectModelError: 'Lütfen en az bir model seçin',
+            runFailed: 'İşbirliği çalıştırılamadı',
+            remove: 'Kaldır'
+        }
     },
     welcome: {
         title: 'Tandem',
@@ -766,7 +1082,17 @@ export const tr = {
         attachFile: 'Dosya ekle',
         enhancePrompt: 'Promptu AI ile geliştir',
         startListening: 'Sesli girişi başlat',
-        stopListening: 'Sesli girişi durdur'
+        stopListening: 'Sesli girişi durdur',
+        prompts: 'Promptlar',
+        promptSuggestions: 'Prompt önerileri',
+        usePrompt: 'Prompt kullan: {{title}}',
+        removeAttachment: '{{name}} kaldır',
+        systemModes: {
+            fast: 'Hızlı',
+            agent: 'Ajan',
+            thinking: 'Düşünme',
+            modeTitle: '{{mode}} Modu'
+        }
     },
     workspaceModals: {
         mountTitle: 'Mevcut Klasör veya Sunucu Ekle',
@@ -844,7 +1170,20 @@ export const tr = {
         regenerate: 'Yeniden Oluştur',
         rating: 'Yanıtı değerlendir',
         actions: 'Mesaj işlemleri',
-        multiModelResponse: 'Birden fazla modelden yanıtlar'
+        multiModelResponse: 'Birden fazla modelden yanıtlar',
+        renderingDiagram: 'Diyagram işleniyor...',
+        imageAlt: 'Görsel',
+        unknownModel: 'Bilinmeyen Model',
+        responseShort: 'Yan {{index}}',
+        attachedImage: 'Ekli {{index}}',
+        tokenEstimate: '~{{count}} token',
+        modelFamilies: {
+            llama: 'Llama Ailesi',
+            mistral: 'Mistral Ailesi',
+            deepseek: 'DeepSeek Ailesi',
+            qwen: 'Qwen Ailesi',
+            phi: 'Phi Ailesi'
+        }
     },
     general: {
         turkish: 'Türkçe',
@@ -861,9 +1200,15 @@ export const tr = {
         autoUpdate: 'Otomatik Güncelleme',
         checkOnStartup: 'Başlangıçta Kontrol Et',
         checkForUpdates: 'Güncelleme Kontrol Et',
+        updates: 'Güncellemeler',
         privacy: 'Gizlilik',
         crashReporting: 'Çökme Raporlaması',
-        crashReportingDesc: 'Tandem\'i geliştirmemize yardımcı olmak için anonim çökme raporları gönderin.'
+        crashReportingDesc: 'Tandem\'i geliştirmemize yardımcı olmak için anonim çökme raporları gönderin.',
+        startup: 'Başlangıç',
+        startOnStartup: 'Sistem başlangıcında çalıştır',
+        startOnStartupDesc: 'Bilgisayar açıldığında Tandem otomatik başlatılsın.',
+        workAtBackground: 'Arka planda çalıştır',
+        workAtBackgroundDesc: 'Pencere kapatılsa bile Tandem arka planda çalışsın.'
     },
     appearance: {
         themeDesc: 'Uygulamanın renk temasını değiştirin.',
@@ -919,6 +1264,7 @@ export const tr = {
         weekly: 'Haftalık',
         monthly: 'Aylık',
         yearly: 'Yıllık',
+        noDataForPeriod: 'Seçilen dönem için veri yok.',
         chats: 'SOHBETLER',
         messages: 'MESAJLAR',
         totalTokens: 'TOPLAM TOKEN',
@@ -958,7 +1304,18 @@ export const tr = {
         sevenDayStatus: '7g Durumu',
         codexAccount: 'Codex Hesabı',
         dailyStatus: 'Günlük Durum',
-        weeklyStatus: 'Haftalık Durum'
+        weeklyStatus: 'Haftalık Durum',
+        totalMessages: 'Toplam mesaj',
+        activeThreads: 'Aktif konuşmalar',
+        tokensIn: 'Gelen',
+        tokensOut: 'Giden',
+        activity: 'Etkinlik',
+        sessions: 'oturum',
+        input: 'Girdi',
+        output: 'Çıktı',
+        claudeTitle: 'Anthropic Claude',
+        codexTitle: 'ChatGPT Codex',
+        copilotTitle: 'GitHub Copilot'
     },
     about: {
         description: 'Tandem, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.',
@@ -968,7 +1325,13 @@ export const tr = {
         copyright: '© 2025 Tandem',
         factoryReset: 'Fabrika Ayarlarına Dön',
         factoryResetDesc: 'Tüm ayarları ve verileri silerek uygulamayı sıfırlar.',
-        updateCheckAlert: 'Güncelleme kontrolü prodüksiyon sürümünde aktiftir.'
+        updateCheckAlert: 'Güncelleme kontrolü prodüksiyon sürümünde aktiftir.',
+        locale: 'Yerel Ayar',
+        buildSync: 'Derleme Senk.',
+        forceReload: 'ZORLA YENİLE',
+        sessionStart: 'Oturum Başlangıcı',
+        buildVersion: 'Derleme Sür.',
+        notAvailable: 'Yok'
     },
     developer: {
         title: 'Geliştirici Ayarları',
@@ -994,6 +1357,8 @@ export const tr = {
         refresh: 'Yenile',
         noImages: 'Görsel Bulunamadı',
         emptyState: 'Yapay zeka tarafından üretilen görseller burada görünecektir',
+        prompt: 'İstem',
+        viewPrompt: 'İstemi Gör',
         deleteConfirm: 'Bu görseli silmek istediğinize emin misiniz?',
         openLocation: 'Dosya Konumunu Aç',
         open: 'Aç',
@@ -1024,7 +1389,11 @@ export const tr = {
         tip2: 'Tandem, geliştirme için uzak SSH sunucularına bağlanmayı destekler.',
         tip3: 'Dosyaları doğrudan sohbet penceresine sürükleyip bırakabilirsiniz.',
         tip4: 'Kodunuz hakkında çoklu ajan perspektifi almak için "Konsey" sekmesini kullanın.',
-        tip5: 'Deneyiminizi Ayarlar > Görünüm menüsünden özelleştirebilirsiniz.'
+        tip5: 'Deneyiminizi Ayarlar > Görünüm menüsünden özelleştirebilirsiniz.',
+        didYouKnow: 'Biliyor muydunuz?',
+        discoverMore: 'Daha fazlasını keşfet',
+        dontShowAgain: 'Bir daha gösterme',
+        gotIt: 'Anladım'
     },
     agents: {
         planner: 'Planlayıcı',
@@ -1171,11 +1540,56 @@ export const tr = {
         system: 'Sistem',
         navigate: 'Gezin',
         select: 'Seç',
-        close: 'Kapat'
+        close: 'Kapat',
+        engineLabel: 'Tandem Komut Motoru',
+        previewEmpty: 'Detayları görmek için bir öğe seçin',
+        noResultsHint: 'Sohbetler, modeller veya ayarlar içinde aramayı deneyin'
     },
     quickAction: {
         explain: 'Açıkla',
         translate: 'Çevir'
+    },
+    activityBar: {
+        chat: 'Sohbet',
+        explorer: 'Gezgin',
+        search: 'Ara',
+        sourceControl: 'Kaynak Kontrol',
+        debug: 'Hata Ayıklama',
+        extensions: 'Uzantılar',
+        settings: 'Ayarlar'
+    },
+    statusBar: {
+        error: 'Hata',
+        errors: 'Hatalar',
+        warning: 'Uyarı',
+        warnings: 'Uyarılar'
+    },
+    updateNotification: {
+        checkingTitle: 'Güncellemeler kontrol ediliyor...',
+        availableTitle: 'Güncelleme Mevcut: v{{version}}',
+        availableContent: 'Tandem’in yeni bir sürümü mevcut.',
+        downloadingTitle: 'Güncelleme indiriliyor...',
+        downloadedTitle: 'Güncelleme Hazır',
+        downloadedContent: 'En son güncellemeyi uygulamak için Tandem’i yeniden başlatın.',
+        errorTitle: 'Güncelleme Başarısız',
+        uptodateTitle: 'Güncelsiniz',
+        downloadAction: 'İndir',
+        restartAction: 'Şimdi Yeniden Başlat'
+    },
+    panelLayout: {
+        expand: 'Genişlet',
+        collapse: 'Daralt',
+        maximize: 'Büyüt'
+    },
+    diffViewer: {
+        loading: 'Farklar yükleniyor...'
+    },
+    fab: {
+        openMenu: 'Menüyü aç',
+        closeMenu: 'Menüyü kapat'
+    },
+    modal: {
+        close: 'Modali kapat'
     },
     titleBar: {
         minimize: 'Küçült',
@@ -1186,6 +1600,7 @@ export const tr = {
         authError: 'Kimlik Doğrulama Hatası',
         goToAccounts: 'Hesaplara Git',
         connectionFailed: 'Antigravity sunucusuyla bağlantı kurulamadı. Lütfen oturum açın veya API anahtarınızı kontrol edin.',
+        logout: 'Çıkış yap',
         // Manual Session Modal
         sessionKeyRequired: 'Claude Oturum Anahtarı Gerekli',
         completeConnection: '{{email}} için Bağlantıyı Tamamla',
@@ -1231,7 +1646,6 @@ export const tr = {
         episodesDescription: 'Uzun konuşmalardan sonra sohbet özetleri oluşturulur.',
         noEntitiesDetected: 'Varlık algılanmadı',
         entitiesDescription: 'Kişiler, yerler ve araçlar hakkında yapılandırılmış bilgi burada görünecektir.',
-        confidence: 'Güven',
         ago: 'önce',
         via: 'kaynak',
         chatId: 'Sohbet ID',
@@ -1243,7 +1657,79 @@ export const tr = {
         memoryNotePlaceholder: 'Not ekleyin...',
         memorySourcePlaceholder: 'Kaynak (opsiyonel)...',
         memoryKeyPlaceholder: 'Hafıza anahtarı...',
-        memoryValuePlaceholder: 'Hafıza değeri...'
+        memoryValuePlaceholder: 'Hafıza değeri...',
+        addTitle: 'Bellek Ekle',
+        editTitle: 'Belleği Düzenle',
+        contentLabel: 'Bellek İçeriği',
+        contentPlaceholder: 'Bellek içeriğini buraya yazın...',
+        categoryLabel: 'Kategori',
+        tagsLabel: 'Etiketler',
+        tagsPlaceholder: 'Etiket ekleyin...',
+        tagsPlaceholderFull: 'Etiket ekleyin (virgülle ayrılmış)...',
+        addAction: 'Bellek Ekle',
+        saveChanges: 'Değişiklikleri Kaydet',
+        importanceLabel: 'Önem',
+        importance: 'Önem',
+        runDecay: 'Azaltmayı Çalıştır',
+        allCategories: 'Tüm Kategoriler',
+        confirmAll: 'Tümünü Onayla',
+        rejectAll: 'Tümünü Reddet',
+        noPendingTitle: 'Bekleyen Bellek Yok',
+        noPendingDesc: 'Yeni bellekler inceleme için burada görünecek.',
+        noConfirmedTitle: 'Onaylı Bellek Yok',
+        noConfirmedDesc: 'Onaylanan bellekler burada görünecek.',
+        noArchivedTitle: 'Arşivlenmiş Bellek Yok',
+        noArchivedDesc: 'Arşivlenen bellekler burada görünecek.',
+        needsReview: 'İnceleme gerekli',
+        confirm: 'Onayla',
+        reject: 'Reddet',
+        confidence: 'Güven',
+        relevance: 'İlgi',
+        novelty: 'Yenilik',
+        potentialContradiction: 'Olası çelişki',
+        potentialContradictions: 'Olası çelişkiler',
+        similarMemory: 'Benzer bellek',
+        similarMemories: 'Benzer bellekler',
+        contradictionLabel: 'Çelişki',
+        similarLabel: 'Benzer',
+        timeAgo: '{{time}} önce',
+        storedAgo: '{{time}} önce kaydedildi',
+        selectedCount: '{{count}} seçildi',
+        archive: 'Arşivle',
+        archived: 'Arşivlendi',
+        userVerified: 'Kullanıcı doğruladı',
+        accessed: 'Erişildi',
+        restore: 'Geri Yükle',
+        tabs: {
+            pending: 'Bekleyen',
+            confirmed: 'Onaylı',
+            archived: 'Arşiv',
+            stats: 'İstatistikler'
+        },
+        categories: {
+            preference: 'Tercih',
+            personal: 'Kişisel',
+            project: 'Proje',
+            technical: 'Teknik',
+            workflow: 'İş Akışı',
+            relationship: 'İlişki',
+            fact: 'Gerçek',
+            instruction: 'Talimat'
+        },
+        stats: {
+            memoriesByCategory: 'Kategoriye Göre Bellekler',
+            memoriesBySource: 'Kaynağa Göre Bellekler',
+            healthMetrics: 'Bellek Sağlık Ölçümleri',
+            avgConfidence: 'Ortalama Güven',
+            avgImportance: 'Ortalama Önem',
+            recentlyAccessed: 'Son Erişilenler',
+            recentlyCreated: 'Son Oluşturulanlar',
+            last24h: 'Son 24s',
+            categoryDistribution: 'Kategori Dağılımı',
+            memoriesCount: 'Bellek Sayısı',
+            globalContext: 'Genel Bağlam',
+            totalActiveFragments: 'Toplam Aktif Parça'
+        }
     },
     terminal: {
         noShellsFound: 'Kabuk bulunamadı',
@@ -1251,7 +1737,8 @@ export const tr = {
         startNewSession: 'Yeni Oturum Başlat',
         sessionFailed: 'Terminal oturumu başlatılamadı',
         closeAndCreate: 'Bu sekmeyi kapatın ve yeni bir terminal oturumu oluşturun',
-        exitedWithCode: 'Terminal çıkış kodu: {{code}}'
+        exitedWithCode: 'Terminal çıkış kodu: {{code}}',
+        dashboardPlaceholder: '[ Terminal Panosu Yer Tutucu ]'
     },
     logging: {
         title: 'Günlük Panosu',
@@ -1299,14 +1786,64 @@ export const tr = {
         text: 'Metin',
         markdown: 'Markdown'
     },
+    markdown: {
+        loadingDiagram: 'Diyagram yükleniyor...'
+    },
     modelExplorer: {
         title: 'Model Gezgini',
         search: 'Model ara...',
+        searchPlaceholder: 'Model ara...',
+        searching: 'Aranıyor...',
+        subtitle: 'Açık kaynak modelleri keşfedin ve yükleyin',
+        noModels: 'Model bulunamadı',
+        scanningFiles: 'Dosyalar taranıyor...',
+        allSources: 'Tüm Kaynaklar',
+        provider: 'Sağlayıcı',
+        sourceOllama: 'Ollama',
+        sourceHuggingFace: 'Hugging Face',
+        sort: 'Sırala',
+        popularity: 'Popülerlik',
+        newest: 'En Yeni',
+        bestChoice: 'En İyi Seçim',
+        page: 'Sayfa {{page}}',
+        name: 'Ad',
+        updated: 'Güncellendi',
+        updatedLibraryLatest: 'Ollama Kütüphanesi (En Son)',
+        likes: 'Beğeni',
+        architecture: 'Mimari',
+        architectureLlama3: 'Llama 3',
+        architectureTransformer: 'Transformer',
+        architectureGguf: 'GGUF',
+        context: 'Bağlam',
+        context128k: '128k',
+        context8k: '8k',
+        contextVariable: 'Değişken',
+        minVram: 'Min VRAM',
+        systemRam: 'Sistem RAM',
+        hardwareReq: 'Donanım Gereksinimleri',
+        ollamaLibrary: 'Ollama Kütüphanesi',
+        availableVersions: 'Kullanılabilir Sürümler',
+        pullVersion: 'Sürümü Çek',
+        pulling: 'Çekiliyor...',
+        pulled: 'Çekildi',
+        localPull: 'Çek',
+        downloadPackage: 'Paketi İndir',
+        downloading: 'İndiriliyor...',
+        ggufCompatible: 'GGUF Uyumlu',
+        noCompatible: 'Uyumlu dosya bulunamadı',
+        defaultDescription: 'Açık kaynak model',
         install: 'Yükle',
         installed: 'Yüklü'
     },
     docker: {
         title: 'Docker Yönetimi',
+        containers: 'Konteynerler',
+        loading: 'Konteynerler yükleniyor...',
+        failedLoad: 'Konteynerler yüklenemedi',
+        noContainers: 'Konteyner bulunamadı',
+        selectContainer: 'Detayları görmek için bir konteyner seçin',
+        notRunning: 'Docker çalışmıyor',
+        noLogs: 'Günlük yok',
         stop: 'Durdur',
         start: 'Başlat',
         remove: 'Kaldır',
@@ -1315,13 +1852,38 @@ export const tr = {
         stats: 'İstatistikler'
     },
     onboarding: {
+        // OnboardingFlow steps (4-step wizard) - flat keys for i18n compatibility
+        welcomeTitle: 'Tandem\'e Hoş Geldiniz',
+        welcomeDescription: 'Yapay zeka destekli kodlama arkadaşınız. Tandem, parmaklarınızın ucundaki birden fazla AI sağlayıcısıyla kod yazmanıza, hata ayıklamanıza ve anlamanıza yardımcı olur.',
+        multiModelTitle: 'Çoklu Model Desteği',
+        multiModelDescription: 'OpenAI, Anthropic, Google, Ollama ve daha fazlasına bağlanın. Modeller arasında anında geçiş yapın veya Tandem\'in göreviniz için en iyisini seçmesine izin verin.',
+        workspaceTitle: 'Çalışma Alanınız',
+        workspaceDescription: 'Projeleri düzenleyin, konuşmaları yönetin ve kodlama geçmişinize erişin. Her şey bilgisayarınızda yerel ve güvenli kalır.',
+        privacyTitle: 'Önce Gizlilik',
+        privacyDescription: 'Kodunuz sizin kalır. Tandem isteğe bağlı bulut özellikleriyle yerel olarak çalışır. Bilgisayarınızdan hangi verilerin çıkacağını tam olarak kontrol edersiniz.',
+        // OnboardingTour steps (5-step feature tour)
+        step1Title: 'AI Asistanınızla Tanışın',
+        step1Desc: 'Tandem, daha hızlı kod yazmanıza yardımcı olmak için birden fazla AI modelini birleştirir. Doğal dille sorular sorun, kod üretin veya sorunları ayıklayın.',
+        step2Title: 'Komut Paleti',
+        step2Desc: 'Komut paletine erişmek için Cmd+K (Windows\'ta Ctrl+K) tuşlarına basın. Her yerden hızlıca gezinin, arayın ve eylemler gerçekleştirin.',
+        step3Title: 'Çalışma Alanları ve Projeler',
+        step3Desc: 'Çalışmalarınızı projelerle düzenleyin. Her proje, daha akıllı öneriler için kendi bağlamını, sohbet geçmişini ve AI belleğini korur.',
+        step4Title: 'Yerleşik Güvenlik',
+        step4Desc: 'API anahtarları yerel olarak şifrelenir. Tüm konuşmalar Ollama ile çevrimdışı kalabilir. Neyin paylaşılacağını ve neyin gizli kalacağını siz kontrol edersiniz.',
+        step5Title: 'Sohbete Başlayın',
+        step5Desc: 'Aşağıya ilk mesajınızı yazın. Kodla ilgili yardım isteyin, bir kavramı açıklayın veya yeni bir şey üretin. Tandem siz hazır olduğunuzda hazır.',
+        // Navigation buttons
+        skip: 'Atla',
+        next: 'İleri',
+        back: 'Geri',
+        finish: 'Bitir',
+        continue: 'Devam Et',
+        letsStart: 'Başlayalım',
+        // Legacy keys for compatibility
         welcome: 'Tandem\'e Hoş Geldiniz',
         step1: 'AI Sağlayıcılarını Bağlayın',
         step2: 'Çalışma Alanını Hazırlayın',
-        step3: 'Kodlamaya Başlayın',
-        skip: 'Atla',
-        next: 'İleri',
-        finish: 'Bitir'
+        step3: 'Kodlamaya Başlayın'
     },
     agentDashboard: {
         title: 'Ajan Konseyi',
@@ -1389,6 +1951,7 @@ export const tr = {
             marketTrends: 'Pazar Trendleri',
             competitors: 'Rakipler',
             selectPath: 'Proje Yolunu Seç',
+            pathPlaceholder: 'C:\\\\Projects\\\\my-project',
             creating: 'Proje oluşturuluyor...',
             detailedDescription: 'Detaylı Açıklama',
             roadmap: 'Proje Yol Haritası',
@@ -1495,6 +2058,23 @@ export const tr = {
 
         previewMarket: 'Pazar Araştırmasını Önizle',
 
+        marketPreview: {
+            title: 'Pazar Araştırması Önizlemesi',
+            subtitle: 'Seçtiğiniz kategoriler için hızlı pazar özeti',
+            loading: 'Pazar koşulları analiz ediliyor...',
+            keyTrends: 'Öne Çıkan Trendler',
+            marketSize: 'Pazar Büyüklüğü',
+            empty: 'Önizleme verisi yok',
+            continue: 'Tam Araştırmaya Devam Et'
+        },
+
+        delete: {
+            title: 'Fikri Sil',
+            bulkTitle: 'Birden Fazla Fikri Sil',
+            message: 'Bu fikri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            bulkMessage: '{{count}} fikri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'
+        },
+
         // History
         history: {
             title: 'Fikir Geçmişi',
@@ -1506,12 +2086,78 @@ export const tr = {
             pendingReview: 'İnceleme Bekleyen',
             viewDetails: 'Detayları Gör',
             noIdeasYet: 'Henüz fikir üretilmedi',
-            daysAgo: '{{count}} gün önce'
+            daysAgo: '{{count}} gün önce',
+            ideasCount: 'Üretilen Fikirler',
+            ideasSelected: '{{count}} fikir seçildi',
+            clearSelection: 'Seçimi temizle',
+            deleteSelected: 'Seçilenleri sil',
+            activeFilters: 'Etkin filtreler:',
+            clearFilters: 'Tümünü temizle',
+            ideasGenerated: '{{current}} / {{total}} fikir',
+            ideasGeneratedCount: '{{count}} fikir üretildi',
+            filter: {
+                searchLabel: 'Arama',
+                statusLabel: 'Durum',
+                categoryLabel: 'Kategori'
+            }
+        },
+
+        details: {
+            tabs: {
+                overview: 'Genel Bakış',
+                market: 'Pazar Analizi',
+                strategy: 'Strateji',
+                users: 'Kullanıcı Profilleri',
+                business: 'İş Modeli',
+                technology: 'Teknoloji',
+                roadmap: 'Yol Haritası'
+            },
+            statusLabel: 'Durum',
+            readyForPilot: 'Pilot İçin Hazır',
+            projectCreated: 'Proje Oluşturuldu',
+            projectNamePlaceholder: 'Proje Adı',
+            regenerateTitle: 'Bu fikri yeniden üret',
+            regenerate: 'Yeniden Üret',
+            regenerating: 'Yeniden üretiliyor...',
+            deleteTitle: 'Fikri Sil',
+            closeTitle: 'Kapat (Esc)',
+            rejectTitle: 'Bu fikri reddet?',
+            rejectBody: '"{{title}}" fikrini reddetmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            rejectReasonLabel: 'Neden (İsteğe bağlı)',
+            rejectReasonPlaceholder: 'Bu fikri neden reddediyorsunuz?',
+            rejectAction: 'Fikri Reddet',
+            rejecting: 'Reddediliyor...',
+            altLabel: 'Alternatif:',
+            targetPersonas: 'Hedef Personalar',
+            painPoints: 'Ağrı Noktaları',
+            userJourney: 'Kullanıcı Yolculuğu Haritası',
+            benefitLabel: 'Fayda: {{benefit}}',
+            swot: {
+                title: 'SWOT Analizi',
+                strengths: 'Güçlü Yönler',
+                weaknesses: 'Zayıf Yönler',
+                opportunities: 'Fırsatlar',
+                threats: 'Tehditler'
+            },
+            revenueModel: 'Gelir Modeli',
+            breakEvenStrategy: 'Başabaş Stratejisi',
+            costStructure: 'Maliyet Yapısı',
+            goToMarket: 'Pazara Giriş Planı',
+            first100Users: 'İlk 100 Kullanıcı Stratejisi',
+            researchAssistant: 'Araştırma Asistanı',
+            researchEmpty: 'Bu fikir için pazar araştırması, rekabet veya teknoloji yığını hakkında her şeyi sorabilirsiniz!',
+            researchPlaceholder: 'Rakipler, boşluklar veya mantık hakkında sor...',
+            researchError: 'Üzgünüm, şu anda araştırma laboratuvarına ulaşamadım.',
+            coreConcept: 'Temel Konsept',
+            visualIdentity: 'Görsel Kimlik',
+            editDescriptionPlaceholder: 'Açıklamayı düzenle...',
+            categoryAnalysis: 'Kategori Analizi',
+            analysisPending: 'Derinlemesine analiz bekleniyor...'
         },
 
         // Session setup
         modelSelectorHint: 'AI modelini değiştirmek için üst çubuktaki model seçiciyi kullanın.',
-        
+
         // Idea Details Modal placeholders - I18N-001-3
         detailsTitlePlaceholder: 'Fikir başlığı girin...',
         detailsDescriptionPlaceholder: 'Fikir açıklaması girin...'
@@ -1528,6 +2174,19 @@ export const tr = {
         output: 'ÇIKTI',
         filePreview: 'Dosya Önizleme',
         path: 'Yol:',
+        command: 'Komut',
+        error: 'Hata',
+        executing: 'Yürütülüyor',
+        executingCommand: 'Komut yürütülüyor...',
+        running: 'Çalışıyor',
+        forceStop: 'Zorla durdur',
+        noOutput: 'Çıktı yok',
+        noOutputReturned: 'Çıktı dönmedi',
+        stop: 'Durdur',
+        terminalHost: 'admin@macbook',
+        terminalShell: 'zsh',
+        stderrLabel: 'stderr:',
+        errorLabel: 'error:',
         // Task Node placeholders - I18N-001-2
         taskTitlePlaceholder: 'Görev Başlığı (Opsiyonel)',
         taskDescriptionPlaceholder: 'Ne yapmak istediğinizi açıklayın...'
@@ -1543,6 +2202,159 @@ export const tr = {
         // Dev Server placeholders - I18N-001-6
         startCommandPlaceholder: 'npm run dev',
         portPlaceholder: '3000'
+    },
+    agent: {
+        allStepsFinished: 'Tüm adımlar tamamlandı. Yeni talimatlar için hazır.',
+        readyForInstructions: 'Talimatlar için hazır',
+        waitingActivity: 'Aktivite bekleniyor...',
+        autonomousTitle: 'Otonom Ajan',
+        autonomousDesc: 'Ajan, hedefe ulaşmak için bağımsız olarak çalışacaktır.',
+        executionPlan: 'Uygulama Planı',
+        approveExecute: 'Onayla ve Uygula',
+        rejectPlan: 'Planı Reddet',
+        awaitingApproval: 'Onay Bekliyor',
+        noToolCalls: 'Henüz araç çağrısı yok.',
+        activeTools: 'Aktif Araçlar',
+        snapshot: 'Anlık Görüntü',
+        promptPlaceholder: 'Ajandan ne yapmasını istediğinizi açıklayın...',
+        start: 'Ajanı Başlat',
+        stop: 'Ajanı Durdur',
+        pause: 'Duraklat',
+        resume: 'Devam Et',
+        retry: 'Tekrar Dene',
+        tokens: 'Token',
+        tokensShort: '{{count}}k tkn',
+        cost: 'Maliyet',
+        live: 'CANLI',
+        calls: 'Çağrılar',
+        activitiesCount: 'Aktiviteler',
+        history: 'Geçmiş',
+        no_tasks_yet: 'Henüz görev yok',
+        selectModel: 'Model Seç',
+        unknownModel: 'Bilinmeyen Model',
+        continueWithModel: 'Seçili modelle devam et',
+        selectAlternativeModel: 'Alternatif Model Seç',
+        interruptionTitle: 'Kesinti',
+        interruptionReason: 'Sebep:',
+        interruptionHelp: 'Ajanın devam etmek için yardımınıza ihtiyacı var.',
+        failedLoadModels: 'Modeller yüklenemedi.',
+        justNow: 'Az önce',
+        minutesAgo: '{{count}}dk önce',
+        hoursAgo: '{{count}}sa önce',
+        daysAgo: '{{count}}g önce',
+        attachFiles: 'Dosya Ekle',
+        aiProvider: 'Yapay Zeka Sağlayıcısı'
+    },
+    projectAgent: {
+        changePreview: 'Değişiklik önizlemesi',
+        reasoningTitle: 'Akıl Yürütme',
+        consoleTitle: 'Konsol',
+        consoleTab: 'Konsol',
+        planTab: 'Plan',
+        eventCount: '{{count}} olay',
+        waitingLogs: 'Günlükler bekleniyor...',
+        toolSummary: {
+            editing: 'Dosyalar düzenleniyor',
+            command: 'Komut çalıştırılıyor',
+            running: 'Araç çalışıyor',
+            fileFallback: 'Dosya değişikliği'
+        },
+        newTask: 'Yeni Görev',
+        generatingPlan: 'Plan oluşturuluyor...',
+        executingTask: 'Görev yürütülüyor...',
+        waitingApproval: 'Onay bekleniyor',
+        newStep: 'Yeni adım',
+        addStep: 'Adım ekle',
+        noPlan: 'Henüz plan yok',
+        overallProgress: 'Genel ilerleme',
+        selectAgentProfile: 'Ajan profili seç',
+        agentSelected: 'Ajan seçildi',
+        defaultAgent: 'Varsayılan Ajan',
+        defaultAgentDesc: 'Genel amaçlı proje ajanı',
+        approveAndRun: 'Onayla ve Çalıştır',
+        planning: 'Planlama',
+        running: 'Çalışıyor',
+        stopLabel: 'Durdur',
+        planAction: 'Planla',
+        executeAction: 'Yürüt',
+        thinkingOn: 'Düşünme açık',
+        thinkingOff: 'Düşünme kapalı',
+        selectAction: 'Eylem seç',
+        noDescription: 'Açıklama yok',
+        selectProject: 'Proje seç'
+    },
+    audioChat: {
+        listening: 'Dinleniyor...',
+        listeningLabel: 'Dinleniyor',
+        listeningDesc: 'Sizi dinliyorum.',
+        speaking: 'Konuşuluyor...',
+        speakingDesc: 'Sizinle konuşuyorum.',
+        thinking: 'Düşünülüyor...',
+        thinkingDesc: 'İsteğiniz işleniyor.',
+        stopSpeaking: 'Konuşmayı Durdur',
+        pauseListening: 'Duraklat',
+        resumeListening: 'Devam Et'
+    },
+    canvas: {
+        selectArea: 'Alan Seç'
+    },
+    inspector: {
+        analyzing: 'Analiz ediliyor...',
+        selectFolder: 'İncelemek için bir klasör seçin'
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI'
+    },
+    exportChat: {
+        confirm: 'Dışa Aktar',
+        exporting: 'Dışa aktarılıyor...',
+        title: 'Sohbeti Dışa Aktar'
+    },
+    export: {
+        title: 'Sohbeti Dışa Aktar',
+        confirm: 'Dışa Aktar',
+        exporting: 'Dışa aktarılıyor...',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)'
+    },
+    extensionPrompt: {
+        title: 'Deneyiminizi Geliştirin',
+        subtitle: 'Tandem Tarayıcı Uzantısını Yükleyin',
+        infoTitle: 'Tarayıcı uzantısı nedir?',
+        infoBody: 'Tandem tarayıcı uzantısı, yapay zekanın web sayfalarıyla doğrudan etkileşim kurmasını sağlar. İçeriği okuyabilir, formları doldurabilir, düğmelere tıklayabilir ve komutlarınıza göre otomatik işlemler yapabilir.',
+        featuresTitle: 'Özellikler:',
+        features: {
+            aiChatTitle: 'Tarayıcıda Yapay Zeka Sohbeti:',
+            aiChatDesc: 'Herhangi bir web sayfasından doğrudan yapay zekayla sohbet edin',
+            pageInteractionTitle: 'Sayfa Etkileşimi:',
+            pageInteractionDesc: 'Yapay zeka sayfaları okuyabilir, tıklayabilir ve formları otomatik doldurabilir',
+            contentExtractionTitle: 'İçerik Çıkarma:',
+            contentExtractionDesc: 'Sayfa içeriğini tek tıkla çıkarın ve özetleyin',
+            secureConnectionTitle: 'Güvenli Bağlantı:',
+            secureConnectionDesc: 'Tüm iletişim bilgisayarınızda yerel olarak kalır'
+        },
+        installTitle: 'Hızlı Kurulum:',
+        steps: {
+            step1: "Chrome'u açın ve chrome://extensions/ adresine gidin",
+            step2: '"Geliştirici modu"nu etkinleştirin (sağ üstteki anahtar)',
+            step3: '"Paketlenmemiş yükle"ye tıklayın',
+            step4Prefix: 'Tandem dizinindeki',
+            step4Suffix: 'klasörünü seçin'
+        },
+        openFolder: 'Uzantı Klasörünü Aç',
+        viewInstructions: 'Talimatları Görüntüle',
+        dismiss: 'Bunu bir daha gösterme',
+        remindLater: 'Daha sonra hatırlat'
+    },
+    tasksPanel: {
+        createNew: 'Yeni Görev Oluştur'
+    },
+    tasks: {
+        createNew: 'Yeni Görev Oluştur'
     }
 };
 

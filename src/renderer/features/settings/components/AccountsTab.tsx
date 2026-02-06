@@ -1,7 +1,7 @@
 import { LinkedAccountInfo } from '@renderer/electron.d';
 import { DeviceCodeModal, DeviceCodeModalState } from '@renderer/features/settings/components/DeviceCodeModal';
 import { UseLinkedAccountsResult } from '@renderer/features/settings/hooks/useLinkedAccounts';
-import { ChevronDown, ExternalLink, Plus, RefreshCw } from 'lucide-react';
+import { ChevronDown, Cpu, ExternalLink, Plus, RefreshCw } from 'lucide-react';
 import React, { useState } from 'react';
 
 import antigravityLogo from '@/assets/antigravity.svg';
@@ -323,6 +323,60 @@ const OllamaSection = React.memo(({
 });
 OllamaSection.displayName = 'OllamaSection';
 
+const NvidiaSection = React.memo(({
+    settings,
+    setSettings,
+    handleSave,
+    t
+}: {
+    settings: AppSettings
+    setSettings: (s: AppSettings) => void
+    handleSave: (s?: AppSettings) => void
+    t: (k: string) => string
+}) => {
+    return (
+        <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t('accounts.categories.aiProviders')} (NVIDIA)
+            </h3>
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="p-4 flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
+                        <Cpu className="h-7 w-7 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-foreground">{t('accounts.providers.nvidia.name')}</div>
+                        <div className="text-xs text-muted-foreground">{t('accounts.providers.nvidia.description')}</div>
+                    </div>
+                    <span className={cn(
+                        "px-2.5 py-1 rounded-md text-xs font-bold",
+                        settings.nvidia?.apiKey
+                            ? "bg-success/10 text-success"
+                            : "bg-muted text-muted-foreground"
+                    )}>
+                        {settings.nvidia?.apiKey ? t('accounts.connected') : t('accounts.disconnected')}
+                    </span>
+                </div>
+
+                <div className="border-t border-border p-4 space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase text-muted-foreground">{t('accounts.enterApiKey')}</label>
+                        <input
+                            type="password"
+                            placeholder="nvapi-..."
+                            value={settings.nvidia?.apiKey ?? ''}
+                            onChange={e => setSettings({ ...settings, nvidia: { ...settings.nvidia, apiKey: e.target.value, model: settings.nvidia?.model ?? 'nvidia/llama3-chatqa-1.5-70b' } })}
+                            onBlur={() => handleSave()}
+                            className="w-full bg-muted/30 border border-border rounded-lg px-3 py-2 font-mono text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        />
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+});
+NvidiaSection.displayName = 'NvidiaSection';
+
 export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
     settings, linkedAccounts, authBusy, authMessage, isOllamaRunning,
     connectGitHubProfile, connectCopilot, connectBrowserProvider,
@@ -402,6 +456,15 @@ export const AccountsTab: React.FC<AccountsTabProps> = React.memo(({
                 onUnlink={linkedAccounts.unlinkAccount}
                 onSetActive={linkedAccounts.setActiveAccount}
                 onShowManualSession={handleShowManualSession}
+                t={t}
+            />
+
+
+
+            <NvidiaSection
+                settings={settings}
+                setSettings={setSettings}
+                handleSave={handleSave}
                 t={t}
             />
 

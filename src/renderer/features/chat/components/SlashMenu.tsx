@@ -70,7 +70,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             className="absolute bottom-full left-4 mb-2 w-64 bg-popover border border-border shadow-2xl rounded-xl overflow-hidden z-50 flex flex-col"
         >
-            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground bg-muted/20 border-b border-border/50">
+            <div className="px-3 py-2 text-xxs font-black uppercase tracking-[0.1em] text-muted-foreground bg-muted/20 border-b border-border/50">
                 {t('common.commands')}
             </div>
             <div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
@@ -93,7 +93,7 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold truncate leading-tight">{cmd.label}</div>
                             <div className={cn(
-                                "text-[11px] truncate mt-0.5",
+                                "text-xxs truncate mt-0.5",
                                 idx === selectedIndex ? "text-foreground/70" : "text-muted-foreground"
                             )}>{cmd.description}</div>
                         </div>

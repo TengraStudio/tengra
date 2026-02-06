@@ -85,6 +85,7 @@ export interface ElectronAPI {
     checkAuthStatus: () => Promise<AuthStatus>
     deleteProxyAuthFile: (name: string) => Promise<boolean>
     syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
+    downloadAuthFile: (name: string) => Promise<Record<string, unknown> | null>
     saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
 
     code: {
@@ -179,6 +180,8 @@ export interface ElectronAPI {
         deleteChat: (id: string) => Promise<{ success: boolean }>
         duplicateChat: (id: string) => Promise<Chat>
         archiveChat: (id: string, isArchived: boolean) => Promise<{ success: boolean }>
+        bulkDeleteChats: (ids: string[]) => Promise<{ success: boolean }>
+        bulkArchiveChats: (ids: string[], isArchived: boolean) => Promise<{ success: boolean }>
         getChat: (id: string) => Promise<Chat | null>
         getAllChats: () => Promise<Chat[]>
         getPrompts: () => Promise<{ id: string; title: string; content: string; tags: string[] }[]>
@@ -641,6 +644,7 @@ const api: ElectronAPI = {
     checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
     deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
     syncAuthFiles: () => ipcRenderer.invoke('proxy:syncAuthFiles'),
+    downloadAuthFile: (name: string) => ipcRenderer.invoke('proxy:downloadAuthFile', name),
     saveClaudeSession: (sessionKey: string, accountId?: string) => ipcRenderer.invoke('proxy:saveClaudeSession', sessionKey, accountId),
 
     // --- Linked Accounts (New Multi-Account API) ---
@@ -744,6 +748,8 @@ const api: ElectronAPI = {
         deleteChat: (id) => ipcRenderer.invoke('db:deleteChat', id),
         duplicateChat: (id) => ipcRenderer.invoke('db:duplicateChat', id),
         archiveChat: (id, isArchived) => ipcRenderer.invoke('db:archiveChat', id, isArchived),
+        bulkDeleteChats: (ids) => ipcRenderer.invoke('db:bulkDeleteChats', ids),
+        bulkArchiveChats: (ids, isArchived) => ipcRenderer.invoke('db:bulkArchiveChats', ids, isArchived),
         getChat: (id) => ipcRenderer.invoke('db:getChat', id),
         getAllChats: () => ipcRenderer.invoke('db:getAllChats'),
         searchChats: (query) => ipcRenderer.invoke('db:searchChats', query),
@@ -953,7 +959,7 @@ const api: ElectronAPI = {
     renamePath: (oldPath, newPath) => ipcRenderer.invoke('files:renamePath', oldPath, newPath),
     searchFiles: (rootPath, pattern) => ipcRenderer.invoke('files:searchFiles', rootPath, pattern),
     searchFilesStream: (rootPath: string, pattern: string, onResult: (path: string) => void, onComplete?: () => void) => {
-        const jobId = Math.random().toString(36).substring(7);
+        const jobId = crypto.randomUUID();
 
         const resultListener = (_event: IpcRendererEvent, path: string) => onResult(path);
         const completeListener = () => {

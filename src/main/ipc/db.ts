@@ -153,6 +153,58 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
     ipcMain.handle('db:deleteChatsByTitle', createSafeIpcHandler('db:deleteChatsByTitle', async (_event: IpcMainInvokeEvent, title: string) => {
         return await withRateLimit('db', () => databaseService.deleteChatsByTitle(title));
     }, { success: false }));
+
+    ipcMain.handle('db:bulkDeleteChats', createSafeIpcHandler('db:bulkDeleteChats', async (_event: IpcMainInvokeEvent, ids: string[]) => {
+        try {
+            await withRateLimit('db', () => databaseService.bulkDeleteChats(ids));
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkDeleteChats',
+                    category: 'data',
+                    details: { chatIds: ids },
+                    success: true
+                });
+            }
+            return { success: true };
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkDeleteChats',
+                    category: 'data',
+                    details: { chatIds: ids },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
+            throw error;
+        }
+    }, { success: false }));
+
+    ipcMain.handle('db:bulkArchiveChats', createSafeIpcHandler('db:bulkArchiveChats', async (_event: IpcMainInvokeEvent, ids: string[], isArchived: boolean) => {
+        try {
+            await withRateLimit('db', () => databaseService.bulkArchiveChats(ids, isArchived));
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkArchiveChats',
+                    category: 'data',
+                    details: { chatIds: ids, isArchived },
+                    success: true
+                });
+            }
+            return { success: true };
+        } catch (error) {
+            if (auditLogService) {
+                await auditLogService.log({
+                    action: 'bulkArchiveChats',
+                    category: 'data',
+                    details: { chatIds: ids, isArchived },
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+            }
+            throw error;
+        }
+    }, { success: false }));
 }
 
 function registerMessageHandlers(databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {

@@ -90,7 +90,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             exit={{ opacity: 0, y: isUp ? 4 : -4, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             style={{ position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 10000, width: width || 'auto' }}
-            className="bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden"
+            className="bg-background/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
         >
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar py-1">

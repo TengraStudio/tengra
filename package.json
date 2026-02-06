@@ -80,6 +80,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^17.0.0",
     "jsdom": "^27.4.0",
+    "path-browserify": "^1.0.1",
     "playwright": "^1.57.0",
     "postcss": "^8.5.6",
     "react-window": "^2.2.4",
@@ -166,6 +167,16 @@
     "extraResources": [
       "resources/bin/**"
     ],
+    "extraFiles": [
+      {
+        "from": "scripts/register-services.ps1",
+        "to": "scripts/register-services.ps1"
+      },
+      {
+        "from": "scripts/install-db-service.ps1",
+        "to": "scripts/install-db-service.ps1"
+      }
+    ],
     "win": {
       "target": [
         "nsis",
@@ -174,6 +185,17 @@
       ],
       "icon": "resources/icon.ico",
       "publisherName": "Tandem Team"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "include": "build/installer.nsh",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerSidebar": "resources/installer-sidebar.bmp",
+      "license": "LICENSE"
     },
     "linux": {
       "target": [

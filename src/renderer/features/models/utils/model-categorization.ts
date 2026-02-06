@@ -1,7 +1,7 @@
 ﻿
-export type ModelProvider = 'copilot' | 'openai' | 'anthropic' | 'ollama' | 'antigravity' | 'opencode' | 'custom';
+export type ModelProvider = 'copilot' | 'openai' | 'codex' | 'anthropic' | 'ollama' | 'antigravity' | 'opencode' | 'nvidia' | 'custom';
 
-const VALID_PROVIDERS: Set<string> = new Set(['copilot', 'openai', 'anthropic', 'ollama', 'antigravity', 'opencode']);
+const VALID_PROVIDERS: Set<string> = new Set(['copilot', 'openai', 'codex', 'anthropic', 'ollama', 'antigravity', 'opencode', 'nvidia', 'github']);
 
 export interface ModelDefinition {
     id: string;
@@ -43,17 +43,20 @@ function detectModelType(lowerId: string): 'chat' | 'image' | 'video' {
 }
 
 function detectProvider(lowerId: string): ModelProvider {
+    if (lowerId.includes('gpt-') || lowerId.startsWith('o1') || lowerId.startsWith('o3')) {
+        return 'openai';
+    }
     if (lowerId.startsWith('copilot-') || lowerId.startsWith('github-')) {
         return 'copilot';
     }
-    if (lowerId.startsWith('claude-')) {
+    if (lowerId.startsWith('claude-') || lowerId.includes('anthropic/')) {
         return 'anthropic';
-    }
-    if (lowerId.includes('gpt-') || lowerId.startsWith('o1')) {
-        return 'openai';
     }
     if (lowerId.startsWith('opencode-')) {
         return 'opencode';
+    }
+    if (lowerId.includes('nvidia/')) {
+        return 'nvidia';
     }
     return 'custom';
 }
@@ -68,12 +71,19 @@ function createDefinition(id: string, provider: ModelProvider, type: 'chat' | 'i
 }
 
 function formatLabel(slug: string): string {
-    const label = slug.replace(/^(github-|copilot-|openai-|codex-|antigravity-|ollama-|opencode-)/i, '');
+    let label = slug.replace(/^(github-|copilot-|openai-|codex-|antigravity-|ollama-|opencode-|nvidia-|nvidia\/|google\/|meta\/|mistralai\/|microsoft\/|deepseek-ai\/)/i, '');
+
+    // If ID contains multiple slashes or segments, take the last part
+    if (label.includes('/')) {
+        const parts = label.split('/');
+        label = parts[parts.length - 1] ?? label;
+    }
+
     return label
         .split(/[-_]/)
         .map(word => {
             const low = word.toLowerCase();
-            if (['gpt', 'llm', 'ai', 'o1'].includes(low)) { return word.toUpperCase(); }
+            if (['gpt', 'llm', 'ai', 'o1', 'r1', 'v3'].includes(low)) { return word.toUpperCase(); }
             if (/^\d/.test(word)) { return word; }
             return word.charAt(0).toUpperCase() + word.slice(1);
         })

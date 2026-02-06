@@ -50,7 +50,7 @@ export const WizardSSHBrowserStep: React.FC<WizardSSHBrowserStepProps> = ({
                         }}
                         className="w-full flex items-center gap-3 p-2 hover:bg-muted/20 rounded-lg text-left transition-colors group"
                     >
-                        <FolderOpen className="w-4 h-4 text-yellow/70 group-hover:text-yellow" />
+                        <FolderOpen className="w-4 h-4 text-warning/70 group-hover:text-warning" />
                         <span className="text-sm text-foreground/70 group-hover:text-foreground">..</span>
                     </button>
                 )}

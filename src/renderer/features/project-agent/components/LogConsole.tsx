@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { Button } from '@/components/ui/button';
+import { ToolOutputVirtualizer } from '@/features/chat/components/ToolOutputVirtualizer';
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface LogConsoleProps {
@@ -47,12 +49,12 @@ const SimpleDiff = ({ oldText, newText }: SimpleDiffProps) => {
     }, [oldText, newText]);
 
     return (
-        <div className="mt-2 border border-white/5 rounded overflow-hidden text-[9px] bg-black/40">
+        <div className="mt-2 border border-border/20 rounded overflow-hidden text-xxxs bg-card/40">
             {lines.map((line, idx) => (
                 <div key={idx} className={cn(
                     "flex gap-2 px-2 py-0.5",
-                    line.type === 'added' ? "bg-emerald-500/10 text-emerald-400" :
-                        line.type === 'removed' ? "bg-red-500/10 text-red-400" :
+                    line.type === 'added' ? "bg-success/10 text-success" :
+                        line.type === 'removed' ? "bg-destructive/10 text-destructive" :
                             "text-muted-foreground/50"
                 )}>
                     <span className="shrink-0 w-3 opacity-50">
@@ -73,21 +75,21 @@ interface ToolCallItemProps {
 
 type ToolArgs = Record<string, unknown>;
 
-const ToolCallDetails = ({ args, isFileEdit }: { args: ToolArgs; isFileEdit: boolean }) => {
+const ToolCallDetails = ({ args, isFileEdit, t }: { args: ToolArgs; isFileEdit: boolean; t: (key: string, options?: Record<string, string | number>) => string }) => {
     const targetContent = args.TargetContent as string | undefined;
     const replacementContent = args.ReplacementContent as string | undefined;
 
     return (
         <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-            <pre className="text-[8px] bg-black/40 p-1.5 rounded border border-white/5 text-muted-foreground/70 overflow-x-auto max-h-[150px] custom-scrollbar">
+            <pre className="text-xxxs bg-card/40 p-1.5 rounded border border-border/20 text-muted-foreground/70 overflow-x-auto max-h-[150px] custom-scrollbar">
                 {JSON.stringify(args, null, 2)}
             </pre>
 
             {isFileEdit && targetContent !== undefined && replacementContent !== undefined && (
                 <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <div className="flex items-center gap-1.5 text-xxxs text-muted-foreground uppercase font-bold tracking-wider">
                         <Info className="w-2.5 h-2.5" />
-                        <span>Değişiklik Önizleme</span>
+                        <span>{t('projectAgent.changePreview')}</span>
                     </div>
                     <SimpleDiff oldText={targetContent} newText={replacementContent} />
                 </div>
@@ -96,37 +98,37 @@ const ToolCallDetails = ({ args, isFileEdit }: { args: ToolArgs; isFileEdit: boo
     );
 };
 
-const getToolSummary = (name: string, args: ToolArgs): string => {
+const getToolSummary = (name: string, args: ToolArgs, t: (key: string, options?: Record<string, string | number>) => string): string => {
     if (name.includes('replace') || name.includes('write')) {
         const targetFile = args.TargetFile as string | undefined;
-        const fileName = targetFile ? targetFile.split(/[\\/]/).pop() : 'dosya';
-        return `${fileName} düzenleniyor`;
+        const fileName = targetFile ? targetFile.split(/[\\/]/).pop() : t('projectAgent.toolSummary.fileFallback');
+        return t('projectAgent.toolSummary.editing', { file: fileName ?? '' });
     }
     if (name.includes('run_command')) {
         const cmd = (args.CommandLine as string | undefined) ?? '';
-        return `Komut: ${cmd.slice(0, 50)}${cmd.length > 50 ? '...' : ''}`;
+        return t('projectAgent.toolSummary.command', { command: cmd.slice(0, 50), suffix: cmd.length > 50 ? '...' : '' });
     }
-    return `${name} çalıştırılıyor`;
+    return t('projectAgent.toolSummary.running', { tool: name });
 };
 
 const getToolStatusClass = (isFileEdit: boolean, isCommand: boolean) => {
     if (isFileEdit) {
-        return "bg-emerald-500/5 border-emerald-500/20";
+        return "bg-success/5 border-success/20";
     }
     if (isCommand) {
-        return "bg-blue-500/5 border-blue-500/20";
+        return "bg-info/5 border-info/20";
     }
-    return "bg-white/5 border-white/5";
+    return "bg-muted/10 border-border/20";
 };
 
 const getToolTextClass = (isFileEdit: boolean, isCommand: boolean) => {
     if (isFileEdit) {
-        return "text-emerald-400";
+        return "text-success";
     }
     if (isCommand) {
-        return "text-blue-400";
+        return "text-info";
     }
-    return "text-amber-200/80";
+    return "text-warning/80";
 };
 
 const ToolStatusIcon = ({ isFileEdit, isCommand }: { isFileEdit: boolean; isCommand: boolean }) => {
@@ -139,14 +141,14 @@ const ToolStatusIcon = ({ isFileEdit, isCommand }: { isFileEdit: boolean; isComm
     return <Wrench className="w-3 h-3" />;
 };
 
-const ToolCallItem = ({ call, isExpanded, onToggle }: ToolCallItemProps) => {
+const ToolCallItem = ({ call, isExpanded, onToggle, t }: ToolCallItemProps & { t: (key: string, options?: Record<string, string | number>) => string }) => {
     const args = useMemo(() => safeJsonParse(call.function.arguments, {} as ToolArgs), [call.function.arguments]);
     const name = call.function.name;
 
     const isFileEdit = name.includes('replace') || name.includes('write');
     const isCommand = name.includes('run_command');
 
-    const summary = getToolSummary(name, args);
+    const summary = getToolSummary(name, args, t);
 
     return (
         <div className={cn(
@@ -159,19 +161,19 @@ const ToolCallItem = ({ call, isExpanded, onToggle }: ToolCallItemProps) => {
                     getToolTextClass(isFileEdit, isCommand)
                 )}>
                     <ToolStatusIcon isFileEdit={isFileEdit} isCommand={isCommand} />
-                    <span className="opacity-50 text-[10px]">$</span>
+                    <span className="opacity-50 text-xxs">$</span>
                     <span className="font-bold">{summary}</span>
                 </div>
                 <button
                     onClick={onToggle}
-                    className="text-[9px] hover:text-primary transition-colors text-muted-foreground ml-2 flex items-center gap-0.5"
+                    className="text-xxxs hover:text-primary transition-colors text-muted-foreground ml-2 flex items-center gap-0.5"
                 >
                     {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    {isExpanded ? 'Gizle' : 'Detay'}
+                    {isExpanded ? t('common.hide') : t('common.details')}
                 </button>
             </div>
 
-            {isExpanded && <ToolCallDetails args={args} isFileEdit={isFileEdit} />}
+            {isExpanded && <ToolCallDetails args={args} isFileEdit={isFileEdit} t={t} />}
         </div>
     );
 };
@@ -184,33 +186,34 @@ interface LogEntryProps {
 
 const RoleIcon = ({ role }: { role: string }) => {
     if (role === 'user') {
-        return <User className="w-3 h-3 text-blue-400" />;
+        return <User className="w-3 h-3 text-info" />;
     }
     if (role === 'assistant') {
-        return <Brain className="w-3 h-3 text-purple-400" />;
+        return <Brain className="w-3 h-3 text-primary" />;
     }
-    return <Wrench className="w-3 h-3 text-amber-400" />;
+    return <Wrench className="w-3 h-3 text-warning" />;
 };
 
 const ReasoningBlock = ({ content }: { content: string }) => {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(true);
 
     if (!content) { return null; }
 
     return (
-        <div className="mb-2 border border-purple-500/20 bg-purple-500/5 rounded-lg overflow-hidden transition-all duration-300">
+        <div className="mb-2 border border-primary/20 bg-primary/5 rounded-lg overflow-hidden transition-all duration-300">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-purple-500/10 transition-colors text-[9px] font-bold text-purple-400/70 uppercase tracking-widest"
+                className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-primary/10 transition-colors text-xxxs font-bold text-primary/70 uppercase tracking-widest"
             >
                 <div className="flex items-center gap-2">
                     <Brain className={cn("w-3 h-3", isExpanded ? "animate-pulse" : "")} />
-                    <span>AI Reasoning Process</span>
+                    <span>{t('projectAgent.reasoningTitle')}</span>
                 </div>
                 {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
             {isExpanded && (
-                <div className="px-3 py-2 text-[10px] text-purple-200/60 leading-relaxed font-sans italic border-t border-purple-500/10 bg-black/20">
+                <div className="px-3 py-2 text-xxs text-primary/60 leading-relaxed font-sans italic border-t border-primary/10 bg-card/20">
                     {content}
                 </div>
             )}
@@ -219,7 +222,7 @@ const ReasoningBlock = ({ content }: { content: string }) => {
 };
 
 const LogTimestamp = ({ timestamp }: { timestamp: number | Date }) => (
-    <span className="text-[9px] text-muted-foreground/30">
+    <span className="text-xxxs text-muted-foreground/30">
         {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
     </span>
 );
@@ -234,24 +237,36 @@ const LogContent = ({
     isTool: boolean;
     shortenContent?: boolean;
     onToggle?: () => void;
-}) => (
-    <div className={cn(
-        "text-foreground/80 whitespace-pre-wrap break-words leading-relaxed p-2 rounded border transition-colors",
-        isTool ? "bg-black/60 border-white/5 font-mono text-[9px] text-amber-100/60" : "bg-white/[0.02] border-white/5"
-    )}>
-        {content}
-        {shortenContent && onToggle && (
-            <button
-                onClick={onToggle}
-                className="block mt-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors"
-            >
-                Visa mer...
-            </button>
-        )}
-    </div>
-);
+}) => {
+    const { t } = useTranslation();
+    if (isTool && content.length > 500) {
+        return (
+            <div className="mt-1">
+                <ToolOutputVirtualizer content={content} maxHeight="300px" isDark={true} />
+            </div>
+        );
+    }
+
+    return (
+        <div className={cn(
+            "text-foreground/80 whitespace-pre-wrap break-words leading-relaxed p-2 rounded border transition-colors",
+            isTool ? "bg-card/60 border-border/20 font-mono text-xxxs text-warning/60" : "bg-muted/5 border-border/20"
+        )}>
+            {content}
+            {shortenContent && onToggle && (
+                <button
+                    onClick={onToggle}
+                    className="block mt-1 text-xxxs text-primary hover:text-primary/80 transition-colors"
+                >
+                    {t('common.showMore')}
+                </button>
+            )}
+        </div>
+    );
+};
 
 const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) => {
+    const { t } = useTranslation();
     const [isContentExpanded, setIsContentExpanded] = useState(false);
     if (log.role === 'system') {
         return null;
@@ -269,10 +284,10 @@ const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) 
 
             <div className="flex-1 space-y-2 overflow-hidden min-w-0">
                 <div className="flex items-center gap-2">
-                    <span className={cn("font-bold text-[10px] uppercase tracking-tighter",
-                        log.role === 'user' ? "text-blue-400" : log.role === 'assistant' ? "text-purple-400" : "text-amber-400"
+                    <span className={cn("font-bold text-xxs uppercase tracking-tighter",
+                        log.role === 'user' ? "text-info" : log.role === 'assistant' ? "text-primary" : "text-warning"
                     )}>
-                        {log.role}
+                        {t(`projectAgent.roles.${log.role}`)}
                     </span>
                     <LogTimestamp timestamp={log.timestamp} />
                 </div>
@@ -285,6 +300,7 @@ const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) 
                         call={call}
                         isExpanded={expandedTools[`${log.id}-tool-${i}`] || false}
                         onToggle={() => toggleTool(`${log.id}-tool-${i}`)}
+                        t={t}
                     />
                 ))}
 
@@ -304,6 +320,7 @@ const LogEntry = React.memo(({ log, expandedTools, toggleTool }: LogEntryProps) 
 LogEntry.displayName = 'LogEntry';
 
 export const LogConsole = ({ logs, className }: LogConsoleProps) => {
+    const { t } = useTranslation();
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
     const [atBottom, setAtBottom] = useState(true);
@@ -323,17 +340,17 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
     }, [logs.length, atBottom]);
 
     return (
-        <div className={cn("flex flex-col h-full bg-black/40 rounded-lg border border-white/10 overflow-hidden font-mono text-[10px]", className)}>
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 bg-white/5 shrink-0 z-10">
+        <div className={cn("flex flex-col h-full bg-card/40 rounded-lg border border-border/20 overflow-hidden font-mono text-xxs", className)}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/10 shrink-0 z-10">
                 <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-muted-foreground font-medium uppercase tracking-tight text-[9px]">UAC Console</span>
-                <span className="ml-auto text-[9px] text-muted-foreground/30">{logs.length} olay</span>
+                <span className="text-muted-foreground font-medium uppercase tracking-tight text-xxxs">{t('projectAgent.consoleTitle')}</span>
+                <span className="ml-auto text-xxxs text-muted-foreground/30">{t('projectAgent.eventCount', { count: logs.length })}</span>
             </div>
 
             <div className="flex-1 relative">
                 {logs.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground/40 italic">
-                        Loglar bekleniyor...
+                        {t('projectAgent.waitingLogs')}
                     </div>
                 ) : (
                     <Virtuoso

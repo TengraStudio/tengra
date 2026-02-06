@@ -13,7 +13,7 @@ export const TypingDots = () => {
                 <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce [animation-delay:-0.15s] shadow-lg shadow-purple-500/30" />
                 <div className="w-2 h-2 bg-gradient-to-r from-pink-500 to-primary rounded-full animate-bounce shadow-lg shadow-pink-500/30" />
             </div>
-            <span className="text-[10px] text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
+            <span className="text-xxs text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
         </div>
     );
 };
@@ -33,7 +33,7 @@ export const ImageSkeleton = () => {
                 <Sparkles className="w-6 h-6 text-primary/40" />
             </div>
             <div className="space-y-2 text-center">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
+                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">{t('messageBubble.TandemDrawing')}</div>
                 <div className="flex gap-1 justify-center">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.15s]" />

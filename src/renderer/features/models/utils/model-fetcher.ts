@@ -29,10 +29,10 @@ export interface GroupedModels {
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;
 const CACHE_DURATION_MS = 60000; // 1 minute cache
 
-export async function fetchModels(): Promise<ModelInfo[]> {
+export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
     try {
         // PERF-005-1: Return cached models if still fresh
-        if (modelCache && Date.now() - modelCache.timestamp < CACHE_DURATION_MS) {
+        if (!bypassCache && modelCache && Date.now() - modelCache.timestamp < CACHE_DURATION_MS) {
             return modelCache.data;
         }
 

@@ -397,7 +397,7 @@ export class MarketResearchService extends BaseService {
             if (searchResult.success && searchResult.results) {
                 for (const result of searchResult.results) {
                     products.push({
-                        id: Math.random().toString(36).substring(7),
+                        id: crypto.randomUUID(),
                         name: result.title.split(' - ')[0],
                         tagline: result.snippet.slice(0, 100),
                         url: result.url,

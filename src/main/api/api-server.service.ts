@@ -8,8 +8,8 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
-import { Message } from '@shared/types/chat';
-import { JsonObject } from '@shared/types/common';
+import { Message, MessageContentPart } from '@shared/types/chat';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
 
@@ -384,14 +384,16 @@ export class ApiServerService extends BaseService {
     private async handleToolsList(res: ServerResponse): Promise<void> {
         try {
             const tools = await this.options.toolExecutor.getToolDefinitions();
-            this.sendJson(res, 200, {
+            const toolList: JsonObject[] = tools.map((tool) => ({
+                name: tool.function.name,
+                description: tool.function.description,
+                parameters: tool.function.parameters ?? {}
+            }));
+            const response = {
                 success: true,
-                tools: tools.map((tool) => ({
-                    name: tool.function.name,
-                    description: tool.function.description,
-                    parameters: tool.function.parameters
-                }))
-            } as unknown as JsonObject);
+                tools: toolList
+            } satisfies JsonObject;
+            this.sendJson(res, 200, response);
         } catch (error) {
             appLogger.error(this.name, `Failed to list tools: ${getErrorMessage(error as Error)}`);
             this.sendJson(res, 500, {
@@ -434,10 +436,11 @@ export class ApiServerService extends BaseService {
 
             const result = await this.options.toolExecutor.execute(toolName, args ?? {});
 
-            this.sendJson(res, 200, {
+            const responseBody = {
                 success: true,
-                result
-            } as unknown as JsonObject);
+                result: this.normalizeToolResult(result)
+            } satisfies JsonObject;
+            this.sendJson(res, 200, responseBody);
         } catch (error) {
             appLogger.error(this.name, `Tool execution failed: ${getErrorMessage(error as Error)}`);
             this.sendJson(res, 500, {
@@ -455,7 +458,7 @@ export class ApiServerService extends BaseService {
         try {
             const body = await this.readBody(req);
             const { messages, model, provider } = body as {
-                messages?: unknown;
+                messages?: JsonValue;
                 model?: string;
                 provider?: string;
             };
@@ -470,7 +473,7 @@ export class ApiServerService extends BaseService {
 
             // SEC-008-3: Validate message structure
             try {
-                this.validateChatMessages(messages as unknown[]);
+                this.validateChatMessages(messages as JsonValue[]);
             } catch (error) {
                 this.sendJson(res, 400, {
                     success: false,
@@ -481,23 +484,26 @@ export class ApiServerService extends BaseService {
 
             appLogger.info(this.name, `Chat request: model=${model}, provider=${provider}`);
 
-            const response = await this.options.llmService.chatOpenAI(messages as Message[], {
+            const parsedMessages = this.parseMessages(messages as JsonValue[]);
+            const response = await this.options.llmService.chatOpenAI(parsedMessages, {
                 model: model ?? 'gpt-4o',
                 provider: provider ?? 'openai'
             });
 
-            this.sendJson(res, 200, {
+            const toolCalls = this.normalizeToolCalls(response.tool_calls);
+            const responseBody = {
                 success: true,
                 response: {
-                    content: response.content,
-                    tool_calls: response.tool_calls,
+                    content: response.content ?? null,
+                    tool_calls: toolCalls,
                     usage: {
                         prompt_tokens: response.promptTokens ?? 0,
                         completion_tokens: response.completionTokens ?? 0,
                         total_tokens: response.totalTokens ?? 0
                     }
                 }
-            } as unknown as JsonObject);
+            } satisfies JsonObject;
+            this.sendJson(res, 200, responseBody);
         } catch (error) {
             appLogger.error(this.name, `Chat request failed: ${getErrorMessage(error as Error)}`);
             this.sendJson(res, 500, {
@@ -522,7 +528,7 @@ export class ApiServerService extends BaseService {
         try {
             const body = await this.readBody(req);
             const { messages, model, provider } = body as {
-                messages?: unknown;
+                messages?: JsonValue;
                 model?: string;
                 provider?: string;
             };
@@ -545,8 +551,9 @@ export class ApiServerService extends BaseService {
                 'Connection': 'keep-alive'
             });
 
+            const parsedMessages = this.parseMessages(messages as JsonValue[]);
             // Start streaming
-            const stream = this.options.llmService.chatOpenAIStream(messages as Message[], {
+            const stream = this.options.llmService.chatOpenAIStream(parsedMessages, {
                 model: model ?? 'gpt-4o',
                 provider: provider ?? 'openai'
             });
@@ -712,11 +719,12 @@ export class ApiServerService extends BaseService {
                 throw new Error('No response from vision model');
             }
 
-            this.sendJson(res, 200, {
+            const responseBody = {
                 success: true,
-                content: response.content,
+                content: response.content ?? null,
                 model
-            });
+            } satisfies JsonObject;
+            this.sendJson(res, 200, responseBody);
         } catch (error) {
             appLogger.error(this.name, 'Vision analysis failed:', error as Error);
             this.sendJson(res, 500, {
@@ -800,7 +808,7 @@ export class ApiServerService extends BaseService {
         return this.httpServer !== null && this.wsServer !== null;
     }
 
-    private validateChatMessages(messages: unknown[]): void {
+    private validateChatMessages(messages: JsonValue[]): void {
         for (const msg of messages) {
             if (typeof msg !== 'object' || msg === null) {
                 throw new Error('Invalid message: must be an object');
@@ -820,5 +828,97 @@ export class ApiServerService extends BaseService {
                 throw new Error('Invalid message: content must be string or array');
             }
         }
+    }
+
+    private normalizeToolResult(result: { success: boolean; result?: JsonValue; error?: string }): JsonObject {
+        return {
+            success: result.success,
+            result: result.result ?? null,
+            error: result.error
+        };
+    }
+
+    private normalizeToolCalls(toolCalls?: Message['toolCalls']): JsonValue {
+        if (!toolCalls) {
+            return null;
+        }
+        return toolCalls.map((call) => ({
+            id: call.id,
+            type: call.type,
+            function: {
+                name: call.function.name,
+                arguments: call.function.arguments
+            }
+        }));
+    }
+
+    private parseMessages(messages: JsonValue[]): Message[] {
+        this.validateChatMessages(messages);
+        return messages.map((raw, index) => {
+            if (typeof raw !== 'object' || raw === null) {
+                throw new Error('Invalid message: must be an object');
+            }
+            const record = raw as Record<string, JsonValue>;
+            const role = String(record.role) as Message['role'];
+            const content = this.normalizeMessageContent(record.content);
+            const id = typeof record.id === 'string' ? record.id : `${Date.now()}-${index}`;
+            const timestamp = this.parseTimestamp(record.timestamp);
+            const images = Array.isArray(record.images)
+                ? record.images.filter((img): img is string => typeof img === 'string')
+                : undefined;
+
+            return {
+                id,
+                role,
+                content,
+                timestamp,
+                images
+            };
+        });
+    }
+
+    private parseTimestamp(value: JsonValue | undefined): Date {
+        if (typeof value === 'string' || typeof value === 'number') {
+            const parsed = new Date(value);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed;
+            }
+        }
+        return new Date();
+    }
+
+    private normalizeMessageContent(value: JsonValue | undefined): Message['content'] {
+        if (typeof value === 'string') {
+            return value;
+        }
+        if (!Array.isArray(value)) {
+            return '';
+        }
+
+        const parts = value
+            .filter((item): item is Record<string, JsonValue> => typeof item === 'object' && item !== null)
+            .map((item): MessageContentPart | null => {
+                const type = item.type;
+                if (type === 'text' && typeof item.text === 'string') {
+                    return { type: 'text', text: item.text };
+                }
+                if (type === 'image_url' && typeof item.image_url === 'object' && item.image_url !== null) {
+                    const imageUrl = item.image_url as Record<string, JsonValue>;
+                    const url = imageUrl.url;
+                    const detail = imageUrl.detail;
+                    if (typeof url === 'string') {
+                        const detailValue =
+                            detail === 'auto' || detail === 'low' || detail === 'high' ? detail : undefined;
+                        if (detailValue) {
+                            return { type: 'image_url', image_url: { url, detail: detailValue } };
+                        }
+                        return { type: 'image_url', image_url: { url } };
+                    }
+                }
+                return null;
+            })
+            .filter((part): part is MessageContentPart => part !== null);
+
+        return parts.length > 0 ? parts : '';
     }
 }

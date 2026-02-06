@@ -81,7 +81,7 @@ const InputSection: React.FC<InputSectionProps> = ({ sessionKey, setSessionKey, 
             />
         </div>
         {error && (
-            <p className="text-[11px] text-destructive font-medium ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+            <p className="text-xxs text-destructive font-medium ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
                 <AlertCircle className="w-3 h-3" />
                 {error}
             </p>

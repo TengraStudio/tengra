@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface GlassModalProps {
@@ -160,6 +161,7 @@ interface ModalHeaderProps {
 }
 
 const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) => {
+    const { t } = useTranslation();
     const showHeader = title ?? showClose;
     if (!showHeader) { return null; }
 
@@ -167,7 +169,7 @@ const ModalHeader: React.FC<ModalHeaderProps> = ({ title, showClose, onClose }) 
         <div className="flex items-center justify-between p-4 border-b border-white/10">
             {title && <h2 id="modal-title" className="text-lg font-semibold gradient-text">{title}</h2>}
             {showClose && (
-                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors ripple" aria-label="Close modal">
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors ripple" aria-label={t('modal.close')}>
                     <X className="w-5 h-5" />
                 </button>
             )}

@@ -1,12 +1,12 @@
 /**
  * Main Ideas Page component with workflow state machine
  */
-import { appLogger } from '@main/logging/logger';
 import type { IdeaSession, IdeaSessionConfig, ProjectIdea, ResearchData } from '@shared/types/ideas';
 import type { Project } from '@shared/types/project';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { DeleteConfirmation } from './components/DeleteConfirmation';
 import { IdeasError } from './components/IdeasError';

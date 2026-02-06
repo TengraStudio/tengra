@@ -1,11 +1,11 @@
 
-import { appLogger } from '@main/logging/logger';
 import { Layers, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { SSHPackageInfo } from '@/types/ssh';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface PackageManagerProps {
     connectionId: string

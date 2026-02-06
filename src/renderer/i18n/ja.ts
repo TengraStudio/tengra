@@ -23,8 +23,17 @@ export const ja = {
         add: '追加',
         done: '完了',
         pending: '保留中',
+        confirm: '確認',
+        processing: '処理中...',
         selectAll: 'すべて選択',
         itemsSelected: '{{count}} 個選択済み'
+    },
+    app: {
+        name: 'Tandem'
+    },
+    errors: {
+        unexpected: '申し訳ありません。エラーが発生しました。',
+        somethingWentWrong: '問題が発生しました:'
     },
     languages: {
         tr: 'トルコ語',
@@ -620,7 +629,9 @@ export const ja = {
         render: 'レンダリング',
         expand: '展開',
         collapse: '折りたたむ',
-        moreLines: 'さらに数行'
+        moreLines: 'さらに数行',
+        scrollToBottom: '一番下へスクロール',
+        scrollToBottomWithCount: '一番下へスクロール（{{count}}件の新着）'
     },
     welcome: {
         title: 'Tandem',
@@ -1092,11 +1103,56 @@ export const ja = {
         system: 'システム',
         navigate: '移動',
         select: '選択',
-        close: '閉じる'
+        close: '閉じる',
+        engineLabel: 'Tandem コマンドエンジン',
+        previewEmpty: '詳細を表示するには項目を選択してください',
+        noResultsHint: 'チャット、モデル、設定を検索してみてください'
     },
     quickAction: {
         explain: '説明',
         translate: '翻訳'
+    },
+    activityBar: {
+        chat: 'チャット',
+        explorer: 'エクスプローラー',
+        search: '検索',
+        sourceControl: 'ソース管理',
+        debug: 'デバッグ',
+        extensions: '拡張機能',
+        settings: '設定'
+    },
+    statusBar: {
+        error: 'エラー',
+        errors: 'エラー',
+        warning: '警告',
+        warnings: '警告'
+    },
+    updateNotification: {
+        checkingTitle: '更新を確認しています...',
+        availableTitle: '更新があります: v{{version}}',
+        availableContent: 'Tandem の新しいバージョンがあります。',
+        downloadingTitle: '更新をダウンロード中...',
+        downloadedTitle: '更新の準備完了',
+        downloadedContent: '最新の更新を適用するには Tandem を再起動してください。',
+        errorTitle: '更新に失敗しました',
+        uptodateTitle: '最新の状態です',
+        downloadAction: 'ダウンロード',
+        restartAction: '今すぐ再起動'
+    },
+    panelLayout: {
+        expand: '展開',
+        collapse: '折りたたむ',
+        maximize: '最大化'
+    },
+    diffViewer: {
+        loading: '差分を読み込み中...'
+    },
+    fab: {
+        openMenu: 'メニューを開く',
+        closeMenu: 'メニューを閉じる'
+    },
+    modal: {
+        close: 'モーダルを閉じる'
     },
     titleBar: {
         minimize: '最小化',
@@ -1342,6 +1398,35 @@ export const ja = {
         output: '出力',
         filePreview: 'ファイルプレビュー',
         path: 'パス:'
+    },
+    extensionPrompt: {
+        title: '体験を強化しましょう',
+        subtitle: 'Tandem ブラウザー拡張機能をインストール',
+        infoTitle: 'ブラウザー拡張機能とは？',
+        infoBody: 'Tandem のブラウザー拡張機能により、AI がウェブページと直接やり取りできるようになります。コンテンツの読み取り、フォーム入力、ボタンのクリック、コマンドに基づく自動操作が可能です。',
+        featuresTitle: '機能:',
+        features: {
+            aiChatTitle: 'ブラウザー内AIチャット:',
+            aiChatDesc: 'どのウェブページからでもAIと直接チャット',
+            pageInteractionTitle: 'ページ操作:',
+            pageInteractionDesc: 'AI がページを読み取り、クリックし、フォームを自動入力',
+            contentExtractionTitle: 'コンテンツ抽出:',
+            contentExtractionDesc: 'ワンクリックでページ内容を抽出して要約',
+            secureConnectionTitle: '安全な接続:',
+            secureConnectionDesc: 'すべての通信はお使いのコンピューター内に留まります'
+        },
+        installTitle: 'クイックインストール:',
+        steps: {
+            step1: 'Chrome を開き chrome://extensions/ に移動',
+            step2: '「デベロッパーモード」を有効にする（右上の切り替え）',
+            step3: '「パッケージ化されていない拡張機能を読み込む」をクリック',
+            step4Prefix: 'Tandem ディレクトリ内の',
+            step4Suffix: 'フォルダーを選択'
+        },
+        openFolder: '拡張機能フォルダーを開く',
+        viewInstructions: '手順を見る',
+        dismiss: 'もう表示しない',
+        remindLater: '後でリマインド'
     }
 };
 

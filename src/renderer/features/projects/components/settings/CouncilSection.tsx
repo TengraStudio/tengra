@@ -28,7 +28,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                 <p className="text-xs text-muted-foreground">{t('projects.councilAIDesc') || 'Configure how agents collaborate on this project.'}</p>
             </div>
             <div className="flex items-center gap-3 bg-white/5 p-1 rounded-full border border-white/10 px-3 py-1">
-                <span className="text-xs font-medium text-muted-foreground">Enabled</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('projects.councilEnabledLabel')}</span>
                 <button
                     onClick={() => setFormData(prev => ({ ...prev, councilEnabled: !prev.councilEnabled }))}
                     className={cn(
@@ -59,8 +59,8 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                     onChange={e => setFormData(prev => ({ ...prev, consensusThreshold: parseFloat(e.target.value) }))}
                     className="w-full accent-primary bg-muted/30 rounded-lg h-1.5 appearance-none cursor-pointer"
                 />
-                <p className="text-[10px] text-muted-foreground italic">
-                    Higher thresholds require more agents to agree before a step is considered final.
+                <p className="text-xxs text-muted-foreground italic">
+                    {t('projects.councilThresholdHint')}
                 </p>
             </div>
 
@@ -87,7 +87,7 @@ export const CouncilSection: React.FC<CouncilSectionProps> = ({
                                 </div>
                                 <div className="text-left">
                                     <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{agent.name}</div>
-                                    <div className="text-[10px] opacity-60">{agent.description ?? 'General AI'}</div>
+                                    <div className="text-xxs opacity-60">{agent.description ?? t('projects.generalAI')}</div>
                                 </div>
                             </div>
                             <div className={cn(

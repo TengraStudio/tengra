@@ -41,9 +41,9 @@ export const GeneralSection: React.FC<SettingsSectionProps> = ({ formData, setFo
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as Project['status'] }))}
                     className="w-full bg-muted/20 border border-border/50 rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-sans"
                 >
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                    <option value="draft">Draft</option>
+                    <option value="active">{t('projects.statusActive')}</option>
+                    <option value="archived">{t('projects.statusArchived')}</option>
+                    <option value="draft">{t('projects.statusDraft')}</option>
                 </select>
             </div>
         </div>

@@ -35,15 +35,15 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
             {/* Header Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-border/40">
                 <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalPrompt')}</span>
+                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalPrompt')}</span>
                     <div className="text-2xl font-black tabular-nums text-primary">{formatNumber(totalPrompt)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalCompletion')}</span>
+                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest">{t('statistics.totalCompletion')}</span>
                     <div className="text-2xl font-black tabular-nums text-success">{formatNumber(totalCompletion)}</div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                         <Coins className="w-3 h-3 text-warning" />
                         {t('statistics.cost')}
                     </span>
@@ -52,12 +52,12 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                        <Activity className="w-3 h-3 text-purple" />
-                        Activity
+                    <span className="text-xxs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                        <Activity className="w-3 h-3 text-info" />
+                        {t('statistics.activity')}
                     </span>
                     <div className="text-2xl font-black tabular-nums text-foreground">
-                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="text-xs text-muted-foreground font-medium">sessions</span>
+                        {sortedData.filter(d => (d.promptTokens + d.completionTokens) > 0).length} <span className="text-xs text-muted-foreground font-medium">{t('statistics.sessions')}</span>
                     </div>
                 </div>
             </div>
@@ -67,12 +67,12 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                 {/* Legend Overlay */}
                 <div className="absolute top-0 right-0 flex items-center gap-4 z-10">
                     <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-background/50 backdrop-blur border border-border/30">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Input</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-primary/80 to-primary shadow-primary/20 glow-primary" />
+                        <span className="text-xxs font-bold uppercase tracking-wider text-muted-foreground">{t('statistics.input')}</span>
                     </div>
                     <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-background/50 backdrop-blur border border-border/30">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Output</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-success/80 to-success glow-success" />
+                        <span className="text-xxs font-bold uppercase tracking-wider text-muted-foreground">{t('statistics.output')}</span>
                     </div>
                 </div>
 
@@ -109,25 +109,25 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                         <div className="bg-popover/90 backdrop-blur-xl border border-border/50 rounded-xl p-3 shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[140px] animate-in zoom-in-95 duration-200">
                                             <div className="text-xs font-bold text-foreground mb-2 pb-2 border-b border-border/30 text-center">
                                                 {new Date(data.timestamp).toLocaleDateString()}
-                                                <span className="block text-[9px] font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
+                                                <span className="block text-xxxs font-normal text-muted-foreground capitalize mt-0.5 opacity-70">
                                                     {getLabel(data.timestamp, period, true)}
                                                 </span>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Input</span>
+                                                    <span className="text-xxs font-bold text-primary uppercase tracking-wider">{t('statistics.input')}</span>
                                                     <span className="text-xs font-mono font-bold">{formatNumber(data.promptTokens)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center gap-3">
-                                                    <span className="text-[10px] font-bold text-success uppercase tracking-wider">Output</span>
+                                                    <span className="text-xxs font-bold text-success uppercase tracking-wider">{t('statistics.output')}</span>
                                                     <span className="text-xs font-mono font-bold">{formatNumber(data.completionTokens)}</span>
                                                 </div>
                                                 {data.modelBreakdown && Object.keys(data.modelBreakdown).length > 0 && (
                                                     <div className="mt-2 pt-2 border-t border-border/20 space-y-1">
                                                         {Object.entries(data.modelBreakdown).map(([model, usage]) => (
                                                             <div key={model} className="flex justify-between items-center gap-2">
-                                                                <span className="text-[9px] text-muted-foreground truncate max-w-[80px]" title={model}>{model}</span>
-                                                                <span className="text-[9px] font-mono opacity-80">{formatNumber(usage.prompt + usage.completion)}</span>
+                                                                <span className="text-xxxs text-muted-foreground truncate max-w-[80px]" title={model}>{model}</span>
+                                                                <span className="text-xxxs font-mono opacity-80">{formatNumber(usage.prompt + usage.completion)}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -141,7 +141,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                     {/* Stacks */}
                                     <div className="w-full px-[1px] flex flex-col justify-end h-full relative group-hover:scale-y-[1.02] transition-transform origin-bottom duration-300">
                                         <div
-                                            className="w-full rounded-t-[2px] bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                                            className="w-full rounded-t-[2px] bg-gradient-to-tr from-success/80 to-success shadow-success/20"
                                             style={{
                                                 height: `${completionHeight}%`,
                                                 minHeight: data.completionTokens > 0 ? '2px' : '0',
@@ -150,7 +150,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                             }}
                                         />
                                         <div
-                                            className="w-full rounded-b-[1px] bg-gradient-to-tr from-blue-600 to-cyan-400 shadow-[0_0_10px_rgba(59,130,246,0.2)] mt-[1px]"
+                                            className="w-full rounded-b-[1px] bg-gradient-to-tr from-primary/80 to-primary shadow-primary/20 mt-[1px]"
                                             style={{
                                                 height: `${promptHeight}%`,
                                                 minHeight: data.promptTokens > 0 ? '2px' : '0',
@@ -161,7 +161,7 @@ export const TokenUsageChart: React.FC<TokenUsageChartProps> = ({ tokenTimeline,
                                     </div>
 
                                     {/* X-Axis Label (Sparse) */}
-                                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[9px] font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xxxs font-medium text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity">
                                         {getSimpleLabel(data.timestamp, period)}
                                     </div>
                                 </div>

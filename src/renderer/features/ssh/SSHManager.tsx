@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { NginxWizard } from '@renderer/features/ssh/NginxWizard';
 import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
@@ -8,6 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { SSHConnection } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { AddConnectionModal } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';

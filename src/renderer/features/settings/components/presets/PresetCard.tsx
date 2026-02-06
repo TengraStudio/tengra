@@ -44,7 +44,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({
                         preset.id === 'precise' ? t('ssh.presets.precise') :
                             preset.id === 'coding' ? t('ssh.presets.coding') : preset.name}
                 </div>
-                <div className="text-[10px] opacity-60">
+                <div className="text-xxs opacity-60">
                     T:{preset.temperature} P:{preset.topP}
                 </div>
             </div>

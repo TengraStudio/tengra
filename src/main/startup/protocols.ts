@@ -3,14 +3,23 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { protocol } from 'electron';
 
-export function registerProtocols(allowedFileRoots: Set<string>) {
+/**
+ * Pre-register protocols before app is ready.
+ * MUST be called before app.whenReady()
+ */
+export function preRegisterProtocols() {
     // Guard for when running in Node.js context during build (vite-plugin-electron)
     if (typeof protocol.registerSchemesAsPrivileged === 'function') {
         protocol.registerSchemesAsPrivileged([
             { scheme: 'safe-file', privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true } }
         ]);
     }
+}
 
+/**
+ * Register the actual protocol handlers after app is ready.
+ */
+export function registerProtocols(allowedFileRoots: Set<string>) {
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '');
 

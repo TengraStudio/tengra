@@ -1,6 +1,8 @@
 import { AlertTriangle, X } from 'lucide-react';
 import React from 'react';
 
+import { useTranslation } from '@/i18n';
+
 interface BrowserClosureModalProps {
     isOpen: boolean
     onClose: () => void
@@ -9,6 +11,7 @@ interface BrowserClosureModalProps {
 }
 
 export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen, onClose, onConfirm, providerName }) => {
+    const { t } = useTranslation();
     if (!isOpen) { return null; }
 
     return (
@@ -18,7 +21,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2 text-warning">
                         <AlertTriangle className="h-5 w-5" />
-                        <h3 className="font-bold text-foreground">Browser Closure Required</h3>
+                        <h3 className="font-bold text-foreground">{t('settings.browserClosure.title')}</h3>
                     </div>
                     <button
                         onClick={onClose}
@@ -31,15 +34,17 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                 {/* Content */}
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        To authenticate with <strong className="text-foreground">{providerName}</strong>, Tandem needs to read protected cookies.
+                        {t('settings.browserClosure.description', { provider: providerName })}
                     </p>
                     <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
                         <p className="text-xs font-medium text-warning">
-                            We must <span className="underline decoration-2 underline-offset-2">automatically close your browser</span> to release the file lock.
+                            {t('settings.browserClosure.warningPrefix')}{' '}
+                            <span className="underline decoration-2 underline-offset-2">{t('settings.browserClosure.warningEmphasis')}</span>{' '}
+                            {t('settings.browserClosure.warningSuffix')}
                         </p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        Please save your work in the browser before proceeding. We will re-open it invisibly to extract the session key.
+                        {t('settings.browserClosure.saveWork')}
                     </p>
                 </div>
 
@@ -49,7 +54,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={() => {
@@ -58,7 +63,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                         }}
                         className="px-4 py-2 rounded-lg text-sm font-bold bg-warning hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20 transition-all"
                     >
-                        Close Browser & Connect
+                        {t('settings.browserClosure.confirm')}
                     </button>
                 </div>
             </div>

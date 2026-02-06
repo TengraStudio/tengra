@@ -7,8 +7,8 @@ import { useTranslation } from '@/i18n';
 interface LogEntry { id: string; timestamp: Date; level: 'debug' | 'info' | 'warn' | 'error'; source: string; message: string; }
 interface LoggingDashboardProps { isOpen: boolean; onClose: () => void; }
 
-const levelColors = { debug: 'text-muted-foreground', info: 'text-primary', warn: 'text-yellow', error: 'text-destructive' };
-const levelBadgeColors = { debug: 'bg-muted/20 text-muted-foreground', info: 'bg-primary/20 text-primary', warn: 'bg-yellow/20 text-yellow', error: 'bg-destructive/20 text-destructive' };
+const levelColors = { debug: 'text-muted-foreground', info: 'text-primary', warn: 'text-warning', error: 'text-destructive' };
+const levelBadgeColors = { debug: 'bg-muted/20 text-muted-foreground', info: 'bg-primary/20 text-primary', warn: 'bg-yellow/20 text-warning', error: 'bg-destructive/20 text-destructive' };
 
 const LogTable: React.FC<{ logs: LogEntry[], t: (key: string) => string }> = ({ logs, t }) => (
     <table className="w-full">
@@ -46,7 +46,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(({ i
     useEffect(() => {
         if (!isOpen) { return; }
         const handler = (_: IpcRendererEvent, log: LogEntry) => {
-            if (!isPaused) { setLogs(prev => [...prev.slice(-500), { ...log, id: `${Date.now()}-${Math.random()}` }]); }
+            if (!isPaused) { setLogs(prev => [...prev.slice(-500), { ...log, id: `${Date.now()}-${crypto.randomUUID().substring(0, 8)}` }]); }
         };
         window.electron.ipcRenderer.on('log:entry', handler);
         return () => window.electron.ipcRenderer.off('log:entry', handler);

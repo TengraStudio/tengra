@@ -23,7 +23,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
     handleSave,
     groupedModels,
     copilotQuota,
-    t: _t
+    t
 }) => {
     const antigravityModels = useMemo(() => {
         if (!groupedModels) { return []; }
@@ -100,7 +100,7 @@ export const ModelUsageLimitsTab: React.FC<ModelUsageLimitsTabProps> = ({
         <div className="space-y-6">
             <div className="flex items-center gap-2 mb-6">
                 <Settings className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold">Model Usage Limits</h2>
+                <h2 className="text-lg font-bold">{t('settings.usageLimits.title')}</h2>
             </div>
 
             <CopilotLimitsSection

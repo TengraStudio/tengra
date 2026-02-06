@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { BaseService } from '@main/services/base.service';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
@@ -58,12 +59,13 @@ interface TerminalSnapshot {
     timestamp: number
 }
 
-export class TerminalService {
+export class TerminalService extends BaseService {
     private sessions: Map<string, TerminalSession> = new Map();
     private persistencePath: string;
     private snapshots: Map<string, TerminalSnapshot> = new Map();
 
     constructor() {
+        super('TerminalService');
         if (!pty) {
             appLogger.warn('TerminalService', 'node-pty not loaded - terminal features unavailable');
         }
@@ -72,16 +74,15 @@ export class TerminalService {
         try {
             const userDataPath = app.getPath('userData');
             this.persistencePath = path.join(userDataPath, 'terminal-sessions.json');
-            void this.loadSnapshots();
         } catch (e) {
             appLogger.error('TerminalService', 'Failed to determine userData path', e as Error);
             this.persistencePath = '';
         }
+    }
 
-        // Auto-save on quit
-        app.on('before-quit', () => {
-            void this.saveSnapshots();
-        });
+    async initialize(): Promise<void> {
+        this.logInfo('Initializing TerminalService...');
+        await this.loadSnapshots();
     }
 
     /**
@@ -418,8 +419,9 @@ export class TerminalService {
     /**
      * Cleanup all sessions
      */
-    dispose(): void {
-        void this.saveSnapshots(); // Last save
+    async cleanup(): Promise<void> {
+        this.logInfo('Cleaning up TerminalService...');
+        await this.saveSnapshots(); // Last save
         for (const [, session] of this.sessions) {
             try {
                 session.ptyProcess?.kill();

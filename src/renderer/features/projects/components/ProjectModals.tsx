@@ -247,7 +247,7 @@ const DeleteFilesCheckbox: React.FC<{ checked: boolean; onChange: (b: boolean) =
                 {t('projects.deleteProjectFiles')}
             </span>
             {checked && (
-                <span className="text-[10px] text-destructive font-bold uppercase animate-pulse">
+                <span className="text-xxs text-destructive font-bold uppercase animate-pulse">
                     ⚠️ Permanent Deletion
                 </span>
             )}

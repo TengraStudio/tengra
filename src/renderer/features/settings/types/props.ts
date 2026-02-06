@@ -54,7 +54,7 @@ export interface SettingsSharedProps {
     setManualSessionModal: (m: ManualSessionModalState) => void
     handleSaveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
     t: (key: string, options?: Record<string, string | number>) => string
-    onRefreshModels: () => void
+    onRefreshModels: (bypassCache?: boolean) => void
     loadSettings: () => Promise<void>
     setIsLoading: (v: boolean) => void
     onReset: () => void | Promise<void>

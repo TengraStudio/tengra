@@ -4,6 +4,7 @@
 import React, { useCallback } from 'react';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { useTranslation } from '@/i18n';
 
 export type DeleteConfirmType = 'idea' | 'session' | 'bulk';
 
@@ -21,11 +22,12 @@ interface DeleteConfirmationProps {
 }
 
 export const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({ state, onClose, onConfirm }) => {
+    const { t } = useTranslation();
     const isIdea = state.type === 'idea';
-    const title = isIdea ? 'Delete Idea' : 'Delete Multiple Ideas';
+    const title = isIdea ? t('ideas.delete.title') : t('ideas.delete.bulkTitle');
     const message = isIdea
-        ? 'Are you sure you want to delete this idea? This action cannot be undone.'
-        : `Are you sure you want to delete ${state.ids?.length ?? 0} ideas? This action cannot be undone.`;
+        ? t('ideas.delete.message')
+        : t('ideas.delete.bulkMessage', { count: state.ids?.length ?? 0 });
 
     const handleConfirm = useCallback(() => {
         void onConfirm();
@@ -38,7 +40,7 @@ export const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({ state, o
             onConfirm={handleConfirm}
             title={title}
             message={message}
-            confirmLabel="Delete"
+            confirmLabel={t('common.delete')}
             variant="danger"
         />
     );

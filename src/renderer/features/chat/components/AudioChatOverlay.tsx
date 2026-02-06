@@ -37,7 +37,7 @@ function getAudioState(isListening: boolean, isSpeaking: boolean): AudioState {
 function getStateConfig(state: AudioState, t: (key: string) => string): StateConfig {
     const configs: Record<AudioState, StateConfig> = {
         listening: { bgClass: 'bg-primary text-primary-foreground', blurClass: 'bg-primary/30', shadowStyle: '0 0 80px rgba(var(--primary), 0.4)', icon: Mic, title: t('audioChat.listening'), desc: t('audioChat.listeningDesc') },
-        speaking: { bgClass: 'bg-success text-foreground', blurClass: 'bg-success/30', shadowStyle: '0 0 80px rgba(16, 185, 129, 0.4)', icon: Volume2, title: t('audioChat.speaking'), desc: t('audioChat.speakingDesc') },
+        speaking: { bgClass: 'bg-success text-foreground', blurClass: 'bg-success/30', shadowStyle: '0 0 80px hsl(var(--success) / 0.4)', icon: Volume2, title: t('audioChat.speaking'), desc: t('audioChat.speakingDesc') },
         processing: { bgClass: 'bg-zinc-800 text-muted-foreground', blurClass: '', shadowStyle: 'none', icon: Loader2, iconClass: 'animate-spin opacity-50', title: t('audioChat.thinking'), desc: t('audioChat.thinkingDesc') },
     };
     return configs[state];

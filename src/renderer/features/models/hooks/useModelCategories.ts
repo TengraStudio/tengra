@@ -47,13 +47,14 @@ export function useModelCategories({
 
 function createBaseCategories(t: (k: string) => string): ModelCategory[] {
     return [
-        { id: 'favorites', name: t('common.favorites'), icon: Zap, color: 'text-yellow', bg: 'bg-yellow/10', providerId: 'favorites', models: [] },
+        { id: 'favorites', name: t('common.favorites'), icon: Zap, color: 'text-warning', bg: 'bg-yellow/10', providerId: 'favorites', models: [] },
         { id: 'copilot', name: t('providerLabels.githubCopilot'), icon: Zap, color: 'text-indigo', bg: 'bg-indigo/10', providerId: 'copilot', models: [] },
         { id: 'openai', name: t('providerLabels.openai'), icon: Sparkles, color: 'text-success', bg: 'bg-success/10', providerId: 'openai', models: [] },
         { id: 'claude', name: t('providerLabels.anthropic'), icon: BrainCircuit, color: 'text-purple', bg: 'bg-pink/10', providerId: 'anthropic', models: [] },
         { id: 'antigravity', name: t('providerLabels.antigravity'), icon: LayoutGrid, color: 'text-pink', bg: 'bg-pink/10', providerId: 'antigravity', models: [] },
         { id: 'opencode', name: t('modelSelector.openCode'), icon: Code2, color: 'text-cyan', bg: 'bg-cyan/10', providerId: 'opencode', models: [] },
-        { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-orange', bg: 'bg-orange/10', providerId: 'ollama', models: [] },
+        { id: 'ollama', name: t('providerLabels.ollama'), icon: Server, color: 'text-orange', bg: 'bg-warning/10', providerId: 'ollama', models: [] },
+        { id: 'nvidia', name: 'NVIDIA', icon: Zap, color: 'text-green', bg: 'bg-green/10', providerId: 'nvidia', models: [] },
         { id: 'custom', name: t('modelSelector.proxyCustom'), icon: Box, color: 'text-muted-foreground', bg: 'bg-muted/10', providerId: 'openai', models: [] }
     ];
 }
@@ -73,10 +74,13 @@ function populateCategories(props: PopulateProps) {
     const brandsMapping: Record<string, string> = {
         ollama: 'ollama',
         copilot: 'copilot',
+        github: 'copilot',
         openai: 'openai',
+        codex: 'openai',
         anthropic: 'claude',
         antigravity: 'antigravity',
         opencode: 'opencode',
+        nvidia: 'nvidia',
         custom: 'custom'
     };
 
@@ -131,6 +135,10 @@ function mapModelToItem(
     if (!matchesSearch(m, ctx.searchLower)) { return null; }
     if (ctx.hidden.has(id) && id !== ctx.selectedModel) { return null; }
 
+    // Extract thinking levels from model data
+    const thinkingLevels = Array.isArray(m.thinking_levels) ? m.thinking_levels as string[] : undefined;
+    const description = typeof m.description === 'string' ? m.description : undefined;
+
     return {
         id,
         label: formatDisplayLabel(m),
@@ -139,7 +147,9 @@ function mapModelToItem(
         type: typeof m.type === 'string' ? m.type : 'text',
         contextWindow: m.contextWindow,
         pricing: extractPricing(m.pricing),
-        pinned: ctx.favorites.has(id)
+        pinned: ctx.favorites.has(id),
+        thinkingLevels,
+        description
     };
 }
 

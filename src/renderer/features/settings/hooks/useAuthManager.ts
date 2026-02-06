@@ -19,6 +19,7 @@ export function useAuthManager() {
         setAppSettings: logic.setSettings,
         quotas: logic.quotaData,
         codexUsage: logic.codexUsage,
+        claudeQuota: logic.claudeQuota,
         refresh: logic.refreshAuthStatus
     }), [
         logic, settingsCategory, isAuthModalOpen

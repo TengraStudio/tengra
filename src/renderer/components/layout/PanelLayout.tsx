@@ -6,6 +6,7 @@
 import { ChevronDown, ChevronRight, Maximize2, X } from 'lucide-react';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -102,6 +103,7 @@ const PanelHeader: React.FC<{
     onToggleCollapse?: () => void
     onMaximize?: () => void
 }> = ({ group, onToggleCollapse, onMaximize }) => {
+    const { t } = useTranslation();
     const { removePanel, setActivePanel } = usePanelLayout();
 
     if (group.panels.length === 0) { return null; }
@@ -124,7 +126,7 @@ const PanelHeader: React.FC<{
                     <button
                         onClick={onToggleCollapse}
                         className="p-1 rounded hover:bg-muted text-muted-foreground"
-                        title={group.collapsed ? "Expand" : "Collapse"}
+                        title={group.collapsed ? t('panelLayout.expand') : t('panelLayout.collapse')}
                     >
                         {group.collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
@@ -133,7 +135,7 @@ const PanelHeader: React.FC<{
                     <button
                         onClick={onMaximize}
                         className="p-1 rounded hover:bg-muted text-muted-foreground"
-                        title="Maximize"
+                        title={t('panelLayout.maximize')}
                     >
                         <Maximize2 className="w-3.5 h-3.5" />
                     </button>

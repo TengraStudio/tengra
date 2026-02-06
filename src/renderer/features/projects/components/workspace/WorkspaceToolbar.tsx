@@ -100,7 +100,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         )}
-                        <div className="px-1.5 py-0.5 rounded text-[10px] uppercase font-medium bg-primary/10 text-primary border border-primary/20">
+                        <div className="px-1.5 py-0.5 rounded text-xxs uppercase font-medium bg-primary/10 text-primary border border-primary/20">
                             {project.type}
                         </div>
                     </div>

@@ -145,7 +145,16 @@ export class Container {
             const instance = def.instance as LifecycleAware;
             if (typeof instance.cleanup === 'function') {
                 try {
-                    await instance.cleanup();
+                    appLogger.info('Container', `Cleaning up ${def.name}...`);
+                    const start = Date.now();
+
+                    // 2s timeout per service cleanup
+                    await Promise.race([
+                        instance.cleanup(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timed out')), 2000))
+                    ]);
+
+                    appLogger.info('Container', `Cleaned up ${def.name} in ${Date.now() - start}ms`);
                 } catch (error) {
                     appLogger.error('Container', `Failed to cleanup ${def.name}`, error as Error);
                 }

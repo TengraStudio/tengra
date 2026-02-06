@@ -20,22 +20,14 @@ export function getTray(): Tray | null {
 }
 
 export function createWindow(settingsService?: SettingsService): BrowserWindow {
-    // Get saved window settings or use defaults
-    const settings = settingsService?.getSettings();
-    const windowSettings = settings?.window;
-    const defaultWidth = 1280;
-    const defaultHeight = 800;
-
-    // Use correct icon path for both dev and production
-    const iconPath = app.isPackaged
-        ? path.join(process.resourcesPath, 'icon.ico')
-        : path.join(__dirname, '../../resources/icon.ico');
+    const { width, height, x, y } = getWindowInitialSettings(settingsService);
+    const iconPath = getWindowIconPath();
 
     const win = new BrowserWindow({
-        width: windowSettings?.width ?? defaultWidth,
-        height: windowSettings?.height ?? defaultHeight,
-        x: windowSettings?.x,
-        y: windowSettings?.y,
+        width,
+        height,
+        x,
+        y,
         show: false,
         frame: false,
         backgroundColor: '#000000',
@@ -49,52 +41,11 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
         }
     });
 
-    // Security: Set Content-Security-Policy
-    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-        callback({
-            responseHeaders: {
-                ...details.responseHeaders,
-                'Content-Security-Policy': [
-                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:*; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https:;"
-                ]
-            }
-        });
-    });
-
-    // Apply fullscreen if saved
-    if (windowSettings?.fullscreen === true) {
-        win.setFullScreen(true);
-    }
-
-    win.on('ready-to-show', () => {
-        const isHidden = process.argv.includes('--hidden') ||
-            process.argv.includes('/hidden') ||
-            settings?.window?.workAtBackground === true && app.getLoginItemSettings().wasOpenedAtLogin;
-
-        if (!isHidden) {
-            win.show();
-        }
-        win.setTitle('TANDEM');
-    });
-
-    setupWindowStatePersistence(win, settingsService, defaultWidth, defaultHeight);
-
-    win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-        const levels = ['debug', 'info', 'warn', 'error'];
-        const lvl = levels[level] as 'debug' | 'info' | 'warn' | 'error';
-        const context = `renderer:${path.basename(sourceId)}:${line} `;
-        appLogger[lvl](context, message);
-    });
-
-    win.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-        appLogger.warn('Security', `Permission request denied for: ${permission}`);
-        return callback(false);
-    });
-
-    win.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-        appLogger.debug('Security', `Permission check for: ${permission}`);
-        return false;
-    });
+    // Setup Security & Event Handlers
+    setupWebContentsSecurity(win);
+    setupConsoleRedirect(win);
+    setupWindowStatePersistence(win, settingsService, 1280, 800);
+    setupWindowReadyState(win, settingsService);
 
     win.webContents.setWindowOpenHandler((details: HandlerDetails) => {
         void shell.openExternal(details.url);
@@ -109,6 +60,85 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
 
     mainWindow = win;
     return win;
+}
+
+/**
+ * Resolves the appropriate icon path for the application.
+ */
+function getWindowIconPath(): string {
+    return app.isPackaged
+        ? path.join(process.resourcesPath, 'icon.ico')
+        : path.join(__dirname, '../../resources/icon.ico');
+}
+
+/**
+ * Retrieves initial window dimensions and position from settings.
+ */
+function getWindowInitialSettings(settingsService?: SettingsService) {
+    const settings = settingsService?.getSettings();
+    const win = settings?.window;
+    return {
+        width: win?.width ?? 1280,
+        height: win?.height ?? 800,
+        x: win?.x,
+        y: win?.y
+    };
+}
+
+/**
+ * Handles the 'ready-to-show' event and initial visibility logic.
+ */
+function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsService) {
+    win.on('ready-to-show', () => {
+        const settings = settingsService?.getSettings();
+        const isHidden = process.argv.includes('--hidden') ||
+            process.argv.includes('/hidden') ||
+            (settings?.window?.workAtBackground === true && app.getLoginItemSettings().wasOpenedAtLogin);
+
+        if (!isHidden) {
+            win.show();
+        }
+        win.setTitle('TANDEM');
+    });
+}
+
+/**
+ * Hardens WebContents security with CSP and permission restrictions.
+ */
+function setupWebContentsSecurity(win: BrowserWindow) {
+    // Security: Set Content-Security-Policy
+    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https://fonts.gstatic.com;"
+                ]
+            }
+        });
+    });
+
+    win.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+        appLogger.warn('Security', `Permission request denied for: ${permission}`);
+        return callback(false);
+    });
+
+    win.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
+        appLogger.debug('Security', `Permission check for: ${permission}`);
+        return false;
+    });
+}
+
+/**
+ * Redirects renderer console messages to application logger.
+ */
+function setupConsoleRedirect(win: BrowserWindow) {
+    win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+        const levels = ['debug', 'info', 'warn', 'error'];
+        const lvl = (levels[level] || 'info') as 'debug' | 'info' | 'warn' | 'error';
+        const context = `renderer:${path.basename(sourceId)}:${line} `;
+        appLogger[lvl](context, message);
+    });
 }
 
 function setupWindowStatePersistence(win: BrowserWindow, settingsService?: SettingsService, defaultWidth: number = 1280, defaultHeight: number = 800) {
@@ -188,7 +218,7 @@ export function setupTray(settingsService?: SettingsService) {
             {
                 label: 'Show Tandem',
                 click: () => {
-                    if (mainWindow) {
+                    if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.show();
                         mainWindow.focus();
                     } else if (settingsService) {
@@ -208,7 +238,7 @@ export function setupTray(settingsService?: SettingsService) {
         tray.setContextMenu(contextMenu);
 
         tray.on('click', () => {
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
                 if (mainWindow.isVisible()) {
                     mainWindow.hide();
                 } else {

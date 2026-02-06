@@ -137,7 +137,7 @@ export class ModelRegistryService extends BaseService {
         // Let's check AuthService later. For now, we'll try to get 'github' token if existing.
 
         // Dynamically add cloud providers if authenticated
-        const cloudProviders = ['antigravity', 'codex', 'claude', 'copilot']; // Added copilot here to treat it uniformly
+        const cloudProviders = ['antigravity', 'codex', 'claude', 'copilot', 'nvidia', 'openai'];
         for (const p of cloudProviders) {
             // Proactively refresh tokens for cloud providers before fetching models
             try {
@@ -147,6 +147,7 @@ export class ModelRegistryService extends BaseService {
             }
 
             const token = await this.deps.authService.getActiveToken(p);
+
             appLogger.debug('ModelRegistry', `Cloud provider ${p}: token ${token ? 'found' : 'NOT FOUND'}`);
             if (token) {
                 promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
@@ -155,8 +156,19 @@ export class ModelRegistryService extends BaseService {
 
         const results = await Promise.all(promises);
         const all = results.flat();
+
+        // Add NVIDIA models to ensure high-quality ones are always visible
+        const nvidiaToken = await this.deps.authService.getActiveToken('nvidia');
+        if (nvidiaToken) {
+            all.push(...this.getNvidiaModels());
+        }
+
+        // Use provider:id as key to preserve models with same ID from different providers
         const unique = new Map<string, ModelProviderInfo>();
-        all.forEach(m => unique.set(m.id, m));
+        all.forEach(m => {
+            const key = `${m.provider}:${m.id}`;
+            unique.set(key, m);
+        });
         return Array.from(unique.values());
     }
 
@@ -177,10 +189,18 @@ export class ModelRegistryService extends BaseService {
             appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`);
 
             if (response.success && response.models.length > 0) {
-                return response.models.map(m => ({
-                    ...m,
-                    provider: provider === 'anthropic' ? 'claude' : provider
-                }));
+                return response.models.map(m => {
+                    const mappedProvider = provider === 'anthropic' ? 'claude' : provider;
+                    let id = m.id;
+                    if (mappedProvider === 'nvidia' && !id.startsWith('nvidia/')) {
+                        id = `nvidia/${id}`;
+                    }
+                    return {
+                        ...m,
+                        id,
+                        provider: mappedProvider
+                    };
+                });
             }
         } catch (e) {
             appLogger.debug('ModelRegistry', `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`);
@@ -236,6 +256,18 @@ export class ModelRegistryService extends BaseService {
      */
     async getInstalledModels(): Promise<ModelProviderInfo[]> {
         return this.fetchModelProvider('ollama');
+    }
+
+    private getNvidiaModels(): ModelProviderInfo[] {
+        return [
+            { id: 'nvidia/meta/llama-3.1-405b-instruct', name: 'Llama 3.1 405B Instruct', provider: 'nvidia', contextWindow: 128000 },
+            { id: 'nvidia/meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct', provider: 'nvidia', contextWindow: 128000 },
+            { id: 'nvidia/meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', provider: 'nvidia', contextWindow: 128000 },
+            { id: 'nvidia/nvidia/llama-3.1-nemotron-70b-instruct', name: 'Llama 3.1 Nemotron 70B', provider: 'nvidia', contextWindow: 128000 },
+            { id: 'nvidia/nvidia/nemotron-4-340b-instruct', name: 'Nemotron-4 340B Instruct', provider: 'nvidia', contextWindow: 128000 },
+            { id: 'nvidia/mistralai/mixtral-8x22b-instruct-v0.1', name: 'Mixtral 8x22B Instruct v0.1', provider: 'nvidia', contextWindow: 65536 },
+            { id: 'nvidia/microsoft/phi-3-medium-4k-instruct', name: 'Phi-3 Medium 4K Instruct', provider: 'nvidia', contextWindow: 4096 }
+        ];
     }
 }
 

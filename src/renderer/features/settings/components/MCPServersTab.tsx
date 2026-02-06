@@ -1,6 +1,7 @@
 import { CheckCircle2, Edit2,Plus, Server, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface MCPServer {
@@ -12,6 +13,7 @@ interface MCPServer {
 }
 
 export const MCPServersTab = () => {
+    const { t } = useTranslation();
     const [servers, setServers] = useState<MCPServer[]>([
         { id: '1', name: 'Local Dev Server', url: 'http://localhost:8000/sse', status: 'connected', type: 'sse' },
         { id: '2', name: 'PostgreSQL MCP', url: 'stdio: npx -y @modelcontextprotocol/server-postgres', status: 'disconnected', type: 'stdio' }
@@ -27,13 +29,13 @@ export const MCPServersTab = () => {
                 <div>
                     <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Server className="w-5 h-5" />
-                        Configured Servers
+                        {t('settings.mcp.servers.title')}
                     </h2>
-                    <p className="text-sm text-muted-foreground">Manage your Model Context Protocol server connections</p>
+                    <p className="text-sm text-muted-foreground">{t('settings.mcp.servers.subtitle')}</p>
                 </div>
                 <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
                     <Plus className="w-4 h-4" />
-                    Connect Server
+                    {t('settings.mcp.servers.connect')}
                 </button>
             </div>
 
@@ -52,7 +54,7 @@ export const MCPServersTab = () => {
                             <div>
                                 <h3 className="font-medium flex items-center gap-2">
                                     {server.name}
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted uppercase text-muted-foreground border">
+                                    <span className="px-1.5 py-0.5 rounded text-xxs bg-muted uppercase text-muted-foreground border">
                                         {server.type}
                                     </span>
                                 </h3>
@@ -65,7 +67,7 @@ export const MCPServersTab = () => {
                                 {server.status === 'connected' && <CheckCircle2 className="w-3.5 h-3.5 text-success" />}
                                 {server.status === 'disconnected' && <div className="w-2 h-2 rounded-full bg-muted" />}
                                 {server.status === 'error' && <XCircle className="w-3.5 h-3.5 text-destructive" />}
-                                <span className="text-xs capitalize">{server.status}</span>
+                                <span className="text-xs capitalize">{t(`settings.mcp.status.${server.status}`)}</span>
                             </div>
 
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -86,7 +88,7 @@ export const MCPServersTab = () => {
                 {servers.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50 border border-dashed border-border/50 rounded-xl">
                         <Server className="w-10 h-10 mb-3 opacity-20" />
-                        <p>No servers connected</p>
+                        <p>{t('settings.mcp.servers.empty')}</p>
                     </div>
                 )}
             </div>

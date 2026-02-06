@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { ProjectWizardModal } from '@renderer/features/projects/components/ProjectWizardModal';
 import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace';
 import { AppSettings } from '@shared/types';
@@ -9,6 +8,7 @@ import React, { memo, useState } from 'react';
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { Language, useTranslation } from '@/i18n';
 import { Message, Project, TerminalTab } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { ProjectCard } from './components/ProjectCard';
 import { ProjectModals } from './components/ProjectModals';

@@ -1,4 +1,3 @@
-import { appLogger } from '@main/logging/logger';
 import { useTranslation } from '@renderer/i18n';
 import { ChevronDown, Maximize2, Minimize2, Plus, Terminal, TerminalSquare, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
@@ -10,6 +9,7 @@ import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import 'xterm/css/xterm.css';
 

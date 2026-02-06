@@ -1,5 +1,7 @@
-import { AlertCircle,Download, ExternalLink, X } from 'lucide-react';
+import { AlertCircle, Download, ExternalLink, X } from 'lucide-react';
 import React from 'react';
+
+import { useTranslation } from '@/i18n';
 
 interface ExtensionInstallPromptProps {
     onClose: () => void;
@@ -13,6 +15,8 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
     onClose,
     onDismiss
 }) => {
+    const { t } = useTranslation();
+
     const handleOpenExtensionFolder = () => {
         const extensionPath = process.cwd() + '/extension';
         // Sanitize path before creating file:// URL
@@ -39,7 +43,7 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
-                        aria-label="Close"
+                        aria-label={t('common.close')}
                     >
                         <X size={20} />
                     </button>
@@ -49,10 +53,10 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-white">
-                                Enhance Your Experience
+                                {t('extensionPrompt.title')}
                             </h2>
                             <p className="text-white/80 text-sm">
-                                Install the Tandem Browser Extension
+                                {t('extensionPrompt.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -65,46 +69,44 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                         <AlertCircle size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-gray-300">
                             <p className="font-medium text-white mb-1">
-                                What is the browser extension?
+                                {t('extensionPrompt.infoTitle')}
                             </p>
                             <p>
-                                The Tandem browser extension allows the AI to interact directly with web
-                                pages. It can read content, fill forms, click buttons, and perform
-                                automated actions based on your commands.
+                                {t('extensionPrompt.infoBody')}
                             </p>
                         </div>
                     </div>
 
                     {/* Features */}
                     <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-white">Features:</h3>
+                        <h3 className="text-sm font-semibold text-white">{t('extensionPrompt.featuresTitle')}</h3>
                         <ul className="space-y-2 text-sm text-gray-300">
                             <li className="flex items-start gap-2">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">AI Chat in Browser:</strong> Chat with
-                                    AI directly from any webpage
+                                    <strong className="text-white">{t('extensionPrompt.features.aiChatTitle')}</strong>{' '}
+                                    {t('extensionPrompt.features.aiChatDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">Page Interaction:</strong> AI can read,
-                                    click, and fill forms automatically
+                                    <strong className="text-white">{t('extensionPrompt.features.pageInteractionTitle')}</strong>{' '}
+                                    {t('extensionPrompt.features.pageInteractionDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">Content Extraction:</strong> Extract and
-                                    summarize page content with one click
+                                    <strong className="text-white">{t('extensionPrompt.features.contentExtractionTitle')}</strong>{' '}
+                                    {t('extensionPrompt.features.contentExtractionDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-green-400 mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">Secure Connection:</strong> All
-                                    communication stays local on your computer
+                                    <strong className="text-white">{t('extensionPrompt.features.secureConnectionTitle')}</strong>{' '}
+                                    {t('extensionPrompt.features.secureConnectionDesc')}
                                 </span>
                             </li>
                         </ul>
@@ -112,13 +114,15 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
 
                     {/* Installation Steps */}
                     <div className="space-y-2 mt-4">
-                        <h3 className="text-sm font-semibold text-white">Quick Installation:</h3>
+                        <h3 className="text-sm font-semibold text-white">{t('extensionPrompt.installTitle')}</h3>
                         <ol className="space-y-2 text-sm text-gray-300 list-decimal list-inside">
-                            <li>Open Chrome and go to chrome://extensions/</li>
-                            <li>Enable &quot;Developer mode&quot; (toggle in top-right)</li>
-                            <li>Click &quot;Load unpacked&quot;</li>
+                            <li>{t('extensionPrompt.steps.step1')}</li>
+                            <li>{t('extensionPrompt.steps.step2')}</li>
+                            <li>{t('extensionPrompt.steps.step3')}</li>
                             <li>
-                                Select the <code className="text-purple-400 bg-gray-800 px-1 rounded">extension</code> folder from Tandem directory
+                                {t('extensionPrompt.steps.step4Prefix')}{' '}
+                                <code className="text-purple-400 bg-gray-800 px-1 rounded">extension</code>{' '}
+                                {t('extensionPrompt.steps.step4Suffix')}
                             </li>
                         </ol>
                     </div>
@@ -131,14 +135,14 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-lg transition-all"
                     >
                         <Download size={18} />
-                        Open Extension Folder
+                        {t('extensionPrompt.openFolder')}
                     </button>
                     <button
                         onClick={handleOpenInstructions}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
                     >
                         <ExternalLink size={18} />
-                        View Instructions
+                        {t('extensionPrompt.viewInstructions')}
                     </button>
                 </div>
 
@@ -148,13 +152,13 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                         onClick={handleDismiss}
                         className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
                     >
-                        Don&apos;t show this again
+                        {t('extensionPrompt.dismiss')}
                     </button>
                     <button
                         onClick={onClose}
                         className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
                     >
-                        Remind me later
+                        {t('extensionPrompt.remindLater')}
                     </button>
                 </div>
             </div>

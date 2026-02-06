@@ -24,7 +24,7 @@ interface SettingsTabContentProps {
     sharedProps: SettingsSharedProps
     installedModels: ModelInfo[]
     proxyModels?: ModelInfo[]
-    onRefreshModels: () => void
+    onRefreshModels: (bypassCache?: boolean) => void
     handleFactoryReset: () => void | Promise<void>
     groupedModels?: GroupedModels
 }

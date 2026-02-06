@@ -34,7 +34,7 @@ export const MaxIdeasSliderSection: React.FC<MaxIdeasSliderSectionProps> = ({
 				disabled={isLoading}
 				className="w-full accent-primary"
 			/>
-			<div className="flex justify-between text-[10px] text-muted-foreground/60 mt-1 font-medium">
+			<div className="flex justify-between text-xxs text-muted-foreground/60 mt-1 font-medium">
 				<span>1</span>
 				<span>25</span>
 				<span>50</span>

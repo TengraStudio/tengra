@@ -95,8 +95,8 @@ export class ProjectScaffoldService extends BaseService {
 :root {
     --primary-color: #3498db;
     --secondary-color: #2ecc71;
-    --text-color: #333;
-    --bg-color: #fff;
+    --text-color: text-foreground;
+    --bg-color: white;
 }
 
 * {
@@ -131,7 +131,7 @@ main {
 }
 
 footer {
-    background: #333;
+    background: text-foreground;
     color: white;
     text-align: center;
     padding: 1rem;
@@ -205,7 +205,7 @@ export default function App() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: 'white',
     },
     content: {
         flex: 1,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     description: {
         fontSize: 16,
         textAlign: 'center',
-        color: '#666',
+        color: 'hsl(var(--muted-foreground))',
     },
 });
 `;
@@ -306,12 +306,12 @@ function create() {
     // Set up game objects
     this.add.text(400, 300, '${idea.title}', {
         fontSize: '32px',
-        fill: '#fff'
+        fill: 'white'
     }).setOrigin(0.5);
 
     this.add.text(400, 350, 'Press SPACE to start', {
         fontSize: '16px',
-        fill: '#ccc'
+        fill: 'border-border'
     }).setOrigin(0.5);
 }
 
@@ -338,7 +338,7 @@ function update() {
             background: #1a1a2e;
         }
         #game-container {
-            border: 2px solid #333;
+            border: 2px solid text-foreground;
             border-radius: 4px;
         }
     </style>
@@ -552,8 +552,8 @@ contextBridge.exposeInMainWorld('api', {
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        h1 { color: #333; }
-        p { color: #666; }
+        h1 { color: text-foreground; }
+        p { color: hsl(var(--muted-foreground)); }
     </style>
 </head>
 <body>

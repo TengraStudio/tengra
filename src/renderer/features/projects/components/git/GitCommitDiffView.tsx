@@ -16,18 +16,18 @@ export const GitCommitDiffView: React.FC<CommitDiffViewProps> = ({ selectedCommi
             <div className="flex items-center gap-2">
                 <GitCommit className="w-4 h-4 text-primary" />
                 <h4 className="text-sm font-bold text-foreground">
-                    Changes in Commit <span className="font-mono text-primary">{selectedCommit.hash.substring(0, 7)}</span>
+                    {t('projectDashboard.commitChangesTitle')}: {selectedCommit.hash.substring(0, 7)}
                 </h4>
             </div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                Unified Diff
+            <div className="text-xxs text-muted-foreground uppercase tracking-widest font-bold">
+                {t('projectDashboard.unifiedDiff')}
             </div>
         </div>
         <div className="bg-neutral-950 rounded-xl border border-border/50 overflow-hidden">
             {loadingDiff ? (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
                     <RefreshCw className="w-6 h-6 animate-spin mr-3" />
-                    <span>Analyzing commit changes...</span>
+                    <span>{t('projectDashboard.analyzingCommit')}</span>
                 </div>
             ) : commitDiff ? (
                 <div className="max-h-[500px] overflow-auto p-4 font-mono text-xs leading-relaxed">

@@ -23,8 +23,17 @@ export const zh = {
         add: '添加',
         done: '完成',
         pending: '待处理',
+        confirm: '确认',
+        processing: '处理中...',
         selectAll: '全选',
         itemsSelected: '已选择 {{count}} 项'
+    },
+    app: {
+        name: 'Tandem'
+    },
+    errors: {
+        unexpected: '抱歉，发生了错误。',
+        somethingWentWrong: '出了点问题：'
     },
     languages: {
         tr: '土耳其语',
@@ -620,7 +629,9 @@ export const zh = {
         render: '渲染',
         expand: '展开',
         collapse: '收起',
-        moreLines: '更多行'
+        moreLines: '更多行',
+        scrollToBottom: '滚动到底部',
+        scrollToBottomWithCount: '滚动到底部（{{count}} 条新消息）'
     },
     welcome: {
         title: 'Tandem',
@@ -1089,11 +1100,56 @@ export const zh = {
         system: '系统',
         navigate: '导航',
         select: '选择',
-        close: '关闭'
+        close: '关闭',
+        engineLabel: 'Tandem 命令引擎',
+        previewEmpty: '选择一个项目以查看详情',
+        noResultsHint: '试着搜索聊天、模型或设置'
     },
     quickAction: {
         explain: '解释',
         translate: '翻译'
+    },
+    activityBar: {
+        chat: '聊天',
+        explorer: '资源管理器',
+        search: '搜索',
+        sourceControl: '源代码管理',
+        debug: '调试',
+        extensions: '扩展',
+        settings: '设置'
+    },
+    statusBar: {
+        error: '错误',
+        errors: '错误',
+        warning: '警告',
+        warnings: '警告'
+    },
+    updateNotification: {
+        checkingTitle: '正在检查更新...',
+        availableTitle: '有可用更新：v{{version}}',
+        availableContent: 'Tandem 有新版本可用。',
+        downloadingTitle: '正在下载更新...',
+        downloadedTitle: '更新已就绪',
+        downloadedContent: '重启 Tandem 以应用最新更新。',
+        errorTitle: '更新失败',
+        uptodateTitle: '已是最新版本',
+        downloadAction: '下载',
+        restartAction: '立即重启'
+    },
+    panelLayout: {
+        expand: '展开',
+        collapse: '折叠',
+        maximize: '最大化'
+    },
+    diffViewer: {
+        loading: '正在加载差异...'
+    },
+    fab: {
+        openMenu: '打开菜单',
+        closeMenu: '关闭菜单'
+    },
+    modal: {
+        close: '关闭弹窗'
     },
     titleBar: {
         minimize: '最小化',
@@ -1339,6 +1395,35 @@ export const zh = {
         output: '输出',
         filePreview: '文件预览',
         path: '路径：'
+    },
+    extensionPrompt: {
+        title: '提升你的体验',
+        subtitle: '安装 Tandem 浏览器扩展',
+        infoTitle: '什么是浏览器扩展？',
+        infoBody: 'Tandem 浏览器扩展允许 AI 直接与网页交互。它可以读取内容、填写表单、点击按钮，并根据你的指令执行自动化操作。',
+        featuresTitle: '功能：',
+        features: {
+            aiChatTitle: '浏览器内 AI 聊天：',
+            aiChatDesc: '在任何网页上直接与 AI 对话',
+            pageInteractionTitle: '页面交互：',
+            pageInteractionDesc: 'AI 可自动读取页面、点击并填写表单',
+            contentExtractionTitle: '内容提取：',
+            contentExtractionDesc: '一键提取并总结页面内容',
+            secureConnectionTitle: '安全连接：',
+            secureConnectionDesc: '所有通信都保留在你的电脑本地'
+        },
+        installTitle: '快速安装：',
+        steps: {
+            step1: '打开 Chrome 并访问 chrome://extensions/',
+            step2: '启用“开发者模式”（右上角开关）',
+            step3: '点击“加载已解压的扩展程序”',
+            step4Prefix: '选择 Tandem 目录中的',
+            step4Suffix: '文件夹'
+        },
+        openFolder: '打开扩展文件夹',
+        viewInstructions: '查看说明',
+        dismiss: '不再显示',
+        remindLater: '稍后提醒我'
     }
 };
 

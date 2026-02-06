@@ -76,7 +76,7 @@ export const WizardDetailsStep: React.FC<WizardDetailsStepProps> = ({
                                     <cat.icon className="w-5 h-5" />
                                 </div>
                                 <span className={cn(
-                                    "text-[10px] font-black uppercase tracking-widest truncate w-full px-1 text-center",
+                                    "text-xxs font-black uppercase tracking-widest truncate w-full px-1 text-center",
                                     formData.category === cat.id ? "text-primary" : "text-muted-foreground"
                                 )}>
                                     {t(cat.nameKey)}

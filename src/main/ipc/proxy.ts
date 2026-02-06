@@ -89,4 +89,8 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         // Auth sync is now automatic via HTTP API - no manual sync needed
         return { success: true };
     });
+
+    ipcMain.handle('proxy:downloadAuthFile', async (_event, name: string) => {
+        return await proxyService.getAuthFileContent(name);
+    });
 }

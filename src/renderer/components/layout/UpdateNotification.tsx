@@ -1,9 +1,10 @@
-
 import type { IpcRendererEvent } from 'electron';
 import { AlertCircle, CheckCircle, Download, LucideIcon, RefreshCw, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
+import { useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
+import { appLogger } from '@/utils/renderer-logger';
 
 type UpdateState = 'checking' | 'available' | 'downloading' | 'downloaded' | 'not-available' | 'error' | 'idle';
 
@@ -24,40 +25,40 @@ interface StateConfig {
     content?: string | ((status: UpdateStatus) => React.ReactNode)
 }
 
-const STATE_CONFIGS: Partial<Record<UpdateState, StateConfig>> = {
+const getStateConfigs = (t: (key: string, options?: Record<string, string | number>) => string): Partial<Record<UpdateState, StateConfig>> => ({
     checking: {
         icon: RefreshCw,
         iconClass: 'text-primary animate-spin',
-        title: 'Checking for updates...'
+        title: t('updateNotification.checkingTitle')
     },
     available: {
         icon: Download,
         iconClass: 'text-primary',
-        title: (version) => `Update Available: v${version}`,
-        content: 'A new version of Tandem is available.'
+        title: (version) => t('updateNotification.availableTitle', { version: version ?? '' }),
+        content: t('updateNotification.availableContent')
     },
     downloading: {
         icon: Download,
         iconClass: 'text-primary animate-pulse',
-        title: 'Downloading update...'
+        title: t('updateNotification.downloadingTitle')
     },
     downloaded: {
         icon: CheckCircle,
         iconClass: 'text-success',
-        title: 'Update Ready',
-        content: 'Restart Tandem to apply the latest update.'
+        title: t('updateNotification.downloadedTitle'),
+        content: t('updateNotification.downloadedContent')
     },
     error: {
         icon: AlertCircle,
         iconClass: 'text-destructive',
-        title: 'Update Failed'
+        title: t('updateNotification.errorTitle')
     },
     'not-available': {
         icon: CheckCircle,
         iconClass: 'text-muted-foreground',
-        title: 'You are up to date'
+        title: t('updateNotification.uptodateTitle')
     }
-};
+});
 
 const AUTO_SHOW_STATES: UpdateState[] = ['available', 'downloading', 'downloaded', 'error', 'not-available'];
 
@@ -98,12 +99,14 @@ const ActionButton: React.FC<ActionButtonProps> = ({ onClick, className, label }
 );
 
 export const UpdateNotification: React.FC = () => {
+    const { t } = useTranslation();
     const [status, setStatus] = useState<UpdateStatus>({ state: 'idle' });
     const [isVisible, setIsVisible] = useState(false);
+    const stateConfigs = useMemo(() => getStateConfigs(t), [t]);
 
     useEffect(() => {
         const handleUpdateStatus = (_event: IpcRendererEvent, newStatus: UpdateStatus) => {
-            console.warn('Update status received:', newStatus);
+            appLogger.info('UpdateNotification', 'Update status received', newStatus);
             setStatus(newStatus);
 
             if (AUTO_SHOW_STATES.includes(newStatus.state)) {
@@ -125,7 +128,7 @@ export const UpdateNotification: React.FC = () => {
 
     if (!isVisible || status.state === 'idle') { return null; }
 
-    const config = STATE_CONFIGS[status.state];
+    const config = stateConfigs[status.state];
     if (!config) { return null; }
 
     const Icon = config.icon;
@@ -151,7 +154,7 @@ export const UpdateNotification: React.FC = () => {
 
                 <UpdateContent status={status} config={config} />
 
-                <UpdateActions state={status.state} onDownload={handleDownload} onInstall={handleInstall} />
+                <UpdateActions state={status.state} onDownload={handleDownload} onInstall={handleInstall} t={t} />
             </motion.div>
         </AnimatePresence>
     );
@@ -179,11 +182,12 @@ interface UpdateActionsProps {
     state: UpdateStatus['state']
     onDownload: () => void
     onInstall: () => void
+    t: (key: string, options?: Record<string, string | number>) => string
 }
 
-const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInstall }) => (
+const UpdateActions: React.FC<UpdateActionsProps> = ({ state, onDownload, onInstall, t }) => (
     <div className="flex gap-2">
-        {state === 'available' && <ActionButton onClick={onDownload} className="bg-blue-600 hover:bg-blue-700" label="Download" />}
-        {state === 'downloaded' && <ActionButton onClick={onInstall} className="bg-green-600 hover:bg-green-700" label="Restart Now" />}
+        {state === 'available' && <ActionButton onClick={onDownload} className="bg-blue-600 hover:bg-blue-700" label={t('updateNotification.downloadAction')} />}
+        {state === 'downloaded' && <ActionButton onClick={onInstall} className="bg-green-600 hover:bg-green-700" label={t('updateNotification.restartAction')} />}
     </div>
 );

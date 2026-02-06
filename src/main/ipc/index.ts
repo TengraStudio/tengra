@@ -125,7 +125,8 @@ export function registerAllIpc(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
-        proxyService: services.proxyService
+        proxyService: services.proxyService,
+        rateLimitService: services.rateLimitService
     });
     registerLlamaIpc(services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
@@ -151,7 +152,7 @@ export function registerAllIpc(
     registerPromptTemplatesIpc(services.promptTemplatesService);
     registerHistoryIpc(services.historyImportService);
 
-    registerTerminalIpc(getWin);
+    registerTerminalIpc(getWin, services.terminalService);
 
     // External Integrations
     registerToolsIpc(toolExecutor, services.commandService);

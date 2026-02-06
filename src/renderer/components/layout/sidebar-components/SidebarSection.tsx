@@ -110,7 +110,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, b
         onClick={onToggle}
         className={cn(
             'sidebar-section-header w-full flex items-center justify-between',
-            'px-3 py-2 mx-0.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider',
+            'px-3 py-2 mx-0.5 rounded-lg text-xxs font-semibold uppercase tracking-wider',
             'text-muted-foreground/70 hover:text-foreground hover:bg-background/40 hover:backdrop-blur-sm transition-all duration-200',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group',
             isExpanded && 'text-foreground bg-background/20'
@@ -125,7 +125,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ id, title, icon, badge, b
             <span>{title}</span>
         </div>
         {badge !== undefined && (
-            <span className={cn('px-1.5 py-0.5 rounded-full text-[9px] font-medium border border-transparent', BADGE_CLASSES[badgeVariant ?? 'default'], "group-hover:border-border/20 group-hover:shadow-sm transition-all")}>{badge}</span>
+            <span className={cn('px-1.5 py-0.5 rounded-full text-xxxs font-medium border border-transparent', BADGE_CLASSES[badgeVariant ?? 'default'], "group-hover:border-border/20 group-hover:shadow-sm transition-all")}>{badge}</span>
         )}
     </button>
 );
@@ -189,7 +189,7 @@ const SidebarCollapsedSection: React.FC<{
                 <div className="relative">
                     {icon}
                     {badge !== undefined && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[9px] font-bold flex items-center justify-center text-primary-foreground">
+                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground">
                             {typeof badge === 'number' && badge > 9 ? '9+' : badge}
                         </span>
                     )}
