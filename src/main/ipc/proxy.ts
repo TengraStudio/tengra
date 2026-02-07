@@ -56,10 +56,6 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         return await proxyService.getCodexAuthUrl();
     });
 
-    ipcMain.handle('proxy:checkAuthStatus', async () => {
-        return await proxyService.getAuthFiles();
-    });
-
     ipcMain.handle('proxy:getModels', async () => {
         return await proxyService.getModels();
     });
@@ -80,8 +76,9 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         return await proxyService.getClaudeQuota();
     });
 
-    ipcMain.handle('proxy:deleteAuthFile', async (_event, name: string) => {
-        return await proxyService.deleteAuthFile(name);
+    ipcMain.handle('proxy:deleteAuthFile', async () => {
+        // Legacy file-based auth is now handled via HTTP API
+        return { success: true };
     });
 
     // Sync auth files - now handled automatically by HTTP auth API
@@ -90,7 +87,8 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         return { success: true };
     });
 
-    ipcMain.handle('proxy:downloadAuthFile', async (_event, name: string) => {
-        return await proxyService.getAuthFileContent(name);
+    ipcMain.handle('proxy:downloadAuthFile', async () => {
+        // Legacy file-based auth is now handled via HTTP API
+        return { success: false, error: 'Not supported' };
     });
 }

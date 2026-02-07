@@ -67,6 +67,15 @@ func GetProviderName(modelName string) []string {
 		return []string{"claude"}
 	}
 
+	// Fallback for OpenAI/Codex models (GPT, o1, o3, o4 series)
+	modelLower := strings.ToLower(modelName)
+	if strings.HasPrefix(modelLower, "gpt-") ||
+		strings.HasPrefix(modelLower, "o1") ||
+		strings.HasPrefix(modelLower, "o3") ||
+		strings.HasPrefix(modelLower, "o4") {
+		return []string{"codex"}
+	}
+
 	return providers
 }
 

@@ -41,7 +41,7 @@ export const QuotaRing = ({ value, color, size = 'md' }: { value: number; color:
                     strokeDashoffset={offset}
                     strokeLinecap="round"
                     fill="transparent"
-                    className="transition-all duration-700 ease-out drop-shadow-[0_0_8px_var(--ring-glow)]"
+                    className="transition-all duration-700 ease-out"
                     style={{ '--ring-glow': color } as React.CSSProperties}
                 />
             </svg>

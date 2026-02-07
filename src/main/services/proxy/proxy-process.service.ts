@@ -1,9 +1,8 @@
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, exec, spawn } from 'child_process';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import * as http from 'http';
-import * as net from 'net';
 import * as path from 'path';
+import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { DataService } from '@main/services/data/data.service';
@@ -53,16 +52,11 @@ export class ProxyProcessManager {
 
         this.currentPort = options?.port ?? 8317;
 
-        // Check if port is already in use (e.g., from a previous detached proxy instance)
-        const portStatus = await this.ensurePortAvailability(this.currentPort);
-        if (portStatus.running) {
-            this.isProxyRunning = true;
-            return { running: true, port: this.currentPort };
-        }
-        if (portStatus.error) {
-            appLogger.error('Proxy', `Port ${this.currentPort} still in use, cannot start proxy`);
-            return { running: false, port: this.currentPort, error: portStatus.error };
-        }
+        // Always kill any existing proxy processes on startup to ensure we use the latest binary
+        await this.killExistingProxyProcesses();
+
+        // Small delay to allow OS to release the port
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Get the auth API port to pass to the proxy
         const authAPIPort = this.setupAuthAPI();
@@ -132,25 +126,47 @@ export class ProxyProcessManager {
         }
     }
 
-    async stop(_force: boolean = false): Promise<ProxyEmbedStatus> {
+    async stop(force: boolean = false): Promise<ProxyEmbedStatus> {
+        // Kill our managed child process if exists
         if (this.child) {
-            // If the user manually stops it (force=true) or if it's NOT persistent logic (handled by caller passing force=true?)
-            // Actually, if we want lifecycle management:
-            // - App Exit: call stop(false) -> if persistent, don't kill.
-            // - Manual Reset: call stop(true) -> kill.
-
-            // However, existing calls to stop() don't pass args.
-            // We'll rely on the caller logic. If this method is called, we assume we want to stop it.
-            // BUT, for app shutdown, we should avoid calling stop() if we want it to persist.
-            // Logic must be upstream in ProxyService.
-
-            // For now, just implement kill.
             this.child.kill();
             this.child = null;
         }
-        this.isProxyRunning = false;
 
+        // If force=true, also kill any orphaned/detached proxy processes
+        if (force) {
+            await this.killExistingProxyProcesses();
+        }
+
+        this.isProxyRunning = false;
         return this.getStatus();
+    }
+
+    /**
+     * Kill any existing cliproxy-embed processes.
+     * This ensures we always start with a fresh binary on app startup.
+     */
+    private async killExistingProxyProcesses(): Promise<void> {
+        const execAsync = promisify(exec);
+        const proxyName = process.platform === 'win32' ? 'cliproxy-embed.exe' : 'cliproxy-embed';
+
+        try {
+            if (process.platform === 'win32') {
+                // Windows: Use taskkill to forcefully terminate all cliproxy-embed processes
+                await execAsync(`taskkill /F /IM ${proxyName} 2>nul`).catch(() => {
+                    // Ignore errors - process may not exist
+                });
+            } else {
+                // Unix/Mac: Use pkill to terminate all cliproxy-embed processes
+                await execAsync(`pkill -9 -f ${proxyName}`).catch(() => {
+                    // Ignore errors - process may not exist
+                });
+            }
+            appLogger.info('Proxy', 'Killed existing proxy processes');
+        } catch {
+            // Process not found is fine - ignore
+            appLogger.debug('Proxy', 'No existing proxy processes to kill');
+        }
     }
 
 
@@ -305,90 +321,5 @@ logging-to-file: false
         return undefined;
     }
 
-    private async ensurePortAvailability(port: number): Promise<{ running?: boolean; error?: string }> {
-        const portInUse = await this.isPortInUse(port);
-        if (!portInUse) { return {}; }
-
-        appLogger.info('Proxy', `Port ${port} already in use, checking if it's our proxy...`);
-        const isOurProxy = await this.verifyExistingProxy(port);
-        if (isOurProxy) {
-            appLogger.info('Proxy', `Existing proxy detected on port ${port}, reusing it`);
-            return { running: true };
-        }
-
-        appLogger.warn('Proxy', `Port ${port} in use by unknown process, attempting to find alternative or waiting...`);
-        // Wait a bit and retry - the old proxy might be shutting down
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const stillInUse = await this.isPortInUse(port);
-        if (stillInUse) {
-            return { error: `Port ${port} is already in use` };
-        }
-        return {};
-    }
-
-    /**
-     * Check if a port is already in use
-     */
-    private async isPortInUse(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const server = net.createServer();
-
-            server.once('error', (err: NodeJS.ErrnoException) => {
-                if (err.code === 'EADDRINUSE') {
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            });
-
-            server.once('listening', () => {
-                server.close();
-                resolve(false);
-            });
-
-            server.listen(port, '127.0.0.1');
-        });
-    }
-
-    /**
-     * Verify if an existing process on the port is our proxy
-     * by making a simple health check request
-     */
-    private async verifyExistingProxy(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
-            const settings = this.settingsService.getSettings();
-            const key = settings.proxy?.key ?? '';
-
-            const req = http.request({
-                hostname: '127.0.0.1',
-                port,
-                path: '/v1/models',
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${key}`
-                },
-                timeout: 2000
-            }, (res) => {
-                // Only reuse if we are authorized (Key matches)
-                if (res.statusCode === 401 || res.statusCode === 403) {
-                    appLogger.warn('Proxy', `Found existing proxy on port ${port} but key rejected (HTTP ${res.statusCode}). Not reusing.`);
-                    resolve(false);
-                } else {
-                    resolve(res.statusCode !== undefined && res.statusCode < 500);
-                }
-            });
-
-            req.on('error', () => {
-                resolve(false);
-            });
-
-            req.on('timeout', () => {
-                req.destroy();
-                resolve(false);
-            });
-
-            req.end();
-        });
-    }
 }
 

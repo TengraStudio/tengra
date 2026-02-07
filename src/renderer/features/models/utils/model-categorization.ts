@@ -43,7 +43,10 @@ function detectModelType(lowerId: string): 'chat' | 'image' | 'video' {
 }
 
 function detectProvider(lowerId: string): ModelProvider {
-    if (lowerId.includes('gpt-') || lowerId.startsWith('o1') || lowerId.startsWith('o3')) {
+    if (lowerId.includes('codex') || lowerId.startsWith('gpt-5') || lowerId.startsWith('o1') || lowerId.startsWith('o3')) {
+        return 'codex';
+    }
+    if (lowerId.includes('gpt-')) {
         return 'openai';
     }
     if (lowerId.startsWith('copilot-') || lowerId.startsWith('github-')) {

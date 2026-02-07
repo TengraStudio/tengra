@@ -13,6 +13,17 @@ export interface ProjectStep {
     id: string;
     text: string;
     status: 'pending' | 'running' | 'completed' | 'failed';
+    /** Token usage for this step */
+    tokens?: {
+        prompt: number;
+        completion: number;
+    };
+    /** Execution timing */
+    timing?: {
+        startedAt?: number;
+        completedAt?: number;
+        durationMs?: number;
+    };
 }
 
 export interface ProjectState {
@@ -23,6 +34,16 @@ export interface ProjectState {
     lastError?: string;
     config?: AgentStartOptions;
     nodeId?: string;
+    /** Aggregated token usage for entire plan */
+    totalTokens?: {
+        prompt: number;
+        completion: number;
+    };
+    /** Plan execution timing */
+    timing?: {
+        startedAt?: number;
+        completedAt?: number;
+    };
 }
 
 export interface AgentStartOptions {

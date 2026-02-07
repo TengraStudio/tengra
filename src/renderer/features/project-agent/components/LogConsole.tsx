@@ -329,34 +329,36 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
         setExpandedTools(prev => ({ ...prev, [id]: !prev[id] }));
     }, []);
 
+    const visibleLogs = useMemo(() => logs.filter(l => l.role !== 'system'), [logs]);
+
     // Helper to keep scroll at bottom if already at bottom
     useEffect(() => {
         if (atBottom && virtuosoRef.current) {
             // Small timeout to allow render to happen
             setTimeout(() => {
-                virtuosoRef.current?.scrollToIndex({ index: logs.length - 1, align: 'end', behavior: 'smooth' });
+                virtuosoRef.current?.scrollToIndex({ index: visibleLogs.length - 1, align: 'end', behavior: 'smooth' });
             }, 50);
         }
-    }, [logs.length, atBottom]);
+    }, [visibleLogs.length, atBottom]);
 
     return (
-        <div className={cn("flex flex-col h-full bg-card/40 rounded-lg border border-border/20 overflow-hidden font-mono text-xxs", className)}>
+        <div className={cn("flex flex-col h-full bg-card/40 rounded-lg border border-border/20 overflow-hidden font-mono text-xxs nodrag nowheel", className)}>
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20 bg-muted/10 shrink-0 z-10">
                 <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground font-medium uppercase tracking-tight text-xxxs">{t('projectAgent.consoleTitle')}</span>
-                <span className="ml-auto text-xxxs text-muted-foreground/30">{t('projectAgent.eventCount', { count: logs.length })}</span>
+                <span className="ml-auto text-xxxs text-muted-foreground/30">{t('projectAgent.eventCount', { count: visibleLogs.length })}</span>
             </div>
 
             <div className="flex-1 relative">
-                {logs.length === 0 ? (
+                {visibleLogs.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground/40 italic">
                         {t('projectAgent.waitingLogs')}
                     </div>
                 ) : (
                     <Virtuoso
                         ref={virtuosoRef}
-                        data={logs}
-                        totalCount={logs.length}
+                        data={visibleLogs}
+                        totalCount={visibleLogs.length}
                         atBottomStateChange={setAtBottom}
                         followOutput={'smooth'}
                         itemContent={(_index, log) => (
@@ -372,11 +374,11 @@ export const LogConsole = ({ logs, className }: LogConsoleProps) => {
                     />
                 )}
 
-                {!atBottom && logs.length > 0 && (
+                {!atBottom && visibleLogs.length > 0 && (
                     <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => virtuosoRef.current?.scrollToIndex({ index: logs.length - 1, align: 'end', behavior: 'smooth' })}
+                        onClick={() => virtuosoRef.current?.scrollToIndex({ index: visibleLogs.length - 1, align: 'end', behavior: 'smooth' })}
                         className="absolute bottom-4 right-4 h-6 w-6 rounded-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 p-0 shadow-lg z-20"
                     >
                         <ArrowDown className="w-3 h-3" />

@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { AppSettings } from '@/types';
 
-import { AuthFile, AuthStatusState } from '../types';
+import { AuthStatusState } from '../types';
 
-const PROVIDER_IDENTIFIERS: Record<string, string[]> = { claude: ['claude', 'anthropic'], antigravity: ['antigravity'], codex: ['codex'], copilot: ['copilot'] };
+
 
 type ProviderType = 'copilot' | 'codex' | 'claude' | 'antigravity';
 
@@ -15,11 +15,7 @@ const PROVIDER_SETTINGS_UPDATERS: Record<ProviderType, (s: AppSettings, setStatu
     antigravity: (s, set) => { s.antigravity = { ...(s.antigravity ?? { connected: false }), connected: false }; set(p => ({ ...p, antigravity: false })); }
 };
 
-const matchesProvider = (f: AuthFile, ids: string[]) => {
-    const prov = (f.provider ?? f.type ?? '').toLowerCase();
-    const name = (f.name ?? '').toLowerCase();
-    return ids.some(id => prov === id || name.startsWith(`${id}-`));
-};
+
 
 interface BrowserAuthOptions {
     settings: AppSettings | null; updateSettings: (s: AppSettings, save: boolean) => Promise<void>;
@@ -33,10 +29,14 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const refreshAuthStatus = useCallback(async () => {
         try {
-            const status = await window.electron.checkAuthStatus();
-            const files = (status?.files ?? []) as AuthFile[];
-            const check = (ids: string[]) => files.some(f => matchesProvider(f, ids));
-            const ns = { codex: check(['codex', 'openai']), claude: check(['claude', 'anthropic']), antigravity: check(['antigravity']), copilot: check(['copilot', 'copilot_token']) };
+            const accounts = await window.electron.getLinkedAccounts();
+            const check = (ids: string[]) => accounts.some(acc => ids.includes(acc.provider.toLowerCase()));
+            const ns = {
+                codex: check(['codex', 'openai']),
+                claude: check(['claude', 'anthropic']),
+                antigravity: check(['antigravity']),
+                copilot: check(['copilot', 'copilot_token'])
+            };
             setAuthStatus(p => (p.codex !== ns.codex || p.claude !== ns.claude || p.antigravity !== ns.antigravity || p.copilot !== ns.copilot) ? ns : p);
         } catch (e) { console.error('Auth check failed:', e); }
     }, []);
@@ -55,11 +55,10 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         const poll = async () => {
             attempts++;
             try {
-                const status = await window.electron.checkAuthStatus();
-                const matched = ((status?.files ?? []) as AuthFile[]).some(f => matchesProvider(f, identifiers));
+                const accounts = await window.electron.getLinkedAccounts();
+                const matched = accounts.some(acc => identifiers.includes(acc.provider.toLowerCase()));
                 if (matched) {
                     setAuthNotice(`${provider} success!`);
-                    await window.electron.syncAuthFiles();
                     await refreshAuthStatus();
                     await onRefreshAccounts?.();
                     onRefreshModels?.();
@@ -105,9 +104,6 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         const updated = { ...settings };
         try {
             await window.electron.unlinkProvider(prov);
-            const status = await window.electron.checkAuthStatus();
-            const targets = ((status?.files ?? []) as AuthFile[]).filter(f => matchesProvider(f, PROVIDER_IDENTIFIERS[prov] ?? []));
-            for (const t of targets) { await window.electron.deleteProxyAuthFile(t.name ?? ''); }
         } catch (e) { console.error('Deletion failed:', e); }
         PROVIDER_SETTINGS_UPDATERS[prov](updated, setAuthStatus);
         await updateSettings(updated, true);

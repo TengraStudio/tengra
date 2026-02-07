@@ -84,20 +84,28 @@ export class ToolExecutor {
             return this.handleProjectTool(name, args);
         }
 
-        switch (name) {
-            case 'read_file':
-                return this.handleFileRead(args);
-            case 'write_file':
-                return this.handleFileWrite(args);
-            case 'list_dir':
-                return this.handleListDir(args);
-            case 'execute_command':
-                return this.handleCommand(args);
-            case 'search_web':
-                return this.handleWebSearch(args);
-            default:
-                return this.handleMcpTool(name, args);
+        const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
+            read_file: (toolArgs) => this.handleFileRead(toolArgs),
+            write_file: (toolArgs) => this.handleFileWrite(toolArgs),
+            list_directory: (toolArgs) => this.handleListDir(toolArgs),
+            list_dir: (toolArgs) => this.handleListDir(toolArgs),
+            file_exists: (toolArgs) => this.handleFileExists(toolArgs),
+            get_file_info: (toolArgs) => this.handleGetFileInfo(toolArgs),
+            create_directory: (toolArgs) => this.handleCreateDirectory(toolArgs),
+            delete_file: (toolArgs) => this.handleDeleteFile(toolArgs),
+            copy_file: (toolArgs) => this.handleCopyFile(toolArgs),
+            move_file: (toolArgs) => this.handleMoveFile(toolArgs),
+            execute_command: (toolArgs) => this.handleCommand(toolArgs),
+            search_web: (toolArgs) => this.handleWebSearch(toolArgs),
+            get_system_info: () => this.handleSystemInfo()
+        };
+
+        const handler = handlers[name];
+        if (handler) {
+            return handler(args);
         }
+
+        return this.handleMcpTool(name, args);
     }
 
     private async handleProjectTool(name: string, args: JsonObject): Promise<InternalToolResult> {
@@ -165,6 +173,77 @@ export class ToolExecutor {
         }
     }
 
+    private async handleFileExists(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
+        try {
+            const response = await this.options.fileSystem.fileExists(path);
+            return { success: true, result: response.exists };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleGetFileInfo(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
+        try {
+            const response = await this.options.fileSystem.getFileInfo(path);
+            if (!response.success || !response.data) {
+                return { success: false, error: response.error ?? 'Failed to get file info' };
+            }
+            return { success: true, result: response.data };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleCreateDirectory(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
+        try {
+            const response = await this.options.fileSystem.createDirectory(path);
+            return { success: response.success, error: response.error ?? undefined };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleDeleteFile(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['path'] !== 'string') { return { success: false, error: "Missing 'path' argument" }; }
+        const path = args['path'];
+        try {
+            const response = await this.options.fileSystem.deleteFile(path);
+            return { success: response.success, error: response.error ?? undefined };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleCopyFile(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['source'] !== 'string') { return { success: false, error: "Missing 'source' argument" }; }
+        if (typeof args['destination'] !== 'string') { return { success: false, error: "Missing 'destination' argument" }; }
+
+        try {
+            const response = await this.options.fileSystem.copyFile(args['source'], args['destination']);
+            return { success: response.success, error: response.error ?? undefined };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleMoveFile(args: JsonObject): Promise<InternalToolResult> {
+        if (typeof args['source'] !== 'string') { return { success: false, error: "Missing 'source' argument" }; }
+        if (typeof args['destination'] !== 'string') { return { success: false, error: "Missing 'destination' argument" }; }
+
+        try {
+            const response = await this.options.fileSystem.moveFile(args['source'], args['destination']);
+            return { success: response.success, error: response.error ?? undefined };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
     private async handleCommand(args: JsonObject): Promise<InternalToolResult> {
         if (typeof args['command'] !== 'string') { return { success: false, error: "Missing 'command' argument" }; }
         const command = args['command'];
@@ -187,6 +266,15 @@ export class ToolExecutor {
         try {
             const result = await this.options.web.searchWeb(query);
             return { success: result.success, result: result.results ?? [], error: result.error ?? undefined };
+        } catch (e) {
+            return { success: false, error: String(e) };
+        }
+    }
+
+    private async handleSystemInfo(): Promise<InternalToolResult> {
+        try {
+            const info = await this.options.system.getSystemInfo();
+            return { success: true, result: info as JsonValue };
         } catch (e) {
             return { success: false, error: String(e) };
         }

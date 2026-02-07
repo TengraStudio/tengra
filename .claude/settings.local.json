@@ -31,7 +31,15 @@
       "Bash(cat:*)",
       "Bash(taskkill:*)",
       "Bash(tasklist:*)",
-      "Bash(npm run build:vite:*)"
+      "Bash(npm run build:vite:*)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:platform.openai.com)",
+      "Bash(copy:*)",
+      "Bash(copy \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\src\\\\services\\\\token-service\\\\target\\\\release\\\\tandem-token-service.exe\" \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\tandem-token-service.exe\" /Y)",
+      "Bash(copy \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\vendor\\\\cliproxyapi\\\\cmd\\\\cliproxy-embed\\\\cliproxy-embed.exe\" \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\cliproxy-embed.exe\" /Y)",
+      "Bash(cmd /c:*)",
+      "Bash(Get-Item \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\cliproxy-embed.exe\")",
+      "Bash(Select-Object Name, Length, LastWriteTime)"
     ]
   },
   "mcpServers": {

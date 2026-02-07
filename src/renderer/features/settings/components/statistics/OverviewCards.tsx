@@ -1,8 +1,8 @@
 import { Activity, Clock, Loader2, LucideIcon, MessageSquare, TrendingUp } from 'lucide-react';
 import React from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/formatters';
+import { cn } from '@/lib/utils';
 
 import { DetailedStats, TimeStats } from '../../types';
 
@@ -23,31 +23,33 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ Icon, iconColor, title, children }) => (
-    <Card className="border-border/40 bg-card backdrop-blur-md overflow-hidden relative group hover:bg-card/90 transition-all duration-300">
-        <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-all duration-500 group-hover:scale-110">
-            <Icon className="w-24 h-24 text-primary" />
+    <div className="premium-glass p-6 relative group overflow-hidden hover:bg-muted/5 transition-all duration-300">
+        <div className="absolute -right-4 -bottom-4 opacity-[0.05] group-hover:opacity-[0.1] transition-all duration-500 group-hover:scale-110">
+            <Icon className="w-20 h-20 text-primary" />
         </div>
-        <CardHeader className="pb-3">
+        <div className="space-y-4 relative z-10">
             <div className="flex items-center justify-between">
-                <CardTitle className="text-xxs font-black uppercase tracking-[0.2em] text-muted-foreground">{title}</CardTitle>
-                <Icon className={`w-4 h-4 ${iconColor}`} />
+                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</div>
+                <div className={cn("p-2 rounded-xl bg-muted/10 border border-border/40 transition-colors group-hover:bg-primary/10 group-hover:border-primary/20", iconColor)}>
+                    <Icon className="w-3.5 h-3.5" />
+                </div>
             </div>
-        </CardHeader>
-        <CardContent>{children}</CardContent>
-    </Card>
+            <div>{children}</div>
+        </div>
+    </div>
 );
 
 const MessagesCard: React.FC<{ t: (k: string) => string; count: number }> = ({ t, count }) => (
-    <StatCard Icon={MessageSquare} iconColor="text-primary/50" title={t('statistics.messages')}>
-        <div className="text-4xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
-        <p className="text-xxs font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">{t('statistics.totalMessages')}</p>
+    <StatCard Icon={MessageSquare} iconColor="text-primary" title={t('statistics.messages')}>
+        <div className="text-3xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none opacity-60">{t('statistics.totalMessages')}</p>
     </StatCard>
 );
 
 const ChatsCard: React.FC<{ t: (k: string) => string; count: number }> = ({ t, count }) => (
-    <StatCard Icon={Activity} iconColor="text-success/50" title={t('statistics.chats')}>
-        <div className="text-4xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
-        <p className="text-xxs font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none">{t('statistics.activeThreads')}</p>
+    <StatCard Icon={Activity} iconColor="text-success" title={t('statistics.chats')}>
+        <div className="text-3xl font-black text-foreground leading-none tracking-tighter tabular-nums">{count}</div>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2 tracking-widest leading-none opacity-60">{t('statistics.activeThreads')}</p>
     </StatCard>
 );
 
@@ -59,19 +61,19 @@ interface TokensCardProps {
 }
 
 const TokensCard: React.FC<TokensCardProps> = ({ t, total, prompt, completion }) => (
-    <StatCard Icon={TrendingUp} iconColor="text-primary/50" title={t('statistics.totalTokens')}>
+    <StatCard Icon={TrendingUp} iconColor="text-primary" title={t('statistics.totalTokens')}>
         <div className="space-y-4">
             <div className="flex items-end justify-between gap-4">
-                <div className="text-4xl font-black text-foreground leading-none tracking-tighter tabular-nums">{formatNumber(total)}</div>
+                <div className="text-3xl font-black text-foreground leading-none tracking-tighter tabular-nums">{formatNumber(total)}</div>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/10">
                 <div>
-                    <div className="text-xxxs font-black text-muted-foreground uppercase tracking-widest">{t('statistics.tokensIn')}</div>
-                    <div className="text-xs font-bold text-primary tabular-nums">{formatNumber(prompt)}</div>
+                    <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60">{t('statistics.tokensIn')}</div>
+                    <div className="text-xs font-bold text-primary tabular-nums mt-1">{formatNumber(prompt)}</div>
                 </div>
                 <div>
-                    <div className="text-xxxs font-black text-muted-foreground uppercase tracking-widest">{t('statistics.tokensOut')}</div>
-                    <div className="text-xs font-bold text-success tabular-nums">{formatNumber(completion)}</div>
+                    <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60">{t('statistics.tokensOut')}</div>
+                    <div className="text-xs font-bold text-success tabular-nums mt-1">{formatNumber(completion)}</div>
                 </div>
             </div>
         </div>
@@ -85,7 +87,7 @@ interface TimeCardProps {
 }
 
 const TimeCard: React.FC<TimeCardProps> = ({ t, loading, timeStats }) => (
-    <StatCard Icon={Clock} iconColor="text-info/50" title={t('statistics.onlineTime')}>
+    <StatCard Icon={Clock} iconColor="text-info" title={t('statistics.onlineTime')}>
         <div className="pt-2">
             {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />

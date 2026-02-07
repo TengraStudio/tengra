@@ -143,6 +143,11 @@ export const tr = {
         shiftClickMulti: 'Birden fazla model seçmek için Shift+tıklayın',
         mode: 'Mod',
         reasoning: 'Düşünme',
+        selectReasoningLevel: 'Düşünme Seviyesi Seçin',
+        reasoningRequired: 'Bu model kullanılmadan önce bir düşünme seviyesi seçilmesini gerektirir.',
+        confirmModel: 'Seçimi Onayla',
+        selectLevelFirst: 'Önce bir seviye seçin',
+        mustSelectReasoning: 'Devam etmek için bir düşünme seviyesi seçin',
         providerLabels: {
             ollama: 'Ollama',
             codex: 'OpenAI',
@@ -930,6 +935,7 @@ export const tr = {
     nav: {
         chat: 'Sohbet',
         projects: 'Projeler',
+        'project-agent': 'Proje Ajanı',
         settings: 'Ayarlar',
         council: 'Konsey',
         mcp: 'MCP Yönetimi'

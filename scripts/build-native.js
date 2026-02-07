@@ -5,6 +5,90 @@ const path = require('path');
 const SERVICES_DIR = path.join(__dirname, '../src/services');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const BIN_DIR = path.join(__dirname, '../resources/bin');
+const GO_PROXY_DIR = path.join(__dirname, '../vendor/cliproxyapi');
+
+function copyWithRetry(src, dest) {
+    let retries = 10;
+    while (retries > 0) {
+        try {
+            // Try to delete destination first to avoid lock issues
+            if (fs.existsSync(dest)) {
+                try {
+                    fs.unlinkSync(dest);
+                } catch (e) {
+                    // If delete fails, it might be locked, let the copy try or fail
+                    if (e.code !== 'ENOENT') {
+                        // Ignore unlink error, copyFileSync might still fail or succeed
+                    }
+                }
+            }
+            fs.copyFileSync(src, dest);
+            return;
+        } catch (e) {
+            console.log(`Copy error: ${e.code || e.message}`);
+            if (e.code === 'EBUSY' || e.code === 'EPERM') {
+                if (retries <= 1) throw e;
+                console.log(`File locked, retrying copy in 2s: ${path.basename(dest)}`);
+                // Sync sleep 2s
+                const end = Date.now() + 2000;
+                while (Date.now() < end);
+                retries--;
+                continue;
+            }
+            throw e;
+        }
+    }
+}
+
+function buildGoProxy() {
+    console.log('Building Go proxy server...');
+
+    try {
+        // Check if Go is installed
+        execSync('go version', { stdio: 'ignore' });
+    } catch {
+        console.warn('Go toolchain not found. Skipping Go proxy build.');
+        return;
+    }
+
+    try {
+        // Kill existing proxy process
+        try {
+            execSync('taskkill /F /IM cliproxy-embed.exe 2>NUL', { stdio: 'ignore' });
+        } catch {
+            // Process not running, ignore
+        }
+
+        // Build cliproxy-embed
+        console.log('Compiling Go proxy binary...');
+        const embedDir = path.join(GO_PROXY_DIR, 'cmd/cliproxy-embed');
+
+        execSync('go build -o cliproxy-embed.exe', {
+            cwd: embedDir,
+            stdio: 'inherit'
+        });
+
+        // Create output dir if needed
+        if (!fs.existsSync(BIN_DIR)) {
+            fs.mkdirSync(BIN_DIR, { recursive: true });
+        }
+
+        // Copy binary to resources/bin
+        const src = path.join(embedDir, 'cliproxy-embed.exe');
+        const dest = path.join(BIN_DIR, 'cliproxy-embed.exe');
+
+        if (fs.existsSync(src)) {
+            copyWithRetry(src, dest);
+            console.log('Copied cliproxy-embed.exe to resources/bin');
+        } else {
+            console.error(`Go binary not found: ${src}`);
+        }
+
+    } catch (error) {
+        console.error('Failed to build Go proxy:', error);
+        // Don't exit - Go proxy is optional for dev
+    }
+}
 
 function buildNative() {
     console.log('Building native services...');
@@ -36,6 +120,10 @@ function buildNative() {
                 // Process not running, ignore
             }
         }
+
+        // Wait for processes to release locks
+        const end = Date.now() + 1000;
+        while (Date.now() < end);
 
         // Build workspace
         console.log('Compiling Rust binaries...');
@@ -108,7 +196,7 @@ function buildNative() {
             const dest = path.join(BIN_DIR, bin);
 
             if (fs.existsSync(src)) {
-                fs.copyFileSync(src, dest);
+                copyWithRetry(src, dest);
                 console.log(`Copied ${bin} to resources/bin`);
             } else {
                 console.error(`Binary not found: ${src}`);
@@ -123,4 +211,6 @@ function buildNative() {
 
 if (require.main === module) {
     buildNative();
+    buildGoProxy();
 }
+

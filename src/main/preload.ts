@@ -3,12 +3,12 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(50);
 import {
-    AgentDefinition, AgentStartOptions, AppSettings, AuthStatus,
+    AgentDefinition, AgentStartOptions, AppSettings,
     Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota,
     EntityKnowledge, EpisodicMemory, FileEntry, FileSearchResult, Folder, IpcValue, MCPServerConfig,
     Message, OllamaLibraryModel,
     ProcessInfo,
-    Project, ProjectAnalysis, ProjectState, Prompt,
+    Project, ProjectAnalysis, ProjectState, ProjectStep, Prompt,
     QuotaResponse, SemanticFragment,
     SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
 } from '@shared/types';
@@ -78,14 +78,9 @@ export interface ElectronAPI {
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => Promise<{ success: boolean; token?: string; error?: string }>
     antigravityLogin: () => Promise<{ url: string; state: string }>
 
-    anthropicLogin: () => Promise<{ url: string; state: string }>
-    claudeLogin: () => Promise<{ url: string; state: string }>
-    codexLogin: () => Promise<{ url: string; state: string }>
 
-    checkAuthStatus: () => Promise<AuthStatus>
-    deleteProxyAuthFile: (name: string) => Promise<boolean>
-    syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
-    downloadAuthFile: (name: string) => Promise<Record<string, unknown> | null>
+
+
     saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
 
     code: {
@@ -104,8 +99,7 @@ export interface ElectronAPI {
     getClaudeQuota: () => Promise<{ accounts: Array<import('@shared/types/quota').ClaudeQuota> }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
-    importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
-    importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
+
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
     git: {
         getBranch: (cwd: string) => Promise<{ success: boolean; branch?: string; error?: string }>
@@ -611,11 +605,20 @@ export interface ElectronAPI {
     projectAgent: {
         start: (options: AgentStartOptions) => Promise<void>
         generatePlan: (options: AgentStartOptions) => Promise<void>
-        approvePlan: (plan: string[]) => Promise<void>
+        approvePlan: (plan: string[] | ProjectStep[]) => Promise<void>
         stop: () => Promise<void>
+        resetState: () => Promise<void>
         getStatus: () => Promise<ProjectState>
         retryStep: (index: number) => Promise<void>
+        getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>
         onUpdate: (callback: (state: ProjectState) => void) => () => void
+        // Canvas persistence
+        saveCanvasNodes: (nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, IpcValue> }>) => Promise<void>
+        getCanvasNodes: () => Promise<Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, IpcValue> }>>
+        deleteCanvasNode: (id: string) => Promise<void>
+        saveCanvasEdges: (edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>) => Promise<void>
+        getCanvasEdges: () => Promise<Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>>
+        deleteCanvasEdge: (id: string) => Promise<void>
     }
 
     // Extension API
@@ -638,13 +641,6 @@ const api: ElectronAPI = {
     pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') => ipcRenderer.invoke('auth:poll-token', deviceCode, interval, appId),
     antigravityLogin: () => ipcRenderer.invoke('proxy:antigravityLogin'),
 
-    anthropicLogin: () => ipcRenderer.invoke('proxy:claudeLogin'),
-    claudeLogin: () => ipcRenderer.invoke('proxy:claudeLogin'),
-    codexLogin: () => ipcRenderer.invoke('proxy:codexLogin'),
-    checkAuthStatus: () => ipcRenderer.invoke('proxy:checkAuthStatus'),
-    deleteProxyAuthFile: (name: string) => ipcRenderer.invoke('proxy:deleteAuthFile', name),
-    syncAuthFiles: () => ipcRenderer.invoke('proxy:syncAuthFiles'),
-    downloadAuthFile: (name: string) => ipcRenderer.invoke('proxy:downloadAuthFile', name),
     saveClaudeSession: (sessionKey: string, accountId?: string) => ipcRenderer.invoke('proxy:saveClaudeSession', sessionKey, accountId),
 
     // --- Linked Accounts (New Multi-Account API) ---
@@ -672,8 +668,7 @@ const api: ElectronAPI = {
     getClaudeQuota: () => ipcRenderer.invoke('proxy:getClaudeQuota'),
     checkUsageLimit: (provider: string, model: string) => ipcRenderer.invoke('usage:checkLimit', provider, model),
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => ipcRenderer.invoke('usage:getUsageCount', period, provider, model),
-    importChatHistory: (provider: string) => ipcRenderer.invoke('history:import', provider),
-    importChatHistoryJson: (jsonContent: string) => ipcRenderer.invoke('history:import-json', jsonContent),
+
 
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
@@ -1227,8 +1222,10 @@ const api: ElectronAPI = {
         generatePlan: (options) => ipcRenderer.invoke('project:plan', options),
         approvePlan: (plan) => ipcRenderer.invoke('project:approve', plan),
         stop: () => ipcRenderer.invoke('project:stop'),
+        resetState: () => ipcRenderer.invoke('project:reset-state'),
         getStatus: () => ipcRenderer.invoke('project:get-status'),
         retryStep: (index) => ipcRenderer.invoke('project:retry-step', index),
+        getProfiles: () => ipcRenderer.invoke('project:get-profiles'),
         onUpdate: (callback) => {
             const listener = (_event: IpcRendererEvent, state: IpcValue) => {
                 if (isProjectState(state)) {
@@ -1237,7 +1234,14 @@ const api: ElectronAPI = {
             };
             ipcRenderer.on('project:update', listener);
             return () => ipcRenderer.removeListener('project:update', listener);
-        }
+        },
+        // Canvas persistence
+        saveCanvasNodes: (nodes) => ipcRenderer.invoke('project:save-canvas-nodes', nodes),
+        getCanvasNodes: () => ipcRenderer.invoke('project:get-canvas-nodes'),
+        deleteCanvasNode: (id) => ipcRenderer.invoke('project:delete-canvas-node', id),
+        saveCanvasEdges: (edges) => ipcRenderer.invoke('project:save-canvas-edges', edges),
+        getCanvasEdges: () => ipcRenderer.invoke('project:get-canvas-edges'),
+        deleteCanvasEdge: (id) => ipcRenderer.invoke('project:delete-canvas-edge', id)
     },
 
     extension: {

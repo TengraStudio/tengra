@@ -226,7 +226,8 @@ export class LLMService {
     }
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, n, signal, systemMode, reasoningEffort } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort } = options;
+        const provider = this.resolveProvider(model, requestedProvider);
 
         // LLM-001-3: Context overflow mitigation
         const contextService = getContextWindowService();
@@ -290,7 +291,8 @@ export class LLMService {
     }
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
-        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider, signal, systemMode, reasoningEffort } = options;
+        const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort } = options;
+        const provider = this.resolveProvider(model, requestedProvider);
 
         const contextService = getContextWindowService();
         const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
@@ -540,7 +542,8 @@ export class LLMService {
     }
 
     async * chatStream(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { systemMode?: SystemMode, reasoningEffort?: string, temperature?: number, signal?: AbortSignal, projectRoot?: string }) {
-        const p = (provider ?? '').toLowerCase();
+        const effectiveProvider = this.resolveProvider(model, provider);
+        const p = effectiveProvider.toLowerCase();
         const config = await this.getRouteConfig(p, model, tools, options);
 
         if (p.includes('opencode')) {
@@ -565,13 +568,18 @@ export class LLMService {
         const temp = options?.temperature;
         const projectRoot = options?.projectRoot;
 
+        const buildProxyBaseUrl = (ampProvider: string) => {
+            const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
+            const port = proxyStatus.port ?? 8317;
+            return `http://localhost:${port}/api/provider/${ampProvider}/v1`;
+        };
+
         if (p.includes('nvidia')) {
             return { model, tools, baseUrl: 'https://integrate.api.nvidia.com/v1', apiKey: this.getNvidiaKey(), provider: 'nvidia', temperature: temp, projectRoot };
         }
 
         if (p.includes('antigravity')) {
-            const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
-            const proxyUrl = `http://localhost:${proxyStatus.port ?? 8317}/v1`;
+            const proxyUrl = buildProxyBaseUrl('antigravity');
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
         }
@@ -585,8 +593,7 @@ export class LLMService {
 
         // Route Codex/OpenAI through embedded proxy
         if (p.includes('codex') || p.includes('openai')) {
-            const proxyStatus = this.deps.proxyService.getEmbeddedProxyStatus();
-            const proxyUrl = `http://localhost:${proxyStatus.port ?? 8317}/v1`;
+            const proxyUrl = buildProxyBaseUrl(this.toAmpProvider(provider));
             const proxyKey = await this.deps.proxyService.getProxyKey();
             return { model, tools, baseUrl: proxyUrl, apiKey: proxyKey, provider, temperature: temp, projectRoot };
         }
@@ -595,7 +602,8 @@ export class LLMService {
     }
 
     async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number, projectRoot?: string }): Promise<OpenAIResponse> {
-        const p = (provider ?? '').toLowerCase();
+        const effectiveProvider = this.resolveProvider(model, provider);
+        const p = effectiveProvider.toLowerCase();
 
         if (p.includes('anthropic') || p.includes('claude')) {
             return this.chatAnthropic(messages, model);
@@ -725,6 +733,7 @@ export class LLMService {
             'anthropic': ['anthropic/', 'claude/'],
             'claude': ['anthropic/', 'claude/'],
             'openai': ['openai/'],
+            'codex': ['codex/', 'openai/'],
             'google': ['google/', 'gemini/'],
             'nvidia': ['nvidia/'],
             'gemini': ['google/', 'gemini/'],
@@ -748,6 +757,39 @@ export class LLMService {
         }
 
         return target;
+    }
+
+    private resolveProvider(model: string, provider?: string): string {
+        const normalizedProvider = provider?.trim().toLowerCase();
+        if (normalizedProvider) {
+            if (normalizedProvider === 'claude') { return 'anthropic'; }
+            return normalizedProvider;
+        }
+
+        const normalizedModel = model.trim().toLowerCase();
+        if (normalizedModel.includes('codex') || normalizedModel.startsWith('gpt-5') || normalizedModel.startsWith('o1') || normalizedModel.startsWith('o3')) {
+            return 'codex';
+        }
+        if (normalizedModel.startsWith('claude-') || normalizedModel.startsWith('anthropic/')) {
+            return 'anthropic';
+        }
+        if (normalizedModel.startsWith('gemini-') || normalizedModel.startsWith('google/')) {
+            return 'google';
+        }
+        if (normalizedModel.startsWith('ollama/')) {
+            return 'ollama';
+        }
+        return 'openai';
+    }
+
+    private toAmpProvider(provider: string): string {
+        const p = provider.trim().toLowerCase();
+        if (p === 'claude') { return 'anthropic'; }
+        if (p === 'gemini') { return 'google'; }
+        if (p === 'codex' || p === 'openai' || p === 'anthropic' || p === 'google' || p === 'antigravity') {
+            return p;
+        }
+        return 'openai';
     }
 
     private getOpenAISettings(baseUrlOverride?: string, apiKeyOverride?: string, provider?: string) {
@@ -820,19 +862,63 @@ export class LLMService {
     }
 
     private applyReasoningEffort(body: Record<string, unknown>, model: string, systemMode?: SystemMode, reasoningEffort?: string): void {
-        const isReasoningModel = model.startsWith('o1') || model.startsWith('o3');
-        if (!isReasoningModel) { return; }
+        const modelType = this.detectReasoningModelType(model);
+        if (!modelType) { return; }
 
-        if (reasoningEffort) {
-            body.reasoning_effort = reasoningEffort;
-            return;
+        const effort = this.resolveEffortLevel(reasoningEffort, systemMode);
+
+        switch (modelType) {
+            case 'openai':
+                body.reasoning_effort = effort;
+                break;
+            case 'gemini3':
+                body.thinking_level = effort;
+                break;
+            case 'gemini25':
+                body.thinking_budget = this.getGeminiBudget(effort);
+                break;
+            case 'claude':
+                body.thinking = { type: 'enabled', budget_tokens: this.getClaudeBudget(effort) };
+                break;
         }
+    }
 
-        const effortMap: Record<string, string> = {
-            'thinking': 'high',
-            'fast': 'low'
-        };
-        body.reasoning_effort = effortMap[systemMode ?? ''] ?? 'medium';
+    private detectReasoningModelType(model: string): 'openai' | 'gemini3' | 'gemini25' | 'claude' | null {
+        const m = model.toLowerCase();
+
+        if (this.isOpenAIReasoningModel(m)) { return 'openai'; }
+        if (/gemini-3\.?/.test(m)) { return 'gemini3'; }
+        if (/gemini-2[.-]5/.test(m)) { return 'gemini25'; }
+        if (this.isClaudeThinkingModel(m)) { return 'claude'; }
+
+        return null;
+    }
+
+    private isOpenAIReasoningModel(m: string): boolean {
+        return /^o[134](-|$)/.test(m) ||
+            (m.startsWith('gpt-5') && !m.includes('mini')) ||
+            (m.includes('grok') && m.includes('code'));
+    }
+
+    private isClaudeThinkingModel(m: string): boolean {
+        if (!m.includes('claude')) { return false; }
+        return /opus-4|sonnet-4|haiku-4\.5|4-[15]-|4\.[15]-/.test(m);
+    }
+
+    private resolveEffortLevel(reasoningEffort?: string, systemMode?: SystemMode): string {
+        if (reasoningEffort) { return reasoningEffort; }
+        const modeMap: Record<string, string> = { 'thinking': 'high', 'fast': 'low' };
+        return modeMap[systemMode ?? ''] ?? 'medium';
+    }
+
+    private getGeminiBudget(effort: string): number {
+        const budgetMap: Record<string, number> = { 'minimal': 128, 'low': 2048, 'medium': 8192, 'high': 16384 };
+        return budgetMap[effort] ?? 8192;
+    }
+
+    private getClaudeBudget(effort: string): number {
+        const budgetMap: Record<string, number> = { 'low': 2048, 'medium': 8192, 'high': 16384 };
+        return budgetMap[effort] ?? 8192;
     }
 
     private sanitizeTools(tools: ToolDefinition[]): unknown[] {

@@ -1,3 +1,4 @@
+import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
 import { DataService } from '@main/services/data/data.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
@@ -49,7 +50,15 @@ describe('DatabaseService', () => {
             })
         } as unknown as DatabaseClientService;
 
-        service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient);
+        const mockTimeTracking = {
+            getTimeStats: vi.fn().mockResolvedValue({
+                totalOnlineTime: 100,
+                totalCodingTime: 50,
+                projectCodingTime: {}
+            })
+        } as unknown as TimeTrackingService;
+
+        service = new DatabaseService(mockDataService, mockEventBus, mockDatabaseClient, mockTimeTracking);
         await service.initialize();
         mockQuery.mockClear();
     });

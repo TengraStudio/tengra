@@ -1,6 +1,4 @@
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
@@ -22,14 +20,7 @@ import { net } from 'electron';
 /**
  * Check if file/directory exists using async fs.access
  */
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.promises.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+
 
 
 export interface ModelItem {
@@ -119,26 +110,20 @@ export class ProxyService extends BaseService {
 
     await this.ensureAuthStoreKey();
     await this.ensureProxyKey();
-    await this.cleanupAuthDirectory();
-    // No longer calling syncAuthFiles()
+
   }
 
   override async cleanup(): Promise<void> {
     try {
-      await this.stopEmbeddedProxy();
-      this.logInfo('Proxy service stopped');
+      // Force stop proxy on app exit - kill all proxy processes including orphaned ones
+      await this.processManager.stop(true);
+      this.logInfo('Proxy service stopped (force killed all proxy processes)');
     } catch (e) {
       this.logError('Failed to stop proxy during cleanup:', e as Error);
     }
   }
 
-  /**
-   * @deprecated Token synchronization now happens via AuthAPIService (HTTP)
-   */
-  async syncAuthFiles(): Promise<void> {
-    // This is now a no-op to prevent writing sensitive data to disk
-    return Promise.resolve();
-  }
+
 
 
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
@@ -229,7 +214,7 @@ export class ProxyService extends BaseService {
             });
 
             // Sync to file system so proxy picks it up immediately
-            await this.syncAuthFiles();
+
           } catch (err) {
             this.logError('Antigravity login failed', err as Error);
           }
@@ -265,7 +250,7 @@ export class ProxyService extends BaseService {
         });
 
         // Sync to file system so proxy picks it up immediately
-        await this.syncAuthFiles();
+
 
         this.logInfo('Claude OAuth login successful');
       },
@@ -281,85 +266,7 @@ export class ProxyService extends BaseService {
     return response;
   }
 
-  async getAuthFiles(): Promise<{ files: { name: string, provider: string }[] }> {
-    const dir = this.getAuthWorkDir();
-    const exists = await fileExists(dir);
-    const filesList: { name: string, provider: string }[] = [];
 
-    this.logDebug(`getAuthFiles: checking dir ${dir}, exists=${exists}`);
-
-    // Include file-based auth tokens with file: prefix for identification
-    if (exists) {
-      const files = (await fs.promises.readdir(dir)).filter(f => f.endsWith('.json') || f.endsWith('.enc'));
-      this.logDebug(`getAuthFiles: found ${files.length} files in dir:`, files);
-      files.forEach(f => {
-        const raw = f.replace(/\.(json|enc)$/, '');
-        const provider = this.normalizeProviderName(raw);
-        filesList.push({ name: f, provider });
-      });
-    }
-
-    // Include tokens from Database with db: prefix
-    const accounts = await this.authService.getAllAccountsFull();
-    this.logDebug(`getAuthFiles: found ${accounts.length} accounts in DB`);
-    for (const account of accounts) {
-      const normalized = this.normalizeProviderName(account.provider);
-      filesList.push({
-        name: `db:${normalized}`,
-        provider: normalized
-      });
-    }
-
-    this.logDebug(`getAuthFiles: returning ${filesList.length} total files:`, filesList.map(f => f.name));
-    return { files: filesList };
-  }
-
-  private normalizeProviderName(provider: string): string {
-    let p = provider.toLowerCase();
-
-    // Strip emails (e.g. claude-user@gmail.com -> claude)
-    if (p.includes('@')) {
-      p = p.split('-')[0].split('_')[0];
-    }
-
-    // Strip common suffixes
-    p = p.replace(/(_token|_key|_auth)$/, '');
-
-    const mappings: Record<string, string> = {
-      'proxy': 'proxy_key', 'proxy_key': 'proxy_key',
-      'github': 'github', 'github_token': 'github',
-      'copilot': 'copilot', 'copilot_token': 'copilot',
-      'antigravity': 'antigravity', 'antigravity_token': 'antigravity',
-      'anthropic': 'claude', 'anthropic_key': 'claude', 'claude': 'claude',
-      'openai': 'codex', 'openai_key': 'codex', 'codex': 'codex',
-      'gemini': 'gemini', 'gemini_key': 'gemini'
-    };
-
-    return mappings[p] ?? p;
-  }
-
-  async deleteAuthFile(name: string): Promise<{ success: boolean }> {
-    if (name.startsWith('db:')) {
-      const provider = name.substring(3);
-      await this.authService.unlinkAllForProvider(provider);
-      return { success: true };
-    }
-
-    const filePath = path.join(this.getAuthWorkDir(), name);
-    const exists = await fileExists(filePath);
-    if (exists) {
-      await fs.promises.unlink(filePath);
-      return { success: true };
-    }
-    return { success: false };
-  }
-
-  async getAuthFileContent(name: string): Promise<JsonObject | null> {
-    const filePath = path.join(this.getAuthWorkDir(), name);
-    const exists = await fileExists(filePath);
-    if (!exists) { return null; }
-    return await this.readAuthFile(name);
-  }
 
   async startEmbeddedProxy(options?: { port?: number }): Promise<ProxyEmbedStatus> {
     this.currentPort = options?.port ?? 8317;
@@ -601,33 +508,7 @@ export class ProxyService extends BaseService {
   }
 
 
-  getAuthWorkDir(): string {
-    return this.dataService.getPath('auth');
-  }
 
-  private async cleanupAuthDirectory() {
-    try {
-      const dir = this.getAuthWorkDir();
-      const exists = await fileExists(dir);
-      if (!exists) { return; }
-
-      const files = await fs.promises.readdir(dir);
-      const jsonFiles = files.filter(f => f.endsWith('.json') || f.endsWith('.json.enc'));
-
-      if (jsonFiles.length > 0) {
-        this.logInfo(`Cleaning up ${jsonFiles.length} legacy auth files...`);
-        for (const file of jsonFiles) {
-          try {
-            await fs.promises.unlink(path.join(dir, file));
-          } catch {
-            // Ignore errors during cleanup
-          }
-        }
-      }
-    } catch (e) {
-      this.logError('Failed to cleanup auth directory:', e as Error);
-    }
-  }
 
   private makeRequest(path: string, apiKey?: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<ProxyRequestResponse> {
     return new Promise((resolve, reject) => {
@@ -697,41 +578,7 @@ export class ProxyService extends BaseService {
     return key;
   }
 
-  async readAuthFile(fileName: string): Promise<JsonObject | null> {
-    const filePath = path.join(this.getAuthWorkDir(), fileName);
-    try {
-      const exists = await fileExists(filePath);
-      if (!exists) { return null; }
-      const content = await fs.promises.readFile(filePath, 'utf8');
-      return this.parseAuthContent(content, fileName);
-    } catch (error) {
-      this.logError(`Failed to read auth file ${fileName}:`, error as Error);
-      return null;
-    }
-  }
 
-  private parseAuthContent(content: string, fileName: string): JsonObject | null {
-    if (!content) { return null; }
-    try {
-      const jsonValue = this.getInitialJson(content, fileName);
-      if (!jsonValue || typeof jsonValue !== 'object' || Array.isArray(jsonValue)) {
-        return null;
-      }
-      return jsonValue as JsonObject;
-    } catch (e) {
-      this.logDebug('Parse failed:', e as Error);
-      return null;
-    }
-  }
-
-  private getInitialJson(content: string, fileName: string): JsonValue | null {
-    if (fileName.endsWith('.enc')) {
-      const decrypted = this.securityService.decryptSync(content);
-      if (!decrypted) { return null; }
-      return safeJsonParse<JsonValue>(decrypted, null);
-    }
-    return safeJsonParse<JsonValue>(content, null);
-  }
 
   private async fetchAntigravityProjectID(accessToken: string): Promise<string | undefined> {
     return new Promise((resolve) => {

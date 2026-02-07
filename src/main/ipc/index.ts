@@ -14,7 +14,6 @@ import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
 import { registerHealthIpc } from '@main/ipc/health';
-import { registerHistoryIpc } from '@main/ipc/history';
 import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLlamaIpc } from '@main/ipc/llama';
@@ -150,7 +149,7 @@ export function registerAllIpc(
     registerBrainIpcHandlers(services.brainService);
     registerGitIpc(services.gitService);
     registerPromptTemplatesIpc(services.promptTemplatesService);
-    registerHistoryIpc(services.historyImportService);
+
 
     registerTerminalIpc(getWin, services.terminalService);
 

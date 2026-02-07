@@ -50,7 +50,6 @@ export function registerBatchableHandler(
         ipcMain.handle(channel, handler);
     } catch {
         // If already registered (e.g. by a specialized handler in another file), that's fine
-        appLogger.debug('IpcBatch', `Channel ${channel} already has a regular handler, skipping automatic registration`);
     }
 }
 

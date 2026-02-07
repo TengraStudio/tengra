@@ -1,6 +1,7 @@
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
+import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { AgentProfile } from '@shared/types/project-agent';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -111,7 +112,7 @@ export class SystemRepository extends BaseRepository {
 
 
     // --- Stats ---
-    async getStats() {
+    async getStats(): Promise<DbStats> {
         const chatRow = await this.adapter.prepare('SELECT count(*) as count FROM chats').get<{ count: number }>();
         const messageRow = await this.adapter.prepare('SELECT count(*) as count FROM messages').get<{ count: number }>();
         return {
@@ -121,15 +122,172 @@ export class SystemRepository extends BaseRepository {
         };
     }
 
-    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') {
+    async getDetailedStats(period: string): Promise<DbDetailedStats> {
+        const since = this.getStartTime(period);
+        const chatCount = await this.getChatCount();
+        const messageCount = await this.getMessageCount();
+
+        const tokenStats = await this.adapter.prepare(`
+            SELECT
+                SUM(tokens_sent) as sent,
+                SUM(tokens_received) as received,
+                SUM(tokens_sent + tokens_received) as total
+            FROM token_usage
+            WHERE timestamp >= ?
+        `).get<{ sent: number; received: number; total: number }>(since);
+
+        // Fetch token timeline data grouped by time bucket
+        const tokenTimeline = await this.getTokenTimeline(period, since);
+
+        // Fetch activity data (message counts per hour for daily, per day for others)
+        const activity = await this.getActivityData(period, since);
+
+        return {
+            chatCount,
+            messageCount,
+            dbSize: 0,
+            totalTokens: tokenStats?.total ?? 0,
+            promptTokens: tokenStats?.sent ?? 0,
+            completionTokens: tokenStats?.received ?? 0,
+            tokenTimeline,
+            activity
+        };
+    }
+
+    private async getTokenTimeline(period: string, since: number): Promise<Array<{
+        timestamp: number;
+        promptTokens: number;
+        completionTokens: number;
+        modelBreakdown?: Record<string, { prompt: number; completion: number }>;
+    }>> {
+        const { bucketMs, bucketCount } = this.getBucketConfig(period);
+
+        const rows = await this.adapter.prepare(`
+            SELECT timestamp, tokens_sent, tokens_received, model
+            FROM token_usage
+            WHERE timestamp >= ?
+            ORDER BY timestamp ASC
+        `).all<{ timestamp: number; tokens_sent: number; tokens_received: number; model: string }>(since);
+
+        const buckets = this.initializeBuckets(bucketMs, bucketCount);
+        this.aggregateTokenData(rows, buckets, bucketMs);
+
+        return Array.from(buckets.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([timestamp, data]) => ({
+                timestamp,
+                promptTokens: data.promptTokens,
+                completionTokens: data.completionTokens,
+                modelBreakdown: Object.keys(data.modelBreakdown).length > 0 ? data.modelBreakdown : undefined
+            }));
+    }
+
+    private getBucketConfig(period: string): { bucketMs: number; bucketCount: number } {
+        switch (period) {
+            case 'yearly': return { bucketMs: 30 * 24 * 60 * 60 * 1000, bucketCount: 12 };
+            case 'monthly': return { bucketMs: 24 * 60 * 60 * 1000, bucketCount: 30 };
+            case 'weekly': return { bucketMs: 24 * 60 * 60 * 1000, bucketCount: 7 };
+            default: return { bucketMs: 60 * 60 * 1000, bucketCount: 24 };
+        }
+    }
+
+    private initializeBuckets(bucketMs: number, bucketCount: number): Map<number, {
+        promptTokens: number;
+        completionTokens: number;
+        modelBreakdown: Record<string, { prompt: number; completion: number }>;
+    }> {
+        const buckets = new Map<number, {
+            promptTokens: number;
+            completionTokens: number;
+            modelBreakdown: Record<string, { prompt: number; completion: number }>;
+        }>();
         const now = Date.now();
-        const since = period === 'daily' ? now - 86400000 : now - 2592000000;
-        const result = await this.adapter.prepare('SELECT count(*) as count FROM messages WHERE timestamp >= ?').get<{ count: number }>(since);
-        return { messageCount: result?.count ?? 0 };
+        for (let i = 0; i < bucketCount; i++) {
+            const bucketStart = now - (bucketCount - 1 - i) * bucketMs;
+            const bucketKey = Math.floor(bucketStart / bucketMs) * bucketMs;
+            buckets.set(bucketKey, { promptTokens: 0, completionTokens: 0, modelBreakdown: {} });
+        }
+        return buckets;
+    }
+
+    private aggregateTokenData(
+        rows: Array<{ timestamp: number; tokens_sent: number; tokens_received: number; model: string }>,
+        buckets: Map<number, { promptTokens: number; completionTokens: number; modelBreakdown: Record<string, { prompt: number; completion: number }> }>,
+        bucketMs: number
+    ): void {
+        for (const row of rows) {
+            const bucketKey = Math.floor(row.timestamp / bucketMs) * bucketMs;
+            const bucket = buckets.get(bucketKey) ?? { promptTokens: 0, completionTokens: 0, modelBreakdown: {} };
+            if (!buckets.has(bucketKey)) {
+                buckets.set(bucketKey, bucket);
+            }
+            bucket.promptTokens += row.tokens_sent;
+            bucket.completionTokens += row.tokens_received;
+
+            const model = row.model || 'unknown';
+            const modelEntry = bucket.modelBreakdown[model] ?? { prompt: 0, completion: 0 };
+            bucket.modelBreakdown[model] = modelEntry;
+            modelEntry.prompt += row.tokens_sent;
+            modelEntry.completion += row.tokens_received;
+        }
+    }
+
+    private async getActivityData(period: string, since: number): Promise<number[]> {
+        // For daily: 24 hours, for weekly/monthly: days
+        const isDaily = period === 'daily';
+        const bucketCount = isDaily ? 24 : (period === 'weekly' ? 7 : 30);
+
+        const rows = await this.adapter.prepare(`
+            SELECT timestamp FROM messages WHERE timestamp >= ?
+        `).all<{ timestamp: number }>(since);
+
+        const activity = new Array(bucketCount).fill(0);
+        const now = Date.now();
+
+        for (const row of rows) {
+            const ts = row.timestamp;
+            if (isDaily) {
+                // Bucket by hour
+                const hour = new Date(ts).getHours();
+                activity[hour]++;
+            } else {
+                // Bucket by day offset from today
+                const dayOffset = Math.floor((now - ts) / (24 * 60 * 60 * 1000));
+                const idx = bucketCount - 1 - dayOffset;
+                if (idx >= 0 && idx < bucketCount) {
+                    activity[idx]++;
+                }
+            }
+        }
+
+        return activity;
+    }
+
+    private getStartTime(period: string): number {
+        const now = Date.now();
+        switch (period) {
+            case 'weekly': return now - 7 * 24 * 60 * 60 * 1000;
+            case 'monthly': return now - 30 * 24 * 60 * 60 * 1000;
+            case 'yearly': return now - 365 * 24 * 60 * 60 * 1000;
+            default: return now - 24 * 60 * 60 * 1000;
+        }
+    }
+
+    private async getChatCount(): Promise<number> {
+        return (await this.adapter.prepare('SELECT count(*) as count FROM chats').get<{ count: number }>())?.count ?? 0;
+    }
+
+    private async getMessageCount(): Promise<number> {
+        return (await this.adapter.prepare('SELECT count(*) as count FROM messages').get<{ count: number }>())?.count ?? 0;
     }
 
     async getTimeStats() {
-        return { totalTime: 0, averageTime: 0 };
+        // This will be delegated by DatabaseService, but provided here as fallback
+        return {
+            totalOnlineTime: 0,
+            totalCodingTime: 0,
+            projectCodingTime: {}
+        };
     }
 
     async getMigrationStatus() {
@@ -145,9 +303,31 @@ export class SystemRepository extends BaseRepository {
         `).run(id, record.chatId, record.projectId ?? null, record.messageId ?? null, record.provider, record.model, record.tokensSent, record.tokensReceived, record.costEstimate ?? 0, timestamp);
     }
 
-    async getTokenUsageStats(_period: 'daily' | 'weekly' | 'monthly'): Promise<{ totalTokens: number }> {
-        const rows = await this.adapter.prepare('SELECT sum(tokens_sent + tokens_received) as total FROM token_usage').all<{ total: number }>();
-        return { totalTokens: rows[0]?.total ?? 0 };
+    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> {
+        const now = Date.now();
+        let since = now - 24 * 60 * 60 * 1000;
+        if (period === 'weekly') { since = now - 7 * 24 * 60 * 60 * 1000; }
+        if (period === 'monthly') { since = now - 30 * 24 * 60 * 60 * 1000; }
+
+        const rows = await this.adapter.prepare(`
+            SELECT 
+                SUM(tokens_sent) as sent, 
+                SUM(tokens_received) as received,
+                SUM(cost_estimate) as cost
+            FROM token_usage 
+            WHERE timestamp >= ?
+        `).all<{ sent: number; received: number; cost: number }>(since);
+
+        const total = rows[0] || { sent: 0, received: 0, cost: 0 };
+
+        return {
+            totalSent: total.sent || 0,
+            totalReceived: total.received || 0,
+            totalCost: total.cost || 0,
+            timeline: [],
+            byProvider: {},
+            byModel: {}
+        };
     }
 
     // --- Usage Tracking ---

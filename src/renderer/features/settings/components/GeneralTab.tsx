@@ -12,17 +12,20 @@ interface GeneralTabProps {
     t: (key: string) => string
 }
 
-interface ToggleSwitchProps {
-    enabled: boolean
-    onToggle: () => void
-}
 
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ enabled, onToggle }) => (
-    <div
-        onClick={onToggle}
-        className={`w-10 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${enabled ? 'bg-primary' : 'bg-gray-600'}`}
-    >
-        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+
+const ToggleSwitch: React.FC<{ enabled: boolean; onToggle: () => void; title?: string; description?: string }> = ({ enabled, onToggle, title, description }) => (
+    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
+        {(title || description) && (
+            <div>
+                {title && <div className="text-sm font-black text-foreground uppercase tracking-tight">{title}</div>}
+                {description && <div className="text-xs font-medium text-muted-foreground/70">{description}</div>}
+            </div>
+        )}
+        <label className="relative inline-flex items-center cursor-pointer scale-110 ml-auto">
+            <input type="checkbox" checked={enabled} onChange={onToggle} className="sr-only peer" />
+            <div className="w-12 h-6.5 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:shadow-lg after:transition-all peer-checked:bg-primary border border-border/20"></div>
+        </label>
     </div>
 );
 
@@ -48,140 +51,150 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-card p-4 rounded-xl border border-border">
-                    <label className="text-xs font-bold uppercase text-muted-foreground mr-2 flex items-center gap-1">
-                        <Globe className="w-3 h-3" /> {t('settings.language')}
-                    </label>
-                    <SelectDropdown
-                        value={settings?.general.language ?? 'en'}
-                        options={languageOptions}
-                        onChange={(val) => updateGeneral({ language: val as Language })}
-                        className="mt-2"
-                    />
-                </div>
-                <div className="bg-card p-4 rounded-xl border border-border">
-                    <label className="text-xs font-bold uppercase text-muted-foreground mr-2">
-                        <Activity className="w-3 h-3 inline mr-1" /> {t('general.contextMessageLimit')}
-                    </label>
-                    <input
-                        type="number"
-                        value={settings?.general.contextMessageLimit ?? 50}
-                        onChange={e => updateGeneral({ contextMessageLimit: parseInt(e.target.value) })}
-                        className="w-full bg-muted/20 border border-border/50 rounded-lg px-3 py-2 mt-2 font-mono text-primary"
-                    />
-                </div>
-                <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3">
-                    <Database className="w-8 h-8 text-primary/40" />
+            {/* Project Basics Card */}
+            <div className="premium-glass p-8 space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
+                        <Globe className="w-6 h-6" />
+                    </div>
                     <div>
-                        <div className="text-sm font-bold text-foreground uppercase tracking-wider">{t('general.database')}</div>
-                        <div className="text-xs text-muted-foreground">{t('general.databaseDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.projectBasics')}</div>
+                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.projectBasicsDesc')}</div>
                     </div>
                 </div>
-                <div className="bg-card p-4 rounded-xl border border-border flex items-center justify-between">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            {t('settings.language')}
+                        </label>
+                        <SelectDropdown
+                            value={settings?.general.language ?? 'en'}
+                            options={languageOptions}
+                            onChange={(val) => updateGeneral({ language: val as Language })}
+                            className="w-full"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            {t('general.contextMessageLimit')}
+                        </label>
+                        <input
+                            type="number"
+                            value={settings?.general.contextMessageLimit ?? 50}
+                            onChange={e => updateGeneral({ contextMessageLimit: parseInt(e.target.value) })}
+                            className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* App Intelligence Card */}
+            <div className="premium-glass p-8 space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-success/10 text-success border border-success/20 shadow-lg shadow-success/10">
+                        <Database className="w-6 h-6" />
+                    </div>
                     <div>
-                        <div className="text-sm font-bold text-foreground uppercase tracking-wider">{t('general.onboardingTour')}</div>
-                        <div className="text-xs text-muted-foreground">{t('general.onboardingTourDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.appIntelligence')}</div>
+                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.appIntelligenceDesc')}</div>
                     </div>
-                    <button
-                        onClick={() => updateGeneral({ onboardingCompleted: false })}
-                        className="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold uppercase rounded-lg border border-primary/20 transition-all"
-                    >
-                        {t('general.startTour')}
-                    </button>
                 </div>
 
-                {/* Updates Section */}
-                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Download className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.updates')}</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <span className="text-sm font-medium">{t('general.autoUpdate')}</span>
-                            <ToggleSwitch enabled={autoUpdate.enabled} onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })} />
-                        </div>
-
-                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <span className="text-sm font-medium">{t('general.checkOnStartup')}</span>
-                            <ToggleSwitch enabled={autoUpdate.checkOnStartup} onToggle={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-4 p-5 rounded-2xl border border-border/40 bg-muted/5 group">
+                        <Database className="w-10 h-10 text-primary/30 group-hover:text-primary/50 transition-colors" />
+                        <div>
+                            <div className="text-sm font-black text-foreground uppercase tracking-tight">{t('general.database')}</div>
+                            <div className="text-xs font-medium text-muted-foreground/70">{t('general.databaseDesc')}</div>
                         </div>
                     </div>
-
-                    <div className="flex justify-end pt-2">
+                    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 group transition-all hover:bg-muted/10">
+                        <div>
+                            <div className="text-sm font-black text-foreground uppercase tracking-tight">{t('general.onboardingTour')}</div>
+                            <div className="text-xs font-medium text-muted-foreground/70">{t('general.onboardingTourDesc')}</div>
+                        </div>
                         <button
-                            onClick={() => { void window.electron.update.checkForUpdates(); }}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-foreground text-xs font-bold uppercase rounded-lg transition-all"
+                            onClick={() => updateGeneral({ onboardingCompleted: false })}
+                            className="px-5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-black uppercase rounded-xl border border-primary/20 transition-all shadow-sm"
                         >
-                            <RefreshCw className="w-3 h-3" />
-                            {t('general.checkForUpdates')}
+                            {t('general.startTour')}
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* Privacy Section */}
-                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.privacy')}</span>
+            {/* App Lifecycle & Updates */}
+            <div className="premium-glass p-8 space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-lg shadow-blue-500/10">
+                        <Download className="w-6 h-6" />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <div>
-                                <span className="text-sm font-medium">{t('general.crashReporting')}</span>
-                                <p className="text-xs text-muted-foreground mt-1">{t('general.crashReportingDesc')}</p>
-                            </div>
-                            <ToggleSwitch
-                                enabled={settings?.crashReporting?.enabled ?? false}
-                                onToggle={() => {
-                                    if (!settings) { return; }
-                                    const current = settings.crashReporting ?? { enabled: false };
-                                    void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } });
-                                }}
-                            />
-                        </div>
+                    <div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.lifecycle')}</div>
+                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.lifecycleDesc')}</div>
                     </div>
                 </div>
 
-                {/* Startup Section */}
-                <div className="bg-card p-4 rounded-xl border border-border col-span-1 md:col-span-2 space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-bold uppercase text-muted-foreground">{t('general.startup')}</span>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ToggleSwitch enabled={autoUpdate.enabled} onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })} title={t('general.autoUpdate')} description={t('general.autoUpdateDesc')} />
+                    <ToggleSwitch enabled={autoUpdate.checkOnStartup} onToggle={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })} title={t('general.checkOnStartup')} description={t('general.checkOnStartupDesc')} />
+                    <ToggleSwitch
+                        enabled={settings?.window?.startOnStartup ?? false}
+                        onToggle={() => {
+                            if (!settings) { return; }
+                            const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
+                            void handleSave({ ...settings, window: { ...currentWindow, startOnStartup: !currentWindow.startOnStartup } });
+                        }}
+                        title={t('general.startOnStartup')}
+                        description={t('general.startOnStartupDesc')}
+                    />
+                    <ToggleSwitch
+                        enabled={settings?.window?.workAtBackground ?? false}
+                        onToggle={() => {
+                            if (!settings) { return; }
+                            const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
+                            void handleSave({ ...settings, window: { ...currentWindow, workAtBackground: !currentWindow.workAtBackground } });
+                        }}
+                        title={t('general.workAtBackground')}
+                        description={t('general.workAtBackgroundDesc')}
+                    />
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <div>
-                                <span className="text-sm font-medium">{t('general.startOnStartup')}</span>
-                                <p className="text-xs text-muted-foreground mt-1">{t('general.startOnStartupDesc')}</p>
-                            </div>
-                            <ToggleSwitch
-                                enabled={settings?.window?.startOnStartup ?? false}
-                                onToggle={() => {
-                                    if (!settings) { return; }
-                                    const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
-                                    void handleSave({ ...settings, window: { ...currentWindow, startOnStartup: !currentWindow.startOnStartup } });
-                                }}
-                            />
-                        </div>
+                <div className="flex justify-end pt-4 border-t border-border/20">
+                    <button
+                        onClick={() => { void window.electron.update.checkForUpdates(); }}
+                        className="flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground text-xs font-black uppercase rounded-xl transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        {t('general.checkForUpdates')}
+                    </button>
+                </div>
+            </div>
 
-                        <div className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                            <div>
-                                <span className="text-sm font-medium">{t('general.workAtBackground')}</span>
-                                <p className="text-xs text-muted-foreground mt-1">{t('general.workAtBackgroundDesc')}</p>
-                            </div>
-                            <ToggleSwitch
-                                enabled={settings?.window?.workAtBackground ?? false}
-                                onToggle={() => {
-                                    if (!settings) { return; }
-                                    const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
-                                    void handleSave({ ...settings, window: { ...currentWindow, workAtBackground: !currentWindow.workAtBackground } });
-                                }}
-                            />
-                        </div>
+            {/* Privacy & Safety */}
+            <div className="premium-glass p-8 space-y-8">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-lg shadow-rose-500/10">
+                        <Activity className="w-6 h-6" />
                     </div>
+                    <div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.privacySafety')}</div>
+                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.privacySafetyDesc')}</div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ToggleSwitch
+                        enabled={settings?.crashReporting?.enabled ?? false}
+                        onToggle={() => {
+                            if (!settings) { return; }
+                            const current = settings.crashReporting ?? { enabled: false };
+                            void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } });
+                        }}
+                        title={t('general.crashReporting')}
+                        description={t('general.crashReportingDesc')}
+                    />
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import { useSettingsLogic } from '@renderer/features/settings/hooks/useSettingsLogic';
 import { SettingsCategory } from '@renderer/features/settings/types';
+import { BarChart, Code, Mic, Palette, Rocket, Server, Settings, Shield, Sparkles, User, Users } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
@@ -45,18 +46,19 @@ export function SettingsPage({
     // Search state for settings
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Define tabs for filtering
+    // Define tabs with icons for filtering and sidebar
     const allTabs = useMemo(() => [
-        { id: 'general', label: t('settings.tabs.general') },
-        { id: 'accounts', label: t('settings.tabs.accounts') },
-        { id: 'appearance', label: t('settings.tabs.appearance') },
-        { id: 'models', label: t('settings.tabs.models') },
-        { id: 'statistics', label: t('settings.tabs.statistics') },
-        { id: 'personas', label: t('settings.tabs.personas') },
-        { id: 'speech', label: t('settings.tabs.speech') },
-        { id: 'developer', label: t('settings.tabs.developer') },
-        { id: 'advanced', label: t('settings.tabs.advanced') },
-        { id: 'about', label: t('settings.tabs.about') }
+        { id: 'general', label: t('settings.tabs.general'), icon: Settings, category: 'General' },
+        { id: 'accounts', label: t('settings.tabs.accounts'), icon: User, category: 'Security' },
+        { id: 'appearance', label: t('settings.tabs.appearance'), icon: Palette, category: 'Visuals' },
+        { id: 'models', label: t('settings.tabs.models'), icon: Sparkles, category: 'AI' },
+        { id: 'statistics', label: t('settings.tabs.statistics'), icon: BarChart, category: 'Insights' },
+        { id: 'personas', label: t('settings.tabs.personas'), icon: Users, category: 'Customization' },
+        { id: 'speech', label: t('settings.tabs.speech'), icon: Mic, category: 'Interaction' },
+        { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: 'Tools' },
+        { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: 'Security' },
+        { id: 'mcp-servers', label: t('settings.tabs.mcpServers'), icon: Server, category: 'Infrastructure' },
+        { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: 'App' }
     ], [t]);
 
     const filteredTabs = useMemo(() => {
@@ -106,7 +108,7 @@ export function SettingsPage({
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, handleFactoryReset
-    ]);
+    ]); 
 
     return (
         <div className="settings-container">
@@ -119,7 +121,7 @@ export function SettingsPage({
                         filteredTabsCount={filteredTabs.length}
                     />
 
-                    <div className={cn("settings-section h-full pr-4", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
+                    <div className={cn("settings-section h-full pr-4 pb-20", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
                         {statusMessage && (
                             <div className="mb-6 px-4 py-2 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />

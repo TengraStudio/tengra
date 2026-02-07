@@ -53,13 +53,11 @@ class LazyServiceRegistry {
     }
 
     private async loadService<T>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
-        const startTime = Date.now();
-        appLogger.info('LazyServices', `Loading service '${name}'...`);
+        // const startTime = Date.now();
 
         try {
             const service = await factory();
-            const loadTime = Date.now() - startTime;
-            appLogger.info('LazyServices', `Service '${name}' loaded in ${loadTime}ms`);
+            // const loadTime = Date.now() - startTime;
             return service;
         } catch (error) {
             appLogger.error('LazyServices', `Failed to load service '${name}': ${error}`);

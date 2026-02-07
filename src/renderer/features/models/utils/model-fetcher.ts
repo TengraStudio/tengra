@@ -15,6 +15,8 @@ export interface ModelInfo {
         input?: number;
         output?: number;
     };
+    thinkingLevels?: string[];
+    description?: string;
     [key: string]: JsonValue | undefined;
 }
 

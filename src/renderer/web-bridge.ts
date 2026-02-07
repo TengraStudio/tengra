@@ -1,6 +1,6 @@
 import type { ElectronAPI } from '@renderer/electron.d';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
-import type { AuthStatus, IpcValue } from '@shared/types/common';
+import type { IpcValue } from '@shared/types/common';
 import type { Project, ProjectAnalysis } from '@shared/types/project';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
@@ -25,20 +25,6 @@ export const webElectronMock: ElectronAPI = {
     anthropicLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
     codexLogin: async () => ({ url: 'http://localhost', state: 'mock-state' }),
 
-    checkAuthStatus: async () => ({
-        authenticated: false,
-        files: [],
-        github: false,
-        copilot: false,
-        antigravity: false,
-
-        claude: false,
-        anthropic: false,
-        codex: false
-    } as AuthStatus),
-    deleteProxyAuthFile: async (_name: string) => ({ success: true }),
-    syncAuthFiles: async () => ({ success: true }),
-    downloadAuthFile: async (_name: string) => null,
     saveClaudeSession: async () => ({ success: true }),
     triggerClaudeSessionCapture: async () => ({ success: true }),
 
@@ -157,8 +143,7 @@ export const webElectronMock: ElectronAPI = {
     }),
     checkUsageLimit: async (_provider: string, _model: string) => ({ allowed: true }),
     getUsageCount: async (_period: 'hourly' | 'daily' | 'weekly', _provider?: string, _model?: string) => 0,
-    importChatHistory: async (_provider: string) => ({ success: true }),
-    importChatHistoryJson: async (_jsonContent: string) => ({ success: true }),
+
 
     getModels: async () => [],
     chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
@@ -557,10 +542,18 @@ export const webElectronMock: ElectronAPI = {
         generatePlan: async (_options: unknown) => { },
         approvePlan: async (_plan: string[] | unknown[]) => { },
         stop: async () => { },
+        resetState: async () => { },
         getStatus: async () => null,
         retryStep: async (_index: number) => { },
         getProfiles: async () => [],
-        onUpdate: (_callback: (state: unknown) => void) => () => { }
+        onUpdate: (_callback: (state: unknown) => void) => () => { },
+        // Canvas persistence stubs
+        saveCanvasNodes: async (_nodes: unknown[]) => { },
+        getCanvasNodes: async () => [],
+        deleteCanvasNode: async (_id: string) => { },
+        saveCanvasEdges: async (_edges: unknown[]) => { },
+        getCanvasEdges: async () => [],
+        deleteCanvasEdge: async (_id: string) => { }
     },
     extension: {
         shouldShowWarning: async () => false,

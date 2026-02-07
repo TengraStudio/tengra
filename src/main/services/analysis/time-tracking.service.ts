@@ -4,7 +4,7 @@
  */
 
 import { BaseService } from '@main/services/base.service';
-import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface TimeTrackingRecord {
@@ -32,7 +32,7 @@ export class TimeTrackingService extends BaseService {
     private isTracking = false;
 
     constructor(
-        private databaseService: DatabaseService
+        private databaseClient: DatabaseClientService
     ) {
         super('TimeTrackingService');
     }
@@ -140,23 +140,25 @@ export class TimeTrackingService extends BaseService {
      */
     private async recordTime(record: Omit<TimeTrackingRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
         try {
-            const db = this.databaseService.getDatabase();
             const id = uuidv4();
             const now = Date.now();
 
-            await db.prepare(`
-                INSERT INTO time_tracking (id, type, project_id, start_time, end_time, duration_ms, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
-                id,
-                record.type,
-                record.projectId ?? null,
-                record.startTime,
-                record.endTime ?? null,
-                record.durationMs,
-                now,
-                now
-            );
+            await this.databaseClient.executeQuery({
+                sql: `
+                    INSERT INTO time_tracking (id, type, project_id, start_time, end_time, duration_ms, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `,
+                params: [
+                    id,
+                    record.type,
+                    record.projectId ?? null,
+                    record.startTime,
+                    record.endTime ?? null,
+                    record.durationMs,
+                    now,
+                    now
+                ]
+            });
         } catch (error) {
             this.logError('Failed to record time', error);
         }
@@ -186,61 +188,65 @@ export class TimeTrackingService extends BaseService {
      */
     async getTimeStats(): Promise<TimeTrackingStats> {
         try {
-            const db = this.databaseService.getDatabase();
-
-            // Get total app online time
-            const appOnlineResult = await db.prepare(`
-                SELECT COALESCE(SUM(duration_ms), 0) as total
-                FROM time_tracking
-                WHERE type = 'app_online'
-            `).get() as { total: number };
-
-            // Get total coding time
-            const codingResult = await db.prepare(`
-                SELECT COALESCE(SUM(duration_ms), 0) as total
-                FROM time_tracking
-                WHERE type = 'coding'
-            `).get() as { total: number };
-
-            // Get per-project coding time
-            const projectResult = await db.prepare(`
-                SELECT project_id, COALESCE(SUM(duration_ms), 0) as total
-                FROM time_tracking
-                WHERE type = 'project_coding' AND project_id IS NOT NULL
-                GROUP BY project_id
-            `).all() as Array<{ project_id: string; total: number }>;
-
-            const projectCodingTime: Record<string, number> = {};
-            for (const row of projectResult) {
-                projectCodingTime[row.project_id] = row.total;
-            }
+            const appOnlineTotal = await this.getTotalTimeByType('app_online');
+            const codingTotal = await this.getTotalTimeByType('coding');
+            const projectCodingTime = await this.getProjectCodingStats();
 
             // Add current active tracking time
-            const currentAppTime = this.isTracking && this.appStartTime
-                ? Date.now() - this.appStartTime
+            const now = Date.now();
+            const currentAppTime = (this.isTracking && this.appStartTime)
+                ? now - this.appStartTime
                 : 0;
             const currentCodingTime = this.codingStartTime
-                ? Date.now() - this.codingStartTime
+                ? now - this.codingStartTime
                 : 0;
 
-            // Add current project times
+            // Add current project times from active sessions
             for (const [projectId, startTime] of this.projectStartTimes.entries()) {
-                const currentTime = Date.now() - startTime;
-                projectCodingTime[projectId] = (projectCodingTime[projectId] ?? 0) + currentTime;
+                projectCodingTime[projectId] = (projectCodingTime[projectId] ?? 0) + (now - startTime);
             }
 
             return {
-                totalOnlineTime: appOnlineResult.total + currentAppTime,
-                totalCodingTime: codingResult.total + currentCodingTime,
+                totalOnlineTime: appOnlineTotal + currentAppTime,
+                totalCodingTime: codingTotal + currentCodingTime,
                 projectCodingTime
             };
         } catch (error) {
-            this.logError('Failed to get time stats', error);
+            this.logError('Failed to get time stats', error as Error);
             return {
                 totalOnlineTime: 0,
                 totalCodingTime: 0,
                 projectCodingTime: {}
             };
         }
+    }
+
+    /**
+     * Helper to get total time by tracking type
+     */
+    private async getTotalTimeByType(type: string): Promise<number> {
+        const response = await this.databaseClient.executeQuery({
+            sql: `SELECT COALESCE(SUM(duration_ms), 0) as total FROM time_tracking WHERE type = ?`,
+            params: [type]
+        });
+        return (response.rows[0]?.total as number) ?? 0;
+    }
+
+    /**
+     * Helper to get per-project coding statistics
+     */
+    private async getProjectCodingStats(): Promise<Record<string, number>> {
+        const response = await this.databaseClient.executeQuery({
+            sql: `SELECT project_id, COALESCE(SUM(duration_ms), 0) as total FROM time_tracking WHERE type = 'project_coding' AND project_id IS NOT NULL GROUP BY project_id`
+        });
+
+        const projectCodingTime: Record<string, number> = {};
+        const rows = response.rows ?? [];
+        for (const row of rows) {
+            if (row.project_id) {
+                projectCodingTime[String(row.project_id)] = Number(row.total);
+            }
+        }
+        return projectCodingTime;
     }
 }

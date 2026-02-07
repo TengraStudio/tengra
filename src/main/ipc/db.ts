@@ -478,7 +478,11 @@ function registerStatsHandlers(databaseService: DatabaseService, _auditLogServic
 
     ipcMain.handle('db:getTimeStats', createSafeIpcHandler('db:getTimeStats', async () => {
         return await databaseService.getTimeStats();
-    }, { totalTime: 0, averageTime: 0 }));
+    }, {
+        totalOnlineTime: 0,
+        totalCodingTime: 0,
+        projectCodingTime: {}
+    }));
 
     ipcMain.handle('db:searchChats', createSafeIpcHandler('db:searchChats', async (_event: IpcMainInvokeEvent, options: {
         query?: string;
@@ -495,7 +499,14 @@ function registerStatsHandlers(databaseService: DatabaseService, _auditLogServic
 
     ipcMain.handle('db:getTokenStats', createSafeIpcHandler('db:getTokenStats', async (_event: IpcMainInvokeEvent, period: 'daily' | 'weekly' | 'monthly') => {
         return await databaseService.getTokenUsageStats(period);
-    }, { totalTokens: 0 }));
+    }, {
+        totalSent: 0,
+        totalReceived: 0,
+        totalCost: 0,
+        timeline: [],
+        byProvider: {},
+        byModel: {}
+    }));
 
     ipcMain.handle('db:addTokenUsage', createSafeIpcHandler('db:addTokenUsage', async (_event: IpcMainInvokeEvent, record: {
         messageId?: string

@@ -1,8 +1,8 @@
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { Message } from '@shared/types/chat';
-import { AgentProfile, AgentStartOptions, ProjectStep } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectStep, ProjectState } from '@shared/types/project-agent';
 import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
-import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, User, X, Zap } from 'lucide-react';
+import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, Clock, Coins, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, User, X, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -31,6 +31,10 @@ export type TaskNodeData = {
     isModelOpen?: boolean;
     systemMode?: 'thinking' | 'fast' | 'architect';
     agentProfileId?: string;
+    /** Total token usage */
+    totalTokens?: ProjectState['totalTokens'];
+    /** Task timing */
+    timing?: ProjectState['timing'];
 };
 
 interface TaskNodeActionProps {
@@ -44,10 +48,19 @@ interface TaskNodeActionProps {
 
 const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, currentModelId, selectedProjectId }: TaskNodeActionProps) => {
     const { t } = useLanguage();
+    const planInFlightRef = useRef(false);
+    const executeInFlightRef = useRef(false);
+
     const handlePlan = useCallback(async () => {
         if (!data.title && !data.description) {
             return;
         }
+        if (planInFlightRef.current) {
+            appLogger.warn('TaskNode', 'Plan request ignored because a previous plan request is still in-flight');
+            return;
+        }
+
+        planInFlightRef.current = true;
         try {
             updateNodeData(id, { status: 'planning', isExpanded: true });
             const options: AgentStartOptions = {
@@ -61,10 +74,18 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
             };
             await window.electron.projectAgent.generatePlan(options);
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.includes('Cannot start planning from current state: planning')) {
+                appLogger.warn('TaskNode', 'Plan request blocked: another planning session is already active');
+                updateNodeData(id, { status: 'idle' });
+                return;
+            }
             appLogger.error('TaskNode', 'Failed to generate plan', error as Error);
             updateNodeData(id, { status: 'failed' });
+        } finally {
+            planInFlightRef.current = false;
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t, planInFlightRef]);
 
     const handleApprove = useCallback(async () => {
         if (!data.plan) {
@@ -72,13 +93,7 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
         }
         try {
             updateNodeData(id, { status: 'running' });
-            // Since approvePlan in preload takes string[], we might need to update preload or just pass it.
-            // But the service now needs nodeId. Our current approvePlan in preload is: 
-            // approvePlan: (plan) => ipcRenderer.invoke('project:approve', plan)
-            // We should ideally pass { plan, nodeId } or similar.
-            // For now, let's assume the backend will use the nodeId from the LAST generatePlan call.
-            // OR we can update preload.
-            await window.electron.projectAgent.approvePlan(data.plan.map(s => s.text));
+            await window.electron.projectAgent.approvePlan(data.plan);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to approve plan', error as Error);
             updateNodeData(id, { status: 'failed' });
@@ -89,6 +104,11 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
         if (!data.title && !data.description) {
             return;
         }
+        if (executeInFlightRef.current) {
+            appLogger.warn('TaskNode', 'Execute request ignored because a previous execute request is still in-flight');
+            return;
+        }
+        executeInFlightRef.current = true;
         try {
             updateNodeData(id, { status: 'running', activeTab: 'logs' });
             const options: AgentStartOptions = {
@@ -104,8 +124,10 @@ const useTaskNodeActions = ({ id, data, updateNodeData, currentProviderId, curre
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to start task', error as Error);
             updateNodeData(id, { status: 'failed' });
+        } finally {
+            executeInFlightRef.current = false;
         }
-    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t]);
+    }, [data.title, data.description, data.attachments, data.systemMode, data.agentProfileId, currentProviderId, currentModelId, selectedProjectId, id, updateNodeData, t, executeInFlightRef]);
 
     const handleStop = useCallback(async () => {
         try {
@@ -197,6 +219,109 @@ const useTaskNodeState = ({
 
 // --- Sub-components ---
 
+/**
+ * Format token count to human-readable (1.2k, 5.5k, etc.)
+ */
+const formatTokens = (count: number): string => {
+    if (count >= 1000) {
+        return `${(count / 1000).toFixed(1)}k`;
+    }
+    return String(count);
+};
+
+/**
+ * Format milliseconds to human-readable duration
+ */
+const formatDuration = (ms: number): string => {
+    if (ms < 1000) {
+        return `${ms}ms`;
+    }
+    if (ms < 60000) {
+        return `${(ms / 1000).toFixed(1)}s`;
+    }
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}m ${secs}s`;
+};
+
+/**
+ * TokenCounter - Displays token usage for a step or total
+ */
+const TokenCounter = ({ tokens, timing, className }: {
+    tokens?: { prompt: number; completion: number };
+    timing?: { durationMs?: number };
+    className?: string;
+}) => {
+    if (!tokens && !timing?.durationMs) {
+        return null;
+    }
+
+    const total = (tokens?.prompt ?? 0) + (tokens?.completion ?? 0);
+
+    return (
+        <div className={cn("flex items-center gap-2 text-xxs text-muted-foreground", className)}>
+            {tokens && total > 0 && (
+                <span className="flex items-center gap-1" title={`${tokens.prompt} prompt + ${tokens.completion} completion`}>
+                    <Coins className="w-3 h-3" />
+                    {formatTokens(total)}
+                </span>
+            )}
+            {timing?.durationMs && timing.durationMs > 0 && (
+                <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatDuration(timing.durationMs)}
+                </span>
+            )}
+        </div>
+    );
+};
+
+/**
+ * ProgressRing - SVG circular progress indicator around an icon
+ */
+const ProgressRing = ({ progress, size = 32, strokeWidth = 2, className, children }: {
+    progress: number;
+    size?: number;
+    strokeWidth?: number;
+    className?: string;
+    children: React.ReactNode;
+}) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+    return (
+        <div className={cn("relative inline-flex items-center justify-center", className)} style={{ width: size, height: size }}>
+            <svg className="absolute -rotate-90" width={size} height={size}>
+                {/* Background ring */}
+                <circle
+                    className="text-muted/30"
+                    strokeWidth={strokeWidth}
+                    stroke="currentColor"
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+                {/* Progress ring */}
+                <circle
+                    className="text-primary transition-all duration-500 ease-out"
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r={radius}
+                    cx={size / 2}
+                    cy={size / 2}
+                />
+            </svg>
+            <div className="z-10">{children}</div>
+        </div>
+    );
+};
+
 const TaskMetaInfo = ({ status }: { status: string }) => {
     if (status !== 'running' && status !== 'planning') {
         return null;
@@ -256,7 +381,7 @@ interface PlanStageProps {
 
 const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, activeStepRef, t }: PlanStageProps & { t: (key: string, options?: Record<string, string | number>) => string }) => {
     return (
-        <div ref={planContainerRef} className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+        <div ref={planContainerRef} className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1 nodrag nowheel">
             {plan.map((step, idx) => {
                 const isRunning = step.status === 'running';
                 return (
@@ -314,6 +439,10 @@ const PlanStage = ({ plan, status, onUpdatePlan, onRetry, planContainerRef, acti
                                 {t('common.retry')}
                             </button>
                         )}
+                        {/* Token counter for completed/running steps */}
+                        {(step.status === 'completed' || step.status === 'running') && (
+                            <TokenCounter tokens={step.tokens} timing={step.timing} className="ml-auto opacity-60" />
+                        )}
                     </div>
                 );
             })}
@@ -363,17 +492,29 @@ const TaskExecutionDetails = ({
     </div>
 );
 
-const ProgressBar = ({ plan }: { plan: ProjectStep[] }) => {
+const ProgressBar = ({ plan, totalTokens }: { plan: ProjectStep[]; totalTokens?: { prompt: number; completion: number } }) => {
     const { t } = useLanguage();
     const completed = plan.filter(s => s.status === 'completed').length;
     const total = plan.length;
     const percentage = Math.round((completed / Math.max(1, total)) * 100);
 
+    // Calculate total duration from completed steps
+    const totalDuration = plan.reduce((acc, step) => {
+        return acc + (step.timing?.durationMs ?? 0);
+    }, 0);
+
     return (
         <div className="px-4 py-2 bg-card/10 border-t border-border/20">
             <div className="flex justify-between items-center mb-1">
                 <span className="text-xxs font-medium text-muted-foreground uppercase tracking-wider">{t('projectAgent.overallProgress')}</span>
-                <span className="text-xxs font-mono text-primary">{percentage}%</span>
+                <div className="flex items-center gap-3">
+                    <TokenCounter
+                        tokens={totalTokens}
+                        timing={{ durationMs: totalDuration }}
+                        className="opacity-80"
+                    />
+                    <span className="text-xxs font-mono text-primary">{percentage}%</span>
+                </div>
             </div>
             <div className="h-1.5 w-full bg-muted/20 rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${percentage}%` }} />
@@ -442,18 +583,28 @@ const AgentProfileSelector = ({ profiles, selectedProfileId, onProfileSelect }: 
 
 const TaskHeader = ({
     isPlanner, isAction, label, selectedProject, projects,
-    selectedProjectId, onProjectSelect, isExpanded, setIsExpanded, onDelete
-}: { isPlanner: boolean; isAction: boolean; label: string; selectedProject?: { title: string }; projects: Array<{ id: string; title: string }>; selectedProjectId?: string; onProjectSelect: (id: string) => void; isExpanded: boolean; setIsExpanded: (expanded: boolean) => void; onDelete: () => void }) => {
+    selectedProjectId, onProjectSelect, isExpanded, setIsExpanded, onDelete, progress, status
+}: { isPlanner: boolean; isAction: boolean; label: string; selectedProject?: { title: string }; projects: Array<{ id: string; title: string }>; selectedProjectId?: string; onProjectSelect: (id: string) => void; isExpanded: boolean; setIsExpanded: (expanded: boolean) => void; onDelete: () => void; progress?: number; status?: string }) => {
     const { t } = useLanguage();
+    const showProgressRing = status === 'running' || status === 'planning';
+
+    const iconContent = (
+        <div className={cn(
+            "p-1.5 rounded-lg shrink-0",
+            isPlanner ? "bg-primary/20 text-primary" : isAction ? "bg-warning/20 text-warning" : "bg-primary/20 text-primary"
+        )}>
+            {isPlanner ? <Sparkles className="w-4 h-4" /> : isAction ? <Zap className="w-4 h-4" /> : <Box className="w-4 h-4" />}
+        </div>
+    );
+
     return (
         <div className="p-3 border-b border-border/20 flex items-center justify-between bg-muted/10 rounded-t-lg">
             <div className="flex items-center gap-2 overflow-hidden">
-                <div className={cn(
-                    "p-1.5 rounded-lg shrink-0",
-                    isPlanner ? "bg-primary/20 text-primary" : isAction ? "bg-warning/20 text-warning" : "bg-primary/20 text-primary"
-                )}>
-                    {isPlanner ? <Sparkles className="w-4 h-4" /> : isAction ? <Zap className="w-4 h-4" /> : <Box className="w-4 h-4" />}
-                </div>
+                {showProgressRing ? (
+                    <ProgressRing progress={progress ?? 0} size={32} strokeWidth={2}>
+                        {iconContent}
+                    </ProgressRing>
+                ) : iconContent}
                 {isPlanner ? (
                     <Popover>
                         <PopoverTrigger asChild>
@@ -678,6 +829,10 @@ const TaskBody = ({
     id, data, isPlanner, isAction, isExpanded, activeTab, updateNodeData, onRetry, planContainerRef, activeStepRef
 }: TaskBodyProps) => {
     const { t } = useLanguage();
+
+    // Debug: Log render conditions
+    appLogger.debug('TaskBody', `Node ${id}: isExpanded=${isExpanded}, isPlanner=${isPlanner}, taskType=${data.taskType}, plan=${data.plan?.length ?? 0}, status=${data.status}`);
+
     return (
         <div className="p-4 space-y-3">
             {isPlanner ? (
@@ -691,7 +846,7 @@ const TaskBody = ({
                     {data.description ?? t('projectAgent.noDescription')}
                 </p>
             )}
-            {isPlanner && data.plan && data.plan.length > 0 && <ProgressBar plan={data.plan} />}
+            {isPlanner && data.plan && data.plan.length > 0 && <ProgressBar plan={data.plan} totalTokens={data.totalTokens} />}
             {isExpanded && isPlanner && (
                 <TaskExecutionDetails
                     id={id}
@@ -731,7 +886,14 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
     useEffect(() => {
         const fetchProfiles = async () => {
             try {
-                const fetched = await window.electron.projectAgent.getProfiles();
+                const getProfilesFn = (window.electron.projectAgent as { getProfiles?: () => Promise<AgentProfile[]> } | undefined)?.getProfiles;
+                if (typeof getProfilesFn !== 'function') {
+                    appLogger.warn('TaskNode', 'projectAgent.getProfiles is unavailable in current preload bridge');
+                    setProfiles([]);
+                    return;
+                }
+
+                const fetched = await getProfilesFn();
                 setProfiles(fetched);
             } catch (err) {
                 appLogger.error('TaskNode', 'Failed to fetch agent profiles', err as Error);
@@ -759,9 +921,15 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
     }, [data.plan]);
 
     useEffect(() => {
-        const needsExpansion = ['planning', 'waiting_for_approval'].includes(data.status ?? 'idle');
+        const status = data.status ?? 'idle';
+        const needsExpansion = ['planning', 'waiting_for_approval'].includes(status);
         if (needsExpansion) {
-            updateNodeData(id, { isExpanded: true });
+            // When waiting for approval, expand the node and show plan tab
+            const updates: Partial<TaskNodeData> = { isExpanded: true };
+            if (status === 'waiting_for_approval') {
+                updates.activeTab = 'plan';
+            }
+            updateNodeData(id, updates);
         }
     }, [data.status, id, updateNodeData]);
 
@@ -780,10 +948,19 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
         }
     }, [id, data.attachments, updateNodeData]);
 
+    // Calculate plan progress percentage
+    const planProgress = React.useMemo(() => {
+        if (!data.plan || data.plan.length === 0) {
+            return 0;
+        }
+        const completed = data.plan.filter(s => s.status === 'completed').length;
+        return Math.round((completed / data.plan.length) * 100);
+    }, [data.plan]);
+
     return (
         <div className={getTaskNodeClasses(isExpanded, !!selected, data.status ?? 'idle')}>
             <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background transition-colors hover:!bg-primary" />
-            <TaskHeader isPlanner={isPlanner} isAction={isAction} label={data.label} selectedProject={selectedProject} projects={projects} selectedProjectId={selectedProjectId} onProjectSelect={(pid) => updateNodeData(id, { projectId: pid })} isExpanded={isExpanded} setIsExpanded={(expanded) => updateNodeData(id, { isExpanded: expanded })} onDelete={() => void deleteElements({ nodes: [{ id }] })} />
+            <TaskHeader isPlanner={isPlanner} isAction={isAction} label={data.label} selectedProject={selectedProject} projects={projects} selectedProjectId={selectedProjectId} onProjectSelect={(pid) => updateNodeData(id, { projectId: pid })} isExpanded={isExpanded} setIsExpanded={(expanded) => updateNodeData(id, { isExpanded: expanded })} onDelete={() => void deleteElements({ nodes: [{ id }] })} progress={planProgress} status={data.status} />
 
             <TaskBody
                 id={id}

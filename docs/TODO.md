@@ -1,5 +1,92 @@
 # Tandem Project - Task Tracking (Consolidated)
 
+## 🟢 COMPLETED RECENTLY
+- [x] Remove `HistoryImportService` and its associated IPC handlers
+- [x] Remove `getAuthFiles` and file-based auth from `ProxyService`
+- [x] Update renderer to use `getLinkedAccounts` instead of `checkAuthStatus`
+- [x] Fix Statistics Discrepancy & Service Refactor: Integrated and optimized `TimeTrackingService`
+- [x] Technical Debt: Hardened type safety in `DatabaseService` and standardized stats interfaces
+- [x] Visual Polish: Implemented HSL-based shadow tokens and premium transitions (`DSN-01`)
+- [x] Fix token chart data population in Statistics tab
+- [x] Add proxy lifecycle management (kill old proxy on startup)
+- [x] Remove unnecessary DEBUG logs from Go auth store
+- [x] Fix agent plan visibility in UI nodes (auto-expand on waiting_for_approval)
+
+---
+
+## 🤖 AUTONOMOUS AGENT SYSTEM (Project Agent v2)
+
+### 🔄 Phase 1: Checkpoint & Recovery (Priority: HIGH)
+- [x] **AGT-CP-00**: Canvas node persistence (save/restore on app restart) <!-- id: agt0 -->
+- [ ] **AGT-CP-01**: Add checkpoint table to database schema <!-- id: agt1 -->
+- [ ] **AGT-CP-02**: Create `AgentCheckpointService` for state serialization <!-- id: agt2 -->
+- [ ] **AGT-CP-03**: Auto-save checkpoint after each step completion <!-- id: agt3 -->
+- [ ] **AGT-CP-04**: Implement "Resume from checkpoint" UI button <!-- id: agt4 -->
+- [ ] **AGT-CP-05**: Add rollback functionality (revert to previous checkpoint) <!-- id: agt5 -->
+- [ ] **AGT-CP-06**: Plan versioning (track plan modifications) <!-- id: agt6 -->
+
+### ⚡ Phase 2: Parallel Task Execution (Priority: HIGH)
+- [ ] **AGT-PAR-01**: Refactor `ProjectAgentService` to support multiple concurrent tasks <!-- id: agt7 -->
+- [ ] **AGT-PAR-02**: Add task queue with priority levels <!-- id: agt8 -->
+- [ ] **AGT-PAR-03**: Implement node dependency graph (A → B means B waits for A) <!-- id: agt9 -->
+- [ ] **AGT-PAR-04**: Add Fork node type (split into parallel branches) <!-- id: agt10 -->
+- [ ] **AGT-PAR-05**: Add Join node type (wait for all branches) <!-- id: agt11 -->
+- [ ] **AGT-PAR-06**: Visual: Show parallel execution lanes in canvas <!-- id: agt12 -->
+
+### 🔗 Phase 3: Git Integration (Priority: HIGH)
+- [ ] **AGT-GIT-01**: Auto-create feature branch when plan starts <!-- id: agt13 -->
+- [ ] **AGT-GIT-02**: Auto-commit after each successful step <!-- id: agt14 -->
+- [ ] **AGT-GIT-03**: Add "Create PR" action node type <!-- id: agt15 -->
+- [ ] **AGT-GIT-04**: Implement diff preview before commit <!-- id: agt16 -->
+- [ ] **AGT-GIT-05**: Add branch cleanup on plan completion <!-- id: agt17 -->
+
+### 📊 Phase 4: Token & Cost Tracking (Priority: MEDIUM)
+- [x] **AGT-TOK-01**: Track token usage per plan/step <!-- id: agt18 -->
+- [ ] **AGT-TOK-02**: Add cost estimation before plan execution <!-- id: agt19 -->
+- [x] **AGT-TOK-03**: Display real-time token counter in node <!-- id: agt20 -->
+- [ ] **AGT-TOK-04**: Add budget limits (stop if exceeded) <!-- id: agt21 -->
+- [ ] **AGT-TOK-05**: Show cost breakdown in plan summary <!-- id: agt22 -->
+
+### 🧠 Phase 5: Smart Planning (Priority: MEDIUM)
+- [ ] **AGT-PLN-01**: Auto-retry failed steps with alternative approach <!-- id: agt23 -->
+- [ ] **AGT-PLN-02**: Dynamic plan revision (modify plan mid-execution) <!-- id: agt24 -->
+- [ ] **AGT-PLN-03**: Learn from past plans (success/failure patterns) <!-- id: agt25 -->
+- [x] **AGT-PLN-04**: Time estimation per step (timing display) <!-- id: agt26 -->
+- [ ] **AGT-PLN-05**: Confidence scoring for each step <!-- id: agt27 -->
+
+### 🎨 Phase 6: Visual Enhancements (Priority: MEDIUM)
+- [ ] **AGT-VIS-01**: Animated data flow between nodes <!-- id: agt28 -->
+- [ ] **AGT-VIS-02**: Mini-map for large plan graphs <!-- id: agt29 -->
+- [ ] **AGT-VIS-03**: Real-time log streaming in node terminal <!-- id: agt30 -->
+- [ ] **AGT-VIS-04**: Drag & drop to reorder plan steps <!-- id: agt31 -->
+- [ ] **AGT-VIS-05**: Collapsible step groups <!-- id: agt32 -->
+- [x] **AGT-VIS-06**: Progress ring around node icon <!-- id: agt33 -->
+
+### 🤝 Phase 7: Multi-Model Collaboration (Priority: LOW)
+- [ ] **AGT-COL-01**: Assign different models to different steps <!-- id: agt34 -->
+- [ ] **AGT-COL-02**: Model-specific task routing (code→GPT-4, research→Claude) <!-- id: agt35 -->
+- [ ] **AGT-COL-03**: Voting mechanism for critical decisions <!-- id: agt36 -->
+- [ ] **AGT-COL-04**: Consensus builder for conflicting outputs <!-- id: agt37 -->
+
+### 📝 Phase 8: Templates & Presets (Priority: LOW)
+- [ ] **AGT-TPL-01**: Built-in templates (refactor, bug-fix, feature, docs) <!-- id: agt38 -->
+- [ ] **AGT-TPL-02**: User-defined template creation <!-- id: agt39 -->
+- [ ] **AGT-TPL-03**: Template variables (project name, file paths) <!-- id: agt40 -->
+- [ ] **AGT-TPL-04**: Template sharing/export <!-- id: agt41 -->
+
+### 🛡️ Phase 9: Human-in-the-Loop (Priority: LOW)
+- [ ] **AGT-HIL-01**: Mark steps as "requires approval" <!-- id: agt42 -->
+- [ ] **AGT-HIL-02**: Inline step editing during execution <!-- id: agt43 -->
+- [ ] **AGT-HIL-03**: "Skip this step" option <!-- id: agt44 -->
+- [ ] **AGT-HIL-04**: Manual intervention points <!-- id: agt45 -->
+- [ ] **AGT-HIL-05**: Step-level comments/notes <!-- id: agt46 -->
+
+### 🧪 Phase 10: Testing Integration (Priority: LOW)
+- [ ] **AGT-TST-01**: Auto-run tests after code changes <!-- id: agt47 -->
+- [ ] **AGT-TST-02**: Test result visualization in node <!-- id: agt48 -->
+- [ ] **AGT-TST-03**: Fail step if tests fail <!-- id: agt49 -->
+- [ ] **AGT-TST-04**: Coverage tracking per plan <!-- id: agt50 -->
+
 ## 🔴 CRITICAL PRIORITY (Core Architecture)
 - [ ] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->
 - [ ] **GLOBAL-TS-02**: Audit all 131 files for implicit `any` <!-- id: g2 -->
@@ -18,7 +105,7 @@
 
 ### 🎨 Global Aesthetics & Theming
 - [ ] **DSN-01**: Standardize all shadows to use HSL-based tints for softer aesthetics <!-- id: d3 -->
-- [ ] **DSN-02**: Implement custom scrollbars with smooth transitions <!-- id: d4 -->
+- [x] **DSN-02**: Implement custom scrollbars with smooth transitions <!-- id: d4 -->
 - [ ] **DSN-03**: Audit color contrast ratios for accessibility (WCAG 2.1) <!-- id: d5 -->
 
 ### ✨ Micro-Animations & Transitions
@@ -32,8 +119,8 @@
 - [ ] **UI-CH-01**: Chat: Implement message bubble "tail" variants with SVG paths <!-- id: u1 -->
 - [ ] **UI-CH-02**: Chat: Add message timestamp "show on hover" logic <!-- id: u2 -->
 - [ ] **UI-CH-03**: Chat: Implement typing indicator with dot-bounce animation <!-- id: u3 -->
-- [ ] **UI-ST-01**: Settings: Group related toggles into "Glass Cards" <!-- id: u4 -->
-- [ ] **UI-ST-02**: Settings: Add reactive highlighting for active tabs <!-- id: u5 -->
+- [x] **UI-ST-01**: Settings: Group related toggles into "Glass Cards" <!-- id: u4 -->
+- [x] **UI-ST-02**: Settings: Add reactive highlighting for active tabs <!-- id: u5 -->
 - [ ] **UI-ID-01**: Ideas: Implement card flip animation for "Technical Details" view <!-- id: u6 -->
 - [ ] **UI-ID-02**: Ideas: Add vibrant gradient borders for "High Potential" items <!-- id: u7 -->
 
@@ -94,7 +181,7 @@
 15. **chat.ts**: [ ] Audit [x] Refactor [ ] Doc [ ] Test <!-- id: a57 -->
 16. **code-intelligence.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a61 -->
 17. **collaboration.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a65 -->
-18. **db.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a69 -->
+18. **db.ts**: [x] Audit [x] Refactor [ ] Doc [ ] Test <!-- id: a69 -->
 19. **dialog.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a73 -->
 20. **export.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a77 -->
 21. **extension.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a81 -->
@@ -124,7 +211,7 @@
 45. **project.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a177 -->
 46. **prompt-templates.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a181 -->
 47. **proxy-embed.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a185 -->
-48. **proxy.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a189 -->
+48. **proxy.ts**: [x] Audit [x] Refactor [ ] Doc [ ] Test <!-- id: a189 -->
 49. **screenshot.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a193 -->
 50. **settings.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a197 -->
 51. **system.ts**: [ ] Audit [ ] Refactor [ ] Doc [ ] Test <!-- id: a201 -->
@@ -145,7 +232,7 @@
 64. **config.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s64 -->
 65. **data-service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s65 -->
 66. **data/chat-event.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s66 -->
-67. **data/database.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s67 -->
+67. **data/database.service.ts**: [x] Type Audit [x] Refactor [ ] Doc [ ] Test <!-- id: s67 -->
 68. **data/database-migration.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s68 -->
 69. **export.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s69 -->
 70. **health-check.service.ts**: [ ] Type Audit [ ] Doc [ ] Test <!-- id: s70 -->

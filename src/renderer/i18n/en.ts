@@ -143,6 +143,11 @@ export const en = {
         shiftClickMulti: 'Shift+click to select multiple models',
         mode: 'Mode',
         reasoning: 'Reasoning',
+        selectReasoningLevel: 'Select Reasoning Level',
+        reasoningRequired: 'This model requires a reasoning level to be selected before use.',
+        confirmModel: 'Confirm Selection',
+        selectLevelFirst: 'Select a level first',
+        mustSelectReasoning: 'Please select a reasoning level to continue',
         providerLabels: {
             ollama: 'Ollama',
             codex: 'OpenAI',
@@ -929,6 +934,7 @@ export const en = {
     nav: {
         chat: 'Chat',
         projects: 'Projects',
+        "project-agent": 'Project Agent',
         settings: 'Settings',
         council: 'Council',
         mcp: 'MCP Management'
