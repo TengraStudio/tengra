@@ -1,3 +1,4 @@
+import { IpcValue } from '@shared/types';
 import { ProjectState } from '@shared/types/project-agent';
 import {
     addEdge,
@@ -12,6 +13,23 @@ import {
     useNodesState,
     useReactFlow,
 } from '@xyflow/react';
+
+/** Canvas node shape from database */
+interface CanvasNodeRecord {
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: Record<string, IpcValue>;
+}
+
+/** Canvas edge shape from database */
+interface CanvasEdgeRecord {
+    id: string;
+    source: string;
+    target: string;
+    sourceHandle?: string;
+    targetHandle?: string;
+}
 import {
     ChevronRight,
     Maximize,
@@ -206,19 +224,36 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
     );
 };
 
-const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node[]>>) => {
+const useProjectAgentState = (
+    setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
+    isLoaded: boolean,
+    updateNodeData: (id: string, data: Record<string, unknown>) => void,
+    getNodes: () => Node[]
+) => {
     useEffect(() => {
-        // Fetch initial state on mount
+        // Don't fetch initial state until canvas is loaded
+        if (!isLoaded) {
+            return;
+        }
+
+        // Fetch initial state after canvas is loaded
         const fetchInitialState = async () => {
             try {
                 const projectState = await window.electron.projectAgent.getStatus();
+                appLogger.info('ProjectAgentView', `Fetched initial state - status: ${projectState.status}, plan: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`);
+
                 if (projectState.nodeId || projectState.status !== 'idle') {
+                    const shouldShowPlan = projectState.status === 'waiting_for_approval' && projectState.plan && projectState.plan.length > 0;
+
                     setNodes((nds) => {
                         const targetNodeId = projectState.nodeId;
+
+                        appLogger.debug('ProjectAgentView', `Initial state: nodes count=${nds.length}, targetNodeId=${targetNodeId}`);
 
                         // Check if node already exists
                         const existingNode = nds.find(n => n.id === targetNodeId);
                         if (existingNode) {
+                            appLogger.info('ProjectAgentView', `Found existing node ${targetNodeId}, applying initial state`);
                             return nds.map(node => {
                                 if (node.id === targetNodeId) {
                                     return {
@@ -228,7 +263,14 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
                                             status: projectState.status,
                                             plan: projectState.plan,
                                             history: projectState.history,
-                                            currentTask: projectState.currentTask
+                                            currentTask: projectState.currentTask,
+                                            totalTokens: projectState.totalTokens,
+                                            timing: projectState.timing,
+                                            // Restore model config if node doesn't have it
+                                            model: (node.data as Record<string, unknown>).model ?? projectState.config?.model,
+                                            systemMode: (node.data as Record<string, unknown>).systemMode ?? projectState.config?.systemMode,
+                                            agentProfileId: (node.data as Record<string, unknown>).agentProfileId ?? projectState.config?.agentProfileId,
+                                            ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
                                         }
                                     };
                                 }
@@ -236,10 +278,14 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
                             });
                         }
 
-                        // If node doesn't exist but we have state, we might need to create it
+                        // If node doesn't exist but we have state, apply to first planner node
                         if (!targetNodeId) {
+                            const plannerNode = nds.find(n => (n.data as Record<string, unknown>).taskType === 'planner');
+                            if (plannerNode) {
+                                appLogger.info('ProjectAgentView', `No targetNodeId, applying to first planner node ${plannerNode.id}`);
+                            }
                             return nds.map(node => {
-                                if (node.data.taskType === 'planner') {
+                                if ((node.data as Record<string, unknown>).taskType === 'planner') {
                                     return {
                                         ...node,
                                         data: {
@@ -247,13 +293,22 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
                                             status: projectState.status,
                                             plan: projectState.plan,
                                             history: projectState.history,
-                                            currentTask: projectState.currentTask
+                                            currentTask: projectState.currentTask,
+                                            totalTokens: projectState.totalTokens,
+                                            timing: projectState.timing,
+                                            // Restore model config
+                                            model: (node.data as Record<string, unknown>).model ?? projectState.config?.model,
+                                            systemMode: (node.data as Record<string, unknown>).systemMode ?? projectState.config?.systemMode,
+                                            agentProfileId: (node.data as Record<string, unknown>).agentProfileId ?? projectState.config?.agentProfileId,
+                                            ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
                                         }
                                     };
                                 }
                                 return node;
                             });
                         }
+
+                        appLogger.warn('ProjectAgentView', `Target node ${targetNodeId} not found during initial state load`);
                         return nds;
                     });
                 }
@@ -263,50 +318,63 @@ const useProjectAgentState = (setNodes: React.Dispatch<React.SetStateAction<Node
         };
 
         void fetchInitialState();
+    }, [setNodes, isLoaded]);
+
+    useEffect(() => {
+        if (!isLoaded) {
+            appLogger.debug('ProjectAgentView', 'Event listener waiting for canvas to load...');
+            return;
+        }
+
+        appLogger.info('ProjectAgentView', 'Setting up project:update event listener');
 
         const unsubscribe = window.electron.projectAgent.onUpdate((projectState: ProjectState) => {
-            setNodes((nds) => {
-                const targetNodeId = projectState.nodeId;
-                if (!targetNodeId) {
-                    return nds.map((node) => {
-                        if (node.data.taskType === 'planner') {
-                            return {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    status: projectState.status,
-                                    plan: projectState.plan,
-                                    history: projectState.history,
-                                    currentTask: projectState.currentTask
-                                }
-                            };
-                        }
-                        return node;
-                    });
-                }
+            appLogger.info('ProjectAgentView', `Received project:update - status: ${projectState.status}, plan steps: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`);
 
-                return nds.map((node) => {
-                    if (node.id === targetNodeId) {
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                status: projectState.status,
-                                plan: projectState.plan,
-                                history: projectState.history,
-                                currentTask: projectState.currentTask
-                            }
-                        };
-                    }
-                    return node;
-                });
+            const nodes = getNodes();
+            let targetNodeId = projectState.nodeId;
+
+            // If no target node ID, try to find the first planner node
+            if (!targetNodeId) {
+                const plannerNode = nodes.find(n => (n.data as Record<string, unknown>).taskType === 'planner');
+                if (plannerNode) {
+                    targetNodeId = plannerNode.id;
+                    appLogger.debug('ProjectAgentView', `No targetNodeId, using first planner node: ${targetNodeId}`);
+                } else {
+                    appLogger.warn('ProjectAgentView', 'No targetNodeId and no planner node found to update');
+                    return;
+                }
+            }
+
+            // Check if node exists
+            const targetNode = nodes.find(n => n.id === targetNodeId);
+            if (!targetNode) {
+                appLogger.warn('ProjectAgentView', `Target node ${targetNodeId} not found in canvas! Available nodes: ${nodes.map(n => n.id).join(', ')}`);
+                return;
+            }
+
+            // Determine if we should expand and show plan tab
+            const shouldShowPlan = projectState.status === 'waiting_for_approval' && projectState.plan && projectState.plan.length > 0;
+
+            appLogger.info('ProjectAgentView', `Updating node ${targetNodeId} with status=${projectState.status}, plan=${projectState.plan?.length ?? 0} steps`);
+
+            // Use updateNodeData for reliable React Flow updates
+            updateNodeData(targetNodeId, {
+                status: projectState.status,
+                plan: projectState.plan,
+                history: projectState.history,
+                currentTask: projectState.currentTask,
+                totalTokens: projectState.totalTokens,
+                timing: projectState.timing,
+                // Auto-expand and show plan when waiting for approval
+                ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
             });
         });
 
         return () => {
             unsubscribe();
         };
-    }, [setNodes]);
+    }, [setNodes, isLoaded, updateNodeData, getNodes]);
 };
 
 const InternalProjectAgentView: React.FC = () => {
@@ -318,9 +386,146 @@ const InternalProjectAgentView: React.FC = () => {
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [menu, setMenu] = useState<{ x: number, y: number } | null>(null);
-    const { screenToFlowPosition } = useReactFlow();
+    const [isLoaded, setIsLoaded] = useState(false);
+    const { screenToFlowPosition, updateNodeData, getNodes } = useReactFlow();
+    const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    useProjectAgentState(setNodes);
+    // Load saved nodes and edges on mount
+    useEffect(() => {
+        const loadCanvas = async () => {
+            try {
+                const [savedNodes, savedEdges, projectState] = await Promise.all([
+                    window.electron.projectAgent.getCanvasNodes(),
+                    window.electron.projectAgent.getCanvasEdges(),
+                    window.electron.projectAgent.getStatus()
+                ]);
+
+                let nodesToSet: Node[] = [];
+
+                if (savedNodes.length > 0) {
+                    nodesToSet = savedNodes.map((n: CanvasNodeRecord) => ({
+                        id: n.id,
+                        type: n.type,
+                        position: n.position,
+                        data: n.data
+                    }));
+                }
+
+                // Check if there's an active task with a nodeId that doesn't exist in saved nodes
+                if (projectState.nodeId && projectState.status !== 'idle') {
+                    const nodeExists = nodesToSet.some(n => n.id === projectState.nodeId);
+
+                    if (!nodeExists) {
+                        appLogger.info('ProjectAgentView', `Active task found with nodeId ${projectState.nodeId} but node doesn't exist in canvas. Creating node.`);
+
+                        // Create a new node for the orphaned task
+                        const newNode: Node = {
+                            id: projectState.nodeId,
+                            type: 'task',
+                            position: { x: 100, y: 100 },
+                            data: {
+                                label: 'Restored Task',
+                                taskType: 'planner',
+                                status: projectState.status,
+                                title: projectState.currentTask,
+                                plan: projectState.plan,
+                                history: projectState.history,
+                                totalTokens: projectState.totalTokens,
+                                timing: projectState.timing,
+                                isExpanded: projectState.status === 'waiting_for_approval',
+                                activeTab: 'plan',
+                                // Restore model config from task state
+                                model: projectState.config?.model,
+                                systemMode: projectState.config?.systemMode,
+                                agentProfileId: projectState.config?.agentProfileId
+                            }
+                        };
+
+                        nodesToSet.push(newNode);
+
+                        // Save this new node to the database
+                        void window.electron.projectAgent.saveCanvasNodes([{
+                            id: newNode.id,
+                            type: 'task',
+                            position: newNode.position,
+                            data: newNode.data as Record<string, unknown>
+                        }]);
+                    }
+                }
+
+                if (nodesToSet.length > 0) {
+                    setNodes(nodesToSet);
+                }
+
+                if (savedEdges.length > 0) {
+                    setEdges(savedEdges.map((e: CanvasEdgeRecord) => ({
+                        id: e.id,
+                        source: e.source,
+                        target: e.target,
+                        sourceHandle: e.sourceHandle,
+                        targetHandle: e.targetHandle
+                    })));
+                }
+
+                appLogger.info('ProjectAgentView', `Loaded ${nodesToSet.length} nodes and ${savedEdges.length} edges from database`);
+            } catch (error) {
+                appLogger.error('ProjectAgentView', 'Failed to load canvas state', error as Error);
+            } finally {
+                setIsLoaded(true);
+            }
+        };
+
+        void loadCanvas();
+    }, [setNodes, setEdges]);
+
+    // Save nodes and edges when they change (debounced)
+    useEffect(() => {
+        if (!isLoaded) { return; }
+
+        // Debounce save to avoid excessive DB writes
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        saveTimeoutRef.current = setTimeout(() => {
+            const saveCanvas = async () => {
+                try {
+                    // Save nodes with their current data
+                    const nodesToSave = nodes.map(n => ({
+                        id: n.id,
+                        type: n.type ?? 'task',
+                        position: n.position,
+                        data: n.data as Record<string, unknown>
+                    }));
+                    await window.electron.projectAgent.saveCanvasNodes(nodesToSave);
+
+                    // Save edges
+                    const edgesToSave = edges.map(e => ({
+                        id: e.id,
+                        source: e.source,
+                        target: e.target,
+                        sourceHandle: e.sourceHandle ?? undefined,
+                        targetHandle: e.targetHandle ?? undefined
+                    }));
+                    await window.electron.projectAgent.saveCanvasEdges(edgesToSave);
+
+                    appLogger.debug('ProjectAgentView', `Saved ${nodes.length} nodes and ${edges.length} edges`);
+                } catch (error) {
+                    appLogger.error('ProjectAgentView', 'Failed to save canvas state', error as Error);
+                }
+            };
+
+            void saveCanvas();
+        }, 500);
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [nodes, edges, isLoaded]);
+
+    useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes);
 
     const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
     const onAddNode = useCallback((type: 'planner' | 'action', position?: { x: number, y: number }) => {

@@ -583,13 +583,11 @@ func (s *Service) Run(ctx context.Context) error {
 	if err = watcherWrapper.Start(watcherCtx); err != nil {
 		return fmt.Errorf("cliproxy: failed to start watcher: %w", err)
 	}
-	log.Info("file watcher started for config and auth directory changes")
 
 	// Prefer core auth manager auto refresh if available.
 	if s.coreManager != nil {
 		interval := 15 * time.Minute
 		s.coreManager.StartAutoRefresh(context.Background(), interval)
-		log.Infof("core auth auto-refresh started (interval=%s)", interval)
 
 		// Periodic reload to pick up new accounts from HTTP store or Disk during runtime.
 		// Watcher handles files, but for HTTP store we need a pull for new accounts.

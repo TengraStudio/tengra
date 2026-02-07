@@ -1,5 +1,150 @@
 # Changelog & Updates
 
+## 2026-02-06 (Update 21): 💾 Agent Canvas Persistence
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Implemented canvas state persistence for the autonomous agent system. Task nodes and edges are now saved to the database and automatically restored when the application restarts.
+
+### 💾 Persistence Features
+- [x] **Database Schema**: Added `uac_canvas_nodes` and `uac_canvas_edges` tables to store canvas state.
+- [x] **Repository Methods**: Implemented CRUD operations in `UacRepository` for canvas nodes and edges.
+- [x] **IPC Handlers**: Added IPC handlers for `save/get/delete` canvas nodes and edges.
+- [x] **Auto-Save**: Canvas state is automatically saved with 500ms debounce when nodes or edges change.
+- [x] **Auto-Load**: Canvas state is restored on app startup before user interaction.
+
+### 📝 Files Modified
+- `src/main/services/data/repositories/uac.repository.ts` - Added canvas tables and methods
+- `src/main/ipc/project-agent.ts` - Added canvas persistence IPC handlers
+- `src/main/startup/ipc.ts` - Passed databaseService to registerProjectAgentIpc
+- `src/main/preload.ts` - Added canvas API to preload bridge
+- `src/renderer/electron.d.ts` - Added canvas API types
+- `src/renderer/web-bridge.ts` - Added canvas API stubs
+- `src/renderer/features/project-agent/ProjectAgentView.tsx` - Implemented load/save logic
+
+
+## 2026-02-06 (Update 20): 🤖 Agent System Token Tracking & Visual Enhancements
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Implemented token usage tracking and visual enhancements for the autonomous agent system, including real-time token counters, step timing display, and progress ring indicators.
+
+### 🤖 Agent System Enhancements
+- [x] **Token Tracking Backend**: Added `currentStepTokens` tracking in `ProjectAgentService` to accumulate token usage per step from LLM stream chunks.
+- [x] **Step Timing**: Implemented `startStep()` and `completeStep()` helper methods that record timing data (startedAt, completedAt, durationMs) for each plan step.
+- [x] **Type Definitions**: Extended `ProjectStep` and `ProjectState` interfaces with `tokens` and `timing` fields.
+
+### 🎨 UI Enhancements
+- [x] **Token Counter Component**: Created `TokenCounter` component displaying token usage with formatted numbers (1.2k, 5.5k) and duration (ms/s/m).
+- [x] **Progress Ring**: Implemented `ProgressRing` SVG component showing circular progress around the task node icon during execution.
+- [x] **Step-Level Tokens**: Added token and timing display for each completed/running step in the plan list.
+- [x] **Total Tokens**: Added aggregate token counter and total duration in the progress bar area.
+
+### 📝 Files Modified
+- `src/main/services/project/project-agent.service.ts`
+- `src/shared/types/project-agent.ts`
+- `src/renderer/features/project-agent/nodes/TaskNode.tsx`
+- `src/renderer/features/project-agent/ProjectAgentView.tsx`
+- `docs/TODO.md`
+
+
+## 2026-02-06 (Update 19): ✨ Settings UI Refinement & Visual Excellence
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Standardized the Settings UI by grouping scattered settings into logical "Glass Cards", updating the `ToggleSwitch` component, and implementing reactive tab highlighting in the restored settings sidebar.
+
+### ✨ Visual & UX Polish
+- [x] **Glass Card Standard**: Standardized all section cards to use `premium-glass` and premium shadows across `AppearanceTab.tsx`, `GeneralTab.tsx`, `AboutTab.tsx`, and `StatisticsTab.tsx`.
+- [x] **Statistics Standardization**: Refactored the entire `StatisticsTab.tsx` and all quota cards (`AntigravityCard`, `ClaudeCard`, `CodexCard`, `CopilotCard`) to follow the "Premium Glass" unified header and layout system.
+- [x] **Sidebar Restoration**: Restored the missing settings sidebar and implemented reactive `active` state highlighting with `lucide-react` icons.
+- [x] **Premium Toggles**: Refactored `ToggleSwitch` with premium nested-circle aesthetics and support for `title`/`description` props.
+- [x] **Custom Scrollbars**: Implemented a modern, subtle scrollbar system in `index.css` with smooth transitions.
+
+### 🧹 Code Health & Maintenance
+- [x] **GeneralTab Refactor**: Grouped scattered settings into logical categories (Project Basics, App Intelligence, Lifecycle, Privacy).
+- [x] **Syntax & Lints**: Fixed trailing parenthesis errors in `GeneralTab.tsx` and removed unused imports in `SettingsPage.tsx`.
+
+### 📝 Files Modified
+- `src/renderer/index.css`
+- `src/renderer/features/settings/SettingsPage.tsx`
+- `src/renderer/features/settings/components/AppearanceTab.tsx`
+- `src/renderer/features/settings/components/GeneralTab.tsx`
+- `src/renderer/features/settings/components/AboutTab.tsx`
+- `src/renderer/features/settings/components/StatisticsTab.tsx`
+- `src/renderer/features/settings/components/statistics/OverviewCards.tsx`
+- `src/renderer/features/settings/components/statistics/AntigravityCard.tsx`
+- `src/renderer/features/settings/components/statistics/ClaudeCard.tsx`
+- `src/renderer/features/settings/components/statistics/CodexCard.tsx`
+- `src/renderer/features/settings/components/statistics/CopilotCard.tsx`
+
+
+## 2026-02-06 (Update 18): 🧹 Technical Debt Refactor & Visual Polish
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Refactored core services to reduce complexity, hardened type safety across the database layer, and implemented a premium HSL-based shadow system in the UI.
+
+### 🧹 Refactoring & Type Safety
+- [x] **Time Tracking Service**: Extracted helper methods from `getTimeStats` to reduce cyclomatic complexity and improve readability.
+- [x] **Database Layer Hardening**: Standardized return types for `Project`, `DbStats`, and `KnowledgeRepository` methods. Resolved implicit `any` and `unknown` types.
+- [x] **Interface Standardization**: Updated `DbStats` to extend `JsonObject` for IPC compatibility and fixed fallback logic in `DatabaseClientService`.
+
+### ✨ Visual & UX Polish
+- [x] **Premium Shadows**: Implemented a set of HSL-based shadow tokens in `index.css` for consistent, tinted shadow aesthetics.
+- [x] **Smooth Transitions**: Added `transition-premium` (cubic-bezier) and hover shadow effects to statistics cards and dashboard components.
+
+### 🧪 Quality Control
+- [x] Achieved 100% pass rate for build and type-check.
+- [x] Adhered to NASA Power of Ten rules for simplified function logic.
+
+### 📝 Files Modified
+- `src/main/services/analysis/time-tracking.service.ts`
+- `src/main/services/data/database.service.ts`
+- `src/main/services/data/database-client.service.ts`
+- `src/main/services/data/repositories/knowledge.repository.ts`
+- `src/shared/types/db-api.ts`
+- `src/renderer/index.css`
+- `src/renderer/features/projects/components/ProjectStatsCards.tsx`
+- `src/renderer/features/ssh/StatsDashboard.tsx`
+
+
+## 2026-02-06 (Update 17): 📊 Statistics Accuracy & Data Integrity
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Resolved inaccuracies in the statistics dashboard by correctly integrating the `TimeTrackingService` and implementing robust database queries for chat, message, and token usage metrics.
+
+### ✅ Fixes
+- [x] **Time Tracking**: Integrated and initialized `TimeTrackingService` in the main process, ensuring active app and coding time are accurately captured.
+- [x] **Data Integrity**: Refactored `SystemRepository` to use actual database queries instead of default values for message counts, chat counts, and token usage breakdown.
+- [x] **Circular Dependency**: Resolved a circular dependency between `DatabaseService` and `TimeTrackingService` by refactoring the latter to depend on `DatabaseClientService`.
+- [x] **IPC Layer**: Updated IPC handlers for statistics to return consistent data structures with proper fallback values.
+- [x] **Type Safety**: Ensured 100% type safety across the new statistics implementation, removing `any` casts and defining strict interfaces.
+
+### 🧹 Quality & Stability
+- [x] Resolved legacy type errors in `ProxyService` IPC handlers (`deleteAuthFile`, `getAuthFileContent`).
+- [x] Updated unit and integration tests to accommodate the new service architecture.
+- [x] Achieved 100% pass rate for build, lint, and type-check.
+
+### 📝 Files Modified
+- `src/main/startup/services.ts`
+- `src/main/services/data/database.service.ts`
+- `src/main/services/data/repositories/system.repository.ts`
+- `src/main/services/analysis/time-tracking.service.ts`
+- `src/main/ipc/db.ts`
+- `src/main/ipc/proxy.ts`
+- `src/tests/main/services/data/database.service.test.ts`
+- `src/tests/main/tests/integration/repository-db.integration.test.ts`
+
+
+## [Unreleased]
+### Removed
+- Removed `HistoryImportService` and `history:import` IPC handlers.
+- Removed file-based auth management from `ProxyService` (`getAuthFiles`, `syncAuthFiles`, `deleteAuthFile`, etc.).
+- Updated `useBrowserAuth` hook to use the database-backed multi-account API.
+- Cleaned up `preload.ts` and `electron.d.ts` from obsolete auth methods.
+
 ## 2026-02-05 (Update 16): 🛡️ Codex Routing & Proxy Hardening
 
 **Status**: ✅ COMPLETED

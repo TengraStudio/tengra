@@ -15,7 +15,6 @@ import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
 import { registerHealthIpc } from '@main/ipc/health';
-import { registerHistoryIpc } from '@main/ipc/history';
 import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
@@ -158,7 +157,7 @@ export function registerIpcHandlers(
     registerTerminalIpc(getMainWindow, services.terminalService);
 
     registerDialogIpc(getMainWindow);
-    registerHistoryIpc(services.historyImportService);
+
 
     registerProxyEmbedIpc(services.proxyService);
     registerExportIpc(services.exportService);
@@ -173,7 +172,7 @@ export function registerIpcHandlers(
     registerIdeaGeneratorIpc(services.ideaGeneratorService, services.eventBusService);
 
     services.projectAgentService.setToolExecutor(toolExecutor);
-    registerProjectAgentIpc(services.projectAgentService, getMainWindow);
+    registerProjectAgentIpc(services.projectAgentService, getMainWindow, services.databaseService);
 
     // Register Multi-Agent Orchestrator IPC
     registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);

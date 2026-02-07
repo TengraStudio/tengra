@@ -270,12 +270,35 @@ export interface DbStoreSemanticFragmentRequest {
 // Stats Types
 // ============================================================================
 
-export interface DbStats {
-    total_chats: number
-    total_messages: number
-    total_projects: number
-    total_folders: number
-    total_prompts: number
+export interface DbStats extends JsonObject {
+    chatCount: number
+    messageCount: number
+    dbSize: number
+}
+
+export interface DbDetailedStats {
+    chatCount: number
+    messageCount: number
+    dbSize: number
+    totalTokens: number
+    promptTokens: number
+    completionTokens: number
+    tokenTimeline: Array<{
+        timestamp: number
+        promptTokens: number
+        completionTokens: number
+        modelBreakdown?: Record<string, { prompt: number; completion: number }>
+    }>
+    activity: number[]
+}
+
+export interface DbTokenStats {
+    totalSent: number
+    totalReceived: number
+    totalCost: number
+    timeline: Array<{ timestamp: number; sent: number; received: number }>
+    byProvider: Record<string, { sent: number; received: number; cost: number }>
+    byModel: Record<string, { sent: number; received: number; cost: number }>
 }
 
 // ============================================================================

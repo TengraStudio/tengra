@@ -33,33 +33,48 @@ interface ThemeSectionProps {
 }
 
 const ThemeSection: React.FC<ThemeSectionProps> = ({ currentTheme, onThemeChange, t }) => (
-    <div className="bg-card p-6 rounded-2xl border border-border space-y-6">
-        <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary"><Palette className="w-5 h-5" /></div>
+    <div className="premium-glass p-8 space-y-8">
+        <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
+                <Palette className="w-6 h-6" />
+            </div>
             <div>
-                <div className="text-sm font-bold text-foreground">{t('settings.theme')}</div>
-                <div className="text-xs text-muted-foreground">{t('appearance.themeDesc')}</div>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('settings.theme')}</div>
+                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.themeDesc')}</div>
             </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {THEME_OPTIONS.map((theme) => {
                 const isActive = currentTheme === theme.id;
                 return (
                     <button
                         key={theme.id}
                         onClick={() => onThemeChange(theme.id)}
-                        className={cn("w-full p-3 rounded-xl border transition-all text-left group", isActive ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-accent/30 hover:bg-accent/50")}
+                        className={cn(
+                            "group relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-500",
+                            isActive
+                                ? "border-primary/50 bg-primary/10 shadow-xl shadow-primary/5 ring-1 ring-primary/20 scale-[1.02]"
+                                : "border-border/40 bg-muted/5 hover:border-primary/30 hover:bg-muted/10"
+                        )}
                     >
-                        <div className="flex items-center gap-3 w-full">
-                            <div data-theme={theme.id} className="h-10 w-10 rounded-xl border flex items-end p-2 transition-transform group-hover:scale-105" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}>
-                                <span className="h-2 w-6 rounded-full" style={{ background: 'hsl(var(--primary))' }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-xxs font-bold text-foreground truncate">{theme.label}</div>
-                                <div className="text-xxs text-muted-foreground truncate">{theme.id}</div>
-                            </div>
-                            {isActive && <div className="h-2 w-2 rounded-full bg-primary" />}
+                        <div
+                            data-theme={theme.id}
+                            className="h-16 w-16 rounded-2xl border-2 flex items-end p-2.5 transition-all duration-500 group-hover:scale-110 shadow-2xl"
+                            style={{
+                                background: 'hsl(var(--background))',
+                                borderColor: isActive ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)'
+                            }}
+                        >
+                            <span className="h-2.5 w-8 rounded-full shadow-sm" style={{ background: 'hsl(var(--primary))' }} />
                         </div>
+                        <div className="text-center">
+                            <div className={cn("text-xs font-black uppercase tracking-widest transition-colors", isActive ? "text-primary" : "text-muted-foreground")}>
+                                {theme.label}
+                            </div>
+                        </div>
+                        {isActive && (
+                            <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary border-2 border-background shadow-lg animate-in zoom-in duration-300" />
+                        )}
                     </button>
                 );
             })}
@@ -77,23 +92,30 @@ interface TypographySectionProps {
 }
 
 const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, fontSize, fontOptions, onFontChange, onFontSizeChange, t }) => (
-    <div className="bg-card p-6 rounded-2xl border border-border space-y-6">
-        <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-success/10 text-success"><Type className="w-5 h-5" /></div>
+    <div className="premium-glass p-8 space-y-8">
+        <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-success/10 text-success border border-success/20 shadow-lg shadow-success/10">
+                <Type className="w-6 h-6" />
+            </div>
             <div>
-                <div className="text-sm font-bold text-foreground">{t('appearance.font')}</div>
-                <div className="text-xs text-muted-foreground">{t('appearance.fontDesc')}</div>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('appearance.font')}</div>
+                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.fontDesc')}</div>
             </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground">{t('appearance.fontFamily')}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">{t('appearance.fontFamily')}</div>
                 <div className="grid gap-2">
                     {fontOptions.map((font) => (
                         <button
                             key={font.id}
                             onClick={() => onFontChange(font.id)}
-                            className={cn("w-full px-4 py-3 rounded-xl border text-left text-sm transition-all", currentFont === font.id ? "border-primary bg-primary/5 text-primary" : "border-border bg-accent/30 text-muted-foreground hover:bg-accent/50 hover:text-foreground")}
+                            className={cn(
+                                "w-full px-5 py-4 rounded-xl border text-left text-sm transition-all duration-300",
+                                currentFont === font.id
+                                    ? "border-primary/50 bg-primary/10 text-primary shadow-lg shadow-primary/5 ring-1 ring-primary/20"
+                                    : "border-border/40 bg-muted/5 text-muted-foreground hover:bg-muted/10 hover:text-foreground"
+                            )}
                             style={{ fontFamily: font.id }}
                         >
                             {font.label}
@@ -102,15 +124,29 @@ const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, font
                 </div>
             </div>
             <div className="space-y-4">
-                <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground flex justify-between">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1 flex justify-between">
                     <span>{t('appearance.fontSize')}</span>
                     <span className="text-primary">{fontSize}px</span>
                 </div>
-                <div className="p-6 rounded-2xl bg-accent/30 border border-border flex flex-col items-center gap-6">
-                    <div className="text-center transition-all bg-background p-4 rounded-xl border border-border w-full" style={{ fontSize: `${fontSize}px`, fontFamily: currentFont }}>
+                <div className="p-8 rounded-3xl bg-muted/5 border border-border/40 flex flex-col items-center gap-8 shadow-inner">
+                    <div className="text-center transition-all bg-background/50 backdrop-blur-md p-6 rounded-2xl border border-border/40 w-full shadow-2xl" style={{ fontSize: `${fontSize}px`, fontFamily: currentFont }}>
                         {t('appearance.previewText')}
                     </div>
-                    <input type="range" min="12" max="20" step="1" value={fontSize} onChange={e => onFontSizeChange(parseInt(e.target.value))} className="w-full accent-primary" />
+                    <div className="w-full space-y-2">
+                        <input
+                            type="range"
+                            min="12"
+                            max="20"
+                            step="1"
+                            value={fontSize}
+                            onChange={e => onFontSizeChange(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                        <div className="flex justify-between text-xxxs font-black text-muted-foreground uppercase opacity-50 px-1">
+                            <span>12px</span>
+                            <span>20px</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,14 +161,14 @@ interface ToggleSwitchProps {
 }
 
 const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, title, description }) => (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/30">
+    <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
         <div>
-            <div className="text-sm font-bold text-foreground">{title}</div>
-            <div className="text-xs text-muted-foreground">{description}</div>
+            <div className="text-sm font-black text-foreground uppercase tracking-tight">{title}</div>
+            <div className="text-xs font-medium text-muted-foreground/70">{description}</div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
+        <label className="relative inline-flex items-center cursor-pointer scale-110">
             <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            <div className="w-12 h-6.5 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:shadow-lg after:transition-all peer-checked:bg-primary border border-border/20"></div>
         </label>
     </div>
 );
@@ -146,15 +182,17 @@ interface AccessibilitySectionProps {
 }
 
 const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({ highContrast, reduceMotion, onHighContrastChange, onReduceMotionChange, t }) => (
-    <div className="bg-card p-6 rounded-2xl border border-border space-y-6">
-        <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-warning/10 text-orange"><Type className="w-5 h-5" /></div>
+    <div className="premium-glass p-8 space-y-8">
+        <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-warning/10 text-orange border border-warning/20 shadow-lg shadow-warning/10">
+                <Palette className="w-6 h-6 rotate-180" />
+            </div>
             <div>
-                <div className="text-sm font-bold text-foreground">{t('appearance.accessibility')}</div>
-                <div className="text-xs text-muted-foreground">{t('appearance.accessibilityDesc')}</div>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('appearance.accessibility')}</div>
+                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.accessibilityDesc')}</div>
             </div>
         </div>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ToggleSwitch checked={highContrast} onChange={onHighContrastChange} title={t('appearance.highContrast')} description={t('appearance.highContrastDesc')} />
             <ToggleSwitch checked={reduceMotion} onChange={onReduceMotionChange} title={t('appearance.reduceMotion')} description={t('appearance.reduceMotionDesc')} />
         </div>

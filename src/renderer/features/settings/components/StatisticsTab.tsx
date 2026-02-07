@@ -1,7 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types';
@@ -29,16 +28,16 @@ interface PeriodSelectorProps {
 
 // PERF-002-3: Memoize PeriodSelector to prevent unnecessary re-renders
 const PeriodSelector: React.FC<PeriodSelectorProps> = memo(({ period, onChange, t }) => (
-    <div className="flex bg-muted/20 rounded-lg p-1 border border-border/40">
+    <div className="flex bg-muted/5 rounded-xl p-1 border border-border/40 backdrop-blur-md">
         {PERIODS.map((p) => (
             <button
                 key={p}
                 onClick={() => onChange(p)}
                 className={cn(
-                    "px-3 py-1 text-xs rounded-md capitalize transition-all",
+                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
                     period === p
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'hover:bg-muted/30 text-muted-foreground'
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                        : 'hover:bg-muted/10 text-muted-foreground hover:text-foreground'
                 )}
             >
                 {t(`statistics.${p}`)}
@@ -96,15 +95,16 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loading
     }
 
     return (
-        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
+        <div className="premium-glass p-8 space-y-8">
+            <div className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle className="text-lg font-semibold">{t('statistics.codingTimeByProject')}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{t('statistics.timeSpentCodingInEachProject')}</p>
+                    <div className="text-base font-black text-foreground uppercase tracking-tight">{t('statistics.codingTimeByProject')}</div>
+                    <div className="text-xs font-medium text-muted-foreground/70">{t('statistics.timeSpentCodingInEachProject')}</div>
                 </div>
                 <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
-            </CardHeader>
-            <CardContent>
+            </div>
+
+            <div className="pt-2">
                 {loadingTimeStats ? (
                     <div className="h-64 flex items-center justify-center">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -115,8 +115,8 @@ const CodingTimeCard: React.FC<CodingTimeCardProps> = memo(({ timeStats, loading
                         maxTime={maxTime}
                     />
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 });
 CodingTimeCard.displayName = 'CodingTimeCard';
@@ -131,15 +131,15 @@ interface TokenUsageCardProps {
 
 // PERF-002-3: Memoize TokenUsageCard to prevent unnecessary re-renders
 const TokenUsageCard: React.FC<TokenUsageCardProps> = memo(({ statsLoading, tokenTimeline, statsPeriod, setStatsPeriod, t }) => (
-    <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between">
+    <div className="premium-glass p-8 space-y-8">
+        <div className="flex flex-row items-center justify-between">
             <div>
-                <CardTitle className="text-lg font-semibold">{t('statistics.tokenUsageOverTime')}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">{t('statistics.visualizeTokenConsumption')}</p>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('statistics.tokenUsageOverTime')}</div>
+                <div className="text-xs font-medium text-muted-foreground/70">{t('statistics.visualizeTokenConsumption')}</div>
             </div>
             <PeriodSelector period={statsPeriod} onChange={setStatsPeriod} t={t} />
-        </CardHeader>
-        <CardContent className="min-h-[300px]">
+        </div>
+        <div className="min-h-[300px] pt-4">
             {statsLoading ? (
                 <div className="h-64 flex items-center justify-center">
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -147,8 +147,8 @@ const TokenUsageCard: React.FC<TokenUsageCardProps> = memo(({ statsLoading, toke
             ) : (
                 <TokenUsageChart tokenTimeline={tokenTimeline ?? []} t={t} period={statsPeriod} />
             )}
-        </CardContent>
-    </Card>
+        </div>
+    </div>
 ));
 TokenUsageCard.displayName = 'TokenUsageCard';
 

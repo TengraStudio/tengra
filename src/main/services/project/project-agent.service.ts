@@ -20,14 +20,20 @@ export class ProjectAgentService extends BaseService {
         status: 'idle',
         currentTask: '',
         plan: [],
-        history: []
+        history: [],
+        totalTokens: { prompt: 0, completion: 0 }
     };
     private shouldStop: boolean = false;
     private toolExecutor?: ToolExecutor;
 
+    /** Track tokens for current step */
+    private currentStepTokens = { prompt: 0, completion: 0 };
+
     private stateMachine: StateMachine<ProjectState['status'], string>;
     private currentTaskId: string | null = null;
     private abortController: AbortController | null = null;
+    private startRequestInFlight = false;
+    private planRequestInFlight = false;
 
     constructor(
         private databaseService: DatabaseService,
@@ -66,8 +72,17 @@ export class ProjectAgentService extends BaseService {
                     this.logInfo(`Received project:step-update: ${JSON.stringify(payload)}`);
                     const { index, status, message } = payload;
                     if (index >= 0 && index < this.state.plan.length) {
-                        const step = this.state.plan[index];
-                        step.status = status;
+                        // Use helper methods for proper token/timing tracking
+                        if (status === 'running') {
+                            this.startStep(index);
+                        } else if (status === 'completed' || status === 'failed') {
+                            this.completeStep(index, status);
+                        } else {
+                            this.state.plan[index].status = status;
+                        }
+                        if (this.currentTaskId) {
+                            await this.databaseService.uac.updateStepStatus(this.state.plan[index].id, status);
+                        }
                         if (message) {
                             this.logInfo(`Step ${index} updated to ${status}: ${message}`);
                         }
@@ -83,6 +98,10 @@ export class ProjectAgentService extends BaseService {
         // Listen for plan proposals
         this.eventBus.on('project:plan-proposed', (payload) => {
             this.logInfo(`Received project:plan-proposed event with ${payload.steps.length} steps`);
+            if (this.state.status !== 'planning') {
+                this.logWarn(`Ignoring proposed plan while state is ${this.state.status}`);
+                return;
+            }
             void (async () => {
                 try {
                     const { steps } = payload;
@@ -98,7 +117,7 @@ export class ProjectAgentService extends BaseService {
 
                     if (this.currentTaskId) {
                         try {
-                            await this.databaseService.uac.createSteps(this.currentTaskId, this.state.plan);
+                            await this.syncTaskSteps(this.currentTaskId, this.state.plan);
                             await this.databaseService.uac.updateTaskStatus(this.currentTaskId, 'waiting_for_approval');
                         } catch (dbError) {
                             this.logWarn(`Failed to sync plan to DB: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
@@ -119,113 +138,199 @@ export class ProjectAgentService extends BaseService {
     }
 
     async start(options: AgentStartOptions): Promise<void> {
-        if (!this.stateMachine.can('running')) {
-            throw new Error(`Cannot start agent from current state: ${this.state.status} `);
+        if (this.startRequestInFlight) {
+            this.logWarn('Ignoring duplicate start request while a start operation is in-flight');
+            return;
         }
 
-        const { task, projectId, attachments, agentProfileId } = options;
-        const profile = this.agentRegistryService.getProfile(agentProfileId);
-        const systemPrompt = profile.systemPrompt;
+        if (
+            this.state.status === 'running' &&
+            this.state.currentTask === String(options.task) &&
+            this.state.nodeId === options.nodeId
+        ) {
+            this.logWarn('Ignoring duplicate start request for the same running task');
+            return;
+        }
 
-        await this.stateMachine.transitionTo('running');
-        this.shouldStop = false;
-        this.abortController = new AbortController();
+        // If a different node is requesting start while we have a stuck task from another node,
+        // reset the old task and allow the new one to proceed
+        if (!this.stateMachine.can('running') && options.nodeId && this.state.nodeId !== options.nodeId) {
+            this.logWarn(`Clearing stale task from node ${this.state.nodeId} to allow new start from node ${options.nodeId}`);
+            await this.resetState();
+        }
 
-        // create task in DB
-        this.currentTaskId = await this.databaseService.uac.createTask(
-            projectId ?? 'unknown',
-            String(task),
-            'running'
-        );
+        if (!this.stateMachine.can('running')) {
+            this.logWarn(`Ignoring start request from current state: ${this.state.status}`);
+            return;
+        }
 
-        this.state = {
-            status: 'running',
-            currentTask: String(task),
-            nodeId: options.nodeId,
-            plan: [],
-            history: [
-                { id: randomUUID(), role: 'system', content: systemPrompt, timestamp: new Date() } as Message,
-                {
-                    id: randomUUID(),
-                    role: 'user',
-                    content: `Task: ${String(task)} \n\nProject Context: ${projectId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
-                    timestamp: new Date()
-                } as Message
-            ],
-            config: options
-        };
-        // Log initial messages
-        // for (const msg of this.state.history) {
-        //     await this.databaseService.uac.addLog(this.currentTaskId, msg.role, msg.content);
-        // }
+        this.startRequestInFlight = true;
+        try {
+            const { task, projectId, attachments, agentProfileId } = options;
+            const profile = this.agentRegistryService.getProfile(agentProfileId);
+            const systemPrompt = profile.systemPrompt;
 
-        this.emitUpdate();
+            await this.stateMachine.transitionTo('running');
+            this.shouldStop = false;
+            this.abortController = new AbortController();
 
-        // Start loop in background
-        void this.executionLoop();
+            // create task in DB with nodeId and model config for resumption
+            const taskMetadata = {
+                model: options.model,
+                agentProfileId: agentProfileId,
+                systemMode: options.systemMode
+            };
+            this.currentTaskId = await this.databaseService.uac.createTask(
+                projectId ?? 'unknown',
+                String(task),
+                'running',
+                options.nodeId,
+                taskMetadata
+            );
+
+            this.state = {
+                status: 'running',
+                currentTask: String(task),
+                nodeId: options.nodeId,
+                plan: [],
+                history: [
+                    { id: randomUUID(), role: 'system', content: systemPrompt, timestamp: new Date() } as Message,
+                    {
+                        id: randomUUID(),
+                        role: 'user',
+                        content: `Task: ${String(task)} \n\nProject Context: ${projectId ?? 'None'} \nAttachments: ${attachments?.map(a => a.name).join(', ') ?? 'None'} `,
+                        timestamp: new Date()
+                    } as Message
+                ],
+                config: options
+            };
+            // Log initial messages
+            // for (const msg of this.state.history) {
+            //     await this.databaseService.uac.addLog(this.currentTaskId, msg.role, msg.content);
+            // }
+
+            this.emitUpdate();
+
+            // Start loop in background
+            void this.executionLoop();
+        } finally {
+            this.startRequestInFlight = false;
+        }
     }
 
     async generatePlan(options: AgentStartOptions): Promise<void> {
-        if (!this.stateMachine.can('planning')) {
-            throw new Error(`Cannot start planning from current state: ${this.state.status} `);
+        if (this.planRequestInFlight) {
+            this.logWarn('Ignoring duplicate generatePlan request while initialization is in-flight');
+            return;
         }
 
-        const { task, projectId, agentProfileId } = options;
-        const profile = this.agentRegistryService.getProfile(agentProfileId);
-        const systemPrompt = profile.systemPrompt;
+        if (
+            this.state.status === 'planning' &&
+            this.state.currentTask === String(options.task) &&
+            this.state.nodeId === options.nodeId
+        ) {
+            this.logWarn('Ignoring duplicate generatePlan request while planning is already in progress');
+            return;
+        }
 
-        await this.stateMachine.transitionTo('planning');
-        this.shouldStop = false;
-        this.abortController = new AbortController();
+        if (this.state.status === 'planning') {
+            this.logWarn('Ignoring generatePlan request because another planning session is already active');
+            return;
+        }
 
-        // create task in DB
-        this.currentTaskId = await this.databaseService.uac.createTask(
-            projectId ?? 'unknown',
-            String(task),
-            'planning'
-        );
+        // If we can't transition to planning, check if we should reset stale state
+        if (!this.stateMachine.can('planning')) {
+            // Case 1: Different node requesting - clear old task
+            if (options.nodeId && this.state.nodeId !== options.nodeId) {
+                this.logWarn(`Clearing stale task from node ${this.state.nodeId} to allow new planning from node ${options.nodeId}`);
+                await this.resetState();
+            }
+            // Case 2: Same node requesting new plan while in waiting_for_approval (user wants to regenerate)
+            else if (this.state.status === 'waiting_for_approval' && this.state.nodeId === options.nodeId) {
+                this.logInfo(`Same node requesting new plan while waiting_for_approval - resetting to allow regeneration`);
+                await this.resetState();
+            }
+        }
 
-        this.state = {
-            status: 'planning',
-            currentTask: String(task),
-            nodeId: options.nodeId,
-            plan: [],
-            history: [
-                { id: randomUUID(), role: 'system', content: systemPrompt, timestamp: new Date() } as Message,
-                {
-                    id: randomUUID(),
-                    role: 'user',
-                    content: `Task: ${String(task)} \n\nProject Context: ${projectId ?? 'None'} \n\nLütfen bu görevi analiz edin ve bir uygulama planı hazırlayın. \n\nÖNEMLİ: Planı ASLA chat'e yazmayın. Doğrudan 'propose_plan' tool'unu çağırmanız gerekiyor. Planı chat'e yazmak yasaktır.`,
-                    timestamp: new Date()
-                } as Message
-            ],
-            config: options
-        };
+        if (!this.stateMachine.can('planning')) {
+            this.logWarn(`Ignoring generatePlan request from current state: ${this.state.status}`);
+            return;
+        }
 
-        // Log initial messages
-        // for (const msg of this.state.history) {
-        //     await this.databaseService.uac.addLog(this.currentTaskId, msg.role, msg.content);
-        // }
+        this.planRequestInFlight = true;
+        try {
+            const { task, projectId, agentProfileId } = options;
+            const profile = this.agentRegistryService.getProfile(agentProfileId);
+            const systemPrompt = profile.systemPrompt;
 
-        this.emitUpdate();
+            await this.stateMachine.transitionTo('planning');
+            this.shouldStop = false;
+            this.abortController = new AbortController();
 
-        void this.planningLoop();
+            // create task in DB with nodeId and model config for resumption
+            const taskMetadata = {
+                model: options.model,
+                agentProfileId: agentProfileId,
+                systemMode: options.systemMode
+            };
+            this.currentTaskId = await this.databaseService.uac.createTask(
+                projectId ?? 'unknown',
+                String(task),
+                'planning',
+                options.nodeId,
+                taskMetadata
+            );
+
+            this.state = {
+                status: 'planning',
+                currentTask: String(task),
+                nodeId: options.nodeId,
+                plan: [],
+                history: [
+                    { id: randomUUID(), role: 'system', content: systemPrompt, timestamp: new Date() } as Message,
+                    {
+                        id: randomUUID(),
+                        role: 'user',
+                        content: `Task: ${String(task)}
+
+Project Context: ${projectId ?? 'None'}
+
+INSTRUCTIONS:
+1. Analyze this task briefly
+2. Call the \`propose_plan\` tool with your implementation steps
+
+FALLBACK (if tool calling is not available):
+Return a JSON object: { "steps": ["step 1", "step 2", ...] }`,
+                        timestamp: new Date()
+                    } as Message
+                ],
+                config: options
+            };
+
+            // Log initial messages
+            // for (const msg of this.state.history) {
+            //     await this.databaseService.uac.addLog(this.currentTaskId, msg.role, msg.content);
+            // }
+
+            this.emitUpdate();
+
+            void this.planningLoop();
+        } finally {
+            this.planRequestInFlight = false;
+        }
     }
 
     async approvePlan(plan: ProjectStep[] | string[]): Promise<void> {
         if (!this.stateMachine.can('running')) {
-            throw new Error(`Cannot approve plan in current state: ${this.state.status}`);
+            if (this.state.status === 'running') {
+                this.logWarn('Ignoring duplicate approvePlan request while execution is already running');
+            } else {
+                this.logWarn(`Ignoring approvePlan request in current state: ${this.state.status}`);
+            }
+            return;
         }
 
-        if (plan.length > 0 && typeof plan[0] === 'string') {
-            this.state.plan = (plan as string[]).map(text => ({
-                id: randomUUID(),
-                text,
-                status: 'pending'
-            }));
-        } else {
-            this.state.plan = plan as ProjectStep[];
-        }
+        this.state.plan = this.normalizePlan(plan);
 
         await this.stateMachine.transitionTo('running');
         this.state.status = 'running';
@@ -243,7 +348,7 @@ export class ProjectAgentService extends BaseService {
 
         if (this.currentTaskId) {
             // Update DB
-            await this.databaseService.uac.createSteps(this.currentTaskId, this.state.plan);
+            await this.syncTaskSteps(this.currentTaskId, this.state.plan);
             await this.databaseService.uac.updateTaskStatus(this.currentTaskId, 'running');
             await this.databaseService.uac.addLog(this.currentTaskId, approvalMsg.role, String(approvalMsg.content));
         }
@@ -264,6 +369,39 @@ export class ProjectAgentService extends BaseService {
         if (this.currentTaskId) {
             await this.databaseService.uac.updateTaskStatus(this.currentTaskId, 'idle'); // or aborted
         }
+        this.emitUpdate();
+    }
+
+    /**
+     * Force reset state to idle, clearing any stuck tasks
+     * Use this when the agent is stuck in an invalid state
+     */
+    async resetState(): Promise<void> {
+        this.logInfo('Force resetting agent state to idle');
+        this.shouldStop = true;
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+
+        // Reset current task in DB if exists
+        if (this.currentTaskId) {
+            await this.databaseService.uac.updateTaskStatus(this.currentTaskId, 'idle');
+            this.currentTaskId = null;
+        }
+
+        // Force state machine to idle
+        this.stateMachine.setState('idle');
+
+        // Reset state completely
+        this.state = {
+            status: 'idle',
+            currentTask: '',
+            plan: [],
+            history: [],
+            totalTokens: { prompt: 0, completion: 0 }
+        };
+
         this.emitUpdate();
     }
 
@@ -295,9 +433,22 @@ export class ProjectAgentService extends BaseService {
     }
 
     private getModelConfig() {
+        const model = this.state.config?.model;
+
+        // If no model configured, log warning and use a safe fallback
+        if (!model?.model || !model?.provider) {
+            this.logWarn(`No model configured in task state. Config: ${JSON.stringify(this.state.config)}`);
+            // Use claude-3-5-sonnet as safe fallback (widely available)
+            return {
+                modelId: 'claude-3-5-sonnet-20241022',
+                providerId: 'anthropic',
+                systemMode: this.state.config?.systemMode
+            };
+        }
+
         return {
-            modelId: this.state.config?.model?.model ?? 'gpt-4o',
-            providerId: this.state.config?.model?.provider ?? 'openai',
+            modelId: model.model,
+            providerId: model.provider,
             systemMode: this.state.config?.systemMode
         };
     }
@@ -368,19 +519,140 @@ export class ProjectAgentService extends BaseService {
         return false;
     }
 
-    private async autoProposeTextPlan(content: string): Promise<boolean> {
-        const lines = content.split('\n');
-        const steps = lines
-            .map(l => l.trim())
-            .filter(l => /^\d+\.\s+/.test(l) || /^-\s+/.test(l))
-            .map(l => l.replace(/^\d+\.\s+|-\s+/, '').trim());
+    /**
+     * Convert a step item to string (handles string, object with text, or other)
+     */
+    private stepToString(step: unknown): string {
+        if (typeof step === 'string') {
+            return step;
+        }
+        if (typeof step === 'object' && step !== null && 'text' in step) {
+            return String((step as { text: string }).text);
+        }
+        return String(step);
+    }
 
-        if (steps.length >= 2) {
+    /**
+     * Convert array of unknown items to string steps
+     */
+    private arrayToSteps(arr: unknown[]): string[] | null {
+        if (arr.length === 0) {
+            return null;
+        }
+        const steps = arr.map(s => this.stepToString(s)).filter(s => s.length > 0);
+        return steps.length > 0 ? steps : null;
+    }
+
+    /**
+     * Extract steps array from parsed JSON (object or array)
+     */
+    private extractStepsFromParsed(parsed: unknown): string[] | null {
+        // Handle direct array [...]
+        if (Array.isArray(parsed)) {
+            return this.arrayToSteps(parsed);
+        }
+
+        // Handle { "steps": [...] } or { "plan": [...] }
+        if (typeof parsed !== 'object' || parsed === null) {
+            return null;
+        }
+
+        const obj = parsed as Record<string, unknown>;
+        const stepsArray = obj['steps'] ?? obj['plan'];
+
+        if (!Array.isArray(stepsArray)) {
+            return null;
+        }
+
+        return this.arrayToSteps(stepsArray);
+    }
+
+    /**
+     * Try to extract a plan from JSON format in content
+     * Supports: { "steps": [...] }, { "plan": [...] }, or just [...]
+     */
+    private tryParseJsonPlan(content: string): string[] | null {
+        // Try to extract JSON from markdown code blocks first
+        const jsonBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        const jsonContent = jsonBlockMatch ? jsonBlockMatch[1].trim() : content.trim();
+
+        // Patterns to find JSON object/array anywhere in the content
+        const jsonPatterns = [
+            /\{[\s\S]*"steps"\s*:\s*\[[\s\S]*\][\s\S]*\}/,  // { "steps": [...] }
+            /\{[\s\S]*"plan"\s*:\s*\[[\s\S]*\][\s\S]*\}/,   // { "plan": [...] }
+            /\[[\s\S]*\]/                                     // [...]
+        ];
+
+        for (const pattern of jsonPatterns) {
+            const match = jsonContent.match(pattern) ?? content.match(pattern);
+            if (!match) {
+                continue;
+            }
+
+            try {
+                const parsed = JSON.parse(match[0]) as unknown;
+                const steps = this.extractStepsFromParsed(parsed);
+                if (steps) {
+                    this.logInfo(`Parsed JSON plan with ${steps.length} steps`);
+                    return steps;
+                }
+            } catch {
+                // JSON parse failed, continue to next pattern
+            }
+        }
+
+        return null;
+    }
+
+    private async autoProposeTextPlan(content: string): Promise<boolean> {
+        // First, try to parse as JSON (highest priority for structured data)
+        const jsonSteps = this.tryParseJsonPlan(content);
+        if (jsonSteps && jsonSteps.length > 0) {
+            this.logInfo(`Detected JSON-based plan with ${jsonSteps.length} steps. Auto-proposing.`);
+            this.eventBus.emit('project:plan-proposed', { steps: jsonSteps });
+            this.shouldStop = true;
+            return true;
+        }
+
+        const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+        // Pattern matchers for various list formats
+        const listPatterns = [
+            /^\d+\.\s+/,           // 1. Step
+            /^-\s+/,               // - Step
+            /^\*\s+/,              // * Step
+            /^•\s*/,               // • Step
+            /^✓\s*/,               // ✓ Step
+            /^Step\s*\d*[:.]\s*/i, // Step 1: or Step:
+            /^Adım\s*\d*[:.]\s*/i  // Adım 1: or Adım:
+        ];
+
+        const cleanPattern = /^\d+\.\s+|^-\s+|^\*\s+|^•\s*|^✓\s*|^Step\s*\d*[:.]\s*|^Adım\s*\d*[:.]\s*/i;
+
+        const steps = lines
+            .filter(l => listPatterns.some(p => p.test(l)))
+            .map(l => l.replace(cleanPattern, '').trim())
+            .filter(l => l.length > 0);
+
+        this.logDebug(`autoProposeTextPlan: ${lines.length} lines, ${steps.length} pattern-matched steps`);
+
+        // Accept if we found at least 1 structured step
+        if (steps.length >= 1) {
             this.logInfo(`Detected text-based plan with ${steps.length} steps. Auto-proposing.`);
             this.eventBus.emit('project:plan-proposed', { steps });
             this.shouldStop = true;
             return true;
         }
+
+        // Fallback: If content has meaningful text but no patterns, wrap as single step
+        const cleanContent = content.trim();
+        if (cleanContent.length >= 20 && cleanContent.length <= 2000) {
+            this.logInfo('No structured plan detected, wrapping content as single step.');
+            this.eventBus.emit('project:plan-proposed', { steps: [cleanContent] });
+            this.shouldStop = true;
+            return true;
+        }
+
         return false;
     }
 
@@ -474,7 +746,12 @@ export class ProjectAgentService extends BaseService {
                 }
             }
         } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
             this.logError('Planning failed', error as Error);
+
+            // Store error message for UI display
+            this.state.lastError = `Planning failed: ${errorMsg}`;
+
             await this.stateMachine.transitionTo('failed');
             this.state.status = 'failed';
             this.emitUpdate();
@@ -483,7 +760,7 @@ export class ProjectAgentService extends BaseService {
 
     private async processMessageStream(
         msg: Message & { reasoning?: string },
-        stream: AsyncGenerator<{ content?: string; reasoning?: string; tool_calls?: ToolCall[] }>
+        stream: AsyncGenerator<{ content?: string; reasoning?: string; tool_calls?: ToolCall[]; usage?: { prompt_tokens: number; completion_tokens: number } }>
     ) {
         for await (const chunk of stream) {
             if (chunk.content) {
@@ -495,6 +772,15 @@ export class ProjectAgentService extends BaseService {
             }
             if (chunk.tool_calls) {
                 this.mergeToolCalls(msg, chunk.tool_calls);
+            }
+            // Track token usage from stream
+            if (chunk.usage) {
+                this.currentStepTokens.prompt += chunk.usage.prompt_tokens;
+                this.currentStepTokens.completion += chunk.usage.completion_tokens;
+                // Update total tokens
+                this.state.totalTokens = this.state.totalTokens ?? { prompt: 0, completion: 0 };
+                this.state.totalTokens.prompt += chunk.usage.prompt_tokens;
+                this.state.totalTokens.completion += chunk.usage.completion_tokens;
             }
             this.emitUpdate();
         }
@@ -624,7 +910,12 @@ export class ProjectAgentService extends BaseService {
                     break;
                 }
             } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
                 this.logError('Execution loop error', error as Error);
+
+                // Store error message for UI display
+                this.state.lastError = `Execution failed: ${errorMsg}`;
+
                 await this.stateMachine.transitionTo('failed');
                 this.state.status = 'failed';
                 this.emitUpdate();
@@ -635,6 +926,109 @@ export class ProjectAgentService extends BaseService {
 
     private updateStepProgress() {
         // Fallback progress logic based on message count if agent forgets to use update_plan_step
+    }
+
+    /**
+     * Mark a step as started and reset token counter
+     */
+    private startStep(stepIndex: number): void {
+        const step = this.state.plan[stepIndex];
+        if (!step) {
+            return;
+        }
+        step.status = 'running';
+        step.timing = {
+            startedAt: Date.now()
+        };
+        // Reset step token counter
+        this.currentStepTokens = { prompt: 0, completion: 0 };
+    }
+
+    /**
+     * Mark a step as completed and record tokens/timing
+     */
+    private completeStep(stepIndex: number, status: 'completed' | 'failed' = 'completed'): void {
+        const step = this.state.plan[stepIndex];
+        if (!step) {
+            return;
+        }
+        step.status = status;
+        // Record timing
+        const completedAt = Date.now();
+        step.timing = {
+            ...step.timing,
+            completedAt,
+            durationMs: step.timing?.startedAt ? completedAt - step.timing.startedAt : undefined
+        };
+        // Record accumulated tokens
+        step.tokens = { ...this.currentStepTokens };
+        this.logInfo(`Step ${stepIndex} ${status}: ${this.currentStepTokens.prompt} prompt + ${this.currentStepTokens.completion} completion tokens`);
+    }
+
+    private normalizePlan(plan: ProjectStep[] | string[]): ProjectStep[] {
+        if (plan.length === 0) {
+            return [];
+        }
+
+        if (typeof plan[0] === 'string') {
+            return (plan as string[]).map(text => ({
+                id: randomUUID(),
+                text,
+                status: 'pending'
+            }));
+        }
+
+        return (plan as ProjectStep[]).map(step => ({
+            id: step.id,
+            text: step.text,
+            status: step.status
+        }));
+    }
+
+    private async syncTaskSteps(taskId: string, steps: ProjectStep[]): Promise<void> {
+        const existingSteps = await this.databaseService.uac.getSteps(taskId);
+
+        if (existingSteps.length === 0) {
+            await this.databaseService.uac.createSteps(taskId, steps);
+            return;
+        }
+
+        const sameDefinition = existingSteps.length === steps.length &&
+            existingSteps.every((existing, index) => {
+                const current = steps[index];
+                return existing.id === current.id && existing.text === current.text;
+            });
+
+        if (!sameDefinition) {
+            await this.databaseService.uac.deleteStepsByTask(taskId);
+            await this.databaseService.uac.createSteps(taskId, steps);
+            return;
+        }
+
+        for (let i = 0; i < steps.length; i++) {
+            const current = steps[i];
+            const existing = existingSteps[i];
+            if (existing.status !== current.status) {
+                await this.databaseService.uac.updateStepStatus(current.id, current.status);
+            }
+        }
+    }
+
+    private async recoverInterruptedPlanningTask(taskId: string): Promise<void> {
+        if (this.state.plan.length > 0) {
+            this.logWarn('Recovered planning task with existing steps; transitioning to waiting_for_approval');
+            this.state.status = 'waiting_for_approval';
+            this.state.lastError = 'Planning was interrupted. Review the proposed plan and continue.';
+            this.stateMachine.setState('waiting_for_approval');
+            await this.databaseService.uac.updateTaskStatus(taskId, 'waiting_for_approval');
+            return;
+        }
+
+        this.logWarn('Recovered planning task without plan steps; marking task as failed');
+        this.state.status = 'failed';
+        this.state.lastError = 'Planning was interrupted unexpectedly. Please generate a new plan.';
+        this.stateMachine.setState('failed');
+        await this.databaseService.uac.updateTaskStatus(taskId, 'failed');
     }
 
     private async saveState() {
@@ -657,14 +1051,35 @@ export class ProjectAgentService extends BaseService {
             this.logInfo(`Found active task to resume: ${activeTask.id} (${activeTask.status})`);
 
             // Load task details
-            this.currentTaskId = activeTask.id;
             const steps = await this.databaseService.uac.getSteps(activeTask.id);
             const logs = await this.databaseService.uac.getLogs(activeTask.id);
 
-            // Reconstruct state from DB
+            // CRITICAL: If task is in waiting_for_approval but has no plan steps,
+            // it's a stale/corrupted state - reset to idle instead of blocking new operations
+            if (activeTask.status === 'waiting_for_approval' && steps.length === 0) {
+                this.logWarn(`Task ${activeTask.id} is in waiting_for_approval but has no plan. Resetting to idle.`);
+                await this.databaseService.uac.updateTaskStatus(activeTask.id, 'idle');
+                // Don't restore this task - let user start fresh
+                return;
+            }
+
+            // Similarly, if task is in planning state without steps, mark as failed
+            if (activeTask.status === 'planning' && steps.length === 0) {
+                this.logWarn(`Task ${activeTask.id} is in planning state but interrupted without plan. Marking as failed.`);
+                await this.databaseService.uac.updateTaskStatus(activeTask.id, 'failed');
+                return;
+            }
+
+            this.currentTaskId = activeTask.id;
+
+            // Parse metadata to restore model config
+            const metadata = activeTask.metadata ? safeJsonParse<Record<string, unknown>>(activeTask.metadata, {}) : {};
+
+            // Reconstruct state from DB including nodeId for UI binding
             this.state = {
                 status: activeTask.status as ProjectState['status'],
                 currentTask: activeTask.description,
+                nodeId: activeTask.node_id ?? undefined,
                 plan: steps.map(s => ({
                     id: s.id,
                     text: s.text,
@@ -680,13 +1095,21 @@ export class ProjectAgentService extends BaseService {
                 config: {
                     task: activeTask.description,
                     projectId: activeTask.project_path,
-                    agentProfileId: 'default'
+                    agentProfileId: (metadata['agentProfileId'] as string) ?? 'default',
+                    model: metadata['model'] as { provider: string; model: string } | undefined,
+                    systemMode: metadata['systemMode'] as 'fast' | 'thinking' | 'architect' | undefined
                 }
             };
+
+            this.logInfo(`Restored config: model=${JSON.stringify(this.state.config?.model)}, agentProfileId=${this.state.config?.agentProfileId}`);
 
             // Sync state machine to current status
             this.stateMachine.setState(this.state.status);
             this.logInfo(`Restored state with status: ${this.state.status}`);
+
+            if (this.state.status === 'planning') {
+                await this.recoverInterruptedPlanningTask(activeTask.id);
+            }
 
             if (this.state.status === 'running') {
                 this.shouldStop = false;
@@ -710,10 +1133,14 @@ export class ProjectAgentService extends BaseService {
         const steps = await this.databaseService.uac.getSteps(activeTask.id);
         const logs = await this.databaseService.uac.getLogs(activeTask.id);
 
-        // Reconstruct state
+        // Parse metadata to restore model config
+        const metadata = activeTask.metadata ? safeJsonParse<Record<string, unknown>>(activeTask.metadata, {}) : {};
+
+        // Reconstruct state including nodeId for UI binding
         this.state = {
             status: activeTask.status as ProjectState['status'],
             currentTask: activeTask.description,
+            nodeId: activeTask.node_id ?? undefined,
             plan: steps.map(s => ({
                 id: s.id,
                 text: s.text,
@@ -729,9 +1156,13 @@ export class ProjectAgentService extends BaseService {
             config: {
                 task: activeTask.description,
                 projectId: projectId,
-                agentProfileId: 'default' // We might need to store this in DB task record
+                agentProfileId: (metadata['agentProfileId'] as string) ?? 'default',
+                model: metadata['model'] as { provider: string; model: string } | undefined,
+                systemMode: metadata['systemMode'] as 'fast' | 'thinking' | 'architect' | undefined
             }
         };
+
+        this.logInfo(`Resumed config: model=${JSON.stringify(this.state.config?.model)}, agentProfileId=${this.state.config?.agentProfileId}`);
 
         // Transition state machine
         try {
@@ -743,15 +1174,14 @@ export class ProjectAgentService extends BaseService {
             // Allow arbitrary transition for hydration
             this.stateMachine.setState(this.state.status);
 
+            if (this.state.status === 'planning') {
+                await this.recoverInterruptedPlanningTask(activeTask.id);
+            }
+
             if (this.state.status === 'running') {
                 this.shouldStop = false;
                 this.abortController = new AbortController();
                 void this.executionLoop();
-            } else if (this.state.status === 'planning') {
-                this.shouldStop = false;
-                this.abortController = new AbortController();
-                // We can't easily resume planning loop without full context, 
-                // might be better to set to 'paused' or 'waiting_for_approval'
             }
 
             this.emitUpdate();

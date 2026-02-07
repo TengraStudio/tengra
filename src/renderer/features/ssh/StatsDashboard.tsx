@@ -53,7 +53,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4">
             {/* CPU */}
-            <Card className="bg-card/40 border-border/50">
+            <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.cpuUsage')}</CardTitle>
                     <Cpu size={16} className="text-primary" />
@@ -73,7 +73,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             </Card>
 
             {/* RAM */}
-            <Card className="bg-card/40 border-border/50">
+            <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.memoryUsage')}</CardTitle>
                     <Activity size={16} className="text-primary/80" />
@@ -94,7 +94,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             </Card>
 
             {/* Disk */}
-            <Card className="bg-card/40 border-border/50">
+            <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-success/30">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.diskUsage')}</CardTitle>
                     <HardDrive size={16} className="text-success" />
@@ -115,7 +115,7 @@ export function StatsDashboard({ connectionId }: StatsDashboardProps) {
             </Card>
 
             {/* Uptime */}
-            <Card className="bg-card/40 border-border/50">
+            <Card className="bg-card/40 border-border/50 transition-premium hover:shadow-md hover:border-primary/20">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground/80">{t('ssh.uptime')}</CardTitle>
                     <Clock size={16} className="text-primary/70" />

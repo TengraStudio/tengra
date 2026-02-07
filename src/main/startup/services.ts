@@ -10,6 +10,7 @@ import { PerformanceService } from '@main/services/analysis/performance.service'
 import { ScannerService } from '@main/services/analysis/scanner.service';
 import { SentryService } from '@main/services/analysis/sentry.service';
 import { TelemetryService } from '@main/services/analysis/telemetry.service';
+import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
 import { UsageTrackingService } from '@main/services/analysis/usage-tracking.service';
 import { BackupService } from '@main/services/data/backup.service';
 import { ChatEventService } from '@main/services/data/chat-event.service';
@@ -24,7 +25,6 @@ import { ExportService } from '@main/services/export/export.service';
 import { CollaborationService } from '@main/services/external/collaboration.service';
 import { ContentService } from '@main/services/external/content.service';
 import { FeatureFlagService } from '@main/services/external/feature-flag.service';
-import { HistoryImportService } from '@main/services/external/history-import.service';
 import { HttpService } from '@main/services/external/http.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { MarketResearchService } from '@main/services/external/market-research.service';
@@ -115,7 +115,7 @@ export interface Services {
     securityService: SecurityService;
     contentService: ContentService;
     monitoringService: MonitoringService;
-    historyImportService: HistoryImportService;
+
     embeddingService: EmbeddingService;
     dockerService: DockerService;
     screenshotService: ScreenshotService;
@@ -173,6 +173,7 @@ export interface Services {
     mcpPluginService: McpPluginService;
     apiServerService: ApiServerService;
     extensionDetectorService: ExtensionDetectorService;
+    timeTrackingService: TimeTrackingService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -266,11 +267,14 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         const ollamaUrl = (ollamaSettings?.['url'] as string | undefined) ?? 'http://localhost:11434';
         return getOllamaHealthService(ollamaUrl);
     }, ['settingsService']);
+
+    // Time Tracking Service
+    container.register('timeTrackingService', (dbcs) => new TimeTrackingService(dbcs as DatabaseClientService), ['databaseClientService']);
 }
 
 function registerDataServices() {
     container.register('databaseClientService', (ebs, pm) => new DatabaseClientService(ebs as EventBusService, pm as ProcessManagerService), ['eventBusService', 'processManagerService']);
-    container.register('databaseService', (ds, ebs, dbcs) => new DatabaseService(ds as DataService, ebs as EventBusService, dbcs as DatabaseClientService), ['dataService', 'eventBusService', 'databaseClientService']);
+    container.register('databaseService', (ds, ebs, dbcs, tts) => new DatabaseService(ds as DataService, ebs as EventBusService, dbcs as DatabaseClientService, tts as TimeTrackingService), ['dataService', 'eventBusService', 'databaseClientService', 'timeTrackingService']);
     container.register('fileChangeTracker', (dbs, ebs) => new FileChangeTracker(dbs as DatabaseService, ebs as EventBusService), ['databaseService', 'eventBusService']);
     container.register('chatEventService', (dbs) => new ChatEventService(dbs as DatabaseService), ['databaseService']);
     container.register('fileManagementService', () => new FileManagementService());
@@ -448,7 +452,7 @@ function registerProjectServices() {
         });
     }, ['proxyCore', 'proxyProcessManager', 'quotaService']);
 
-    container.register('historyImportService', (ps, dbs) => new HistoryImportService(ps as ProxyService, dbs as DatabaseService), ['proxyService', 'databaseService']);
+
 
 
 }
@@ -530,7 +534,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         securityService: container.resolve<SecurityService>('securityService'),
         contentService: container.resolve<ContentService>('contentService'),
         monitoringService: container.resolve<MonitoringService>('monitoringService'),
-        historyImportService: container.resolve<HistoryImportService>('historyImportService'),
+
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         utilityService: container.resolve<UtilityService>('utilityService'),
         dockerService: createLazyServiceProxy<DockerService>('dockerService'),
@@ -585,6 +589,7 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
         localImageService: container.resolve<LocalImageService>('localImageService'),
         extensionDetectorService: container.resolve<ExtensionDetectorService>('extensionDetectorService'),
+        timeTrackingService: container.resolve<TimeTrackingService>('timeTrackingService'),
         apiServerService: null as unknown as ApiServerService // Will be created in main.ts after ToolExecutor
     };
 }

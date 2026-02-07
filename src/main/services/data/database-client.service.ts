@@ -451,11 +451,9 @@ export class DatabaseClientService extends BaseService {
     async getStats(): Promise<DbStats> {
         const response = await this.apiCall<DbStats>('GET', '/api/v1/stats');
         return response.data ?? {
-            total_chats: 0,
-            total_messages: 0,
-            total_projects: 0,
-            total_folders: 0,
-            total_prompts: 0
+            chatCount: 0,
+            messageCount: 0,
+            dbSize: 0
         };
     }
 

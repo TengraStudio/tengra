@@ -1,4 +1,4 @@
-import { Bot, Cpu, File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff, Paperclip, Send, Sparkles, Square, X, Zap } from 'lucide-react';
+import { File as FileIcon, FileCode, FileText, Image as ImageIcon, Mic, MicOff, Paperclip, Send, Sparkles, Square, X } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
 import { ModelSelector } from '@/features/models/components/ModelSelector';
@@ -145,9 +145,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 
                     <div className="h-8 w-px bg-border/50 mx-1" />
 
-                    <div className="h-8 w-px bg-border/50 mx-1" />
-
-                    <SystemModeSelector ctrl={ctrl} />
+                    <div className="h-8 w-px bg-border/50 mx-1" /> 
                     <ModelSelectorWrapper ctrl={ctrl} />
                 </div>
 
@@ -265,42 +263,6 @@ const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
         />
     </div>
 );
-
-const SystemModeSelector: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
-    const modes = [
-        { id: 'fast', label: ctrl.t('input.systemModes.fast'), icon: Zap, color: 'text-warning' },
-        { id: 'agent', label: ctrl.t('input.systemModes.agent'), icon: Bot, color: 'text-primary' },
-        { id: 'thinking', label: ctrl.t('input.systemModes.thinking'), icon: Cpu, color: 'text-purple' }
-    ] as const;
-
-
-    return (
-        <div className="flex items-center gap-1 mr-2">
-            <div className="flex bg-muted/50 rounded-lg p-0.5 border border-border/30">
-                {modes.map(mode => {
-                    const Icon = mode.icon;
-                    const isActive = ctrl.systemMode === mode.id;
-                    return (
-                        <button
-                            key={mode.id}
-                            onClick={() => ctrl.setSystemMode(mode.id)}
-                            className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-xxs font-medium transition-all",
-                                isActive
-                                    ? "bg-background shadow-sm text-foreground ring-1 ring-border/5"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            )}
-                            title={ctrl.t('input.systemModes.modeTitle', { mode: mode.label })}
-                        >
-                            <Icon size={12} className={isActive ? mode.color : ""} />
-                            {isActive && <span>{mode.label}</span>}
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
 
 const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     const isEnhancable = ctrl.input.trim() !== '' && !ctrl.isLoading;

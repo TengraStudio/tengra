@@ -418,14 +418,14 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'propose_plan',
-            description: 'Kullanıcıya onay için bir uygulama planı sunar. Görevi analiz ettikten sonra bunu kullanın. Bu tool çağrıldığında döngü durur ve kullanıcı onayı beklenir.',
+            description: 'MANDATORY: Submit an execution plan for user approval. You MUST call this tool after analyzing the task. Do NOT write the plan as text in the chat - always use this tool. The planning loop will stop once this tool is called.',
             parameters: {
                 type: 'object',
                 properties: {
                     steps: {
                         type: 'array',
                         items: { type: 'string' },
-                        description: 'Uygulama adımlarının listesi.'
+                        description: 'List of implementation steps (each step should be a clear, actionable task).'
                     }
                 },
                 required: ['steps']

@@ -122,7 +122,7 @@ describe('LLMService', () => {
                 await service.chat(messages, 'gpt-4o', undefined, 'codex');
 
                 expect(mockHttpService.fetch).toHaveBeenCalledWith(
-                    expect.stringContaining('http://localhost:8317/v1/chat/completions'),
+                    expect.stringContaining('http://localhost:8317/api/provider/codex/v1/chat/completions'),
                     expect.objectContaining({
                         headers: expect.objectContaining({
                             'Authorization': 'Bearer test-key'

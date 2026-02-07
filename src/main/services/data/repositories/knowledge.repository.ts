@@ -59,7 +59,7 @@ export class KnowledgeRepository extends BaseRepository {
         }));
     }
 
-    async storeCodeSymbol(symbol: CodeSymbolRecord) {
+    async storeCodeSymbol(symbol: CodeSymbolRecord): Promise<void> {
         const vec = symbol.vector ? `[${symbol.vector.join(',')}]` : null;
         await this.adapter.prepare(`
             INSERT INTO code_symbols(id, name, project_path, file_path, line, kind, signature, docstring, embedding)
@@ -255,30 +255,30 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     // --- File Diffs ---
-    async getFileDiff(id: string) {
+    async getFileDiff(id: string): Promise<JsonObject | undefined> {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE id = ?').get<JsonObject>(id);
     }
 
-    async storeFileDiff(diff: { id: string; projectId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }) {
+    async storeFileDiff(diff: { id: string; projectId: string; filePath: string; diffContent: string; createdAt: number; sessionId?: string; systemId?: string }): Promise<void> {
         await this.adapter.prepare(`
             INSERT INTO file_diffs(id, project_path, file_path, diff, created_at)
             VALUES(?, ?, ?, ?, ?)
         `).run(diff.id, diff.projectId, diff.filePath, JSON.stringify(diff), Date.now());
     }
 
-    async getFileDiffHistory(filePath: string) {
+    async getFileDiffHistory(filePath: string): Promise<JsonObject[]> {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE file_path = ? ORDER BY created_at DESC').all<JsonObject>(filePath);
     }
 
-    async getRecentFileDiffs(limit: number) {
+    async getRecentFileDiffs(limit: number): Promise<JsonObject[]> {
         return this.adapter.prepare('SELECT * FROM file_diffs ORDER BY created_at DESC LIMIT ?').all<JsonObject>(limit);
     }
 
-    async getFileDiffsBySession(sessionId: string) {
+    async getFileDiffsBySession(sessionId: string): Promise<JsonObject[]> {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE session_id = ?').all<JsonObject>(sessionId);
     }
 
-    async getFileDiffsBySystem(systemId: string) {
+    async getFileDiffsBySystem(systemId: string): Promise<JsonObject[]> {
         return this.adapter.prepare('SELECT * FROM file_diffs WHERE system_id = ?').all<JsonObject>(systemId);
     }
 

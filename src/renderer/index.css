@@ -220,7 +220,14 @@
     /* Glass/Overlay Colors */
     --glass-bg: 0 0% 100%;
     --glass-border: 0 0% 0%;
-    --shadow-color: 0 0% 0%;
+    --shadow-color: 250 20% 10%;
+
+    /* Standardized Shadows - HSL based */
+    --shadow-sm: 0 1px 2px 0 hsl(var(--shadow-color) / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(var(--shadow-color) / 0.1), 0 2px 4px -2px hsl(var(--shadow-color) / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--shadow-color) / 0.1), 0 4px 6px -4px hsl(var(--shadow-color) / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(var(--shadow-color) / 0.1), 0 8px 10px -6px hsl(var(--shadow-color) / 0.1);
+    --shadow-premium: 0 20px 50px -12px hsl(var(--shadow-color) / 0.25);
   }
 
   /* BLACK THEME (Dark) */
@@ -280,6 +287,13 @@
     --glass-bg: 0 0% 100%;
     --glass-border: 0 0% 100%;
     --shadow-color: 0 0% 0%;
+
+    /* Standardized Shadows - Dark mode tinted */
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 8px -1px hsl(0 0% 0% / 0.5), 0 2px 4px -2px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 12px 20px -3px hsl(0 0% 0% / 0.6), 0 4px 8px -4px hsl(0 0% 0% / 0.6);
+    --shadow-xl: 0 25px 35px -5px hsl(0 0% 0% / 0.7), 0 10px 15px -6px hsl(0 0% 0% / 0.7);
+    --shadow-premium: 0 30px 60px -12px hsl(0 0% 0% / 0.8), 0 0 0 1px hsl(var(--border) / 0.2);
   }
 
   /* Utility for logos that should be white in dark mode and original in light mode */
@@ -325,11 +339,8 @@
 
   /* Premium Glassmorphism */
   .premium-glass {
-    background: linear-gradient(135deg, hsl(var(--background) / 0.7) 0%, hsl(var(--background) / 0.4) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsl(var(--border) / 0.5);
-    box-shadow: 0 8px 32px 0 hsl(var(--shadow-color) / 0.37);
+    @apply bg-card/40 backdrop-blur-xl border border-white/10 rounded-2xl transition-premium;
+    box-shadow: var(--shadow-xl), inset 0 0 0 1px hsla(0, 0%, 100%, 0.05);
   }
 
   .premium-glass-light {
@@ -375,10 +386,12 @@
   }
 
   .premium-shadow {
-    box-shadow:
-      0 10px 15px -3px hsl(var(--shadow-color) / 0.1),
-      0 4px 6px -2px hsl(var(--shadow-color) / 0.05),
-      0 0 0 1px hsl(var(--border) / 0.1);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid hsl(var(--border) / 0.1);
+  }
+
+  .transition-premium {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -413,8 +426,8 @@
 
   /* Premium Scrollbar */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -422,11 +435,28 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted) / 0.5);
-    border-radius: 10px;
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.4);
+    border-radius: 20px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.1);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.3);
   }
 

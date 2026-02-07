@@ -135,8 +135,8 @@ function mapModelToItem(
     if (!matchesSearch(m, ctx.searchLower)) { return null; }
     if (ctx.hidden.has(id) && id !== ctx.selectedModel) { return null; }
 
-    // Extract thinking levels from model data
-    const thinkingLevels = Array.isArray(m.thinking_levels) ? m.thinking_levels as string[] : undefined;
+    // Extract thinking levels from model data (Rust service sends as camelCase: thinkingLevels)
+    const thinkingLevels = Array.isArray(m.thinkingLevels) ? m.thinkingLevels as string[] : undefined;
     const description = typeof m.description === 'string' ? m.description : undefined;
 
     return {

@@ -20,33 +20,37 @@ const formatBytes = (bytes: number) => {
 export const ProjectStatsCards: React.FC<ProjectStatsCardsProps> = ({ stats, type, moduleCount }) => {
     const { t } = useTranslation();
 
+    const formattedSize = React.useMemo(() => {
+        return stats ? formatBytes(stats.totalSize) : '0 B';
+    }, [stats]);
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
                     {t('projectDashboard.fileCount')}
                 </div>
                 <div className="text-2xl font-black text-foreground">{stats?.fileCount ?? 0}</div>
             </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
                     {t('projectDashboard.loc')}
                 </div>
                 <div className="text-2xl font-black text-foreground">~{stats?.loc ?? 0}</div>
             </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
                     {t('projectDashboard.totalSize')}
                 </div>
-                <div className="text-2xl font-black text-foreground">{stats ? formatBytes(stats.totalSize) : '0 B'}</div>
+                <div className="text-2xl font-black text-foreground">{formattedSize}</div>
             </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
                     {t('projectDashboard.modules')}
                 </div>
                 <div className="text-2xl font-black text-foreground">{moduleCount}</div>
             </div>
-            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-colors">
+            <div className="bg-card p-4 rounded-xl border border-border hover:border-primary/20 transition-premium hover:shadow-md">
                 <div className="text-xxs font-bold uppercase text-muted-foreground mb-1 tracking-wider">
                     {t('projectDashboard.type')}
                 </div>

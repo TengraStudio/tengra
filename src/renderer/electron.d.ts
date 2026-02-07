@@ -1,7 +1,7 @@
 import { IpcRendererEvent } from 'electron';
 
 import {
-    AgentDefinition, AgentStartOptions, AppSettings, AuthStatus, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota,
+    AgentDefinition, AgentStartOptions, AppSettings, Chat, ChatRequest, ChatStreamRequest, ClaudeQuota, CopilotQuota,
     EntityKnowledge, EpisodicMemory, FileSearchResult, Folder, IdeaProgress, IdeaSession, IdeaSessionConfig, IpcValue, Message, Project,
     ProjectAnalysis, ProjectIdea, ProjectState, ProjectStats, ProjectStep, QuotaResponse, ResearchData, ResearchProgress,
     SemanticFragment,
@@ -138,10 +138,6 @@ export interface ElectronAPI {
     anthropicLogin: () => Promise<{ url: string; state: string }>
     codexLogin: () => Promise<{ url: string; state: string }>
 
-    checkAuthStatus: () => Promise<AuthStatus>
-    deleteProxyAuthFile: (name: string) => Promise<{ success: boolean }>
-    syncAuthFiles: () => Promise<{ success: boolean; error?: string }>
-    downloadAuthFile: (name: string) => Promise<Record<string, unknown> | null>
     saveClaudeSession: (sessionKey: string, accountId?: string) => Promise<{ success: boolean; error?: string }>
     triggerClaudeSessionCapture: () => Promise<{ success: boolean; error?: string }>
 
@@ -238,8 +234,6 @@ export interface ElectronAPI {
     getClaudeQuota: () => Promise<{ accounts: Array<ClaudeQuota> }>
     checkUsageLimit: (provider: string, model: string) => Promise<{ allowed: boolean; reason?: string }>
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) => Promise<number>
-    importChatHistory: (provider: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
-    importChatHistoryJson: (jsonContent: string) => Promise<{ success: boolean; importedChats?: number; importedMessages?: number; message?: string }>
     runCommand: (command: string, args: string[], cwd?: string) => Promise<{ stdout: string; stderr: string; code: number }>
     git: {
         getBranch: (cwd: string) => Promise<{ success: boolean; branch?: string; error?: string }>
@@ -682,10 +676,18 @@ export interface ElectronAPI {
         generatePlan: (options: AgentStartOptions) => Promise<void>
         approvePlan: (plan: string[] | ProjectStep[]) => Promise<void>
         stop: () => Promise<void>
+        resetState: () => Promise<void>
         getStatus: () => Promise<ProjectState>
         retryStep: (index: number) => Promise<void>
         getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>
         onUpdate: (callback: (state: ProjectState) => void) => () => void
+        // Canvas persistence
+        saveCanvasNodes: (nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, IpcValue> }>) => Promise<void>
+        getCanvasNodes: () => Promise<Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, IpcValue> }>>
+        deleteCanvasNode: (id: string) => Promise<void>
+        saveCanvasEdges: (edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>) => Promise<void>
+        getCanvasEdges: () => Promise<Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>>
+        deleteCanvasEdge: (id: string) => Promise<void>
     }
 
     /**

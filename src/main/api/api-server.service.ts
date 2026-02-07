@@ -52,14 +52,12 @@ export class ApiServerService extends BaseService {
         }
 
         // Generate API token for this session
-        this.apiToken = this.generateApiToken();
-        appLogger.info(this.name, `Generated API token for extension auth`);
+        this.apiToken = this.generateApiToken(); 
 
         await this.startServer();
     }
 
-    async cleanup(): Promise<void> {
-        appLogger.info(this.name, 'Cleaning up API server...');
+    async cleanup(): Promise<void> { 
         await this.stopServer();
     }
 
@@ -142,8 +140,6 @@ export class ApiServerService extends BaseService {
         const parsedUrl = parse(req.url ?? '', true);
         const pathname = parsedUrl.pathname ?? '/';
         const method = req.method ?? 'GET';
-
-        appLogger.info(this.name, `${method} ${pathname}`);
 
         // Handle public/unauthenticated routes
         if (this.handlePublicRoutes(pathname, method, res)) {
@@ -482,13 +478,12 @@ export class ApiServerService extends BaseService {
                 return;
             }
 
-            appLogger.info(this.name, `Chat request: model=${model}, provider=${provider}`);
+            const selectedModel = model ?? 'gpt-4o';
+            const detectedProvider = this.detectProvider(selectedModel, provider);
+            appLogger.info(this.name, `Chat request: model=${selectedModel}, provider=${detectedProvider}`);
 
             const parsedMessages = this.parseMessages(messages as JsonValue[]);
-            const response = await this.options.llmService.chatOpenAI(parsedMessages, {
-                model: model ?? 'gpt-4o',
-                provider: provider ?? 'openai'
-            });
+            const response = await this.options.llmService.chat(parsedMessages, selectedModel, undefined, detectedProvider);
 
             const toolCalls = this.normalizeToolCalls(response.tool_calls);
             const responseBody = {
@@ -542,7 +537,21 @@ export class ApiServerService extends BaseService {
                 return;
             }
 
-            appLogger.info(this.name, `Streaming chat: model=${model}, provider=${provider}`);
+            // SEC-008-3: Validate message structure
+            try {
+                this.validateChatMessages(messages as JsonValue[]);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                this.sendJson(res, 400, {
+                    success: false,
+                    error: (error as Error).message
+                });
+                return;
+            }
+
+            const selectedModel = model ?? 'gpt-4o';
+            const detectedProvider = this.detectProvider(selectedModel, provider);
+            appLogger.info(this.name, `Streaming chat: model=${selectedModel}, provider=${detectedProvider}`);
 
             // Set headers for SSE
             res.writeHead(200, {
@@ -553,10 +562,12 @@ export class ApiServerService extends BaseService {
 
             const parsedMessages = this.parseMessages(messages as JsonValue[]);
             // Start streaming
-            const stream = this.options.llmService.chatOpenAIStream(parsedMessages, {
-                model: model ?? 'gpt-4o',
-                provider: provider ?? 'openai'
-            });
+            const stream = this.options.llmService.chatStream(
+                parsedMessages,
+                selectedModel,
+                undefined,
+                detectedProvider
+            );
 
             for await (const chunk of stream) {
                 res.write(`data: ${JSON.stringify(chunk)}\n\n`);
@@ -787,10 +798,19 @@ export class ApiServerService extends BaseService {
      * Detect provider from model name
      */
     private detectProvider(model: string, provider?: string): string {
-        if (provider) { return provider; }
-        if (model.startsWith('gpt-')) { return 'openai'; }
-        if (model.startsWith('claude-')) { return 'anthropic'; }
-        if (model.startsWith('gemini-')) { return 'google'; }
+        const normalizedProvider = provider?.trim().toLowerCase();
+        if (normalizedProvider) {
+            if (normalizedProvider === 'claude') { return 'anthropic'; }
+            return normalizedProvider;
+        }
+
+        const normalizedModel = model.trim().toLowerCase();
+        if (normalizedModel.includes('codex') || normalizedModel.startsWith('gpt-5') || normalizedModel.startsWith('o1') || normalizedModel.startsWith('o3')) { return 'codex'; }
+        if (normalizedModel.startsWith('antigravity/')) { return 'antigravity'; }
+        if (normalizedModel.startsWith('claude-') || normalizedModel.startsWith('anthropic/')) { return 'anthropic'; }
+        if (normalizedModel.startsWith('gemini-') || normalizedModel.startsWith('google/')) { return 'google'; }
+        if (normalizedModel.startsWith('ollama/')) { return 'ollama'; }
+        if (normalizedModel.startsWith('gpt-')) { return 'openai'; }
         return 'openai'; // default
     }
 

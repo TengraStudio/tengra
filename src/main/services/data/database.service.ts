@@ -1,5 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
+import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
+import { TimeTrackingStats } from '@main/services/analysis/time-tracking.service';
 import { BaseService } from '@main/services/base.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobState } from '@main/services/system/job-scheduler.service';
@@ -7,6 +9,7 @@ import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import { IpcValue, JsonObject, JsonValue } from '@shared/types/common';
 import { DatabaseAdapter, SqlParams, SqlValue } from '@shared/types/database';
+import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
 import { FileDiff } from '@shared/types/file-diff';
 import { Project } from '@shared/types/project';
 import { AgentProfile } from '@shared/types/project-agent';
@@ -110,7 +113,8 @@ export class DatabaseService extends BaseService {
     constructor(
         _dataService: DataService,
         private eventBus: EventBusService,
-        private dbClient: DatabaseClientService
+        private dbClient: DatabaseClientService,
+        private timeTracking: TimeTrackingService
     ) {
         super('DatabaseService');
     }
@@ -223,16 +227,16 @@ export class DatabaseService extends BaseService {
     async getPrompt(id: string) { return this._system.getPrompt(id); }
     async createPrompt(title: string, content: string, tags: string[] = []) { return this._system.createPrompt(title, content, tags); }
     async updatePrompt(id: string, updates: Partial<Prompt>) { return this._system.updatePrompt(id, updates); }
-    async deletePrompt(id: string) { return this._system.deletePrompt(id); }
+    async deletePrompt(id: string): Promise<void> { return this._system.deletePrompt(id); }
 
     // Projects
-    async getProjects() { return this._projects.getProjects(); }
-    async getProject(id: string) { return this._projects.getProject(id); }
-    async hasIndexedSymbols(projectPath: string) { return this._projects.hasIndexedSymbols(projectPath); }
-    async createProject(title: string, path: string, desc: string = '', m?: string, c?: string) { return this._projects.createProject(title, path, desc, m, c); }
-    async updateProject(id: string, updates: Partial<Project>) { return this._projects.updateProject(id, updates); }
-    async deleteProject(id: string, deleteFiles: boolean = false) { return this._projects.deleteProject(id, deleteFiles); }
-    async archiveProject(id: string, isArchived: boolean) { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
+    async getProjects(): Promise<Project[]> { return this._projects.getProjects(); }
+    async getProject(id: string): Promise<Project | null | undefined> { return this._projects.getProject(id); }
+    async hasIndexedSymbols(projectPath: string): Promise<boolean> { return this._projects.hasIndexedSymbols(projectPath); }
+    async createProject(title: string, path: string, desc: string = '', m?: string, c?: string): Promise<Project> { return this._projects.createProject(title, path, desc, m, c); }
+    async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> { return this._projects.updateProject(id, updates); }
+    async deleteProject(id: string, deleteFiles: boolean = false): Promise<void> { return this._projects.deleteProject(id, deleteFiles); }
+    async archiveProject(id: string, isArchived: boolean): Promise<Project | undefined> { return this._projects.updateProject(id, { status: isArchived ? 'archived' : 'active' }); }
 
     async bulkDeleteProjects(ids: string[], deleteFiles: boolean = false) {
         for (const id of ids) {
@@ -347,10 +351,10 @@ export class DatabaseService extends BaseService {
 
 
     // Stats & Tracking
-    async getStats() { return this._system.getStats(); }
-    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily') { return this._system.getDetailedStats(period); }
-    async getTimeStats() { return this._system.getTimeStats(); }
-    async getMigrationStatus() { return this._system.getMigrationStatus(); }
+    async getStats(): Promise<DbStats> { return this._system.getStats(); }
+    async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily'): Promise<DbDetailedStats> { return this._system.getDetailedStats(period); }
+    async getTimeStats(): Promise<TimeTrackingStats> { return this.timeTracking.getTimeStats(); }
+    async getMigrationStatus(): Promise<{ version: number; lastMigration: number }> { return this._system.getMigrationStatus(); }
     async addTokenUsage(record: TokenUsageRecord) {
         let projectPath = record.projectId;
         if (projectPath && !projectPath.includes('/') && !projectPath.includes('\\')) {
@@ -361,8 +365,8 @@ export class DatabaseService extends BaseService {
         }
         return this._system.addTokenUsage({ ...record, projectId: projectPath });
     }
-    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly') { return this._system.getTokenUsageStats(period); }
-    async duplicateChat(id: string) {
+    async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { return this._system.getTokenUsageStats(period); }
+    async duplicateChat(id: string): Promise<string | null> {
         const chat = await this.getChat(id);
         if (!chat) { return null; }
         const newId = uuidv4();
@@ -436,7 +440,7 @@ export class DatabaseService extends BaseService {
     // --- Audit Log Methods ---
 
     async addAuditLog(entry: AuditLogEntry): Promise<void> { return this._system.addAuditLog(entry); }
-    async getAuditLogs(options: { category?: string; startDate?: number; endDate?: number; limit?: number } = {}) { return this._system.getAuditLogs(options); }
+    async getAuditLogs(options: { category?: string; startDate?: number; endDate?: number; limit?: number } = {}): Promise<AuditLogEntry[]> { return this._system.getAuditLogs(options); }
     async clearAuditLogs() { return this._system.clearAuditLogs(); }
 
     // --- Job Scheduler Methods ---

@@ -1,0 +1,115 @@
+import { ToolExecutor, ToolExecutorOptions } from '@main/tools/tool-executor';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@main/logging/logger', () => ({
+    appLogger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn()
+    }
+}));
+
+describe('ToolExecutor', () => {
+    const fileSystem = {
+        readFile: vi.fn(),
+        writeFile: vi.fn(),
+        listDirectory: vi.fn(),
+        fileExists: vi.fn(),
+        getFileInfo: vi.fn(),
+        createDirectory: vi.fn(),
+        deleteFile: vi.fn(),
+        copyFile: vi.fn(),
+        moveFile: vi.fn()
+    };
+
+    const command = { executeCommand: vi.fn() };
+    const web = { searchWeb: vi.fn() };
+    const system = { getSystemInfo: vi.fn() };
+    const eventBus = { emit: vi.fn() };
+    const mcp = { dispatch: vi.fn() };
+
+    const createExecutor = () => {
+        const options = {
+            fileSystem,
+            eventBus,
+            command,
+            web,
+            system,
+            mcp
+        } as unknown as ToolExecutorOptions;
+
+        return new ToolExecutor(options);
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('routes list_directory to fileSystem.listDirectory', async () => {
+        fileSystem.listDirectory.mockResolvedValueOnce({
+            success: true,
+            data: [{ name: 'src', isDirectory: true }]
+        });
+
+        const executor = createExecutor();
+        const result = await executor.execute('list_directory', { path: 'C:/repo' });
+
+        expect(result).toEqual({
+            success: true,
+            result: [{ name: 'src', isDirectory: true }]
+        });
+        expect(fileSystem.listDirectory).toHaveBeenCalledWith('C:/repo');
+    });
+
+    it('routes file_exists to fileSystem.fileExists', async () => {
+        fileSystem.fileExists.mockResolvedValueOnce({ exists: true });
+
+        const executor = createExecutor();
+        const result = await executor.execute('file_exists', { path: 'C:/repo/package.json' });
+
+        expect(result).toEqual({ success: true, result: true });
+        expect(fileSystem.fileExists).toHaveBeenCalledWith('C:/repo/package.json');
+    });
+
+    it('routes get_file_info to fileSystem.getFileInfo', async () => {
+        fileSystem.getFileInfo.mockResolvedValueOnce({
+            success: true,
+            data: { path: 'C:/repo/package.json', size: 123, isFile: true, isDirectory: false }
+        });
+
+        const executor = createExecutor();
+        const result = await executor.execute('get_file_info', { path: 'C:/repo/package.json' });
+
+        expect(result.success).toBe(true);
+        expect(result.result).toEqual({ path: 'C:/repo/package.json', size: 123, isFile: true, isDirectory: false });
+        expect(fileSystem.getFileInfo).toHaveBeenCalledWith('C:/repo/package.json');
+    });
+
+    it('routes get_system_info to SystemService', async () => {
+        system.getSystemInfo.mockResolvedValueOnce({ platform: 'win32', hostname: 'dev-box' });
+
+        const executor = createExecutor();
+        const result = await executor.execute('get_system_info', {});
+
+        expect(result).toEqual({
+            success: true,
+            result: { platform: 'win32', hostname: 'dev-box' }
+        });
+        expect(system.getSystemInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to MCP for unknown tools', async () => {
+        mcp.dispatch.mockResolvedValueOnce({ success: true, data: { ok: true } });
+
+        const executor = createExecutor();
+        const result = await executor.execute('my_custom_tool', { value: 1 });
+
+        expect(result).toEqual({
+            success: true,
+            result: { ok: true },
+            error: undefined
+        });
+        expect(mcp.dispatch).toHaveBeenCalledWith('default', 'my_custom_tool', { value: 1 });
+    });
+});

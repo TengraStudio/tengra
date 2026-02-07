@@ -1,10 +1,27 @@
+import { DatabaseService } from '@main/services/data/database.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 
+interface CanvasNode {
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: Record<string, unknown>;
+}
+
+interface CanvasEdge {
+    id: string;
+    source: string;
+    target: string;
+    sourceHandle?: string;
+    targetHandle?: string;
+}
+
 export function registerProjectAgentIpc(
     projectAgentService: ProjectAgentService,
-    getMainWindow: () => BrowserWindow | null
+    getMainWindow: () => BrowserWindow | null,
+    databaseService?: DatabaseService
 ) {
     // Forward project updates to renderer
     const eventBus = projectAgentService.eventBus;
@@ -20,6 +37,10 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle('project:stop', async () => {
         await projectAgentService.stop();
+    });
+
+    ipcMain.handle('project:reset-state', async () => {
+        await projectAgentService.resetState();
     });
 
     ipcMain.handle('project:plan', async (_, options: AgentStartOptions) => {
@@ -48,5 +69,50 @@ export function registerProjectAgentIpc(
 
     ipcMain.handle('project:delete-profile', async (_, id: string) => {
         return await projectAgentService.deleteProfile(id);
+    });
+
+    // ==================== Canvas Persistence ====================
+
+    ipcMain.handle('project:save-canvas-nodes', async (_, nodes: CanvasNode[]) => {
+        if (!databaseService) { return; }
+        await databaseService.uac.saveCanvasNodes(nodes);
+    });
+
+    ipcMain.handle('project:get-canvas-nodes', async () => {
+        if (!databaseService) { return []; }
+        const records = await databaseService.uac.getCanvasNodes();
+        return records.map(r => ({
+            id: r.id,
+            type: r.type,
+            position: { x: r.position_x, y: r.position_y },
+            data: JSON.parse(r.data)
+        }));
+    });
+
+    ipcMain.handle('project:delete-canvas-node', async (_, id: string) => {
+        if (!databaseService) { return; }
+        await databaseService.uac.deleteCanvasNode(id);
+    });
+
+    ipcMain.handle('project:save-canvas-edges', async (_, edges: CanvasEdge[]) => {
+        if (!databaseService) { return; }
+        await databaseService.uac.saveCanvasEdges(edges);
+    });
+
+    ipcMain.handle('project:get-canvas-edges', async () => {
+        if (!databaseService) { return []; }
+        const records = await databaseService.uac.getCanvasEdges();
+        return records.map(r => ({
+            id: r.id,
+            source: r.source,
+            target: r.target,
+            sourceHandle: r.source_handle ?? undefined,
+            targetHandle: r.target_handle ?? undefined
+        }));
+    });
+
+    ipcMain.handle('project:delete-canvas-edge', async (_, id: string) => {
+        if (!databaseService) { return; }
+        await databaseService.uac.deleteCanvasEdge(id);
     });
 }

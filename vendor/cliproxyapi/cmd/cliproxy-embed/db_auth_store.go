@@ -94,14 +94,11 @@ func (s *HTTPAuthStore) List(ctx context.Context) ([]*coreauth.Auth, error) {
 
 // Save pushes an auth update back to the Electron app
 func (s *HTTPAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, error) {
-	log.Printf("[DEBUG] HTTPAuthStore.Save called for ID=%s, Provider=%s", auth.ID, auth.Provider)
 	if auth == nil || auth.ID == "" {
-		log.Printf("[DEBUG] HTTPAuthStore.Save: invalid auth - nil or missing ID")
 		return "", fmt.Errorf("invalid auth: nil or missing ID")
 	}
 
 	url := fmt.Sprintf("%s/%s", s.apiURL, auth.ID)
-	log.Printf("[DEBUG] HTTPAuthStore.Save: POSTing to URL=%s", url)
 
 	// Map coreauth.Auth back to the format expected by the API
 	// Note: We use auth.Metadata and top-level fields
@@ -130,18 +127,14 @@ func (s *HTTPAuthStore) Save(ctx context.Context, auth *coreauth.Auth) (string, 
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		log.Printf("[DEBUG] HTTPAuthStore.Save: HTTP error: %v", err)
 		return "", fmt.Errorf("failed to send sync update: %w", err)
 	}
 	defer resp.Body.Close()
 
-	log.Printf("[DEBUG] HTTPAuthStore.Save: Response status=%d", resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		log.Printf("[DEBUG] HTTPAuthStore.Save: Error response: %s", string(respBody))
 		return "", fmt.Errorf("sync update failed with status %d: %s", resp.StatusCode, string(respBody))
 	}
-	log.Printf("[DEBUG] HTTPAuthStore.Save: Success! Token saved to database")
 
 	// Update local cache
 	s.mu.Lock()
@@ -177,8 +170,6 @@ func (s *HTTPAuthStore) sync(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	log.Printf("HTTPAuthStore: Syncing auth data from %s", s.apiURL)
-
 	req, err := http.NewRequestWithContext(ctx, "GET", s.apiURL, nil)
 	if err != nil {
 		log.Printf("HTTPAuthStore: Failed to create request: %v", err)
@@ -207,8 +198,6 @@ func (s *HTTPAuthStore) sync(ctx context.Context) error {
 		log.Printf("HTTPAuthStore: Failed to decode response: %v", err)
 		return fmt.Errorf("failed to decode response: %w", err)
 	}
-
-	log.Printf("HTTPAuthStore: Received %d accounts from API", len(apiResp.Accounts))
 
 	newCache := make(map[string]*coreauth.Auth)
 	now := time.Now().UTC()
@@ -277,7 +266,6 @@ func (s *HTTPAuthStore) sync(ctx context.Context) error {
 			// If the incoming timestamp is newer, clear previous error/unavailability states
 			// to allow immediate recovery after re-authentication.
 			if acc.UpdatedAt > existing.UpdatedAt.Unix()*1000 {
-				log.Printf("HTTPAuthStore: Data for %s is newer, resetting failure states", acc.ID)
 				auth.LastRefreshedAt = time.Time{}
 				auth.NextRefreshAfter = time.Time{}
 				auth.NextRetryAfter = time.Time{}
@@ -301,11 +289,9 @@ func (s *HTTPAuthStore) sync(ctx context.Context) error {
 		}
 
 		newCache[acc.ID] = auth
-		log.Printf("HTTPAuthStore: Cached auth for provider=%s, id=%s, prefix=%s", acc.Provider, acc.ID, prefix)
 	}
 
 	s.cache = newCache
 	s.lastSync = now
-	log.Printf("HTTPAuthStore: Sync complete, total cached: %d", len(s.cache))
 	return nil
 }
