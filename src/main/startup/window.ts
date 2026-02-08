@@ -131,12 +131,20 @@ function setupWebContentsSecurity(win: BrowserWindow) {
 
 /**
  * Redirects renderer console messages to application logger.
+ * Uses new Event<WebContentsConsoleMessageEventParams> API (Electron 29+)
  */
 function setupConsoleRedirect(win: BrowserWindow) {
-    win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-        const levels = ['debug', 'info', 'warn', 'error'];
-        const lvl = (levels[level] || 'info') as 'debug' | 'info' | 'warn' | 'error';
-        const context = `renderer:${path.basename(sourceId)}:${line} `;
+    win.webContents.on('console-message', (event) => {
+        const { level, message, lineNumber, sourceId } = event;
+        // level is now a string: 'info' | 'warning' | 'error' | 'debug'
+        const levelMap: Record<string, 'debug' | 'info' | 'warn' | 'error'> = {
+            'debug': 'debug',
+            'info': 'info',
+            'warning': 'warn',
+            'error': 'error'
+        };
+        const lvl = levelMap[level] ?? 'info';
+        const context = `renderer:${path.basename(sourceId)}:${lineNumber} `;
         appLogger[lvl](context, message);
     });
 }

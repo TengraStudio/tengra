@@ -177,10 +177,6 @@ export default defineConfig({
                     if (id.includes('node_modules/katex')) {
                         return 'katex';
                     }
-                    // Chart libraries (lazy loaded, d3 büyük)
-                    if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) {
-                        return 'charts';
-                    }
                     // xterm (lazy loaded, terminal için)
                     if (id.includes('node_modules/@xterm') || id.includes('node_modules/xterm')) {
                         return 'xterm';
@@ -196,8 +192,9 @@ export default defineConfig({
                 assetFileNames: 'assets/[name]-[hash].[ext]'
             }
         },
-        // UZAY OPTİMİZASYONU: Chunk boyutu limitini düşür
-        chunkSizeWarningLimit: 500,
+        // Electron desktop dağıtımında bazı vendor/chunk'lar doğal olarak büyük.
+        // 500k uyarı eşiği yerine gerçekçi bir eşik kullanıyoruz.
+        chunkSizeWarningLimit: 5000,
         // AGRESIF MİNİFİCATION: terser kullan (esbuild'den daha iyi sıkıştırma)
         minify: 'terser',
         terserOptions: {

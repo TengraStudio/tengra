@@ -2,9 +2,10 @@ import { Bot, CheckCircle, ChevronDown, ChevronRight, Clock, History, List, Load
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { CheckpointList } from './CheckpointList';
 import { CheckpointItem } from '@/features/projects/hooks/useAgentHistory';
 import { cn } from '@/lib/utils';
+
+import { CheckpointList } from './CheckpointList';
 
 export interface TaskHistoryItem {
     id: string;

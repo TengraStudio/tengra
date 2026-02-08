@@ -33,36 +33,36 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
             <SidebarMenuItem
                 id="ollama"
                 icon={<Brain className="w-4 h-4" />}
-                label="Ollama"
-                description="Local models"
+                label={t('sidebar.ollama')}
+                description={t('sidebar.ollamaDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
-                statusLabel="Running"
+                statusLabel={t('sidebar.ollamaRunning')}
             />
             <SidebarMenuItem
                 id="openai"
                 icon={<Sparkles className="w-4 h-4" />}
-                label="OpenAI"
-                description="GPT-4, GPT-4o"
+                label={t('sidebar.openai')}
+                description={t('sidebar.openaiDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
             />
             <SidebarMenuItem
                 id="anthropic"
                 icon={<Brain className="w-4 h-4" />}
-                label="Anthropic"
-                description="Claude 3.5"
+                label={t('sidebar.anthropic')}
+                description={t('sidebar.anthropicDescription')}
                 onClick={() => onOpenSettings('models' as SettingsCategory)}
                 status="online"
             />
             <SidebarMenuItem
                 id="copilot"
                 icon={<Cpu className="w-4 h-4" />}
-                label="GitHub Copilot"
-                description="Code completion"
+                label={t('sidebar.copilot')}
+                description={t('sidebar.copilotDescription')}
                 onClick={() => onOpenSettings('accounts' as SettingsCategory)}
                 status="online"
-                statusLabel="Active"
+                statusLabel={t('sidebar.copilotActive')}
             />
         </SidebarSection>
     );

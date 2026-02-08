@@ -3,16 +3,15 @@
  * VSCode-style terminal panel with bottom slide-up behavior
  */
 
+import { TerminalPanelState,TerminalSession } from '@shared/types/terminal-v2';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal } from '@xterm/xterm';
+import { Plus,X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 
-import { Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
-import { TerminalSession, TerminalPanelState } from '@shared/types/terminal-v2';
-import { X, Plus } from 'lucide-react';
-
 import './TerminalPanel.css';
 
 const TERMINAL_MIN_HEIGHT = 100;
@@ -155,7 +154,7 @@ export const TerminalPanel: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!isResizing) return;
+        if (!isResizing) {return;}
 
         const handleMouseMove = (e: MouseEvent) => {
             const newHeight = window.innerHeight - e.clientY;
@@ -174,7 +173,7 @@ export const TerminalPanel: React.FC = () => {
         };
     }, [isResizing]);
 
-    if (!panelState.isOpen) return null;
+    if (!panelState.isOpen) {return null;}
 
     return (
         <div ref={panelRef} className="terminal-panel" style={{ height: `${panelState.height}px` }}>

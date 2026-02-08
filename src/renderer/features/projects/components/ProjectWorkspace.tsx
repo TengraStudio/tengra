@@ -78,7 +78,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 project={project}
                 projectName={project.title}
                 onNameChange={(title) => { void handleUpdateProject({ title }); }}
-                handleRunProject={() => wm.setDashboardTab('terminal')}
+                handleRunProject={() => ps.setShowTerminal(true)}
                 onBack={onBack}
                 language={language}
                 dashboardTab={wm.dashboardTab}
@@ -185,7 +185,7 @@ interface ProjectExplorerPanelProps {
 function ProjectExplorerPanel({ ps, wm, language }: ProjectExplorerPanelProps) {
     return (
         <div className={cn(
-            "flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] z-20",
+            "flex flex-col border-r border-border/40 bg-background/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-smooth z-20",
             ps.sidebarCollapsed ? "w-0 overflow-hidden opacity-0" : "w-72 opacity-100"
         )}>
             <div className="flex-1 overflow-hidden">

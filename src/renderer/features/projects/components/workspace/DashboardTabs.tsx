@@ -1,4 +1,4 @@
-import { AlertCircle, FileText, GitBranch, Layout, ListTodo, Play, Search, Settings, Terminal } from 'lucide-react';
+import { AlertCircle, FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -19,7 +19,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
 }) => {
     const tabs = [
         { id: 'overview', icon: Layout, title: t('projectDashboard.overview') },
-        { id: 'terminal', icon: Terminal, title: t('projectDashboard.terminal') },
         { id: 'tasks', icon: ListTodo, title: t('projectDashboard.todoList') },
         { id: 'search', icon: Search, title: t('projectDashboard.search') },
         { id: 'git', icon: GitBranch, title: t('projectDashboard.git') },
@@ -37,7 +36,7 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
 
                 return (
                     <React.Fragment key={tab.id}>
-                        {idx === 3 && (
+                        {idx === 2 && (
                             <button
                                 onClick={handleRunProject}
                                 className="p-1.5 rounded-md hover:bg-white/10 text-success transition-colors"

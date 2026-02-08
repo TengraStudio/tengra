@@ -12,7 +12,6 @@ import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-
 import { AgentPersistenceService } from './agent/agent-persistence.service';
 import { createInitialAgentState } from './agent/agent-state-machine';
 

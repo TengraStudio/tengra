@@ -35,8 +35,8 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             <SidebarMenuItem
                 id="mcp"
                 icon={<Plug className="w-4 h-4" />}
-                label="MCP Services"
-                description="Model Context Protocol"
+                label={t('sidebar.mcpServices')}
+                description={t('sidebar.mcpDescription')}
                 onClick={() => onChangeView('mcp')}
                 isActive={currentView === 'mcp'}
                 status="online"
@@ -45,16 +45,16 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
             <SidebarMenuItem
                 id="docker"
                 icon={<Container className="w-4 h-4" />}
-                label="Docker"
-                description="Container management"
+                label={t('sidebar.docker')}
+                description={t('sidebar.dockerDescription')}
                 onClick={() => onChangeView('docker')}
                 status="idle"
             />
             <SidebarMenuItem
                 id="terminal"
                 icon={<Terminal className="w-4 h-4" />}
-                label="Terminal"
-                description="Command line access"
+                label={t('sidebar.terminal')}
+                description={t('sidebar.terminalDescription')}
                 onClick={() => onChangeView('terminal')}
             />
         </SidebarSection>
