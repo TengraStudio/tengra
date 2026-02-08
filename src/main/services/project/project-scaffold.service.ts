@@ -738,5 +738,9 @@ MIT
         };
         return text.replace(/[&<>"']/g, char => escapeMap[char] ?? char);
     }
+
+    override async cleanup(): Promise<void> {
+        // Stateless scaffold service; nothing to dispose.
+    }
 }
 

@@ -14,6 +14,12 @@ type LogData = string | number | boolean | object | null | undefined | Error;
 
 class RendererLogger {
     private currentLevel: LogLevel = LogLevel.INFO;
+    private readonly electronLevelMethod: Record<LogLevel, 'debug' | 'info' | 'warn' | 'error'> = {
+        [LogLevel.DEBUG]: 'debug',
+        [LogLevel.INFO]: 'info',
+        [LogLevel.WARN]: 'warn',
+        [LogLevel.ERROR]: 'error'
+    };
 
     setLevel(level: LogLevel): void {
         this.currentLevel = level;
@@ -52,6 +58,8 @@ class RendererLogger {
         const levelStr = LogLevel[level];
         const formattedMessage = `[${timestamp}] [${levelStr}] [${context}] ${message}`;
 
+        if (this.tryElectronLog(level, formattedMessage, data)) { return; }
+
         const consoleMethod = this.getConsoleMethod(level);
         if (data !== undefined) {
             consoleMethod(formattedMessage, data);
@@ -60,18 +68,31 @@ class RendererLogger {
         }
     }
 
+    private tryElectronLog(level: LogLevel, formattedMessage: string, data?: LogData): boolean {
+        const electronLog = window.electron?.log;
+        if (!electronLog) { return false; }
+
+        const method = this.electronLevelMethod[level] ?? 'info';
+        if (data !== undefined) {
+            electronLog[method](formattedMessage, data);
+        } else {
+            electronLog[method](formattedMessage);
+        }
+        return true;
+    }
+
     private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
         switch (level) {
             case LogLevel.DEBUG:
-                return console.debug.bind(console);
+                return console.warn.bind(console);
             case LogLevel.INFO:
-                return console.info.bind(console);
+                return console.warn.bind(console);
             case LogLevel.WARN:
                 return console.warn.bind(console);
             case LogLevel.ERROR:
                 return console.error.bind(console);
             default:
-                return console.log.bind(console);
+                return console.warn.bind(console);
         }
     }
 }

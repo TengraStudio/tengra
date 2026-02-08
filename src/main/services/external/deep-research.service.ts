@@ -717,6 +717,10 @@ Respond in JSON:
         this.logInfo('Research cache cleared');
     }
 
+    override async cleanup(): Promise<void> {
+        this.researchCache.clear();
+    }
+
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }

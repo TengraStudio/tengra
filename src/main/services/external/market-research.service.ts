@@ -604,4 +604,9 @@ export class MarketResearchService extends BaseService {
 
         return opportunities.slice(0, 8);
     }
+
+    override async cleanup(): Promise<void> {
+        this.productHuntApiKey = null;
+        this.crunchbaseApiKey = null;
+    }
 }

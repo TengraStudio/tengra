@@ -90,4 +90,8 @@ export class MultiModelComparisonService extends BaseService {
             console.warn('[MultiModelComparisonService] Comparison timed out for some models');
         }
     }
+
+    override async cleanup(): Promise<void> {
+        // Stateless service; nothing to dispose currently.
+    }
 }
