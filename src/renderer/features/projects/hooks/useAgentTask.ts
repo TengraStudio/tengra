@@ -12,8 +12,8 @@ import {
     fetchTaskDetailsHandler,
     pauseTaskHandler,
     rejectPlanHandler,
-    resumeTaskHandler,
     resumeCheckpointHandler,
+    resumeTaskHandler,
     saveSnapshotHandler,
     stopTaskHandler
 } from './converters/asyncHandlers';

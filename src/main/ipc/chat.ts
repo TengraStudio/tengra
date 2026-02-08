@@ -204,7 +204,7 @@ class ChatIpcManager {
 
     private async recordTokens(sanitized: { model: string, provider: string, projectId?: string, chatId?: string }, res: { promptTokens?: number; completionTokens?: number }, messages: Message[]) {
         try {
-            const lastUserMessage = messages.findLast(m => m.role === 'user');
+            const lastUserMessage = messages.filter((m: Message) => m.role === 'user').pop();
             const promptTokens = res.promptTokens ?? 0;
             const completionTokens = res.completionTokens ?? 0;
 

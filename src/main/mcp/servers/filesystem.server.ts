@@ -1,7 +1,8 @@
+import * as os from 'os';
+
 import { buildActions, McpDeps, validatePath, validateString, validateUrl } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 import { JsonObject } from '@shared/types/common';
-import * as os from 'os';
 
 export function buildFilesystemServers(deps: McpDeps): McpService[] {
     return [

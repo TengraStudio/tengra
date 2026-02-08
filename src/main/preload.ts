@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
+import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service';
 import {
     AgentDefinition, AgentStartOptions, AppSettings,
     Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota,
@@ -12,7 +13,6 @@ import {
     QuotaResponse, SemanticFragment,
     SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
 } from '@shared/types';
-import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service';
 import {
     AdvancedSemanticFragment,
     MemoryCategory,

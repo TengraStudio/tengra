@@ -1,6 +1,7 @@
+import * as os from 'os';
+
 import { buildActions, McpDeps, validatePath, validateString } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
-import * as os from 'os';
 
 export function buildProjectServers(deps: McpDeps): McpService[] {
     // Path validation helper

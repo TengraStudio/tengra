@@ -232,7 +232,7 @@ export class McpMarketplaceService extends BaseService {
             isOfficial: true,
             license: 'MIT'
         }
-    ]
+    ];
 
     constructor() {
         super('McpMarketplaceService');

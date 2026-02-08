@@ -1,5 +1,33 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 23): 🤖 GitHub Actions Automation & Marketplace Planning
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Enhanced CI/CD infrastructure with automated workflow cleanup and added comprehensive marketplace system planning for VSCode-style extensions.
+
+### 🤖 GitHub Actions Automation
+- [x] **Cleanup Workflow**: Created automated workflow to clean old runs (Sundays, UTC midnight)
+- [x] **Cleanup Scripts**: Node.js and PowerShell scripts for manual workflow run deletion
+- [x] **CI/CD Fixes**: Simplified CI workflow, enhanced release workflow with Rust/Go toolchains
+- [x] **Git LFS Support**: Added Git LFS checkout to both CI and release workflows
+- [x] **NPM Scripts**: Added `gh:cleanup`, `gh:cleanup:all`, `gh:cleanup:dry` commands
+
+### 🛍️ Marketplace System Planning
+- [x] **Architecture Design**: Added 25 marketplace tasks across 5 phases
+- [x] **Extension Types**: MCP servers, themes, commands, languages, agent templates
+- [x] **Security Model**: Signing, sandboxing, code review, user ratings
+- [x] **Developer Experience**: SDK, documentation, testing framework, publishing workflow
+
+### 📝 Files Created/Modified
+- `.github/workflows/cleanup.yml` - Automated workflow cleanup (weekly)
+- `scripts/cleanup-workflow-runs.js` - Node.js cleanup script
+- `scripts/cleanup-workflow-runs.ps1` - PowerShell cleanup script
+- `scripts/README-workflow-cleanup.md` - Comprehensive documentation
+- `package.json` - Added gh:cleanup npm scripts
+- `docs/TODO.md` - Added 25 marketplace tasks, marked security work complete
+- `docs/CHANGELOG.md` - This update
+
 ## 2026-02-08 (Update 22): 🔒 MCP Security Hardening
 
 **Status**: ✅ COMPLETED
