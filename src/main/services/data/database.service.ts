@@ -140,7 +140,10 @@ export class DatabaseService extends BaseService {
             this._knowledge = new KnowledgeRepository(adapter);
             this._system = new SystemRepository(adapter);
             this._uac = new UacRepository(adapter);
+
             await this._uac.ensureTables();
+            await this._knowledge.ensureFileDiffTable();
+            await this._system.ensureProductionIndexes();
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });

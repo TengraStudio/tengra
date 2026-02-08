@@ -146,7 +146,7 @@ export const Modal: React.FC<ModalProps> = ({
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-in zoom-in-95 duration-300 mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]} ${className}`}
+                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]} ${className}`}
             >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
                     <h3 id="modal-title" className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>

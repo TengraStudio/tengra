@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
@@ -12,6 +13,38 @@ import { BaseRepository } from './base.repository';
 export class SystemRepository extends BaseRepository {
     constructor(adapter: DatabaseAdapter) {
         super(adapter);
+    }
+
+    async ensureProductionIndexes(): Promise<void> {
+        const indexStatements = [
+            // Chat and message hot paths
+            'CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_chats_project_id ON chats(project_id)',
+            'CREATE INDEX IF NOT EXISTS idx_chats_folder_id ON chats(folder_id)',
+            'CREATE INDEX IF NOT EXISTS idx_messages_chat_time ON messages(chat_id, timestamp ASC)',
+            'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp DESC)',
+
+            // Stats and usage hot paths
+            'CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_token_usage_provider_model_time ON token_usage(provider, model, timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_token_usage_project_time ON token_usage(project_path, timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_usage_tracking_timestamp ON usage_tracking(timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_usage_tracking_provider_model ON usage_tracking(provider, model)',
+
+            // Operational dashboards
+            'CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_audit_logs_category_timestamp ON audit_logs(category, timestamp DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider_active ON linked_accounts(provider, is_active)',
+            'CREATE INDEX IF NOT EXISTS idx_prompts_created_at ON prompts(created_at DESC)'
+        ];
+
+        for (const statement of indexStatements) {
+            try {
+                await this.adapter.exec(statement);
+            } catch (error) {
+                appLogger.warn('SystemRepository', `Skipping index statement due to runtime DB constraints: ${statement} (${String(error)})`);
+            }
+        }
     }
 
     // --- Folders ---

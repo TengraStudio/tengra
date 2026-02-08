@@ -13,6 +13,7 @@ export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonE
     isCollapsed?: boolean
     actions?: React.ReactNode
     variant?: 'default' | 'ghost' | 'glass'
+    iconClassName?: string
 }
 
 function getButtonClassName(active: boolean, variant: string, className?: string): string {
@@ -35,6 +36,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     actions,
     children,
     variant = 'default',
+    iconClassName,
     ...props
 }) => (
     <div className="group/item relative">
@@ -46,7 +48,8 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
             <div className="relative">
                 <Icon className={cn(
                     "w-4 h-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110",
-                    active ? "opacity-100" : "opacity-70 group-hover/item:opacity-100"
+                    active ? "opacity-100" : "opacity-70 group-hover/item:opacity-100",
+                    iconClassName
                 )} />
                 {active && (
                     <motion.div

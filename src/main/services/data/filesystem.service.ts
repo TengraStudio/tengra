@@ -204,7 +204,7 @@ export class FileSystemService {
                         size = stats.size;
                         modified = stats.mtime.toISOString();
                     } catch (e) {
-                        console.error(`Failed to stat ${entryPath}:`, e);
+                        appLogger.warn('filesystem.service', `Failed to stat ${entryPath}: ${getErrorMessage(e as Error)}`);
                     }
                     return {
                         name: entry.name,
@@ -262,6 +262,7 @@ export class FileSystemService {
 
     async getFileInfo(filePath: string): Promise<ServiceResponse<{ path: string; size: number; isDirectory: boolean; isFile: boolean; created: string; modified: string; accessed: string }>> {
         try {
+            this.validatePath(filePath);
             const absolutePath = path.resolve(filePath);
             const stats = await fs.stat(absolutePath);
             return {
@@ -502,7 +503,10 @@ export class FileSystemService {
             }
 
             const newContent = lines.join('\n');
-            await this.writeFile(filePath, newContent);
+            const writeResult = await this.writeFile(filePath, newContent);
+            if (!writeResult.success) {
+                return { success: false, error: writeResult.error ?? 'Failed to write edited file content' };
+            }
             return { success: true, message: `Applied ${edits.length} edits to ${filePath}` };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };

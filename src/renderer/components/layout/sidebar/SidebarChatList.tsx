@@ -65,7 +65,11 @@ export const SidebarChatList = React.memo(({
                             <Pin className="w-3 h-3" /> {t('sidebar.pinned')}
                         </p>
                         <div className="space-y-0.5">
-                            {pinnedChats.map(renderChatItem)}
+                            {pinnedChats.map(chat => (
+                                <div key={chat.id} className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
+                                    {renderChatItem(chat)}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -88,6 +92,7 @@ export const SidebarChatList = React.memo(({
                                     key={folder.id}
                                     folder={folder}
                                     isExpanded={expandedFolders.has(folder.id)}
+                                    // Filter chats for this folder specifically
                                     folderChats={filteredChats.filter(c => c.folderId === folder.id)}
                                     isCollapsed={isCollapsed}
                                     toggleFolder={toggleFolder}
@@ -104,7 +109,11 @@ export const SidebarChatList = React.memo(({
                     <div>
                         <p className="px-2 py-1 text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider">{t('sidebar.recent')}</p>
                         <div className="space-y-0.5">
-                            {recentChats.map(renderChatItem)}
+                            {recentChats.map(chat => (
+                                <div key={chat.id} className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
+                                    {renderChatItem(chat)}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
