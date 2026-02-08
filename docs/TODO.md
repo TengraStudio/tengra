@@ -127,6 +127,51 @@
 - [ ] **MKT-DEV-04**: Extension publishing workflow (automated builds, versioning) <!-- id: mkt24 -->
 - [ ] **MKT-DEV-05**: Extension analytics dashboard for developers <!-- id: mkt25 -->
 
+## 🖥️ ADVANCED TERMINAL SYSTEM (Priority: HIGH)
+
+### 🚀 Phase 1: Terminal Infrastructure Overhaul
+- [ ] **TERM-INFRA-01**: Design modular terminal architecture (plugin-based backends) <!-- id: term1 -->
+- [ ] **TERM-INFRA-02**: Create abstract terminal backend interface <!-- id: term2 -->
+- [ ] **TERM-INFRA-03**: Implement terminal session manager (multiple terminals, persistence) <!-- id: term3 -->
+- [ ] **TERM-INFRA-04**: Add terminal profile system (custom shells, environments, themes) <!-- id: term4 -->
+- [ ] **TERM-INFRA-05**: Implement terminal workspace integration (per-project terminals) <!-- id: term5 -->
+
+### 🎨 Phase 2: Terminal Backend Integrations
+- [ ] **TERM-BACKEND-01**: Ghostty integration (fast GPU-accelerated terminal) <!-- id: term6 -->
+- [ ] **TERM-BACKEND-02**: Alacritty integration (cross-platform GPU terminal) <!-- id: term7 -->
+- [ ] **TERM-BACKEND-03**: Warp integration (AI-powered modern terminal) <!-- id: term8 -->
+- [ ] **TERM-BACKEND-04**: WezTerm integration (GPU-accelerated Rust terminal) <!-- id: term9 -->
+- [ ] **TERM-BACKEND-05**: Windows Terminal integration (native Windows support) <!-- id: term10 -->
+- [ ] **TERM-BACKEND-06**: Kitty integration (GPU-based feature-rich terminal) <!-- id: term11 -->
+- [ ] **TERM-BACKEND-07**: Native xterm.js fallback (always-available option) <!-- id: term12 -->
+
+### 🔧 Phase 3: Terminal Features
+- [ ] **TERM-FEAT-01**: Split panes (horizontal/vertical splits) <!-- id: term13 -->
+- [ ] **TERM-FEAT-02**: Tab management (drag & drop, reordering, detaching) <!-- id: term14 -->
+- [ ] **TERM-FEAT-03**: Terminal search (text search, regex, history search) <!-- id: term15 -->
+- [ ] **TERM-FEAT-04**: Command history (searchable, persistent, shared) <!-- id: term16 -->
+- [ ] **TERM-FEAT-05**: Smart suggestions (AI-powered command completion) <!-- id: term17 -->
+- [ ] **TERM-FEAT-06**: Terminal multiplexing (tmux/screen integration) <!-- id: term18 -->
+- [ ] **TERM-FEAT-07**: Remote terminal (SSH/Docker exec integration) <!-- id: term19 -->
+- [ ] **TERM-FEAT-08**: Terminal recording (session replay, export) <!-- id: term20 -->
+
+### 🎨 Phase 4: Terminal UI/UX
+- [ ] **TERM-UI-01**: Standalone terminal window (detach from project view) <!-- id: term21 -->
+- [ ] **TERM-UI-02**: Floating terminal overlay (quick access, ` hotkey) <!-- id: term22 -->
+- [ ] **TERM-UI-03**: Terminal gallery view (grid of terminals) <!-- id: term23 -->
+- [ ] **TERM-UI-04**: Custom themes (import/export, community themes) <!-- id: term24 -->
+- [ ] **TERM-UI-05**: Font ligatures support (Fira Code, JetBrains Mono) <!-- id: term25 -->
+- [ ] **TERM-UI-06**: Transparency & blur effects (modern aesthetics) <!-- id: term26 -->
+- [ ] **TERM-UI-07**: Context menu (copy, paste, search, split) <!-- id: term27 -->
+
+### ⚡ Phase 5: Performance & Integration
+- [ ] **TERM-PERF-01**: GPU acceleration (offload rendering to GPU) <!-- id: term28 -->
+- [ ] **TERM-PERF-02**: Virtual scrolling (handle millions of lines) <!-- id: term29 -->
+- [ ] **TERM-PERF-03**: Link detection (URLs, file paths, clickable) <!-- id: term30 -->
+- [ ] **TERM-PERF-04**: Semantic output parsing (extract errors, warnings) <!-- id: term31 -->
+- [ ] **TERM-PERF-05**: AI integration (explain commands, fix errors) <!-- id: term32 -->
+- [ ] **TERM-PERF-06**: Task runner integration (npm scripts, make, cargo) <!-- id: term33 -->
+
 ## 🔴 CRITICAL PRIORITY (Core Architecture)
 - [x] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->
 - [x] **GLOBAL-TS-02**: Audit all 131 files for implicit `any` <!-- id: g2 -->

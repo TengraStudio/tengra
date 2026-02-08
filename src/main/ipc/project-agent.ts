@@ -67,6 +67,10 @@ export function registerProjectAgentIpc(
         return await projectAgentService.getTaskHistory(projectId);
     });
 
+    ipcMain.handle('project:get-checkpoints', async (_, taskId: string) => {
+        return await projectAgentService.getCheckpoints(taskId);
+    });
+
     ipcMain.handle('project:get-profiles', async () => {
         return await projectAgentService.getProfiles();
     });

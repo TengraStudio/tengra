@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-02-08T12:38:21.012Z",
+  "generatedAt": "2026-02-08T12:45:26.380Z",
   "globalTs": {
     "strictEnabled": true,
     "typeCheckExitCode": 0,
     "implicitAnyDiagnostics": 0
   },
   "nasa": {
-    "maxFunctionLengthViolations": 0,
-    "complexityViolations": 0,
+    "maxFunctionLengthViolations": 6,
+    "complexityViolations": 39,
     "fsIpcReturnCheckViolations": 0
   },
   "logging": {
     "consoleLogFindings": [],
-    "noConsoleRuleFindings": 0
+    "noConsoleRuleFindings": 3
   },
   "memory": {
     "potentialLeakRiskFiles": [
@@ -31,7 +31,7 @@
     "totalIpcFiles": 50
   },
   "ipc": {
-    "totalIpcHandles": 374,
+    "totalIpcHandles": 375,
     "wrappedIpcHandles": 139,
     "wrapperCoveragePercent": 37
   },
@@ -39,7 +39,7 @@
     "indexStatementCount": 27
   },
   "tooling": {
-    "eslintExitCode": 1,
-    "eslintParseableFiles": 0
+    "eslintExitCode": 0,
+    "eslintParseableFiles": 701
   }
 }

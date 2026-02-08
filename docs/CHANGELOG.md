@@ -1,5 +1,47 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 25): 🚀 Performance Optimizations & Terminal System V2 Planning
+
+**Status**: ✅ COMPLETED (Planning Phase)
+
+**Summary**: Implemented UZAY-level (space-grade) performance optimizations for build system, created comprehensive Performance Monitor Service, and designed next-generation terminal system architecture.
+
+### 🚀 Build Performance Optimizations
+- [x] **Aggressive Code Splitting**: 12 separate chunks (react-core, monaco, react-flow, ui-libs, syntax, katex, markdown, virtualization, icons, charts, vendor)
+- [x] **Terser Minification**: 2-pass optimization, console.log removal, comment stripping
+- [x] **Tree Shaking**: Preset recommended, no side effects on external modules
+- [x] **Build Cleanup**: Auto-delete old dist files on each build (emptyOutDir)
+- [x] **Cache Optimization**: Hashed file names for browser caching
+- [x] **Main Process Minification**: esbuild with code splitting (mcp-servers, services, ipc-handlers)
+- [x] **Preload Minification**: esbuild optimization
+
+### ⚡ Performance Monitor Service
+- [x] **Real-time Monitoring**: Memory (30s intervals), CPU, IPC latency, DB queries, LLM responses
+- [x] **Startup Metrics**: Track appReady, windowReady, servicesInit, databaseInit
+- [x] **Space-Grade Alerts**: Memory >1GB, IPC >100ms, DB query >50ms, CPU >80%
+- [x] **Resource Tracking**: Garbage collection support, file handle counting
+- [x] **Performance API**: `measure()`, `recordDuration()`, `getSummary()`, `getResourceUsage()`
+
+### 🖥️ Terminal System V2 Architecture
+- [x] **33 Terminal Tasks**: 5 phases covering infrastructure, backends, features, UI, performance
+- [x] **Backend Integrations**: Ghostty, Alacritty, Warp, WezTerm, Windows Terminal, Kitty, xterm.js fallback
+- [x] **Advanced Features**: Split panes, AI suggestions, semantic parsing, recording, remote terminals
+- [x] **Architecture Document**: Comprehensive design spec (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
+
+### 📊 Build Results
+- **Renderer Build**: 3m 26s
+- **Main Process**: 12.27s
+- **Preload**: 67ms
+- **Monaco Editor**: 3.75MB (lazy loaded)
+- **Largest Chunks**: Reduced via intelligent splitting
+
+### 📝 Files Created/Modified
+- `src/main/services/performance/performance-monitor.service.ts` - Space-grade monitoring
+- `docs/architecture/TERMINAL_SYSTEM_V2.md` - Terminal system design
+- `docs/TODO.md` - Added 33 terminal system tasks
+- `vite.config.ts` - Comprehensive build optimizations
+- `package.json` - Added terser, @types/uuid
+
 ## 2026-02-08 (Update 24): ✨ Visual & UX Excellence - Animations & Polish
 
 **Status**: ✅ COMPLETED
