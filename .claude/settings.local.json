@@ -39,7 +39,11 @@
       "Bash(copy \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\vendor\\\\cliproxyapi\\\\cmd\\\\cliproxy-embed\\\\cliproxy-embed.exe\" \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\cliproxy-embed.exe\" /Y)",
       "Bash(cmd /c:*)",
       "Bash(Get-Item \"c:\\\\Users\\\\agnes\\\\Desktop\\\\projects\\\\orbit\\\\resources\\\\bin\\\\cliproxy-embed.exe\")",
-      "Bash(Select-Object Name, Length, LastWriteTime)"
+      "Bash(Select-Object Name, Length, LastWriteTime)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:registry.modelcontextprotocol.io)",
+      "WebFetch(domain:glama.ai)"
     ]
   },
   "mcpServers": {

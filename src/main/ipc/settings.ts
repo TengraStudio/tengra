@@ -7,7 +7,21 @@ import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { app, ipcMain, IpcMainInvokeEvent } from 'electron';
+
+function syncStartupBehavior(settings: AppSettings): void {
+    if (!app.isPackaged || settings.window?.startOnStartup === undefined) {
+        return;
+    }
+
+    const shouldStartHidden = settings.window.workAtBackground ?? false;
+    app.setLoginItemSettings({
+        openAtLogin: settings.window.startOnStartup,
+        openAsHidden: shouldStartHidden,
+        path: process.execPath,
+        args: shouldStartHidden ? ['--hidden'] : []
+    });
+}
 
 export function registerSettingsIpc(options: {
     settingsService: SettingsService
@@ -90,6 +104,7 @@ export function registerSettingsIpc(options: {
         const oldSettings = settingsService.getSettings();
         // Await the save to get the final merged settings (with preserved secrets)
         const finalSettings = await settingsService.saveSettings(newSettings);
+        syncStartupBehavior(finalSettings);
 
         // Audit log for sensitive settings changes
         await auditSensitiveChanges(newSettings, oldSettings, auditLogService);

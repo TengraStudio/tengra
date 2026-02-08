@@ -64,7 +64,7 @@ export class TokenService extends BaseService {
         // Start the native service process (wait for it to be ensuringly ready)
         await this.system.processManager.startService({
             name: 'token-service',
-            executable: 'Tandem-token-service',
+            executable: 'tandem-token-service',
             persistent: true // Keep running in background
         });
 

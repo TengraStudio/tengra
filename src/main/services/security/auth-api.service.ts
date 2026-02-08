@@ -132,8 +132,6 @@ export class AuthAPIService extends BaseService {
                 return;
             }
 
-            appLogger.info('AuthAPIService', `Received update for account ${accountId}`);
-
             const tokenData = this.mapToTokenData(data);
             const provider = this.normalizeProviderName(accountId.split('-')[0]);
 

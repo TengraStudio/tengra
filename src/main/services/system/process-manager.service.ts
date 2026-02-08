@@ -106,6 +106,11 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         const binPath = this.getBinaryPath(options.executable);
         appLogger.info('ProcessManager', `Starting service ${options.name} from ${binPath}`);
 
+        if (!fs.existsSync(binPath)) {
+            appLogger.error('ProcessManager', `Binary not found for ${options.name}: ${binPath}`);
+            return;
+        }
+
         try {
             const child = spawn(binPath, options.args ?? [], {
                 stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin to prevent hanging
@@ -121,6 +126,12 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
             child.stderr.on('data', (data: Buffer) => {
                 appLogger.error('ProcessManager', `[${options.name}] stderr: ${data.toString()}`);
+            });
+
+            child.on('error', (error) => {
+                appLogger.error('ProcessManager', `[${options.name}] process error: ${getErrorMessage(error)}`);
+                this.processes.delete(options.name);
+                this.servicePorts.delete(options.name);
             });
 
             child.on('close', (code) => {
@@ -288,11 +299,23 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
     private getBinaryPath(executable: string): string {
         const binName = executable.endsWith('.exe') ? executable : `${executable}.exe`;
-        if (this.isDev) {
-            return path.join(process.cwd(), 'resources', 'bin', binName);
-        } else {
-            return path.join(process.resourcesPath, 'bin', binName);
+        const candidates = this.isDev
+            ? [
+                path.join(process.cwd(), 'resources', 'bin', binName),
+                path.join(process.cwd(), 'resources', 'resources', 'bin', binName)
+            ]
+            : [
+                path.join(process.resourcesPath, 'bin', binName),
+                path.join(process.resourcesPath, 'resources', 'bin', binName)
+            ];
+
+        const existing = candidates.find(candidate => fs.existsSync(candidate));
+        if (existing) {
+            return existing;
         }
+
+        appLogger.warn('ProcessManager', `Binary not found in expected locations for ${binName}. Tried: ${candidates.join(', ')}`);
+        return candidates[0];
     }
 }
 

@@ -1,5 +1,37 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 22): 🔒 MCP Security Hardening
+
+**Status**: ✅ COMPLETED
+
+**Summary**: Implemented comprehensive security improvements across all 13 MCP (Model Context Protocol) servers covering 34 services and 80+ actions. Added validation framework, rate limiting, audit logging, encryption, path traversal protection, SSRF prevention, and command injection protection.
+
+### 🔐 Security Frameworks
+- [x] **Validation Framework**: 6 validators (string, number, path, URL, git command, SSH command)
+- [x] **Rate Limiting**: Token bucket algorithm with 13 MCP-specific rate limits
+- [x] **Audit Logging**: Comprehensive logging of all MCP operations with timing and error tracking
+- [x] **Encryption at Rest**: Memory storage encrypted using Electron safeStorage
+
+### 🛡️ Server-Specific Hardening
+- [x] **Git Server**: Command injection prevention, timeout protection (30s)
+- [x] **Network Server**: SSRF protection via URL validation and IP filtering
+- [x] **Filesystem Server**: Path traversal protection on all 26 operations, symlink detection
+- [x] **SSH Server**: Command sanitization, host validation
+- [x] **Database Server**: Pagination (1-100 limit), size limits (10KB embeddings, 1MB base64)
+- [x] **Intelligence Server**: Memory recall bounds (1-100), timeout protection (2min/1min)
+- [x] **Project Server**: Scan path validation against allowedFileRoots
+
+### 📝 Files Modified (20 Files)
+- `src/main/mcp/server-utils.ts` - Validation framework, audit logging integration
+- `src/main/services/security/rate-limit.service.ts` - 13 MCP rate limits
+- `src/main/mcp/servers/*.ts` - All 12 MCP server files hardened
+- `src/main/services/external/utility.service.ts` - Memory encryption
+- `src/main/startup/services.ts` - DI configuration
+- `.claude/projects/.../memory/MEMORY.md` - Comprehensive documentation
+
+### ✅ All 20 Security Tasks Completed
+1. Validation framework 2. Git injection fixes 3. Network SSRF 4. SSH hardening 5. Internet URL validation 6. UI clipboard 7. LLM quota 8. Rate limiting 9. Audit logging 10. Memory encryption 11. DB pagination 12. DB size limits 13. FS path traversal 14. FS symlinks 15. FS size limits 16. Docker env 17. GitHub auth 18. Clipboard consent 19. Memory bounds 20. Idea timeouts
+
 ## 2026-02-06 (Update 21): 💾 Agent Canvas Persistence
 
 **Status**: ✅ COMPLETED

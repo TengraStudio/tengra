@@ -64,13 +64,13 @@ export function useProjectManager() {
                         ? [{ id: `local-${project.id}`, name: 'Local', type: 'local' as const, rootPath: project.path }]
                         : []
             }));
-            
+
             setState(prev => {
                 // Sync selectedProject if it exists
                 const updatedSelected = prev.selectedProject
-                    ? loadedProjects.find(p => p.id === prev.selectedProject!.id) ?? prev.selectedProject
+                    ? loadedProjects.find(p => p.id === prev.selectedProject?.id) ?? prev.selectedProject
                     : null;
-                
+
                 return {
                     ...prev,
                     projects: loadedProjects,
@@ -92,7 +92,7 @@ export function useProjectManager() {
     }, [loadFolders]);
 
     const handleDeleteFolder = useCallback(async (id: string, onFolderDeleted?: () => void) => {
-        console.warn('Klasörü silmek istediğinize emin misiniz?');
+        console.warn('Are you sure you want to delete this folder?');
         try {
             await window.electron.db.deleteFolder(id);
             await loadFolders();
@@ -128,27 +128,27 @@ export function useProjectManager() {
 
     // Destructure state for return object
     const { projects, folders, selectedProject, terminalTabs, activeTerminalId } = state;
-    
+
     // Setters that update specific parts of state
     const setProjects = useCallback((projects: Project[]) => {
         setState(prev => ({ ...prev, projects }));
     }, []);
-    
+
     const setFolders = useCallback((folders: Folder[]) => {
         setState(prev => ({ ...prev, folders }));
     }, []);
-    
+
     const setSelectedProject = useCallback((selectedProject: Project | null) => {
         setState(prev => ({ ...prev, selectedProject }));
     }, []);
-    
+
     const setTerminalTabs = useCallback((tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => {
         setState(prev => ({
             ...prev,
             terminalTabs: typeof tabs === 'function' ? tabs(prev.terminalTabs) : tabs
         }));
     }, []);
-    
+
     const setActiveTerminalId = useCallback((id: string | null) => {
         setState(prev => ({ ...prev, activeTerminalId: id }));
     }, []);

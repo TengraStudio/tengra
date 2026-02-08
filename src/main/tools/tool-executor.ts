@@ -63,6 +63,13 @@ export class ToolExecutor {
 
     async getToolDefinitions() {
         const { toolDefinitions } = await import('./tool-definitions');
+
+        // Add MCP tools if available
+        if (this.options.mcp) {
+            const mcpTools = await this.options.mcp.getToolDefinitions();
+            return [...toolDefinitions, ...mcpTools];
+        }
+
         return toolDefinitions;
     }
 

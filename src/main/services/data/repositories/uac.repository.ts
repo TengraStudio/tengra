@@ -167,6 +167,12 @@ export class UacRepository {
         ).get<UacTaskRecord>(projectPath);
     }
 
+    async getTasks(projectPath: string, limit: number = 50): Promise<UacTaskRecord[]> {
+        return this.db.prepare(
+            `SELECT * FROM uac_tasks WHERE project_path = ? ORDER BY created_at DESC LIMIT ?`
+        ).all<UacTaskRecord>(projectPath, limit);
+    }
+
     /**
      * Get any active task across all projects for app restart resumption
      * Returns the most recently updated active task from any project

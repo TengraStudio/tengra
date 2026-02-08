@@ -1,6 +1,7 @@
-import { buildActions, McpDeps } from '@main/mcp/server-utils';
+import { buildActions, McpDeps, validatePath, validateString, validateUrl } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 import { JsonObject } from '@shared/types/common';
+import * as os from 'os';
 
 export function buildFilesystemServers(deps: McpDeps): McpService[] {
     return [
@@ -11,73 +12,137 @@ export function buildFilesystemServers(deps: McpDeps): McpService[] {
                 ...buildBasicFileActions(deps),
                 ...buildLineEditActions(deps),
                 ...buildFileManagementActions(deps)
-            ])
+            ], 'filesystem', deps.auditLog)
         }
     ];
 }
 
 function buildBasicFileActions(deps: McpDeps) {
+    // Get allowed file roots from settings, default to user home directory
+    const getAllowedRoots = (): string[] => {
+        const settings = deps.settings.getSettings();
+        const allowedRoots = settings.allowedFileRoots;
+        // Validate and convert to string array
+        if (Array.isArray(allowedRoots) && allowedRoots.length > 0) {
+            return allowedRoots.filter((r): r is string => typeof r === 'string');
+        }
+        // Fallback to home directory if no roots configured
+        return [os.homedir()];
+    };
+
+    // Validate path against allowed roots
+    const validateFilePath = (inputPath: string): string => {
+        const validatedInput = validateString(inputPath, 2000);
+        const allowedRoots = getAllowedRoots();
+
+        // Try to validate against each allowed root
+        for (const root of allowedRoots) {
+            try {
+                return validatePath(root, validatedInput);
+            } catch {
+                // Continue to next root
+            }
+        }
+
+        // If no root matched, throw error
+        throw new Error(`Path not allowed. Must be within one of: ${allowedRoots.join(', ')}`);
+    };
+
     return [
         {
             name: 'read',
-            description: 'Read a UTF-8 file content',
-            handler: (args: JsonObject) => deps.filesystem.readFile(args.path as string)
+            description: 'Read a UTF-8 file content (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.readFile(validateFilePath(args.path as string))
         },
         {
             name: 'write',
-            description: 'Write text to file (creates directories if needed)',
-            handler: (args: JsonObject) => deps.filesystem.writeFile(args.path as string, args.content as string)
+            description: 'Write text to file (creates directories if needed, path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.writeFile(
+                validateFilePath(args.path as string),
+                validateString(args.content, 10485760) // 10MB max content
+            )
         },
         {
             name: 'list',
-            description: 'List directory entries with metadata',
-            handler: (args: JsonObject) => deps.filesystem.listDirectory(args.path as string)
+            description: 'List directory entries with metadata (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.listDirectory(validateFilePath(args.path as string))
         },
         {
             name: 'exists',
-            description: 'Check if file or directory exists',
-            handler: (args: JsonObject) => deps.filesystem.fileExists(args.path as string)
+            description: 'Check if file or directory exists (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.fileExists(validateFilePath(args.path as string))
         },
         {
             name: 'info',
-            description: 'Get detailed file/directory information',
-            handler: (args: JsonObject) => deps.filesystem.getFileInfo(args.path as string)
+            description: 'Get detailed file/directory information (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.getFileInfo(validateFilePath(args.path as string))
         },
         {
             name: 'mkdir',
-            description: 'Create a directory (recursive)',
-            handler: (args: JsonObject) => deps.filesystem.createDirectory(args.path as string)
+            description: 'Create a directory (recursive, path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.createDirectory(validateFilePath(args.path as string))
         },
         {
             name: 'delete',
-            description: 'Delete a file',
-            handler: (args: JsonObject) => deps.filesystem.deleteFile(args.path as string)
+            description: 'Delete a file (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.deleteFile(validateFilePath(args.path as string))
         },
         {
             name: 'deleteDir',
-            description: 'Delete a directory recursively',
-            handler: (args: JsonObject) => deps.filesystem.deleteDirectory(args.path as string)
+            description: 'Delete a directory recursively (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.deleteDirectory(validateFilePath(args.path as string))
         },
         {
             name: 'copy',
-            description: 'Copy a file',
-            handler: (args: JsonObject) => deps.filesystem.copyFile(args.source as string, args.destination as string)
+            description: 'Copy a file (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.copyFile(
+                validateFilePath(args.source as string),
+                validateFilePath(args.destination as string)
+            )
         },
         {
             name: 'move',
-            description: 'Move/rename a file or directory',
-            handler: (args: JsonObject) => deps.filesystem.moveFile(args.source as string, args.destination as string)
+            description: 'Move/rename a file or directory (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.moveFile(
+                validateFilePath(args.source as string),
+                validateFilePath(args.destination as string)
+            )
         }
     ];
 }
 
 function buildLineEditActions(deps: McpDeps) {
+    // Reuse the same path validation logic
+    const getAllowedRoots = (): string[] => {
+        const settings = deps.settings.getSettings();
+        const allowedRoots = settings.allowedFileRoots;
+        // Validate and convert to string array
+        if (Array.isArray(allowedRoots) && allowedRoots.length > 0) {
+            return allowedRoots.filter((r): r is string => typeof r === 'string');
+        }
+        // Fallback to home directory if no roots configured
+        return [os.homedir()];
+    };
+
+    const validateFilePath = (inputPath: string): string => {
+        const validatedInput = validateString(inputPath, 2000);
+        const allowedRoots = getAllowedRoots();
+        for (const root of allowedRoots) {
+            try {
+                return validatePath(root, validatedInput);
+            } catch {
+                // Continue to next root
+            }
+        }
+        throw new Error(`Path not allowed. Must be within one of: ${allowedRoots.join(', ')}`);
+    };
+
     return [
         {
             name: 'readLines',
-            description: 'Read specific lines from a file',
+            description: 'Read specific lines from a file (path traversal protected)',
             handler: async (args: JsonObject) => {
-                const path = args.path as string;
+                const path = validateFilePath(args.path as string);
                 const startLine = args.startLine as number;
                 const endLine = args.endLine as number;
                 const result = await deps.filesystem.readFile(path);
@@ -100,9 +165,9 @@ function buildLineEditActions(deps: McpDeps) {
         },
         {
             name: 'replaceLine',
-            description: 'Replace a single line in a file',
+            description: 'Replace a single line in a file (path traversal protected)',
             handler: async (args: JsonObject) => {
-                const path = args.path as string;
+                const path = validateFilePath(args.path as string);
                 const lineNumber = args.lineNumber as number;
                 const content = args.content as string;
                 const result = await deps.filesystem.readFile(path);
@@ -120,9 +185,9 @@ function buildLineEditActions(deps: McpDeps) {
         },
         {
             name: 'insertLine',
-            description: 'Insert a new line at specific position',
+            description: 'Insert a new line at specific position (path traversal protected)',
             handler: async (args: JsonObject) => {
-                const path = args.path as string;
+                const path = validateFilePath(args.path as string);
                 const lineNumber = args.lineNumber as number;
                 const content = args.content as string;
                 const result = await deps.filesystem.readFile(path);
@@ -140,9 +205,9 @@ function buildLineEditActions(deps: McpDeps) {
         },
         {
             name: 'deleteLine',
-            description: 'Delete a specific line from a file',
+            description: 'Delete a specific line from a file (path traversal protected)',
             handler: async (args: JsonObject) => {
-                const path = args.path as string;
+                const path = validateFilePath(args.path as string);
                 const lineNumber = args.lineNumber as number;
                 const result = await deps.filesystem.readFile(path);
                 if (!result.success || !result.data) {
@@ -159,8 +224,8 @@ function buildLineEditActions(deps: McpDeps) {
         },
         {
             name: 'applyEdits',
-            description: 'Apply multiple line edits to a file atomically',
-            handler: (args: JsonObject) => deps.filesystem.applyEdits(args.path as string, args.edits as Array<{
+            description: 'Apply multiple line edits to a file atomically (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.applyEdits(validateFilePath(args.path as string), args.edits as Array<{
                 startLine: number;
                 endLine: number;
                 replacement: string;
@@ -168,9 +233,9 @@ function buildLineEditActions(deps: McpDeps) {
         },
         {
             name: 'searchInFile',
-            description: 'Search for text in a file and return matching line numbers',
+            description: 'Search for text in a file and return matching line numbers (path traversal protected)',
             handler: async (args: JsonObject) => {
-                const path = args.path as string;
+                const path = validateFilePath(args.path as string);
                 const pattern = args.pattern as string;
                 const caseSensitive = args.caseSensitive as boolean;
                 const result = await deps.filesystem.readFile(path);
@@ -201,29 +266,63 @@ function buildLineEditActions(deps: McpDeps) {
 }
 
 function buildFileManagementActions(deps: McpDeps) {
+    // Reuse the same path validation logic
+    const getAllowedRoots = (): string[] => {
+        const settings = deps.settings.getSettings();
+        const allowedRoots = settings.allowedFileRoots;
+        // Validate and convert to string array
+        if (Array.isArray(allowedRoots) && allowedRoots.length > 0) {
+            return allowedRoots.filter((r): r is string => typeof r === 'string');
+        }
+        // Fallback to home directory if no roots configured
+        return [os.homedir()];
+    };
+
+    const validateFilePath = (inputPath: string): string => {
+        const validatedInput = validateString(inputPath, 2000);
+        const allowedRoots = getAllowedRoots();
+        for (const root of allowedRoots) {
+            try {
+                return validatePath(root, validatedInput);
+            } catch {
+                // Continue to next root
+            }
+        }
+        throw new Error(`Path not allowed. Must be within one of: ${allowedRoots.join(', ')}`);
+    };
+
     return [
         {
             name: 'unzip',
-            description: 'Extract a zip archive',
-            handler: (args: JsonObject) => deps.filesystem.unzip(args.zipPath as string, args.destPath as string)
+            description: 'Extract a zip archive (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.unzip(
+                validateFilePath(args.zipPath as string),
+                validateFilePath(args.destPath as string)
+            )
         },
         {
             name: 'download',
-            description: 'Download a file from URL',
-            handler: (args: JsonObject) => deps.filesystem.downloadFile(args.url as string, args.destPath as string)
+            description: 'Download a file from URL (path traversal protected, URL validated)',
+            handler: (args: JsonObject) => deps.filesystem.downloadFile(
+                validateUrl(args.url),
+                validateFilePath(args.destPath as string)
+            )
         },
         {
             name: 'getHash',
-            description: 'Calculate file hash (md5, sha1, sha256)',
+            description: 'Calculate file hash (md5, sha1, sha256) (path traversal protected)',
             handler: (args: JsonObject) => deps.filesystem.getFileHash(
-                args.path as string,
+                validateFilePath(args.path as string),
                 args.algorithm as 'md5' | 'sha1' | 'sha256'
             )
         },
         {
             name: 'searchFiles',
-            description: 'Search for files by name pattern',
-            handler: (args: JsonObject) => deps.filesystem.searchFiles(args.rootPath as string, args.pattern as string)
+            description: 'Search for files by name pattern (path traversal protected)',
+            handler: (args: JsonObject) => deps.filesystem.searchFiles(
+                validateFilePath(args.rootPath as string),
+                validateString(args.pattern, 500)
+            )
         }
     ];
 }

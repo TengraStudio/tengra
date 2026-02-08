@@ -1,7 +1,7 @@
 import { Activity, AlertTriangle, ExternalLink } from 'lucide-react';
 import React from 'react';
 
-import antigravityLogo from '@/assets/antigravity.svg';
+import logo from '@/assets/logo.png';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface AboutTabProps {
@@ -13,7 +13,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
     return (
         <div className="space-y-6">
             <div className="bg-card p-8 rounded-xl border border-border flex flex-col items-center text-center space-y-6">
-                <div className="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center mb-2"><img src={antigravityLogo} alt={t('app.name')} className="w-12 h-12 opacity-80" /></div>
+                <div className="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center mb-2"><img src={logo} alt={t('app.name')} className="w-12 h-12 opacity-80" /></div>
                 <div>
                     <h2 className="text-2xl font-black text-foreground tracking-tight">{t('app.name')}</h2>
                     <div className="flex items-center justify-center gap-2 mt-1">

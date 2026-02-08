@@ -60,3 +60,14 @@ export interface OrchestratorState extends ProjectState {
     activeAgentId?: string;
     assignments: Record<string, string>; // stepId -> agentProfileId
 }
+
+export interface AgentTaskHistoryItem {
+    id: string;
+    description: string;
+    provider: string;
+    model: string;
+    status: 'idle' | 'planning' | 'waiting_for_approval' | 'running' | 'paused' | 'failed' | 'completed' | 'error';
+    createdAt: number;
+    updatedAt: number;
+    latestCheckpointId?: string;
+}

@@ -51,7 +51,13 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
 }) => {
     const {
         status, setStatus, isLoading, setIsLoading, selectedTaskId, setSelectedTaskId, activityLogs, setActivityLogs,
-        toolExecutions, setToolExecutions, currentPlan, setCurrentPlan, startTask, pauseTask, stopTask, saveSnapshot, resumeTask, approvePlan, rejectPlan
+        toolExecutions, setToolExecutions, currentPlan, setCurrentPlan, startTask, pauseTask,
+        stopTask,
+        saveSnapshot,
+        resumeTask,
+        resumeFromCheckpoint,
+        approvePlan,
+        rejectPlan
     } = useAgentTask(project);
     const { loadTaskHistory, deleteTask, groupedTasks } = useAgentHistory(project);
     const {
@@ -99,6 +105,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
                     onSelectTask={setSelectedTaskId}
                     onDeleteTask={handleDeleteTask}
                     onResumeTask={(id) => { void resumeTask(id); }}
+                    onResumeCheckpoint={(id) => { void resumeFromCheckpoint(id); }}
                     onCloseSidebar={() => setShowHistory(false)}
                     onNewTask={resetToIdle}
                     t={t}

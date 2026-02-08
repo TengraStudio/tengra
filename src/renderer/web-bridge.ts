@@ -374,6 +374,18 @@ export const webElectronMock: ElectronAPI = {
         removeResultListener: () => { }
     },
 
+    mcpMarketplace: {
+        list: async () => ({ success: true, servers: [] }),
+        search: async (_query: string) => ({ success: true, servers: [] }),
+        filter: async (_category: string) => ({ success: true, servers: [] }),
+        categories: async () => ({ success: true, categories: [] }),
+        install: async (_serverId: string) => ({ success: true }),
+        uninstall: async (_serverId: string) => ({ success: true }),
+        installed: async () => ({ success: true, servers: [] }),
+        toggle: async (_serverId: string, _enabled: boolean) => ({ success: true }),
+        refresh: async () => ({ success: true })
+    },
+
     proxyEmbed: {
         start: async (_options?: Record<string, IpcValue>) => ({}),
         stop: async () => ({}),

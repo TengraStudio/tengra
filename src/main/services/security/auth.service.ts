@@ -392,8 +392,7 @@ export class AuthService extends BaseService {
         }
     }
 
-    private emitLinkEvents(provider: string, account: LinkedAccount, tokenData: TokenData): void {
-        appLogger.info('AuthService', `Linked account for ${provider}: ${tokenData.email ?? account.id}`);
+    private emitLinkEvents(provider: string, account: LinkedAccount, _tokenData: TokenData): void {
         this.eventBus.emit('account:linked', { accountId: account.id, provider });
         this.eventBus.emit('account:updated', { accountId: account.id, provider });
     }

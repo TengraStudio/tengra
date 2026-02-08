@@ -63,7 +63,7 @@ class EventBus {
 
     constructor() {
         // Increase max listeners to avoid warnings
-        this.emitter.setMaxListeners(50);
+        this.emitter.setMaxListeners(60);
     }
 
     /**

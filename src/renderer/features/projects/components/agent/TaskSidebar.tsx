@@ -21,6 +21,7 @@ export interface TaskHistoryItem {
         toolCalls: number;
         estimatedCost: number;
     };
+    latestCheckpointId?: string;
 }
 
 interface TaskSidebarProps {
@@ -31,6 +32,7 @@ interface TaskSidebarProps {
     onSelectTask: (taskId: string) => void;
     onDeleteTask: (taskId: string) => void;
     onResumeTask: (taskId: string) => void;
+    onResumeCheckpoint: (checkpointId: string) => void;
     onCloseSidebar: () => void;
     onNewTask: () => void;
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -42,6 +44,7 @@ const TaskItem = memo(({
     onSelect,
     onDelete,
     onResume,
+    onResumeCheckpoint,
     formatTime,
     t
 }: {
@@ -50,6 +53,7 @@ const TaskItem = memo(({
     onSelect: (id: string) => void;
     onDelete: (id: string) => void;
     onResume: (id: string) => void;
+    onResumeCheckpoint: (id: string) => void;
     formatTime: (date: Date) => string;
     t: (key: string, options?: Record<string, string | number>) => string;
 }) => {
@@ -83,9 +87,16 @@ const TaskItem = memo(({
                     </span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {task.status === 'paused' && (
+                    {(task.status === 'paused' || (task.latestCheckpointId && task.status !== 'running')) && (
                         <button
-                            onClick={(e) => { e.stopPropagation(); onResume(task.id); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (task.status === 'paused') {
+                                    onResume(task.id);
+                                } else if (task.latestCheckpointId) {
+                                    onResumeCheckpoint(task.latestCheckpointId);
+                                }
+                            }}
                             className="p-1 hover:bg-primary/20 rounded text-primary transition-colors"
                             title={t('common.resume')}
                         >
@@ -131,6 +142,7 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
     onSelectTask,
     onDeleteTask,
     onResumeTask,
+    onResumeCheckpoint,
     onCloseSidebar,
     onNewTask,
     t
@@ -231,6 +243,7 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
                                             onSelect={onSelectTask}
                                             onDelete={onDeleteTask}
                                             onResume={onResumeTask}
+                                            onResumeCheckpoint={onResumeCheckpoint}
                                             formatTime={formatRelativeTime}
                                             t={t}
                                         />
@@ -244,4 +257,3 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
         </div>
     );
 };
-

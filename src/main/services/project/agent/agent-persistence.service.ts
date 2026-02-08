@@ -93,6 +93,28 @@ interface ProviderHistoryRow {
 }
 
 /**
+ * Database row type for agent_checkpoints table
+ */
+interface CheckpointRow {
+    id: string;
+    task_id: string;
+    step_index: number;
+    state_snapshot: string;
+    created_at: string;
+}
+
+/**
+ * Checkpoint record
+ */
+export interface Checkpoint {
+    id: string;
+    taskId: string;
+    stepIndex: number;
+    state: AgentTaskState;
+    createdAt: Date;
+}
+
+/**
  * Persistence service for agent state
  * Provides transactional operations for zero-loss task resumption
  */
@@ -641,6 +663,132 @@ export class AgentPersistenceService extends BaseService {
     }
 
     // ========================================================================
+    // Checkpoint Operations
+    // ========================================================================
+
+    /**
+     * Save a checkpoint of the agent state
+     */
+    async saveCheckpoint(taskId: string, stepIndex: number, state: AgentTaskState): Promise<void> {
+        this.logDebug(`Saving checkpoint for task ${taskId} at step ${stepIndex}`);
+
+        try {
+            const id = randomUUID();
+            const db = this.databaseService.getDatabase();
+
+            await db.prepare(
+                `INSERT INTO agent_checkpoints (id, task_id, step_index, state_snapshot, created_at)
+                 VALUES (?, ?, ?, ?, ?)`
+            ).run(
+                id,
+                taskId,
+                stepIndex,
+                JSON.stringify(state),
+                new Date().toISOString()
+            );
+        } catch (error) {
+            this.logError(`Failed to save checkpoint for task ${taskId}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get all checkpoints for a task
+     */
+    async getCheckpoints(taskId: string): Promise<Checkpoint[]> {
+        try {
+            const db = this.databaseService.getDatabase();
+            const rows = await db.prepare(
+                `SELECT * FROM agent_checkpoints WHERE task_id = ? ORDER BY step_index ASC`
+            ).all(taskId) as CheckpointRow[];
+
+            return rows.map(row => ({
+                id: row.id,
+                taskId: row.task_id,
+                stepIndex: row.step_index,
+                state: JSON.parse(row.state_snapshot),
+                createdAt: new Date(row.created_at)
+            }));
+        } catch (error) {
+            this.logError(`Failed to get checkpoints for task ${taskId}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load a specific checkpoint
+     */
+    async loadCheckpoint(checkpointId: string): Promise<AgentTaskState | null> {
+        try {
+            const db = this.databaseService.getDatabase();
+            const row = await db.prepare(
+                `SELECT * FROM agent_checkpoints WHERE id = ?`
+            ).get(checkpointId) as CheckpointRow | undefined;
+
+            if (!row) {
+                return null;
+            }
+
+            const state = JSON.parse(row.state_snapshot) as AgentTaskState;
+            // Ensure dates are parsed back to Date objects if needed (JSON.parse leaves them as strings)
+            // The state will be used by the system which might expect Date objects.
+            // A full deserialization helper might be needed if AgentTaskState has Date objects.
+            // For now, we assume standard JSON parsing is sufficient or we need to map dates.
+            return this.hydrateStateDates(state);
+        } catch (error) {
+            this.logError(`Failed to load checkpoint ${checkpointId}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get the latest checkpoint for a task
+     */
+    async getLatestCheckpoint(taskId: string): Promise<AgentTaskState | null> {
+        try {
+            const db = this.databaseService.getDatabase();
+            const row = await db.prepare(
+                `SELECT * FROM agent_checkpoints WHERE task_id = ? ORDER BY step_index DESC LIMIT 1`
+            ).get(taskId) as CheckpointRow | undefined;
+
+            if (!row) {
+                return null;
+            }
+
+            return this.hydrateStateDates(JSON.parse(row.state_snapshot));
+        } catch (error) {
+            this.logError(`Failed to get latest checkpoint for task ${taskId}`, error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Helper to restore Date objects in state
+     */
+    private hydrateStateDates(state: AgentTaskState): AgentTaskState {
+        return {
+            ...state,
+            createdAt: new Date(state.createdAt),
+            updatedAt: new Date(state.updatedAt),
+            startedAt: state.startedAt ? new Date(state.startedAt) : null,
+            completedAt: state.completedAt ? new Date(state.completedAt) : null,
+            eventHistory: state.eventHistory.map(e => ({
+                ...e,
+                timestamp: new Date(e.timestamp)
+            })),
+            errors: state.errors.map(e => ({
+                ...e,
+                timestamp: new Date(e.timestamp)
+            })),
+            providerHistory: state.providerHistory.map(p => ({
+                ...p,
+                startedAt: new Date(p.startedAt),
+                endedAt: p.endedAt ? new Date(p.endedAt) : undefined
+            }))
+        };
+    }
+
+    // ========================================================================
     // Private Helpers
     // ========================================================================
 
@@ -668,18 +816,17 @@ export class AgentPersistenceService extends BaseService {
                 id TEXT PRIMARY KEY,
                 project_id TEXT NOT NULL,
                 description TEXT NOT NULL,
-                state TEXT NOT NULL,
                 current_step INTEGER DEFAULT 0,
                 total_steps INTEGER DEFAULT 0,
                 execution_plan TEXT,
-                context TEXT NOT NULL,
-                current_provider TEXT NOT NULL,
+                context TEXT,
+                current_provider TEXT,
                 recovery_attempts INTEGER DEFAULT 0,
                 total_tokens_used INTEGER DEFAULT 0,
                 total_llm_calls INTEGER DEFAULT 0,
                 total_tool_calls INTEGER DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 started_at TEXT,
                 completed_at TEXT,
                 result TEXT,
@@ -696,7 +843,7 @@ export class AgentPersistenceService extends BaseService {
                 tool_calls TEXT,
                 images TEXT,
                 sequence_number INTEGER NOT NULL,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                timestamp TEXT NOT NULL,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
         `);
@@ -710,70 +857,83 @@ export class AgentPersistenceService extends BaseService {
                 status TEXT NOT NULL,
                 result TEXT,
                 error TEXT,
-                started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                started_at TEXT NOT NULL,
                 completed_at TEXT,
                 duration_ms INTEGER,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
         `);
 
-        // Create agent_events table for activity log persistence
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_events (
                 id TEXT PRIMARY KEY,
                 task_id TEXT NOT NULL,
                 event_type TEXT NOT NULL,
                 payload TEXT,
-                state_before TEXT,
-                state_after TEXT,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                state_before TEXT NOT NULL,
+                state_after TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
         `);
 
-        // Create agent_provider_history table
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_provider_history (
                 id TEXT PRIMARY KEY,
                 task_id TEXT NOT NULL,
                 provider TEXT NOT NULL,
                 model TEXT NOT NULL,
-                attempt_number INTEGER,
-                status TEXT,
+                attempt_number INTEGER NOT NULL,
+                status TEXT NOT NULL,
                 error TEXT,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                timestamp TEXT NOT NULL,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
         `);
 
-        // Create agent_errors table
         await db.exec(`
             CREATE TABLE IF NOT EXISTS agent_errors (
                 id TEXT PRIMARY KEY,
                 task_id TEXT NOT NULL,
                 error_type TEXT NOT NULL,
-                message TEXT,
-                state_when_occurred TEXT,
-                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                message TEXT NOT NULL,
+                state_when_occurred TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
+            )
+        `);
+
+        // Checkpoint table
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS agent_checkpoints (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                step_index INTEGER NOT NULL,
+                state_snapshot TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (task_id) REFERENCES agent_tasks(id) ON DELETE CASCADE
             )
         `);
 
         // Create indexes
         await db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_agent_tasks_project ON agent_tasks(project_id)`
+            `CREATE INDEX IF NOT EXISTS idx_agent_checkpoints_task ON agent_checkpoints(task_id, step_index)`
         );
 
+        // Create indexes (existing ones)
         await db.exec(
             `CREATE INDEX IF NOT EXISTS idx_agent_messages_task ON agent_messages(task_id, sequence_number)`
         );
 
         await db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_agent_tools_task ON agent_tool_executions(task_id)`
+            `CREATE INDEX IF NOT EXISTS idx_agent_events_task ON agent_events(task_id, timestamp)`
+        );
+        await db.exec(
+            `CREATE INDEX IF NOT EXISTS idx_agent_tasks_project ON agent_tasks(project_id)`
         );
 
         await db.exec(
-            `CREATE INDEX IF NOT EXISTS idx_agent_events_task ON agent_events(task_id, timestamp)`
+            `CREATE INDEX IF NOT EXISTS idx_agent_tools_task ON agent_tool_executions(task_id)`
         );
 
         await this.tryAddColumn(db, 'agent_tasks', 'estimated_cost', 'ALTER TABLE agent_tasks ADD COLUMN estimated_cost REAL DEFAULT 0');
@@ -796,7 +956,7 @@ export class AgentPersistenceService extends BaseService {
                 this.logInfo(`Column ${tableName}.${columnName} already exists, skipping`);
                 return;
             }
-            this.logWarn(`Failed to add column ${tableName}.${columnName}: ${message}`);
+            this.logWarn(`Failed to add column ${tableName}.${columnName}: ${message} `);
         }
     }
 

@@ -32,38 +32,23 @@ export const useAgentHistory = (project: Project) => {
                 channel: 'project-agent:get-task-history',
                 args: [{ projectId: project.id }]
             }]);
-            const data = result.results[0].data as {
-                success: boolean; tasks?: Array<{
-                    taskId: string;
-                    description: string;
-                    state: string;
-                    currentStep: number;
-                    totalSteps: number;
-                    currentProvider: { provider: string; model: string };
-                    createdAt: string;
-                    updatedAt: string;
-                    completedAt?: string;
-                    metrics: {
-                        tokensUsed: number;
-                        llmCalls: number;
-                        toolCalls: number;
-                        estimatedCost: number;
-                    };
-                }>
-            };
-            if (data.success && data.tasks) {
-                const history: TaskHistoryItem[] = data.tasks.map(task => ({
-                    id: task.taskId,
+            const tasks = result.results[0].data as import('@shared/types/project-agent').AgentTaskHistoryItem[];
+
+            if (tasks && Array.isArray(tasks)) {
+                const history: TaskHistoryItem[] = tasks.map(task => ({
+                    id: task.id,
                     description: task.description,
-                    provider: task.currentProvider.provider,
-                    model: task.currentProvider.model,
-                    status: mapStateToStatus(task.state),
+                    provider: task.provider || 'unknown',
+                    model: task.model || 'unknown',
+                    status: mapStateToStatus(task.status),
                     createdAt: new Date(task.createdAt),
                     updatedAt: new Date(task.updatedAt),
-                    completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
-                    planCount: task.totalSteps,
-                    currentPlan: task.currentStep,
-                    metrics: task.metrics
+                    // completedAt is not in AgentTaskHistoryItem yet, need to add or infer
+                    completedAt: ['completed', 'failed', 'error'].includes(task.status) ? new Date(task.updatedAt) : undefined,
+                    planCount: 0, // Not available in current history item
+                    currentPlan: 0, // Not available
+                    latestCheckpointId: task.latestCheckpointId
+                    // metrics deliberately omitted for now as they are not in history item
                 }));
                 setTaskHistory(history);
             }

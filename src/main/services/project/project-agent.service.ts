@@ -5,12 +5,14 @@ import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { ToolDefinition } from '@main/tools/tool-definitions';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
-import { Message, ToolCall } from '@shared/types/chat';
+import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
+import { AgentTaskState } from '@shared/types/agent-state';
 import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { createInitialAgentState } from './agent/agent-state-machine';
+import { AgentPersistenceService } from './agent/agent-persistence.service';
 
 
 
@@ -39,7 +41,8 @@ export class ProjectAgentService extends BaseService {
         private databaseService: DatabaseService,
         private llmService: LLMService,
         public eventBus: EventBusService,
-        private agentRegistryService: AgentRegistryService
+        private agentRegistryService: AgentRegistryService,
+        private agentPersistenceService: AgentPersistenceService
     ) {
         super('ProjectAgentService');
 
@@ -79,7 +82,9 @@ export class ProjectAgentService extends BaseService {
                             this.completeStep(index, status);
                         } else {
                             this.state.plan[index].status = status;
+                            // For non-completion updates, we might still want to checkpoint if meaningful
                         }
+
                         if (this.currentTaskId) {
                             await this.databaseService.uac.updateStepStatus(this.state.plan[index].id, status);
                         }
@@ -131,6 +136,60 @@ export class ProjectAgentService extends BaseService {
                 }
             })();
         });
+    }
+
+    async getTaskHistory(projectId: string): Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]> {
+        try {
+            const tasks = await this.databaseService.uac.getTasks(projectId);
+            const history: import('@shared/types/project-agent').AgentTaskHistoryItem[] = [];
+
+            for (const task of tasks) {
+                let latestCheckpointId: string | undefined;
+                let provider = 'unknown';
+                let model = 'unknown';
+
+                try {
+                    if (task.metadata) {
+                        const metadata = JSON.parse(task.metadata);
+                        if (metadata.model) {
+                            provider = metadata.model.provider || 'unknown';
+                            model = metadata.model.model || 'unknown';
+                        }
+                    }
+                } catch {
+                    // Ignore parse errors
+                }
+
+                // Only check for checkpoints if the task is not running
+                if (!['running', 'planning', 'waiting_for_approval'].includes(task.status)) {
+                    const checkpoint = await this.agentPersistenceService.getLatestCheckpoint(task.id);
+                    if (checkpoint) {
+                        // We need the checkpoint ID, but getLatestCheckpoint returns AgentTaskState which doesn't have the checkpoint ID directly
+                        // We need to fetch checkpoints list to get the ID
+                        const checkpoints = await this.agentPersistenceService.getCheckpoints(task.id);
+                        if (checkpoints.length > 0) {
+                            latestCheckpointId = checkpoints[checkpoints.length - 1].id;
+                        }
+                    }
+                }
+
+                history.push({
+                    id: task.id,
+                    description: task.description,
+                    provider,
+                    model,
+                    status: task.status as import('@shared/types/project-agent').AgentTaskHistoryItem['status'],
+                    createdAt: task.created_at,
+                    updatedAt: task.updated_at,
+                    latestCheckpointId
+                });
+            }
+
+            return history;
+        } catch (error) {
+            this.logError('Failed to get task history', error as Error);
+            return [];
+        }
     }
 
     async getStatus(): Promise<ProjectState> {
@@ -963,6 +1022,82 @@ Return a JSON object: { "steps": ["step 1", "step 2", ...] }`,
         // Record accumulated tokens
         step.tokens = { ...this.currentStepTokens };
         this.logInfo(`Step ${stepIndex} ${status}: ${this.currentStepTokens.prompt} prompt + ${this.currentStepTokens.completion} completion tokens`);
+
+        // Auto-save checkpoint
+        void (async () => {
+            try {
+                if (this.currentTaskId) {
+                    const taskState = this.mapToAgentTaskState();
+                    await this.agentPersistenceService.saveCheckpoint(this.currentTaskId, stepIndex, taskState);
+                }
+            } catch (error) {
+                this.logWarn(`Failed to auto-save checkpoint: ${error}`);
+            }
+        })();
+    }
+
+    private mapToAgentTaskState(): AgentTaskState {
+        if (!this.currentTaskId) {
+            throw new Error('No current task ID');
+        }
+
+        const baseState = createInitialAgentState(this.currentTaskId, this.state.config?.projectId || '');
+
+        // Map ProjectState to AgentTaskState
+        baseState.state = this.mapProjectStatusToAgentState(this.state.status);
+
+        baseState.description = this.state.config?.task || '';
+        baseState.currentStep = this.state.plan.findIndex(s => s.status === 'running') !== -1
+            ? this.state.plan.findIndex(s => s.status === 'running')
+            : this.state.plan.length; // or last completed
+
+        // If we are planning, step is 0
+        if (baseState.state === 'planning') {
+            baseState.currentStep = 0;
+        }
+
+        // Map plan
+        if (this.state.plan.length > 0) {
+            baseState.plan = {
+                steps: this.state.plan.map((s, i) => ({
+                    index: i,
+                    description: s.text,
+                    type: 'code_generation', // default
+                    status: this.mapProjectStepStatusToPlanStepStatus(s.status),
+                    toolsUsed: [],
+                })),
+                requiredTools: [],
+                dependencies: []
+            };
+            baseState.totalSteps = this.state.plan.length;
+        }
+
+        // Map history (recent)
+        baseState.messageHistory = this.state.history;
+
+        return baseState;
+    }
+
+    private mapProjectStatusToAgentState(status: ProjectState['status']): AgentTaskState['state'] {
+        switch (status) {
+            case 'waiting_for_approval': return 'planning'; // closest match
+            case 'running': return 'executing';
+            case 'idle': return 'idle';
+            case 'completed': return 'completed';
+            case 'failed': return 'failed';
+            case 'paused': return 'paused';
+            default: return 'idle';
+        }
+    }
+
+    private mapProjectStepStatusToPlanStepStatus(status: ProjectStep['status']): 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped' {
+        switch (status) {
+            case 'running': return 'in_progress';
+            case 'pending': return 'pending';
+            case 'completed': return 'completed';
+            case 'failed': return 'failed';
+            default: return 'pending';
+        }
     }
 
     private normalizePlan(plan: ProjectStep[] | string[]): ProjectStep[] {
@@ -1012,6 +1147,90 @@ Return a JSON object: { "steps": ["step 1", "step 2", ...] }`,
                 await this.databaseService.uac.updateStepStatus(current.id, current.status);
             }
         }
+    }
+
+
+    private mapFromAgentTaskState(taskState: AgentTaskState): ProjectState {
+        // Map Plan
+        const plan: ProjectStep[] = taskState.plan?.steps.map(s => ({
+            id: randomUUID(), // Generate new IDs as they are not preserved in AgentTaskState
+            text: s.description,
+            status: s.status === 'in_progress' ? 'running' : (s.status === 'skipped' ? 'pending' : s.status) as ProjectStep['status']
+        })) ?? [];
+
+        // Map Status
+        let status: ProjectState['status'] = 'idle';
+        if (taskState.state === 'executing') {
+            status = 'running';
+        } else if (taskState.state === 'planning') {
+            status = 'planning';
+        } else if (taskState.state === 'completed') {
+            status = 'completed';
+        } else if (taskState.state === 'failed') {
+            status = 'failed';
+        } else if (taskState.state === 'paused') {
+            status = 'paused';
+        } else {
+            status = 'idle';
+        }
+
+        return {
+            status,
+            currentTask: taskState.description,
+            plan,
+            history: taskState.messageHistory,
+            totalTokens: { prompt: 0, completion: 0 }, // Metrics might be lost or need mapping
+            config: {
+                task: taskState.description,
+                projectId: taskState.projectId,
+                agentProfileId: 'default', // Defaulting as it's not in AgentTaskState
+                model: undefined, // Defaulting
+            }
+        };
+    }
+
+    async resumeFromCheckpoint(checkpointId: string): Promise<void> {
+        this.logInfo(`Resuming from checkpoint ${checkpointId}`);
+        const checkpoint = await this.agentPersistenceService.loadCheckpoint(checkpointId);
+
+        if (!checkpoint) {
+            throw new Error(`Checkpoint ${checkpointId} not found`);
+        }
+
+        this.currentTaskId = checkpoint.taskId;
+        const newState = this.mapFromAgentTaskState(checkpoint);
+
+        // Restore config if possible from current state or DB (best effort)
+        if (this.state.config && this.state.config.projectId === newState.config!.projectId) {
+            newState.config = { ...this.state.config, ...newState.config };
+        }
+
+        this.state = newState;
+
+        // Sync with UAC Database
+        if (this.currentTaskId) {
+            await this.databaseService.uac.updateTaskStatus(this.currentTaskId, this.state.status);
+            // Re-create steps to ensure IDs match
+            await this.databaseService.uac.deleteStepsByTask(this.currentTaskId);
+            await this.databaseService.uac.createSteps(this.currentTaskId, this.state.plan);
+            // Note: Logs are not fully synced back to UAC logs table to avoid duplication/complexity, 
+            // but in-memory history is restored.
+        }
+
+        // Restart State Machine and Execution
+        this.stateMachine.setState(this.state.status);
+
+        if (this.state.status === 'running') {
+            this.shouldStop = false;
+            this.abortController = new AbortController();
+            void this.executionLoop();
+        } else if (this.state.status === 'planning') {
+            this.shouldStop = false;
+            this.abortController = new AbortController();
+            void this.planningLoop();
+        }
+
+        this.emitUpdate();
     }
 
     private async recoverInterruptedPlanningTask(taskId: string): Promise<void> {

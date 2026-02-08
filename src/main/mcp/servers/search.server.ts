@@ -15,7 +15,7 @@ export function buildSearchServers(deps: McpDeps): McpService[] {
                         numResults as number | undefined
                     )
                 }
-            ])
+            ], 'search', deps.auditLog)
         },
         {
             name: 'knowledge',
@@ -30,7 +30,7 @@ export function buildSearchServers(deps: McpDeps): McpService[] {
                         limit: limit as number | undefined
                     })
                 }
-            ])
+            ], 'knowledge', deps.auditLog)
         }
     ];
 }

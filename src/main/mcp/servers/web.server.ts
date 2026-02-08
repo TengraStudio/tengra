@@ -59,6 +59,6 @@ export function buildWebServer(deps: McpDeps): McpService {
                     return deps.web.fetchJson(url);
                 }
             }
-        ])
+        ], 'web', deps.auditLog)
     };
 }
