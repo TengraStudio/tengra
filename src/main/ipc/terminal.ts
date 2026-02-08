@@ -20,13 +20,16 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null, termi
 
     // Create session
     ipcMain.handle('terminal:create', createIpcHandler('terminal:create', async (_event: IpcMainInvokeEvent, options: {
-        id: string
+        id?: string
         shell?: string
         cwd?: string
         cols?: number
         rows?: number
     }) => {
-        appLogger.info('ipc', `terminal:create called for session ${options.id}`);
+        // Generate session ID if not provided
+        const sessionId = options.id || `term-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        appLogger.info('ipc', `terminal:create called for session ${sessionId}`);
 
         // Validate cols and rows
         if (options.cols !== undefined) {
@@ -42,15 +45,21 @@ export function registerTerminalIpc(getWindow: () => BrowserWindow | null, termi
 
         const success = terminalService.createSession({
             ...options,
+            id: sessionId,
             onData: (data: string) => {
-                getWindow()?.webContents.send('terminal:data', { id: options.id, data });
+                getWindow()?.webContents.send(`terminal:data:${sessionId}`, data);
             },
             onExit: (code: number) => {
-                getWindow()?.webContents.send('terminal:exit', { id: options.id, code });
+                getWindow()?.webContents.send('terminal:exit', { id: sessionId, code });
             }
         });
-        return { success };
+        return success ? sessionId : null;
     }));
+
+    // Close session (alias for kill)
+    ipcMain.handle('terminal:close', createSafeIpcHandler('terminal:close', async (_event: IpcMainInvokeEvent, sessionId: string) => {
+        return terminalService.kill(sessionId);
+    }, false));
 
     // Write to session
     ipcMain.handle('terminal:write', createSafeIpcHandler('terminal:write', async (_event: IpcMainInvokeEvent, sessionId: string, data: string) => {

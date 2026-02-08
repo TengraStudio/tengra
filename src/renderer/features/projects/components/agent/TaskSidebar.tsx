@@ -1,7 +1,9 @@
-import { Bot, CheckCircle, ChevronDown, ChevronRight, Clock, List, Loader2, Pause, Play, Plus, Trash2, X, XCircle } from 'lucide-react';
-import React, { memo, useMemo, useState } from 'react';
+import { Bot, CheckCircle, ChevronDown, ChevronRight, Clock, History, List, Loader2, Pause, Play, Plus, Trash2, X, XCircle } from 'lucide-react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
+import { CheckpointList } from './CheckpointList';
+import { CheckpointItem } from '@/features/projects/hooks/useAgentHistory';
 import { cn } from '@/lib/utils';
 
 export interface TaskHistoryItem {
@@ -33,6 +35,7 @@ interface TaskSidebarProps {
     onDeleteTask: (taskId: string) => void;
     onResumeTask: (taskId: string) => void;
     onResumeCheckpoint: (checkpointId: string) => void;
+    getCheckpoints: (taskId: string) => Promise<CheckpointItem[]>;
     onCloseSidebar: () => void;
     onNewTask: () => void;
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -45,6 +48,7 @@ const TaskItem = memo(({
     onDelete,
     onResume,
     onResumeCheckpoint,
+    getCheckpoints,
     formatTime,
     t
 }: {
@@ -54,9 +58,28 @@ const TaskItem = memo(({
     onDelete: (id: string) => void;
     onResume: (id: string) => void;
     onResumeCheckpoint: (id: string) => void;
+    getCheckpoints: (id: string) => Promise<CheckpointItem[]>;
     formatTime: (date: Date) => string;
     t: (key: string, options?: Record<string, string | number>) => string;
 }) => {
+    const [showCheckpoints, setShowCheckpoints] = useState(false);
+    const [checkpoints, setCheckpoints] = useState<CheckpointItem[]>([]);
+    const [isLoadingCheckpoints, setIsLoadingCheckpoints] = useState(false);
+
+    const toggleCheckpoints = useCallback(async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!showCheckpoints) {
+            setIsLoadingCheckpoints(true);
+            try {
+                const data = await getCheckpoints(task.id);
+                setCheckpoints(data);
+            } finally {
+                setIsLoadingCheckpoints(false);
+            }
+        }
+        setShowCheckpoints(!showCheckpoints);
+    }, [showCheckpoints, task.id, getCheckpoints]);
+
     const getStatusIcon = (s: TaskHistoryItem['status']) => {
         switch (s) {
             case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
@@ -86,32 +109,56 @@ const TaskItem = memo(({
                         {task.description}
                     </span>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {(task.status === 'paused' || (task.latestCheckpointId && task.status !== 'running')) && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (task.status === 'paused') {
-                                    onResume(task.id);
-                                } else if (task.latestCheckpointId) {
-                                    onResumeCheckpoint(task.latestCheckpointId);
-                                }
-                            }}
-                            className="p-1 hover:bg-primary/20 rounded text-primary transition-colors"
-                            title={t('common.resume')}
-                        >
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                        </button>
-                    )}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                        className="p-1 hover:bg-destructive/10 rounded text-destructive/70 hover:text-destructive transition-colors"
-                        title={t('common.delete')}
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                </div>
             </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <button
+                    onClick={(e) => { void toggleCheckpoints(e); }}
+                    className={cn(
+                        "p-1 hover:bg-primary/20 rounded transition-colors",
+                        showCheckpoints ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+                    )}
+                    title={t('agent.viewCheckpoints')}
+                >
+                    <History className="w-3.5 h-3.5" />
+                </button>
+                {(task.status === 'paused' || (task.latestCheckpointId && task.status !== 'running')) && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (task.status === 'paused') {
+                                onResume(task.id);
+                            } else if (task.latestCheckpointId) {
+                                onResumeCheckpoint(task.latestCheckpointId);
+                            }
+                        }}
+                        className="p-1 hover:bg-primary/20 rounded text-primary transition-colors"
+                        title={t('common.resume')}
+                    >
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                )}
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+                    className="p-1 hover:bg-destructive/10 rounded text-destructive/70 hover:text-destructive transition-colors"
+                    title={t('common.delete')}
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
+            {
+                showCheckpoints && (
+                    <div className="mt-2 mb-2 pl-2 border-l-2 border-primary/20 bg-background/30 rounded-r-md">
+                        <CheckpointList
+                            checkpoints={checkpoints}
+                            onResume={(id) => onResumeCheckpoint(id)}
+                            isLoading={isLoadingCheckpoints}
+                            formatTime={formatTime}
+                            t={t}
+                        />
+                    </div>
+                )
+            }
 
             <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
@@ -128,7 +175,7 @@ const TaskItem = memo(({
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 });
 
@@ -143,6 +190,7 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
     onDeleteTask,
     onResumeTask,
     onResumeCheckpoint,
+    getCheckpoints,
     onCloseSidebar,
     onNewTask,
     t
@@ -244,6 +292,7 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
                                             onDelete={onDeleteTask}
                                             onResume={onResumeTask}
                                             onResumeCheckpoint={onResumeCheckpoint}
+                                            getCheckpoints={getCheckpoints}
                                             formatTime={formatRelativeTime}
                                             t={t}
                                         />

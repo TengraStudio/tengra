@@ -59,7 +59,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
         approvePlan,
         rejectPlan
     } = useAgentTask(project);
-    const { loadTaskHistory, deleteTask, groupedTasks } = useAgentHistory(project);
+    const { loadTaskHistory, deleteTask, getCheckpoints, groupedTasks } = useAgentHistory(project);
     const {
         userPrompt, setUserPrompt, attachedFiles, setAttachedFiles, expandedProviders,
         isInterruptModalOpen, setIsInterruptModalOpen, interruptReason, handleStart, handleFileSelect, toggleProvider, handleModelSelectFromInterrupt
@@ -106,6 +106,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
                     onDeleteTask={handleDeleteTask}
                     onResumeTask={(id) => { void resumeTask(id); }}
                     onResumeCheckpoint={(id) => { void resumeFromCheckpoint(id); }}
+                    getCheckpoints={getCheckpoints}
                     onCloseSidebar={() => setShowHistory(false)}
                     onNewTask={resetToIdle}
                     t={t}

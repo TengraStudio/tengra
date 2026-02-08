@@ -67,12 +67,12 @@ const useTerminalSession = (tab: TerminalTab, containerRef: React.RefObject<HTML
                 return null;
             }
             if (!isMountedRef.current) {return null;}
-            const result = await window.electron.terminal.create({ id: tab.id, shell: tab.type, ...(projectPath ? { cwd: projectPath } : {}), cols, rows });
-            if (!result.success && isMountedRef.current) {
-                term.write(`\r\n\x1b[31m[ERROR] ${result.error}\x1b[0m\r\n`);
+            const sessionId = await window.electron.terminal.create({ id: tab.id, shell: tab.type, ...(projectPath ? { cwd: projectPath } : {}), cols, rows });
+            if (!sessionId && isMountedRef.current) {
+                term.write(`\r\n\x1b[31m[ERROR] Failed to create session\x1b[0m\r\n`);
                 return null;
             }
-            return result;
+            return sessionId;
         };
 
         const initSession = async () => {

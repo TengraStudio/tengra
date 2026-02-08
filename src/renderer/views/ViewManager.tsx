@@ -36,6 +36,7 @@ interface ViewManagerProps {
     setShowFileMenu: (show: boolean) => void
     templates: ChatTemplate[]
     onNavigateToProject?: (projectId: string) => void | Promise<void>
+    settingsSearchQuery?: string
 }
 
 /**

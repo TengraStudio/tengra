@@ -14,12 +14,13 @@ import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
+import { TerminalPanel } from '@renderer/features/terminal/components/TerminalPanel';
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts';
 import { useLanguage, useTranslation } from '@renderer/i18n';
 import { ViewManager } from '@renderer/views/ViewManager';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
@@ -46,6 +47,7 @@ export default function App() {
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
     const { projects, setSelectedProject } = useProject();
     const appState = useAppState();
+    const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
 
     const { showExtensionWarning, setShowExtensionWarning } = useAppInitialization();
 
@@ -149,7 +151,11 @@ export default function App() {
                             />
                         }
                         mainContent={<>
-                            <AppHeader currentView={appState.currentView} />
+                            <AppHeader
+                                currentView={appState.currentView}
+                                settingsSearchQuery={settingsSearchQuery}
+                                setSettingsSearchQuery={setSettingsSearchQuery}
+                            />
                             <DragDropWrapper isDragging={appState.isDragging} setIsDragging={appState.setIsDragging} onFileDrop={(file) => { void processFile(file); }}>
                                 <ViewManager
                                     currentView={appState.currentView} templates={chatTemplates}
@@ -157,12 +163,16 @@ export default function App() {
                                     textareaRef={appState.textareaRef} onScrollToBottom={handleScrollToBottom}
                                     showScrollButton={appState.showScrollButton} setShowScrollButton={appState.setShowScrollButton}
                                     showFileMenu={appState.showFileMenu} setShowFileMenu={appState.setShowFileMenu}
+                                    settingsSearchQuery={settingsSearchQuery}
                                 />
                                 <div id="modal-root" />
                             </DragDropWrapper>
                         </>}
                     />
                 </div>
+
+                {/* Terminal Panel - VSCode-style bottom panel */}
+                <TerminalPanel />
             </div>
         </ErrorBoundary>
     );
