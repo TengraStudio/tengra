@@ -72,20 +72,8 @@ export default defineConfig({
                             ],
                             // UZAY OPTİMİZASYONU: Main process code splitting
                             output: {
-                                manualChunks: (id: string) => {
-                                    // MCP servers'ı ayrı chunk'a al
-                                    if (id.includes('src/main/mcp/servers/')) {
-                                        return 'mcp-servers';
-                                    }
-                                    // Service layer'ı ayrı chunk'a al
-                                    if (id.includes('src/main/services/')) {
-                                        return 'services';
-                                    }
-                                    // IPC handlers'ı ayrı chunk'a al
-                                    if (id.includes('src/main/ipc/')) {
-                                        return 'ipc-handlers';
-                                    }
-                                }
+                                // Main process'te manuel chunk zorlaması circular chunk uyarısı
+                                // ürettiği için varsayılan Rollup chunklama stratejisi kullanılıyor.
                             },
                             // AGRESIF tree shaking
                             treeshake: {

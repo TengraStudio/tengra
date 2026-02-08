@@ -1,6 +1,5 @@
 import { randomBytes } from 'crypto';
 import { createServer, IncomingMessage, Server as HttpServer, ServerResponse } from 'http';
-import { parse } from 'url';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
@@ -137,8 +136,9 @@ export class ApiServerService extends BaseService {
             return;
         }
 
-        const parsedUrl = parse(req.url ?? '', true);
-        const pathname = parsedUrl.pathname ?? '/';
+        // Use WHATWG URL API instead of deprecated url.parse()
+        const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+        const pathname = url.pathname;
         const method = req.method ?? 'GET';
 
         // Handle public/unauthenticated routes
