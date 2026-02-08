@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { McpAction, McpResult } from '@main/mcp/types';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -28,8 +31,6 @@ import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { ServiceResponse } from '@shared/types';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import * as path from 'path';
-import * as fs from 'fs';
 
 export interface McpDeps {
     web: WebService

@@ -51,10 +51,10 @@ import { MultiModelComparisonService } from '@main/services/llm/multi-model-comp
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { getOllamaHealthService, OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
-import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
-import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
+import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
+import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';

@@ -1,10 +1,9 @@
-import { ipcMain } from 'electron';
-
 import { appLogger } from '@main/logging/logger';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { MCPServerConfig } from '@shared/types/settings';
+import { ipcMain } from 'electron';
 
 /**
  * IPC handlers for MCP Marketplace operations

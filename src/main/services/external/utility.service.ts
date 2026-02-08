@@ -205,7 +205,7 @@ export class UtilityService extends BaseService {
     async recallMemory(key: string) {
         try {
             const memory = await this.db.recallMemory(key);
-            if (!memory || !memory.content) {
+            if (!memory?.content) {
                 return { success: true, data: null };
             }
 

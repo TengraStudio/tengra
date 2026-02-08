@@ -19,6 +19,7 @@ import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
 
 import { registerLifecycleHandlers } from './startup/lifecycle';
 import { preRegisterProtocols, registerProtocols } from './startup/protocols';
+import { closeSplashWindow, shouldShowSplashWindow, showSplashWindow } from './startup/splash';
 import { createWindow, getMainWindow, setupTray } from './startup/window';
 
 /**
@@ -47,6 +48,11 @@ app.whenReady().then(async () => {
 
     appLogger.info('Startup', 'Validating environment variables...');
     validateEnvironmentVariables();
+
+    const shouldShowSplash = shouldShowSplashWindow();
+    if (shouldShowSplash) {
+        showSplashWindow();
+    }
 
     // Security: Filter allowed roots for file protocol
     const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery');
@@ -135,19 +141,29 @@ app.whenReady().then(async () => {
     }
 
     // Create Window
-    createWindow(services.settingsService);
+    const mainWindow = createWindow(services.settingsService);
+    if (shouldShowSplash) {
+        mainWindow.once('ready-to-show', () => {
+            closeSplashWindow();
+        });
+
+        mainWindow.webContents.once('did-fail-load', () => {
+            closeSplashWindow();
+        });
+    }
 
     // Background Tasks
     const { startOllama } = await import('@main/startup/ollama');
     void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
 
-    const mainWindow = getMainWindow();
-    if (mainWindow) {
-        services.updateService.init(mainWindow);
+    const openedMainWindow = getMainWindow();
+    if (openedMainWindow) {
+        services.updateService.init(openedMainWindow);
     }
     void services.sentryService.init();
 
 }).catch(e => {
+    closeSplashWindow();
     console.error('Critical failure on startup:', e);
     app.exit(1);
 });

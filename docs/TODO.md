@@ -11,6 +11,9 @@
 - [x] Add proxy lifecycle management (kill old proxy on startup)
 - [x] Remove unnecessary DEBUG logs from Go auth store
 - [x] Fix agent plan visibility in UI nodes (auto-expand on waiting_for_approval)
+- [x] **MCP Security Hardening**: Completed all 20 security tasks (validation, rate limiting, audit logging, encryption)
+- [x] **GitHub Actions**: Fixed CI/CD workflows, added cleanup automation
+- [x] **Workflow Cleanup Scripts**: Created Node.js and PowerShell scripts for GitHub Actions cleanup
 
 ---
 
@@ -86,6 +89,43 @@
 - [ ] **AGT-TST-02**: Test result visualization in node <!-- id: agt48 -->
 - [ ] **AGT-TST-03**: Fail step if tests fail <!-- id: agt49 -->
 - [ ] **AGT-TST-04**: Coverage tracking per plan <!-- id: agt50 -->
+
+## 🛍️ MARKETPLACE SYSTEM (VSCode-style Extensions) (Priority: HIGH)
+
+### 📦 Phase 1: Marketplace Infrastructure
+- [ ] **MKT-INFRA-01**: Design marketplace architecture (extension manifest schema, discovery API) <!-- id: mkt1 -->
+- [ ] **MKT-INFRA-02**: Create marketplace backend service (extension registry, search, versioning) <!-- id: mkt2 -->
+- [ ] **MKT-INFRA-03**: Implement extension loader/unloader with sandboxing <!-- id: mkt3 -->
+- [ ] **MKT-INFRA-04**: Add extension lifecycle management (install, update, remove, enable/disable) <!-- id: mkt4 -->
+- [ ] **MKT-INFRA-05**: Create extension permission system (file access, network, IPC) <!-- id: mkt5 -->
+
+### 🎨 Phase 2: Marketplace UI
+- [ ] **MKT-UI-01**: Design marketplace browser tab (similar to VSCode Extensions) <!-- id: mkt6 -->
+- [ ] **MKT-UI-02**: Implement extension card with rating, downloads, description <!-- id: mkt7 -->
+- [ ] **MKT-UI-03**: Add search and filter (categories, tags, popularity) <!-- id: mkt8 -->
+- [ ] **MKT-UI-04**: Create extension detail view with README, changelog, reviews <!-- id: mkt9 -->
+- [ ] **MKT-UI-05**: Add installed extensions manager (update, configure, uninstall) <!-- id: mkt10 -->
+
+### 🔌 Phase 3: Extension Types
+- [ ] **MKT-EXT-01**: MCP Server Extensions (custom AI tools/plugins) <!-- id: mkt11 -->
+- [ ] **MKT-EXT-02**: Theme Extensions (custom color schemes, UI themes) <!-- id: mkt12 -->
+- [ ] **MKT-EXT-03**: Command Extensions (custom slash commands) <!-- id: mkt13 -->
+- [ ] **MKT-EXT-04**: Language Extensions (additional translation packs) <!-- id: mkt14 -->
+- [ ] **MKT-EXT-05**: Agent Template Extensions (pre-built agent workflows) <!-- id: mkt15 -->
+
+### 🔐 Phase 4: Security & Quality
+- [ ] **MKT-SEC-01**: Extension signing and verification <!-- id: mkt16 -->
+- [ ] **MKT-SEC-02**: Sandboxed execution environment for extensions <!-- id: mkt17 -->
+- [ ] **MKT-SEC-03**: Code review and malware scanning for published extensions <!-- id: mkt18 -->
+- [ ] **MKT-SEC-04**: User reviews and rating system <!-- id: mkt19 -->
+- [ ] **MKT-SEC-05**: Extension telemetry and crash reporting <!-- id: mkt20 -->
+
+### 📚 Phase 5: Developer Experience
+- [ ] **MKT-DEV-01**: Extension development kit (SDK, templates, CLI tools) <!-- id: mkt21 -->
+- [ ] **MKT-DEV-02**: Extension development documentation and guides <!-- id: mkt22 -->
+- [ ] **MKT-DEV-03**: Extension testing framework and CI/CD integration <!-- id: mkt23 -->
+- [ ] **MKT-DEV-04**: Extension publishing workflow (automated builds, versioning) <!-- id: mkt24 -->
+- [ ] **MKT-DEV-05**: Extension analytics dashboard for developers <!-- id: mkt25 -->
 
 ## 🔴 CRITICAL PRIORITY (Core Architecture)
 - [ ] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->

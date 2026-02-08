@@ -1,0 +1,39 @@
+name: Cleanup Old Workflow Runs
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Her Pazar gece yarısı (UTC)
+  workflow_dispatch:      # Manuel tetikleme için
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write  # Workflow runs'ları silmek için gerekli
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cleanup Failed Runs (30+ days old)
+        run: node scripts/cleanup-workflow-runs.js --status=failure --older-than=30
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup Old Success Runs (60+ days old, keep last 10)
+        run: node scripts/cleanup-workflow-runs.js --status=success --older-than=60 --keep-last=10
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log Cleanup Summary
+        run: |
+          echo "✅ Workflow cleanup completed successfully"
+          echo "- Failed runs older than 30 days: deleted"
+          echo "- Success runs older than 60 days: deleted (kept last 10)"

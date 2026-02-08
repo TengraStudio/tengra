@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { CopilotQuota } from '@/types/quota';

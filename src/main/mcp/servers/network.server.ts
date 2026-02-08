@@ -1,4 +1,4 @@
-import { buildActions, McpDeps, validateString, validateCommand, validateHostname, ensureAllowedTarget, withTimeout } from '@main/mcp/server-utils';
+import { buildActions, ensureAllowedTarget, McpDeps, validateCommand, validateHostname, validateString, withTimeout } from '@main/mcp/server-utils';
 import { McpService } from '@main/mcp/types';
 import { SSHConnection } from '@main/services/project/ssh.service';
 

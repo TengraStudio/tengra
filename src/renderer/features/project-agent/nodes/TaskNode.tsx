@@ -1,6 +1,6 @@
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
 import { Message } from '@shared/types/chat';
-import { AgentProfile, AgentStartOptions, ProjectStep, ProjectState } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectState,ProjectStep } from '@shared/types/project-agent';
 import { Handle, Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
 import { AlertCircle, Box, Brain, CheckCircle2, ChevronDown, Circle, Clock, Coins, FolderGit2, ListTodo, Loader2, Maximize, Paperclip, Play, Settings2, Sparkles, Square, Terminal, Trash2, User, X, Zap } from 'lucide-react';
 import React, { useCallback, useEffect, useRef } from 'react';

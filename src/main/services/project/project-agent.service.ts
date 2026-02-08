@@ -7,12 +7,13 @@ import { AgentRegistryService } from '@main/services/project/agent/agent-registr
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
-import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import { AgentTaskState } from '@shared/types/agent-state';
+import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
 import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { createInitialAgentState } from './agent/agent-state-machine';
+
 import { AgentPersistenceService } from './agent/agent-persistence.service';
+import { createInitialAgentState } from './agent/agent-state-machine';
 
 
 
