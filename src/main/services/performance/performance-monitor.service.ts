@@ -11,8 +11,9 @@
  * - LLM response times
  */
 
-import { BaseService } from '@main/services/base.service';
 import * as os from 'os';
+
+import { BaseService } from '@main/services/base.service';
 
 export interface PerformanceMetric {
     name: string;

@@ -1,4 +1,4 @@
-import { Play, Clock, Hash } from 'lucide-react';
+import { Clock, Hash,Play } from 'lucide-react';
 import React from 'react';
 
 import { CheckpointItem } from '@/features/projects/hooks/useAgentHistory';

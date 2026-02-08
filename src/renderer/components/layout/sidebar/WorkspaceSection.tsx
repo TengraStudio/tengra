@@ -1,10 +1,10 @@
-import { SidebarMenuItem,SidebarSection } from '@renderer/components/layout/sidebar-components';
-import { Book, Folder as FolderIcon,MessageSquare, Rocket } from 'lucide-react';
+import { SidebarMenuItem, SidebarSection } from '@renderer/components/layout/sidebar-components';
+import { Book, Folder as FolderIcon, MessageSquare, Rocket } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { AppView } from '@/hooks/useAppState';
-import { Language,useTranslation } from '@/i18n';
+import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 
@@ -50,7 +50,7 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
             title={t('sidebar.projects')}
         >
             <Rocket className="w-4 h-4 shrink-0" />
-        </Button> 
+        </Button>
     </div>
 );
 
@@ -79,8 +79,8 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
             onClick={() => onChangeView('projects')}
             isActive={currentView === 'projects'}
             status={selectedProject ? 'online' : undefined}
-            statusLabel={selectedProject ? 'Active' : undefined}
-        /> 
+            statusLabel={selectedProject ? t('sidebar.active') : undefined}
+        />
         <SidebarMenuItem
             id="prompts"
             icon={<Book className="w-4 h-4" />}

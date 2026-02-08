@@ -3,8 +3,8 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
-import { assertPathWithinRoot } from '@main/utils/path-security.util';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { assertPathWithinRoot } from '@main/utils/path-security.util';
 import { ipcMain, shell } from 'electron';
 
 

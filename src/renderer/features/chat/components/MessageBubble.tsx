@@ -17,9 +17,10 @@ import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { Message, MessageVariant } from '@/types';
 
+import { TypingIndicator } from './TypingIndicator';
+
 import 'katex/dist/katex.min.css';
 import '@renderer/features/chat/components/MessageBubble.css';
-import { TypingIndicator } from './TypingIndicator';
 
 const COLLAPSE_THRESHOLD = 30;
 
@@ -141,7 +142,7 @@ const AssistantLogo = memo(({ displayModel, provider, backend, t }: { displayMod
             </div>
         );
     }
-    return <MessageIcon short={info.short ?? 'AI'} color={info.color} title={info.key.toUpperCase()} />;
+    return <MessageIcon short={info.short ?? t('common.ai')} color={info.color} title={info.key.toUpperCase()} />;
 });
 AssistantLogo.displayName = 'AssistantLogo';
 
@@ -632,13 +633,13 @@ const MessageFooter = memo(({ message, displayContent, language, isStreaming, st
     const { t } = useTranslation(language);
     return (
         <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium transition-opacity duration-300">
-            <span className="opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span className="opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">{new Date(message.timestamp).toLocaleTimeString(t('common.locale'), { hour: '2-digit', minute: '2-digit' })}</span>
             <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
             <span>{t('messageBubble.tokenEstimate', { count: Math.ceil(displayContent.length / 4) })}</span>
             {message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}
-            {message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-success/60">{(message.responseTime / 1000).toFixed(1)}s</span></>)}
+            {message.responseTime && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-success/60">{(message.responseTime / 1000).toFixed(1)}{t('messageBubble.secondsShort')}</span></>)}
             {message.isBookmarked && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-warning/60 flex items-center gap-1"><Bookmark className="w-2.5 h-2.5 fill-current" /></span></>)}
-            {isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} tps</span></>)}
+            {isStreaming && streamingSpeed && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="text-primary animate-pulse font-bold">{streamingSpeed.toFixed(1)} {t('messageBubble.tokensPerSecond')}</span></>)}
         </div>
     );
 });

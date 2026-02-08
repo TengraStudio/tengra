@@ -1,5 +1,13 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 28): 🌐 Internationalization (Phase 4) - Sidebar Components
+**Status**: ✅ COMPLETED
+**Summary**: Successfully implemented Phase 4 of the internationalization (i18n) project, focusing on the remaining layout components within the sidebar.
+- [x] **Sidebar Localization**: Localized `SidebarNavigation`, `WorkspaceSection`, `ToolsSection`, and `ProvidersSection`.
+- [x] **Hardcoded String Removal**: Replaced hardcoded labels for Memory, Agent, Docker, Terminal, and AI providers with localized strings.
+- [x] **Translation Synchronization**: Added missing keys to `en.ts` and `tr.ts` to support sidebar localization.
+- [x] **Quality Control**: Confirmed compliance with `npm run lint` and `npm run type-check` (zero errors).
+
 ## 2026-02-08 (Update 27): 🌐 Internationalization (Phase 3) - Layout & Settings
 **Status**: ✅ COMPLETED
 **Summary**: Successfully implemented Phase 3 of the internationalization (i18n) project, focusing on layout and settings components. Unified MCP i18n keys and refactored the MCP Servers tab for better performance and compliance.

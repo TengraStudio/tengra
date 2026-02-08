@@ -1,4 +1,4 @@
-﻿import { Calendar, ExternalLink, FolderOpen, Image, Info, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+﻿import { Calendar, ExternalLink, FolderOpen, Image, Info, LucideIcon, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { memo, useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -30,9 +30,9 @@ interface GalleryViewProps {
     language: Language;
 }
 
-const formatDate = (timestamp: number, language: Language): string => {
+const formatDate = (timestamp: number, locale: string): string => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
+    return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -44,54 +44,60 @@ const formatDate = (timestamp: number, language: Language): string => {
 interface MetadataDisplayProps {
     metadata?: GalleryItemMetadata;
     mtime: number;
-    language: Language;
     t: (key: string) => string;
 }
 
-const MetadataDisplay = memo(({ metadata, mtime, language, t }: MetadataDisplayProps) => {
-    const hasPrompt = metadata?.prompt && metadata.prompt.length > 0;
-    const hasDimensions = metadata?.width && metadata?.height;
+const MetadataItem = memo(({ icon: Icon, value }: { icon: LucideIcon; value: string | number }) => (
+    <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="w-3 h-3" />
+        <span className="truncate">{value}</span>
+    </div>
+));
+MetadataItem.displayName = 'MetadataItem';
 
+const GenerationParams = memo(({ metadata, t }: { metadata?: GalleryItemMetadata; t: (key: string) => string }) => {
+    if (!metadata || !(metadata.steps || metadata.cfg_scale || metadata.seed)) { return null; }
+    return (
+        <div className="flex flex-wrap gap-2 text-xxxs text-muted-foreground border-t border-border/10 pt-2 mt-2">
+            {metadata.steps && <span>{t('gallery.steps')}: {metadata.steps}</span>}
+            {metadata.cfg_scale && <span>{t('gallery.cfg')}: {metadata.cfg_scale}</span>}
+            {metadata.seed && <span>{t('gallery.seed')}: {metadata.seed}</span>}
+        </div>
+    );
+});
+GenerationParams.displayName = 'GenerationParams';
+
+const PromptSection = memo(({ prompt, t }: { prompt: string; t: (key: string) => string }) => (
+    <div className="mt-2 pt-2 border-t border-border/20">
+        <div className="text-xxxs text-muted-foreground uppercase font-bold mb-1">{t('gallery.prompt')}</div>
+        <div className="text-foreground/80 line-clamp-3 leading-relaxed">{prompt}</div>
+    </div>
+));
+PromptSection.displayName = 'PromptSection';
+
+const MetadataDisplay = memo(({ metadata, mtime, t }: MetadataDisplayProps) => {
     return (
         <div className="space-y-2 text-xxs">
             {/* Date */}
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(mtime, language)}</span>
-            </div>
+            <MetadataItem icon={Calendar} value={formatDate(mtime, t('common.locale'))} />
 
             {/* Dimensions */}
-            {hasDimensions && (
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Image className="w-3 h-3" />
-                    <span>{metadata.width} × {metadata.height}</span>
-                </div>
+            {metadata?.width && metadata.height && (
+                <MetadataItem icon={Image} value={`${metadata.width} × ${metadata.height}`} />
             )}
 
             {/* Model */}
             {metadata?.model && (
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Sparkles className="w-3 h-3" />
-                    <span className="truncate">{metadata.model}</span>
-                </div>
+                <MetadataItem icon={Sparkles} value={metadata.model} />
             )}
 
             {/* Prompt */}
-            {hasPrompt && (
-                <div className="mt-2 pt-2 border-t border-border/20">
-                    <div className="text-xxxs text-muted-foreground uppercase font-bold mb-1">{t('gallery.prompt')}</div>
-                    <div className="text-foreground/80 line-clamp-3 leading-relaxed">{metadata.prompt}</div>
-                </div>
+            {metadata?.prompt && (
+                <PromptSection prompt={metadata.prompt} t={t} />
             )}
 
             {/* Generation params */}
-            {(metadata?.steps ?? metadata?.cfg_scale ?? metadata?.seed) && (
-                <div className="flex flex-wrap gap-2 text-xxxs text-muted-foreground">
-                    {metadata?.steps && <span>Steps: {metadata.steps}</span>}
-                    {metadata?.cfg_scale && <span>CFG: {metadata.cfg_scale}</span>}
-                    {metadata?.seed && <span>Seed: {metadata.seed}</span>}
-                </div>
-            )}
+            <GenerationParams metadata={metadata} t={t} />
         </div>
     );
 });
@@ -107,7 +113,7 @@ interface GalleryCardProps {
     t: (key: string) => string;
 }
 
-const GalleryCard = memo(({ img, language, deleting, onDelete, onOpen, onReveal, t }: GalleryCardProps) => {
+const GalleryCard = memo(({ img, deleting, onDelete, onOpen, onReveal, t }: Omit<GalleryCardProps, 'language'>) => {
     const [showDetails, setShowDetails] = useState(false);
 
     return (
@@ -133,7 +139,7 @@ const GalleryCard = memo(({ img, language, deleting, onDelete, onOpen, onReveal,
                 <div className="text-xs text-foreground truncate font-medium mb-2">{img.name}</div>
 
                 {/* Metadata */}
-                <MetadataDisplay metadata={img.metadata} mtime={img.mtime} language={language} t={t} />
+                <MetadataDisplay metadata={img.metadata} mtime={img.mtime} t={t} />
 
                 {/* Actions */}
                 <div className="flex gap-2 justify-end mt-3 pt-2 border-t border-border/20">
@@ -258,7 +264,6 @@ export function GalleryView({ language }: GalleryViewProps) {
                             <GalleryCard
                                 key={img.path}
                                 img={img}
-                                language={language}
                                 deleting={deleting}
                                 onDelete={(path) => void handleDelete(path)}
                                 onOpen={(path) => void handleOpen(path)}
