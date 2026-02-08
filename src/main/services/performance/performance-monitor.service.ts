@@ -12,8 +12,6 @@
  */
 
 import { BaseService } from '@main/services/base.service';
-import { appLogger } from '@main/logging/logger';
-import { app } from 'electron';
 import * as os from 'os';
 
 export interface PerformanceMetric {
@@ -50,6 +48,10 @@ export class PerformanceMonitorService extends BaseService {
 
     constructor() {
         super('PerformanceMonitorService');
+    }
+
+    override async cleanup(): Promise<void> {
+        await this.dispose();
     }
 
     async initialize(): Promise<void> {
@@ -282,7 +284,9 @@ export class PerformanceMonitorService extends BaseService {
         this.recordCPUUsage();
 
         // File descriptor count (handle count)
-        const handleCount = (process as any)._getActiveHandles?.()?.length ?? 0;
+        type ProcessWithHandles = NodeJS.Process & { _getActiveHandles?: () => unknown[] };
+        const processWithHandles = process as ProcessWithHandles;
+        const handleCount = processWithHandles._getActiveHandles?.().length ?? 0;
 
         return {
             memory,

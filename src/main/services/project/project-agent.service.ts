@@ -9,9 +9,9 @@ import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
-import { AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
+import { AgentProfile, AgentStartOptions, ProjectState, ProjectStep } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { AgentTaskState, ExecutionPlan, PlanStep, ProviderConfig, AgentContext } from '@shared/types/agent-state';
+
 
 import { AgentPersistenceService } from './agent/agent-persistence.service';
 import { createInitialAgentState } from './agent/agent-state-machine';
@@ -1266,140 +1266,6 @@ Return a JSON object: { "steps": ["step 1", "step 2", ...] }`,
         }
     }
 
-    async resumeFromCheckpoint(checkpointId: string): Promise<void> {
-        this.logInfo(`Resuming from checkpoint ${checkpointId}`);
-        const checkpointState = await this.agentPersistenceService.loadCheckpoint(checkpointId);
-
-        if (!checkpointState) {
-            throw new Error(`Checkpoint ${checkpointId} not found`);
-        }
-
-        this.currentTaskId = checkpointState.taskId;
-
-        // Map AgentTaskState -> ProjectState
-        this.restoreStateFromCheckpoint(checkpointState);
-    }
-
-    private mapToAgentTaskState(): AgentTaskState {
-        const { currentTask, plan, history, config, metrics, status } = this.state;
-        const now = new Date();
-
-        // Map plan steps
-        const executionPlan: ExecutionPlan = {
-            steps: plan.map((p, i) => ({
-                index: i,
-                description: p.text,
-                type: 'code_generation', // Default
-                status: p.status === 'pending' ? 'pending' :
-                    p.status === 'running' ? 'in_progress' :
-                        p.status === 'completed' ? 'completed' :
-                            p.status === 'failed' ? 'failed' : 'skipped',
-                toolsUsed: []
-            })),
-            requiredTools: [],
-            dependencies: []
-        };
-
-        const providerConfig: ProviderConfig = {
-            provider: config?.model?.provider ?? 'openai',
-            model: config?.model?.model ?? 'gpt-4',
-            accountIndex: 0,
-            status: 'active'
-        };
-
-        const context: AgentContext = {
-            projectPath: config?.projectId ?? '',
-            projectName: '',
-            workspace: { rootPath: config?.projectId ?? '', hasGit: false, hasDependencies: false },
-            constraints: { maxIterations: 50, maxDuration: 3600000, maxToolCalls: 100, allowedTools: [] }
-        };
-
-        return {
-            taskId: this.currentTaskId ?? randomUUID(),
-            projectId: config?.projectId ?? 'unknown',
-            description: currentTask,
-            state: status === 'waiting_for_approval' ? 'planning' : // Map waiting to planning or closest equivalent
-                status === 'error' ? 'failed' :
-                    status as AgentTaskState['state'],
-            currentStep: plan.findIndex(s => s.status === 'running'),
-            totalSteps: plan.length,
-            plan: executionPlan,
-            context,
-            messageHistory: history,
-            eventHistory: [],
-            currentProvider: providerConfig,
-            providerHistory: [],
-            errors: [],
-            recoveryAttempts: 0,
-            createdAt: now, // Should be preserved from original creation
-            updatedAt: now,
-            startedAt: this.state.timing?.startedAt ? new Date(this.state.timing.startedAt) : null,
-            completedAt: this.state.timing?.completedAt ? new Date(this.state.timing.completedAt) : null,
-            metrics: {
-                duration: 0,
-                llmCalls: 0,
-                toolCalls: 0,
-                tokensUsed: this.state.totalTokens?.completion ?? 0 + (this.state.totalTokens?.prompt ?? 0),
-                providersUsed: [],
-                errorCount: 0,
-                recoveryCount: 0
-            },
-            result: null
-        };
-    }
-
-    private restoreStateFromCheckpoint(checkpoint: AgentTaskState) {
-        // Map AgentTaskState -> ProjectState
-        const plan: ProjectStep[] = checkpoint.plan?.steps.map(s => ({
-            id: randomUUID(), // ID might be lost if not in AgentTaskState explicit plan
-            text: s.description,
-            status: s.status === 'in_progress' ? 'running' :
-                s.status === 'skipped' ? 'pending' :
-                    s.status as ProjectStep['status']
-        })) ?? [];
-
-        // Restore config from context/provider
-        const config: AgentStartOptions = {
-            task: checkpoint.description,
-            projectId: checkpoint.projectId,
-            model: {
-                provider: checkpoint.currentProvider.provider,
-                model: checkpoint.currentProvider.model
-            },
-            // Try to recover other options if stored in metadata/context
-            agentProfileId: 'default' // Defaulting as specific ID might be lost
-        };
-
-        this.state = {
-            status: checkpoint.state === 'executing' ? 'running' :
-                checkpoint.state as ProjectState['status'],
-            currentTask: checkpoint.description,
-            plan,
-            history: checkpoint.messageHistory,
-            config,
-            totalTokens: {
-                prompt: 0,
-                completion: checkpoint.metrics.tokensUsed
-            }
-        };
-
-        // Sync with UAC Database
-        if (this.currentTaskId) {
-            void this.databaseService.uac.updateTaskStatus(this.currentTaskId, this.state.status);
-        }
-
-        // Restart State Machine and Execution
-        this.stateMachine.setState(this.state.status);
-
-        if (this.state.status === 'running') {
-            this.shouldStop = false;
-            this.abortController = new AbortController();
-            void this.executionLoop();
-        }
-
-        this.emitUpdate();
-    }
-
     /**
      * Load any active task from DB on app restart to enable resumption
      */
@@ -1563,6 +1429,10 @@ Return a JSON object: { "steps": ["step 1", "step 2", ...] }`,
 
     async registerProfile(profile: AgentProfile) {
         return this.agentRegistryService.registerProfile(profile);
+    }
+
+    async getCheckpoints(taskId: string) {
+        return this.agentPersistenceService.getCheckpoints(taskId);
     }
 
     async deleteProfile(id: string) {

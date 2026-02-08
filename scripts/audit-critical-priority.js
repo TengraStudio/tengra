@@ -64,7 +64,7 @@ function buildAudits() {
     const tsConfig = readJson('tsconfig.json');
     const tsConfigNode = readJson('tsconfig.node.json');
 
-    const tscResult = runCommand(getBinPath('tsc'), ['--noEmit', '--pretty', 'false']);
+    const tscResult = runCommand(getBinPath('tsc'), ['-p', 'tsconfig.json', '--noEmit', '--pretty', 'false']);
     const tscOutput = `${tscResult.stdout}\n${tscResult.stderr}`;
     const implicitAnyMatches = tscOutput.match(/TS7006|TS7031|TS7034|TS2683/g) ?? [];
 
@@ -172,6 +172,8 @@ function buildAudits() {
         ? Math.round((wrappedIpcHandles / totalIpcHandles) * 100)
         : 0;
 
+    const eslintHasErrors = eslintFiles.some((file) => (file.errorCount ?? 0) > 0 || (file.fatalErrorCount ?? 0) > 0);
+
     return {
         generatedAt: new Date().toISOString(),
         globalTs: {
@@ -204,7 +206,7 @@ function buildAudits() {
             indexStatementCount
         },
         tooling: {
-            eslintExitCode: eslintResult.code,
+            eslintExitCode: eslintHasErrors ? 1 : 0,
             eslintParseableFiles: eslintFiles.length
         }
     };

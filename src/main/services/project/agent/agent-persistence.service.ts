@@ -744,6 +744,8 @@ export class AgentPersistenceService extends BaseService {
     /**
      * Get the latest checkpoint for a task
      */
+
+
     async getLatestCheckpoint(taskId: string): Promise<AgentTaskState | null> {
         try {
             const db = this.databaseService.getDatabase();
