@@ -67,6 +67,8 @@ export interface TokenData {
 }
 
 export interface ElectronAPI {
+    invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>
+
     // Window controls
     minimize: () => void
     maximize: () => void
@@ -337,7 +339,8 @@ export interface ElectronAPI {
     terminal: {
         isAvailable: () => Promise<boolean>
         getShells: () => Promise<{ id: string; name: string; path: string }[]>
-        create: (options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<{ success: boolean; error?: string }>
+        create: (options: { id?: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<string>
+        close: (sessionId: string) => Promise<boolean>
         write: (sessionId: string, data: string) => Promise<boolean>
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
         kill: (sessionId: string) => Promise<boolean>
@@ -624,6 +627,7 @@ export interface ElectronAPI {
         resetState: () => Promise<void>
         getStatus: () => Promise<ProjectState>
         retryStep: (index: number) => Promise<void>
+        getCheckpoints: (taskId: string) => Promise<Array<{ id: string; stepIndex: number; createdAt: string }>>
         getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>
         onUpdate: (callback: (state: ProjectState) => void) => () => void
         // Canvas persistence
@@ -645,6 +649,8 @@ export interface ElectronAPI {
 }
 
 const api: ElectronAPI = {
+    invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => ipcRenderer.invoke(channel, ...args) as Promise<T>,
+
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),
     close: () => ipcRenderer.send('window:close'),
@@ -1114,6 +1120,7 @@ const api: ElectronAPI = {
         isAvailable: () => ipcRenderer.invoke('terminal:isAvailable'),
         getShells: () => ipcRenderer.invoke('terminal:getShells'),
         create: (options) => ipcRenderer.invoke('terminal:create', options),
+        close: (sessionId) => ipcRenderer.invoke('terminal:close', sessionId),
         write: (sessionId, data) => ipcRenderer.invoke('terminal:write', sessionId, data),
         resize: (sessionId, cols, rows) => ipcRenderer.invoke('terminal:resize', sessionId, cols, rows),
         kill: (sessionId) => ipcRenderer.invoke('terminal:kill', sessionId),
@@ -1251,6 +1258,7 @@ const api: ElectronAPI = {
         resetState: () => ipcRenderer.invoke('project:reset-state'),
         getStatus: () => ipcRenderer.invoke('project:get-status'),
         retryStep: (index) => ipcRenderer.invoke('project:retry-step', index),
+        getCheckpoints: (taskId: string) => ipcRenderer.invoke('project:get-checkpoints', taskId),
         getProfiles: () => ipcRenderer.invoke('project:get-profiles'),
         onUpdate: (callback) => {
             const listener = (_event: IpcRendererEvent, state: IpcValue) => {

@@ -82,14 +82,14 @@ export const TerminalSession = memo(({ tab, isActive, onClose, projectPath }: Te
             initializingTerminals.delete(tab.id);
             return null;
         }
-        const res = await window.electron.terminal.create({ id: tab.id, shell: tab.type, ...(projectPath ? { cwd: projectPath } : {}), cols: term.cols, rows: term.rows });
-        if (!res.success) {
-            term.write(`\r\n\x1b[31m[ERROR] ${res.error ?? 'Failed to create session'}\x1b[0m\r\n`);
+        const sessionId = await window.electron.terminal.create({ id: tab.id, shell: tab.type, ...(projectPath ? { cwd: projectPath } : {}), cols: term.cols, rows: term.rows });
+        if (!sessionId) {
+            term.write(`\r\n\x1b[31m[ERROR] Failed to create session\x1b[0m\r\n`);
             setTimeout(() => setHasError(true), 0);
             initializingTerminals.delete(tab.id);
             return null;
         }
-        return res;
+        return sessionId;
     }, [tab.id, tab.type, projectPath]);
 
     const setupSession = useCallback(async (term: XTerm, fitAddon: FitAddon) => {

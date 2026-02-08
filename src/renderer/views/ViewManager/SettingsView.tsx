@@ -12,6 +12,7 @@ interface SettingsViewProps {
     loadModels: (bypassCache?: boolean) => void
     settingsCategory: SettingsCategory
     groupedModels?: GroupedModels | null
+    searchQuery?: string
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -19,7 +20,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     proxyModels,
     loadModels,
     settingsCategory,
-    groupedModels
+    groupedModels,
+    searchQuery
 }) => {
     const onRefreshModels = useCallback((bypassCache?: boolean) => {
         void loadModels(bypassCache);
@@ -33,6 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onRefreshModels={onRefreshModels}
                 activeTab={settingsCategory}
                 groupedModels={groupedModels}
+                searchQuery={searchQuery}
             />
         </Suspense>
     );

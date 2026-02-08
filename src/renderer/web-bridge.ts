@@ -10,9 +10,12 @@ import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh';
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
+    invoke: <T = IpcValue>(_channel: string, ..._args: IpcValue[]) => Promise.resolve({} as T),
     minimize: () => window.electron.log.warn('minimize'),
+
     maximize: () => window.electron.log.warn('maximize'),
     close: () => window.electron.log.warn('close'),
+
     resizeWindow: (res: string) => window.electron.log.warn('resize', res),
     toggleCompact: (enabled: boolean) => window.electron.log.warn('compact', enabled),
 
@@ -277,7 +280,8 @@ export const webElectronMock: ElectronAPI = {
     terminal: {
         isAvailable: async () => true,
         getShells: async () => [],
-        create: async (_options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => ({ success: true }),
+        create: async (_options: { id?: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => 'mock-session-id',
+        close: async (_sessionId: string) => true,
         write: async (_sessionId: string, _data: string) => true,
         resize: async (_sessionId: string, _cols: number, _rows: number) => true,
         kill: async (_sessionId: string) => true,
@@ -557,6 +561,7 @@ export const webElectronMock: ElectronAPI = {
         resetState: async () => { },
         getStatus: async () => null,
         retryStep: async (_index: number) => { },
+        getCheckpoints: async (_taskId: string) => [],
         getProfiles: async () => [],
         onUpdate: (_callback: (state: unknown) => void) => () => { },
         // Canvas persistence stubs

@@ -7,7 +7,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import type { ModelInfo } from '@/features/models/utils/model-fetcher';
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
-import { SettingsSearch, SettingsTabContent } from '@/features/settings/components';
+import { SettingsTabContent } from '@/features/settings/components';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +21,7 @@ export interface SettingsPageProps {
     onRefreshModels: (bypassCache?: boolean) => void
     activeTab?: SettingsCategory
     groupedModels?: GroupedModels | null
+    searchQuery?: string
 }
 
 export function SettingsPage({
@@ -28,7 +29,8 @@ export function SettingsPage({
     proxyModels,
     onRefreshModels,
     activeTab = 'general',
-    groupedModels
+    groupedModels,
+    searchQuery: controlledSearchQuery
 }: SettingsPageProps) {
     const {
         settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
@@ -43,8 +45,8 @@ export function SettingsPage({
 
     const { t } = useTranslation(settings?.general.language ?? 'tr');
 
-    // Search state for settings
-    const [searchQuery, setSearchQuery] = useState('');
+    // Search query is controlled from the global app header.
+    const searchQuery = controlledSearchQuery ?? '';
 
     // Define tabs with icons for filtering and sidebar
     const allTabs = useMemo(() => [
@@ -67,6 +69,7 @@ export function SettingsPage({
             tab.label.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [searchQuery, allTabs]);
+    const isActiveTabVisible = filteredTabs.some(tab => tab.id === activeTab);
 
     const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -114,14 +117,14 @@ export function SettingsPage({
         <div className="settings-container">
             <div className="settings-content flex h-full gap-6">
                 <main className="settings-main flex-1 overflow-y-auto">
-                    <SettingsSearch
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        t={t}
-                        filteredTabsCount={filteredTabs.length}
-                    />
-
                     <div className={cn("settings-section h-full pr-4 pb-20", (activeTab === 'models' || activeTab === 'gallery') && "max-w-none")}>
+                        {searchQuery && (
+                            <div className="mb-4 text-xs text-muted-foreground">
+                                {filteredTabs.length > 0
+                                    ? t('settings.searchResults', { count: filteredTabs.length })
+                                    : t('settings.noResults')}
+                            </div>
+                        )}
                         {statusMessage && (
                             <div className="mb-6 px-4 py-2 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
@@ -130,15 +133,21 @@ export function SettingsPage({
                         )}
                         <div className="hidden">[DEBUG: BUILD VERSION 2026-01-19-01]</div>
 
-                        <SettingsTabContent
-                            activeTab={activeTab}
-                            sharedProps={sharedProps}
-                            installedModels={installedModels}
-                            proxyModels={proxyModels}
-                            onRefreshModels={onRefreshModels}
-                            handleFactoryReset={onResetClick}
-                            groupedModels={groupedModels ?? undefined}
-                        />
+                        {searchQuery && !isActiveTabVisible ? (
+                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
+                                {t('settings.noResults')}
+                            </div>
+                        ) : (
+                            <SettingsTabContent
+                                activeTab={activeTab}
+                                sharedProps={sharedProps}
+                                installedModels={installedModels}
+                                proxyModels={proxyModels}
+                                onRefreshModels={onRefreshModels}
+                                handleFactoryReset={onResetClick}
+                                groupedModels={groupedModels ?? undefined}
+                            />
+                        )}
                     </div>
                 </main>
             </div>

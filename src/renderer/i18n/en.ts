@@ -1104,6 +1104,9 @@ export const en = {
         }
     },
     terminal: {
+        title: 'Terminal',
+        new: 'New Terminal',
+        hide: 'Hide Terminal',
         noShellsFound: 'No shells found',
         noActiveSessions: 'No active terminal sessions',
         startNewSession: 'Start New Session',

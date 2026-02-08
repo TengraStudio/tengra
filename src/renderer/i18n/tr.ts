@@ -1756,6 +1756,9 @@ export const tr = {
         }
     },
     terminal: {
+        title: 'Terminal',
+        new: 'Yeni Terminal',
+        hide: 'Terminali Gizle',
         noShellsFound: 'Kabuk bulunamadı',
         noActiveSessions: 'Aktif terminal oturumu yok',
         startNewSession: 'Yeni Oturum Başlat',

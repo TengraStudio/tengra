@@ -84,6 +84,8 @@ export interface TokenData {
  * ```
  */
 export interface ElectronAPI {
+    invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>
+
     /**
      * Minimizes the application window.
      */
@@ -373,7 +375,9 @@ export interface ElectronAPI {
     terminal: {
         isAvailable: () => Promise<boolean>
         getShells: () => Promise<{ id: string; name: string; path: string }[]>
-        create: (options: { id: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<{ success: boolean; error?: string }>
+        create: (options: { id?: string; shell?: string; cwd?: string; cols?: number; rows?: number }) => Promise<string>
+
+        close: (sessionId: string) => Promise<boolean>
         write: (sessionId: string, data: string) => Promise<boolean>
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>
         kill: (sessionId: string) => Promise<boolean>
@@ -692,6 +696,7 @@ export interface ElectronAPI {
         resetState: () => Promise<void>
         getStatus: () => Promise<ProjectState>
         retryStep: (index: number) => Promise<void>
+        getCheckpoints: (taskId: string) => Promise<Array<{ id: string; stepIndex: number; createdAt: string }>>
         getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>
         onUpdate: (callback: (state: ProjectState) => void) => () => void
         // Canvas persistence

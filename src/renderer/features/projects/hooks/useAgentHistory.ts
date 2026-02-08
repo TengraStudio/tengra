@@ -5,6 +5,12 @@ import { Project } from '@/types';
 import { ModelOption } from '../components/agent/TaskInputForm';
 import { TaskHistoryItem } from '../components/agent/TaskSidebar';
 
+export interface CheckpointItem {
+    id: string;
+    stepIndex: number;
+    createdAt: Date;
+}
+
 // Helper to map agent state to UI status
 const mapStateToStatus = (state: string): TaskHistoryItem['status'] => {
     switch (state) {
@@ -79,6 +85,19 @@ export const useAgentHistory = (project: Project) => {
         }
     }, [loadTaskHistory]);
 
+    const getCheckpoints = useCallback(async (taskId: string): Promise<CheckpointItem[]> => {
+        try {
+            const result = await window.electron.projectAgent.getCheckpoints(taskId);
+            return result.map(cp => ({
+                ...cp,
+                createdAt: new Date(cp.createdAt)
+            }));
+        } catch (error) {
+            window.electron.log.error('Failed to load checkpoints', { error: String(error) });
+            return [];
+        }
+    }, []);
+
     const groupedTasks = useMemo(() => {
         const grouped: Record<string, TaskHistoryItem[]> = {};
         taskHistory.forEach(task => {
@@ -100,6 +119,7 @@ export const useAgentHistory = (project: Project) => {
         setSelectedModel,
         loadTaskHistory,
         deleteTask,
+        getCheckpoints,
         groupedTasks
     };
 };

@@ -269,15 +269,15 @@ const useTerminalInstance = (
 
             initializingTerminals.add(finalTerminalId);
             try {
-                const result = await window.electron.terminal.create({
+                const sessionId = await window.electron.terminal.create({
                     id: finalTerminalId,
                     cwd: cwd ?? '.',
                     cols: term.cols,
                     rows: term.rows
                 });
 
-                if (!result.success) {
-                    const errorMessage = result.error ?? t('projectDashboard.terminalFailedSession');
+                if (!sessionId) {
+                    const errorMessage = t('projectDashboard.terminalFailedSession');
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
                     initializingTerminals.delete(finalTerminalId);
                     throw new Error(errorMessage);

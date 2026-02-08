@@ -169,15 +169,15 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
             initializingTerminals.add(finalTerminalId);
 
             try {
-                const result = await window.electron.terminal.create({
+                const sessionId = await window.electron.terminal.create({
                     id: finalTerminalId,
                     cwd: cwd ?? (typeof process !== 'undefined' ? process.cwd() : ''),
                     cols: term.cols,
                     rows: term.rows
                 });
 
-                if (!result.success) {
-                    const errorMessage = result.error ?? (t ? t('projectDashboard.terminalFailedSession') : 'Failed to start session');
+                if (!sessionId) {
+                    const errorMessage = t ? t('projectDashboard.terminalFailedSession') : 'Failed to start session';
                     term.write(`\r\n\x1b[31m[ERROR] ${errorMessage}\x1b[0m\r\n`);
                     initializingTerminals.delete(finalTerminalId);
                     return;
