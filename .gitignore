@@ -160,3 +160,4 @@ nul
 dist/
 node_modules/
 
+docs/components_checklist.md

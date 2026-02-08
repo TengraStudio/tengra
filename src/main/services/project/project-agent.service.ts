@@ -38,6 +38,8 @@ export class ProjectAgentService extends BaseService {
     private abortController: AbortController | null = null;
     private startRequestInFlight = false;
     private planRequestInFlight = false;
+    private unsubscribeStepUpdate?: () => void;
+    private unsubscribePlanProposed?: () => void;
 
     constructor(
         private databaseService: DatabaseService,
@@ -71,7 +73,7 @@ export class ProjectAgentService extends BaseService {
         this.logInfo('ProjectAgentService initialized');
 
         // Listen for tool-triggered step updates
-        this.eventBus.on('project:step-update', (payload) => {
+        this.unsubscribeStepUpdate = this.eventBus.on('project:step-update', (payload) => {
             void (async () => {
                 try {
                     this.logInfo(`Received project:step-update: ${JSON.stringify(payload)}`);
@@ -103,7 +105,7 @@ export class ProjectAgentService extends BaseService {
         });
 
         // Listen for plan proposals
-        this.eventBus.on('project:plan-proposed', (payload) => {
+        this.unsubscribePlanProposed = this.eventBus.on('project:plan-proposed', (payload) => {
             this.logInfo(`Received project:plan-proposed event with ${payload.steps.length} steps`);
             if (this.state.status !== 'planning') {
                 this.logWarn(`Ignoring proposed plan while state is ${this.state.status}`);
@@ -138,6 +140,15 @@ export class ProjectAgentService extends BaseService {
                 }
             })();
         });
+    }
+
+    override async cleanup(): Promise<void> {
+        this.unsubscribeStepUpdate?.();
+        this.unsubscribePlanProposed?.();
+        this.unsubscribeStepUpdate = undefined;
+        this.unsubscribePlanProposed = undefined;
+        this.abortController?.abort();
+        this.abortController = null;
     }
 
     async getTaskHistory(projectId: string): Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]> {

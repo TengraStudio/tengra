@@ -72,7 +72,8 @@ export const tr = {
     },
     errors: {
         unexpected: 'Üzgünüz, bir hata oluştu.',
-        somethingWentWrong: 'Bir şeyler yanlış gitti:'
+        somethingWentWrong: 'Bir şeyler yanlış gitti:',
+        rootNotFound: 'Kök öğe bulunamadı'
     },
     languages: {
         tr: 'Türkçe',
@@ -1250,6 +1251,8 @@ export const tr = {
         default: 'Varsayılan',
         system: 'Sistem Yazı Tipi',
         themes: {
+            black: 'Siyah',
+            white: 'Beyaz',
             graphite: 'Grafit',
             obsidian: 'Obsidyen',
             midnight: 'Gece Yarısı',
@@ -1571,7 +1574,9 @@ export const tr = {
     },
     quickAction: {
         explain: 'Açıkla',
-        translate: 'Çevir'
+        translate: 'Çevir',
+        explainPrefix: 'Açıkla: ',
+        translatePrefix: 'Çevir: '
     },
     activityBar: {
         chat: 'Sohbet',
@@ -2256,7 +2261,10 @@ export const tr = {
         calls: 'Çağrılar',
         activitiesCount: 'Aktiviteler',
         history: 'Geçmiş',
+        viewCheckpoints: 'Kontrol Noktalarını Görüntüle',
+        no_checkpoints: 'Kontrol noktası bulunamadı',
         no_tasks_yet: 'Henüz görev yok',
+
         selectModel: 'Model Seç',
         unknownModel: 'Bilinmeyen Model',
         continueWithModel: 'Seçili modelle devam et',

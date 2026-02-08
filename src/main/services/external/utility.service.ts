@@ -21,7 +21,7 @@ export class UtilityService extends BaseService {
         super('UtilityService');
     }
 
-    override async cleanup() {
+    override async cleanup(): Promise<void> {
         // Stop all monitors
         for (const [url, interval] of this.monitors.entries()) {
             clearInterval(interval);

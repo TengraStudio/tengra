@@ -90,7 +90,7 @@ export default function App() {
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
 
     return (
-        <ErrorBoundary fallback={<ErrorFallback error={new Error('App Error')} resetErrorBoundary={() => window.location.reload()} />}>
+        <ErrorBoundary fallback={<ErrorFallback error={new Error(t('errors.unexpected'))} resetErrorBoundary={() => window.location.reload()} />}>
             <div className="app-container h-screen w-full overflow-hidden">
                 {showExtensionWarning && (
                     <ExtensionInstallPrompt
@@ -115,8 +115,8 @@ export default function App() {
                     setShowSSHManager={appState.setShowSSHManager}
                 />
                 <QuickActionBar
-                    onExplain={(text) => { setInput(`Açıkla: ${text}`); void handleSend(); }}
-                    onTranslate={(text) => { setInput(`Çevir: ${text}`); void handleSend(); }}
+                    onExplain={(text) => { setInput(`${t('quickAction.explainPrefix')}${text}`); void handleSend(); }}
+                    onTranslate={(text) => { setInput(`${t('quickAction.translatePrefix')}${text}`); void handleSend(); }}
                     language={language}
                 />
                 <UpdateNotification />

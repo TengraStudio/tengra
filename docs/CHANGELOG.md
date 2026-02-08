@@ -1,5 +1,12 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 26): 📝 Component Inventory & Documentation
+**Status**: ✅ COMPLETED
+**Summary**: Created a comprehensive inventory of all React components in the `src/renderer` directory (330+ files) and generated a checklist for tracking.
+- [x] **Component Audit**: Scanned all subdirectories in `src/renderer` to identify every `.tsx` component.
+- [x] **Checklist Generation**: Created `docs/components_checklist.md` with links and checkboxes for all components.
+- [x] **Security/Secrecy**: Updated `.gitignore` to ensure the checklist remains local and is not pushed to GitHub.
+
 ## 2026-02-08 (Update 25): 🚀 Performance Optimizations & Terminal System V2 Planning
 
 **Status**: ✅ COMPLETED (Planning Phase)

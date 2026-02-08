@@ -74,4 +74,8 @@ export abstract class IdeaBaseService extends BaseService {
             throw error;
         }
     }
+
+    override async cleanup(): Promise<void> {
+        // Base implementation for derived idea services.
+    }
 }

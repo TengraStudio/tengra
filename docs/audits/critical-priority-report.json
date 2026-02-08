@@ -1,38 +1,29 @@
 {
-  "generatedAt": "2026-02-08T12:45:26.380Z",
+  "generatedAt": "2026-02-08T13:22:05.978Z",
   "globalTs": {
     "strictEnabled": true,
     "typeCheckExitCode": 0,
     "implicitAnyDiagnostics": 0
   },
   "nasa": {
-    "maxFunctionLengthViolations": 6,
-    "complexityViolations": 39,
+    "maxFunctionLengthViolations": 7,
+    "complexityViolations": 41,
     "fsIpcReturnCheckViolations": 0
   },
   "logging": {
     "consoleLogFindings": [],
-    "noConsoleRuleFindings": 3
+    "noConsoleRuleFindings": 0
   },
   "memory": {
-    "potentialLeakRiskFiles": [
-      "src/main/services/external/deep-research.service.ts",
-      "src/main/services/external/market-research.service.ts",
-      "src/main/services/external/utility.service.ts",
-      "src/main/services/llm/idea/base.service.ts",
-      "src/main/services/llm/multi-model-comparison.service.ts",
-      "src/main/services/mcp/mcp-marketplace.service.ts",
-      "src/main/services/project/project-agent.service.ts",
-      "src/main/services/project/project-scaffold.service.ts"
-    ]
+    "potentialLeakRiskFiles": []
   },
   "security": {
     "pathSanitizedIpcFiles": 2,
     "totalIpcFiles": 50
   },
   "ipc": {
-    "totalIpcHandles": 375,
-    "wrappedIpcHandles": 139,
+    "totalIpcHandles": 376,
+    "wrappedIpcHandles": 140,
     "wrapperCoveragePercent": 37
   },
   "db": {
@@ -40,6 +31,6 @@
   },
   "tooling": {
     "eslintExitCode": 0,
-    "eslintParseableFiles": 701
+    "eslintParseableFiles": 703
   }
 }

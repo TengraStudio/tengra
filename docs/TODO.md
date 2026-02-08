@@ -11,7 +11,8 @@
 - [x] Add proxy lifecycle management (kill old proxy on startup)
 - [x] Remove unnecessary DEBUG logs from Go auth store
 - [x] Fix agent plan visibility in UI nodes (auto-expand on waiting_for_approval)
-- [x] **MCP Security Hardening**: Completed all 20 security tasks (validation, rate limiting, audit logging, encryption)
+- [x] **Documentation**: Created `docs/components_checklist.md` with a comprehensive list of all React components (330+ files)
+- [x] **Git Hygiene**: Added `docs/components_checklist.md` to `.gitignore` to keep it secret/ignored
 - [x] **GitHub Actions**: Fixed CI/CD workflows, added cleanup automation
 - [x] **Workflow Cleanup Scripts**: Created Node.js and PowerShell scripts for GitHub Actions cleanup
 

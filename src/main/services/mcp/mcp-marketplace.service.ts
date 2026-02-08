@@ -417,4 +417,9 @@ export class McpMarketplaceService extends BaseService {
         this.cacheTimestamp = 0;
         await this.listServers();
     }
+
+    override async cleanup(): Promise<void> {
+        this.cache = [];
+        this.cacheTimestamp = 0;
+    }
 }

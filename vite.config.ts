@@ -166,25 +166,18 @@ export default defineConfig({
                 unknownGlobalSideEffects: false
             },
             output: {
-                // AGRESIF CODE SPLITTING: Her büyük kütüphaneyi ayrı chunk'a ayır
+                // CODE SPLITTING: Sadece lazy-loadable büyük kütüphaneleri ayır
+                // NOT: React/React-DOM AYRILMAMALI - internal state paylaşımı bozulur
                 manualChunks: (id: string) => {
-                    // React ecosystem
-                    if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-                        return 'react-core';
-                    }
-                    // Monaco Editor (TypeScript worker çok büyük)
+                    // Monaco Editor (lazy loaded, çok büyük ~4MB)
                     if (id.includes('node_modules/monaco-editor')) {
                         return 'monaco';
                     }
-                    // React Flow (canvas için)
+                    // React Flow (lazy loaded, canvas için)
                     if (id.includes('node_modules/@xyflow') || id.includes('node_modules/reactflow')) {
                         return 'react-flow';
                     }
-                    // UI libraries
-                    if (id.includes('node_modules/@radix-ui') || id.includes('node_modules/@floating-ui')) {
-                        return 'ui-libs';
-                    }
-                    // Code highlighting
+                    // Code highlighting (lazy loaded)
                     if (id.includes('node_modules/prismjs') || id.includes('node_modules/highlight.js')) {
                         return 'syntax';
                     }
@@ -192,23 +185,19 @@ export default defineConfig({
                     if (id.includes('node_modules/katex')) {
                         return 'katex';
                     }
-                    // Markdown
-                    if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark') || id.includes('node_modules/rehype')) {
-                        return 'markdown';
+                    // Math rendering (lazy loaded, KaTeX çok büyük)
+                    if (id.includes('node_modules/katex')) {
+                        return 'katex';
                     }
-                    // Virtualization
-                    if (id.includes('node_modules/react-virtuoso') || id.includes('node_modules/react-window')) {
-                        return 'virtualization';
-                    }
-                    // Icons
-                    if (id.includes('node_modules/lucide-react')) {
-                        return 'icons';
-                    }
-                    // Chart libraries
+                    // Chart libraries (lazy loaded, d3 büyük)
                     if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) {
                         return 'charts';
                     }
-                    // Diğer tüm node_modules
+                    // xterm (lazy loaded, terminal için)
+                    if (id.includes('node_modules/@xterm') || id.includes('node_modules/xterm')) {
+                        return 'xterm';
+                    }
+                    // Diğer tüm node_modules -> vendor (React dahil, birlikte kalmalı)
                     if (id.includes('node_modules')) {
                         return 'vendor';
                     }

@@ -72,7 +72,8 @@ export const en = {
     },
     errors: {
         unexpected: 'Sorry, there was an error.',
-        somethingWentWrong: 'Something went wrong:'
+        somethingWentWrong: 'Something went wrong:',
+        rootNotFound: 'Root element not found'
     },
     languages: {
         tr: 'Turkish',
@@ -961,8 +962,8 @@ export const en = {
         marketplaceSubtitle: 'Discover thousands of servers to empower your platform.',
         searchPlaceholder: 'Search for servers or tools...',
         searchTools: 'Search tools...',
-        storeTitle: 'MCP Tool Store',
-        storeSubtitle: 'Browse and install tools for your MCP servers.',
+        storeTitle: 'MCP Marketplace',
+        storeSubtitle: '{{count}} tools installed and ready to use',
         toolsInstalled: '{{count}} tools installed • Browse Model Context Protocol servers',
         noTools: 'No tools found',
         noServers: 'No servers connected',
@@ -977,7 +978,7 @@ export const en = {
         close: 'Close',
         remove: 'Remove',
         official: 'Official',
-        byAuthor: 'by {{author}}',
+        byAuthor: 'by {{author}} v{{version}}',
         categories: {
             title: 'Categories',
             all: 'All Tools',
@@ -993,7 +994,11 @@ export const en = {
             devops: 'DevOps',
             utility: 'Utility'
         },
-        // MCP Store - I18N-002-1
+        tool: 'tool',
+        tools: 'tools',
+        note: 'Note',
+        noteText: 'Only enabled servers are accessible to AI assistants.',
+        internalAlwaysEnabled: 'Internal tools are always enabled',
         noToolsFound: 'No tools found matching your search.',
         searchingTools: 'Searching tools...',
         toolsAvailable: 'Tools Available',
@@ -1366,6 +1371,8 @@ export const en = {
         default: 'Default',
         system: 'System Font',
         themes: {
+            black: 'Black',
+            white: 'White',
             graphite: 'Graphite',
             obsidian: 'Obsidian',
             midnight: 'Midnight',
@@ -1687,7 +1694,9 @@ export const en = {
     },
     quickAction: {
         explain: 'Explain',
-        translate: 'Translate'
+        translate: 'Translate',
+        explainPrefix: 'Explain: ',
+        translatePrefix: 'Translate: '
     },
     activityBar: {
         chat: 'Chat',
@@ -2257,7 +2266,10 @@ export const en = {
         calls: 'Calls',
         activitiesCount: 'Activities',
         history: 'History',
+        viewCheckpoints: 'View Checkpoints',
+        no_checkpoints: 'No checkpoints available',
         no_tasks_yet: 'No tasks yet',
+
         selectModel: 'Select Model',
         unknownModel: 'Unknown Model',
         continueWithModel: 'Continue with selected model',

@@ -13,9 +13,9 @@ interface AppearanceTabProps {
 interface ThemeOption { id: string; label: string }
 interface FontOption { id: string; label: string }
 
-const THEME_OPTIONS: ThemeOption[] = [
-    { id: 'black', label: 'Black' },
-    { id: 'white', label: 'White' }
+const getThemeOptions = (t: (key: string) => string): ThemeOption[] => [
+    { id: 'black', label: t('appearance.themes.black') },
+    { id: 'white', label: t('appearance.themes.white') }
 ];
 
 const createFontOptions = (t: (key: string) => string): FontOption[] => [
@@ -44,7 +44,7 @@ const ThemeSection: React.FC<ThemeSectionProps> = ({ currentTheme, onThemeChange
             </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {THEME_OPTIONS.map((theme) => {
+            {getThemeOptions(t).map((theme: ThemeOption) => {
                 const isActive = currentTheme === theme.id;
                 return (
                     <button
@@ -207,7 +207,7 @@ const normalizeTheme = (rawTheme: string): string => {
 
 export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGeneral, t }) => {
     const fontOptions = createFontOptions(t);
-    const currentTheme = normalizeTheme(settings?.general.theme ?? 'graphite');
+    const currentTheme = normalizeTheme(settings?.general.theme ?? 'black');
     const currentFont = settings?.general.fontFamily ?? fontOptions[0].id;
     const fontSize = settings?.general.fontSize ?? 14;
 
