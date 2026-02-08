@@ -4,7 +4,7 @@
  * Reduces IPC overhead by combining multiple requests into a single batch
  */
 
-import { appLogger } from '@main/logging/logger';
+
 import { IpcValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
@@ -137,7 +137,6 @@ export function registerBatchIpc(): void {
         const endTime = Date.now();
         const totalMs = endTime - startTime;
 
-        appLogger.debug('IpcBatch', `Processed ${requests.length} requests in ${totalMs}ms`);
 
         return {
             results,
@@ -176,8 +175,6 @@ export function registerBatchIpc(): void {
 
         const endTime = Date.now();
         const totalMs = endTime - startTime;
-
-        appLogger.debug('IpcBatch', `Processed ${requests.length} sequential requests in ${totalMs}ms`);
 
         return {
             results,

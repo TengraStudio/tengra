@@ -5,7 +5,7 @@ import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 export function registerTerminalIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
-    ipcMain.setMaxListeners(50);
+    ipcMain.setMaxListeners(60);
     appLogger.info('terminal', '[IPC] Terminal service registered');
 
     // Check availability

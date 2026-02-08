@@ -47,6 +47,8 @@ export const en = {
         fitView: 'Fit View',
         host: 'Host',
         next: 'Next',
+        previous: 'Previous',
+        pageOf: 'Page {{current}} of {{total}}',
         passphrase: 'Passphrase',
         password: 'Password',
         port: 'Port',
@@ -279,12 +281,21 @@ export const en = {
                 title: 'Configured Servers',
                 subtitle: 'Manage your Model Context Protocol server connections',
                 connect: 'Connect Server',
-                empty: 'No servers connected'
+                empty: 'No servers connected',
+                emptyHint: 'Install servers from the Marketplace tab',
+                enabled: 'enabled',
+                note: 'Note',
+                noteText: 'Only enabled servers are accessible to AI assistants. Toggle the power button to enable/disable each server.',
+                internalAlwaysEnabled: 'Internal tools are always enabled'
             },
             status: {
                 connected: 'Connected',
                 disconnected: 'Disconnected',
-                error: 'Error'
+                error: 'Error',
+                enabled: 'Enabled',
+                disabled: 'Disabled',
+                active: 'Active',
+                inactive: 'Inactive'
             }
         }
     },
@@ -968,12 +979,19 @@ export const en = {
         official: 'Official',
         byAuthor: 'by {{author}}',
         categories: {
+            title: 'Categories',
             all: 'All Tools',
             filesystem: 'Filesystem',
             database: 'Database',
             api: 'APIs',
             development: 'Development',
-            ai: 'AI'
+            ai: 'AI',
+            web: 'Web',
+            devTools: 'Developer Tools',
+            cloud: 'Cloud',
+            productivity: 'Productivity',
+            devops: 'DevOps',
+            utility: 'Utility'
         },
         // MCP Store - I18N-002-1
         noToolsFound: 'No tools found matching your search.',

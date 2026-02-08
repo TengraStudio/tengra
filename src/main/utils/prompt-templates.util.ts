@@ -186,9 +186,9 @@ export function validateTemplate(template: PromptTemplate): {
 } {
     const errors: string[] = [];
 
-    if (!template.id) {errors.push('Template ID is required');}
-    if (!template.name) {errors.push('Template name is required');}
-    if (!template.template) {errors.push('Template content is required');}
+    if (!template.id) { errors.push('Template ID is required'); }
+    if (!template.name) { errors.push('Template name is required'); }
+    if (!template.template) { errors.push('Template content is required'); }
 
     // Check that all declared variables exist in template
     const templateVars = extractVariables(template.template);
@@ -219,9 +219,11 @@ export const BUILTIN_TEMPLATES: PromptTemplate[] = [
         description: 'Review code for bugs, security issues, and improvements',
         template: `Review the following {{language}} code for:
 - Bugs and potential issues
-- Security vulnerabilities
+- Security vulnerabilities (secrets, injection risks)
 - Performance improvements
 - Code style and best practices
+- Type safety (no 'any' or 'unknown')
+- Debugging artifacts (console.log)
 
 {{focus}}
 
@@ -281,7 +283,7 @@ Requirements:
 - Cover happy path and edge cases
 - Include error handling tests
 - Use descriptive test names
-- Mock external dependencies if needed
+- Mock external dependencies/services if needed
 
 {{additionalRequirements}}`,
         variables: [
@@ -309,6 +311,7 @@ Guidelines:
 - Maintain functionality
 - Improve {{goal}}
 - Follow {{language}} best practices
+- Apply "Boy Scout Rule" (fix adjacent warnings)
 - Add comments explaining significant changes
 
 Provide the refactored code with explanations for each change.`,
@@ -413,7 +416,7 @@ export class TemplateManager {
      */
     updateTemplate(id: string, updates: Partial<PromptTemplate>): PromptTemplate | null {
         const index = this.customTemplates.findIndex(t => t.id === id);
-        if (index === -1) {return null;}
+        if (index === -1) { return null; }
 
         this.customTemplates[index] = {
             ...this.customTemplates[index],
@@ -429,7 +432,7 @@ export class TemplateManager {
      */
     deleteTemplate(id: string): boolean {
         const index = this.customTemplates.findIndex(t => t.id === id);
-        if (index === -1) {return false;}
+        if (index === -1) { return false; }
 
         this.customTemplates.splice(index, 1);
         return true;

@@ -81,9 +81,14 @@ export class McpPluginService extends BaseService {
             return { success: false, error: `MCP Plugin '${pluginName}' not found.` };
         }
 
-        const disabled = this.settingsService.getSettings().mcpDisabledServers ?? [];
-        if (disabled.includes(pluginName)) {
-            return { success: false, error: `Plugin '${pluginName}' is disabled in settings.` };
+        // Check if plugin is enabled (user must explicitly enable MCPs)
+        const settings = this.settingsService.getSettings();
+        const userServers = settings.mcpUserServers ?? [];
+        const serverConfig = userServers.find(s => s.id === pluginName || s.name === pluginName);
+
+        // If it's a user server, check if it's enabled
+        if (serverConfig && !serverConfig.enabled) {
+            return { success: false, error: `Plugin '${pluginName}' is disabled. Enable it in Settings > MCP.` };
         }
 
         try {
@@ -108,7 +113,16 @@ export class McpPluginService extends BaseService {
 
         // Update settings persistence
         const settings = this.settingsService.getSettings();
-        const userServers = [...(settings.mcpUserServers ?? []), { name, description, command, args, env, tools: [] }];
+        const userServers = [...(settings.mcpUserServers ?? []), {
+            id: name,
+            name,
+            description,
+            command,
+            args,
+            env,
+            enabled: false,
+            tools: []
+        }];
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
 
         return { success: true };

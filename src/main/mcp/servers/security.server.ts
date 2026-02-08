@@ -14,7 +14,7 @@ export function buildSecurityServers(deps: McpDeps): McpService[] {
                 { name: 'checkPasswordStrength', description: 'Check password strength', handler: ({ password }) => Promise.resolve(deps.security.checkPasswordStrength(password as string)) },
                 { name: 'generateHash', description: 'Generate hash', handler: ({ text, algorithm }) => Promise.resolve(deps.security.generateHash(text as string, algorithm as 'md5' | 'sha256' | 'sha512')) },
                 { name: 'stripMetadata', description: 'Strip file metadata', handler: ({ path, outputPath }) => deps.security.stripMetadata(path as string, outputPath as string) }
-            ])
+            ], 'security', deps.auditLog)
         },
         {
             name: 'security-audit',
@@ -79,7 +79,7 @@ export function buildSecurityServers(deps: McpDeps): McpService[] {
                         return deps.command.executeCommand(command);
                     })
                 }
-            ])
+            ], 'security-audit', deps.auditLog)
         }
     ];
 }

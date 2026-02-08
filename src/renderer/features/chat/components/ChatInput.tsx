@@ -164,11 +164,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(({
 
                 <EnhanceButton ctrl={ctrl} />
                 <SendButton ctrl={ctrl} />
-            </div>
-
-            <div className="absolute bottom-1 right-4 text-xxs text-muted-foreground/30 pointer-events-none select-none">
-                {ctrl.selectedProvider}
-            </div>
+            </div> 
         </div>
     );
 }, (prevProps, nextProps) => {

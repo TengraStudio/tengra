@@ -105,9 +105,7 @@ export class Container {
         // Instantiate all singletons first
         for (const def of singletons) {
             try {
-                appLogger.info('Container', `Instantiating ${def.name}...`);
                 this.resolve(def.name);
-                appLogger.info('Container', `Instantiated ${def.name}`);
             } catch (error) {
                 appLogger.error('Container', `Failed to instantiate ${def.name}`, error as Error);
                 throw error;
@@ -119,9 +117,7 @@ export class Container {
             const instance = def.instance as LifecycleAware;
             if (typeof instance.initialize === 'function') {
                 try {
-                    appLogger.info('Container', `Initializing ${def.name}...`);
                     await instance.initialize();
-                    appLogger.info('Container', `Initialized ${def.name}`);
                 } catch (error) {
                     appLogger.error('Container', `Failed to initialize ${def.name}`, error as Error);
                     // Continue despite error to allow app to launch

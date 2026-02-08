@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { SecurityService } from '@main/services/security/security.service';
 
 interface ExchangeRateResponse {
     rates: Record<string, number>;
@@ -14,7 +15,8 @@ export class UtilityService extends BaseService {
     private monitors: Map<string, NodeJS.Timeout> = new Map();
 
     constructor(
-        private db: DatabaseService
+        private db: DatabaseService,
+        private security: SecurityService
     ) {
         super('UtilityService');
     }
@@ -180,25 +182,40 @@ export class UtilityService extends BaseService {
 
     // 39. Long-term Memory
     /**
-     * Stores a key-value memory pair.
+     * Stores a key-value memory pair with encryption.
      * @param key Key string.
      * @param value Value string.
      */
     async storeMemory(key: string, value: string) {
-        await this.db.storeMemory(key, value);
-        return { success: true, message: `Memory stored for "${key}"` };
+        try {
+            // Encrypt the value before storing
+            const encryptedValue = this.security.encryptSync(value);
+            await this.db.storeMemory(key, encryptedValue);
+            return { success: true, message: `Memory stored for "${key}" (encrypted)` };
+        } catch (error) {
+            this.logError(`Failed to store encrypted memory for "${key}"`, error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
     }
 
     /**
-     * Recalls a stored memory by key.
+     * Recalls a stored memory by key and decrypts it.
      * @param key Key string.
      */
     async recallMemory(key: string) {
-        const value = await this.db.recallMemory(key);
-        // Standardized: return { value } in data, or just the value in data?
-        // recallMemory usually returns the value directly.
-        // Let's wrap it properly: data: value
-        return { success: true, data: value };
+        try {
+            const memory = await this.db.recallMemory(key);
+            if (!memory || !memory.content) {
+                return { success: true, data: null };
+            }
+
+            // Decrypt the content before returning
+            const decryptedValue = this.security.decryptSync(memory.content);
+            return { success: true, data: decryptedValue };
+        } catch (error) {
+            this.logError(`Failed to recall/decrypt memory for "${key}"`, error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
     }
 
     // 40. Local RAG (Vector-based)

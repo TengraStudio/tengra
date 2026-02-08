@@ -62,7 +62,7 @@ export class ModelRegistryService extends BaseService {
         // Start the native service process
         await this.deps.processManager.startService({
             name: 'model-service',
-            executable: 'Tandem-model-service.exe',
+            executable: 'tandem-model-service',
             persistent: true
         });
 

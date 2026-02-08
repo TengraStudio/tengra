@@ -448,6 +448,19 @@ export interface ElectronAPI {
         removeResultListener: () => void
     }
 
+    // MCP Marketplace
+    mcpMarketplace: {
+        list: () => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>
+        search: (query: string) => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>
+        filter: (category: string) => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>
+        categories: () => Promise<{ success: boolean; categories?: string[]; error?: string }>
+        install: (serverId: string) => Promise<{ success: boolean; error?: string }>
+        uninstall: (serverId: string) => Promise<{ success: boolean; error?: string }>
+        installed: () => Promise<{ success: boolean; servers?: IpcValue[]; error?: string }>
+        toggle: (serverId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+        refresh: () => Promise<{ success: boolean; error?: string }>
+    }
+
     proxyEmbed: {
         start: (options?: { configPath?: string; port?: number; health?: boolean }) => Promise<IpcValue>
         stop: () => Promise<IpcValue>

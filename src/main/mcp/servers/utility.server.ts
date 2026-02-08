@@ -10,7 +10,7 @@ export function buildUtilityServers(deps: McpDeps): McpService[] {
                 { name: 'exchangeRate', description: 'Get FX rate', handler: ({ from, to }) => deps.utility.getExchangeRate(from as string, to as string) },
                 { name: 'storeMemory', description: 'Store memory key/value', handler: ({ key, value }) => deps.utility.storeMemory(key as string, value as string) },
                 { name: 'recallMemory', description: 'Recall memory by key', handler: ({ key }) => deps.utility.recallMemory(key as string) }
-            ])
+            ], 'utility', deps.auditLog)
         },
         {
             name: 'screenshot',
@@ -18,21 +18,21 @@ export function buildUtilityServers(deps: McpDeps): McpService[] {
             actions: buildActions([
                 { name: 'capture', description: 'Capture primary screen', handler: () => deps.screenshot.captureScreen() },
                 { name: 'listWindows', description: 'List windows', handler: () => deps.screenshot.listWindows() }
-            ])
+            ], 'screenshot', deps.auditLog)
         },
         {
             name: 'notification',
             description: 'System notifications',
             actions: buildActions([
                 { name: 'notify', description: 'Send notification', handler: ({ title, body, silent }) => deps.notification.showNotification(title as string, body as string, silent as boolean) }
-            ])
+            ], 'notification', deps.auditLog)
         },
         {
             name: 'monitoring',
             description: 'System monitoring',
             actions: buildActions([
                 { name: 'usage', description: 'Get CPU/memory usage', handler: () => deps.monitoring.getUsage() }
-            ])
+            ], 'monitoring', deps.auditLog)
         },
         {
             name: 'clipboard',
@@ -40,7 +40,7 @@ export function buildUtilityServers(deps: McpDeps): McpService[] {
             actions: buildActions([
                 { name: 'read', description: 'Read clipboard text', handler: () => deps.clipboard.readText() },
                 { name: 'write', description: 'Write clipboard text', handler: ({ text }) => deps.clipboard.writeText(text as string) }
-            ])
+            ], 'clipboard', deps.auditLog)
         }
     ];
 }

@@ -1,20 +1,4 @@
-export interface ToolDefinition {
-    type: 'function'
-    function: {
-        name: string
-        description: string
-        parameters: {
-            type: 'object'
-            properties: Record<string, {
-                type: string
-                description: string
-                enum?: string[]
-                items?: { type: string }
-            }>
-            required?: string[]
-        }
-    }
-}
+import { ToolDefinition } from '@shared/types/chat';
 
 export const toolDefinitions: ToolDefinition[] = [
     {

@@ -52,7 +52,9 @@ import { OllamaService } from '@main/services/llm/ollama.service';
 import { getOllamaHealthService, OllamaHealthService } from '@main/services/llm/ollama-health.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
+import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
+import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
@@ -169,8 +171,10 @@ export interface Services {
     projectAgentService: ProjectAgentService;
     multiAgentOrchestratorService: MultiAgentOrchestratorService;
     agentRegistryService: AgentRegistryService;
+    agentPersistenceService: AgentPersistenceService;
     exportService: ExportService;
     mcpPluginService: McpPluginService;
+    mcpMarketplaceService: McpMarketplaceService;
     apiServerService: ApiServerService;
     extensionDetectorService: ExtensionDetectorService;
     timeTrackingService: TimeTrackingService;
@@ -252,7 +256,7 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
     container.register('fileSystemService', (fct) => new FileSystemService(Array.from(allowedFileRoots), fct as FileChangeTracker), ['fileChangeTracker']);
     container.register('httpService', () => new HttpService());
     container.register('rateLimitService', () => new RateLimitService());
-    container.register('utilityService', (dbs) => new UtilityService(dbs as DatabaseService), ['databaseService']);
+    container.register('utilityService', (dbs, sec) => new UtilityService(dbs as DatabaseService, sec as SecurityService), ['databaseService', 'securityService']);
 
     // Extension detector service
     container.register('extensionDetectorService', (ss) => new ExtensionDetectorService(ss as SettingsService), ['settingsService']);
@@ -425,7 +429,8 @@ function registerProjectServices() {
 
     // Project Agent Service
     container.register('agentRegistryService', (dbs) => new AgentRegistryService(dbs as DatabaseService), ['databaseService']);
-    container.register('projectAgentService', (dbs, ls, ebs, ars) => new ProjectAgentService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService']);
+    container.register('agentPersistenceService', (dbs) => new AgentPersistenceService(dbs as DatabaseService), ['databaseService']);
+    container.register('projectAgentService', (dbs, ls, ebs, ars, aps) => new ProjectAgentService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService, aps as AgentPersistenceService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService', 'agentPersistenceService']);
     container.register('multiAgentOrchestratorService', (dbs, ls, ebs, ars) => new MultiAgentOrchestratorService(dbs as DatabaseService, ls as LLMService, ebs as EventBusService, ars as AgentRegistryService), ['databaseService', 'llmService', 'eventBusService', 'agentRegistryService']);
 
     // Proxy Services
@@ -495,17 +500,25 @@ function registerMcpServices() {
             content: services[17] as ContentService,
             command: services[18] as CommandService,
             clipboard: services[19] as ClipboardService,
-            ollama: services[20] as OllamaService
+            ollama: services[20] as OllamaService,
+            advancedMemory: services[21] as AdvancedMemoryService,
+            ideaGenerator: services[22] as IdeaGeneratorService,
+            modelCollaboration: services[23] as ModelCollaborationService,
+            rateLimit: services[24] as RateLimitService,
+            auditLog: services[25] as AuditLogService
         };
     }, [
         'webService', 'utilityService', 'systemService', 'sshService', 'screenshotService',
         'scannerService', 'notificationService', 'networkService', 'monitoringService',
         'gitService', 'securityService', 'settingsService', 'fileSystemService',
         'fileManagementService', 'embeddingService', 'dockerService', 'databaseService',
-        'contentService', 'commandService', 'clipboardService', 'ollamaService'
+        'contentService', 'commandService', 'clipboardService', 'ollamaService',
+        'advancedMemoryService', 'ideaGeneratorService', 'modelCollaborationService', 'rateLimitService',
+        'auditLogService'
     ]);
 
     container.register('mcpPluginService', (ss, deps) => new McpPluginService(ss as SettingsService, deps as McpDeps), ['settingsService', 'mcpDeps']);
+    container.register('mcpMarketplaceService', () => new McpMarketplaceService());
 }
 
 
@@ -583,10 +596,12 @@ function buildServicesMap(dataService: DataService, settingsService: SettingsSer
         projectScaffoldService: container.resolve<ProjectScaffoldService>('projectScaffoldService'),
         ideaGeneratorService: container.resolve<IdeaGeneratorService>('ideaGeneratorService'),
         agentRegistryService: container.resolve<AgentRegistryService>('agentRegistryService'),
+        agentPersistenceService: container.resolve<AgentPersistenceService>('agentPersistenceService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
         multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>('multiAgentOrchestratorService'),
         exportService: container.resolve<ExportService>('exportService'),
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
+        mcpMarketplaceService: container.resolve<McpMarketplaceService>('mcpMarketplaceService'),
         localImageService: container.resolve<LocalImageService>('localImageService'),
         extensionDetectorService: container.resolve<ExtensionDetectorService>('extensionDetectorService'),
         timeTrackingService: container.resolve<TimeTrackingService>('timeTrackingService'),

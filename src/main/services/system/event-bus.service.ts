@@ -25,7 +25,7 @@ export class EventBusService extends BaseService {
     constructor() {
         super('EventBusService');
         this.bus = new EventEmitter();
-        this.bus.setMaxListeners(50); // Increased for more complex app
+        this.bus.setMaxListeners(60); // Increased for more complex app
     }
 
     async initialize(): Promise<void> {

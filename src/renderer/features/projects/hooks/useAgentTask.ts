@@ -13,6 +13,7 @@ import {
     pauseTaskHandler,
     rejectPlanHandler,
     resumeTaskHandler,
+    resumeCheckpointHandler,
     saveSnapshotHandler,
     stopTaskHandler
 } from './converters/asyncHandlers';
@@ -22,7 +23,8 @@ import {
     processEventResponse,
     processMessageResponse,
     processStatusResponse,
-    processTelemetryResponse} from './converters/taskDetailsProcessor';
+    processTelemetryResponse
+} from './converters/taskDetailsProcessor';
 
 export interface AgentTaskStatus {
     taskId: string | null;
@@ -200,6 +202,27 @@ export const useAgentTask = (project: Project) => {
         return await rejectPlanHandler(taskId, reason);
     }, []);
 
+    const resumeFromCheckpoint = useCallback(async (checkpointId: string) => {
+        setIsLoading(true);
+        setStatus(prev => ({ ...prev, state: 'initializing', error: null }));
+        try {
+            const result = await resumeCheckpointHandler(checkpointId);
+            if (result.success) {
+                // TaskId will be updated by events, but we can't set it easily here without the task ID
+                // The backend resumeFromCheckpoint sets the task as active, so we should receive events.
+                return true;
+            }
+            setStatus(prev => ({ ...prev, state: 'failed', error: result.error ?? 'Failed to resume checkpoint' }));
+            return false;
+        } catch (error) {
+            window.electron.log.error('Failed to resume checkpoint:', error as Error);
+            setStatus(prev => ({ ...prev, state: 'failed', error: 'Failed to resume checkpoint' }));
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     return {
         status,
         setStatus,
@@ -220,6 +243,7 @@ export const useAgentTask = (project: Project) => {
         resumeTask,
         approvePlan,
         rejectPlan,
+        resumeFromCheckpoint,
         loadTaskDetails
     };
 };

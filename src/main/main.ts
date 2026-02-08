@@ -66,6 +66,7 @@ app.whenReady().then(async () => {
     // Hardened Tool Executor
     const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
     await services.mcpPluginService.initialize();
+    await services.mcpMarketplaceService.initialize();
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
@@ -119,10 +120,13 @@ app.whenReady().then(async () => {
 
     // Configure Auto-Start
     const settings = services.settingsService.getSettings();
-    if (settings.window?.startOnStartup !== undefined) {
+    if (app.isPackaged && settings.window?.startOnStartup !== undefined) {
+        const shouldStartHidden = settings.window.workAtBackground ?? false;
         app.setLoginItemSettings({
             openAtLogin: settings.window.startOnStartup,
-            openAsHidden: settings.window.workAtBackground ?? false
+            openAsHidden: shouldStartHidden,
+            path: process.execPath,
+            args: shouldStartHidden ? ['--hidden'] : []
         });
     }
 

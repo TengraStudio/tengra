@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
-ipcRenderer.setMaxListeners(50);
+ipcRenderer.setMaxListeners(60);
 import {
     AgentDefinition, AgentStartOptions, AppSettings,
     Chat, ChatRequest, ChatStreamRequest, CodexUsage, CopilotQuota,
@@ -12,6 +12,7 @@ import {
     QuotaResponse, SemanticFragment,
     SSHConfig, SSHConnection, SSHExecOptions, SSHFile, SSHPackageInfo, SSHSystemStats, TodoItem, ToolCall, ToolDefinition, ToolResult
 } from '@shared/types';
+import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service';
 import {
     AdvancedSemanticFragment,
     MemoryCategory,
@@ -397,6 +398,19 @@ export interface ElectronAPI {
         uninstall: (name: string) => Promise<{ success: boolean }>
         onResult: (callback: (result: Record<string, IpcValue>) => void) => void
         removeResultListener: () => void
+    }
+
+    // MCP Marketplace
+    mcpMarketplace: {
+        list: () => Promise<{ success: boolean; servers?: McpMarketplaceServer[]; error?: string }>
+        search: (query: string) => Promise<{ success: boolean; servers?: McpMarketplaceServer[]; error?: string }>
+        filter: (category: string) => Promise<{ success: boolean; servers?: McpMarketplaceServer[]; error?: string }>
+        categories: () => Promise<{ success: boolean; categories?: string[]; error?: string }>
+        install: (serverId: string) => Promise<{ success: boolean; error?: string }>
+        uninstall: (serverId: string) => Promise<{ success: boolean; error?: string }>
+        installed: () => Promise<{ success: boolean; servers?: MCPServerConfig[]; error?: string }>
+        toggle: (serverId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+        refresh: () => Promise<{ success: boolean; error?: string }>
     }
 
     proxyEmbed: {
@@ -907,6 +921,18 @@ const api: ElectronAPI = {
         uninstall: (name) => ipcRenderer.invoke('mcp:uninstall', name),
         onResult: (callback) => ipcRenderer.on('mcp:result', (_event, result) => callback(result)),
         removeResultListener: () => ipcRenderer.removeAllListeners('mcp:result')
+    },
+
+    mcpMarketplace: {
+        list: () => ipcRenderer.invoke('mcp:marketplace:list'),
+        search: (query) => ipcRenderer.invoke('mcp:marketplace:search', query),
+        filter: (category) => ipcRenderer.invoke('mcp:marketplace:filter', category),
+        categories: () => ipcRenderer.invoke('mcp:marketplace:categories'),
+        install: (serverId) => ipcRenderer.invoke('mcp:marketplace:install', serverId),
+        uninstall: (serverId) => ipcRenderer.invoke('mcp:marketplace:uninstall', serverId),
+        installed: () => ipcRenderer.invoke('mcp:marketplace:installed'),
+        toggle: (serverId, enabled) => ipcRenderer.invoke('mcp:marketplace:toggle', serverId, enabled),
+        refresh: () => ipcRenderer.invoke('mcp:marketplace:refresh')
     },
 
     proxyEmbed: {

@@ -11,8 +11,9 @@ Key principles:
 1. CATEGORY-FIRST: You have thoroughly researched the category before proposing any idea
 2. UNIQUENESS: Every idea must be distinctly different from existing solutions
 3. SPECIFICITY: Target specific user pain points with concrete solutions
-4. FEASIBILITY: Ideas should be buildable by a small team within 6-12 months
-5. TIMELY: Leverage ${CURRENT_YEAR} technology trends and market conditions
+14. FEASIBILITY: Ideas should be buildable by a small team within 6-12 months
+15. TIMELY: Leverage ${CURRENT_YEAR} technology trends and market conditions
+16. LANGUAGE: All output must be in English.
 
 This is ONLY the seed idea. It will be further researched and refined in subsequent stages.
 
@@ -43,6 +44,7 @@ This is the FINAL INITIAL concept (seed idea) that will be further researched an
 3. NOVEL: Not a clone of existing products - bring something new.
 4. TIMELY: Relevant to ${CURRENT_YEAR} market conditions and technology.
 5. RELEVANT: Strictly stay within the ${options.categoryNames[options.category]} category. Do NOT focus on AI/ML unless it is essential to the core functionality of this specific category.
+6. FEASIBLE: Must be technically buildable by a small team (MVP in 3-6 months).
 
 💡 Creative direction: ${options.creativityHint}
 ${options.customPrompt ? `\n\n=== USER CONSTRAINTS ===\n${options.customPrompt}\n` : ''}
@@ -51,7 +53,9 @@ Before responding, carefully consider:
 - What SPECIFIC problem does this solve that isn't well-addressed?
 - WHO exactly will use this and WHY will they care?
 - What makes this DIFFERENT from existing solutions?
+- Is this technically feasible for an MVP?
 - Why is ${CURRENT_YEAR} the right time for this idea?
+- Check: Am I responding in English? (Answer MUST be yes)
 
 Respond ONLY with valid JSON:
 {
@@ -87,6 +91,7 @@ Requirements:
 - Detailed SWOT matrix
 - Professional monetization strategy with price points
 - Cost structure and break-even strategy
+- Scalability & Sustainability assessment
 
 Respond in JSON:
 {
@@ -95,7 +100,8 @@ Respond in JSON:
         "monetizationType": "...",
         "revenueStreams": [{ "name": "...", "description": "...", "pricePoint": "..." }],
         "costStructure": ["..."],
-        "breakEvenStrategy": "..."
+        "breakEvenStrategy": "...",
+        "scalability": "..."
     }
 }`,
 
@@ -142,6 +148,7 @@ Category: ${options.category}
 Identify:
 - Specific target audience segments
 - Unique selling points (USPs)
+- Technical Feasibility Analysis (Stack, Complexity, Risks)
 - Potential technical or market challenges
 - Direct and indirect competitors not previously identified
 

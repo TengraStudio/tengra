@@ -79,14 +79,14 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
 
     const connectBrowserProvider = useCallback(async (provider: 'codex' | 'claude' | 'antigravity') => {
         if (authBusy) { return; }
-        setAuthBusy(provider); setAuthNotice('Bağlanıyor...');
+        setAuthBusy(provider); setAuthNotice('Connecting...');
         try {
             const res = provider === 'codex' ? await window.electron.codexLogin() : provider === 'claude' ? await window.electron.claudeLogin() : await window.electron.antigravityLogin();
             if (res.url) {
                 window.electron.openExternal(res.url); setAuthNotice('Login in browser.');
                 pollConnection(provider, provider === 'codex' ? ['codex', 'openai'] : provider === 'claude' ? ['claude', 'anthropic'] : ['antigravity']);
             } else { setAuthNotice(`Failed URL for ${provider}`); setAuthBusy(null); }
-        } catch (e) { console.error('Conn failure:', e); setAuthNotice('Bağlantı başarısız.'); setAuthBusy(null); }
+        } catch (e) { console.error('Conn failure:', e); setAuthNotice('Connection failed.'); setAuthBusy(null); }
     }, [authBusy, setAuthBusy, setAuthNotice, pollConnection]);
 
     const handleSaveClaudeSession = useCallback(async (key: string, id?: string) => {

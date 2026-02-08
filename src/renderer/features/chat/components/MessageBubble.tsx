@@ -168,12 +168,7 @@ const QuotaErrorCard = memo(({ details, t }: { details: { message: string; reset
                 <Clock className="w-3.5 h-3.5" />
                 <span>{t('messageBubble.resetsAt')} {new Date(details.resets_at * 1000).toLocaleString()}</span>
             </div>
-        )}
-        <div className="mt-3 flex gap-2">
-            <button className="px-3 py-1.5 text-xs rounded-lg bg-accent/30 hover:bg-accent/50 transition-colors" onClick={() => { window.electron.openExternal('https://ai.google.dev/pricing'); }}>
-                {t('messageBubble.checkQuotas')}
-            </button>
-        </div>
+        )} 
     </div>
 ));
 QuotaErrorCard.displayName = 'QuotaErrorCard';

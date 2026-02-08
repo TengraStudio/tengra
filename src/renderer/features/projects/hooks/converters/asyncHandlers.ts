@@ -67,6 +67,28 @@ export const resumeTaskHandler = async (taskId: string): Promise<IpcInvokeResult
 };
 
 /**
+ * Resume from a checkpoint
+ */
+export const resumeCheckpointHandler = async (checkpointId: string): Promise<IpcInvokeResult> => {
+    try {
+        // This IPC invocation doesn't return a standard result object in the backend implementation I wrote?
+        // Wait, I wrote: await projectAgentService.resumeFromCheckpoint(checkpointId);
+        // It returns void in the backend service currently?
+        // Let me check projectAgentService.resumeFromCheckpoint return type.
+        // It returns void in the service.
+        // So IPC returns void (undefined).
+        await window.electron.ipcRenderer.invoke('project:resume-checkpoint', checkpointId);
+        return { success: true };
+    } catch (error) {
+        window.electron.log.error('Failed to resume checkpoint:', error as Error);
+        return {
+            success: false,
+            error: 'Failed to resume checkpoint'
+        };
+    }
+};
+
+/**
  * Approve an execution plan
  */
 export const approvePlanHandler = async (taskId: string): Promise<boolean> => {

@@ -47,6 +47,8 @@ export const tr = {
         fitView: 'Görünüme Sığdır',
         host: 'Sunucu',
         next: 'İleri',
+        previous: 'Geri',
+        pageOf: 'Sayfa {{current}} / {{total}}',
         passphrase: 'Parola',
         password: 'Şifre',
         port: 'Port',
@@ -279,12 +281,21 @@ export const tr = {
                 title: 'Yapılandırılmış Sunucular',
                 subtitle: 'Model Bağlam Protokolü sunucu bağlantılarını yönetin',
                 connect: 'Sunucu Bağla',
-                empty: 'Bağlı sunucu yok'
+                empty: 'Bağlı sunucu yok',
+                emptyHint: 'Pazar sekmesinden sunucu yükleyin',
+                enabled: 'etkin',
+                note: 'Not',
+                noteText: 'Yalnızca etkin sunuculara AI asistanları erişebilir. Her sunucuyu etkinleştirmek/devre dışı bırakmak için güç düğmesini kullanın.',
+                internalAlwaysEnabled: 'Dahili araçlar her zaman etkindir'
             },
             status: {
                 connected: 'Bağlı',
                 disconnected: 'Bağlı değil',
-                error: 'Hata'
+                error: 'Hata',
+                enabled: 'Etkin',
+                disabled: 'Devre Dışı',
+                active: 'Aktif',
+                inactive: 'İnaktif'
             }
         }
     },
@@ -969,12 +980,19 @@ export const tr = {
         official: 'Resmi',
         byAuthor: '{{author}} tarafından',
         categories: {
+            title: 'Kategoriler',
             all: 'Tüm Araçlar',
             filesystem: 'Dosya Sistemi',
             database: 'Veritabanı',
             api: 'API\'ler',
             development: 'Geliştirme',
-            ai: 'Yapay Zeka'
+            ai: 'Yapay Zeka',
+            web: 'Web',
+            devTools: 'Geliştirici Araçları',
+            cloud: 'Bulut',
+            productivity: 'Üretkenlik',
+            devops: 'DevOps',
+            utility: 'Yardımcı Araçlar'
         },
         // MCP Store - I18N-002-1
         noToolsFound: 'Aramanızla eşleşen araç bulunamadı.',

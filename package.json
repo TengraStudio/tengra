@@ -158,6 +158,7 @@
   "build": {
     "appId": "com.tandem.app",
     "productName": "Tandem",
+    "executableName": "Tandem",
     "directories": {
       "output": "release"
     },
@@ -165,7 +166,13 @@
       "dist/**/*"
     ],
     "extraResources": [
-      "resources/bin/**"
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "extraFiles": [
       {
@@ -178,6 +185,7 @@
       }
     ],
     "win": {
+      "artifactName": "${productName}.${ext}",
       "target": [
         "nsis",
         "portable",
@@ -187,15 +195,20 @@
       "publisherName": "Tandem Team"
     },
     "nsis": {
+      "artifactName": "${productName} Setup.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
       "include": "build/installer.nsh",
+      "uninstallDisplayName": "${productName}",
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
       "installerSidebar": "resources/installer-sidebar.bmp",
       "license": "LICENSE"
+    },
+    "portable": {
+      "artifactName": "${productName} Portable.${ext}"
     },
     "linux": {
       "target": [

@@ -43,6 +43,21 @@ export class RateLimitService extends BaseService {
         this.setLimit('embedding', { requestsPerMinute: 100, maxBurst: 20 }); // Embedding generation
         this.setLimit('memory:operation', { requestsPerMinute: 60, maxBurst: 10 }); // Memory operations
 
+        // MCP rate limits - per service type
+        this.setLimit('mcp:filesystem', { requestsPerMinute: 200, maxBurst: 30 }); // File operations
+        this.setLimit('mcp:git', { requestsPerMinute: 60, maxBurst: 10 }); // Git operations
+        this.setLimit('mcp:docker', { requestsPerMinute: 30, maxBurst: 5 }); // Docker operations
+        this.setLimit('mcp:database', { requestsPerMinute: 100, maxBurst: 20 }); // Database queries
+        this.setLimit('mcp:ssh', { requestsPerMinute: 60, maxBurst: 10 }); // SSH commands
+        this.setLimit('mcp:network', { requestsPerMinute: 30, maxBurst: 5 }); // Network utilities
+        this.setLimit('mcp:internet', { requestsPerMinute: 60, maxBurst: 10 }); // Internet APIs
+        this.setLimit('mcp:utility', { requestsPerMinute: 120, maxBurst: 20 }); // Utility operations
+        this.setLimit('mcp:llm', { requestsPerMinute: 30, maxBurst: 5 }); // LLM operations
+        this.setLimit('mcp:analysis', { requestsPerMinute: 60, maxBurst: 10 }); // Code analysis
+        this.setLimit('mcp:ui', { requestsPerMinute: 100, maxBurst: 15 }); // UI operations
+        this.setLimit('mcp:project', { requestsPerMinute: 100, maxBurst: 15 }); // Project operations
+        this.setLimit('mcp:data', { requestsPerMinute: 120, maxBurst: 20 }); // Data operations
+
         // Start cleanup interval to remove old buckets
         this.cleanupInterval = setInterval(() => {
             this.cleanupOldBuckets();
@@ -79,7 +94,6 @@ export class RateLimitService extends BaseService {
         for (const [provider, bucket] of this.buckets) {
             if (now - bucket.lastRefill > maxAge) {
                 this.buckets.delete(provider);
-                appLogger.debug(this.name, `Cleaned up unused bucket for provider: ${provider}`);
             }
         }
     }

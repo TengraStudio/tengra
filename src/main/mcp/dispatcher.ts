@@ -44,9 +44,28 @@ export class McpDispatcher {
             return [];
         }
         const plugins = await this.pluginService.listPlugins();
+        const settings = this.settingsService.getSettings();
+
+        // Get disabled servers from legacy setting
+        const disabledServers = settings.mcpDisabledServers ?? [];
+
+        // Get user MCP servers and their enabled status
+        const userServers = settings.mcpUserServers ?? [];
         const tools: ToolDefinition[] = [];
 
         for (const plugin of plugins) {
+            // Skip if disabled in legacy setting
+            if (disabledServers.includes(plugin.name)) {
+                continue;
+            }
+
+            // For user servers, check the enabled flag
+            const userServer = userServers.find(s => s.id === plugin.name || s.name === plugin.name);
+            if (userServer && !userServer.enabled) {
+                continue;
+            }
+
+            // Core plugins are always enabled, so include their tools
             for (const action of plugin.actions) {
                 const toolName = `mcp__${plugin.name}__${action.name}`;
                 tools.push({

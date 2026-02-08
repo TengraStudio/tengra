@@ -21,6 +21,7 @@ import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMcpIpc } from '@main/ipc/mcp';
+import { registerMcpMarketplaceHandlers } from '@main/ipc/mcp-marketplace';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerMetricsIpc } from '@main/ipc/metrics';
 import { registerMigrationIpc } from '@main/ipc/migration';
@@ -149,6 +150,7 @@ export function registerIpcHandlers(
 
     registerToolsIpc(toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher);
+    registerMcpMarketplaceHandlers(services.mcpMarketplaceService, services.settingsService, services.mcpPluginService);
 
     registerScreenshotIpc();
     registerLoggingIpc();

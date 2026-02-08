@@ -184,13 +184,18 @@ export type AppSettings = {
 }
 
 export type MCPServerConfig = {
+    id: string // Unique identifier (e.g., 'github', 'postgres')
     name: string
     command: string
     args: string[]
     description?: string
     env?: Record<string, string>
-    disabled?: boolean
+    enabled?: boolean // Default: false (user must explicitly enable)
     tools?: { name: string; description: string }[]
+    category?: string
+    publisher?: string
+    version?: string
+    isOfficial?: boolean
 }
 
 export type AccountQuotaInfo = {

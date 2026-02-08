@@ -24,7 +24,7 @@ export function buildDevServers(deps: McpDeps): McpService[] {
                         return await deps.web.fetchJson(url);
                     }
                 }
-            ])
+            ], 'npm', deps.auditLog)
         },
         {
             name: 'github',
@@ -46,7 +46,7 @@ export function buildDevServers(deps: McpDeps): McpService[] {
                         return await deps.web.fetchJson(url);
                     }
                 }
-            ])
+            ], 'github', deps.auditLog)
         },
         {
             name: 'stackoverflow',
@@ -61,7 +61,7 @@ export function buildDevServers(deps: McpDeps): McpService[] {
                         return await deps.web.fetchJson(url);
                     }
                 }
-            ])
+            ], 'stackoverflow', deps.auditLog)
         }
     ];
 }

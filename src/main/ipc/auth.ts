@@ -139,7 +139,6 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     // --- Event Bridge to Renderer ---
 
     eventBus.on('account:linked', (payload) => {
-        appLogger.info('AuthIPC', `Bridging account:linked to renderer for ${payload.provider}`);
         getMainWindow()?.webContents.send('auth:account-changed', { type: 'linked', ...payload });
     });
 
@@ -148,7 +147,6 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     });
 
     eventBus.on('account:unlinked', (payload) => {
-        appLogger.info('AuthIPC', `Bridging account:unlinked to renderer for ${payload.provider}`);
         getMainWindow()?.webContents.send('auth:account-changed', { type: 'unlinked', ...payload });
     });
 }
