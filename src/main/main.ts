@@ -13,7 +13,7 @@ import { appLogger, LogLevel } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { registerIpcHandlers } from '@main/startup/ipc';
-import { createServices } from '@main/startup/services';
+import { container, createServices } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
 
@@ -115,7 +115,6 @@ app.whenReady().then(async () => {
     services.apiServerService = apiServerService;
 
     // Manual registration so Container.dispose() finds it and calls cleanup()
-    const { container } = await import('@main/startup/services');
     container.registerInstance('apiServerService', apiServerService);
 
     await apiServerService.initialize();

@@ -40,7 +40,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
 
             <SidebarItem
                 icon={Brain}
-                label="Memory"
+                label={t('sidebar.memory')}
                 active={currentView === 'memory'}
                 onClick={() => onChangeView('memory')}
                 isCollapsed={isCollapsed}
@@ -54,7 +54,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
             />
             <SidebarItem
                 icon={Bot}
-                label="Agent"
+                label={t('sidebar.agent')}
                 active={currentView === 'project-agent'}
                 onClick={() => onChangeView('project-agent')}
                 isCollapsed={isCollapsed}

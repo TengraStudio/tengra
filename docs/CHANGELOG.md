@@ -1,5 +1,14 @@
 # Changelog & Updates
 
+## 2026-02-08 (Update 27): 🌐 Internationalization (Phase 3) - Layout & Settings
+**Status**: ✅ COMPLETED
+**Summary**: Successfully implemented Phase 3 of the internationalization (i18n) project, focusing on layout and settings components. Unified MCP i18n keys and refactored the MCP Servers tab for better performance and compliance.
+- [x] **Settings Tabs Localization**: Internationalized `General`, `Appearance`, `Accounts`, `Developer`, `Models`, `Speech`, `Statistics`, and `MCP` settings tabs.
+- [x] **MCP i18n Consolidation**: Unified disparate `mcp` translation blocks in `en.ts` and `tr.ts` into a single root block for consistency.
+- [x] **MCPServersTab Refactor**: Completely refactored `MCPServersTab.tsx` to reduce complexity (from 21 to low single digits), extracted `ServerItem` component, and replaced `console.log` with `appLogger` (NASA rules).
+- [x] **Layout Verification**: Audited and confirmed i18n compliance for `AppHeader`, `ActivityBar`, `StatusBar`, `TitleBar`, `CommandPalette`, and `QuickActionBar`.
+- [x] **Quality Control**: Achieved 100% pass rate on `npm run build`, `npm run lint`, and `npm run type-check`.
+
 ## 2026-02-08 (Update 26): 📝 Component Inventory & Documentation
 **Status**: ✅ COMPLETED
 **Summary**: Created a comprehensive inventory of all React components in the `src/renderer` directory (330+ files) and generated a checklist for tracking.

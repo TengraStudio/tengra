@@ -934,6 +934,9 @@ export const tr = {
         copilotDescription: 'Kod tamamlama',
         copilotActive: 'Aktif',
         councilReady: 'Hazır',
+        active: 'Aktif',
+        memory: 'Hafıza',
+        agent: 'Ajan',
         project: 'Proje',
         moveTo: 'Taşı...',
         ideas: 'Fikirler'
@@ -963,8 +966,8 @@ export const tr = {
         marketplaceSubtitle: 'Platforma yeni yetenekler kazandıracak binlerce servisi keşfedin.',
         searchPlaceholder: 'Servis veya araç keşfet...',
         searchTools: 'Araçları ara...',
-        storeTitle: 'MCP Araç Mağazası',
-        storeSubtitle: 'MCP sunucularınız için araçlara göz atın ve yükleyin.',
+        storeTitle: 'MCP Marketplace',
+        storeSubtitle: '{{count}} araç yüklü ve kullanıma hazır',
         toolsInstalled: '{{count}} araç yüklü • Model Bağlam Protokolü sunucularına göz atın',
         noTools: 'Araç bulunamadı',
         noServers: 'Bağlı sunucu yok',
@@ -979,7 +982,7 @@ export const tr = {
         close: 'Kapat',
         remove: 'Kaldır',
         official: 'Resmi',
-        byAuthor: '{{author}} tarafından',
+        byAuthor: '{{author}} tarafından v{{version}}',
         categories: {
             title: 'Kategoriler',
             all: 'Tüm Araçlar',
@@ -995,6 +998,11 @@ export const tr = {
             devops: 'DevOps',
             utility: 'Yardımcı Araçlar'
         },
+        tool: 'araç',
+        tools: 'araç',
+        note: 'Not',
+        noteText: 'Sadece etkinleştirilmiş sunucular yapay zeka asistanları tarafından erişilebilir.',
+        internalAlwaysEnabled: 'Dahili araçlar her zaman etkindir',
         // MCP Store - I18N-002-1
         noToolsFound: 'Aramanızla eşleşen araç bulunamadı.',
         searchingTools: 'Araçlar aranıyor...',

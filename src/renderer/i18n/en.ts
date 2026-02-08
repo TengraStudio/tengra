@@ -933,6 +933,9 @@ export const en = {
         copilotDescription: 'Code completion',
         copilotActive: 'Active',
         councilReady: 'Ready',
+        active: 'Active',
+        memory: 'Memory',
+        agent: 'Agent',
         project: 'Project',
         moveTo: 'Move to...',
         ideas: 'Ideas'
