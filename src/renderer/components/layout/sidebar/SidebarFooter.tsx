@@ -41,7 +41,6 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                     <p className="text-xs font-medium truncate">{selectedProject.title}</p>
                 </div>
             )}
-
             {/* Settings Dropdown */}
             <div className="relative">
                 <SidebarItem
@@ -51,6 +50,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                     active={currentView === 'settings' || showSettingsMenu}
                     onClick={toggleSettingsMenu}
                     isCollapsed={isCollapsed}
+                    iconClassName="transition-transform duration-700 ease-in-out group-hover/item:rotate-180"
                 />
 
                 {showSettingsMenu && (
@@ -71,7 +71,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                     {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                 </div>
             </button>
-        </div>
+        </div >
     );
 };
 

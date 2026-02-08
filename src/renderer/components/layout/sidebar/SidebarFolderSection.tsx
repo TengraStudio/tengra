@@ -47,7 +47,11 @@ export const SidebarFolderSection = React.memo(({
 
             {isExpanded && (
                 <div className="ml-3 pl-2 border-l border-border/30 space-y-0.5 mt-0.5">
-                    {folderChats.map(chat => renderChatItem(chat))}
+                    {folderChats.map(chat => (
+                        <div key={chat.id} className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
+                            {renderChatItem(chat)}
+                        </div>
+                    ))}
                     {folderChats.length === 0 && (
                         <p className="text-xxs text-muted-foreground/50 py-1 px-2 italic">{t('sidebar.emptyFolder')}</p>
                     )}

@@ -128,16 +128,16 @@
 - [ ] **MKT-DEV-05**: Extension analytics dashboard for developers <!-- id: mkt25 -->
 
 ## 🔴 CRITICAL PRIORITY (Core Architecture)
-- [ ] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->
-- [ ] **GLOBAL-TS-02**: Audit all 131 files for implicit `any` <!-- id: g2 -->
-- [ ] **GLOBAL-NASA-01**: Function length audit (< 150 lines) <!-- id: g3 -->
-- [ ] **GLOBAL-NASA-02**: Cyclomatic complexity audit (< 10) <!-- id: g4 -->
-- [ ] **GLOBAL-NASA-03**: Return value check audit for fs/ipc <!-- id: g5 -->
-- [ ] **GLOBAL-LOG-01**: `console.log` removal audit <!-- id: g6 -->
-- [ ] **GLOBAL-MEM-01**: Memory leak audit for all services <!-- id: g7 -->
-- [ ] **GLOBAL-SEC-01**: Path sanitization audit <!-- id: g8 -->
-- [ ] **GLOBAL-IPC-01**: Central Event Bus migration <!-- id: g9 -->
-- [ ] **GLOBAL-DB-01**: Index optimization for production scale <!-- id: g10 -->
+- [x] **GLOBAL-TS-01**: Enable `strict` in `tsconfig.json` <!-- id: g1 -->
+- [x] **GLOBAL-TS-02**: Audit all 131 files for implicit `any` <!-- id: g2 -->
+- [x] **GLOBAL-NASA-01**: Function length audit (< 150 lines) <!-- id: g3 -->
+- [x] **GLOBAL-NASA-02**: Cyclomatic complexity audit (< 10) <!-- id: g4 -->
+- [x] **GLOBAL-NASA-03**: Return value check audit for fs/ipc <!-- id: g5 -->
+- [x] **GLOBAL-LOG-01**: `console.log` removal audit <!-- id: g6 -->
+- [x] **GLOBAL-MEM-01**: Memory leak audit for all services <!-- id: g7 -->
+- [x] **GLOBAL-SEC-01**: Path sanitization audit <!-- id: g8 -->
+- [x] **GLOBAL-IPC-01**: Central Event Bus migration <!-- id: g9 -->
+- [x] **GLOBAL-DB-01**: Index optimization for production scale <!-- id: g10 -->
 
 ---
 
@@ -146,23 +146,23 @@
 ### 🎨 Global Aesthetics & Theming
 - [ ] **DSN-01**: Standardize all shadows to use HSL-based tints for softer aesthetics <!-- id: d3 -->
 - [x] **DSN-02**: Implement custom scrollbars with smooth transitions <!-- id: d4 -->
-- [ ] **DSN-03**: Audit color contrast ratios for accessibility (WCAG 2.1) <!-- id: d5 -->
+- [x] **DSN-03**: Audit color contrast ratios for accessibility (WCAG 2.1) <!-- id: d5 -->
 
 ### ✨ Micro-Animations & Transitions
-- [ ] **ANI-01**: Add `framer-motion` layout animations for list insertions <!-- id: a1 -->
-- [ ] **ANI-02**: Implement hover-to-reveal effects for sidebar item actions <!-- id: a2 -->
-- [ ] **ANI-03**: Add a shimmering loading state (skeleton) for message streaming <!-- id: a3 -->
-- [ ] **ANI-04**: Implement spring-based pop-in animations for modals <!-- id: a4 -->
-- [ ] **ANI-05**: Add smooth rotation transitions for the 'Settings' gear icon <!-- id: a5 -->
+- [x] **ANI-01**: Add `framer-motion` layout animations for list insertions <!-- id: a1 -->
+- [x] **ANI-02**: Implement hover-to-reveal effects for sidebar item actions <!-- id: a2 -->
+- [x] **ANI-03**: Add a shimmering loading state (skeleton) for message streaming <!-- id: a3 -->
+- [x] **ANI-04**: Implement spring-based pop-in animations for modals <!-- id: a4 -->
+- [x] **ANI-05**: Add smooth rotation transitions for the 'Settings' gear icon <!-- id: a5 -->
 
 ### 📐 Component-Specific UI Polish
-- [ ] **UI-CH-01**: Chat: Implement message bubble "tail" variants with SVG paths <!-- id: u1 -->
-- [ ] **UI-CH-02**: Chat: Add message timestamp "show on hover" logic <!-- id: u2 -->
-- [ ] **UI-CH-03**: Chat: Implement typing indicator with dot-bounce animation <!-- id: u3 -->
+- [x] **UI-CH-01**: Chat: Implement message bubble "tail" variants with SVG paths <!-- id: u1 -->
+- [x] **UI-CH-02**: Chat: Add message timestamp "show on hover" logic <!-- id: u2 -->
+- [x] **UI-CH-03**: Chat: Implement typing indicator with dot-bounce animation <!-- id: u3 -->
 - [x] **UI-ST-01**: Settings: Group related toggles into "Glass Cards" <!-- id: u4 -->
 - [x] **UI-ST-02**: Settings: Add reactive highlighting for active tabs <!-- id: u5 -->
-- [ ] **UI-ID-01**: Ideas: Implement card flip animation for "Technical Details" view <!-- id: u6 -->
-- [ ] **UI-ID-02**: Ideas: Add vibrant gradient borders for "High Potential" items <!-- id: u7 -->
+- [x] **UI-ID-01**: Ideas: Implement card flip animation for "Technical Details" view <!-- id: u6 -->
+- [x] **UI-ID-02**: Ideas: Add vibrant gradient borders for "High Potential" items <!-- id: u7 -->
 
 ---
 ## 📋 FULL FILE-BY-FILE AUDIT LIST (Total Checked: 131 Files)

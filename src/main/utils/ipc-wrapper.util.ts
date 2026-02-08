@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import type { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
@@ -25,6 +26,29 @@ export interface IpcHandlerOptions {
     onError?: (error: Error, handlerName: string) => unknown;
 }
 
+let ipcEventBus: EventBusService | null = null;
+
+export function setIpcEventBus(eventBus: EventBusService | null): void {
+    ipcEventBus = eventBus;
+}
+
+function emitIpcLifecycleEvent(
+    phase: 'started' | 'succeeded' | 'failed',
+    handlerName: string,
+    durationMs?: number,
+    errorMessage?: string
+): void {
+    if (!ipcEventBus) { return; }
+
+    ipcEventBus.emitCustom('ipc:lifecycle', {
+        phase,
+        handlerName,
+        durationMs,
+        errorMessage,
+        timestamp: Date.now()
+    });
+}
+
 /**
  * Wraps an IPC handler function with unified error handling and logging.
  * @param handlerName The name of the handler for logging purposes.
@@ -39,10 +63,14 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
     const { wrapResponse = false, onError } = options;
 
     return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<IpcResponse<T> | T> => {
+        const startedAt = Date.now();
+        emitIpcLifecycleEvent('started', handlerName);
+
         try {
             // appLogger.debug('IpcHandler', `[${handlerName}] Started`); // Optional: verbose logging
             const result = await handler(event, ...(args as Args));
             // appLogger.debug('IpcHandler', `[${handlerName}] Completed`);
+            emitIpcLifecycleEvent('succeeded', handlerName, Date.now() - startedAt);
 
             if (wrapResponse) {
                 return { success: true, data: result } as IpcResponse<T>;
@@ -51,6 +79,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
         } catch (error) {
             const errorObj = error as Error;
             appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(errorObj)}`);
+            emitIpcLifecycleEvent('failed', handlerName, Date.now() - startedAt, getErrorMessage(errorObj));
 
             // If custom error handler is provided, use it
             if (onError) {
@@ -108,10 +137,16 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unk
     defaultValue: T
 ) => {
     return async (event: IpcMainInvokeEvent, ...args: unknown[]): Promise<T> => {
+        const startedAt = Date.now();
+        emitIpcLifecycleEvent('started', handlerName);
+
         try {
-            return await handler(event, ...(args as Args));
+            const result = await handler(event, ...(args as Args));
+            emitIpcLifecycleEvent('succeeded', handlerName, Date.now() - startedAt);
+            return result;
         } catch (error) {
             appLogger.error('IpcHandler', `[${handlerName}] Failed: ${getErrorMessage(error as Error)}`);
+            emitIpcLifecycleEvent('failed', handlerName, Date.now() - startedAt, getErrorMessage(error as Error));
             return defaultValue;
         }
     };

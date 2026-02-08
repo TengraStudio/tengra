@@ -1,4 +1,5 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
+import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkeleton';
 import { memo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
@@ -38,6 +39,14 @@ export const MessageList = memo(({
 }: MessageListProps) => {
     // Determine if we should follow the output (stick to bottom)
     // We stick to bottom if we are loading (streaming) or if the user is near the bottom (handled by Virtuoso default 'smooth' or 'auto')
+
+    if (messages.length === 0 && isLoading) {
+        return (
+            <div className="p-4 h-full flex flex-col justify-end">
+                <MessageSkeleton />
+            </div>
+        );
+    }
 
     return (
         <Virtuoso

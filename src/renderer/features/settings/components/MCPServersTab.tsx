@@ -28,14 +28,9 @@ export const MCPServersTab = () => {
         try {
             setLoading(true);
             const result = await window.electron.mcpMarketplace.installed();
-            console.log('MCP Servers loaded:', result);
             if (result.success && result.servers) {
                 // Properly cast from IpcValue[] to MCPServer[]
                 const servers = result.servers as unknown as MCPServer[];
-                console.log('Parsed servers:', servers);
-                console.log('Total servers:', servers.length);
-                console.log('Internal servers:', servers.filter(s => s.category === 'Internal').length);
-                console.log('User servers:', servers.filter(s => s.category !== 'Internal').length);
                 setServers(servers);
             }
         } catch (error) {

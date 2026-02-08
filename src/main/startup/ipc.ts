@@ -49,6 +49,7 @@ import { McpDispatcher } from '@main/mcp/dispatcher';
 import { Services } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { registerBatchIpc } from '@main/utils/ipc-batch.util';
+import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow } from 'electron';
 
 export function registerIpcHandlers(
@@ -58,6 +59,8 @@ export function registerIpcHandlers(
     allowedFileRoots: Set<string>,
     mcpDispatcher: McpDispatcher
 ) {
+    setIpcEventBus(services.eventBusService);
+
     // Registers
     registerWindowIpc(getMainWindow);
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);

@@ -127,6 +127,12 @@ export class UacRepository {
                 FOREIGN KEY(target) REFERENCES uac_canvas_nodes(id) ON DELETE CASCADE
             );
         `);
+
+        await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_uac_tasks_project_status ON uac_tasks(project_path, status, updated_at DESC);`);
+        await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_uac_steps_task_index ON uac_steps(task_id, index_num);`);
+        await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_uac_logs_task_created ON uac_logs(task_id, created_at ASC);`);
+        await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_uac_canvas_nodes_updated ON uac_canvas_nodes(updated_at DESC);`);
+        await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_uac_canvas_edges_source_target ON uac_canvas_edges(source, target);`);
     }
 
     async createTask(projectId: string, description: string, status: string = 'idle', nodeId?: string, metadata?: Record<string, unknown>): Promise<string> {

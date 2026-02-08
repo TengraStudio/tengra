@@ -39,11 +39,13 @@ export default defineConfig({
                     },
                     build: {
                         outDir: 'dist/main',
+                        emptyOutDir: true, // UZAY OPTİMİZASYONU: Eski dosyaları temizle
                         lib: {
                             entry: 'src/main/main.ts',
                             formats: ['cjs']
                         },
-                        minify: false,
+                        // AGRESIF MİNİFİCATION: Main process'te de minify
+                        minify: 'esbuild',
                         rollupOptions: {
                             external: [
                                 'electron',
@@ -65,8 +67,31 @@ export default defineConfig({
                                 'ssh2',
                                 'ws',
                                 'bufferutil',
-                                'utf-8-validate'
-                            ]
+                                'utf-8-validate',
+                                'better-sqlite3' // Native module
+                            ],
+                            // UZAY OPTİMİZASYONU: Main process code splitting
+                            output: {
+                                manualChunks: (id: string) => {
+                                    // MCP servers'ı ayrı chunk'a al
+                                    if (id.includes('src/main/mcp/servers/')) {
+                                        return 'mcp-servers';
+                                    }
+                                    // Service layer'ı ayrı chunk'a al
+                                    if (id.includes('src/main/services/')) {
+                                        return 'services';
+                                    }
+                                    // IPC handlers'ı ayrı chunk'a al
+                                    if (id.includes('src/main/ipc/')) {
+                                        return 'ipc-handlers';
+                                    }
+                                }
+                            },
+                            // AGRESIF tree shaking
+                            treeshake: {
+                                preset: 'recommended',
+                                moduleSideEffects: false
+                            }
                         }
                     }
                 }
@@ -85,13 +110,16 @@ export default defineConfig({
                     },
                     build: {
                         outDir: 'dist/preload',
+                        emptyOutDir: true, // UZAY OPTİMİZASYONU: Eski dosyaları temizle
                         lib: {
                             entry: 'src/main/preload.ts',
                             formats: ['cjs']
                         },
-                        minify: false,
+                        // AGRESIF MİNİFİCATION: Preload da minify
+                        minify: 'esbuild',
                         rollupOptions: {
-                            external: ['electron']
+                            external: ['electron'],
+                            treeshake: true
                         }
                     }
                 }
@@ -125,31 +153,105 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist/renderer',
+        // UZAY SEVİYESİ OPTİMİZASYON: Eski build dosyalarını temizle
+        emptyOutDir: true,
         rollupOptions: {
+            // Rollup cache'ini etkinleştir (hızlı rebuild)
+            cache: true,
+            // AGRESIF tree shaking
+            treeshake: {
+                preset: 'recommended',
+                moduleSideEffects: 'no-external',
+                propertyReadSideEffects: false,
+                unknownGlobalSideEffects: false
+            },
             output: {
-                // Better code splitting for faster builds
+                // AGRESIF CODE SPLITTING: Her büyük kütüphaneyi ayrı chunk'a ayır
                 manualChunks: (id: string) => {
+                    // React ecosystem
+                    if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+                        return 'react-core';
+                    }
+                    // Monaco Editor (TypeScript worker çok büyük)
+                    if (id.includes('node_modules/monaco-editor')) {
+                        return 'monaco';
+                    }
+                    // React Flow (canvas için)
+                    if (id.includes('node_modules/@xyflow') || id.includes('node_modules/reactflow')) {
+                        return 'react-flow';
+                    }
+                    // UI libraries
+                    if (id.includes('node_modules/@radix-ui') || id.includes('node_modules/@floating-ui')) {
+                        return 'ui-libs';
+                    }
+                    // Code highlighting
+                    if (id.includes('node_modules/prismjs') || id.includes('node_modules/highlight.js')) {
+                        return 'syntax';
+                    }
+                    // Math rendering (KaTeX çok büyük)
+                    if (id.includes('node_modules/katex')) {
+                        return 'katex';
+                    }
+                    // Markdown
+                    if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark') || id.includes('node_modules/rehype')) {
+                        return 'markdown';
+                    }
+                    // Virtualization
+                    if (id.includes('node_modules/react-virtuoso') || id.includes('node_modules/react-window')) {
+                        return 'virtualization';
+                    }
+                    // Icons
+                    if (id.includes('node_modules/lucide-react')) {
+                        return 'icons';
+                    }
+                    // Chart libraries
+                    if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) {
+                        return 'charts';
+                    }
+                    // Diğer tüm node_modules
                     if (id.includes('node_modules')) {
                         return 'vendor';
                     }
-                }
+                },
+                // UZAY OPTİMİZASYONU: Dosya isimlerini hash'le (cache için)
+                entryFileNames: 'assets/[name]-[hash].js',
+                chunkFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash].[ext]'
             }
         },
-        // Increase chunk size warning limit
-        chunkSizeWarningLimit: 2000,
-        // Enable minification with esbuild (fast)
-        minify: 'esbuild',
-        // CommonJS interop for ESM modules
+        // UZAY OPTİMİZASYONU: Chunk boyutu limitini düşür
+        chunkSizeWarningLimit: 500,
+        // AGRESIF MİNİFİCATION: terser kullan (esbuild'den daha iyi sıkıştırma)
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true, // console.log'ları production'da kaldır
+                drop_debugger: true,
+                pure_funcs: ['console.log', 'console.info', 'console.debug'], // Belirli fonksiyonları kaldır
+                passes: 2 // İki kez optimize et
+            },
+            mangle: {
+                safari10: true // Safari uyumluluğu
+            },
+            format: {
+                comments: false // Yorumları kaldır
+            }
+        },
+        // CommonJS interop
         commonjsOptions: {
             include: [/node_modules/],
             transformMixedEsModules: true,
             esmExternals: true,
             strictRequires: false
         },
-        // Configure build target
+        // Modern tarayıcı hedefi (Electron Chromium 120+)
         target: 'esnext',
-        // Disable sourcemaps in production for faster builds
-        sourcemap: process.env.NODE_ENV === 'development'
+        // Production'da sourcemap yok (boyut tasarrufu)
+        sourcemap: false,
+        // CSS code splitting
+        cssCodeSplit: true,
+        // UZAY OPTİMİZASYONU: Daha agresif tree shaking
+        reportCompressedSize: true
     },
     // Optimize deps - pre-bundle for faster dev startup
     optimizeDeps: {

@@ -19,6 +19,7 @@ import { Message, MessageVariant } from '@/types';
 
 import 'katex/dist/katex.min.css';
 import '@renderer/features/chat/components/MessageBubble.css';
+import { TypingIndicator } from './TypingIndicator';
 
 const COLLAPSE_THRESHOLD = 30;
 
@@ -103,16 +104,7 @@ const MessageIcon = ({ short, color, title }: { short: string; color: string; ti
     </div>
 );
 
-const TypingDots = ({ t }: { t: TranslationFn }) => (
-    <div className="flex gap-2 items-center px-2 py-3">
-        <div className="flex gap-1.5 items-center">
-            <div className="w-2 h-2 bg-gradient-to-r from-primary to-accent-foreground rounded-full animate-bounce [animation-delay:-0.3s] shadow-lg shadow-primary/30" />
-            <div className="w-2 h-2 bg-gradient-to-r from-accent-foreground to-info rounded-full animate-bounce [animation-delay:-0.15s] shadow-lg shadow-accent-foreground/30" />
-            <div className="w-2 h-2 bg-gradient-to-r from-info to-primary rounded-full animate-bounce shadow-lg shadow-info/30" />
-        </div>
-        <span className="text-xxs text-muted-foreground/50 font-medium animate-pulse">{t('messageBubble.thinking')}</span>
-    </div>
-);
+
 
 const ResponseProgress = () => (
     <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden bg-primary/5">
@@ -168,7 +160,7 @@ const QuotaErrorCard = memo(({ details, t }: { details: { message: string; reset
                 <Clock className="w-3.5 h-3.5" />
                 <span>{t('messageBubble.resetsAt')} {new Date(details.resets_at * 1000).toLocaleString()}</span>
             </div>
-        )} 
+        )}
     </div>
 ));
 QuotaErrorCard.displayName = 'QuotaErrorCard';
@@ -390,7 +382,7 @@ const MessageBubbleContent = memo(({ showRawMarkdown, quotaDetails, displayConte
         return <QuotaErrorCard details={quotaDetails} t={t} />;
     }
     if (!displayContent && images.length === 0) {
-        return isStreaming ? <TypingDots t={t} /> : <span className="italic opacity-50">...</span>;
+        return isStreaming ? <TypingIndicator /> : <span className="italic opacity-50">...</span>;
     }
     if (!displayContent) {
         return null;
@@ -585,6 +577,12 @@ const MessageBubbleInner = memo(({ isUser, isStreaming, displayContent, quotaDet
                 t={actionsContextProps.t}
             />
             {showActions && <MessageActions displayContent={displayContent} message={message} isSpeaking={actionsContextProps.isSpeaking} onStop={actionsContextProps.onStop} onSpeak={actionsContextProps.onSpeak} onBookmark={actionsContextProps.onBookmark} onReact={actionsContextProps.onReact} onRate={actionsContextProps.onRate} t={actionsContextProps.t} />}
+            {isUser && (
+                <svg className="absolute -bottom-[1px] -right-2 w-2 h-2.5 text-muted/10 fill-current pointer-events-none" viewBox="0 0 8 10">
+                    <path d="M0 0 L8 10 L0 10 Z" />
+                    {/* Simple tail path */}
+                </svg>
+            )}
         </div>
     );
 });
@@ -633,8 +631,8 @@ interface MessageFooterProps {
 const MessageFooter = memo(({ message, displayContent, language, isStreaming, streamingSpeed }: MessageFooterProps) => {
     const { t } = useTranslation(language);
     return (
-        <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium">
-            <span>{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+        <div className="flex items-center gap-3 mt-2 text-xxs text-muted-foreground/40 font-medium transition-opacity duration-300">
+            <span className="opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">{new Date(message.timestamp).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
             <span className="w-1 h-1 rounded-full bg-muted-foreground/20" />
             <span>{t('messageBubble.tokenEstimate', { count: Math.ceil(displayContent.length / 4) })}</span>
             {message.model && (<><span className="w-1 h-1 rounded-full bg-muted-foreground/20" /><span className="truncate max-w-[120px]">{message.model}</span></>)}

@@ -2,6 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { DatabaseService } from '@main/services/data/database.service';
+import { assertPathWithinRoot } from '@main/utils/path-security.util';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain, shell } from 'electron';
 
 
@@ -24,20 +27,20 @@ interface GalleryItem {
     }
 }
 
-import { DatabaseService } from '@main/services/data/database.service';
-
 export function registerGalleryIpc(galleryPath: string, databaseService?: DatabaseService) {
+    const galleryRoot = path.resolve(galleryPath);
+    const resolveGalleryPath = (inputPath: string) => assertPathWithinRoot(inputPath, galleryRoot, 'gallery');
 
     // Ensure gallery exists
-    if (!fs.existsSync(galleryPath)) {
+    if (!fs.existsSync(galleryRoot)) {
         try {
-            fs.mkdirSync(galleryPath, { recursive: true });
+            fs.mkdirSync(galleryRoot, { recursive: true });
         } catch (e) {
             appLogger.error('Gallery', `Failed to create gallery path: ${e}`);
         }
     }
 
-    ipcMain.handle('gallery:list', async () => {
+    ipcMain.handle('gallery:list', createIpcHandler('gallery:list', async () => {
         try {
             const results: GalleryItem[] = [];
             const subdirs = ['images', 'videos'];
@@ -68,18 +71,19 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             }
 
             for (const sub of subdirs) {
-                const subPath = path.join(galleryPath, sub);
+                const subPath = path.join(galleryRoot, sub);
                 if (!fs.existsSync(subPath)) { continue; }
 
                 const files = await fs.promises.readdir(subPath);
                 for (const f of files) {
                     if (/\.(png|jpg|jpeg|webp|gif|mp4|webm|mov)$/i.test(f)) {
                         const fullPath = path.join(subPath, f);
+                        const resolvedPath = resolveGalleryPath(fullPath);
                         const stats = fs.statSync(fullPath);
                         results.push({
                             name: f,
-                            path: fullPath,
-                            url: `safe-file://${fullPath.replace(/\\/g, '/')}`,
+                            path: resolvedPath,
+                            url: `safe-file://${resolvedPath.replace(/\\/g, '/')}`,
                             mtime: stats.mtime.getTime(),
                             type: sub === 'images' ? 'image' : 'video',
                             metadata: metadataMap[f]
@@ -93,39 +97,38 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             appLogger.error('Gallery', `Gallery List Error: ${error}`);
             return [];
         }
-    });
+    }));
 
-    ipcMain.handle('gallery:delete', async (_event, filePath) => {
+    ipcMain.handle('gallery:delete', createIpcHandler('gallery:delete', async (_event, filePath: string) => {
         try {
-            // Security check: ensure filePath is within galleryPath
-            if (!filePath.startsWith(galleryPath) && !filePath.includes('tandem/Gallery')) {
-                throw new Error('Unauthorized file deletion');
-            }
-            await fs.promises.unlink(filePath);
+            const safePath = resolveGalleryPath(filePath);
+            await fs.promises.unlink(safePath);
             return true;
         } catch (error) {
             appLogger.error('Gallery', `Gallery Delete Error: ${error}`);
             return false;
         }
-    });
+    }));
 
-    ipcMain.handle('gallery:open', async (_event, filePath) => {
+    ipcMain.handle('gallery:open', createIpcHandler('gallery:open', async (_event, filePath: string) => {
         try {
-            await shell.openPath(filePath);
+            const safePath = resolveGalleryPath(filePath);
+            await shell.openPath(safePath);
             return true;
         } catch (error) {
             appLogger.error('Gallery', `Gallery Open Error: ${error}`);
             return false;
         }
-    });
+    }));
 
-    ipcMain.handle('gallery:reveal', async (_event, filePath) => {
+    ipcMain.handle('gallery:reveal', createIpcHandler('gallery:reveal', async (_event, filePath: string) => {
         try {
-            shell.showItemInFolder(filePath);
+            const safePath = resolveGalleryPath(filePath);
+            shell.showItemInFolder(safePath);
             return true;
         } catch (error) {
             appLogger.error('Gallery', `Gallery Reveal Error: ${error}`);
             return false;
         }
-    });
+    }));
 }
