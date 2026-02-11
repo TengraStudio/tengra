@@ -1,4 +1,16 @@
-import { Bot, CheckCircle, ChevronDown, ChevronRight, Clock, History, List, Loader2, Pause, Play, Plus, Trash2, X, XCircle } from 'lucide-react';
+import {
+    Bot,
+    ChevronDown,
+    ChevronRight,
+    Clock,
+    History,
+    Play,
+    Plus,
+    Terminal,
+    Trash2,
+    X,
+    Zap,
+} from 'lucide-react';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -36,149 +48,188 @@ interface TaskSidebarProps {
     onDeleteTask: (taskId: string) => void;
     onResumeTask: (taskId: string) => void;
     onResumeCheckpoint: (checkpointId: string) => void;
+    onRollbackCheckpoint: (checkpointId: string) => void;
     getCheckpoints: (taskId: string) => Promise<CheckpointItem[]>;
     onCloseSidebar: () => void;
     onNewTask: () => void;
     t: (key: string, options?: Record<string, string | number>) => string;
 }
 
-const TaskItem = memo(({
-    task,
-    isSelected,
-    onSelect,
-    onDelete,
-    onResume,
-    onResumeCheckpoint,
-    getCheckpoints,
-    formatTime,
-    t
-}: {
-    task: TaskHistoryItem;
-    isSelected: boolean;
-    onSelect: (id: string) => void;
-    onDelete: (id: string) => void;
-    onResume: (id: string) => void;
-    onResumeCheckpoint: (id: string) => void;
-    getCheckpoints: (id: string) => Promise<CheckpointItem[]>;
-    formatTime: (date: Date) => string;
-    t: (key: string, options?: Record<string, string | number>) => string;
-}) => {
-    const [showCheckpoints, setShowCheckpoints] = useState(false);
-    const [checkpoints, setCheckpoints] = useState<CheckpointItem[]>([]);
-    const [isLoadingCheckpoints, setIsLoadingCheckpoints] = useState(false);
-
-    const toggleCheckpoints = useCallback(async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!showCheckpoints) {
-            setIsLoadingCheckpoints(true);
-            try {
-                const data = await getCheckpoints(task.id);
-                setCheckpoints(data);
-            } finally {
-                setIsLoadingCheckpoints(false);
-            }
-        }
-        setShowCheckpoints(!showCheckpoints);
-    }, [showCheckpoints, task.id, getCheckpoints]);
-
-    const getStatusIcon = (s: TaskHistoryItem['status']) => {
-        switch (s) {
-            case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
-            case 'failed': return <XCircle className="w-4 h-4 text-destructive" />;
-            case 'paused': return <Pause className="w-4 h-4 text-secondary-foreground" />;
-            default: return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
-        }
+const StatusLED: React.FC<{ status: TaskHistoryItem['status'] }> = ({ status }) => {
+    const colors = {
+        running: 'bg-success shadow-success/50 animate-pulse',
+        completed: 'bg-primary shadow-primary/50',
+        failed: 'bg-destructive shadow-destructive/50',
+        paused: 'bg-warning shadow-warning/50',
     };
 
     return (
-        <div
-            onClick={() => onSelect(task.id)}
-            className={cn(
-                "group relative p-3 rounded-lg cursor-pointer transition-all border border-transparent mb-0.5",
-                isSelected
-                    ? "bg-primary/10 border-primary/20 shadow-sm"
-                    : "hover:bg-muted/10 hover:border-border/30"
-            )}
-        >
-            <div className="flex items-start justify-between mb-1">
-                <div className="flex items-center gap-2 overflow-hidden mr-2">
-                    {getStatusIcon(task.status)}
-                    <span className={cn(
-                        "text-sm font-medium truncate",
-                        isSelected ? "text-primary-foreground" : "text-foreground"
-                    )}>
-                        {task.description}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                <button
-                    onClick={(e) => { void toggleCheckpoints(e); }}
-                    className={cn(
-                        "p-1 hover:bg-primary/20 rounded transition-colors",
-                        showCheckpoints ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
-                    )}
-                    title={t('agent.viewCheckpoints')}
-                >
-                    <History className="w-3.5 h-3.5" />
-                </button>
-                {(task.status === 'paused' || (task.latestCheckpointId && task.status !== 'running')) && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (task.status === 'paused') {
-                                onResume(task.id);
-                            } else if (task.latestCheckpointId) {
-                                onResumeCheckpoint(task.latestCheckpointId);
-                            }
-                        }}
-                        className="p-1 hover:bg-primary/20 rounded text-primary transition-colors"
-                        title={t('common.resume')}
-                    >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                    </button>
-                )}
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                    className="p-1 hover:bg-destructive/10 rounded text-destructive/70 hover:text-destructive transition-colors"
-                    title={t('common.delete')}
-                >
-                    <Trash2 className="w-3.5 h-3.5" />
-                </button>
-            </div>
+        <div className="relative flex items-center justify-center w-3 h-3">
+            <div className={cn('absolute w-2 h-2 rounded-full shadow-[0_0_8px]', colors[status])} />
+            <div className={cn('w-1.5 h-1.5 rounded-full', colors[status])} />
+        </div>
+    );
+};
 
-            {
-                showCheckpoints && (
-                    <div className="mt-2 mb-2 pl-2 border-l-2 border-primary/20 bg-background/30 rounded-r-md">
+const TaskItem = memo(
+    ({
+        task,
+        isSelected,
+        onSelect,
+        onDelete,
+        onResume,
+        onResumeCheckpoint,
+        onRollbackCheckpoint,
+        getCheckpoints,
+        formatTime,
+        t,
+    }: {
+        task: TaskHistoryItem;
+        isSelected: boolean;
+        onSelect: (id: string) => void;
+        onDelete: (id: string) => void;
+        onResume: (id: string) => void;
+        onResumeCheckpoint: (id: string) => void;
+        onRollbackCheckpoint: (id: string) => void;
+        getCheckpoints: (id: string) => Promise<CheckpointItem[]>;
+        formatTime: (date: Date) => string;
+        t: (key: string, options?: Record<string, string | number>) => string;
+    }) => {
+        const [showCheckpoints, setShowCheckpoints] = useState(false);
+        const [checkpoints, setCheckpoints] = useState<CheckpointItem[]>([]);
+        const [isLoadingCheckpoints, setIsLoadingCheckpoints] = useState(false);
+
+        const toggleCheckpoints = useCallback(
+            async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!showCheckpoints) {
+                    setIsLoadingCheckpoints(true);
+                    try {
+                        const data = await getCheckpoints(task.id);
+                        setCheckpoints(data);
+                    } finally {
+                        setIsLoadingCheckpoints(false);
+                    }
+                }
+                setShowCheckpoints(!showCheckpoints);
+            },
+            [showCheckpoints, task.id, getCheckpoints]
+        );
+
+        return (
+            <div
+                onClick={() => onSelect(task.id)}
+                className={cn(
+                    'group relative cursor-pointer transition-all duration-200 font-mono',
+                    'border-l-2 ml-2 pl-3 py-2 pr-2',
+                    isSelected
+                        ? 'border-l-primary bg-primary/5'
+                        : 'border-l-border hover:border-l-muted-foreground hover:bg-muted/30'
+                )}
+            >
+                {/* Scan line effect on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-foreground/[0.02] to-transparent h-8 animate-scan" />
+                </div>
+
+                <div className="flex items-start gap-2 relative">
+                    <StatusLED status={task.status} />
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span
+                                className={cn(
+                                    'text-xs font-medium truncate tracking-tight',
+                                    isSelected ? 'text-primary' : 'text-foreground/90'
+                                )}
+                            >
+                                {task.description}
+                            </span>
+                        </div>
+
+                        {/* Metrics row */}
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono">
+                            <span className="flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                {formatTime(task.createdAt)}
+                            </span>
+                            <span className="text-border">|</span>
+                            <span className="truncate max-w-[60px] uppercase text-[9px]">
+                                {task.model}
+                            </span>
+                            {task.metrics && task.metrics.tokensUsed > 0 && (
+                                <>
+                                    <span className="text-border">|</span>
+                                    <span className="text-primary/60">
+                                        {Math.round(task.metrics.tokensUsed / 1000)}K
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action buttons - appear on hover */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={e => {
+                            void toggleCheckpoints(e);
+                        }}
+                        className={cn(
+                            'p-1.5 rounded transition-colors',
+                            showCheckpoints
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                        )}
+                        title={t('agent.viewCheckpoints')}
+                    >
+                        <History className="w-3 h-3" />
+                    </button>
+                    {(task.status === 'paused' ||
+                        (task.latestCheckpointId && task.status !== 'running')) && (
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (task.status === 'paused') {
+                                    onResume(task.id);
+                                } else if (task.latestCheckpointId) {
+                                    onResumeCheckpoint(task.latestCheckpointId);
+                                }
+                            }}
+                            className="p-1.5 rounded text-success/70 hover:text-success hover:bg-success/10 transition-colors"
+                            title={t('common.resume')}
+                        >
+                            <Play className="w-3 h-3 fill-current" />
+                        </button>
+                    )}
+                    <button
+                        onClick={e => {
+                            e.stopPropagation();
+                            onDelete(task.id);
+                        }}
+                        className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title={t('common.delete')}
+                    >
+                        <Trash2 className="w-3 h-3" />
+                    </button>
+                </div>
+
+                {/* Checkpoints panel */}
+                {showCheckpoints && (
+                    <div className="mt-2 ml-1 border-l border-dashed border-primary/30 pl-3 py-1">
                         <CheckpointList
                             checkpoints={checkpoints}
-                            onResume={(id) => onResumeCheckpoint(id)}
+                            onResume={id => onResumeCheckpoint(id)}
+                            onRollback={id => onRollbackCheckpoint(id)}
                             isLoading={isLoadingCheckpoints}
                             formatTime={formatTime}
                             t={t}
                         />
                     </div>
-                )
-            }
-
-            <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                    <span className="flex items-center gap-1 opacity-60">
-                        <Clock className="w-3 h-3" />
-                        {formatTime(task.createdAt)}
-                    </span>
-                    <span className="opacity-30">•</span>
-                    <span className="truncate max-w-[80px] opacity-60">{task.model}</span>
-                </div>
-                {task.metrics && task.metrics.tokensUsed > 0 && (
-                    <div className="text-xs font-mono text-primary/40 group-hover:text-primary transition-colors">
-                        {t('agent.tokensShort', { count: Math.round(task.metrics.tokensUsed / 1000) })}
-                    </div>
                 )}
             </div>
-        </div >
-    );
-});
+        );
+    }
+);
 
 TaskItem.displayName = 'TaskItem';
 
@@ -191,27 +242,40 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
     onDeleteTask,
     onResumeTask,
     onResumeCheckpoint,
+    onRollbackCheckpoint,
     getCheckpoints,
     onCloseSidebar,
     onNewTask,
-    t
+    t,
 }) => {
     const [now] = useState(() => Date.now());
 
-    const formatRelativeTime = useMemo(() => (date: Date): string => {
-        const diff = now - date.getTime();
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-        if (minutes < 1) { return t('agent.justNow'); }
-        if (minutes < 60) { return t('agent.minutesAgo', { count: minutes }); }
-        if (hours < 24) { return t('agent.hoursAgo', { count: hours }); }
-        return t('agent.daysAgo', { count: days });
-    }, [now, t]);
+    const formatRelativeTime = useMemo(
+        () =>
+            (date: Date): string => {
+                const diff = now - date.getTime();
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(diff / 3600000);
+                const days = Math.floor(diff / 86400000);
+                if (minutes < 1) {
+                    return t('agent.justNow');
+                }
+                if (minutes < 60) {
+                    return t('agent.minutesAgo', { count: minutes });
+                }
+                if (hours < 24) {
+                    return t('agent.hoursAgo', { count: hours });
+                }
+                return t('agent.daysAgo', { count: days });
+            },
+        [now, t]
+    );
 
-    // Flatten data for Virtuoso
     const items = useMemo(() => {
-        const flattened: Array<{ type: 'header'; provider: string; count: number } | { type: 'task'; task: TaskHistoryItem }> = [];
+        const flattened: Array<
+            | { type: 'header'; provider: string; count: number }
+            | { type: 'task'; task: TaskHistoryItem }
+        > = [];
         Object.entries(groupedTasks).forEach(([provider, tasks]) => {
             flattened.push({ type: 'header', provider, count: tasks.length });
             if (expandedProviders.has(provider)) {
@@ -222,39 +286,78 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
     }, [groupedTasks, expandedProviders]);
 
     return (
-        <div className="w-80 border-r border-border flex flex-col bg-card/10 backdrop-blur-3xl h-full shadow-2xl">
-            <div className="p-4 border-b border-border/50 flex items-center justify-between bg-card/40">
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
-                        <List className="w-4 h-4 text-primary relative" />
+        <div className="w-72 flex flex-col h-full bg-card/40 backdrop-blur-xl border-r border-border relative overflow-hidden">
+            {/* Decorative grid pattern */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        backgroundImage: `
+                        linear-gradient(to right, currentColor 1px, transparent 1px),
+                        linear-gradient(to bottom, currentColor 1px, transparent 1px)
+                    `,
+                        backgroundSize: '20px 20px',
+                    }}
+                />
+            </div>
+
+            {/* Header */}
+            <div className="relative p-3 border-b border-border">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Terminal className="w-4 h-4 text-primary" />
+                            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground font-mono">
+                                {t('agent.history')}
+                            </h3>
+                            <div className="text-[9px] font-mono text-primary/50 tracking-wider">
+                                SYS.TASKS.LOG
+                            </div>
+                        </div>
                     </div>
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground/70">{t('agent.history')}</h3>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={onNewTask}
+                            className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/20 hover:border-primary/40 group"
+                            title="New Task"
+                        >
+                            <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-300" />
+                        </button>
+                        <button
+                            onClick={onCloseSidebar}
+                            className="p-2 rounded-lg hover:bg-muted transition-all text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={onNewTask}
-                        className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all active:scale-90 flex items-center gap-2 border border-primary/20 shadow-lg shadow-primary/5"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={onCloseSidebar}
-                        className="p-2 hover:bg-muted/20 rounded-xl transition-all active:scale-90 border border-border/50"
-                    >
-                        <X className="w-4 h-4 text-muted-foreground/50" />
-                    </button>
+
+                {/* ASCII art decorative line */}
+                <div className="mt-2 text-[8px] font-mono text-muted-foreground/20 tracking-widest overflow-hidden">
+                    {'═'.repeat(40)}
                 </div>
             </div>
 
+            {/* Task List */}
             <div className="flex-1 min-h-0 relative">
                 {items.length === 0 ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12 space-y-4">
-                        <div className="w-20 h-20 rounded-[2.5rem] bg-muted/5 flex items-center justify-center border border-muted/10">
-                            <Bot className="w-10 h-10 text-muted-foreground/10" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+                        <div className="relative mb-4">
+                            <div className="w-16 h-16 rounded-2xl bg-muted/30 border border-border flex items-center justify-center">
+                                <Bot className="w-8 h-8 text-muted-foreground/30" />
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-background border border-border flex items-center justify-center">
+                                <Zap className="w-2 h-2 text-muted-foreground/40" />
+                            </div>
                         </div>
-                        <p className="text-xxs font-black uppercase tracking-widest text-muted-foreground/30 leading-relaxed">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/50 mb-1">
                             {t('agent.no_tasks_yet')}
+                        </p>
+                        <p className="text-[9px] font-mono text-muted-foreground/30">
+                            AWAITING COMMANDS...
                         </p>
                     </div>
                 ) : (
@@ -266,43 +369,61 @@ export const TaskSidebar: React.FC<TaskSidebarProps> = ({
                                 return (
                                     <button
                                         onClick={() => toggleProvider(item.provider)}
-                                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/5 transition-colors group border-y border-border/10 mt-2 first:mt-0"
+                                        className="w-full px-3 py-2 flex items-center gap-2 hover:bg-muted/30 transition-colors group mt-1 first:mt-0"
                                     >
-                                        <div className="p-1 rounded-md bg-muted/10 group-hover:bg-primary/10 transition-colors">
+                                        <div
+                                            className={cn(
+                                                'p-1 rounded transition-colors',
+                                                expandedProviders.has(item.provider)
+                                                    ? 'text-primary'
+                                                    : 'text-muted-foreground group-hover:text-foreground'
+                                            )}
+                                        >
                                             {expandedProviders.has(item.provider) ? (
-                                                <ChevronDown className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                <ChevronDown className="w-3 h-3" />
                                             ) : (
-                                                <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                <ChevronRight className="w-3 h-3" />
                                             )}
                                         </div>
-                                        <span className="text-xxs font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-foreground transition-colors">
+                                        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-muted-foreground group-hover:text-foreground transition-colors">
                                             {item.provider}
                                         </span>
-                                        <span className="ml-auto text-xxxs font-black font-mono text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity">
-                                            {item.count.toString().padStart(2, '0')}
+                                        <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent mx-2" />
+                                        <span className="text-[9px] font-mono text-primary/40 tabular-nums">
+                                            [{item.count.toString().padStart(2, '0')}]
                                         </span>
                                     </button>
                                 );
                             } else {
                                 return (
-                                    <div className="px-2">
-                                        <TaskItem
-                                            task={item.task}
-                                            isSelected={selectedTaskId === item.task.id}
-                                            onSelect={onSelectTask}
-                                            onDelete={onDeleteTask}
-                                            onResume={onResumeTask}
-                                            onResumeCheckpoint={onResumeCheckpoint}
-                                            getCheckpoints={getCheckpoints}
-                                            formatTime={formatRelativeTime}
-                                            t={t}
-                                        />
-                                    </div>
+                                    <TaskItem
+                                        task={item.task}
+                                        isSelected={selectedTaskId === item.task.id}
+                                        onSelect={onSelectTask}
+                                        onDelete={onDeleteTask}
+                                        onResume={onResumeTask}
+                                        onResumeCheckpoint={onResumeCheckpoint}
+                                        onRollbackCheckpoint={onRollbackCheckpoint}
+                                        getCheckpoints={getCheckpoints}
+                                        formatTime={formatRelativeTime}
+                                        t={t}
+                                    />
                                 );
                             }
                         }}
                     />
                 )}
+            </div>
+
+            {/* Footer status bar */}
+            <div className="p-2 border-t border-border bg-card/30">
+                <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground">
+                    <span>v2.1.0</span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-success animate-pulse" />
+                        <span>ONLINE</span>
+                    </div>
+                </div>
             </div>
         </div>
     );

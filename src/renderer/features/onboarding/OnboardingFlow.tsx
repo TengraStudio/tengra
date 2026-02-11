@@ -17,23 +17,23 @@ const STEPS = [
     {
         title: 'welcome',
         icon: '🏮',
-        color: 'from-orange-500 to-red-600',
+        color: 'from-warning to-destructive',
     },
     {
         title: 'multiModel',
         icon: '🧠',
-        color: 'from-blue-500 to-indigo-600',
+        color: 'from-info to-primary',
     },
     {
         title: 'workspace',
         icon: '🚀',
-        color: 'from-emerald-500 to-teal-600',
+        color: 'from-success to-success-light',
     },
     {
         title: 'privacy',
         icon: '🛡️',
-        color: 'from-purple-500 to-pink-600',
-    }
+        color: 'from-accent to-primary',
+    },
 ];
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose, onStartTour }) => {
@@ -44,9 +44,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
     const completeOnboarding = () => {
         localStorage.setItem('Tandem-onboarding-complete', 'true');
         // Also update via IPC if available
-        window.electron?.ipcRenderer?.invoke?.('settings:update', {
-            general: { onboardingCompleted: true }
-        }).catch(() => { /* Settings update is optional */ });
+        window.electron?.ipcRenderer
+            ?.invoke?.('settings:update', {
+                general: { onboardingCompleted: true },
+            })
+            .catch(() => {
+                /* Settings update is optional */
+            });
         onClose();
     };
 
@@ -76,12 +80,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
     const descKey = `onboarding.${step.title}Description` as const;
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={t(titleKey)}
-            className="max-w-2xl"
-        >
+        <Modal isOpen={isOpen} onClose={onClose} title={t(titleKey)} className="max-w-2xl">
             <div className="relative overflow-hidden min-h-[350px] flex flex-col">
                 {/* Skip button */}
                 <button
@@ -98,8 +97,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                         <div
                             key={i}
                             className={cn(
-                                "h-1.5 flex-1 rounded-full transition-all duration-500",
-                                i <= currentStep ? "bg-primary" : "bg-muted"
+                                'h-1.5 flex-1 rounded-full transition-all duration-500',
+                                i <= currentStep ? 'bg-primary' : 'bg-muted'
                             )}
                         />
                     ))}
@@ -111,13 +110,15 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                         initial={{ x: 20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -20, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="flex-1 flex flex-col items-center text-center space-y-6"
                     >
-                        <div className={cn(
-                            "w-24 h-24 rounded-3xl bg-gradient-to-br flex items-center justify-center text-5xl shadow-2xl",
-                            step.color
-                        )}>
+                        <div
+                            className={cn(
+                                'w-24 h-24 rounded-3xl bg-gradient-to-br flex items-center justify-center text-5xl shadow-2xl',
+                                step.color
+                            )}
+                        >
                             {step.icon}
                         </div>
 
@@ -136,8 +137,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                     <button
                         onClick={handleBack}
                         className={cn(
-                            "px-6 py-2 rounded-xl text-sm font-semibold transition-all",
-                            currentStep === 0 ? "opacity-0 pointer-events-none" : "hover:bg-muted text-muted-foreground"
+                            'px-6 py-2 rounded-xl text-sm font-semibold transition-all',
+                            currentStep === 0
+                                ? 'opacity-0 pointer-events-none'
+                                : 'hover:bg-muted text-muted-foreground'
                         )}
                     >
                         {t('common.back')}
@@ -147,11 +150,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
                         onClick={handleNext}
                         className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                     >
-                        {currentStep === STEPS.length - 1 ? t('common.getStarted') : t('common.next')}
+                        {currentStep === STEPS.length - 1
+                            ? t('common.getStarted')
+                            : t('common.next')}
                     </button>
                 </div>
             </div>
         </Modal>
     );
 };
-

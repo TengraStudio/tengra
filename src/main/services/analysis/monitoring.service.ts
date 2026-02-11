@@ -2,9 +2,8 @@ import { exec } from 'child_process';
 import * as os from 'os';
 import { promisify } from 'util';
 
+import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-
-import { ServiceResponse } from '@/types';
 
 const execAsync = promisify(exec);
 
@@ -19,14 +18,14 @@ export class MonitoringService {
             success: true,
             result: {
                 cpu: cpuUsage,
-                memory: memUsage
-            }
+                memory: memUsage,
+            },
         };
     }
 
     async getSystemMonitor(): Promise<ServiceResponse<{ output: string }>> {
         try {
-            let output = "";
+            let output = '';
             if (process.platform === 'win32') {
                 const { stdout } = await execAsync('wmic cpu get loadpercentage /value');
                 output = stdout;
@@ -43,7 +42,9 @@ export class MonitoringService {
     async getBatteryStatus(): Promise<ServiceResponse<{ output: string }>> {
         try {
             if (process.platform === 'win32') {
-                const { stdout } = await execAsync('powershell -Command "Get-CimInstance -ClassName Win32_Battery | Select-Object -Property EstimatedChargeRemaining, BatteryStatus"');
+                const { stdout } = await execAsync(
+                    'powershell -Command "Get-CimInstance -ClassName Win32_Battery | Select-Object -Property EstimatedChargeRemaining, BatteryStatus"'
+                );
                 return { success: true, result: { output: stdout } };
             } else if (process.platform === 'linux') {
                 const { stdout } = await execAsync('upower -i $(upower -e | grep battery)');

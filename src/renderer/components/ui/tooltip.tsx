@@ -5,27 +5,30 @@ import { cn } from '@/lib/utils';
 
 type Side = 'top' | 'bottom' | 'left' | 'right';
 
-interface Position { top: number; left: number }
+interface Position {
+    top: number;
+    left: number;
+}
 
 type PositionCalculator = (triggerRect: DOMRect, tooltipRect: DOMRect, gap: number) => Position;
 
 const POSITION_CALCULATORS: Record<Side, PositionCalculator> = {
     top: (tr, tt, gap) => ({
         top: tr.top - tt.height - gap,
-        left: tr.left + (tr.width - tt.width) / 2
+        left: tr.left + (tr.width - tt.width) / 2,
     }),
     bottom: (tr, tt, gap) => ({
         top: tr.bottom + gap,
-        left: tr.left + (tr.width - tt.width) / 2
+        left: tr.left + (tr.width - tt.width) / 2,
     }),
     left: (tr, tt, gap) => ({
         top: tr.top + (tr.height - tt.height) / 2,
-        left: tr.left - tt.width - gap
+        left: tr.left - tt.width - gap,
     }),
     right: (tr, tt, gap) => ({
         top: tr.top + (tr.height - tt.height) / 2,
-        left: tr.right + gap
-    })
+        left: tr.right + gap,
+    }),
 };
 
 function clampToViewport(pos: Position, tooltipRect: DOMRect, gap: number): Position {
@@ -33,21 +36,29 @@ function clampToViewport(pos: Position, tooltipRect: DOMRect, gap: number): Posi
     const viewportHeight = window.innerHeight;
     let { top, left } = pos;
 
-    if (left < 0) { left = gap; }
-    if (left + tooltipRect.width > viewportWidth) { left = viewportWidth - tooltipRect.width - gap; }
-    if (top < 0) { top = gap; }
-    if (top + tooltipRect.height > viewportHeight) { top = viewportHeight - tooltipRect.height - gap; }
+    if (left < 0) {
+        left = gap;
+    }
+    if (left + tooltipRect.width > viewportWidth) {
+        left = viewportWidth - tooltipRect.width - gap;
+    }
+    if (top < 0) {
+        top = gap;
+    }
+    if (top + tooltipRect.height > viewportHeight) {
+        top = viewportHeight - tooltipRect.height - gap;
+    }
 
     return { top, left };
 }
 
 export interface TooltipProps {
-    children: React.ReactElement
-    content: string | React.ReactNode
-    side?: Side
-    delay?: number
-    disabled?: boolean
-    className?: string
+    children: React.ReactElement;
+    content: string | React.ReactNode;
+    side?: Side;
+    delay?: number;
+    disabled?: boolean;
+    className?: string;
 }
 
 export function Tooltip({
@@ -56,7 +67,7 @@ export function Tooltip({
     side = 'top',
     delay = 300,
     disabled = false,
-    className
+    className,
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [position, setPosition] = useState<Position>({ top: 0, left: 0 });
@@ -65,7 +76,9 @@ export function Tooltip({
     const tooltipRef = useRef<HTMLDivElement | null>(null);
 
     const showTooltip = () => {
-        if (disabled) { return; }
+        if (disabled) {
+            return;
+        }
         timeoutRef.current = setTimeout(() => {
             setIsVisible(true);
             updatePosition();
@@ -81,7 +94,9 @@ export function Tooltip({
     };
 
     const updatePosition = useCallback(() => {
-        if (!triggerRef.current || !tooltipRef.current) { return; }
+        if (!triggerRef.current || !tooltipRef.current) {
+            return;
+        }
 
         const triggerRect = triggerRef.current.getBoundingClientRect();
         const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -137,33 +152,38 @@ export function Tooltip({
     return (
         <>
             {trigger}
-            {isVisible && createPortal(
-                <div
-                    ref={tooltipRef}
-                    className={cn(
-                        "absolute z-[9999] px-2 py-1.5 text-xs font-medium text-foreground bg-zinc-900 border border-white/10 rounded-md shadow-lg pointer-events-none",
-                        "animate-in fade-in-0 zoom-in-95 duration-200",
-                        className
-                    )}
-                    style={{
-                        top: `${position.top}px`,
-                        left: `${position.left}px`,
-                    }}
-                    role="tooltip"
-                >
-                    {content}
+            {isVisible &&
+                createPortal(
                     <div
+                        ref={tooltipRef}
                         className={cn(
-                            "absolute w-2 h-2 bg-zinc-900 border-white/10 rotate-45",
-                            side === 'top' && "bottom-[-4px] left-1/2 -translate-x-1/2 border-r border-b",
-                            side === 'bottom' && "top-[-4px] left-1/2 -translate-x-1/2 border-l border-t",
-                            side === 'left' && "right-[-4px] top-1/2 -translate-y-1/2 border-r border-t",
-                            side === 'right' && "left-[-4px] top-1/2 -translate-y-1/2 border-l border-b"
+                            'absolute z-[9999] px-3 py-1.5 text-xs font-medium text-foreground bg-popover/90 backdrop-blur-md border border-white/10 rounded-lg shadow-2xl pointer-events-none',
+                            'animate-in fade-in-0 zoom-in-95 duration-200',
+                            className
                         )}
-                    />
-                </div>,
-                document.body
-            )}
+                        style={{
+                            top: `${position.top}px`,
+                            left: `${position.left}px`,
+                        }}
+                        role="tooltip"
+                    >
+                        {content}
+                        <div
+                            className={cn(
+                                'absolute w-2 h-2 bg-muted border-white/10 rotate-45',
+                                side === 'top' &&
+                                    'bottom-[-4px] left-1/2 -translate-x-1/2 border-r border-b',
+                                side === 'bottom' &&
+                                    'top-[-4px] left-1/2 -translate-x-1/2 border-l border-t',
+                                side === 'left' &&
+                                    'right-[-4px] top-1/2 -translate-y-1/2 border-r border-t',
+                                side === 'right' &&
+                                    'left-[-4px] top-1/2 -translate-y-1/2 border-l border-b'
+                            )}
+                        />
+                    </div>,
+                    document.body
+                )}
         </>
     );
 }

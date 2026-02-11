@@ -11,7 +11,12 @@ interface CommandHeaderProps {
 }
 
 export const CommandHeader: React.FC<CommandHeaderProps> = ({
-    search, setSearch, onKeyDown, onClose, inputRef, t
+    search,
+    setSearch,
+    onKeyDown,
+    onClose,
+    inputRef,
+    t,
 }) => {
     return (
         <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
@@ -29,9 +34,14 @@ export const CommandHeader: React.FC<CommandHeaderProps> = ({
                 <Command className="w-3 h-3" />
                 <span>K</span>
             </div>
-            <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-foreground/40 hover:text-foreground/80 transition-colors">
+            <button
+                onClick={onClose}
+                className="p-1 rounded hover:bg-white/10 text-foreground/40 hover:text-foreground/80 transition-colors"
+            >
                 <X className="w-4 h-4" />
             </button>
         </div>
     );
 };
+
+CommandHeader.displayName = 'CommandHeader';

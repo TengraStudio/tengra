@@ -4,15 +4,22 @@ import React from 'react';
 import { useTranslation } from '@/i18n';
 
 interface BrowserClosureModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onConfirm: () => void
-    providerName: string
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    providerName: string;
 }
 
-export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen, onClose, onConfirm, providerName }) => {
+export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    providerName,
+}) => {
     const { t } = useTranslation();
-    if (!isOpen) { return null; }
+    if (!isOpen) {
+        return null;
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -21,7 +28,9 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2 text-warning">
                         <AlertTriangle className="h-5 w-5" />
-                        <h3 className="font-bold text-foreground">{t('settings.browserClosure.title')}</h3>
+                        <h3 className="font-bold text-foreground">
+                            {t('settings.browserClosure.title')}
+                        </h3>
                     </div>
                     <button
                         onClick={onClose}
@@ -39,7 +48,9 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                     <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
                         <p className="text-xs font-medium text-warning">
                             {t('settings.browserClosure.warningPrefix')}{' '}
-                            <span className="underline decoration-2 underline-offset-2">{t('settings.browserClosure.warningEmphasis')}</span>{' '}
+                            <span className="underline decoration-2 underline-offset-2">
+                                {t('settings.browserClosure.warningEmphasis')}
+                            </span>{' '}
                             {t('settings.browserClosure.warningSuffix')}
                         </p>
                     </div>
@@ -61,7 +72,7 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
                             onConfirm();
                             onClose();
                         }}
-                        className="px-4 py-2 rounded-lg text-sm font-bold bg-warning hover:bg-amber-600 text-foreground shadow-lg shadow-amber-500/20 transition-all"
+                        className="px-4 py-2 rounded-lg text-sm font-bold bg-warning hover:bg-warning text-foreground shadow-lg shadow-amber-500/20 transition-all"
                     >
                         {t('settings.browserClosure.confirm')}
                     </button>
@@ -70,4 +81,3 @@ export const BrowserClosureModal: React.FC<BrowserClosureModalProps> = ({ isOpen
         </div>
     );
 };
-

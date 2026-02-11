@@ -345,6 +345,39 @@ impl Database {
                 -- Rename project_id to project_path in token_usage
                 ALTER TABLE token_usage RENAME COLUMN project_id TO project_path;
             "#),
+            (8, "add_agent_templates_table", r#"
+                -- Agent templates table for AGT-TPL features
+                CREATE TABLE IF NOT EXISTS agent_templates (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    category TEXT NOT NULL DEFAULT 'custom',
+                    system_prompt_override TEXT,
+                    task_template TEXT NOT NULL,
+                    predefined_steps TEXT,
+                    variables TEXT DEFAULT '[]',
+                    model_routing TEXT,
+                    tags TEXT DEFAULT '[]',
+                    is_built_in INTEGER NOT NULL DEFAULT 0,
+                    author_id TEXT,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_agent_templates_category ON agent_templates(category);
+                CREATE INDEX IF NOT EXISTS idx_agent_templates_name ON agent_templates(name);
+
+                -- Agent profiles table (if not exists)
+                CREATE TABLE IF NOT EXISTS agent_profiles (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    persona TEXT,
+                    system_prompt TEXT,
+                    skills TEXT DEFAULT '[]',
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+            "#),
         ]
     }
 

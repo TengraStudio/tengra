@@ -336,7 +336,7 @@ export class ProxyService extends BaseService {
       extra = await this.quotaService.getAntigravityAvailableModels();
     } catch (error) {
       if (getErrorMessage(error) === 'AUTH_EXPIRED') {
-        antigravityError = 'Oturum süresi doldu. Lütfen tekrar giriş yapın.';
+        antigravityError = 'Session expired. Please log in again.';
       }
     }
 

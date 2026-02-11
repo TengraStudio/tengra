@@ -12,6 +12,16 @@ import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
 
+/**
+ * Configuration options for the API server.
+ * @property port - HTTP listen port (defaults to 42069)
+ * @property settingsService - Service for reading application settings
+ * @property proxyProcessManager - Manager for the embedded proxy process
+ * @property toolExecutor - Executor for MCP tool invocations
+ * @property llmService - Service for LLM chat interactions
+ * @property modelRegistry - Optional model registry for listing available models
+ * @property rateLimitService - Rate limiter for API request throttling
+ */
 export interface ApiServerOptions {
     port?: number;
     settingsService: SettingsService;
@@ -37,6 +47,10 @@ export class ApiServerService extends BaseService {
         this.port = options.port ?? 42069;
     }
 
+    /**
+     * Initialize the API server.
+     * Generates a session token, checks proxy status, and starts listening.
+     */
     async initialize(): Promise<void> {
         appLogger.info(this.name, 'Initializing API server...');
 
@@ -51,12 +65,13 @@ export class ApiServerService extends BaseService {
         }
 
         // Generate API token for this session
-        this.apiToken = this.generateApiToken(); 
+        this.apiToken = this.generateApiToken();
 
         await this.startServer();
     }
 
-    async cleanup(): Promise<void> { 
+    /** Gracefully stop the HTTP and WebSocket servers. */
+    async cleanup(): Promise<void> {
         await this.stopServer();
     }
 
@@ -664,7 +679,8 @@ export class ApiServerService extends BaseService {
     }
 
     /**
-     * Get current API token
+     * Get current API token for this session.
+     * @returns The hex-encoded session token
      */
     getApiToken(): string {
         return this.apiToken;
@@ -815,19 +831,26 @@ export class ApiServerService extends BaseService {
     }
 
     /**
-     * Get server port
+     * Get the port the server is listening on.
+     * @returns The port number
      */
     getPort(): number {
         return this.port;
     }
 
     /**
-     * Check if server is running
+     * Check if the server is currently running.
+     * @returns True if both HTTP and WebSocket servers are active
      */
     isRunning(): boolean {
         return this.httpServer !== null && this.wsServer !== null;
     }
 
+    /**
+     * Validate chat message array structure.
+     * @param messages - Array of JSON message objects to validate
+     * @throws Error if any message has invalid structure or role
+     */
     private validateChatMessages(messages: JsonValue[]): void {
         for (const msg of messages) {
             if (typeof msg !== 'object' || msg === null) {
@@ -872,6 +895,11 @@ export class ApiServerService extends BaseService {
         }));
     }
 
+    /**
+     * Parse raw JSON message objects into typed Message instances.
+     * @param messages - Array of raw JSON objects
+     * @returns Array of parsed Message objects
+     */
     private parseMessages(messages: JsonValue[]): Message[] {
         this.validateChatMessages(messages);
         return messages.map((raw, index) => {

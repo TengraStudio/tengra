@@ -1,6 +1,6 @@
 /**
  * Performance Monitoring Service
- * UZAY SEVİYESİ OPTİMİZASYON: Gerçek zamanlı performans izleme
+ * SPACE-LEVEL OPTIMIZATION: Real-time performance monitoring
  *
  * Tracks:
  * - Startup time
@@ -42,7 +42,7 @@ export interface StartupMetrics {
 
 export class PerformanceMonitorService extends BaseService {
     private metrics: PerformanceMetric[] = [];
-    private readonly MAX_METRICS = 10000; // Son 10k metrik sakla
+    private readonly MAX_METRICS = 10000; // Keep last 10k metrics
     private startTime: number = Date.now();
     private startupMetrics: Partial<StartupMetrics> = {};
     private memoryCheckInterval?: NodeJS.Timeout;
@@ -59,12 +59,12 @@ export class PerformanceMonitorService extends BaseService {
         this.logInfo('Initializing Performance Monitor (SPACE-GRADE)...');
         this.startTime = Date.now();
 
-        // Her 30 saniyede bir memory snapshot al
+        // Take memory snapshot every 30 seconds
         this.memoryCheckInterval = setInterval(() => {
             this.recordMemorySnapshot();
         }, 30000);
 
-        // Startup metriği başlat
+        // Start startup metrics
         this.startupMetrics = {};
 
         this.logInfo('Performance Monitor initialized');
@@ -89,12 +89,12 @@ export class PerformanceMonitorService extends BaseService {
 
         this.metrics.push(metric);
 
-        // Circular buffer: Eski metrikleri at
+        // Circular buffer: Evict old metrics
         if (this.metrics.length > this.MAX_METRICS) {
             this.metrics.shift();
         }
 
-        // Kritik metrikleri logla
+        // Log critical metrics
         if (
             (category === 'memory' && unit === 'mb' && value > 1000) || // 1GB+ RAM
             (category === 'ipc' && unit === 'ms' && value > 100) || // 100ms+ IPC latency
@@ -156,7 +156,7 @@ export class PerformanceMonitorService extends BaseService {
         this.recordMetric('memory.rss', snapshot.rss, 'mb', 'memory');
         this.recordMetric('memory.system_free', snapshot.systemFree, 'mb', 'memory');
 
-        // Uzayda bile çalışacak: Düşük bellek uyarısı
+        // Space-grade: Low memory warning
         const memoryUsagePercent = ((systemMem - freeMem) / systemMem) * 100;
         if (memoryUsagePercent > 90) {
             this.logError(`SPACE CRITICAL: System memory usage at ${memoryUsagePercent.toFixed(1)}%`);
@@ -212,7 +212,7 @@ export class PerformanceMonitorService extends BaseService {
         if (category) {
             filtered = filtered.filter(m => m.category === category);
         }
-        // Son N metrik
+        // Last N metrics
         return filtered.slice(-limit);
     }
 
@@ -252,7 +252,7 @@ export class PerformanceMonitorService extends BaseService {
             startup: this.getStartupMetrics(),
             memory: currentMemory,
             averages: {
-                ipcLatency: this.getAverageMetric('ipc.latency', 300000), // Son 5 dakika
+                ipcLatency: this.getAverageMetric('ipc.latency', 300000), // Last 5 minutes
                 dbQueryTime: this.getAverageMetric('database.query', 300000),
                 llmResponseTime: this.getAverageMetric('llm.response', 300000)
             },
@@ -291,7 +291,7 @@ export class PerformanceMonitorService extends BaseService {
 
         return {
             memory,
-            cpu: Math.round(this.getAverageMetric('cpu.usage', 10000)), // Son 10 saniye
+            cpu: Math.round(this.getAverageMetric('cpu.usage', 10000)), // Last 10 seconds
             handles: handleCount
         };
     }

@@ -2,13 +2,13 @@ import { Check, ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import React, { useCallback } from 'react';
 
 interface PreviewAreaProps {
-    isGenerating: boolean
-    generatedLogo: string | null
-    onGenerate: () => Promise<void>
-    onManualUpload: () => Promise<void>
-    onApply: () => Promise<void>
-    translateKey: (key: string) => string
-    prompt: string
+    isGenerating: boolean;
+    generatedLogo: string | null;
+    onGenerate: () => Promise<void>;
+    onManualUpload: () => Promise<void>;
+    onApply: () => Promise<void>;
+    translateKey: (key: string) => string;
+    prompt: string;
 }
 
 export const PreviewArea: React.FC<PreviewAreaProps> = ({
@@ -18,7 +18,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
     onManualUpload,
     onApply,
     translateKey,
-    prompt
+    prompt,
 }) => {
     const handleGenerateClick = useCallback(() => {
         void onGenerate();
@@ -42,7 +42,9 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                             <p className="text-xs font-bold text-foreground uppercase tracking-widest">
                                 {translateKey('projects.generating')}
                             </p>
-                            <p className="text-xxs text-muted-foreground italic">{translateKey('projects.logoGeneratingSubtitle')}</p>
+                            <p className="text-xxs text-muted-foreground italic">
+                                {translateKey('projects.logoGeneratingSubtitle')}
+                            </p>
                         </div>
                     </div>
                 ) : generatedLogo ? (
@@ -81,7 +83,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
                     <button
                         onClick={handleApplyClick}
                         disabled={isGenerating}
-                        className="flex items-center justify-center px-6 bg-emerald-600 text-foreground rounded-xl hover:bg-emerald-700 transition-all active:scale-95 shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                        className="flex items-center justify-center px-6 bg-success text-foreground rounded-xl hover:bg-success transition-all active:scale-95 shadow-md shadow-emerald-500/20 disabled:opacity-50"
                         title={translateKey('workspace.applyLogo')}
                     >
                         {isGenerating ? (

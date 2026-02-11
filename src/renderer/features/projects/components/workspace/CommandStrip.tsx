@@ -1,4 +1,4 @@
-import { AlertCircle,Bell, CheckCircle2, Command, GitBranch } from 'lucide-react';
+import { AlertCircle, Bell, CheckCircle2, GitBranch } from 'lucide-react';
 import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -10,7 +10,10 @@ interface CommandStripProps {
     branchName?: string;
     notificationCount?: number;
     status?: 'ready' | 'busy' | 'error';
+    encoding?: string;
+    languageName?: string;
     onCommandClick?: () => void;
+    onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 export const CommandStrip: React.FC<CommandStripProps> = ({
@@ -19,52 +22,61 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     branchName = 'main',
     notificationCount = 0,
     status = 'ready',
-    onCommandClick
+    encoding = 'UTF-8',
+    languageName = 'Plain Text',
+    onCommandClick: _onCommandClick,
+    onMouseDown,
 }) => {
     const { t } = useTranslation(language);
 
     return (
-        <div className={cn(
-            "h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-white/5 select-none text-xxs font-medium text-muted-foreground",
-            className
-        )}>
+        <div
+            className={cn(
+                'h-8 flex items-center justify-between px-3 bg-background/80 backdrop-blur-md border-t border-white/5 select-none text-xxs font-medium text-muted-foreground cursor-ns-resize',
+                className
+            )}
+            onMouseDown={onMouseDown}
+        >
             {/* Left: Context */}
             <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors" title={t('workspace.currentBranch')}>
+                <div
+                    className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors"
+                    title={t('workspace.currentBranch')}
+                >
                     <GitBranch className="w-3 h-3" />
                     <span>{branchName}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     {status === 'ready' && <CheckCircle2 className="w-3 h-3 text-success" />}
-                    {status === 'busy' && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                    {status === 'busy' && (
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    )}
                     {status === 'error' && <AlertCircle className="w-3 h-3 text-destructive" />}
-                    <span className={cn(
-                        status === 'ready' ? "text-success/80" : status === 'error' ? "text-destructive/80" : "text-primary/80"
-                    )}>
+                    <span
+                        className={cn(
+                            status === 'ready'
+                                ? 'text-success/80'
+                                : status === 'error'
+                                  ? 'text-destructive/80'
+                                  : 'text-primary/80'
+                        )}
+                    >
                         {status.toUpperCase()}
                     </span>
                 </div>
             </div>
 
-            {/* Center: Command Trigger */}
-            <button
-                onClick={onCommandClick}
-                className="flex items-center gap-2 px-3 py-0.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group"
-            >
-                <Command className="w-3 h-3 text-primary group-hover:text-foreground transition-colors" />
-                <span className="text-muted-foreground group-hover:text-foreground transition-colors">{t('workspace.typeCommand')}</span>
-                <span className="flex items-center gap-0.5 text-xxxs bg-black/20 px-1 rounded border border-white/5 text-muted-foreground/50">
-                    <span>⌘</span><span>K</span>
-                </span>
-            </button>
-
             {/* Right: System Stats */}
             <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
-                    <span>UTF-8</span>
+                    <span>
+                        {t('workspace.encoding')}: {encoding}
+                    </span>
                 </div>
                 <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
-                    <span>TypeScript</span>
+                    <span>
+                        {t('workspace.language')}: {languageName}
+                    </span>
                 </div>
                 <div className="w-px h-3 bg-white/10" />
                 <button className="flex items-center gap-1.5 hover:text-foreground transition-colors relative">

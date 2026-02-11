@@ -21,16 +21,22 @@ export class QuotaUtils {
             if (!Array.isArray(obj)) {
                 for (const key of keys) {
                     const candidate = obj[key];
-                    if (candidate !== undefined && candidate !== null) {
-                        const result = predicate(candidate);
-                        if (result !== null) { return result; }
+                    if (candidate === undefined || candidate === null) {
+                        continue;
+                    }
+
+                    const result = predicate(candidate);
+                    if (result !== null) {
+                        return result;
                     }
                 }
             }
 
             // Go deeper
             if (depth < maxDepth) {
-                const children = Array.isArray(obj) ? (obj as unknown as JsonValue[]) : Object.values(obj);
+                const children = Array.isArray(obj)
+                    ? (obj as unknown as JsonValue[])
+                    : Object.values(obj);
                 for (const child of children) {
                     if (child && typeof child === 'object') {
                         queue.push({ value: child, depth: depth + 1 });
@@ -42,14 +48,14 @@ export class QuotaUtils {
     }
 
     static findNumberByKeys(root: JsonValue, keys: string[]): number | null {
-        return this.findInObject(root, keys, (val) => {
+        return this.findInObject(root, keys, val => {
             const num = Number(val);
             return !Number.isNaN(num) ? num : null;
         });
     }
 
     static findStringByKeys(root: JsonValue, keys: string[]): string | null {
-        return this.findInObject(root, keys, (val) => {
+        return this.findInObject(root, keys, val => {
             if (typeof val === 'string' && val.trim()) {
                 return val.trim();
             }
@@ -58,37 +64,55 @@ export class QuotaUtils {
     }
 
     static normalizeResetAt(value: JsonValue): string | null {
-        if (typeof value === 'string' && value.trim()) { return value.trim(); }
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
         const numeric = this.toNumber(value);
-        if (numeric === null) { return null; }
+        if (numeric === null) {
+            return null;
+        }
         const ms = numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
         return new Date(ms).toISOString();
     }
 
     static toNumber(value: JsonValue): number | null {
-        if (typeof value === 'number' && Number.isFinite(value)) { return value; }
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
         if (typeof value === 'string') {
             const trimmed = value.trim();
-            if (!trimmed) { return null; }
+            if (!trimmed) {
+                return null;
+            }
             const parsed = Number(trimmed);
-            if (!Number.isNaN(parsed)) { return parsed; }
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
         }
         return null;
     }
 
     static calculatePercentage(usage: number | null, limit: number | null): number | null {
-        if (usage === null || limit === null || limit <= 0) { return null; }
+        if (usage === null || limit === null || limit <= 0) {
+            return null;
+        }
         return Math.min(100, Math.max(0, (usage / limit) * 100));
     }
 
     static normalizePercent(value: number | null): number | null {
-        if (value === null || !Number.isFinite(value)) { return null; }
-        if (value >= 0 && value <= 1) { return value * 100; }
+        if (value === null || !Number.isFinite(value)) {
+            return null;
+        }
+        if (value >= 0 && value <= 1) {
+            return value * 100;
+        }
         return value;
     }
 
     static asObject(value: JsonValue | undefined): JsonObject | null {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) { return null; }
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return null;
+        }
         return value as JsonObject;
     }
 }

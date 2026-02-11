@@ -58,6 +58,11 @@ export interface ToolExecutorOptions {
     pageSpeed: PageSpeedService;
 }
 
+export interface ToolExecutionContext {
+    taskId?: string;
+    projectId?: string;
+}
+
 export class ToolExecutor {
     constructor(private options: ToolExecutorOptions) { }
 
@@ -73,10 +78,10 @@ export class ToolExecutor {
         return toolDefinitions;
     }
 
-    async execute(name: string, args: JsonObject): Promise<InternalToolResult> {
+    async execute(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
         try {
-            appLogger.info('ToolExecutor', `Executing tool: ${name}`);
-            return await this.routeToolCall(name, args);
+            appLogger.info('ToolExecutor', `Executing tool: ${name} (taskId: ${context?.taskId ?? 'none'})`);
+            return await this.routeToolCall(name, args, context);
         } catch (error) {
             appLogger.error('ToolExecutor', `Error executing tool ${name}`, error as Error);
             return {
@@ -86,9 +91,9 @@ export class ToolExecutor {
         }
     }
 
-    private async routeToolCall(name: string, args: JsonObject): Promise<InternalToolResult> {
-        if (name === 'update_plan_step' || name === 'propose_plan') {
-            return this.handleProjectTool(name, args);
+    private async routeToolCall(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
+        if (name === 'update_plan_step' || name === 'propose_plan' || name === 'revise_plan') {
+            return this.handleProjectTool(name, args, context);
         }
 
         const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
@@ -115,14 +120,16 @@ export class ToolExecutor {
         return this.handleMcpTool(name, args);
     }
 
-    private async handleProjectTool(name: string, args: JsonObject): Promise<InternalToolResult> {
+    private async handleProjectTool(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
+        const taskId = context?.taskId;
+
         switch (name) {
             case 'update_plan_step': {
                 const index = Number(args['index']);
                 const status = String(args['status']) as 'pending' | 'running' | 'completed' | 'failed';
                 const message = args['message'] ? String(args['message']) : undefined;
 
-                this.options.eventBus.emit('project:step-update', { index, status, message });
+                this.options.eventBus.emit('project:step-update', { index, status, message, taskId });
                 return { success: true };
             }
             case 'propose_plan': {
@@ -131,8 +138,32 @@ export class ToolExecutor {
                     return { success: false, error: 'Plan must have at least one step' };
                 }
 
-                this.options.eventBus.emit('project:plan-proposed', { steps: steps.map(String) });
+                this.options.eventBus.emit('project:plan-proposed', { steps: steps.map(String), taskId });
                 return { success: true };
+            }
+            case 'revise_plan': {
+                // AGT-PLN-02: Dynamic plan revision mid-execution
+                const action = String(args['action']) as 'add' | 'remove' | 'modify' | 'insert';
+                const index = args['index'] !== undefined ? Number(args['index']) : undefined;
+                const stepText = args['step_text'] ? String(args['step_text']) : undefined;
+                const reason = args['reason'] ? String(args['reason']) : 'No reason provided';
+
+                // Validate required args based on action
+                if ((action === 'add' || action === 'modify' || action === 'insert') && !stepText) {
+                    return { success: false, error: `Action '${action}' requires 'step_text' argument` };
+                }
+                if ((action === 'remove' || action === 'modify' || action === 'insert') && index === undefined) {
+                    return { success: false, error: `Action '${action}' requires 'index' argument` };
+                }
+
+                this.options.eventBus.emit('project:plan-revised', {
+                    action,
+                    index,
+                    stepText,
+                    reason,
+                    taskId,
+                });
+                return { success: true, result: { message: `Plan revision '${action}' applied: ${reason}` } };
             }
             default:
                 return { success: false, error: `Unknown project tool: ${name}` };

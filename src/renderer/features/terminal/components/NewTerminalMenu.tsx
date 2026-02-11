@@ -25,7 +25,7 @@ export const NewTerminalMenu: React.FC<NewTerminalMenuProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute bottom-full left-0 mb-2 py-1 bg-popover border border-border rounded-lg shadow-xl z-50 min-w-[140px] overflow-hidden"
+            className="absolute bottom-full left-0 mb-2 py-1 bg-popover border border-border rounded-lg shadow-xl z-9999 min-w-[140px] overflow-hidden"
         >
             {availableShells.length > 0 ? (
                 availableShells.map(shell => (

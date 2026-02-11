@@ -18,6 +18,7 @@ interface AIAssistantSidebarProps {
     codexUsage: { accounts: { usage: CodexUsage }[] } | null;
     agentChatMessage: string;
     setAgentChatMessage: (val: string) => void;
+    onSendMessage?: (content?: string) => void;
     t: (key: string) => string;
     messages?: Message[] | undefined;
     isLoading?: boolean | undefined;
@@ -27,13 +28,12 @@ interface AIAssistantSidebarProps {
 
 /**
  * AIAssistantSidebar Component
- * 
+ *
  * The right panel of the workspace, which can show:
  * - AI Chat interface
  * - Integrated Model Selection
  */
 export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
-
     selectedProvider,
     selectedModel,
     onSelectModel,
@@ -43,12 +43,27 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
     codexUsage,
     agentChatMessage,
     setAgentChatMessage,
+    onSendMessage,
     t,
     messages = [],
     isLoading,
     language,
-    onSourceClick
+    onSourceClick,
 }) => {
+    const handleSend = () => {
+        if (!agentChatMessage.trim() || !onSendMessage) {
+            return;
+        }
+        onSendMessage(agentChatMessage);
+        setAgentChatMessage('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
     return (
         <motion.div
             initial={{ width: 0, opacity: 0 }}
@@ -60,7 +75,9 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
             <div className="h-12 border-b border-white/5 flex items-center px-4 bg-white/[0.02] shrink-0 overflow-visible relative z-50">
                 <div className="flex items-center gap-2 shrink-0">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-xxs font-bold uppercase tracking-widest text-muted-foreground">{t('workspace.aiLabel')}</span>
+                    <span className="text-xxs font-bold uppercase tracking-widest text-muted-foreground">
+                        {t('workspace.aiLabel')}
+                    </span>
                 </div>
                 <div className="flex-1 flex justify-end">
                     <ModelSelector
@@ -84,7 +101,7 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                                     <Users className="w-4 h-4 text-primary" />
                                 </div>
-                                <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-zinc-300">
+                                <div className="bg-muted/30 rounded-2xl rounded-tl-none p-3 text-sm text-muted-foreground">
                                     {t('agents.welcomeMessage')}
                                 </div>
                             </div>
@@ -95,7 +112,11 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                     message={m}
                                     isLast={idx === messages.length - 1}
                                     language={language as Language}
-                                    isStreaming={Boolean(isLoading && idx === messages.length - 1 && m.role === 'assistant')}
+                                    isStreaming={Boolean(
+                                        isLoading &&
+                                        idx === messages.length - 1 &&
+                                        m.role === 'assistant'
+                                    )}
                                     onSourceClick={onSourceClick}
                                 />
                             ))
@@ -110,11 +131,14 @@ export const AIAssistantSidebar: React.FC<AIAssistantSidebarProps> = ({
                                 className="flex-1 bg-muted/30 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/50"
                                 placeholder={t('workspace.writeSomething')}
                                 value={agentChatMessage}
-                                onChange={(e) => setAgentChatMessage(e.target.value)}
+                                onChange={e => setAgentChatMessage(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                disabled={isLoading}
                             />
                             <button
-                                onClick={() => { /* sendMessage() */ }}
-                                className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                                onClick={handleSend}
+                                disabled={!agentChatMessage.trim() || isLoading || !onSendMessage}
+                                className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ArrowLeft className="w-4 h-4 rotate-180" />
                             </button>

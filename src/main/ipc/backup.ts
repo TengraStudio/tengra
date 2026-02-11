@@ -13,6 +13,10 @@ export interface BackupListItem {
     metadata?: BackupMetadata
 }
 
+/**
+ * Registers IPC handlers for backup functionality
+ * @param backupService Service for managing backups
+ */
 export function registerBackupIpc(backupService: BackupService) {
     // Create a backup
     ipcMain.handle('backup:create', createIpcHandler('backup:create', async (

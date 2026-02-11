@@ -3,16 +3,18 @@
  * VSCode-style terminal panel with bottom slide-up behavior
  */
 
-import { TerminalPanelState,TerminalSession } from '@shared/types/terminal-v2';
+import { TerminalPanelState, TerminalSession } from '@shared/types/terminal-v2';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
-import { Plus,X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 
-import '@xterm/xterm/css/xterm.css';
+import { TerminalConnectionSelector } from './TerminalConnectionSelector';
+
 import './TerminalPanel.css';
+import './TerminalConnectionSelector.css';
 
 const TERMINAL_MIN_HEIGHT = 100;
 const TERMINAL_DEFAULT_HEIGHT = 300;
@@ -25,49 +27,71 @@ export const TerminalPanel: React.FC = () => {
         height: TERMINAL_DEFAULT_HEIGHT,
         activeSessionId: null,
         sessions: [],
-        splitMode: 'single'
+        splitMode: 'single',
     });
 
     const [isResizing, setIsResizing] = useState(false);
+    const [showSelector, setShowSelector] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
     const terminalRefs = useRef<Map<string, { terminal: Terminal; fitAddon: FitAddon }>>(new Map());
 
     const toggleTerminal = useCallback(() => {
         setPanelState(prev => ({
             ...prev,
-            isOpen: !prev.isOpen
+            isOpen: !prev.isOpen,
         }));
     }, []);
 
+    const createTerminalSession = useCallback(
+        async (
+            type: 'local' | 'ssh' | 'docker',
+            name: string,
+            metadata?: Record<string, unknown>
+        ) => {
+            try {
+                const backendId = type === 'local' ? 'node-pty' : type;
+                const sessionId = (await window.electron.invoke('terminal:create', {
+                    cols: 80,
+                    rows: 24,
+                    backendId,
+                    metadata,
+                })) as string;
+
+                const newSession: TerminalSession = {
+                    id: sessionId,
+                    title: name || `${t('terminal.title')} ${panelState.sessions.length + 1}`,
+                    cwd: '',
+                    shell:
+                        type === 'local'
+                            ? process.platform === 'win32'
+                                ? 'powershell.exe'
+                                : '/bin/bash'
+                            : (metadata?.shell as string) || '',
+                    backendType: 'xterm',
+                    status: 'running',
+                    createdAt: Date.now(),
+                    lastActive: Date.now(),
+                };
+
+                setPanelState(prev => ({
+                    ...prev,
+                    isOpen: true,
+                    activeSessionId: sessionId,
+                    sessions: [...prev.sessions, newSession],
+                }));
+            } catch (error) {
+                console.error('Failed to create terminal:', error);
+            }
+        },
+        [t, panelState.sessions.length]
+    );
+
     const createNewTerminal = useCallback(async () => {
-        try {
-            const sessionId = await window.electron.invoke('terminal:create', {
-                cols: 80,
-                rows: 24
-            }) as string;
-
-            const newSession: TerminalSession = {
-                id: sessionId,
-                title: `${t('terminal.title')} ${panelState.sessions.length + 1}`,
-                cwd: '',
-                shell: process.platform === 'win32' ? 'powershell.exe' : '/bin/bash',
-                backendType: 'xterm',
-                status: 'running',
-                createdAt: Date.now(),
-                lastActive: Date.now()
-            };
-
-            setPanelState(prev => ({
-                ...prev,
-                isOpen: true,
-                activeSessionId: sessionId,
-                sessions: [...prev.sessions, newSession]
-            }));
-        } catch (error) {
-            console.error('Failed to create terminal:', error);
-        }
-    }, [t, panelState.sessions.length]);
-
+        await createTerminalSession(
+            'local',
+            `${t('terminal.title')} ${panelState.sessions.length + 1}`
+        );
+    }, [createTerminalSession, t, panelState.sessions.length]);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -85,22 +109,24 @@ export const TerminalPanel: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleTerminal, createNewTerminal]);
 
-
     const closeTerminal = async (sessionId: string) => {
         try {
             await window.electron.invoke('terminal:close', sessionId);
 
             setPanelState(prev => {
                 const newSessions = prev.sessions.filter(s => s.id !== sessionId);
-                const newActiveId = prev.activeSessionId === sessionId
-                    ? (newSessions.length > 0 ? newSessions[0].id : null)
-                    : prev.activeSessionId;
+                const newActiveId =
+                    prev.activeSessionId === sessionId
+                        ? newSessions.length > 0
+                            ? newSessions[0].id
+                            : null
+                        : prev.activeSessionId;
 
                 return {
                     ...prev,
                     sessions: newSessions,
                     activeSessionId: newActiveId,
-                    isOpen: newSessions.length > 0 ? prev.isOpen : false
+                    isOpen: newSessions.length > 0 ? prev.isOpen : false,
                 };
             });
 
@@ -117,7 +143,7 @@ export const TerminalPanel: React.FC = () => {
     const switchTerminal = (sessionId: string) => {
         setPanelState(prev => ({
             ...prev,
-            activeSessionId: sessionId
+            activeSessionId: sessionId,
         }));
     };
 
@@ -132,8 +158,8 @@ export const TerminalPanel: React.FC = () => {
             fontFamily: 'Consolas, "Courier New", monospace',
             theme: {
                 background: '#1e1e1e',
-                foreground: '#cccccc'
-            }
+                foreground: '#cccccc',
+            },
         });
 
         const fitAddon = new FitAddon();
@@ -154,11 +180,16 @@ export const TerminalPanel: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!isResizing) {return;}
+        if (!isResizing) {
+            return;
+        }
 
         const handleMouseMove = (e: MouseEvent) => {
             const newHeight = window.innerHeight - e.clientY;
-            const clampedHeight = Math.max(TERMINAL_MIN_HEIGHT, Math.min(TERMINAL_MAX_HEIGHT, newHeight));
+            const clampedHeight = Math.max(
+                TERMINAL_MIN_HEIGHT,
+                Math.min(TERMINAL_MAX_HEIGHT, newHeight)
+            );
             setPanelState(prev => ({ ...prev, height: clampedHeight }));
         };
 
@@ -173,7 +204,9 @@ export const TerminalPanel: React.FC = () => {
         };
     }, [isResizing]);
 
-    if (!panelState.isOpen) {return null;}
+    if (!panelState.isOpen) {
+        return null;
+    }
 
     return (
         <div ref={panelRef} className="terminal-panel" style={{ height: `${panelState.height}px` }}>
@@ -188,7 +221,12 @@ export const TerminalPanel: React.FC = () => {
                             onClick={() => switchTerminal(session.id)}
                         >
                             <span>{session.title}</span>
-                            <button onClick={(e) => { e.stopPropagation(); void closeTerminal(session.id); }}>
+                            <button
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    void closeTerminal(session.id);
+                                }}
+                            >
                                 <X size={14} />
                             </button>
                         </div>
@@ -196,7 +234,7 @@ export const TerminalPanel: React.FC = () => {
                 </div>
 
                 <div className="terminal-actions">
-                    <button onClick={() => void createNewTerminal()} title={t('terminal.new')}>
+                    <button onClick={() => setShowSelector(true)} title={t('terminal.new')}>
                         <Plus size={18} />
                     </button>
                     <button onClick={toggleTerminal} title={t('terminal.hide')}>
@@ -205,12 +243,29 @@ export const TerminalPanel: React.FC = () => {
                 </div>
             </div>
 
+            {showSelector && (
+                <TerminalConnectionSelector
+                    onSelect={option =>
+                        void createTerminalSession(option.type, option.name, option.metadata)
+                    }
+                    onClose={() => setShowSelector(false)}
+                />
+            )}
+
             <div className="terminal-container">
                 {panelState.sessions.map(session => (
                     <div
                         key={session.id}
-                        className={session.id === panelState.activeSessionId ? 'terminal-view active' : 'terminal-view'}
-                        ref={(el) => el && session.id === panelState.activeSessionId && initializeTerminal(session.id, el)}
+                        className={
+                            session.id === panelState.activeSessionId
+                                ? 'terminal-view active'
+                                : 'terminal-view'
+                        }
+                        ref={el =>
+                            el &&
+                            session.id === panelState.activeSessionId &&
+                            initializeTerminal(session.id, el)
+                        }
                     />
                 ))}
             </div>

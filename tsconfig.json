@@ -52,7 +52,7 @@
     "include": [
         "src",
         "src/tests"
-    ],
+, "scripts/detect-msvs-version.js", "scripts/check-boundaries.js"    ],
     "exclude": [
         "node_modules",
         "dist"

@@ -2,26 +2,25 @@ import { resolve } from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { FileSystemService } from '@main/services/data/filesystem.service';
-import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { AISystemType } from '@shared/types/file-diff';
-import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 
 export function registerFilesIpc(
     getMainWindow: () => BrowserWindow | null,
     fileSystemService: FileSystemService,
-    allowedRoots: Set<string>,
-    rateLimitService?: RateLimitService
+    allowedRoots: Set<string>
 ) {
-    // ... (lines 13-68 omitted for brevity, logic remains same)
-
     ipcMain.handle('files:selectDirectory', async () => {
         const win = getMainWindow();
-        if (!win) { return { success: false }; }
+        if (!win) {
+            return { success: false };
+        }
         const result = await dialog.showOpenDialog(win, {
-            properties: ['openDirectory']
+            properties: ['openDirectory'],
         });
-        if (result.canceled) { return { success: false }; }
+        if (result.canceled) {
+            return { success: false };
+        }
         const chosenPath = result.filePaths[0];
         if (chosenPath) {
             allowedRoots.add(resolve(chosenPath));
@@ -31,90 +30,88 @@ export function registerFilesIpc(
     });
 
     ipcMain.handle('files:listDirectory', async (_event, dirPath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.listDirectory(dirPath);
     });
 
     ipcMain.handle('files:readFile', async (_event, filePath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.readFile(filePath);
     });
 
     ipcMain.handle('files:readImage', async (_event, filePath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:read'); }
         return await fileSystemService.readImage(filePath);
     });
 
-    ipcMain.handle('files:writeFile', async (_event, filePath: string, content: string, context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
-        if (context?.aiSystem) {
-            return await fileSystemService.writeFileWithTracking(filePath, content, {
-                aiSystem: context.aiSystem as AISystemType,
-                chatSessionId: context.chatSessionId,
-                changeReason: context.changeReason ?? 'AI file modification'
-            });
-        } else {
-            return await fileSystemService.writeFile(filePath, content);
+    ipcMain.handle(
+        'files:writeFile',
+        async (
+            _event,
+            filePath: string,
+            content: string,
+            context?: { aiSystem?: string; chatSessionId?: string; changeReason?: string }
+        ) => {
+            if (context?.aiSystem) {
+                return await fileSystemService.writeFileWithTracking(filePath, content, {
+                    aiSystem: context.aiSystem as AISystemType,
+                    chatSessionId: context.chatSessionId,
+                    changeReason: context.changeReason ?? 'AI file modification',
+                });
+            } else {
+                return await fileSystemService.writeFile(filePath, content);
+            }
         }
-    });
+    );
 
     ipcMain.handle('files:createDirectory', async (_event, dirPath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.createDirectory(dirPath);
     });
 
     ipcMain.handle('files:deleteFile', async (_event, filePath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.deleteFile(filePath);
     });
 
     ipcMain.handle('files:deleteDirectory', async (_event, dirPath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.deleteDirectory(dirPath);
     });
 
     ipcMain.handle('files:renamePath', async (_event, oldPath: string, newPath: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:write'); }
         return await fileSystemService.moveFile(oldPath, newPath);
     });
 
     ipcMain.handle('files:searchFiles', async (_event, rootPath: string, pattern: string) => {
-        if (rateLimitService) { await rateLimitService.waitForToken('files:search'); }
         return await fileSystemService.searchFiles(rootPath, pattern);
     });
 
-    ipcMain.handle('files:searchFilesStream', async (_event, rootPath: string, pattern: string, jobId: string) => {
-        if (rateLimitService) {
-            try {
-                await rateLimitService.waitForToken('files:search');
-            } catch (error) {
-                appLogger.warn('FilesIPC', `Rate limit exceeded for searchFilesStream: ${getErrorMessage(error as Error)}`);
-                return { success: false, error: 'Rate limit exceeded. Please wait before searching again.' };
+    ipcMain.handle(
+        'files:searchFilesStream',
+        async (_event, rootPath: string, pattern: string, jobId: string) => {
+            const win = getMainWindow();
+            if (!win) {
+                return { success: false };
             }
+
+            // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
+            // Actually for a stream we should probably just return 'started' and emit events
+            // But handling the promise ensures strictly sequential if needed.
+            // Better: fire and forget the search, let generic events handle results.
+
+            void fileSystemService
+                .searchFilesStream(rootPath, pattern, filePath => {
+                    if (!win.isDestroyed()) {
+                        win.webContents.send(`files:search-result:${jobId}`, filePath);
+                    }
+                })
+                .then(() => {
+                    if (!win.isDestroyed()) {
+                        win.webContents.send(`files:search-complete:${jobId}`);
+                    }
+                })
+                .catch((err: Error) => {
+                    appLogger.error('files', `File search failed: ${err.message}`);
+                });
+
+            return { success: true, jobId };
         }
-
-        const win = getMainWindow();
-        if (!win) { return { success: false }; }
-
-        // Run search in background (don't await fully to blocking return, but here we invoke so we kind of do)
-        // Actually for a stream we should probably just return 'started' and emit events
-        // But handling the promise ensures strictly sequential if needed.
-        // Better: fire and forget the search, let generic events handle results.
-
-        void fileSystemService.searchFilesStream(rootPath, pattern, (filePath) => {
-            if (!win.isDestroyed()) {
-                win.webContents.send(`files:search-result:${jobId}`, filePath);
-            }
-        }).then(() => {
-            if (!win.isDestroyed()) {
-                win.webContents.send(`files:search-complete:${jobId}`);
-            }
-        }).catch((err: Error) => {
-            appLogger.error('files', `File search failed: ${err.message}`);
-        });
-
-        return { success: true, jobId };
-    });
+    );
 
     ipcMain.handle('app:getUserDataPath', () => {
         return app.getPath('userData');

@@ -5,14 +5,14 @@ import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface LogEntry {
-    timestamp: string
-    level: 'info' | 'warn' | 'error' | 'debug'
-    message: string
+    timestamp: string;
+    level: 'info' | 'warn' | 'error' | 'debug';
+    message: string;
 }
 
 interface ProjectLogsTabProps {
-    projectPath: string
-    language: Language
+    projectPath: string;
+    language: Language;
 }
 
 export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, language }) => {
@@ -28,14 +28,18 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
             const lines = data.data.split('\n').filter(line => line.trim());
             const newEntries: LogEntry[] = lines.map(line => {
                 let level: LogEntry['level'] = 'info';
-                if (line.toLowerCase().includes('error')) { level = 'error'; }
-                else if (line.toLowerCase().includes('warn')) { level = 'warn'; }
-                else if (line.toLowerCase().includes('debug')) { level = 'debug'; }
+                if (line.toLowerCase().includes('error')) {
+                    level = 'error';
+                } else if (line.toLowerCase().includes('warn')) {
+                    level = 'warn';
+                } else if (line.toLowerCase().includes('debug')) {
+                    level = 'debug';
+                }
 
                 return {
                     timestamp: new Date().toISOString(),
                     level,
-                    message: line
+                    message: line,
                 };
             });
             setLogs(prev => [...prev.slice(-500), ...newEntries]); // Keep last 500 lines
@@ -65,19 +69,27 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
 
     const getLevelColor = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'text-destructive';
-            case 'warn': return 'text-warning';
-            case 'debug': return 'text-muted-foreground';
-            default: return 'text-zinc-300';
+            case 'error':
+                return 'text-destructive';
+            case 'warn':
+                return 'text-warning';
+            case 'debug':
+                return 'text-muted-foreground';
+            default:
+                return 'text-muted-foreground';
         }
     };
 
     const getLevelBg = (level: LogEntry['level']) => {
         switch (level) {
-            case 'error': return 'bg-destructive/10 border-destructive/20';
-            case 'warn': return 'bg-warning/10 border-warning/20';
-            case 'debug': return 'bg-muted/10 border-border/20';
-            default: return 'bg-muted/10 border-border/10';
+            case 'error':
+                return 'bg-destructive/10 border-destructive/20';
+            case 'warn':
+                return 'bg-warning/10 border-warning/20';
+            case 'debug':
+                return 'bg-muted/10 border-border/20';
+            default:
+                return 'bg-muted/10 border-border/10';
         }
     };
 
@@ -100,7 +112,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                         <input
                             type="text"
                             value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
+                            onChange={e => setFilter(e.target.value)}
                             placeholder={t('projectDashboard.logsFilter')}
                             className="pl-10 pr-4 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50 w-64"
                         />
@@ -108,8 +120,10 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                     <button
                         onClick={() => setAutoScroll(!autoScroll)}
                         className={cn(
-                            "p-2 rounded-lg border transition-colors",
-                            autoScroll ? "bg-primary/10 border-primary/20 text-primary" : "bg-muted/30 border-border/50 text-muted-foreground"
+                            'p-2 rounded-lg border transition-colors',
+                            autoScroll
+                                ? 'bg-primary/10 border-primary/20 text-primary'
+                                : 'bg-muted/30 border-border/50 text-muted-foreground'
                         )}
                         title={t('logging.autoScroll')}
                     >
@@ -134,19 +148,22 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                                 <div
                                     key={idx}
                                     className={cn(
-                                        "p-2 rounded-lg border transition-all",
+                                        'p-2 rounded-lg border transition-all',
                                         getLevelBg(log.level)
                                     )}
                                 >
-                                    <span className="text-zinc-600 mr-2">
+                                    <span className="text-neutral mr-2">
                                         {new Date(log.timestamp).toLocaleTimeString()}
                                     </span>
-                                    <span className={cn("uppercase font-bold mr-2", getLevelColor(log.level))}>
+                                    <span
+                                        className={cn(
+                                            'uppercase font-bold mr-2',
+                                            getLevelColor(log.level)
+                                        )}
+                                    >
                                         [{log.level}]
                                     </span>
-                                    <span className={getLevelColor(log.level)}>
-                                        {log.message}
-                                    </span>
+                                    <span className={getLevelColor(log.level)}>{log.message}</span>
                                 </div>
                             ))}
                             <div ref={logsEndRef} />

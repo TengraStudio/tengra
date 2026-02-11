@@ -26,7 +26,7 @@
 }
 
 .sidebar-brand-logo {
-    @apply w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20;
+    @apply w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20;
 }
 
 .sidebar-brand-name {
@@ -53,7 +53,7 @@
     grid-template-rows: 1fr;
 }
 
-.sidebar-section-content>div {
+.sidebar-section-content > div {
     overflow: hidden;
 }
 
@@ -93,33 +93,32 @@
 }
 
 .status-indicator--online {
-    @apply bg-emerald-500;
-    box-shadow: 0 0 8px theme('colors.emerald.500 / 50%');
+    @apply bg-success;
+    box-shadow: 0 0 8px hsl(var(--success) / 0.5);
 }
 
 .status-indicator--warning {
-    @apply bg-amber-500;
-    box-shadow: 0 0 8px theme('colors.amber.500 / 50%');
+    @apply bg-warning;
+    box-shadow: 0 0 8px hsl(var(--warning) / 0.5);
     animation: status-pulse 2s ease-in-out infinite;
 }
 
 .status-indicator--error {
-    @apply bg-red-500;
-    box-shadow: 0 0 8px theme('colors.red.500 / 50%');
+    @apply bg-destructive;
+    box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
     animation: status-pulse 1s ease-in-out infinite;
 }
 
 .status-indicator--offline {
-    @apply bg-gray-400;
+    @apply bg-neutral-light;
 }
 
 .status-indicator--loading {
-    @apply bg-blue-500;
+    @apply bg-info;
     animation: status-loading 1s linear infinite;
 }
 
 @keyframes status-pulse {
-
     0%,
     100% {
         opacity: 1;
@@ -163,15 +162,15 @@
 }
 
 .sidebar-badge--success {
-    @apply bg-emerald-500 text-foreground;
+    @apply bg-success text-foreground;
 }
 
 .sidebar-badge--warning {
-    @apply bg-amber-500 text-foreground;
+    @apply bg-warning text-foreground;
 }
 
 .sidebar-badge--error {
-    @apply bg-red-500 text-foreground;
+    @apply bg-destructive text-foreground;
 }
 
 /* Badge animation on update */
@@ -196,10 +195,7 @@
 /* === Dividers === */
 .sidebar-divider {
     @apply h-px mx-4 my-2;
-    background: linear-gradient(to right,
-            transparent,
-            theme('colors.border / 40%'),
-            transparent);
+    background: linear-gradient(to right, transparent, theme('colors.border / 40%'), transparent);
 }
 
 .sidebar-divider--labeled {
@@ -210,15 +206,11 @@
 .sidebar-divider--labeled::after {
     content: '';
     @apply flex-1 h-px;
-    background: linear-gradient(to right,
-            theme('colors.border / 40%'),
-            transparent);
+    background: linear-gradient(to right, theme('colors.border / 40%'), transparent);
 }
 
 .sidebar-divider--labeled::after {
-    background: linear-gradient(to left,
-            theme('colors.border / 40%'),
-            transparent);
+    background: linear-gradient(to left, theme('colors.border / 40%'), transparent);
 }
 
 .sidebar-divider__label {
@@ -232,7 +224,7 @@
     @apply min-w-[220px] max-w-[280px];
     @apply bg-popover/95 backdrop-blur-xl;
     @apply border border-border/50 rounded-xl;
-    @apply shadow-2xl shadow-black/20;
+    box-shadow: 0 25px 50px -12px hsl(var(--shadow-color) / 0.25);
     @apply overflow-hidden;
 }
 
@@ -416,7 +408,6 @@
 
 /* === Reduced Motion === */
 @media (prefers-reduced-motion: reduce) {
-
     .sidebar,
     .sidebar-menu-item,
     .sidebar-section-header,

@@ -8,7 +8,8 @@ interface RateLimitConfig {
 
 export class RateLimitService extends BaseService {
     // Simple Token Bucket state: provider -> { tokens: number, lastRefill: number }
-    private buckets: Map<string, { tokens: number; lastRefill: number; config: RateLimitConfig }> = new Map();
+    private buckets: Map<string, { tokens: number; lastRefill: number; config: RateLimitConfig }> =
+        new Map();
     private cleanupInterval?: NodeJS.Timeout;
 
     constructor() {
@@ -59,9 +60,12 @@ export class RateLimitService extends BaseService {
         this.setLimit('mcp:data', { requestsPerMinute: 120, maxBurst: 20 }); // Data operations
 
         // Start cleanup interval to remove old buckets
-        this.cleanupInterval = setInterval(() => {
-            this.cleanupOldBuckets();
-        }, 5 * 60 * 1000); // 5 minutes
+        this.cleanupInterval = setInterval(
+            () => {
+                this.cleanupOldBuckets();
+            },
+            5 * 60 * 1000
+        ); // 5 minutes
 
         appLogger.info(this.name, `Rate limiting initialized for ${this.buckets.size} providers`);
     }
@@ -102,7 +106,7 @@ export class RateLimitService extends BaseService {
         this.buckets.set(provider, {
             tokens: config.maxBurst ?? config.requestsPerMinute,
             lastRefill: Date.now(),
-            config
+            config,
         });
     }
 
@@ -116,7 +120,9 @@ export class RateLimitService extends BaseService {
         }
 
         const bucket = this.buckets.get(provider);
-        if (!bucket) { return; } // No limit set
+        if (!bucket) {
+            return;
+        } // No limit set
 
         const MAX_WAIT_ITERATIONS = 100; // Prevent infinite loops
         let iterations = 0;
@@ -132,13 +138,13 @@ export class RateLimitService extends BaseService {
             const msPerToken = 60000 / bucket.config.requestsPerMinute;
             const waitTime = msPerToken;
 
-            appLogger.debug('RateLimit', `Rate limit hit for ${provider}. Waiting ${waitTime.toFixed(0)}ms.`);
-
             await new Promise(resolve => setTimeout(resolve, waitTime));
             iterations++;
         }
 
-        throw new Error(`Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`);
+        throw new Error(
+            `Rate limit wait exceeded maximum iterations (${MAX_WAIT_ITERATIONS}) for ${provider}`
+        );
     }
 
     /**
@@ -155,15 +161,17 @@ export class RateLimitService extends BaseService {
         // But refillBucket uses Date.now() so it doesn't actually block.
         // We'll trust the lastRefill vs now math.
 
-        // Actually refillBucket IS synchronous in implementation (just async signature in typical generic services, 
-        // but here it returns void and uses no awaits). 
-        // Let's copy the logic or fix refillBucket signature if possible. 
-        // Looking at the file, refillBucket is private async refillBucket(provider: string) 
-        // BUT it doesn't await anything. 
+        // Actually refillBucket IS synchronous in implementation (just async signature in typical generic services,
+        // but here it returns void and uses no awaits).
+        // Let's copy the logic or fix refillBucket signature if possible.
+        // Looking at the file, refillBucket is private async refillBucket(provider: string)
+        // BUT it doesn't await anything.
         // Let's just implement the logic inline for safety or cast call.
 
         const bucket = this.buckets.get(provider);
-        if (!bucket) { return true; }
+        if (!bucket) {
+            return true;
+        }
 
         const now = Date.now();
         const elapsed = now - bucket.lastRefill;
@@ -186,7 +194,9 @@ export class RateLimitService extends BaseService {
 
     private async refillBucket(provider: string) {
         const bucket = this.buckets.get(provider);
-        if (!bucket) { return; }
+        if (!bucket) {
+            return;
+        }
 
         const now = Date.now();
         const elapsed = now - bucket.lastRefill;

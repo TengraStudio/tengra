@@ -4,17 +4,17 @@ import React, { useRef } from 'react';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 
 interface DragDropWrapperProps {
-    isDragging: boolean
-    setIsDragging: (isDragging: boolean) => void
-    onFileDrop: (file: File) => void
-    children: React.ReactNode
+    isDragging: boolean;
+    setIsDragging: (isDragging: boolean) => void;
+    onFileDrop: (file: File) => void;
+    children: React.ReactNode;
 }
 
 export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
     isDragging,
     setIsDragging,
     onFileDrop,
-    children
+    children,
 }) => {
     const { t } = useTranslation();
     const dragCounter = useRef(0);
@@ -23,7 +23,9 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
         e.preventDefault();
         if (e.dataTransfer.types.includes('Files')) {
             dragCounter.current++;
-            if (!isDragging) { setIsDragging(true); }
+            if (!isDragging) {
+                setIsDragging(true);
+            }
         }
     };
 
@@ -84,3 +86,5 @@ export const DragDropWrapper: React.FC<DragDropWrapperProps> = ({
         </div>
     );
 };
+
+DragDropWrapper.displayName = 'DragDropWrapper';

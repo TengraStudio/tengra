@@ -1,3 +1,5 @@
+import path from 'path';
+
 import { GitService } from '@main/services/project/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
@@ -36,7 +38,7 @@ function registerGitBatchHandlers(gitService: GitService) {
                 success: true,
                 isClean,
                 changes: result.length,
-                files: result.map(file => ({ path: file.path, status: file.status }))
+                files: result.map(file => ({ path: file.path, status: file.status })),
             };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
@@ -46,7 +48,10 @@ function registerGitBatchHandlers(gitService: GitService) {
     registerBatchableHandler('git:getLastCommit', async (_event, ...args) => {
         const cwd = args[0] as string;
         try {
-            const result = await gitService.executeRaw(cwd, 'log -1 --pretty=format:"%H|%s|%an|%ar|%aI"');
+            const result = await gitService.executeRaw(
+                cwd,
+                'log -1 --pretty=format:"%H|%s|%an|%ar|%aI"'
+            );
             if (result.success && result.stdout) {
                 const [hash, message, author, relativeTime, date] = result.stdout.trim().split('|');
                 return { success: true, hash, message, author, relativeTime, date };
@@ -60,9 +65,15 @@ function registerGitBatchHandlers(gitService: GitService) {
     registerBatchableHandler('git:getBranches', async (_event, ...args) => {
         const cwd = args[0] as string;
         try {
-            const result = await gitService.executeRaw(cwd, 'branch -a --format="%(refname:short)"');
+            const result = await gitService.executeRaw(
+                cwd,
+                'branch -a --format="%(refname:short)"'
+            );
             if (result.success && result.stdout) {
-                const branches = result.stdout.trim().split('\n').filter(b => b.length > 0);
+                const branches = result.stdout
+                    .trim()
+                    .split('\n')
+                    .filter(b => b.length > 0);
                 return { success: true, branches };
             }
             return { success: true, branches: [] };
@@ -86,6 +97,42 @@ function registerStatusHandlers(gitService: GitService) {
         }
     });
 
+    ipcMain.handle('git:getTreeStatus', async (_event, cwd: string, targetPath: string) => {
+        try {
+            const rootResult = await gitService.executeRaw(cwd, 'rev-parse --show-toplevel');
+            if (!rootResult.success || !rootResult.stdout) {
+                return { success: true, isRepository: false, entries: [] };
+            }
+
+            const repoRoot = rootResult.stdout.trim();
+            const absoluteTarget = path.resolve(targetPath || cwd);
+            const relativeTarget = path.relative(repoRoot, absoluteTarget).replace(/\\/g, '/');
+            const targetArg =
+                relativeTarget && relativeTarget !== '.' ? ` -- "${relativeTarget}"` : '';
+            const statusResult = await gitService.executeRaw(
+                repoRoot,
+                `status --porcelain=1 --ignored=matching --untracked-files=all${targetArg}`
+            );
+
+            const entries = parsePorcelainEntries(statusResult.stdout ?? '');
+
+            return {
+                success: true,
+                isRepository: true,
+                repoRoot,
+                targetPath: absoluteTarget,
+                entries,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                isRepository: false,
+                entries: [],
+                error: getErrorMessage(error as Error),
+            };
+        }
+    });
+
     // Get remote info
     ipcMain.handle('git:getRemotes', async (_event, cwd: string) => {
         try {
@@ -98,7 +145,6 @@ function registerStatusHandlers(gitService: GitService) {
             return { success: false, error: getErrorMessage(error as Error), remotes: [] };
         }
     });
-
 
     function parseRemotes(stdout: string) {
         const remotes: Array<{ name: string; url: string; fetch: boolean; push: boolean }> = [];
@@ -119,8 +165,12 @@ function registerStatusHandlers(gitService: GitService) {
                 const remote = remoteMap.get(name);
                 if (remote) {
                     remote.url = url;
-                    if (type === '(fetch)') { remote.fetch = true; }
-                    if (type === '(push)') { remote.push = true; }
+                    if (type === '(fetch)') {
+                        remote.fetch = true;
+                    }
+                    if (type === '(push)') {
+                        remote.push = true;
+                    }
                 }
             }
         });
@@ -141,14 +191,20 @@ function registerStatusHandlers(gitService: GitService) {
             }
 
             const branch = branchResult.stdout.trim();
-            const trackingResult = await gitService.executeRaw(cwd, `rev-parse --abbrev-ref ${branch}@{upstream}`);
+            const trackingResult = await gitService.executeRaw(
+                cwd,
+                `rev-parse --abbrev-ref ${branch}@{upstream}`
+            );
 
             if (!trackingResult.success || !trackingResult.stdout) {
                 return { success: true, tracking: null, ahead: 0, behind: 0 };
             }
 
             const tracking = trackingResult.stdout.trim();
-            const countsResult = await gitService.executeRaw(cwd, `rev-list --left-right --count ${branch}...${tracking}`);
+            const countsResult = await gitService.executeRaw(
+                cwd,
+                `rev-list --left-right --count ${branch}...${tracking}`
+            );
 
             return parseTrackingCounts(countsResult, tracking);
         } catch {
@@ -157,12 +213,52 @@ function registerStatusHandlers(gitService: GitService) {
     });
 }
 
+function parsePorcelainEntries(
+    output: string
+): Array<{ status: string; path: string; isIgnored: boolean }> {
+    if (!output) {
+        return [];
+    }
+
+    return output
+        .split('\n')
+        .map(line => line.trimEnd())
+        .filter(line => line.length >= 4)
+        .map(line => {
+            const status = line.slice(0, 2);
+            let filePath = line.slice(3).trim();
+            const renameSeparator = ' -> ';
+            if (filePath.includes(renameSeparator)) {
+                const parts = filePath.split(renameSeparator);
+                filePath = parts[parts.length - 1] ?? filePath;
+            }
+
+            if (filePath.startsWith('"') && filePath.endsWith('"')) {
+                filePath = filePath.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            }
+
+            filePath = filePath.replace(/\\/g, '/');
+
+            return {
+                status,
+                path: filePath,
+                isIgnored: status === '!!',
+            };
+        })
+        .filter(entry => entry.path.length > 0);
+}
+
 function parseTrackingCounts(result: { success: boolean; stdout?: string }, tracking: string) {
     if (result.success && result.stdout) {
         const parts = result.stdout.trim().split('\t');
         const ahead = parseInt(parts[0] ?? '0');
         const behind = parseInt(parts[1] ?? '0');
-        return { success: true, tracking, ahead: isNaN(ahead) ? 0 : ahead, behind: isNaN(behind) ? 0 : behind };
+        return {
+            success: true,
+            tracking,
+            ahead: isNaN(ahead) ? 0 : ahead,
+            behind: isNaN(behind) ? 0 : behind,
+        };
     }
     return { success: true, tracking, ahead: 0, behind: 0 };
 }
@@ -171,7 +267,10 @@ function registerHistoryHandlers(gitService: GitService) {
     // Get last commit info
     ipcMain.handle('git:getLastCommit', async (_event, cwd: string) => {
         try {
-            const result = await gitService.executeRaw(cwd, 'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"');
+            const result = await gitService.executeRaw(
+                cwd,
+                'log -1 --pretty=format:"%h|%s|%an|%ar|%cI"'
+            );
             if (result.success && result.stdout) {
                 const parts = result.stdout.trim().split('|');
                 const [hash, message, author, relativeTime, date] = parts;
@@ -181,7 +280,7 @@ function registerHistoryHandlers(gitService: GitService) {
                     message: message,
                     author: author,
                     relativeTime: relativeTime,
-                    date: date
+                    date: date,
                 };
             }
             return { success: false, error: 'No commits found' };
@@ -203,7 +302,10 @@ function registerHistoryHandlers(gitService: GitService) {
     // Get commit statistics
     ipcMain.handle('git:getCommitStats', async (_event, cwd: string, days: number = 365) => {
         try {
-            const result = await gitService.executeRaw(cwd, `log --since="${days} days ago" --pretty=format:"%ad" --date=short`);
+            const result = await gitService.executeRaw(
+                cwd,
+                `log --since="${days} days ago" --pretty=format:"%ad" --date=short`
+            );
             if (result.success && result.stdout) {
                 const dates = result.stdout.split('\n').filter(line => line.trim());
                 const commitCounts: Record<string, number> = {};
@@ -223,24 +325,35 @@ function registerHistoryHandlers(gitService: GitService) {
 
 function registerDiffHandlers(gitService: GitService) {
     // Get file diff
-    ipcMain.handle('git:getFileDiff', async (_event, cwd: string, filePath: string, staged: boolean = false) => {
-        try {
-            const result = await gitService.getFileDiff(cwd, filePath, staged);
-            return result;
-        } catch (error) {
-            return { original: '', modified: '', success: false, error: getErrorMessage(error as Error) };
+    ipcMain.handle(
+        'git:getFileDiff',
+        async (_event, cwd: string, filePath: string, staged: boolean = false) => {
+            try {
+                const result = await gitService.getFileDiff(cwd, filePath, staged);
+                return result;
+            } catch (error) {
+                return {
+                    original: '',
+                    modified: '',
+                    success: false,
+                    error: getErrorMessage(error as Error),
+                };
+            }
         }
-    });
+    );
 
     // Get unified diff
-    ipcMain.handle('git:getUnifiedDiff', async (_event, cwd: string, filePath: string, staged: boolean = false) => {
-        try {
-            const result = await gitService.getUnifiedDiff(cwd, filePath, staged);
-            return result;
-        } catch (error) {
-            return { diff: '', success: false, error: getErrorMessage(error as Error) };
+    ipcMain.handle(
+        'git:getUnifiedDiff',
+        async (_event, cwd: string, filePath: string, staged: boolean = false) => {
+            try {
+                const result = await gitService.getUnifiedDiff(cwd, filePath, staged);
+                return result;
+            } catch (error) {
+                return { diff: '', success: false, error: getErrorMessage(error as Error) };
+            }
         }
-    });
+    );
 
     // Get commit diff
     ipcMain.handle('git:getCommitDiff', async (_event, cwd: string, hash: string) => {
@@ -280,9 +393,14 @@ function registerDiffHandlers(gitService: GitService) {
             // Get unstaged files
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --name-status');
 
-            const parseStatus = (output: string): Array<{ status: string; path: string; staged: boolean }> => {
-                if (!output) { return []; }
-                return output.split('\n')
+            const parseStatus = (
+                output: string
+            ): Array<{ status: string; path: string; staged: boolean }> => {
+                if (!output) {
+                    return [];
+                }
+                return output
+                    .split('\n')
                     .filter(line => line.trim())
                     .map(line => {
                         const parts = line.trim().split('\t');
@@ -292,7 +410,7 @@ function registerDiffHandlers(gitService: GitService) {
                             return {
                                 status: p0,
                                 path: p1,
-                                staged: false
+                                staged: false,
                             };
                         }
                         return null;
@@ -300,17 +418,26 @@ function registerDiffHandlers(gitService: GitService) {
                     .filter(Boolean) as Array<{ status: string; path: string; staged: boolean }>;
             };
 
-            const stagedFiles = parseStatus(stagedResult.stdout ?? '').map(f => ({ ...f, staged: true }));
+            const stagedFiles = parseStatus(stagedResult.stdout ?? '').map(f => ({
+                ...f,
+                staged: true,
+            }));
             const unstagedFiles = parseStatus(unstagedResult.stdout ?? '');
 
             return {
                 success: true,
                 stagedFiles,
                 unstagedFiles,
-                allFiles: [...stagedFiles, ...unstagedFiles]
+                allFiles: [...stagedFiles, ...unstagedFiles],
             };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error), stagedFiles: [], unstagedFiles: [], allFiles: [] };
+            return {
+                success: false,
+                error: getErrorMessage(error as Error),
+                stagedFiles: [],
+                unstagedFiles: [],
+                allFiles: [],
+            };
         }
     });
 
@@ -320,8 +447,12 @@ function registerDiffHandlers(gitService: GitService) {
             const stagedResult = await gitService.executeRaw(cwd, 'diff --cached --numstat');
             const unstagedResult = await gitService.executeRaw(cwd, 'diff --numstat');
 
-            const parseStats = (output: string): { added: number; deleted: number; files: number } => {
-                if (!output) { return { added: 0, deleted: 0, files: 0 }; }
+            const parseStats = (
+                output: string
+            ): { added: number; deleted: number; files: number } => {
+                if (!output) {
+                    return { added: 0, deleted: 0, files: 0 };
+                }
                 const lines = output.split('\n').filter(line => line.trim());
                 let added = 0;
                 let deleted = 0;
@@ -351,11 +482,17 @@ function registerDiffHandlers(gitService: GitService) {
                 total: {
                     added: stagedStats.added + unstagedStats.added,
                     deleted: stagedStats.deleted + unstagedStats.deleted,
-                    files: stagedStats.files + unstagedStats.files
-                }
+                    files: stagedStats.files + unstagedStats.files,
+                },
             };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error), staged: { added: 0, deleted: 0, files: 0 }, unstaged: { added: 0, deleted: 0, files: 0 }, total: { added: 0, deleted: 0, files: 0 } };
+            return {
+                success: false,
+                error: getErrorMessage(error as Error),
+                staged: { added: 0, deleted: 0, files: 0 },
+                unstaged: { added: 0, deleted: 0, files: 0 },
+                total: { added: 0, deleted: 0, files: 0 },
+            };
         }
     });
 }
@@ -382,25 +519,46 @@ function registerActionHandlers(gitService: GitService) {
     });
 
     // Push to remote
-    ipcMain.handle('git:push', async (_event, cwd: string, remote: string = 'origin', branch?: string) => {
-        try {
-            if (!branch) {
-                const branchResult = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
-                branch = branchResult.success && branchResult.stdout ? branchResult.stdout.trim() : 'main';
+    ipcMain.handle(
+        'git:push',
+        async (_event, cwd: string, remote: string = 'origin', branch?: string) => {
+            try {
+                if (!branch) {
+                    const branchResult = await gitService.executeRaw(
+                        cwd,
+                        'rev-parse --abbrev-ref HEAD'
+                    );
+                    branch =
+                        branchResult.success && branchResult.stdout
+                            ? branchResult.stdout.trim()
+                            : 'main';
+                }
+                const targetBranch = branch;
+                const result = await withRateLimit('git', async () =>
+                    gitService.push(cwd, remote, targetBranch)
+                );
+                return {
+                    success: result.success,
+                    error: result.error,
+                    stdout: result.stdout,
+                    stderr: result.stderr,
+                };
+            } catch (error) {
+                return { success: false, error: getErrorMessage(error as Error) };
             }
-            const targetBranch = branch;
-            const result = await withRateLimit('git', async () => gitService.push(cwd, remote, targetBranch));
-            return { success: result.success, error: result.error, stdout: result.stdout, stderr: result.stderr };
-        } catch (error) {
-            return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    );
 
     // Pull from remote
     ipcMain.handle('git:pull', async (_event, cwd: string) => {
         try {
             const result = await withRateLimit('git', () => gitService.pull(cwd));
-            return { success: result.success, error: result.error, stdout: result.stdout, stderr: result.stderr };
+            return {
+                success: result.success,
+                error: result.error,
+                stdout: result.stdout,
+                stderr: result.stderr,
+            };
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }

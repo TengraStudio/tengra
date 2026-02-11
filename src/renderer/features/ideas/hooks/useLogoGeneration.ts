@@ -4,20 +4,23 @@
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseLogoGenerationReturn {
-    canGenerateLogo: boolean
-    isGenerating: boolean
-    logoPath: string | null
-    error: string | null
-    checkAvailability: () => Promise<void>
-    generateLogo: (ideaId: string, prompt: string) => Promise<string | null>
-    clearLogo: () => void
-    clearError: () => void
+    canGenerateLogo: boolean;
+    isGenerating: boolean;
+    logoPaths: string[];
+    error: string | null;
+    checkAvailability: () => Promise<void>;
+    generateLogo: (
+        ideaId: string,
+        options: { prompt: string; style: string; model: string; count: number }
+    ) => Promise<string[] | null>;
+    clearLogos: () => void;
+    clearError: () => void;
 }
 
 export function useLogoGeneration(): UseLogoGenerationReturn {
     const [canGenerateLogo, setCanGenerateLogo] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [logoPath, setLogoPath] = useState<string | null>(null);
+    const [logoPaths, setLogoPaths] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const checkAvailability = useCallback(async () => {
@@ -29,34 +32,40 @@ export function useLogoGeneration(): UseLogoGenerationReturn {
         }
     }, []);
 
-    const generateLogo = useCallback(async (ideaId: string, prompt: string): Promise<string | null> => {
-        if (!canGenerateLogo) {
-            setError('Logo generation not available');
-            return null;
-        }
-
-        setIsGenerating(true);
-        setError(null);
-        setLogoPath(null);
-
-        try {
-            const result = await window.electron.ideas.generateLogo(ideaId, prompt);
-            if (result.success && result.logoPath) {
-                setLogoPath(result.logoPath);
-                return result.logoPath;
+    const generateLogo = useCallback(
+        async (
+            ideaId: string,
+            options: { prompt: string; style: string; model: string; count: number }
+        ): Promise<string[] | null> => {
+            if (!canGenerateLogo) {
+                setError('Logo generation not available');
+                return null;
             }
-            throw new Error('Logo generation failed');
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Logo generation failed';
-            setError(message);
-            return null;
-        } finally {
-            setIsGenerating(false);
-        }
-    }, [canGenerateLogo]);
 
-    const clearLogo = useCallback(() => {
-        setLogoPath(null);
+            setIsGenerating(true);
+            setError(null);
+            setLogoPaths([]);
+
+            try {
+                const result = await window.electron.ideas.generateLogo(ideaId, options);
+                if (result.success && result.logoPaths) {
+                    setLogoPaths(result.logoPaths);
+                    return result.logoPaths;
+                }
+                throw new Error('Logo generation failed');
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Logo generation failed';
+                setError(message);
+                return null;
+            } finally {
+                setIsGenerating(false);
+            }
+        },
+        [canGenerateLogo]
+    );
+
+    const clearLogos = useCallback(() => {
+        setLogoPaths([]);
     }, []);
 
     const clearError = useCallback(() => {
@@ -71,11 +80,11 @@ export function useLogoGeneration(): UseLogoGenerationReturn {
     return {
         canGenerateLogo,
         isGenerating,
-        logoPath,
+        logoPaths,
         error,
         checkAvailability,
         generateLogo,
-        clearLogo,
-        clearError
+        clearLogos,
+        clearError,
     };
 }

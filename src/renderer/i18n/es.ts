@@ -10,7 +10,7 @@ export const es = {
         copy: 'Copiar',
         refresh: 'Actualizar',
         rename: 'Renombrar',
-        search: 'Buscar...',
+        search: 'Buscar',
         loading: 'Cargando...',
         error: 'Error',
         success: 'Éxito',
@@ -23,16 +23,64 @@ export const es = {
         hour: 'hora',
         hours: 'horas',
         clear: 'Limpiar',
+        details: 'Detalles',
+        hide: 'Ocultar',
+        showMore: 'Mostrar más...',
+        kb: 'KB',
         add: 'Añadir',
+        done: 'Hecho',
+        close: 'Cerrar',
+        pending: 'Pendiente',
         confirm: 'Confirmar',
-        processing: 'Procesando...'
+        processing: 'Procesando...',
+        selectAll: 'Seleccionar todo',
+        itemsSelected: '{{count}} elementos seleccionados',
+        // Error messages
+        unknownError: 'Error desconocido',
+        operationFailed: 'Operación fallida',
+        invalidInput: 'Entrada inválida',
+        networkError: 'Error de red',
+        permissionDenied: 'Permiso denegado',
+        // Additional common keys
+        authType: 'Tipo de autenticación',
+        back: 'Atrás',
+        commands: 'Comandos',
+        connect: 'Conectar',
+        favorites: 'Favoritos',
+        fitView: 'Ajustar vista',
+        host: 'Host',
+        next: 'Siguiente',
+        previous: 'Anterior',
+        pageOf: 'Página {{current}} de {{total}}',
+        passphrase: 'Frase de contraseña',
+        password: 'Contraseña',
+        port: 'Puerto',
+        privateKey: 'Clave privada',
+        reset: 'Restablecer',
+        resetZoom: 'Restablecer zoom',
+        resume: 'Reanudar',
+        searching: 'Buscando...',
+        send: 'Enviar',
+        stop: 'Detener',
+        unarchive: 'Desarchivar',
+        update: 'Actualizar',
+        username: 'Usuario',
+        zoomIn: 'Acercar',
+        zoomOut: 'Alejar',
+        toClose: 'para cerrar',
+        locale: 'es-ES',
+        ai: 'IA',
+    },
+    loading: {
+        codeEditor: 'Cargando editor de código',
+        chart: 'Cargando gráfico',
     },
     app: {
-        name: 'Tandem'
+        name: 'Tandem',
     },
     errors: {
         unexpected: 'Lo sentimos, ocurrió un error.',
-        somethingWentWrong: 'Algo salió mal:'
+        somethingWentWrong: 'Algo salió mal:',
     },
     languages: {
         tr: 'Turco',
@@ -42,7 +90,7 @@ export const es = {
         es: 'Español',
         ja: 'Japonés',
         zh: 'Chino',
-        ar: 'Árabe'
+        ar: 'Árabe',
     },
     themeStore: {
         title: 'Tienda de temas',
@@ -59,37 +107,37 @@ export const es = {
         themes: {
             'dark-default': {
                 name: 'Oscuro predeterminado',
-                description: 'El tema oscuro predeterminado con acentos morados'
+                description: 'El tema oscuro predeterminado con acentos morados',
             },
             'light-default': {
                 name: 'Claro predeterminado',
-                description: 'Un tema claro limpio para uso diurno'
+                description: 'Un tema claro limpio para uso diurno',
             },
-            'nord': {
+            nord: {
                 name: 'Nord',
-                description: 'Una paleta de colores árticos azul-norte'
+                description: 'Una paleta de colores árticos azul-norte',
             },
-            'dracula': {
+            dracula: {
                 name: 'Dracula',
-                description: 'Un tema oscuro con colores vibrantes'
+                description: 'Un tema oscuro con colores vibrantes',
             },
-            'monokai': {
+            monokai: {
                 name: 'Monokai Pro',
-                description: 'Tema oscuro profesional con acentos cálidos'
+                description: 'Tema oscuro profesional con acentos cálidos',
             },
             'github-dark': {
                 name: 'GitHub Dark',
-                description: 'El tema oscuro oficial de GitHub'
+                description: 'El tema oscuro oficial de GitHub',
             },
             'solarized-dark': {
                 name: 'Solarized Dark',
-                description: 'Colores precisos para máquinas y personas'
+                description: 'Colores precisos para máquinas y personas',
             },
             'tokyo-night': {
                 name: 'Tokyo Night',
-                description: 'Un tema limpio que celebra las luces de Tokio'
-            }
-        }
+                description: 'Un tema limpio que celebra las luces de Tokio',
+            },
+        },
     },
     modelSelector: {
         searchModels: 'Buscar modelos...',
@@ -99,7 +147,7 @@ export const es = {
         openCode: 'OpenCode',
         proxyCustom: 'Proxy personalizado / Otro',
         model: 'Modelo',
-        selectModel: 'Seleccionar modelo'
+        selectModel: 'Seleccionar modelo',
     },
     assistantIdentity: {
         openai: 'OpenAI',
@@ -112,7 +160,7 @@ export const es = {
         mistral: 'Mistral',
         deepseek: 'DeepSeek',
         qwen: 'Qwen',
-        phi: 'Phi'
+        phi: 'Phi',
     },
     settings: {
         searchPlaceholder: 'Buscar configuración...',
@@ -144,76 +192,81 @@ export const es = {
             maxPercentagePlaceholder: '50',
             typeLabel: 'Tipo:',
             limitLabel: 'Límite {{period}}',
-            percentHint: 'Se limitará a {{count}} solicitudes ({{percentage}} % de {{remaining}} restantes)',
+            percentHint:
+                'Se limitará a {{count}} solicitudes ({{percentage}} % de {{remaining}} restantes)',
             types: {
                 requests: 'Solicitudes',
-                percentage: 'Porcentaje'
+                percentage: 'Porcentaje',
             },
             periods: {
                 hourly: 'Por hora',
                 daily: 'Diario',
-                weekly: 'Semanal'
+                weekly: 'Semanal',
             },
             copilot: {
                 title: 'Copilot',
-                current: 'Actual: {{remaining}} / {{limit}} restantes'
+                current: 'Actual: {{remaining}} / {{limit}} restantes',
             },
             antigravity: {
                 title: 'Modelos Antigravity',
-                description: 'Establece un límite porcentual según la cuota restante de cada modelo'
+                description:
+                    'Establece un límite porcentual según la cuota restante de cada modelo',
             },
             codex: {
                 title: 'Codex',
-                description: 'Establece límites porcentuales según la cuota diaria/semanal restante'
-            }
+                description:
+                    'Establece límites porcentuales según la cuota diaria/semanal restante',
+            },
         },
         browserClosure: {
             title: 'Se requiere cerrar el navegador',
-            description: 'Para autenticar con {{provider}}, Tandem necesita leer cookies protegidas.',
+            description:
+                'Para autenticar con {{provider}}, Tandem necesita leer cookies protegidas.',
             warningPrefix: 'Debemos',
             warningEmphasis: 'cerrar automáticamente tu navegador',
             warningSuffix: 'para liberar el bloqueo de archivos.',
-            saveWork: 'Guarda tu trabajo en el navegador antes de continuar. Lo reabriremos de forma invisible para extraer la clave de sesión.',
-            confirm: 'Cerrar navegador y conectar'
+            saveWork:
+                'Guarda tu trabajo en el navegador antes de continuar. Lo reabriremos de forma invisible para extraer la clave de sesión.',
+            confirm: 'Cerrar navegador y conectar',
         },
         hyperparameters: {
             title: 'Hiperparámetros',
             temperature: {
                 label: 'Temperatura',
-                description: 'Nivel de creatividad (0: determinista, 2: muy creativo)'
+                description: 'Nivel de creatividad (0: determinista, 2: muy creativo)',
             },
             topP: {
                 label: 'Top-P',
-                description: 'Umbral de probabilidad de nucleus sampling'
+                description: 'Umbral de probabilidad de nucleus sampling',
             },
             topK: {
                 label: 'Top-K',
-                description: 'Número de tokens más probables'
+                description: 'Número de tokens más probables',
             },
             repeatPenalty: {
                 label: 'Penalización por repetición',
-                description: 'Penalización por repetición (1: ninguna, 2: alta)'
-            }
+                description: 'Penalización por repetición (1: ninguna, 2: alta)',
+            },
         },
         mcp: {
             title: 'Protocolo de contexto de modelo',
             subtitle: 'Gestiona tus servidores MCP e instala nuevas herramientas',
             tabs: {
                 servers: 'Servidores',
-                marketplace: 'Marketplace'
+                marketplace: 'Marketplace',
             },
             servers: {
                 title: 'Servidores configurados',
                 subtitle: 'Gestiona tus conexiones de servidores MCP',
                 connect: 'Conectar servidor',
-                empty: 'No hay servidores conectados'
+                empty: 'No hay servidores conectados',
             },
             status: {
                 connected: 'Conectado',
                 disconnected: 'Desconectado',
-                error: 'Error'
-            }
-        }
+                error: 'Error',
+            },
+        },
     },
     projects: {
         newProject: 'Nuevo proyecto',
@@ -262,7 +315,7 @@ export const es = {
         changeLogo: 'Cambiar logo',
         noDescription: 'Sin descripción proporcionada',
         todoPlaceholder: '¿Qué hay que hacer? (Presiona Enter)',
-        willActOn: 'Actuará en:'
+        willActOn: 'Actuará en:',
     },
     projectWizard: {
         title: 'Asistente de proyecto',
@@ -275,7 +328,7 @@ export const es = {
         projectName: 'NOMBRE DEL PROYECTO',
         namePlaceholder: 'Ej: Dashboard CRM',
         placeholder: {
-            example: 'ejemplo.com'
+            example: 'ejemplo.com',
         },
         description: 'DESCRIPCIÓN (OPCIONAL)',
         descPlaceholder: '¿Cuál es el objetivo de este proyecto?',
@@ -298,7 +351,8 @@ export const es = {
         sshTodo: 'SSH (Próximamente)',
         sshTodoDesc: 'Desarrolla en un servidor remoto. Actualmente desactivado.',
         newCreateTodo: 'Crear nuevo (Próximamente)',
-        newCreateTodoDesc: 'Crea un directorio de proyecto nuevo desde cero. Actualmente desactivado.',
+        newCreateTodoDesc:
+            'Crea un directorio de proyecto nuevo desde cero. Actualmente desactivado.',
         emptyDir: 'Este directorio está vacío.',
         listingDir: 'Listando directorio...',
         selectRootDesc: 'Selecciona el directorio raíz para los metadatos del proyecto.',
@@ -310,8 +364,8 @@ export const es = {
             backend: 'Servicio Backend',
             cli: 'CLI / Script',
             mobile: 'Aplicación Móvil',
-            other: 'Proyecto Personalizado'
-        }
+            other: 'Proyecto Personalizado',
+        },
     },
     projectDashboard: {
         title: 'Tablero del proyecto',
@@ -384,10 +438,11 @@ export const es = {
         todoList: 'Próximas tareas',
         gitStatus: {
             pulling: 'Haciendo pull...',
-            pushing: 'Haciendo push...'
+            pushing: 'Haciendo push...',
         },
         noIssues: 'No se encontraron problemas significativos en el proyecto. ¡Buen trabajo!',
-        issuesDescription: 'Tandem escanea tu proyecto en busca de posibles errores, advertencias y olores de código.',
+        issuesDescription:
+            'Tandem escanea tu proyecto en busca de posibles errores, advertencias y olores de código.',
         issueType: 'TIPO',
         issueMessage: 'MENSAJE',
         issueLocation: 'UBICACIÓN',
@@ -404,9 +459,10 @@ export const es = {
         envActions: 'ACCIONES',
         // Logs Tab
         logsDescription: 'Registros de la aplicación en tiempo real.',
-        logsEmpty: 'No hay registros disponibles. Ejecuta tu proyecto para generar salida de registro.',
+        logsEmpty:
+            'No hay registros disponibles. Ejecuta tu proyecto para generar salida de registro.',
         logsClear: 'Limpiar registros',
-        logsFilter: 'Filtrar registros...'
+        logsFilter: 'Filtrar registros...',
     },
     git: {
         commitGenerator: 'Generador de commits Git',
@@ -415,11 +471,12 @@ export const es = {
         selectProject: 'Selecciona un proyecto para generar mensajes de commit',
         suggestedMessage: 'Mensaje de commit sugerido',
         stagedChanges: 'Vista previa de cambios indexados',
-        noStagedChanges: 'No se encontraron cambios indexados. Usa `git add` para indexar los cambios primero.',
+        noStagedChanges:
+            'No se encontraron cambios indexados. Usa `git add` para indexar los cambios primero.',
         copy: 'Copiar',
         commit: 'Commit',
         cancel: 'Cancelar',
-        error: 'Ocurrió un error'
+        error: 'Ocurrió un error',
     },
     ssh: {
         title: 'Gestor SSH',
@@ -487,7 +544,7 @@ export const es = {
             username: 'root',
             passwordOptional: 'Actualmente opcional si se usa clave',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: 'Mi servidor'
+            profileName: 'Mi servidor',
         },
         profileName: 'Nombre del perfil',
         nginx: {
@@ -500,15 +557,15 @@ export const es = {
             configPreview: 'Vista previa de configuración',
             placeholders: {
                 domain: 'api.miapp.com',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: 'El nombre de dominio es obligatorio',
                 connecting: 'Conectando al servidor...',
                 moving: 'Moviendo configuración al directorio de Nginx...',
                 success: '¡Nginx recargado exitosamente!',
-                error: 'Error al aplicar: {{error}}. Asegúrate de tener privilegios de sudo.'
-            }
+                error: 'Error al aplicar: {{error}}. Asegúrate de tener privilegios de sudo.',
+            },
         },
         presets: {
             title: 'Preajustes de parámetros',
@@ -520,34 +577,34 @@ export const es = {
             labels: {
                 name: 'Nombre del preajuste',
                 temperature: 'Temperatura',
-                topP: 'Top P'
+                topP: 'Top P',
             },
             placeholders: {
-                name: 'Ej. Mi preajuste personalizado'
-            }
+                name: 'Ej. Mi preajuste personalizado',
+            },
         },
         promptManager: {
             title: 'Biblioteca de prompts',
             newPrompt: 'Nuevo prompt',
             labels: {
                 title: 'Título',
-                content: 'Contenido'
+                content: 'Contenido',
             },
             placeholders: {
                 title: 'Ej. Refactorización de código',
-                content: 'Ingresa el contenido del prompt...'
+                content: 'Ingresa el contenido del prompt...',
             },
             empty: {
                 title: 'No hay prompts aún',
-                subtitle: 'Crea uno para empezar'
-            }
+                subtitle: 'Crea uno para empezar',
+            },
         },
         editor: {
             loading: 'Cargando editor...',
             initializing: 'Iniciando editor...',
             error: 'Error del editor: {{error}}',
-            aiRefactor: 'Refactorización / Explicación por IA'
-        }
+            aiRefactor: 'Refactorización / Explicación por IA',
+        },
     },
     sidebar: {
         chats: 'Chats',
@@ -591,20 +648,20 @@ export const es = {
         councilReady: 'Listo',
         project: 'Proyecto',
         moveTo: 'Mover a...',
-        ideas: 'Ideas'
+        ideas: 'Ideas',
     },
     dateGroups: {
         today: 'Hoy',
         yesterday: 'Ayer',
         lastWeek: 'Semana pasada',
-        older: 'Más antiguo'
+        older: 'Más antiguo',
     },
     nav: {
         chat: 'Chat',
         projects: 'Proyectos',
         settings: 'Configuración',
         council: 'Consejo',
-        mcp: 'Gestión MCP'
+        mcp: 'Gestión MCP',
     },
     mcp: {
         management: 'Gestión MCP',
@@ -618,7 +675,8 @@ export const es = {
         searchPlaceholder: 'Buscar servidores o herramientas...',
         searchTools: 'Buscar herramientas...',
         storeTitle: 'Tienda de herramientas MCP',
-        toolsInstalled: '{{count}} herramientas instaladas • Explorar servidores Model Context Protocol',
+        toolsInstalled:
+            '{{count}} herramientas instaladas • Explorar servidores Model Context Protocol',
         noTools: 'No se encontraron herramientas',
         noServers: 'No hay servidores conectados',
         features: 'CARACTERÍSTICAS',
@@ -637,8 +695,8 @@ export const es = {
             database: 'Base de datos',
             api: 'APIs',
             development: 'Desarrollo',
-            ai: 'IA'
-        }
+            ai: 'IA',
+        },
     },
     memory: {
         title: 'Inspector de memoria',
@@ -657,11 +715,12 @@ export const es = {
         noEpisodesRecorded: 'No hay episodios registrados',
         episodesDescription: 'Los resúmenes de chat se generan después de conversaciones largas.',
         noEntitiesDetected: 'No se detectaron entidades',
-        entitiesDescription: 'El conocimiento estructurado sobre personas, lugares y herramientas aparecerá aquí.',
+        entitiesDescription:
+            'El conocimiento estructurado sobre personas, lugares y herramientas aparecerá aquí.',
         confidence: 'Confianza',
         ago: 'hace',
         via: 'vía',
-        chatId: 'ID de chat'
+        chatId: 'ID de chat',
     },
     terminal: {
         noShellsFound: 'No se encontraron shells',
@@ -669,7 +728,7 @@ export const es = {
         startNewSession: 'Iniciar nueva sesión',
         sessionFailed: 'Error al iniciar sesión de terminal',
         closeAndCreate: 'Cierra esta pestaña y crea una nueva sesión de terminal',
-        exitedWithCode: 'Terminal terminó con código {{code}}'
+        exitedWithCode: 'Terminal terminó con código {{code}}',
     },
     workspace: {
         editor: 'Editor',
@@ -704,13 +763,13 @@ export const es = {
         convertToCode: 'Convertir a código',
         placeholders: {
             rootPath: 'C:\\\\Usuarios\\\\Proyecto',
-            name: 'Nombre...'
+            name: 'Nombre...',
         },
         run: 'Ejecutar proyecto',
         toggleSidebar: 'Alternar barra lateral',
         aiAssistant: 'Asistente IA',
         online: 'En línea',
-        dev: 'DEV'
+        dev: 'DEV',
     },
     chat: {
         placeholder: 'Escribe un mensaje...',
@@ -723,26 +782,28 @@ export const es = {
         collapse: 'Colapsar',
         moreLines: 'más líneas',
         scrollToBottom: 'Desplazar al final',
-        scrollToBottomWithCount: 'Desplazar al final ({{count}} mensajes nuevos)'
+        scrollToBottomWithCount: 'Desplazar al final ({{count}} mensajes nuevos)',
     },
     welcome: {
         title: 'Tandem',
-        tagline: 'La inteligencia encuentra la elegancia.'
+        tagline: 'La inteligencia encuentra la elegancia.',
     },
     auth: {
         authError: 'Error de autenticación',
         goToAccounts: 'Ir a cuentas',
-        connectionFailed: 'Error de conexión con el servidor Antigravity. Por favor inicia sesión o verifica tu clave API.',
+        connectionFailed:
+            'Error de conexión con el servidor Antigravity. Por favor inicia sesión o verifica tu clave API.',
         sessionKeyRequired: 'Se requiere clave de sesión de Claude',
         completeConnection: 'Completar conexión para {{email}}',
-        sessionKeyDescription: 'Para el seguimiento de cuotas e interacción directa, Tandem necesita tu clave de sesión de Claude. Se almacena encriptada localmente.',
+        sessionKeyDescription:
+            'Para el seguimiento de cuotas e interacción directa, Tandem necesita tu clave de sesión de Claude. Se almacena encriptada localmente.',
         howToFindKey: 'Cómo encontrar tu clave de sesión',
         sessionKeyInstructions: {
             step1: 'Abre claude.ai e inicia sesión',
             step2: 'Clic derecho y selecciona Inspeccionar',
             step3: 'Ve a la pestaña Aplicación (o Almacenamiento)',
             step4: 'Expande Cookies y selecciona https://claude.ai',
-            step5: 'Encuentra sessionKey y copia su valor (empieza con sk-ant-sid)'
+            step5: 'Encuentra sessionKey y copia su valor (empieza con sk-ant-sid)',
         },
         sessionKeyLabel: 'Clave de sesión',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -755,7 +816,7 @@ export const es = {
         openGithubToEnter: 'Abrir GitHub para ingresar código',
         waitingForLogin: 'Esperando inicio de sesión...',
         connectedSuccessfully: '¡Conectado exitosamente!',
-        connectionFailedGeneric: 'Conexión fallida'
+        connectionFailedGeneric: 'Conexión fallida',
     },
     accounts: {
         title: 'Cuentas conectadas',
@@ -763,33 +824,33 @@ export const es = {
         categories: {
             aiProviders: 'Proveedores de IA',
             developerTools: 'Herramientas de desarrollador',
-            localModels: 'Modelos locales'
+            localModels: 'Modelos locales',
         },
         providers: {
             github: {
                 name: 'GitHub',
-                description: 'Alojamiento de código fuente y colaboración'
+                description: 'Alojamiento de código fuente y colaboración',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'Completado de código asistido por IA'
+                description: 'Completado de código asistido por IA',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: 'Servicios de IA en la nube y acceso web'
+                description: 'Servicios de IA en la nube y acceso web',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4 y modelos de lenguaje avanzados'
+                description: 'GPT-4 y modelos de lenguaje avanzados',
             },
             claude: {
                 name: 'Claude',
-                description: 'Modelos de razonamiento Anthropic Claude'
+                description: 'Modelos de razonamiento Anthropic Claude',
             },
             ollama: {
                 name: 'Ollama',
-                description: 'Ejecuta modelos de IA localmente'
-            }
+                description: 'Ejecuta modelos de IA localmente',
+            },
         },
         connected: 'CONECTADO',
         disconnected: 'DESCONECTADO',
@@ -821,8 +882,8 @@ export const es = {
             copilot: 'GitHub Copilot',
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
-            claude: 'Claude'
-        }
+            claude: 'Claude',
+        },
     },
     ideas: {
         title: 'Ideas de proyecto',
@@ -841,7 +902,7 @@ export const es = {
             cliTool: 'Herramienta CLI',
             apiBackend: 'API / Backend',
             desktop: 'Aplicación de escritorio',
-            other: 'Otro'
+            other: 'Otro',
         },
         research: {
             title: 'Pipeline de investigación',
@@ -849,13 +910,13 @@ export const es = {
             sectorAnalysis: 'Análisis sectorial',
             marketResearch: 'Investigación de mercado',
             competitorAnalysis: 'Análisis de competencia',
-            complete: 'Investigación completa'
+            complete: 'Investigación completa',
         },
         generation: {
             title: 'Generando ideas',
             progress: 'Generando idea {{current}} de {{total}}',
             enriching: 'Enriqueciendo detalles de la idea...',
-            complete: 'Generación completa'
+            complete: 'Generación completa',
         },
         idea: {
             viewDetails: 'Ver detalles',
@@ -871,14 +932,14 @@ export const es = {
             detailedDescription: 'Descripción detallada',
             roadmap: 'Hoja de ruta del proyecto',
             techStack: 'Stack tecnológico',
-            competitorAnalysis: 'Análisis de competencia'
+            competitorAnalysis: 'Análisis de competencia',
         },
         techStack: {
             frontend: 'Frontend',
             backend: 'Backend',
             database: 'Base de datos',
             infrastructure: 'Infraestructura',
-            other: 'Otras herramientas'
+            other: 'Otras herramientas',
         },
         status: {
             active: 'Activo',
@@ -888,7 +949,7 @@ export const es = {
             cancelled: 'Cancelado',
             pending: 'Pendiente',
             approved: 'Aprobado',
-            rejected: 'Rechazado'
+            rejected: 'Rechazado',
         },
         errors: {
             modelRequired: 'Por favor selecciona un modelo',
@@ -896,13 +957,13 @@ export const es = {
             researchFailed: 'Investigación fallida. Por favor intenta de nuevo.',
             generationFailed: 'Generación de ideas fallida. Por favor intenta de nuevo.',
             approvalFailed: 'Error al crear proyecto. Por favor intenta de nuevo.',
-            logoFailed: 'Generación de logo fallida. Por favor intenta de nuevo.'
+            logoFailed: 'Generación de logo fallida. Por favor intenta de nuevo.',
         },
         empty: {
             noSessions: 'Aún no hay sesiones de ideas',
             noSessionsDesc: 'Inicia una nueva sesión para generar ideas de proyecto',
             noIdeas: 'Aún no se han generado ideas',
-            noIdeasDesc: 'Completa la fase de investigación para generar ideas'
+            noIdeasDesc: 'Completa la fase de investigación para generar ideas',
         },
         history: {
             title: 'Historial de ideas',
@@ -914,14 +975,15 @@ export const es = {
             pendingReview: 'Revisión pendiente',
             viewDetails: 'Ver detalles',
             noIdeasYet: 'Aún no se han generado ideas',
-            daysAgo: 'hace {{count}} días'
+            daysAgo: 'hace {{count}} días',
         },
-        modelSelectorHint: 'Usa el selector de modelo en la barra superior para cambiar el modelo de IA.',
+        modelSelectorHint:
+            'Usa el selector de modelo en la barra superior para cambiar el modelo de IA.',
         competitor: {
             strengths: 'Fortalezas',
             weaknesses: 'Debilidades',
             missingFeatures: 'Características faltantes',
-            opportunity: 'Oportunidad de diferenciación'
+            opportunity: 'Oportunidad de diferenciación',
         },
         stages: {
             seedGeneration: 'Generando concepto inicial...',
@@ -932,26 +994,26 @@ export const es = {
             techStack: 'Seleccionando stack tecnológico...',
             competitorAnalysis: 'Analizando competidores...',
             finalizing: 'Finalizando idea...',
-            complete: 'Idea completa'
+            complete: 'Idea completa',
         },
         logo: {
             title: 'Generación de logo',
             generate: 'Generar logo',
             generating: 'Generando logo...',
             requiresAntigravity: 'La generación de logo requiere conexión con Antigravity',
-            promptPlaceholder: 'Describe tu concepto de logo...'
-        }
+            promptPlaceholder: 'Describe tu concepto de logo...',
+        },
     },
     input: {
         placeholder: {
             copilot: 'Pregunta a Copilot para generar código...',
             ollama: 'Pregunta al LLM local...',
-            default: 'Escribe un mensaje...'
+            default: 'Escribe un mensaje...',
         },
         attachFile: 'Adjuntar archivo',
         enhancePrompt: 'Mejorar prompt con IA',
         startListening: 'Iniciar entrada de voz',
-        stopListening: 'Detener entrada de voz'
+        stopListening: 'Detener entrada de voz',
     },
     workspaceModals: {
         mountTitle: 'Añadir carpeta o servidor existente',
@@ -967,29 +1029,29 @@ export const es = {
         closeModal: 'Cerrar modal',
         inputAriaLabel: 'nombre de {{type}}',
         deleteConfirm: '¿Estás seguro de que deseas eliminar {name}?',
-        confirm: 'Confirmar'
+        confirm: 'Confirmar',
     },
     templates: {
         code: {
             title: 'Programación',
             description: 'Crear componentes y algoritmos.',
-            prompt: '¿Puedes crear un componente React moderno para mí? Con un diseño de tarjeta elegante.'
+            prompt: '¿Puedes crear un componente React moderno para mí? Con un diseño de tarjeta elegante.',
         },
         analyze: {
             title: 'Analizar',
             description: 'Inspeccionar archivos y datos.',
-            prompt: '¿Puedes analizar la arquitectura de este proyecto y proporcionar sugerencias de mejora?'
+            prompt: '¿Puedes analizar la arquitectura de este proyecto y proporcionar sugerencias de mejora?',
         },
         creative: {
             title: 'Escritura creativa',
             description: 'Generar texto y contenido.',
-            prompt: '¿Puedes escribir un texto de introducción impresionante para un asistente de IA llamado Tandem?'
+            prompt: '¿Puedes escribir un texto de introducción impresionante para un asistente de IA llamado Tandem?',
         },
         debug: {
             title: 'Depuración',
             description: 'Encontrar y solucionar problemas.',
-            prompt: '¿Puedes ayudarme a encontrar la fuga de memoria en mi código?'
-        }
+            prompt: '¿Puedes ayudarme a encontrar la fuga de memoria en mi código?',
+        },
     },
     attachments: {
         image: 'Imagen',
@@ -1007,7 +1069,8 @@ export const es = {
         copyAsHtml: 'Copiar como HTML',
         TandemDrawing: 'Dibujo de Tandem...',
         quotaExceeded: 'Cuota excedida',
-        quotaMessage: 'Has excedido la cuota de uso del modelo. Por favor intenta de nuevo más tarde o mejora tu plan.',
+        quotaMessage:
+            'Has excedido la cuota de uso del modelo. Por favor intenta de nuevo más tarde o mejora tu plan.',
         resetsAt: 'Se reinicia en:',
         checkQuotas: 'Verificar cuotas',
         stop: 'Detener',
@@ -1029,7 +1092,7 @@ export const es = {
         regenerate: 'Regenerar',
         rating: 'Calificar respuesta',
         actions: 'Acciones de mensaje',
-        multiModelResponse: 'Respuestas de múltiples modelos'
+        multiModelResponse: 'Respuestas de múltiples modelos',
     },
     general: {
         turkish: 'Turco',
@@ -1041,8 +1104,9 @@ export const es = {
         database: 'BASE DE DATOS',
         databaseDesc: 'Gestionar datos y caché de la aplicación.',
         onboardingTour: 'TOUR DE BIENVENIDA',
-        onboardingTourDesc: 'Reiniciar el tour de introducción a las características de la aplicación.',
-        startTour: 'INICIAR TOUR'
+        onboardingTourDesc:
+            'Reiniciar el tour de introducción a las características de la aplicación.',
+        startTour: 'INICIAR TOUR',
     },
     appearance: {
         themeDesc: 'Cambiar el tema de color de la aplicación.',
@@ -1082,13 +1146,14 @@ export const es = {
             serenity: 'Serenidad',
             neonPulse: 'Pulso Neón',
             cyberFuture: 'Futuro Cíber',
-            softVelvet: 'Terciopelo Suave'
-        }
+            softVelvet: 'Terciopelo Suave',
+        },
     },
     statistics: {
         title: 'Estadísticas',
         tokenUsageOverTime: 'Uso de tokens a lo largo del tiempo',
-        visualizeTokenConsumption: 'Visualiza tus tendencias de uso de modelos de IA a lo largo del tiempo.',
+        visualizeTokenConsumption:
+            'Visualiza tus tendencias de uso de modelos de IA a lo largo del tiempo.',
         totalPrompt: 'Prompt total',
         totalCompletion: 'Completado total',
         cost: 'Costo estimado',
@@ -1121,17 +1186,19 @@ export const es = {
         subscriptionActive: 'Suscripción activa',
         codingTimeByProject: 'Tiempo de programación por proyecto',
         timeSpentCodingInEachProject: 'Tiempo pasado programando en cada proyecto',
-        unknownProject: 'Proyecto desconocido'
+        unknownProject: 'Proyecto desconocido',
     },
     about: {
-        description: 'Tandem es un asistente IDE de IA de próxima generación diseñado para desarrolladores, unificando modelos de IA locales y basados en la nube en una sola interfaz.',
+        description:
+            'Tandem es un asistente IDE de IA de próxima generación diseñado para desarrolladores, unificando modelos de IA locales y basados en la nube en una sola interfaz.',
         checkUpdates: 'Buscar actualizaciones',
         privacyPolicy: 'Política de privacidad',
         github: 'GitHub',
         copyright: '© 2025 Tandem',
         factoryReset: 'Restablecimiento de fábrica',
         factoryResetDesc: 'Restablece la aplicación eliminando todos los ajustes y datos.',
-        updateCheckAlert: 'Verificación de actualizaciones habilitada en compilaciones de producción.'
+        updateCheckAlert:
+            'Verificación de actualizaciones habilitada en compilaciones de producción.',
     },
     developer: {
         title: 'Ajustes de desarrollador',
@@ -1149,7 +1216,7 @@ export const es = {
         importSettingsDesc: 'Carga ajustes desde un archivo JSON',
         import: 'Importar',
         settingsImported: 'Ajustes importados',
-        invalidSettingsFile: 'Archivo de ajustes inválido'
+        invalidSettingsFile: 'Archivo de ajustes inválido',
     },
     advanced: {
         systemInfo: 'Info del sistema',
@@ -1162,13 +1229,14 @@ export const es = {
         tokensPerSec: 'Tokens/seg',
         latency: 'Latencia',
         serviceIntervals: 'Intervalos de servicio',
-        serviceIntervalsDesc: 'Configura la frecuencia con la que los servicios en segundo plano actualizan los datos.',
+        serviceIntervalsDesc:
+            'Configura la frecuencia con la que los servicios en segundo plano actualizan los datos.',
         modelUpdateInterval: 'Actualización de modelo',
         modelUpdateIntervalDesc: 'Frecuencia de actualización de listas de modelos de proveedores.',
         tokenRefreshInterval: 'Actualización de token',
         tokenRefreshIntervalDesc: 'Frecuencia de actualización de tokens OAuth.',
         copilotRefreshInterval: 'Actualización de Copilot',
-        copilotRefreshIntervalDesc: 'Frecuencia de actualización de tokens de sesión de Copilot.'
+        copilotRefreshIntervalDesc: 'Frecuencia de actualización de tokens de sesión de Copilot.',
     },
     tips: {
         title: '¿Sabías que?',
@@ -1176,7 +1244,7 @@ export const es = {
         tip2: 'Tandem admite la conexión a servidores SSH remotos para el desarrollo.',
         tip3: 'Puedes arrastrar y soltar archivos directamente en el chat.',
         tip4: 'Usa la pestaña "Consejo" para obtener perspectivas de múltiples agentes sobre tu código.',
-        tip5: 'Personaliza tu experiencia en Ajustes > Apariencia.'
+        tip5: 'Personaliza tu experiencia en Ajustes > Apariencia.',
     },
     agents: {
         planner: 'Planificador',
@@ -1217,7 +1285,7 @@ export const es = {
         on: 'Activado',
         off: 'Desactivado',
         local: 'local',
-        cloud: 'nube'
+        cloud: 'nube',
     },
     modelComparison: {
         title: 'Comparación de modelos',
@@ -1226,7 +1294,7 @@ export const es = {
         compare: 'Comparar',
         addModel: 'Añadir modelo',
         responsePlaceholder: 'La respuesta aparecerá aquí',
-        copyResponse: 'Copiar respuesta'
+        copyResponse: 'Copiar respuesta',
     },
     council: {
         title: 'Consejo de agentes',
@@ -1238,15 +1306,16 @@ export const es = {
         entry: 'entrada',
         entries: 'entradas',
         noActiveSession: 'No hay sesión activa',
-        noActiveSessionDesc: 'Inicia una tarea para ver a los agentes del consejo en acción. Los registros de actividad aparecerán aquí.',
+        noActiveSessionDesc:
+            'Inicia una tarea para ver a los agentes del consejo en acción. Los registros de actividad aparecerán aquí.',
         status: {
             planning: 'Planificando',
             working: 'Trabajando',
             reviewing: 'Revisando',
             waiting_for_approval: 'Esperando aprobación',
             completed: 'Completado',
-            failed: 'Fallido'
-        }
+            failed: 'Fallido',
+        },
     },
     shortcuts: {
         title: 'Atajos de teclado',
@@ -1267,7 +1336,7 @@ export const es = {
         searchChat: 'Buscar en el chat',
         showShortcuts: 'Mostrar atajos',
         close: 'Cerrar',
-        footer: 'Presiona Esc para cerrar'
+        footer: 'Presiona Esc para cerrar',
     },
     semanticSearch: {
         title: 'Búsqueda semántica',
@@ -1276,7 +1345,7 @@ export const es = {
         results: 'Resultados de búsqueda',
         noResults: 'No se encontraron coincidencias semánticas.',
         relevance: 'Relevancia',
-        filesIndex: 'Archivos indexados'
+        filesIndex: 'Archivos indexados',
     },
     commandPalette: {
         newChat: 'Nuevo chat',
@@ -1309,11 +1378,11 @@ export const es = {
         close: 'Cerrar',
         engineLabel: 'Motor de comandos de Tandem',
         previewEmpty: 'Selecciona un elemento para ver detalles',
-        noResultsHint: 'Intenta buscar chats, modelos o ajustes'
+        noResultsHint: 'Intenta buscar chats, modelos o ajustes',
     },
     quickAction: {
         explain: 'Explicar',
-        translate: 'Traducir'
+        translate: 'Traducir',
     },
     activityBar: {
         chat: 'Chat',
@@ -1322,13 +1391,13 @@ export const es = {
         sourceControl: 'Control de código fuente',
         debug: 'Depurar',
         extensions: 'Extensiones',
-        settings: 'Configuración'
+        settings: 'Configuración',
     },
     statusBar: {
         error: 'Error',
         errors: 'Errores',
         warning: 'Advertencia',
-        warnings: 'Advertencias'
+        warnings: 'Advertencias',
     },
     updateNotification: {
         checkingTitle: 'Buscando actualizaciones...',
@@ -1340,27 +1409,27 @@ export const es = {
         errorTitle: 'La actualización falló',
         uptodateTitle: 'Estás al día',
         downloadAction: 'Descargar',
-        restartAction: 'Reiniciar ahora'
+        restartAction: 'Reiniciar ahora',
     },
     panelLayout: {
         expand: 'Expandir',
         collapse: 'Contraer',
-        maximize: 'Maximizar'
+        maximize: 'Maximizar',
     },
     diffViewer: {
-        loading: 'Cargando diferencias...'
+        loading: 'Cargando diferencias...',
     },
     fab: {
         openMenu: 'Abrir menú',
-        closeMenu: 'Cerrar menú'
+        closeMenu: 'Cerrar menú',
     },
     modal: {
-        close: 'Cerrar modal'
+        close: 'Cerrar modal',
     },
     titleBar: {
         minimize: 'Minimizar',
         maximize: 'Maximizar',
-        close: 'Cerrar'
+        close: 'Cerrar',
     },
     logging: {
         title: 'Tablero de registros',
@@ -1387,32 +1456,33 @@ export const es = {
         lastUpdated: 'Última actualización',
         showing: 'Mostrando',
         of: 'de',
-        logs: 'registros'
+        logs: 'registros',
     },
     personas: {
         title: 'Personas',
         description: 'Perfiles de personalización que influyen en las respuestas.',
         namePlaceholder: 'Nombre de la persona',
         descriptionPlaceholder: 'Descripción corta',
-        promptPlaceholder: 'Prompt'
+        promptPlaceholder: 'Prompt',
     },
     advancedTab: {
         modelConfiguration: 'Configuración de modelo',
-        modelConfigurationDesc: 'Comandos del sistema personalizados y parámetros para el modelo seleccionado.',
+        modelConfigurationDesc:
+            'Comandos del sistema personalizados y parámetros para el modelo seleccionado.',
         customSystemMessage: 'Mensaje del sistema personalizado',
         systemPromptPlaceholder: 'Comando del sistema personalizado para este modelo...',
-        parameterPreset: 'Preajuste de parámetros'
+        parameterPreset: 'Preajuste de parámetros',
     },
     toolDisplay: {
         markdownView: 'Vista Markdown',
         text: 'Texto',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
     },
     modelExplorer: {
         title: 'Explorador de modelos',
         search: 'Buscar modelos...',
         install: 'Instalar',
-        installed: 'Instalado'
+        installed: 'Instalado',
     },
     docker: {
         title: 'Gestión de Docker',
@@ -1421,7 +1491,7 @@ export const es = {
         remove: 'Eliminar',
         shell: 'Shell',
         logs: 'Registros',
-        stats: 'Estadísticas'
+        stats: 'Estadísticas',
     },
     onboarding: {
         welcome: 'Bienvenido a Tandem',
@@ -1430,7 +1500,7 @@ export const es = {
         step3: 'Empezar a programar',
         skip: 'Omitir',
         next: 'Siguiente',
-        finish: 'Finalizar'
+        finish: 'Finalizar',
     },
     agentDashboard: {
         title: 'Consejo de agentes',
@@ -1443,7 +1513,7 @@ export const es = {
         autoRun: 'Auto Run',
         step: 'Etapa',
         currentPlan: 'Plan actual',
-        selectSession: 'Selecciona una sesión o crea una nueva para comenzar.'
+        selectSession: 'Selecciona una sesión o crea una nueva para comenzar.',
     },
     tools: {
         usingTool: 'Usando herramienta',
@@ -1456,23 +1526,25 @@ export const es = {
         input: 'ENTRADA',
         output: 'SALIDA',
         filePreview: 'Vista previa del archivo',
-        path: 'Ruta:'
+        path: 'Ruta:',
     },
     extensionPrompt: {
         title: 'Mejora tu experiencia',
         subtitle: 'Instala la extensión de navegador de Tandem',
         infoTitle: '¿Qué es la extensión del navegador?',
-        infoBody: 'La extensión de navegador de Tandem permite que la IA interactúe directamente con páginas web. Puede leer contenido, completar formularios, hacer clic en botones y realizar acciones automatizadas según tus comandos.',
+        infoBody:
+            'La extensión de navegador de Tandem permite que la IA interactúe directamente con páginas web. Puede leer contenido, completar formularios, hacer clic en botones y realizar acciones automatizadas según tus comandos.',
         featuresTitle: 'Funciones:',
         features: {
             aiChatTitle: 'Chat de IA en el navegador:',
             aiChatDesc: 'Chatea con la IA directamente desde cualquier página web',
             pageInteractionTitle: 'Interacción con páginas:',
-            pageInteractionDesc: 'La IA puede leer, hacer clic y completar formularios automáticamente',
+            pageInteractionDesc:
+                'La IA puede leer, hacer clic y completar formularios automáticamente',
             contentExtractionTitle: 'Extracción de contenido:',
             contentExtractionDesc: 'Extrae y resume el contenido de una página con un clic',
             secureConnectionTitle: 'Conexión segura:',
-            secureConnectionDesc: 'Toda la comunicación se mantiene local en tu ordenador'
+            secureConnectionDesc: 'Toda la comunicación se mantiene local en tu ordenador',
         },
         installTitle: 'Instalación rápida:',
         steps: {
@@ -1480,12 +1552,198 @@ export const es = {
             step2: 'Activa el "modo desarrollador" (interruptor arriba a la derecha)',
             step3: 'Haz clic en "Cargar descomprimida"',
             step4Prefix: 'Selecciona la carpeta',
-            step4Suffix: 'del directorio Tandem'
+            step4Suffix: 'del directorio Tandem',
         },
         openFolder: 'Abrir carpeta de la extensión',
         viewInstructions: 'Ver instrucciones',
         dismiss: 'No volver a mostrar',
-        remindLater: 'Recuérdamelo más tarde'
-    }
+        remindLater: 'Recuérdamelo más tarde',
+    },
+    speech: {
+        title: 'Voz y habla',
+        subtitle: 'Configurar ajustes de voz para respuestas del asistente.',
+        voiceSelection: 'Selección de voz',
+        systemDefault: 'Predeterminado del sistema',
+        test: 'Probar voz',
+        speed: 'Velocidad de habla',
+        previewText: 'Bienvenido al futuro con Tandem. Soy tu asistente de IA.',
+        microphone: 'Micrófono',
+        speaker: 'Altavoz / Auriculares',
+        microphoneSelection: 'Entrada de micrófono',
+        speakerSelection: 'Salida de audio',
+        voiceCloning: 'Clonación de voz',
+        voiceCloningDesc: 'Integra tu propia voz en el ecosistema Tandem.',
+        voiceCloningTitle: '¡Usa tu propia voz!',
+        voiceCloningTeaser:
+            'Habla durante 1 minuto y deja que la IA imite tu voz. ¡Esta función ya está activa!',
+        record: 'Comenzar grabación',
+        stopRecord: 'Detener grabación',
+        recording: 'Grabando...',
+        startTraining: 'Comenzar clonación',
+        training: 'Modelando voz...',
+        trainingDesc:
+            'Por favor espera, esto puede tardar unos minutos dependiendo de la velocidad de tu computadora.',
+        downloadModel: 'Descargar modelo (2GB)',
+        modelRequired: 'Modelo XTTS v2 requerido',
+        modelRequiredDesc:
+            'Para usar la función de clonación de voz, necesitas descargar el modelo de IA (~2GB).',
+        downloadingModel: 'Descargando modelo...',
+        downloadComplete: 'Descarga completada',
+    },
+    dragDrop: {
+        title: 'SOLTAR EL PEDIDO',
+        description: 'Envía archivos al centro para análisis.',
+    },
+    markdown: {
+        loadingDiagram: 'Cargando diagrama...',
+    },
+    gallery: {
+        title: 'Galería',
+        imageCount: '{{count}} imágenes',
+        imageCount_one: '1 imagen',
+        imageCount_other: '{{count}} imágenes',
+        refresh: 'Actualizar',
+        noImages: 'Aún no hay imágenes',
+        emptyState: 'Tus imágenes generadas aparecerán aquí',
+        prompt: 'PROMPT',
+        viewPrompt: 'Ver prompt',
+        deleteConfirm: '¿Estás seguro de que deseas eliminar esta imagen?',
+        openLocation: 'Abrir ubicación del archivo',
+        open: 'Abrir',
+        delete: 'Eliminar',
+        steps: 'Pasos',
+        cfg: 'CFG',
+        seed: 'Semilla',
+    },
+    build: {
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test',
+    },
+    devServer: {
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000',
+    },
+    agent: {
+        allStepsFinished: 'Todos los pasos finalizados. Listo para nuevas instrucciones.',
+        readyForInstructions: 'Listo para instrucciones',
+        waitingActivity: 'Esperando actividad...',
+        autonomousTitle: 'Agente autónomo',
+        autonomousDesc: 'El agente trabajará de forma independiente para lograr el objetivo.',
+        executionPlan: 'Plan de ejecución',
+        approveExecute: 'Aprobar y ejecutar',
+        rejectPlan: 'Rechazar plan',
+        awaitingApproval: 'Esperando aprobación',
+        noToolCalls: 'Aún no hay llamadas a herramientas.',
+        activeTools: 'Herramientas activas',
+        snapshot: 'Instantánea',
+        promptPlaceholder: 'Describe lo que quieres que haga el agente...',
+        start: 'Iniciar agente',
+        stop: 'Detener agente',
+        pause: 'Pausar',
+        resume: 'Reanudar',
+        retry: 'Reintentar',
+        tokens: 'Tokens',
+        tokensShort: '{{count}}k tkn',
+        cost: 'Costo',
+        live: 'EN VIVO',
+        calls: 'Llamadas',
+        activitiesCount: 'Actividades',
+        history: 'Historial',
+        viewCheckpoints: 'Ver puntos de control',
+        no_checkpoints: 'No hay puntos de control disponibles',
+        no_tasks_yet: 'Aún no hay tareas',
+        selectModel: 'Seleccionar modelo',
+        unknownModel: 'Modelo desconocido',
+        continueWithModel: 'Continuar con el modelo seleccionado',
+        selectAlternativeModel: 'Seleccionar modelo alternativo',
+        interruptionTitle: 'Interrupción',
+        interruptionReason: 'Razón:',
+        interruptionHelp: 'El agente necesita tu ayuda para continuar.',
+        failedLoadModels: 'Error al cargar modelos.',
+        justNow: 'Ahora mismo',
+        minutesAgo: 'hace {{count}}m',
+        hoursAgo: 'hace {{count}}h',
+        daysAgo: 'hace {{count}}d',
+        attachFiles: 'Adjuntar archivos',
+        aiProvider: 'Proveedor de IA',
+    },
+    projectAgent: {
+        changePreview: 'Vista previa de cambios',
+        reasoningTitle: 'Razonamiento',
+        consoleTitle: 'Consola',
+        consoleTab: 'Consola',
+        planTab: 'Plan',
+        eventCount: '{{count}} eventos',
+        waitingLogs: 'Esperando registros...',
+        toolSummary: {
+            editing: 'Editando archivos',
+            command: 'Ejecutando comando',
+            running: 'Ejecutando herramienta',
+            fileFallback: 'Cambio de archivo',
+        },
+        newTask: 'Nueva tarea',
+        generatingPlan: 'Generando plan...',
+        executingTask: 'Ejecutando tarea...',
+        waitingApproval: 'Esperando aprobación',
+        newStep: 'Nuevo paso',
+        addStep: 'Añadir paso',
+        noPlan: 'Aún no hay plan',
+        overallProgress: 'Progreso general',
+        selectAgentProfile: 'Seleccionar perfil de agente',
+        agentSelected: 'Agente seleccionado',
+        defaultAgent: 'Agente predeterminado',
+        defaultAgentDesc: 'Agente de proyecto de propósito general',
+        approveAndRun: 'Aprobar y ejecutar',
+        planning: 'Planificando',
+        running: 'Ejecutando',
+        stopLabel: 'Detener',
+        planAction: 'Planificar',
+        executeAction: 'Ejecutar',
+        thinkingOn: 'Pensamiento activado',
+        thinkingOff: 'Pensamiento desactivado',
+        selectAction: 'Seleccionar acción',
+        noDescription: 'Sin descripción proporcionada',
+        selectProject: 'Seleccionar proyecto',
+    },
+    audioChat: {
+        listening: 'Escuchando...',
+        listeningLabel: 'Escuchando',
+        listeningDesc: 'Te estoy escuchando.',
+        speaking: 'Hablando...',
+        speakingDesc: 'Te estoy hablando.',
+        thinking: 'Pensando...',
+        thinkingDesc: 'Procesando tu solicitud.',
+        stopSpeaking: 'Dejar de hablar',
+        pauseListening: 'Pausar',
+        resumeListening: 'Reanudar',
+    },
+    canvas: {
+        selectArea: 'Seleccionar área',
+    },
+    inspector: {
+        analyzing: 'Analizando...',
+        selectFolder: 'Seleccionar una carpeta para inspeccionar',
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI',
+    },
+    exportChat: {
+        confirm: 'Exportar',
+        exporting: 'Exportando...',
+        title: 'Exportar chat',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)',
+    },
+    tasksPanel: {
+        createNew: 'Crear nueva tarea',
+    },
+    tasks: {
+        createNew: 'Crear nueva tarea',
+    },
 };
-

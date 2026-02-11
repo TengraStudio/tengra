@@ -1,5 +1,13 @@
 import { MemoryStatistics } from '@shared/types/advanced-memory';
-import { AlertTriangle, Archive, CheckCircle, Gauge, Plus, RefreshCw, TrendingDown } from 'lucide-react';
+import {
+    AlertTriangle,
+    Archive,
+    CheckCircle,
+    Gauge,
+    Plus,
+    RefreshCw,
+    TrendingDown,
+} from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -15,21 +23,22 @@ interface MemoryHeaderProps {
     onAddMemory: () => void;
 }
 
-export const MemoryHeader: React.FC<MemoryHeaderProps> = ({ isLoading, onRefresh, onRunDecay, onAddMemory }) => {
+export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
+    isLoading,
+    onRefresh,
+    onRunDecay,
+    onAddMemory,
+}) => {
     const { t } = useTranslation();
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    {t('memory.title')}
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                    {t('memory.subtitle')}
-                </p>
+                <h1 className="text-3xl font-bold tracking-tight">{t('memory.title')}</h1>
+                <p className="text-muted-foreground mt-1">{t('memory.subtitle')}</p>
             </div>
             <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={onRefresh} className="gap-2">
-                    <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+                    <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
                     {t('common.refresh')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
@@ -67,23 +76,37 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, color, highlight }) => (
-    <Card className={cn(
-        "p-4 bg-muted/30 border-white/5 flex flex-col gap-1 transition-all",
-        highlight && "border-primary/30 bg-primary/5"
-    )}>
+    <Card
+        className={cn(
+            'p-4 bg-muted/30 border-white/5 flex flex-col gap-1 transition-all',
+            highlight && 'border-primary/30 bg-primary/5'
+        )}
+    >
         <StatCardContent label={label} value={value} icon={Icon} color={color} />
     </Card>
 );
 
-const StatCardContent = ({ label, value, icon: Icon, color }: { label: string; value: number | string; icon: React.ComponentType<{ className?: string }>; color: string }) => {
+const StatCardContent = ({
+    label,
+    value,
+    icon: Icon,
+    color,
+}: {
+    label: string;
+    value: number | string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+}) => {
     const { t } = useTranslation();
     return (
         <>
             <div className="flex items-center gap-2">
-                <Icon className={cn("w-4 h-4", color)} />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t(label)}</span>
+                <Icon className={cn('w-4 h-4', color)} />
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
+                    {t(label)}
+                </span>
             </div>
-            <div className={cn("text-2xl font-bold", color)}>{value}</div>
+            <div className={cn('text-2xl font-bold', color)}>{value}</div>
         </>
     );
 };

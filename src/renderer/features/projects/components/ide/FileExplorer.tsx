@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface FileNode {
-    name: string
-    path: string
-    isDirectory: boolean
-    children?: FileNode[]
+    name: string;
+    path: string;
+    isDirectory: boolean;
+    children?: FileNode[];
 }
 
 // PERF-005-2: Directory listing cache with LRU eviction
@@ -27,7 +27,9 @@ class DirectoryCache {
 
     get(path: string): FileNode[] | null {
         const entry = this.cache.get(path);
-        if (!entry) { return null; }
+        if (!entry) {
+            return null;
+        }
 
         // Check if cache entry has expired
         if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
@@ -63,12 +65,22 @@ class DirectoryCache {
 const directoryCache = new DirectoryCache();
 
 interface FileExplorerProps {
-    rootPath?: string
-    onFileSelect?: (path: string) => void
-    onFolderSelect?: (path: string) => void
+    rootPath?: string;
+    onFileSelect?: (path: string) => void;
+    onFolderSelect?: (path: string) => void;
 }
 
-const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: FileNode, depth?: number, onSelect: (path: string) => void, onFolderSelect?: (path: string) => void }) => {
+const FileTreeItem = ({
+    node,
+    depth = 0,
+    onSelect,
+    onFolderSelect,
+}: {
+    node: FileNode;
+    depth?: number;
+    onSelect: (path: string) => void;
+    onFolderSelect?: (path: string) => void;
+}) => {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [children, setChildren] = useState<FileNode[]>([]);
@@ -77,70 +89,99 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
     // CLEAN-002-1: Track mounted state to prevent state updates after unmount
     const isMountedRef = useRef(true);
 
-    const handleToggle = useCallback(async (e: React.MouseEvent) => {
-        e.stopPropagation();
+    const handleToggle = useCallback(
+        async (e: React.MouseEvent) => {
+            e.stopPropagation();
 
-        // Debounce rapid folder clicks (300ms)
-        if (toggleTimeoutRef.current) {
-            clearTimeout(toggleTimeoutRef.current);
-        }
+            // Debounce rapid folder clicks (300ms)
+            if (toggleTimeoutRef.current) {
+                clearTimeout(toggleTimeoutRef.current);
+            }
 
-        toggleTimeoutRef.current = setTimeout(async () => {
-            // CLEAN-002-1: Check if still mounted before proceeding
-            if (!isMountedRef.current) {return;}
-
-            if (node.isDirectory) {
-                onFolderSelect?.(node.path);
-
-                if (!isOpen && children.length === 0) {
-                    // PERF-005-2: Check cache first before fetching from filesystem
-                    const cachedNodes = directoryCache.get(node.path);
-                    if (cachedNodes) {
-                        setChildren(cachedNodes);
-                        setIsOpen(true);
+            toggleTimeoutRef.current = setTimeout(() => {
+                void (async () => {
+                    // CLEAN-002-1: Check if still mounted before proceeding
+                    if (!isMountedRef.current) {
                         return;
                     }
 
-                    setLoading(true);
-                    try {
-                        const response = await window.electron.files.listDirectory(node.path) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
+                    if (node.isDirectory) {
+                        onFolderSelect?.(node.path);
 
-                        // CLEAN-002-1: Check if still mounted after async operation
-                        if (!isMountedRef.current) {return;}
+                        if (!isOpen && children.length === 0) {
+                            // PERF-005-2: Check cache first before fetching from filesystem
+                            const cachedNodes = directoryCache.get(node.path);
+                            if (cachedNodes) {
+                                setChildren(cachedNodes);
+                                setIsOpen(true);
+                                return;
+                            }
 
-                        // Handle ServiceResponse format: { success, data } or direct array
-                        const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
-                        const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
-                            name: f.name,
-                            path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
-                            isDirectory: f.isDirectory
-                        })).sort((a: FileNode, b: FileNode) => {
-                            if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
-                            return a.isDirectory ? -1 : 1;
-                        });
+                            setLoading(true);
+                            try {
+                                const response = (await window.electron.files.listDirectory(
+                                    node.path
+                                )) as unknown as
+                                    | {
+                                          success?: boolean;
+                                          data?: Array<{ name: string; isDirectory: boolean }>;
+                                      }
+                                    | Array<{ name: string; isDirectory: boolean }>;
 
-                        // PERF-005-2: Cache the directory listing
-                        directoryCache.set(node.path, nodes);
+                                // CLEAN-002-1: Check if still mounted after async operation
+                                if (!isMountedRef.current) {
+                                    return;
+                                }
 
-                        setChildren(nodes);
-                        setIsOpen(true);
-                    } catch (error) {
-                        // CLEAN-002-1: Only log error if still mounted
-                        if (isMountedRef.current) {
-                            appLogger.error('FileExplorer', 'Failed to load directory', error as Error);
-                        }
-                    } finally {
-                        // CLEAN-002-1: Only update loading state if still mounted
-                        if (isMountedRef.current) {
-                            setLoading(false);
+                                // Handle ServiceResponse format: { success, data } or direct array
+                                const files =
+                                    'data' in response && Array.isArray(response.data)
+                                        ? response.data
+                                        : Array.isArray(response)
+                                          ? response
+                                          : [];
+                                const nodes: FileNode[] = files
+                                    .map((f: { name: string; isDirectory: boolean }) => ({
+                                        name: f.name,
+                                        path: `${node.path}/${f.name}`.replace(/\/\//g, '/'),
+                                        isDirectory: f.isDirectory,
+                                    }))
+                                    .sort((a: FileNode, b: FileNode) => {
+                                        if (a.isDirectory === b.isDirectory) {
+                                            return a.name.localeCompare(b.name);
+                                        }
+                                        return a.isDirectory ? -1 : 1;
+                                    });
+
+                                // PERF-005-2: Cache the directory listing
+                                directoryCache.set(node.path, nodes);
+
+                                setChildren(nodes);
+                                setIsOpen(true);
+                            } catch (error) {
+                                // CLEAN-002-1: Only log error if still mounted
+                                if (isMountedRef.current) {
+                                    appLogger.error(
+                                        'FileExplorer',
+                                        'Failed to load directory',
+                                        error as Error
+                                    );
+                                }
+                            } finally {
+                                // CLEAN-002-1: Only update loading state if still mounted
+                                if (isMountedRef.current) {
+                                    setLoading(false);
+                                }
+                            }
+                        } else {
+                            setIsOpen(!isOpen);
                         }
                     }
-                } else {
-                    setIsOpen(!isOpen);
-                }
-            }
-        }, 300); // 300ms debounce
-    }, [node.path, node.isDirectory, isOpen, children.length, onFolderSelect]);
+                })();
+            }, 300); // 300ms debounce
+        },
+        [node.path, node.isDirectory, isOpen, children.length, onFolderSelect]
+    );
 
     // CLEAN-002-1: Cleanup timeout and track unmount
     useEffect(() => {
@@ -160,16 +201,19 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
         <div>
             <div
                 className={cn(
-                    "flex items-center gap-1.5 py-1 px-2 hover:bg-accent/50 cursor-pointer select-none transition-colors rounded-sm",
-                    "text-sm text-muted-foreground hover:text-foreground"
+                    'flex items-center gap-1.5 py-1 px-2 hover:bg-accent/50 cursor-pointer select-none transition-colors rounded-sm',
+                    'text-sm text-muted-foreground hover:text-foreground'
                 )}
                 style={{ paddingLeft: `${depth * 12 + 8}px` }}
-                onClick={() => { void (async () => { await handleToggle({ stopPropagation: () => {} } as React.MouseEvent); })(); }}
+                onClick={() => {
+                    void (async () => {
+                        await handleToggle({ stopPropagation: () => {} } as React.MouseEvent);
+                    })();
+                }}
             >
                 <span className="opacity-70 w-4 flex justify-center">
-                    {node.isDirectory && (
-                        isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />
-                    )}
+                    {node.isDirectory &&
+                        (isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />)}
                 </span>
                 {icon}
                 <span className="truncate">{node.name}</span>
@@ -177,10 +221,18 @@ const FileTreeItem = ({ node, depth = 0, onSelect, onFolderSelect }: { node: Fil
             {isOpen && (
                 <div>
                     {loading ? (
-                        <div className="pl-8 py-1 text-xs text-muted-foreground">{t('common.loading')}</div>
+                        <div className="pl-8 py-1 text-xs text-muted-foreground">
+                            {t('common.loading')}
+                        </div>
                     ) : (
                         children.map(child => (
-                            <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} onFolderSelect={onFolderSelect} />
+                            <FileTreeItem
+                                key={child.path}
+                                node={child}
+                                depth={depth + 1}
+                                onSelect={onSelect}
+                                onFolderSelect={onFolderSelect}
+                            />
                         ))
                     )}
                 </div>
@@ -200,7 +252,9 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
         isMountedRef.current = true;
 
         const loadRoot = async () => {
-            if (!rootPath) { return; }
+            if (!rootPath) {
+                return;
+            }
 
             // PERF-005-2: Check cache first before fetching from filesystem
             const cachedNodes = directoryCache.get(rootPath);
@@ -211,21 +265,36 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
 
             setLoading(true);
             try {
-                const response = await window.electron.files.listDirectory(rootPath) as unknown as { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> } | Array<{ name: string; isDirectory: boolean }>;
+                const response = (await window.electron.files.listDirectory(
+                    rootPath
+                )) as unknown as
+                    | { success?: boolean; data?: Array<{ name: string; isDirectory: boolean }> }
+                    | Array<{ name: string; isDirectory: boolean }>;
 
                 // CLEAN-002-1: Check if still mounted after async operation
-                if (!isMountedRef.current) {return;}
+                if (!isMountedRef.current) {
+                    return;
+                }
 
                 // Handle ServiceResponse format: { success, data } or direct array
-                const files = ('data' in response && Array.isArray(response.data)) ? response.data : (Array.isArray(response) ? response : []);
-                const nodes: FileNode[] = files.map((f: { name: string; isDirectory: boolean }) => ({
-                    name: f.name,
-                    path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
-                    isDirectory: f.isDirectory
-                })).sort((a: FileNode, b: FileNode) => {
-                    if (a.isDirectory === b.isDirectory) { return a.name.localeCompare(b.name); }
-                    return a.isDirectory ? -1 : 1;
-                });
+                const files =
+                    'data' in response && Array.isArray(response.data)
+                        ? response.data
+                        : Array.isArray(response)
+                          ? response
+                          : [];
+                const nodes: FileNode[] = files
+                    .map((f: { name: string; isDirectory: boolean }) => ({
+                        name: f.name,
+                        path: `${rootPath}/${f.name}`.replace(/\/\//g, '/'),
+                        isDirectory: f.isDirectory,
+                    }))
+                    .sort((a: FileNode, b: FileNode) => {
+                        if (a.isDirectory === b.isDirectory) {
+                            return a.name.localeCompare(b.name);
+                        }
+                        return a.isDirectory ? -1 : 1;
+                    });
 
                 // PERF-005-2: Cache the directory listing
                 directoryCache.set(rootPath, nodes);
@@ -234,7 +303,11 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
             } catch (error) {
                 // CLEAN-002-1: Only log error if still mounted
                 if (isMountedRef.current) {
-                    appLogger.error('FileExplorer', 'Failed to load root directory', error as Error);
+                    appLogger.error(
+                        'FileExplorer',
+                        'Failed to load root directory',
+                        error as Error
+                    );
                 }
             } finally {
                 // CLEAN-002-1: Only update loading state if still mounted
@@ -251,15 +324,28 @@ export const FileExplorer = ({ rootPath, onFileSelect, onFolderSelect }: FileExp
         };
     }, [rootPath]);
 
-    if (loading) { return <div className="p-4 text-xs text-muted-foreground">{t('projectDashboard.loadingFiles')}</div>; }
+    if (loading) {
+        return (
+            <div className="p-4 text-xs text-muted-foreground">
+                {t('projectDashboard.loadingFiles')}
+            </div>
+        );
+    }
 
     return (
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
             {rootNodes.map(node => (
-                <FileTreeItem key={node.path} node={node} onSelect={onFileSelect ?? (() => { })} onFolderSelect={onFolderSelect} />
+                <FileTreeItem
+                    key={node.path}
+                    node={node}
+                    onSelect={onFileSelect ?? (() => {})}
+                    onFolderSelect={onFolderSelect}
+                />
             ))}
             {rootNodes.length === 0 && (
-                <div className="p-4 text-xs text-muted-foreground text-center">{t('projectDashboard.emptyDir')}</div>
+                <div className="p-4 text-xs text-muted-foreground text-center">
+                    {t('projectDashboard.emptyDir')}
+                </div>
             )}
         </div>
     );

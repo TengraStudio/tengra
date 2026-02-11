@@ -112,7 +112,9 @@ try {
     if ($OlderThan -gt 0) {
         $CutoffDate = (Get-Date).AddDays(-$OlderThan)
         $RunsToDelete = $RunsToDelete | Where-Object {
-            [DateTime]::Parse($_.created_at) -lt $CutoffDate
+            # Use ParseExact for ISO 8601 format from GitHub API
+            $CreatedAt = [DateTime]::Parse($_.created_at, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+            $CreatedAt -lt $CutoffDate
         }
     }
 
@@ -144,7 +146,7 @@ try {
     $Failed = 0
 
     foreach ($Run in $RunsToDelete) {
-        $Date = ([DateTime]::Parse($Run.created_at)).ToString("yyyy-MM-dd")
+        $Date = ([DateTime]::Parse($Run.created_at, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)).ToString("yyyy-MM-dd")
         $RunStatus = if ($Run.conclusion) { $Run.conclusion } else { $Run.status }
         $Message = "  [$Date] $($Run.name) #$($Run.run_number) ($RunStatus)"
 

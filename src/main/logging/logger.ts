@@ -10,31 +10,31 @@ export enum LogLevel {
     DEBUG = 0,
     INFO = 1,
     WARN = 2,
-    ERROR = 3
+    ERROR = 3,
 }
 
 export interface LoggerConfig {
-    maxBytes: number
-    maxFiles: number
-    compressRotated: boolean
-    jsonFormat: boolean
-    retentionDays: number
+    maxBytes: number;
+    maxFiles: number;
+    compressRotated: boolean;
+    jsonFormat: boolean;
+    retentionDays: number;
 }
 
 type LogPayload = {
-    level: LogLevel
-    message: string
-    context: string
-    data?: JsonValue | Error | AppError
-    timestamp?: string
-}
+    level: LogLevel;
+    message: string;
+    context: string;
+    data?: JsonValue | Error | AppError;
+    timestamp?: string;
+};
 
 const DEFAULT_CONFIG: LoggerConfig = {
-    maxBytes: 10 * 1024 * 1024,  // 10 MB
+    maxBytes: 10 * 1024 * 1024, // 10 MB
     maxFiles: 5,
     compressRotated: true,
     jsonFormat: false,
-    retentionDays: 30
+    retentionDays: 30,
 };
 
 class AppLogger {
@@ -44,18 +44,20 @@ class AppLogger {
     private initialized = false;
     private queue: Promise<void> = Promise.resolve();
     private originalConsole: {
-        debug: Console['debug']
-        info: Console['info']
-        log: Console['log']
-        warn: Console['warn']
-        error: Console['error']
+        debug: Console['debug'];
+        info: Console['info'];
+        log: Console['log'];
+        warn: Console['warn'];
+        error: Console['error'];
     } | null = null;
     private currentLevel: LogLevel = LogLevel.INFO;
     private config: LoggerConfig = { ...DEFAULT_CONFIG };
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
     init(logDir?: string, config?: Partial<LoggerConfig>) {
-        if (this.initialized && !logDir && !config) { return; }
+        if (this.initialized && !logDir && !config) {
+            return;
+        }
 
         if (config) {
             this.config = { ...this.config, ...config };
@@ -105,13 +107,15 @@ class AppLogger {
     }
 
     installConsoleRedirect() {
-        if (this.originalConsole) { return; }
+        if (this.originalConsole) {
+            return;
+        }
         this.originalConsole = {
             debug: console.debug.bind(console),
             info: console.info.bind(console),
             log: console.log.bind(console),
             warn: console.warn.bind(console),
-            error: console.error.bind(console)
+            error: console.error.bind(console),
         };
 
         console.debug = (...args: Array<JsonValue | Error | object>) => {
@@ -131,7 +135,13 @@ class AppLogger {
             this.originalConsole?.warn(...args);
         };
         console.error = (...args: Array<JsonValue | Error | object>) => {
-            this.error('console', formatArgs(args));
+            const message = formatArgs(args);
+            if (message.includes('DeprecationWarning')) {
+                this.warn('console', message);
+                this.originalConsole?.warn(...args);
+                return;
+            }
+            this.error('console', message);
             this.originalConsole?.error(...args);
         };
     }
@@ -165,9 +175,7 @@ class AppLogger {
             this.init();
         }
 
-        const line = this.config.jsonFormat
-            ? formatLineJson(payload)
-            : formatLine(payload);
+        const line = this.config.jsonFormat ? formatLineJson(payload) : formatLine(payload);
 
         // Console Output (with colors if possible)
         const color = getLevelColor(payload.level);
@@ -175,18 +183,26 @@ class AppLogger {
         const levelStr = LogLevel[payload.level].padEnd(5);
         if (this.originalConsole) {
             const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`;
-            if (payload.level === LogLevel.ERROR) { this.originalConsole.error(consoleMsg); }
-            else if (payload.level === LogLevel.WARN) { this.originalConsole.warn(consoleMsg); }
-            else { this.originalConsole.log(consoleMsg); }
+            if (payload.level === LogLevel.ERROR) {
+                this.originalConsole.error(consoleMsg);
+            } else if (payload.level === LogLevel.WARN) {
+                this.originalConsole.warn(consoleMsg);
+            } else {
+                this.originalConsole.log(consoleMsg);
+            }
         }
 
-        this.queue = this.queue.then(async () => {
-            await this.rotateIfNeeded(line.length);
-            await fs.promises.appendFile(this.logPath, line, 'utf8');
-            this.size += Buffer.byteLength(line, 'utf8');
-        }).catch((err) => {
-            if (this.originalConsole) { this.originalConsole.error('Logger write failed', err); }
-        });
+        this.queue = this.queue
+            .then(async () => {
+                await this.rotateIfNeeded(line.length);
+                await fs.promises.appendFile(this.logPath, line, 'utf8');
+                this.size += Buffer.byteLength(line, 'utf8');
+            })
+            .catch(err => {
+                if (this.originalConsole) {
+                    this.originalConsole.error('Logger write failed', err);
+                }
+            });
     }
 
     private async rotateIfNeeded(nextBytes: number) {
@@ -240,7 +256,9 @@ class AppLogger {
     }
 
     private startCleanupScheduler() {
-        if (this.cleanupTimer) { return; }
+        if (this.cleanupTimer) {
+            return;
+        }
 
         // Run cleanup every 24 hours
         const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -289,7 +307,12 @@ class AppLogger {
     /**
      * Get log statistics
      */
-    getStats(): { totalFiles: number; totalSize: number; oldestLog: Date | null; newestLog: Date | null } {
+    getStats(): {
+        totalFiles: number;
+        totalSize: number;
+        oldestLog: Date | null;
+        newestLog: Date | null;
+    } {
         if (!this.logDir || !fs.existsSync(this.logDir)) {
             return { totalFiles: 0, totalSize: 0, oldestLog: null, newestLog: null };
         }
@@ -302,7 +325,9 @@ class AppLogger {
         try {
             const files = fs.readdirSync(this.logDir);
             for (const file of files) {
-                if (!this.isLogFile(file)) { continue; }
+                if (!this.isLogFile(file)) {
+                    continue;
+                }
 
                 const stat = fs.statSync(path.join(this.logDir, file));
                 totalFiles++;
@@ -346,11 +371,16 @@ class AppLogger {
 
 function getLevelColor(level: LogLevel): string {
     switch (level) {
-        case LogLevel.DEBUG: return '\x1b[36m'; // Cyan
-        case LogLevel.INFO: return '\x1b[32m';  // Green
-        case LogLevel.WARN: return '\x1b[33m';  // Yellow
-        case LogLevel.ERROR: return '\x1b[31m'; // Red
-        default: return '';
+        case LogLevel.DEBUG:
+            return '\x1b[36m'; // Cyan
+        case LogLevel.INFO:
+            return '\x1b[32m'; // Green
+        case LogLevel.WARN:
+            return '\x1b[33m'; // Yellow
+        case LogLevel.ERROR:
+            return '\x1b[31m'; // Red
+        default:
+            return '';
     }
 }
 
@@ -358,12 +388,24 @@ export const appLogger = new AppLogger();
 
 // Legacy export for those who used static Logger
 export class Logger {
-    static init(logDir?: string) { appLogger.init(logDir); }
-    static setLevel(level: LogLevel) { appLogger.setLevel(level); }
-    static debug(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.debug(context, message, data); }
-    static info(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.info(context, message, data); }
-    static warn(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.warn(context, message, data); }
-    static error(context: string, message: string, data?: JsonValue | Error | AppError) { appLogger.error(context, message, data); }
+    static init(logDir?: string) {
+        appLogger.init(logDir);
+    }
+    static setLevel(level: LogLevel) {
+        appLogger.setLevel(level);
+    }
+    static debug(context: string, message: string, data?: JsonValue | Error | AppError) {
+        appLogger.debug(context, message, data);
+    }
+    static info(context: string, message: string, data?: JsonValue | Error | AppError) {
+        appLogger.info(context, message, data);
+    }
+    static warn(context: string, message: string, data?: JsonValue | Error | AppError) {
+        appLogger.warn(context, message, data);
+    }
+    static error(context: string, message: string, data?: JsonValue | Error | AppError) {
+        appLogger.error(context, message, data);
+    }
 }
 
 export function initAppLogger() {
@@ -387,7 +429,7 @@ function formatLineJson(payload: LogPayload): string {
         level: LogLevel[payload.level],
         context: payload.context,
         message: payload.message,
-        data: payload.data !== undefined ? formatValueForJson(payload.data) : undefined
+        data: payload.data !== undefined ? formatValueForJson(payload.data) : undefined,
     };
     return JSON.stringify(entry) + '\n';
 }
@@ -396,15 +438,20 @@ function formatValueForJson(value: JsonValue | Error | AppError | object): JsonV
     if (value instanceof Error) {
         return {
             error: value.message,
-            stack: value.stack
+            stack: value.stack,
         };
     }
-    if (value && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value)) {
+    if (
+        value &&
+        typeof value === 'object' &&
+        'message' in value &&
+        ('code' in value || 'stack' in value)
+    ) {
         const ae = value as AppError;
         return {
             message: ae.message,
             code: ae.code,
-            stack: ae.stack
+            stack: ae.stack,
         };
     }
     return value as JsonValue;
@@ -421,8 +468,12 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
 
     if (isAppError(value)) {
         let res = value.message;
-        if (value.code) { res = `[${value.code}] ${res}`; }
-        if (value.stack) { res = `${res} | ${value.stack}`; }
+        if (value.code) {
+            res = `[${value.code}] ${res}`;
+        }
+        if (value.stack) {
+            res = `${res} | ${value.stack}`;
+        }
         return res;
     }
 
@@ -438,9 +489,13 @@ function formatValue(value: JsonValue | Error | AppError | object): string {
 }
 
 function isAppError(value: unknown): value is AppError {
-    return value !== null && typeof value === 'object' && 'message' in value && ('code' in value || 'stack' in value);
+    return (
+        value !== null &&
+        typeof value === 'object' &&
+        'message' in value &&
+        ('code' in value || 'stack' in value)
+    );
 }
-
 
 function sanitize(message: string): string {
     return String(message).replace(/\r?\n/g, '\\n');

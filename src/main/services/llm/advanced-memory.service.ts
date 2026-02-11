@@ -1031,6 +1031,7 @@ Return only the merged fact, no explanation.`;
             'i am', 'i\'m', 'my name', 'i prefer', 'i like', 'i use', 'i work',
             'i want', 'i need', 'always', 'never', 'usually', 'remember',
             'note that', 'keep in mind', 'don\'t forget', 'important:',
+            // Turkish indicators (for localized fact detection)
             'benim', 'ben', 'adım', 'tercih', 'severim', 'kullanıyorum', 'çalışıyorum'
         ];
 

@@ -39,10 +39,10 @@ import {
     DbUpdateMessageRequest,
     DbUpdateProjectRequest,
     DbUpdatePromptRequest,
-    DbVectorSearchRequest
+    DbVectorSearchRequest,
 } from '@shared/types/db-api';
 import { getErrorMessage } from '@shared/utils/error.util';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import { app } from 'electron';
 
 const SERVICE_NAME = 'db-service';
@@ -51,11 +51,11 @@ const HEALTH_RETRY_DELAY_MS = 500;
 
 // PERF-003-4: HTTP agent configuration for connection pooling
 const HTTP_AGENT_CONFIG = {
-    keepAlive: true,           // Enable keep-alive connections
-    keepAliveMsecs: 1000,      // Initial delay for keep-alive probes
-    maxSockets: 10,            // Maximum concurrent sockets per host
-    maxFreeSockets: 5,         // Maximum idle sockets to keep in pool
-    timeout: 60000             // Socket timeout in ms
+    keepAlive: true, // Enable keep-alive connections
+    keepAliveMsecs: 1000, // Initial delay for keep-alive probes
+    maxSockets: 10, // Maximum concurrent sockets per host
+    maxFreeSockets: 5, // Maximum idle sockets to keep in pool
+    timeout: 60000, // Socket timeout in ms
 };
 
 /**
@@ -80,10 +80,10 @@ export class DatabaseClientService extends BaseService {
         this.apiClient = axios.create({
             timeout: 30000,
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             // PERF-003-4: Use connection pooling agent
-            httpAgent: this.httpAgent
+            httpAgent: this.httpAgent,
         });
     }
 
@@ -103,6 +103,13 @@ export class DatabaseClientService extends BaseService {
 
             // Wait for health check
             await this.waitForHealth();
+
+            // Listen for service restarts
+            this.processManager.on(`${SERVICE_NAME}:ready`, (newPort: number) => {
+                this.logInfo(`db-service restarted, updating port to ${newPort}`);
+                this.servicePort = newPort;
+                this.isReady = true;
+            });
 
             this.isReady = true;
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
@@ -131,7 +138,7 @@ export class DatabaseClientService extends BaseService {
             name: SERVICE_NAME,
             executable: 'tandem-db-service',
             args: ['--console'], // Run in console mode, not as Windows Service
-            persistent: true
+            persistent: true,
         });
 
         // Wait for port file to appear
@@ -167,7 +174,11 @@ export class DatabaseClientService extends BaseService {
             const isOpen = await this.isPortOpen(port);
             if (!isOpen) {
                 // Clean up stale port file
-                try { fs.unlinkSync(portFile); } catch { /* ignore */ }
+                try {
+                    fs.unlinkSync(portFile);
+                } catch {
+                    /* ignore */
+                }
                 return null;
             }
 
@@ -189,7 +200,7 @@ export class DatabaseClientService extends BaseService {
      * Check if a port is open
      */
     private isPortOpen(port: number): Promise<boolean> {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             const socket = new net.Socket();
             socket.setTimeout(200);
             socket.on('connect', () => {
@@ -235,12 +246,13 @@ export class DatabaseClientService extends BaseService {
     }
 
     /**
-     * Make an API call to the db-service
+     * Make an API call to the db-service with retry on connection failure
      */
     private async apiCall<T>(
         method: 'GET' | 'POST' | 'PUT' | 'DELETE',
         path: string,
-        data?: unknown
+        data?: unknown,
+        isRetry = false
     ): Promise<DbApiResponse<T>> {
         if (!this.servicePort) {
             throw new Error('db-service not connected');
@@ -252,14 +264,33 @@ export class DatabaseClientService extends BaseService {
             const response = await this.apiClient.request({
                 method,
                 url,
-                data
+                data,
             });
             return response.data as DbApiResponse<T>;
         } catch (error) {
+            const isConnectionError =
+                axios.isAxiosError(error) &&
+                (error.code === 'ECONNREFUSED' ||
+                    error.code === 'ETIMEDOUT' ||
+                    error.code === 'ECONNRESET');
+
+            if (isConnectionError && !isRetry) {
+                this.logWarn(
+                    `Connection to db-service failed (${(error as AxiosError).code}). Attempting to re-discover...`
+                );
+                // Try to discover new port
+                const newPort = await this.discoverService();
+                if (newPort && newPort !== this.servicePort) {
+                    this.logInfo(`Discovered new port for db-service: ${newPort}. Retrying...`);
+                    this.servicePort = newPort;
+                    return this.apiCall<T>(method, path, data, true);
+                }
+            }
+
             this.logError(`API call failed: ${method} ${path}`, error);
             return {
                 success: false,
-                error: getErrorMessage(error)
+                error: getErrorMessage(error),
             };
         }
     }
@@ -286,12 +317,14 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? null;
     }
 
-    async createChat(req: DbCreateChatRequest): Promise<{ success: boolean; chat?: DbChat; error?: string }> {
+    async createChat(
+        req: DbCreateChatRequest
+    ): Promise<{ success: boolean; chat?: DbChat; error?: string }> {
         const response = await this.apiCall<DbChat>('POST', '/api/v1/chats', req);
         return {
             success: response.success,
             chat: response.data,
-            error: response.error
+            error: response.error,
         };
     }
 
@@ -314,12 +347,14 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? [];
     }
 
-    async addMessage(req: DbCreateMessageRequest): Promise<{ success: boolean; message?: DbMessage; error?: string }> {
+    async addMessage(
+        req: DbCreateMessageRequest
+    ): Promise<{ success: boolean; message?: DbMessage; error?: string }> {
         const response = await this.apiCall<DbMessage>('POST', '/api/v1/messages', req);
         return {
             success: response.success,
             message: response.data,
-            error: response.error
+            error: response.error,
         };
     }
 
@@ -347,12 +382,14 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? null;
     }
 
-    async createProject(req: DbCreateProjectRequest): Promise<{ success: boolean; project?: DbProject; error?: string }> {
+    async createProject(
+        req: DbCreateProjectRequest
+    ): Promise<{ success: boolean; project?: DbProject; error?: string }> {
         const response = await this.apiCall<DbProject>('POST', '/api/v1/projects', req);
         return {
             success: response.success,
             project: response.data,
-            error: response.error
+            error: response.error,
         };
     }
 
@@ -375,12 +412,14 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? [];
     }
 
-    async createFolder(req: DbCreateFolderRequest): Promise<{ success: boolean; folder?: DbFolder; error?: string }> {
+    async createFolder(
+        req: DbCreateFolderRequest
+    ): Promise<{ success: boolean; folder?: DbFolder; error?: string }> {
         const response = await this.apiCall<DbFolder>('POST', '/api/v1/folders', req);
         return {
             success: response.success,
             folder: response.data,
-            error: response.error
+            error: response.error,
         };
     }
 
@@ -403,12 +442,14 @@ export class DatabaseClientService extends BaseService {
         return response.data ?? [];
     }
 
-    async createPrompt(req: DbCreatePromptRequest): Promise<{ success: boolean; prompt?: DbPrompt; error?: string }> {
+    async createPrompt(
+        req: DbCreatePromptRequest
+    ): Promise<{ success: boolean; prompt?: DbPrompt; error?: string }> {
         const response = await this.apiCall<DbPrompt>('POST', '/api/v1/prompts', req);
         return {
             success: response.success,
             prompt: response.data,
-            error: response.error
+            error: response.error,
         };
     }
 
@@ -431,7 +472,11 @@ export class DatabaseClientService extends BaseService {
     }
 
     async searchCodeSymbols(req: DbVectorSearchRequest): Promise<DbCodeSymbol[]> {
-        const response = await this.apiCall<DbCodeSymbol[]>('POST', '/api/v1/knowledge/symbols/search', req);
+        const response = await this.apiCall<DbCodeSymbol[]>(
+            'POST',
+            '/api/v1/knowledge/symbols/search',
+            req
+        );
         return response.data ?? [];
     }
 
@@ -440,7 +485,11 @@ export class DatabaseClientService extends BaseService {
     }
 
     async searchSemanticFragments(req: DbVectorSearchRequest): Promise<DbSemanticFragment[]> {
-        const response = await this.apiCall<DbSemanticFragment[]>('POST', '/api/v1/knowledge/fragments/search', req);
+        const response = await this.apiCall<DbSemanticFragment[]>(
+            'POST',
+            '/api/v1/knowledge/fragments/search',
+            req
+        );
         return response.data ?? [];
     }
 
@@ -450,11 +499,13 @@ export class DatabaseClientService extends BaseService {
 
     async getStats(): Promise<DbStats> {
         const response = await this.apiCall<DbStats>('GET', '/api/v1/stats');
-        return response.data ?? {
-            chatCount: 0,
-            messageCount: 0,
-            dbSize: 0
-        };
+        return (
+            response.data ?? {
+                chatCount: 0,
+                messageCount: 0,
+                dbSize: 0,
+            }
+        );
     }
 
     // ========================================================================

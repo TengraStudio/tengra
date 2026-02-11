@@ -43,6 +43,10 @@ export class Container {
 
     /**
      * Register a service factory.
+     * @param name - Unique service identifier
+     * @param factory - Factory function that creates the service instance
+     * @param dependencies - Names of services to inject as factory arguments
+     * @param scope - Lifecycle scope (SINGLETON or TRANSIENT)
      */
     register<T extends ServiceValue>(
         name: string,
@@ -60,6 +64,8 @@ export class Container {
 
     /**
      * Register a pre-existing instance as a singleton.
+     * @param name - Unique service identifier
+     * @param instance - The pre-created service instance to register
      */
     registerInstance<T extends ServiceValue>(name: string, instance: T): void {
         this.services.set(name, {
@@ -72,7 +78,10 @@ export class Container {
     }
 
     /**
-     * Resolve a service by name.
+     * Resolve a service by name. Singletons are cached after first resolution.
+     * @param name - The registered service name
+     * @returns The resolved service instance
+     * @throws ValidationError if the service is not registered or scope is unknown
      */
     resolve<T extends ServiceValue>(name: string): T {
         const definition = this.services.get(name) as ServiceDefinition<T> | undefined;
@@ -95,6 +104,8 @@ export class Container {
 
     /**
      * Initialize all singleton services that implement LifecycleAware.
+     * Instantiates all singletons first, then calls `initialize()` on each.
+     * Continues past initialization errors to allow the app to launch.
      */
     async init(): Promise<void> {
         if (this.initialized) { return; }
@@ -114,6 +125,7 @@ export class Container {
 
         // Run initialize() on them
         for (const def of singletons) {
+            // Cast to LifecycleAware to check for optional initialize() method
             const instance = def.instance as LifecycleAware;
             if (typeof instance.initialize === 'function') {
                 try {
@@ -131,6 +143,7 @@ export class Container {
 
     /**
      * Dispose all singleton services that implement LifecycleAware.
+     * Disposes in reverse registration order. Each cleanup has a 2s timeout.
      */
     async dispose(): Promise<void> {
         const singletons = Array.from(this.services.values())
@@ -138,6 +151,7 @@ export class Container {
             .reverse(); // Dispose in reverse order of registration/creation roughly
 
         for (const def of singletons) {
+            // Cast to LifecycleAware to check for optional cleanup() method
             const instance = def.instance as LifecycleAware;
             if (typeof instance.cleanup === 'function') {
                 try {
@@ -175,13 +189,15 @@ export class Container {
 
     /**
      * Check if a service is registered.
+     * @param name - The service name to check
+     * @returns True if a service with the given name is registered
      */
     has(name: string): boolean {
         return this.services.has(name);
     }
 
     /**
-     * Clear all registered services.
+     * Clear all registered services and reset initialization state.
      */
     clear(): void {
         this.services.clear();

@@ -7,7 +7,7 @@ export const ar = {
         copy: 'نسخ',
         refresh: 'تحديث',
         rename: 'إعادة تسمية',
-        search: 'بحث...',
+        search: 'بحث',
         loading: 'جاري التحميل...',
         error: 'خطأ',
         success: 'نجاح',
@@ -20,20 +20,64 @@ export const ar = {
         hour: 'ساعة',
         hours: 'ساعات',
         clear: 'مسح',
+        details: 'التفاصيل',
+        hide: 'إخفاء',
+        showMore: 'عرض المزيد...',
+        kb: 'كيلوبايت',
         add: 'إضافة',
         done: 'تم',
+        close: 'إغلاق',
         pending: 'قيد الانتظار',
         confirm: 'تأكيد',
         processing: 'جارٍ المعالجة...',
         selectAll: 'تحديد الكل',
-        itemsSelected: 'تم تحديد {{count}} عناصر'
+        itemsSelected: 'تم تحديد {{count}} عناصر',
+        // Error messages
+        unknownError: 'حدث خطأ غير معروف',
+        operationFailed: 'فشلت العملية',
+        invalidInput: 'إدخال غير صالح',
+        networkError: 'خطأ في الشبكة',
+        permissionDenied: 'تم رفض الإذن',
+        // Additional common keys
+        authType: 'نوع المصادقة',
+        back: 'رجوع',
+        commands: 'الأوامر',
+        connect: 'اتصال',
+        favorites: 'المفضلة',
+        fitView: 'ملائمة العرض',
+        host: 'المضيف',
+        next: 'التالي',
+        previous: 'السابق',
+        pageOf: 'الصفحة {{current}} من {{total}}',
+        passphrase: 'عبارة المرور',
+        password: 'كلمة المرور',
+        port: 'المنفذ',
+        privateKey: 'المفتاح الخاص',
+        reset: 'إعادة تعيين',
+        resetZoom: 'إعادة تعيين التكبير',
+        resume: 'استئناف',
+        searching: 'جارٍ البحث...',
+        send: 'إرسال',
+        stop: 'إيقاف',
+        unarchive: 'إلغاء الأرشفة',
+        update: 'تحديث',
+        username: 'اسم المستخدم',
+        zoomIn: 'تكبير',
+        zoomOut: 'تصغير',
+        toClose: 'للإغلاق',
+        locale: 'ar-SA',
+        ai: 'الذكاء الاصطناعي',
+    },
+    loading: {
+        codeEditor: 'جاري تحميل محرر الكود',
+        chart: 'جاري تحميل الرسم البياني',
     },
     app: {
-        name: 'Tandem'
+        name: 'Tandem',
     },
     errors: {
         unexpected: 'عذراً، حدث خطأ.',
-        somethingWentWrong: 'حدث خطأ ما:'
+        somethingWentWrong: 'حدث خطأ ما:',
     },
     languages: {
         tr: 'التركية',
@@ -43,7 +87,7 @@ export const ar = {
         es: 'الإسبانية',
         ja: 'اليابانية',
         zh: 'الصينية',
-        ar: 'العربية'
+        ar: 'العربية',
     },
     themeStore: {
         title: 'متجر السمات',
@@ -60,37 +104,37 @@ export const ar = {
         themes: {
             'dark-default': {
                 name: 'الوضع الداكن الافتراضي',
-                description: 'السمة الداكنة الافتراضية مع لمسات أرجوانية'
+                description: 'السمة الداكنة الافتراضية مع لمسات أرجوانية',
             },
             'light-default': {
                 name: 'الوضع الفاتح الافتراضي',
-                description: 'سمة فاتحة نظيفة للاستخدام النهاري'
+                description: 'سمة فاتحة نظيفة للاستخدام النهاري',
             },
-            'nord': {
+            nord: {
                 name: 'نورد',
-                description: 'لوحة ألوان زرقاء قطبية شمالية'
+                description: 'لوحة ألوان زرقاء قطبية شمالية',
             },
-            'dracula': {
+            dracula: {
                 name: 'دراكولا',
-                description: 'سمة داكنة بألوان زاهية'
+                description: 'سمة داكنة بألوان زاهية',
             },
-            'monokai': {
+            monokai: {
                 name: 'مونوكاي برو',
-                description: 'سمة داكنة احترافية بلمسات دافئة'
+                description: 'سمة داكنة احترافية بلمسات دافئة',
             },
             'github-dark': {
                 name: 'GitHub داكن',
-                description: 'السمة الداكنة الرسمية لـ GitHub'
+                description: 'السمة الداكنة الرسمية لـ GitHub',
             },
             'solarized-dark': {
                 name: 'سولارايزد داكن',
-                description: 'ألوان دقيقة للآلات والبشر'
+                description: 'ألوان دقيقة للآلات والبشر',
             },
             'tokyo-night': {
                 name: 'ليالي طوكيو',
-                description: 'سمة نظيفة تحتفي بأضواء طوكيو'
-            }
-        }
+                description: 'سمة نظيفة تحتفي بأضواء طوكيو',
+            },
+        },
     },
     modelSelector: {
         searchModels: 'البحث عن النماذج...',
@@ -100,7 +144,7 @@ export const ar = {
         openCode: 'OpenCode',
         proxyCustom: 'وكيل مخصص / آخر',
         model: 'نموذج',
-        selectModel: 'اختر النموذج'
+        selectModel: 'اختر النموذج',
     },
     settings: {
         searchPlaceholder: 'البحث في الإعدادات...',
@@ -121,7 +165,7 @@ export const ar = {
         about: 'حول',
         personas: 'الشخصيات',
         factoryResetConfirm: 'هل أنت متأكد أنك تريد حذف جميع البيانات؟',
-        language: 'اللغة'
+        language: 'اللغة',
     },
     projects: {
         newProject: 'مشروع جديد',
@@ -170,7 +214,7 @@ export const ar = {
         changeLogo: 'تغيير الشعار',
         noDescription: 'لم يتم تقديم وصف',
         todoPlaceholder: 'ما الذي يجب القيام به؟ (اضغط Enter)',
-        willActOn: 'سيعمل على:'
+        willActOn: 'سيعمل على:',
     },
     projectWizard: {
         title: 'معالج المشروع',
@@ -183,7 +227,7 @@ export const ar = {
         projectName: 'اسم المشروع',
         namePlaceholder: 'مثال: لوحة تحكم CRM',
         placeholder: {
-            example: 'example.com'
+            example: 'example.com',
         },
         description: 'الوصف (اختياري)',
         descPlaceholder: 'ما هو هدف هذا المشروع؟',
@@ -218,8 +262,8 @@ export const ar = {
             backend: 'خدمة خلفية',
             cli: 'واجهة سطر أوامر / سكريبت',
             mobile: 'تطبيق جوال',
-            other: 'مشروع مخصص'
-        }
+            other: 'مشروع مخصص',
+        },
     },
     projectDashboard: {
         title: 'لوحة تحكم المشروع',
@@ -292,7 +336,7 @@ export const ar = {
         todoList: 'المهام القادمة',
         gitStatus: {
             pulling: 'جاري السحب...',
-            pushing: 'جاري الدفع...'
+            pushing: 'جاري الدفع...',
         },
         noIssues: 'لم يتم العثور على مشكلات كبيرة في المشروع. عمل جيد!',
         issuesDescription: 'يقوم Tandem بفحص مشروعك بحثاً عن الأخطاء والتحذيرات المحتملة.',
@@ -314,7 +358,7 @@ export const ar = {
         logsDescription: 'سجلات التطبيق في الوقت الفعلي.',
         logsEmpty: 'لا توجد سجلات متاحة. قم بتشغيل مشروعك لتوليد مخرجات السجل.',
         logsClear: 'مسح السجلات',
-        logsFilter: 'تصفية السجلات...'
+        logsFilter: 'تصفية السجلات...',
     },
     git: {
         commitGenerator: 'مولد التزامات Git',
@@ -323,11 +367,12 @@ export const ar = {
         selectProject: 'اختر مشروعاً لتوليد رسائل الالتزام',
         suggestedMessage: 'رسالة الالتزام المقترحة',
         stagedChanges: 'معاينة التغييرات المرحّلة',
-        noStagedChanges: 'لم يتم العثور على تغييرات مرحّلة. استخدم `git add` لترحيل التغييرات أولاً.',
+        noStagedChanges:
+            'لم يتم العثور على تغييرات مرحّلة. استخدم `git add` لترحيل التغييرات أولاً.',
         copy: 'نسخ',
         commit: 'الالتزام (Commit)',
         cancel: 'إلغاء',
-        error: 'حدث خطأ'
+        error: 'حدث خطأ',
     },
     ssh: {
         title: 'مدير SSH',
@@ -395,7 +440,7 @@ export const ar = {
             username: 'root',
             passwordOptional: 'اختياري حالياً في حالة استخدام مفتاح',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: 'خادمي'
+            profileName: 'خادمي',
         },
         profileName: 'اسم الملف التعريفي',
         nginx: {
@@ -408,15 +453,15 @@ export const ar = {
             configPreview: 'معاينة التكوين',
             placeholders: {
                 domain: 'api.myapp.com',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: 'اسم النطاق مطلوب',
                 connecting: 'جاري الاتصال بالخادم...',
                 moving: 'نقل التكوين إلى دليل Nginx...',
                 success: 'تم إعادة تحميل Nginx بنجاح!',
-                error: 'فشل التطبيق: {{error}}. تأكد من أن لديك صلاحيات sudo.'
-            }
+                error: 'فشل التطبيق: {{error}}. تأكد من أن لديك صلاحيات sudo.',
+            },
         },
         presets: {
             title: 'إعدادات المعلمات المسبقة',
@@ -428,34 +473,34 @@ export const ar = {
             labels: {
                 name: 'اسم الإعداد المسبق',
                 temperature: 'رجة الحرارة (Temperature)',
-                topP: 'أفضل احتمالية (Top P)'
+                topP: 'أفضل احتمالية (Top P)',
             },
             placeholders: {
-                name: 'مثال: إعدادي المخصص'
-            }
+                name: 'مثال: إعدادي المخصص',
+            },
         },
         promptManager: {
             title: 'مكتبة الموجهات',
             newPrompt: 'موجه جديد',
             labels: {
                 title: 'العنوان',
-                content: 'المحتوى'
+                content: 'المحتوى',
             },
             placeholders: {
                 title: 'مثال: إعادة هيكلة الكود',
-                content: 'أدخل محتوى الموجه...'
+                content: 'أدخل محتوى الموجه...',
             },
             empty: {
                 title: 'لا توجد موجهات حتى الآن',
-                subtitle: 'قم بإنشاء واحد للبدء'
-            }
+                subtitle: 'قم بإنشاء واحد للبدء',
+            },
         },
         editor: {
             loading: 'جاري تحميل المحرر...',
             initializing: 'جاري تهيئة المحرر...',
             error: 'خطأ في المحرر: {{error}}',
-            aiRefactor: 'إعادة هيكلة / شرح بالذكاء الاصطناعي'
-        }
+            aiRefactor: 'إعادة هيكلة / شرح بالذكاء الاصطناعي',
+        },
     },
     sidebar: {
         chats: 'المحادثات',
@@ -499,20 +544,20 @@ export const ar = {
         councilReady: 'جاهز',
         project: 'مشروع',
         moveTo: 'نقل إلى...',
-        ideas: 'أفكار'
+        ideas: 'أفكار',
     },
     dateGroups: {
         today: 'اليوم',
         yesterday: 'أمس',
         lastWeek: 'الأسبوع الماضي',
-        older: 'أقدم'
+        older: 'أقدم',
     },
     nav: {
         chat: 'محادثة',
         projects: 'مشاريع',
         settings: 'إعدادات',
         council: 'المجلس',
-        mcp: 'إدارة MCP'
+        mcp: 'إدارة MCP',
     },
     mcp: {
         management: 'إدارة MCP',
@@ -545,8 +590,8 @@ export const ar = {
             database: 'قاعدة بيانات',
             api: 'واجهات برمجة التطبيقات',
             development: 'تطوير',
-            ai: 'ذكاء اصطناعي'
-        }
+            ai: 'ذكاء اصطناعي',
+        },
     },
     memory: {
         title: 'فاحص الذاكرة',
@@ -569,7 +614,7 @@ export const ar = {
         confidence: 'الثقة',
         ago: 'منذ',
         via: 'عبر',
-        chatId: 'معرف المحادثة'
+        chatId: 'معرف المحادثة',
     },
     terminal: {
         noShellsFound: 'لم يتم العثور على قذائف (Shells)',
@@ -577,7 +622,7 @@ export const ar = {
         startNewSession: 'بدء جلسة جديدة',
         sessionFailed: 'فشل بدء الجلسة الطرفية',
         closeAndCreate: 'يرجى إغلاق علامة التبويب هذه وإنشاء جلسة طرفية جديدة',
-        exitedWithCode: 'خرجت المحطة الطرفية برمز {{code}}'
+        exitedWithCode: 'خرجت المحطة الطرفية برمز {{code}}',
     },
     workspace: {
         editor: 'المحرر',
@@ -612,13 +657,13 @@ export const ar = {
         convertToCode: 'تحويل إلى كود',
         placeholders: {
             rootPath: 'C:\\\\Users\\\\Project',
-            name: 'الاسم...'
+            name: 'الاسم...',
         },
         run: 'تشغيل المشروع',
         toggleSidebar: 'تبديل الشريط الجانبي',
         aiAssistant: 'مساعد الذكاء الاصطناعي',
         online: 'متصل',
-        dev: 'تطوير'
+        dev: 'تطوير',
     },
     chat: {
         placeholder: 'اكتب رسالة...',
@@ -631,26 +676,28 @@ export const ar = {
         collapse: 'طي',
         moreLines: 'أسطر إضافية',
         scrollToBottom: 'التمرير إلى الأسفل',
-        scrollToBottomWithCount: 'التمرير إلى الأسفل ({{count}} رسالة جديدة)'
+        scrollToBottomWithCount: 'التمرير إلى الأسفل ({{count}} رسالة جديدة)',
     },
     welcome: {
         title: 'Tandem',
-        tagline: 'الذكاء يلتقي بالأناقة.'
+        tagline: 'الذكاء يلتقي بالأناقة.',
     },
     auth: {
         authError: 'خطأ في المصادقة',
         goToAccounts: 'الذهاب إلى الحسابات',
-        connectionFailed: 'فشل الاتصال بخادم Antigravity. يرجى تسجيل الدخول أو التحقق من مفتاح API الخاص بك.',
+        connectionFailed:
+            'فشل الاتصال بخادم Antigravity. يرجى تسجيل الدخول أو التحقق من مفتاح API الخاص بك.',
         sessionKeyRequired: 'مفتاح جلسة Claude مطلوب',
         completeConnection: 'إكمال الاتصال لـ {{email}}',
-        sessionKeyDescription: 'من أجل تتبع الحصص والتفاعل المباشر، يحتاج Tandem إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.',
+        sessionKeyDescription:
+            'من أجل تتبع الحصص والتفاعل المباشر، يحتاج Tandem إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.',
         howToFindKey: 'كيف تجد مفتاح الجلسة الخاص بك',
         sessionKeyInstructions: {
             step1: 'افتح claude.ai وقم بتسجيل الدخول',
             step2: 'انقر بزر الماوس الأيمن واختر فحص (Inspect)',
             step3: 'انتقل إلى علامة التبويب التطبيق (Application) أو التخزين',
             step4: 'قم بتوسيع ملفات تعريف الارتباط واختيار https://claude.ai',
-            step5: 'ابحث عن sessionKey وانسخ قيمته (تبدأ بـ sk-ant-sid)'
+            step5: 'ابحث عن sessionKey وانسخ قيمته (تبدأ بـ sk-ant-sid)',
         },
         sessionKeyLabel: 'مفتاح الجلسة',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -663,7 +710,7 @@ export const ar = {
         openGithubToEnter: 'فتح GitHub لإدخال الرمز',
         waitingForLogin: 'في انتظار تسجيل الدخول...',
         connectedSuccessfully: 'تم الاتصال بنجاح!',
-        connectionFailedGeneric: 'فشل الاتصال'
+        connectionFailedGeneric: 'فشل الاتصال',
     },
     accounts: {
         title: 'الحسابات المتصلة',
@@ -671,33 +718,33 @@ export const ar = {
         categories: {
             aiProviders: 'موفرو الذكاء الاصطناعي',
             developerTools: 'أدوات المطور',
-            localModels: 'نماذج محلية'
+            localModels: 'نماذج محلية',
         },
         providers: {
             github: {
                 name: 'GitHub',
-                description: 'استضافة الكود المصدري والتعاون'
+                description: 'استضافة الكود المصدري والتعاون',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'إكمال التعليمات البرمجية بمساعدة الذكاء الاصطناعي'
+                description: 'إكمال التعليمات البرمجية بمساعدة الذكاء الاصطناعي',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: 'خدمات الذكاء الاصطناعي السحابية والوصول إلى الويب'
+                description: 'خدمات الذكاء الاصطناعي السحابية والوصول إلى الويب',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4 ونماذج اللغة المتقدمة'
+                description: 'GPT-4 ونماذج اللغة المتقدمة',
             },
             claude: {
                 name: 'Claude',
-                description: 'نماذج Anthropic Claude الاستنتاجية'
+                description: 'نماذج Anthropic Claude الاستنتاجية',
             },
             ollama: {
                 name: 'Ollama',
-                description: 'تشغيل نماذج الذكاء الاصطناعي محلياً'
-            }
+                description: 'تشغيل نماذج الذكاء الاصطناعي محلياً',
+            },
         },
         connected: 'متصل',
         disconnected: 'غير متصل',
@@ -723,18 +770,18 @@ export const ar = {
         copilotDesc: 'تكامل GitHub Copilot.',
         antigravityDesc: 'خدمات Antigravity السحابية.',
         codexDesc: 'الوصول إلى واجهة برمجة تطبيقات OpenAI Codex.',
-        claudeDesc: 'نماذج Anthropic Claude.'
+        claudeDesc: 'نماذج Anthropic Claude.',
     },
     input: {
         placeholder: {
             copilot: 'اسأل Copilot لتوليد الكود...',
             ollama: 'اسأل LLM المحلي...',
-            default: 'اكتب رسالة...'
+            default: 'اكتب رسالة...',
         },
         attachFile: 'إرفاق ملف',
         enhancePrompt: 'تحسين الموجه بالذكاء الاصطناعي',
         startListening: 'بدء الإدخال الصوتي',
-        stopListening: 'إيقاف الإدخال الصوتي'
+        stopListening: 'إيقاف الإدخال الصوتي',
     },
     workspaceModals: {
         mountTitle: 'إضافة مجلد أو خادم موجود',
@@ -750,29 +797,29 @@ export const ar = {
         closeModal: 'إغلاق النافذة',
         inputAriaLabel: 'اسم {{type}}',
         deleteConfirm: 'هل أنت متأكد أنك تريد حذف {name}؟',
-        confirm: 'تأكيد'
+        confirm: 'تأكيد',
     },
     templates: {
         code: {
             title: 'برمجة',
             description: 'إنشاء مكونات وخوارزميات.',
-            prompt: 'هل يمكن إنشاء مكون React حديث لي؟ بتصميم بطاقة أنيق.'
+            prompt: 'هل يمكن إنشاء مكون React حديث لي؟ بتصميم بطاقة أنيق.',
         },
         analyze: {
             title: 'تحليل',
             description: 'فحص الملفات والبيانات.',
-            prompt: 'هل يمكنك تحليل البنية في هذا المشروع وتقديم اقتراحات للتحسين؟'
+            prompt: 'هل يمكنك تحليل البنية في هذا المشروع وتقديم اقتراحات للتحسين؟',
         },
         creative: {
             title: 'كتابة إبداعية',
             description: 'توليد نصوص ومحتوى.',
-            prompt: 'هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Tandem؟'
+            prompt: 'هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Tandem؟',
         },
         debug: {
             title: 'تصحيح الأخطاء',
             description: 'إيجاد وإصلاح المشكلات.',
-            prompt: 'هل يمكنك مساعدتي في العثور على تسرب الذاكرة في الكود الخاص بي؟'
-        }
+            prompt: 'هل يمكنك مساعدتي في العثور على تسرب الذاكرة في الكود الخاص بي؟',
+        },
     },
     attachments: {
         image: 'صورة',
@@ -790,7 +837,8 @@ export const ar = {
         copyAsHtml: 'نسخ كـ HTML',
         TandemDrawing: 'Tandem يرسم...',
         quotaExceeded: 'تم تجاوز الحصة',
-        quotaMessage: 'لقد تجاوزت حصة الاستخدام للنموذج. يرجى المحاولة مرة أخرى لاحقاً أو ترقية خطتك.',
+        quotaMessage:
+            'لقد تجاوزت حصة الاستخدام للنموذج. يرجى المحاولة مرة أخرى لاحقاً أو ترقية خطتك.',
         resetsAt: 'يتم إعادة التعيين في:',
         checkQuotas: 'التحقق من الحصص',
         stop: 'إيقاف',
@@ -812,7 +860,7 @@ export const ar = {
         regenerate: 'إعادة التوليد',
         rating: 'تقييم الإجابة',
         actions: 'إجراءات الرسالة',
-        multiModelResponse: 'إجابات من نماذج متعددة'
+        multiModelResponse: 'إجابات من نماذج متعددة',
     },
     general: {
         turkish: 'التركية',
@@ -825,7 +873,7 @@ export const ar = {
         databaseDesc: 'إدارة بيانات التطبيق وذاكرة التخزين المؤقت.',
         onboardingTour: 'جولة تعريفية',
         onboardingTourDesc: 'إعادة تشغيل الجولة التعريفية بميزات التطبيق.',
-        startTour: 'بدء الجولة'
+        startTour: 'بدء الجولة',
     },
     appearance: {
         themeDesc: 'تغيير سمة ألوان التطبيق.',
@@ -865,8 +913,8 @@ export const ar = {
             serenity: 'سكينة',
             neonPulse: 'نبض نيون',
             cyberFuture: 'مستقبل سيبراني',
-            softVelvet: 'مخمل ناعم'
-        }
+            softVelvet: 'مخمل ناعم',
+        },
     },
     statistics: {
         title: 'الإحصائيات',
@@ -904,17 +952,18 @@ export const ar = {
         subscriptionActive: 'الاشتراك نشط',
         codingTimeByProject: 'وقت البرمجة حسب المشروع',
         timeSpentCodingInEachProject: 'الوقت المستغرق في البرمجة في كل مشروع',
-        unknownProject: 'مشروع غير معروف'
+        unknownProject: 'مشروع غير معروف',
     },
     about: {
-        description: 'Tandem هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.',
+        description:
+            'Tandem هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.',
         checkUpdates: 'التحقق من التحديثات',
         privacyPolicy: 'سياسة الخصوصية',
         github: 'GitHub',
         copyright: '© 2025 Tandem',
         factoryReset: 'إعادة ضبط المصنع',
         factoryResetDesc: 'إعادة تعيين التطبيق عن طريق مسح جميع الإعدادات والبيانات.',
-        updateCheckAlert: 'تم تفعيل التحقق من التحديثات في إصدارات الإنتاج.'
+        updateCheckAlert: 'تم تفعيل التحقق من التحديثات في إصدارات الإنتاج.',
     },
     developer: {
         title: 'إعدادات المطور',
@@ -932,7 +981,7 @@ export const ar = {
         importSettingsDesc: 'تحميل الإعدادات من ملف JSON',
         import: 'استيراد',
         settingsImported: 'تم استيراد الإعدادات',
-        invalidSettingsFile: 'ملف إعدادات غير صالح'
+        invalidSettingsFile: 'ملف إعدادات غير صالح',
     },
     gallery: {
         title: 'المعرض',
@@ -943,7 +992,7 @@ export const ar = {
         deleteConfirm: 'هل أنت متأكد أنك تريد حذف هذه الصورة؟',
         openLocation: 'فتح موقع الملف',
         open: 'فتح',
-        delete: 'حذف'
+        delete: 'حذف',
     },
     advanced: {
         systemInfo: 'معلومات النظام',
@@ -962,7 +1011,7 @@ export const ar = {
         tokenRefreshInterval: 'تحديث الرمز',
         tokenRefreshIntervalDesc: 'كم مرة يتم تحديث رموز OAuth.',
         copilotRefreshInterval: 'تحديث Copilot',
-        copilotRefreshIntervalDesc: 'كم مرة يتم تحديث رموز جلسة Copilot.'
+        copilotRefreshIntervalDesc: 'كم مرة يتم تحديث رموز جلسة Copilot.',
     },
     tips: {
         title: 'هل تعلم؟',
@@ -970,7 +1019,7 @@ export const ar = {
         tip2: 'يدعم Tandem الاتصال بخوادم SSH البعيدة للتطوير.',
         tip3: 'يمكنك سحب وإفلات الملفات مباشرة في المحادثة.',
         tip4: 'استخدم علامة التبويب "المجلس" للحصول على رؤى متعددة الوكلاء حول الكود الخاص بك.',
-        tip5: 'خصص تجربتك في الإعدادات > المظهر.'
+        tip5: 'خصص تجربتك في الإعدادات > المظهر.',
     },
     agents: {
         planner: 'المخطط',
@@ -980,7 +1029,8 @@ export const ar = {
         reviewer: 'المراجع',
         reviewerRole: 'مدقق جودة الكود',
         refactorPrompt: 'أعد هيكلة سطر الكود هذا (السطر {{line}}): {{content}}',
-        welcomeMessage: 'مرحباً، أنا مساعد الذكاء الاصطناعي الخاص بك. كيف يمكنني مساعدتك في الكود الخاص بك؟',
+        welcomeMessage:
+            'مرحباً، أنا مساعد الذكاء الاصطناعي الخاص بك. كيف يمكنني مساعدتك في الكود الخاص بك؟',
         council: 'المجلس',
         enabled: 'مفعل',
         disabled: 'معطل',
@@ -1011,7 +1061,7 @@ export const ar = {
         on: 'تشغيل',
         off: 'إيقاف',
         local: 'محلي',
-        cloud: 'سحابي'
+        cloud: 'سحابي',
     },
     modelComparison: {
         title: 'مقارنة النماذج',
@@ -1020,7 +1070,7 @@ export const ar = {
         compare: 'مقارنة',
         addModel: 'إضافة نموذج',
         responsePlaceholder: 'ستظهر الإجابة هنا',
-        copyResponse: 'نسخ الإجابة'
+        copyResponse: 'نسخ الإجابة',
     },
     council: {
         title: 'مجلس الوكلاء',
@@ -1039,8 +1089,8 @@ export const ar = {
             reviewing: 'جاري المراجعة',
             waiting_for_approval: 'في انتظار الموافقة',
             completed: 'مكتمل',
-            failed: 'فشل'
-        }
+            failed: 'فشل',
+        },
     },
     shortcuts: {
         title: 'اختصارات لوحة المفاتيح',
@@ -1061,7 +1111,7 @@ export const ar = {
         searchChat: 'البحث في المحادثة',
         showShortcuts: 'عرض الاختصارات',
         close: 'إغلاق',
-        footer: 'اضغط Esc للإغلاق'
+        footer: 'اضغط Esc للإغلاق',
     },
     semanticSearch: {
         title: 'بحث دلالي',
@@ -1070,7 +1120,7 @@ export const ar = {
         results: 'نتائج البحث',
         noResults: 'لم يتم العثور على تطابقات دلالية.',
         relevance: 'الصلة',
-        filesIndex: 'الملفات المفهرسة'
+        filesIndex: 'الملفات المفهرسة',
     },
     commandPalette: {
         newChat: 'محادثة جديدة',
@@ -1103,11 +1153,11 @@ export const ar = {
         close: 'إغلاق',
         engineLabel: 'محرك أوامر Tandem',
         previewEmpty: 'اختر عنصراً لعرض التفاصيل',
-        noResultsHint: 'جرّب البحث عن الدردشات أو النماذج أو الإعدادات'
+        noResultsHint: 'جرّب البحث عن الدردشات أو النماذج أو الإعدادات',
     },
     quickAction: {
         explain: 'شرح',
-        translate: 'ترجمة'
+        translate: 'ترجمة',
     },
     activityBar: {
         chat: 'محادثة',
@@ -1116,13 +1166,13 @@ export const ar = {
         sourceControl: 'التحكم بالمصدر',
         debug: 'تصحيح',
         extensions: 'الإضافات',
-        settings: 'الإعدادات'
+        settings: 'الإعدادات',
     },
     statusBar: {
         error: 'خطأ',
         errors: 'أخطاء',
         warning: 'تحذير',
-        warnings: 'تحذيرات'
+        warnings: 'تحذيرات',
     },
     updateNotification: {
         checkingTitle: 'جارٍ التحقق من التحديثات...',
@@ -1134,27 +1184,27 @@ export const ar = {
         errorTitle: 'فشل التحديث',
         uptodateTitle: 'أنت محدّث',
         downloadAction: 'تنزيل',
-        restartAction: 'إعادة التشغيل الآن'
+        restartAction: 'إعادة التشغيل الآن',
     },
     panelLayout: {
         expand: 'توسيع',
         collapse: 'طي',
-        maximize: 'تكبير'
+        maximize: 'تكبير',
     },
     diffViewer: {
-        loading: 'جارٍ تحميل الفروقات...'
+        loading: 'جارٍ تحميل الفروقات...',
     },
     fab: {
         openMenu: 'فتح القائمة',
-        closeMenu: 'إغلاق القائمة'
+        closeMenu: 'إغلاق القائمة',
     },
     modal: {
-        close: 'إغلاق النافذة'
+        close: 'إغلاق النافذة',
     },
     titleBar: {
         minimize: 'تصغير',
         maximize: 'تكبير',
-        close: 'إغلاق'
+        close: 'إغلاق',
     },
     logging: {
         title: 'لوحة السجلات',
@@ -1181,32 +1231,32 @@ export const ar = {
         lastUpdated: 'آخر تحديث',
         showing: 'يعرض',
         of: 'من',
-        logs: 'سجلات'
+        logs: 'سجلات',
     },
     personas: {
         title: 'الشخصيات',
         description: 'ملفات تعريف التخصيص التي تشكل الإجابات.',
         namePlaceholder: 'اسم الشخصية',
         descriptionPlaceholder: 'وصف قصير',
-        promptPlaceholder: 'الموجه'
+        promptPlaceholder: 'الموجه',
     },
     advancedTab: {
         modelConfiguration: 'تكوين النموذج',
         modelConfigurationDesc: 'أوامر النظام والمعلمات المخصصة للنموذج المحدد.',
         customSystemMessage: 'رسالة نظام مخصصة',
         systemPromptPlaceholder: 'أمر نظام مخصص لهذا النموذج...',
-        parameterPreset: 'إعداد مسبق للمعلمات'
+        parameterPreset: 'إعداد مسبق للمعلمات',
     },
     toolDisplay: {
         markdownView: 'عرض Markdown',
         text: 'نص',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
     },
     modelExplorer: {
         title: 'مستكشف النماذج',
         search: 'البحث عن نماذج...',
         install: 'تثبيت',
-        installed: 'مثبت'
+        installed: 'مثبت',
     },
     docker: {
         title: 'إدارة Docker',
@@ -1215,7 +1265,7 @@ export const ar = {
         remove: 'إزالة',
         shell: 'Shell',
         logs: 'سجلات',
-        stats: 'إحصائيات'
+        stats: 'إحصائيات',
     },
     onboarding: {
         welcome: 'مرحباً في Tandem',
@@ -1224,7 +1274,7 @@ export const ar = {
         step3: 'ابدأ البرمجة',
         skip: 'تخطي',
         next: 'التالي',
-        finish: 'إنهاء'
+        finish: 'إنهاء',
     },
     agentDashboard: {
         title: 'مجلس الوكلاء',
@@ -1237,7 +1287,7 @@ export const ar = {
         autoRun: 'تشغيل تلقائي',
         step: 'خطوة',
         currentPlan: 'الخطة الحالية',
-        selectSession: 'اختر جلسة أو أنشئ واحدة جديدة للبدء.'
+        selectSession: 'اختر جلسة أو أنشئ واحدة جديدة للبدء.',
     },
     ideas: {
         title: 'أفكار المشاريع',
@@ -1258,7 +1308,7 @@ export const ar = {
             cliTool: 'أداة سطر أوامر',
             apiBackend: 'API / خلفية',
             desktop: 'تطبيق سطح مكتب',
-            other: 'آخر'
+            other: 'آخر',
         },
 
         // Research stages
@@ -1268,7 +1318,7 @@ export const ar = {
             sectorAnalysis: 'تحليل القطاع',
             marketResearch: 'أبحاث السوق',
             competitorAnalysis: 'تحليل المنافسين',
-            complete: 'اكتمل البحث'
+            complete: 'اكتمل البحث',
         },
 
         // Generation
@@ -1276,7 +1326,7 @@ export const ar = {
             title: 'جاري توليد الأفكار',
             progress: 'جاري توليد الفكرة {{current}} من {{total}}',
             enriching: 'إثراء تفاصيل الفكرة...',
-            complete: 'اكتمل التوليد'
+            complete: 'اكتمل التوليد',
         },
 
         // Idea card
@@ -1294,7 +1344,7 @@ export const ar = {
             detailedDescription: 'وصف تفصيلي',
             roadmap: 'خارطة طريق المشروع',
             techStack: 'المكدس التقني',
-            competitorAnalysis: 'تحليل المنافسين'
+            competitorAnalysis: 'تحليل المنافسين',
         },
 
         // Tech stack categories
@@ -1303,7 +1353,7 @@ export const ar = {
             backend: 'الخلفية',
             database: 'قاعدة البيانات',
             infrastructure: 'البنية التحتية',
-            other: 'أدوات أخرى'
+            other: 'أدوات أخرى',
         },
 
         // Competitor analysis
@@ -1311,7 +1361,7 @@ export const ar = {
             strengths: 'نقاط القوة',
             weaknesses: 'نقاط الضعف',
             missingFeatures: 'الميزات المفقودة',
-            opportunity: 'فرصة التمايز'
+            opportunity: 'فرصة التمايز',
         },
 
         // Generation stages (multi-stage pipeline)
@@ -1324,7 +1374,7 @@ export const ar = {
             techStack: 'جاري اختيار المكدس التقني...',
             competitorAnalysis: 'جاري تحليل المنافسين...',
             finalizing: 'جاري وضع اللمسات الأخيرة على الفكرة...',
-            complete: 'اكتملت الفكرة'
+            complete: 'اكتملت الفكرة',
         },
 
         // Logo generation
@@ -1333,7 +1383,7 @@ export const ar = {
             generate: 'توليد شعار',
             generating: 'جاري توليد الشعار...',
             requiresAntigravity: 'يتطلب توليد الشعار اتصال Antigravity',
-            promptPlaceholder: 'صف مفهوم شعارك...'
+            promptPlaceholder: 'صف مفهوم شعارك...',
         },
 
         // Status
@@ -1345,7 +1395,7 @@ export const ar = {
             cancelled: 'ملغى',
             pending: 'قيد الانتظار',
             approved: 'تمت الموافقة',
-            rejected: 'مرفوض'
+            rejected: 'مرفوض',
         },
 
         // Errors
@@ -1355,7 +1405,7 @@ export const ar = {
             researchFailed: 'فشل البحث. يرجى المحاولة مرة أخرى.',
             generationFailed: 'فشل توليد الفكرة. يرجى المحاولة مرة أخرى.',
             approvalFailed: 'فشل إنشاء المشروع. يرجى المحاولة مرة أخرى.',
-            logoFailed: 'فشل توليد الشعار. يرجى المحاولة مرة أخرى.'
+            logoFailed: 'فشل توليد الشعار. يرجى المحاولة مرة أخرى.',
         },
 
         // Empty states
@@ -1363,7 +1413,7 @@ export const ar = {
             noSessions: 'لا توجد جلسات أفكار حتى الآن',
             noSessionsDesc: 'ابدأ جلسة جديدة لتوليد أفكار مشاريع',
             noIdeas: 'لم يتم توليد أفكار بعد',
-            noIdeasDesc: 'أكمل مرحلة البحث لتوليد الأفكار'
+            noIdeasDesc: 'أكمل مرحلة البحث لتوليد الأفكار',
         },
 
         // History
@@ -1377,11 +1427,11 @@ export const ar = {
             pendingReview: 'مراجعة معلقة',
             viewDetails: 'عرض التفاصيل',
             noIdeasYet: 'لم يتم توليد أفكار بعد',
-            daysAgo: 'منذ {{count}} يوم'
+            daysAgo: 'منذ {{count}} يوم',
         },
 
         // Session setup
-        modelSelectorHint: 'استخدم محدد النموذج في الشريط العلوي لتغيير نموذج الذكاء الاصطناعي.'
+        modelSelectorHint: 'استخدم محدد النموذج في الشريط العلوي لتغيير نموذج الذكاء الاصطناعي.',
     },
     tools: {
         usingTool: 'جاري استخدام الأداة',
@@ -1394,13 +1444,14 @@ export const ar = {
         input: 'إدخال',
         output: 'إخراج',
         filePreview: 'معاينة الملف',
-        path: 'المسار:'
+        path: 'المسار:',
     },
     extensionPrompt: {
         title: 'حسّن تجربتك',
         subtitle: 'ثبّت إضافة متصفح Tandem',
         infoTitle: 'ما هي إضافة المتصفح؟',
-        infoBody: 'تتيح إضافة متصفح Tandem للذكاء الاصطناعي التفاعل مباشرة مع صفحات الويب. يمكنها قراءة المحتوى وملء النماذج والنقر على الأزرار وتنفيذ إجراءات تلقائية بناءً على أوامرك.',
+        infoBody:
+            'تتيح إضافة متصفح Tandem للذكاء الاصطناعي التفاعل مباشرة مع صفحات الويب. يمكنها قراءة المحتوى وملء النماذج والنقر على الأزرار وتنفيذ إجراءات تلقائية بناءً على أوامرك.',
         featuresTitle: 'الميزات:',
         features: {
             aiChatTitle: 'محادثة الذكاء الاصطناعي في المتصفح:',
@@ -1410,7 +1461,7 @@ export const ar = {
             contentExtractionTitle: 'استخراج المحتوى:',
             contentExtractionDesc: 'استخرج محتوى الصفحة ولخصه بنقرة واحدة',
             secureConnectionTitle: 'اتصال آمن:',
-            secureConnectionDesc: 'تبقى جميع الاتصالات محلية على جهازك'
+            secureConnectionDesc: 'تبقى جميع الاتصالات محلية على جهازك',
         },
         installTitle: 'تثبيت سريع:',
         steps: {
@@ -1418,12 +1469,179 @@ export const ar = {
             step2: 'فعّل "وضع المطوّر" (المفتاح أعلى اليمين)',
             step3: 'انقر على "تحميل إضافة غير معبأة"',
             step4Prefix: 'اختر مجلد',
-            step4Suffix: 'من دليل Tandem'
+            step4Suffix: 'من دليل Tandem',
         },
         openFolder: 'فتح مجلد الإضافة',
         viewInstructions: 'عرض التعليمات',
         dismiss: 'لا تعرض هذا مرة أخرى',
-        remindLater: 'ذكرني لاحقاً'
-    }
+        remindLater: 'ذكرني لاحقاً',
+    },
+    speech: {
+        title: 'الصوت والكلام',
+        subtitle: 'تكوين إعدادات الصوت لاستجابات المساعد.',
+        voiceSelection: 'اختيار الصوت',
+        systemDefault: 'النظام الافتراضي',
+        test: 'اختبار الصوت',
+        speed: 'معدل الكلام',
+        previewText: 'مرحباً بك في المستقبل مع Tandem. أنا مساعدك بالذكاء الاصطناعي.',
+        microphone: 'الميكروفون',
+        speaker: 'السماعة / سماعات الرأس',
+        microphoneSelection: 'مدخل الميكروفون',
+        speakerSelection: 'مخرج الصوت',
+        voiceCloning: 'استنساخ الصوت',
+        voiceCloningDesc: 'دمج صوتك الخاص في نظام Tandem البيئي.',
+        voiceCloningTitle: 'استخدم صوتك الخاص!',
+        voiceCloningTeaser:
+            'تحدث لمدة دقيقة واحدة ودع الذكاء الاصطناعي يقلد صوتك. هذه الميزة نشطة الآن!',
+        record: 'بدء التسجيل',
+        stopRecord: 'إيقاف التسجيل',
+        recording: 'جارٍ التسجيل...',
+        startTraining: 'بدء الاستنساخ',
+        training: 'جارٍ نمذجة الصوت...',
+        trainingDesc: 'يرجى الانتظار، قد يستغرق هذا بضع دقائق حسب سرعة جهاز الكمبيوتر الخاص بك.',
+        downloadModel: 'تنزيل النموذج (2 جيجابايت)',
+        modelRequired: 'نموذج XTTS v2 مطلوب',
+        modelRequiredDesc:
+            'لاستخدام ميزة استنساخ الصوت، تحتاج إلى تنزيل نموذج الذكاء الاصطناعي (حوالي 2 جيجابايت).',
+        downloadingModel: 'جارٍ تنزيل النموذج...',
+        downloadComplete: 'اكتمل التنزيل',
+    },
+    dragDrop: {
+        title: 'إسقاط الطلب',
+        description: 'إرسال الملفات إلى المركز للتحليل.',
+    },
+    markdown: {
+        loadingDiagram: 'جاري تحميل الرسم التخطيطي...',
+    },
+    build: {
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test',
+    },
+    devServer: {
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000',
+    },
+    agent: {
+        allStepsFinished: 'انتهت جميع الخطوات. جاهز لتعليمات جديدة.',
+        readyForInstructions: 'جاهز للتعليمات',
+        waitingActivity: 'في انتظار النشاط...',
+        autonomousTitle: 'وكيل مستقل',
+        autonomousDesc: 'سيعمل الوكيل بشكل مستقل لتحقيق الهدف.',
+        executionPlan: 'خطة التنفيذ',
+        approveExecute: 'الموافقة والتنفيذ',
+        rejectPlan: 'رفض الخطة',
+        awaitingApproval: 'في انتظار الموافقة',
+        noToolCalls: 'لا توجد استدعاءات أدوات بعد.',
+        activeTools: 'الأدوات النشطة',
+        snapshot: 'لقطة',
+        promptPlaceholder: 'صف ما تريد أن يفعله الوكيل...',
+        start: 'بدء الوكيل',
+        stop: 'إيقاف الوكيل',
+        pause: 'إيقاف مؤقت',
+        resume: 'استئناف',
+        retry: 'إعادة المحاولة',
+        tokens: 'الرموز',
+        tokensShort: '{{count}} ألف رمز',
+        cost: 'التكلفة',
+        live: 'مباشر',
+        calls: 'المكالمات',
+        activitiesCount: 'الأنشطة',
+        history: 'السجل',
+        viewCheckpoints: 'عرض نقاط التفتيش',
+        no_checkpoints: 'لا توجد نقاط تفتيش متاحة',
+        no_tasks_yet: 'لا توجد مهام بعد',
+        selectModel: 'اختر النموذج',
+        unknownModel: 'نموذج غير معروف',
+        continueWithModel: 'متابعة مع النموذج المحدد',
+        selectAlternativeModel: 'اختر نموذجاً بديلاً',
+        interruptionTitle: 'انقطاع',
+        interruptionReason: 'السبب:',
+        interruptionHelp: 'يحتاج الوكيل إلى مساعدتك للمتابعة.',
+        failedLoadModels: 'فشل تحميل النماذج.',
+        justNow: 'الآن',
+        minutesAgo: 'منذ {{count}} دقيقة',
+        hoursAgo: 'منذ {{count}} ساعة',
+        daysAgo: 'منذ {{count}} يوم',
+        attachFiles: 'إرفاق ملفات',
+        aiProvider: 'مزود الذكاء الاصطناعي',
+    },
+    projectAgent: {
+        changePreview: 'معاينة التغييرات',
+        reasoningTitle: 'التفكير',
+        consoleTitle: 'وحدة التحكم',
+        consoleTab: 'وحدة التحكم',
+        planTab: 'الخطة',
+        eventCount: '{{count}} أحداث',
+        waitingLogs: 'في انتظار السجلات...',
+        toolSummary: {
+            editing: 'تحرير الملفات',
+            command: 'تشغيل الأمر',
+            running: 'تشغيل الأداة',
+            fileFallback: 'تغيير الملف',
+        },
+        newTask: 'مهمة جديدة',
+        generatingPlan: 'جارٍ إنشاء الخطة...',
+        executingTask: 'جارٍ تنفيذ المهمة...',
+        waitingApproval: 'في انتظار الموافقة',
+        newStep: 'خطوة جديدة',
+        addStep: 'إضافة خطوة',
+        noPlan: 'لا توجد خطة بعد',
+        overallProgress: 'التقدم الإجمالي',
+        selectAgentProfile: 'حدد ملف تعريف الوكيل',
+        agentSelected: 'تم تحديد الوكيل',
+        defaultAgent: 'الوكيل الافتراضي',
+        defaultAgentDesc: 'وكيل المشروع متعدد الأغراض',
+        approveAndRun: 'الموافقة والتشغيل',
+        planning: 'جارٍ التخطيط',
+        running: 'جارٍ التشغيل',
+        stopLabel: 'إيقاف',
+        planAction: 'خطة',
+        executeAction: 'تنفيذ',
+        thinkingOn: 'التفكير مفعّل',
+        thinkingOff: 'التفكير معطّل',
+        selectAction: 'حدد إجراء',
+        noDescription: 'لا يوجد وصف',
+        selectProject: 'حدد مشروعاً',
+    },
+    audioChat: {
+        listening: 'جارٍ الاستماع...',
+        listeningLabel: 'الاستماع',
+        listeningDesc: 'أنا أستمع إليك.',
+        speaking: 'جارٍ التحدث...',
+        speakingDesc: 'أنا أتحدث إليك.',
+        thinking: 'جارٍ التفكير...',
+        thinkingDesc: 'معالجة طلبك.',
+        stopSpeaking: 'إيقاف التحدث',
+        pauseListening: 'إيقاف مؤقت',
+        resumeListening: 'استئناف',
+    },
+    canvas: {
+        selectArea: 'حدد منطقة',
+    },
+    inspector: {
+        analyzing: 'جارٍ التحليل...',
+        selectFolder: 'حدد مجلداً للفحص',
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI',
+    },
+    exportChat: {
+        confirm: 'تصدير',
+        exporting: 'جارٍ التصدير...',
+        title: 'تصدير المحادثة',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)',
+    },
+    tasksPanel: {
+        createNew: 'إنشاء مهمة جديدة',
+    },
+    tasks: {
+        createNew: 'إنشاء مهمة جديدة',
+    },
 };
-

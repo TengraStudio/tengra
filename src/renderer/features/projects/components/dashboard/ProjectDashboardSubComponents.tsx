@@ -3,15 +3,19 @@ import { Trash2 } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 
 interface SearchResultsProps {
-    results: FileSearchResult[]
-    projectRoot: string
-    onSelect: (path: string, line?: number) => void
-    t: (key: string) => string
+    results: FileSearchResult[];
+    projectRoot: string;
+    onSelect: (path: string, line?: number) => void;
+    t: (key: string) => string;
 }
 
 export function SearchResults({ results, projectRoot, onSelect, t }: SearchResultsProps) {
     if (results.length === 0) {
-        return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>;
+        return (
+            <div className="text-center text-muted-foreground mt-10">
+                {t('projectDashboard.noResults')}
+            </div>
+        );
     }
 
     return (
@@ -24,10 +28,16 @@ export function SearchResults({ results, projectRoot, onSelect, t }: SearchResul
                     className="p-2 hover:bg-muted/20 rounded cursor-pointer group mb-2 mx-1"
                 >
                     <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
-                        <span className="font-mono">{res.file.replace(projectRoot, '')}:{res.line}</span>
-                        {res.type && <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">{res.type}</span>}
+                        <span className="font-mono">
+                            {res.file.replace(projectRoot, '')}:{res.line}
+                        </span>
+                        {res.type && (
+                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
+                                {res.type}
+                            </span>
+                        )}
                     </div>
-                    <div className="text-sm text-gray-300 font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
+                    <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
                         {res.text.trim()}
                     </div>
                 </div>
@@ -37,8 +47,8 @@ export function SearchResults({ results, projectRoot, onSelect, t }: SearchResul
 }
 
 interface DangerZoneProps {
-    onDelete: () => void
-    t: (key: string) => string
+    onDelete: () => void;
+    t: (key: string) => string;
 }
 
 export function DangerZone({ onDelete, t }: DangerZoneProps) {
@@ -50,8 +60,12 @@ export function DangerZone({ onDelete, t }: DangerZoneProps) {
             </h3>
             <div className="bg-destructive/5 border border-destructive/10 rounded-xl p-6 flex items-center justify-between">
                 <div>
-                    <h4 className="text-foreground font-medium mb-1">{t('projects.deleteProject') || 'Delete Project'}</h4>
-                    <p className="text-sm text-muted-foreground">{t('projects.deleteWarning') || 'This action cannot be undone.'}</p>
+                    <h4 className="text-foreground font-medium mb-1">
+                        {t('projects.deleteProject') || 'Delete Project'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                        {t('projects.deleteWarning') || 'This action cannot be undone.'}
+                    </p>
                 </div>
                 <button
                     onClick={onDelete}

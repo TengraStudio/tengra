@@ -1,25 +1,42 @@
 import { Language } from '@renderer/i18n';
 import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
 import { AppSettings } from '@/types/settings';
 
 interface GeneralTabProps {
-    settings: AppSettings | null
-    updateGeneral: (patch: Partial<AppSettings['general']>) => void
-    handleSave: (settings: AppSettings) => Promise<void>
-    t: (key: string) => string
+    settings: AppSettings | null;
+    updateGeneral: (patch: Partial<AppSettings['general']>) => void;
+    handleSave: (settings: AppSettings) => Promise<void>;
+    t: (key: string) => string;
 }
 
+type TerminalBackendOption = {
+    id: string;
+    name: string;
+    available: boolean;
+};
 
-
-const ToggleSwitch: React.FC<{ enabled: boolean; onToggle: () => void; title?: string; description?: string }> = ({ enabled, onToggle, title, description }) => (
+const ToggleSwitch: React.FC<{
+    enabled: boolean;
+    onToggle: () => void;
+    title?: string;
+    description?: string;
+}> = ({ enabled, onToggle, title, description }) => (
     <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
         {(title || description) && (
             <div>
-                {title && <div className="text-sm font-black text-foreground uppercase tracking-tight">{title}</div>}
-                {description && <div className="text-xs font-medium text-muted-foreground/70">{description}</div>}
+                {title && (
+                    <div className="text-sm font-black text-foreground uppercase tracking-tight">
+                        {title}
+                    </div>
+                )}
+                {description && (
+                    <div className="text-xs font-medium text-muted-foreground/70">
+                        {description}
+                    </div>
+                )}
             </div>
         )}
         <label className="relative inline-flex items-center cursor-pointer scale-110 ml-auto">
@@ -29,7 +46,15 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onToggle: () => void; title?: s
     </div>
 );
 
-export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral, handleSave, t }) => {
+export const GeneralTab: React.FC<GeneralTabProps> = ({
+    settings,
+    updateGeneral,
+    handleSave,
+    t,
+}) => {
+    const [isLoadingTerminalBackends, setIsLoadingTerminalBackends] = useState(false);
+    const [terminalBackends, setTerminalBackends] = useState<TerminalBackendOption[]>([]);
+
     const languageOptions = [
         { value: 'tr', label: t('languages.tr') },
         { value: 'en', label: t('languages.en') },
@@ -38,16 +63,72 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
         { value: 'es', label: t('languages.es') },
         { value: 'ja', label: t('languages.ja') },
         { value: 'zh', label: t('languages.zh') },
-        { value: 'ar', label: t('languages.ar') }
+        { value: 'ar', label: t('languages.ar') },
     ];
 
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                setIsLoadingTerminalBackends(true);
+                const backends = await window.electron.terminal.getBackends();
+                if (!cancelled && Array.isArray(backends)) {
+                    setTerminalBackends(backends);
+                }
+            } catch {
+                if (!cancelled) {
+                    setTerminalBackends([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoadingTerminalBackends(false);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const terminalBackendOptions = useMemo(() => {
+        const options =
+            terminalBackends.length > 0
+                ? terminalBackends
+                : [
+                      { id: 'node-pty', name: 'Integrated Terminal', available: true },
+                      { id: 'windows-terminal', name: 'Windows Terminal', available: true },
+                      { id: 'kitty', name: 'Kitty', available: true },
+                      { id: 'ghostty', name: 'Ghostty', available: true },
+                      { id: 'alacritty', name: 'Alacritty', available: true },
+                      { id: 'warp', name: 'Warp', available: true },
+                  ];
+
+        return options.map(backend => ({
+            value: backend.id,
+            label: backend.available ? backend.name : `${backend.name} (Unavailable)`,
+        }));
+    }, [terminalBackends]);
+
     const updateAutoUpdate = (patch: Partial<AppSettings['autoUpdate']>) => {
-        if (!settings) { return; }
-        const current = settings.autoUpdate ?? { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false };
+        if (!settings) {
+            return;
+        }
+        const current = settings.autoUpdate ?? {
+            enabled: true,
+            checkOnStartup: true,
+            downloadAutomatically: false,
+            notifyOnly: false,
+        };
         void handleSave({ ...settings, autoUpdate: { ...current, ...patch } });
     };
 
-    const autoUpdate = settings?.autoUpdate ?? { enabled: true, checkOnStartup: true, downloadAutomatically: false, notifyOnly: false };
+    const autoUpdate = settings?.autoUpdate ?? {
+        enabled: true,
+        checkOnStartup: true,
+        downloadAutomatically: false,
+        notifyOnly: false,
+    };
 
     return (
         <div className="space-y-6">
@@ -58,8 +139,12 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <Globe className="w-6 h-6" />
                     </div>
                     <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.projectBasics')}</div>
-                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.projectBasicsDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">
+                            {t('general.projectBasics')}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground/70">
+                            {t('general.projectBasicsDesc')}
+                        </div>
                     </div>
                 </div>
 
@@ -71,7 +156,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <SelectDropdown
                             value={settings?.general.language ?? 'en'}
                             options={languageOptions}
-                            onChange={(val) => updateGeneral({ language: val as Language })}
+                            onChange={val => updateGeneral({ language: val as Language })}
                             className="w-full"
                         />
                     </div>
@@ -82,9 +167,27 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <input
                             type="number"
                             value={settings?.general.contextMessageLimit ?? 50}
-                            onChange={e => updateGeneral({ contextMessageLimit: parseInt(e.target.value) })}
+                            onChange={e =>
+                                updateGeneral({ contextMessageLimit: parseInt(e.target.value) })
+                            }
                             className="w-full bg-muted/5 border border-border/40 rounded-xl px-4 py-3 text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                            {t('projectDashboard.terminal')} Backend
+                        </label>
+                        <SelectDropdown
+                            value={settings?.general.defaultTerminalBackend ?? 'node-pty'}
+                            options={terminalBackendOptions}
+                            onChange={value => updateGeneral({ defaultTerminalBackend: value })}
+                            className="w-full"
+                        />
+                        <div className="text-[11px] text-muted-foreground/70 px-1">
+                            {isLoadingTerminalBackends
+                                ? t('common.loading')
+                                : 'Select the default backend used when creating new terminal sessions.'}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -96,8 +199,12 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                         <Database className="w-6 h-6" />
                     </div>
                     <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.appIntelligence')}</div>
-                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.appIntelligenceDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">
+                            {t('general.appIntelligence')}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground/70">
+                            {t('general.appIntelligenceDesc')}
+                        </div>
                     </div>
                 </div>
 
@@ -105,14 +212,22 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                     <div className="flex items-center gap-4 p-5 rounded-2xl border border-border/40 bg-muted/5 group">
                         <Database className="w-10 h-10 text-primary/30 group-hover:text-primary/50 transition-colors" />
                         <div>
-                            <div className="text-sm font-black text-foreground uppercase tracking-tight">{t('general.database')}</div>
-                            <div className="text-xs font-medium text-muted-foreground/70">{t('general.databaseDesc')}</div>
+                            <div className="text-sm font-black text-foreground uppercase tracking-tight">
+                                {t('general.database')}
+                            </div>
+                            <div className="text-xs font-medium text-muted-foreground/70">
+                                {t('general.databaseDesc')}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 group transition-all hover:bg-muted/10">
                         <div>
-                            <div className="text-sm font-black text-foreground uppercase tracking-tight">{t('general.onboardingTour')}</div>
-                            <div className="text-xs font-medium text-muted-foreground/70">{t('general.onboardingTourDesc')}</div>
+                            <div className="text-sm font-black text-foreground uppercase tracking-tight">
+                                {t('general.onboardingTour')}
+                            </div>
+                            <div className="text-xs font-medium text-muted-foreground/70">
+                                {t('general.onboardingTourDesc')}
+                            </div>
                         </div>
                         <button
                             onClick={() => updateGeneral({ onboardingCompleted: false })}
@@ -127,24 +242,53 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
             {/* App Lifecycle & Updates */}
             <div className="premium-glass p-8 space-y-8">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 shadow-lg shadow-blue-500/10">
+                    <div className="p-3 rounded-2xl bg-info/10 text-info border border-info/20 shadow-lg shadow-blue-500/10">
                         <Download className="w-6 h-6" />
                     </div>
                     <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.lifecycle')}</div>
-                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.lifecycleDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">
+                            {t('general.lifecycle')}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground/70">
+                            {t('general.lifecycleDesc')}
+                        </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ToggleSwitch enabled={autoUpdate.enabled} onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })} title={t('general.autoUpdate')} description={t('general.autoUpdateDesc')} />
-                    <ToggleSwitch enabled={autoUpdate.checkOnStartup} onToggle={() => updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })} title={t('general.checkOnStartup')} description={t('general.checkOnStartupDesc')} />
+                    <ToggleSwitch
+                        enabled={autoUpdate.enabled}
+                        onToggle={() => updateAutoUpdate({ enabled: !autoUpdate.enabled })}
+                        title={t('general.autoUpdate')}
+                        description={t('general.autoUpdateDesc')}
+                    />
+                    <ToggleSwitch
+                        enabled={autoUpdate.checkOnStartup}
+                        onToggle={() =>
+                            updateAutoUpdate({ checkOnStartup: !autoUpdate.checkOnStartup })
+                        }
+                        title={t('general.checkOnStartup')}
+                        description={t('general.checkOnStartupDesc')}
+                    />
                     <ToggleSwitch
                         enabled={settings?.window?.startOnStartup ?? false}
                         onToggle={() => {
-                            if (!settings) { return; }
-                            const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
-                            void handleSave({ ...settings, window: { ...currentWindow, startOnStartup: !currentWindow.startOnStartup } });
+                            if (!settings) {
+                                return;
+                            }
+                            const currentWindow = settings.window ?? {
+                                width: 1280,
+                                height: 800,
+                                x: 0,
+                                y: 0,
+                            };
+                            void handleSave({
+                                ...settings,
+                                window: {
+                                    ...currentWindow,
+                                    startOnStartup: !currentWindow.startOnStartup,
+                                },
+                            });
                         }}
                         title={t('general.startOnStartup')}
                         description={t('general.startOnStartupDesc')}
@@ -152,9 +296,22 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                     <ToggleSwitch
                         enabled={settings?.window?.workAtBackground ?? false}
                         onToggle={() => {
-                            if (!settings) { return; }
-                            const currentWindow = settings.window ?? { width: 1280, height: 800, x: 0, y: 0 };
-                            void handleSave({ ...settings, window: { ...currentWindow, workAtBackground: !currentWindow.workAtBackground } });
+                            if (!settings) {
+                                return;
+                            }
+                            const currentWindow = settings.window ?? {
+                                width: 1280,
+                                height: 800,
+                                x: 0,
+                                y: 0,
+                            };
+                            void handleSave({
+                                ...settings,
+                                window: {
+                                    ...currentWindow,
+                                    workAtBackground: !currentWindow.workAtBackground,
+                                },
+                            });
                         }}
                         title={t('general.workAtBackground')}
                         description={t('general.workAtBackgroundDesc')}
@@ -163,7 +320,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
 
                 <div className="flex justify-end pt-4 border-t border-border/20">
                     <button
-                        onClick={() => { void window.electron.update.checkForUpdates(); }}
+                        onClick={() => {
+                            void window.electron.update.checkForUpdates();
+                        }}
                         className="flex items-center gap-2.5 px-6 py-3 bg-primary text-primary-foreground text-xs font-black uppercase rounded-xl transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95"
                     >
                         <RefreshCw className="w-4 h-4" />
@@ -175,12 +334,16 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
             {/* Privacy & Safety */}
             <div className="premium-glass p-8 space-y-8">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-lg shadow-rose-500/10">
+                    <div className="p-3 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 shadow-lg shadow-rose-500/10">
                         <Activity className="w-6 h-6" />
                     </div>
                     <div>
-                        <div className="text-base font-black text-foreground uppercase tracking-tight">{t('general.privacySafety')}</div>
-                        <div className="text-xs font-medium text-muted-foreground/70">{t('general.privacySafetyDesc')}</div>
+                        <div className="text-base font-black text-foreground uppercase tracking-tight">
+                            {t('general.privacySafety')}
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground/70">
+                            {t('general.privacySafetyDesc')}
+                        </div>
                     </div>
                 </div>
 
@@ -188,9 +351,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
                     <ToggleSwitch
                         enabled={settings?.crashReporting?.enabled ?? false}
                         onToggle={() => {
-                            if (!settings) { return; }
+                            if (!settings) {
+                                return;
+                            }
                             const current = settings.crashReporting ?? { enabled: false };
-                            void handleSave({ ...settings, crashReporting: { enabled: !current.enabled } });
+                            void handleSave({
+                                ...settings,
+                                crashReporting: { enabled: !current.enabled },
+                            });
                         }}
                         title={t('general.crashReporting')}
                         description={t('general.crashReportingDesc')}
@@ -200,4 +368,3 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({ settings, updateGeneral,
         </div>
     );
 };
-

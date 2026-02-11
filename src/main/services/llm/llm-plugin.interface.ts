@@ -3,7 +3,7 @@
  * Abstract interface for LLM providers to enable a plugin architecture.
  */
 
-import { Message, ToolDefinition } from '@/types';
+import { Message, ToolDefinition } from '@shared/types';
 
 /**
  * Model information returned by providers
@@ -108,7 +108,10 @@ export interface ILLMProvider {
     /**
      * Send a streaming chat completion request
      */
-    streamChat(messages: Message[], options: ChatCompletionOptions): Promise<ReadableStream<Uint8Array> | null>;
+    streamChat(
+        messages: Message[],
+        options: ChatCompletionOptions
+    ): Promise<ReadableStream<Uint8Array> | null>;
 
     /**
      * Test the connection to the provider
@@ -175,7 +178,7 @@ export abstract class BaseLLMProvider implements ILLMProvider {
 
     async initialize(config: LLMProviderConfig): Promise<void> {
         this.config = config;
-        this._isConfigured = !!config.apiKey || await this.validateConfig();
+        this._isConfigured = !!config.apiKey || (await this.validateConfig());
     }
 
     isConfigured(): boolean {
@@ -189,7 +192,10 @@ export abstract class BaseLLMProvider implements ILLMProvider {
     abstract getStatus(): Promise<LLMProviderStatus>;
     abstract getModels(): Promise<LLMModel[]>;
     abstract chat(messages: Message[], options: ChatCompletionOptions): Promise<Message | null>;
-    abstract streamChat(messages: Message[], options: ChatCompletionOptions): Promise<ReadableStream<Uint8Array> | null>;
+    abstract streamChat(
+        messages: Message[],
+        options: ChatCompletionOptions
+    ): Promise<ReadableStream<Uint8Array> | null>;
     abstract testConnection(): Promise<{ success: boolean; error?: string }>;
 
     async dispose(): Promise<void> {

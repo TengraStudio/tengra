@@ -78,7 +78,10 @@ export function registerAllIpc(
         copilotService: services.copilotService,
         auditLogService: services.auditLogService,
         updateOpenAIConnection: () => {
-            getWin()?.webContents.send('openai:connection-status', services.llmService.isOpenAIConnected());
+            getWin()?.webContents.send(
+                'openai:connection-status',
+                services.llmService.isOpenAIConnected()
+            );
         },
         updateOllamaConnection: async () => {
             try {
@@ -88,11 +91,16 @@ export function registerAllIpc(
                 appLogger.error('IPC', 'Failed to check Ollama connection', error as Error);
                 getWin()?.webContents.send('ollama:connection-status', false);
             }
-        }
+        },
     });
 
     // Content & Data
-    registerDbIpc(getWin, services.databaseService, services.embeddingService, services.auditLogService);
+    registerDbIpc(
+        getWin,
+        services.databaseService,
+        services.embeddingService,
+        services.auditLogService
+    );
     registerFilesIpc(getWin, services.fileSystemService, allowedFileRoots);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
@@ -104,11 +112,15 @@ export function registerAllIpc(
         copilotService: services.copilotService,
         authService: services.authService,
         getMainWindow: getWin,
-        eventBus: services.eventBusService
+        eventBus: services.eventBusService,
     });
     registerProxyIpc(services.proxyService);
     registerProxyEmbedIpc(services.proxyService);
-    registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService);
+    registerUsageIpc(
+        services.usageTrackingService,
+        services.settingsService,
+        services.proxyService
+    );
     registerChatIpc({
         settingsService: services.settingsService,
         copilotService: services.copilotService,
@@ -116,7 +128,7 @@ export function registerAllIpc(
         proxyService: services.proxyService,
         codeIntelligenceService: services.codeIntelligenceService,
         contextRetrievalService: services.contextRetrievalService,
-        databaseService: services.databaseService
+        databaseService: services.databaseService,
     });
     registerOllamaIpc({
         localAIService: services.localAIService,
@@ -125,7 +137,7 @@ export function registerAllIpc(
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
         proxyService: services.proxyService,
-        rateLimitService: services.rateLimitService
+        rateLimitService: services.rateLimitService,
     });
     registerLlamaIpc(services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
@@ -141,7 +153,7 @@ export function registerAllIpc(
         logoService: services.logoService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
-        databaseService: services.databaseService
+        databaseService: services.databaseService,
     });
     registerAgentIpc(services.agentService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
@@ -150,8 +162,13 @@ export function registerAllIpc(
     registerGitIpc(services.gitService);
     registerPromptTemplatesIpc(services.promptTemplatesService);
 
-
-    registerTerminalIpc(getWin, services.terminalService);
+    registerTerminalIpc(
+        getWin,
+        services.terminalService,
+        services.terminalProfileService,
+        services.terminalSmartService,
+        services.dockerService
+    );
 
     // External Integrations
     registerToolsIpc(toolExecutor, services.commandService);

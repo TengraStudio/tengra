@@ -24,17 +24,18 @@ interface WorkspaceMountItemProps {
     loading: boolean;
     refreshSignal: number;
     onOpenFile: (entry: WorkspaceEntry) => void;
-    onSelectEntry: (entry: WorkspaceEntry) => void;
-    selectedEntry?: WorkspaceEntry | null;
+    onSelectEntry: (entry: WorkspaceEntry, e?: React.MouseEvent) => void;
+    selectedEntries?: WorkspaceEntry[] | null;
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onTreeItemContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
+    onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
     t: (key: string) => string;
 }
 
 // Status color lookup table to reduce complexity
 const STATUS_COLOR_MAP: Record<string, string> = {
-    'connected': 'bg-success',
-    'connecting': 'bg-warning animate-pulse',
+    connected: 'bg-success',
+    connecting: 'bg-warning animate-pulse',
 };
 
 interface MountIconProps {
@@ -42,9 +43,11 @@ interface MountIconProps {
 }
 
 const MountIcon: React.FC<MountIconProps> = ({ mountType }) => {
-    return mountType === 'ssh'
-        ? <Server className="w-3.5 h-3.5 text-indigo" />
-        : <Folder className="w-3.5 h-3.5 text-success" />;
+    return mountType === 'ssh' ? (
+        <Server className="w-3.5 h-3.5 text-indigo" />
+    ) : (
+        <Folder className="w-3.5 h-3.5 text-success" />
+    );
 };
 
 interface MountStatusIndicatorProps {
@@ -60,12 +63,7 @@ const MountStatusIndicator: React.FC<MountStatusIndicatorProps> = ({ mountType, 
 
     const statusColor = STATUS_COLOR_MAP[status] || 'bg-destructive/50';
 
-    return (
-        <div
-            className={cn('w-1.5 h-1.5 rounded-full', statusColor)}
-            title={status}
-        />
-    );
+    return <div className={cn('w-1.5 h-1.5 rounded-full', statusColor)} title={status} />;
 };
 
 interface MountHeaderProps {
@@ -95,7 +93,7 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                 isExpanded ? 'text-foreground' : ''
             )}
             onClick={() => onToggle(mount)}
-            onContextMenu={(e) => onContextMenu(e, mount.id)}
+            onContextMenu={e => onContextMenu(e, mount.id)}
         >
             <span className="opacity-50 group-hover/mount:opacity-100 transition-opacity">
                 {isExpanded ? (
@@ -110,19 +108,15 @@ const MountHeader: React.FC<MountHeaderProps> = ({
                     {mount.name}
                 </div>
                 {mount.type === 'ssh' && (
-                    <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-indigo-300 text-xxxs font-bold border border-indigo/30">
+                    <span className="px-1 py-0.5 rounded-[3px] bg-indigo/20 text-primary text-xxxs font-bold border border-indigo/30">
                         SSH
                     </span>
                 )}
-                <MountStatusIndicator
-                    mountId={mount.id}
-                    mountType={mount.type}
-                    status={status}
-                />
+                <MountStatusIndicator mountId={mount.id} mountType={mount.type} status={status} />
             </div>
 
             <button
-                onClick={(e) => {
+                onClick={e => {
                     e.stopPropagation();
                     onRemove(mount.id);
                 }}
@@ -141,10 +135,11 @@ interface VirtualizedRowProps {
     mount: WorkspaceMount;
     refreshSignal: number;
     onOpenFile: (entry: WorkspaceEntry) => void;
-    onSelectEntry: (entry: WorkspaceEntry) => void;
-    selectedEntry?: WorkspaceEntry | null;
+    onSelectEntry: (entry: WorkspaceEntry, e?: React.MouseEvent) => void;
+    selectedEntries?: WorkspaceEntry[] | null;
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
+    onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
     t: (key: string) => string;
 }
 
@@ -157,10 +152,11 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
     refreshSignal,
     onOpenFile,
     onSelectEntry,
-    selectedEntry,
+    selectedEntries,
     onEnsureMount,
     onContextMenu,
-    t
+    onMove,
+    t,
 }) => {
     const node = nodes[index];
     if (!node) {
@@ -175,9 +171,10 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
                 refreshSignal={refreshSignal}
                 onOpenFile={onOpenFile}
                 onSelectEntry={onSelectEntry}
-                selectedEntry={selectedEntry}
+                selectedEntries={selectedEntries}
                 onEnsureMount={onEnsureMount}
                 onContextMenu={onContextMenu}
+                onMove={onMove}
                 t={t}
             />
         </div>
@@ -197,10 +194,11 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     refreshSignal,
     onOpenFile,
     onSelectEntry,
-    selectedEntry,
+    selectedEntries,
     onEnsureMount,
     onTreeItemContextMenu,
-    t
+    onMove,
+    t,
 }) => {
     const showHeader = mountsCount > 1 || mount.type !== 'local';
 
@@ -208,17 +206,32 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     const shouldVirtualize = rootNodes.length > VIRTUALIZATION_THRESHOLD;
 
     // PERF-001-3: Memoize row props to prevent re-renders
-    const rowProps = useMemo<VirtualizedRowProps>(() => ({
-        nodes: rootNodes,
-        mount,
-        refreshSignal,
-        onOpenFile,
-        onSelectEntry,
-        selectedEntry,
-        onEnsureMount,
-        onContextMenu: onTreeItemContextMenu,
-        t
-    }), [rootNodes, mount, refreshSignal, onOpenFile, onSelectEntry, selectedEntry, onEnsureMount, onTreeItemContextMenu, t]);
+    const rowProps = useMemo<VirtualizedRowProps>(
+        () => ({
+            nodes: rootNodes,
+            mount,
+            refreshSignal,
+            onOpenFile,
+            onSelectEntry,
+            selectedEntries,
+            onEnsureMount,
+            onContextMenu: onTreeItemContextMenu,
+            onMove,
+            t,
+        }),
+        [
+            rootNodes,
+            mount,
+            refreshSignal,
+            onOpenFile,
+            onSelectEntry,
+            selectedEntries,
+            onEnsureMount,
+            onTreeItemContextMenu,
+            onMove,
+            t,
+        ]
+    );
 
     // PERF-001-3: Memoized row component that combines base props with rowProps
     const RowComponent = useCallback(
@@ -263,7 +276,7 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                             overscanCount={5}
                         />
                     ) : (
-                        rootNodes.map((node) => (
+                        rootNodes.map(node => (
                             <WorkspaceTreeItem
                                 key={`${mount.id}:${node.path}`}
                                 node={node}
@@ -272,9 +285,10 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                                 refreshSignal={refreshSignal}
                                 onOpenFile={onOpenFile}
                                 onSelectEntry={onSelectEntry}
-                                selectedEntry={selectedEntry}
+                                selectedEntries={selectedEntries}
                                 onEnsureMount={onEnsureMount}
                                 onContextMenu={onTreeItemContextMenu}
+                                onMove={onMove}
                                 t={t}
                             />
                         ))

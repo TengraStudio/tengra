@@ -17,7 +17,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
     onClose,
     onRemoveMount,
     onContextAction,
-    t
+    t,
 }) => {
     return createPortal(
         <div
@@ -25,9 +25,9 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
             style={{
                 left: contextMenu.x,
                 top: contextMenu.y,
-                zIndex: 99999
+                zIndex: 99999,
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
         >
             {/* Mount-level context menu */}
             {contextMenu.mountId && !contextMenu.entry && (
@@ -38,7 +38,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                         }
                         onClose();
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-red-300 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                     {t('workspace.removeMount')}
@@ -76,7 +76,7 @@ export const WorkspaceContextMenu: React.FC<WorkspaceContextMenuProps> = ({
                     </button>
                     <button
                         onClick={() => onContextAction('delete')}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-red-300 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium hover:bg-destructive/10 text-destructive hover:text-destructive transition-colors"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         {t('common.delete')}

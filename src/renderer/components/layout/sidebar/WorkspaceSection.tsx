@@ -20,7 +20,7 @@ interface WorkspaceSectionProps {
     setShowPrompts: (show: boolean) => void;
 }
 
-export const WorkspaceSectionComponent: React.FC<WorkspaceSectionProps> = (props) => {
+export const WorkspaceSectionComponent: React.FC<WorkspaceSectionProps> = props => {
     const { isCollapsed, language } = props;
     const { t } = useTranslation(language as Language);
 
@@ -32,13 +32,15 @@ export const WorkspaceSectionComponent: React.FC<WorkspaceSectionProps> = (props
 };
 
 const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => string }> = ({
-    currentView, onChangeView, t
+    currentView,
+    onChangeView,
+    t,
 }) => (
     <div className="space-y-1">
         <Button
             variant="ghost"
             onClick={() => onChangeView('chat')}
-            className={cn("nav-item justify-center", currentView === 'chat' && "nav-item-active")}
+            className={cn('nav-item justify-center', currentView === 'chat' && 'nav-item-active')}
             title={t('sidebar.chats')}
         >
             <MessageSquare className="w-4 h-4 shrink-0" />
@@ -46,7 +48,10 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
         <Button
             variant="ghost"
             onClick={() => onChangeView('projects')}
-            className={cn("nav-item justify-center", currentView === 'projects' && "nav-item-active")}
+            className={cn(
+                'nav-item justify-center',
+                currentView === 'projects' && 'nav-item-active'
+            )}
             title={t('sidebar.projects')}
         >
             <Rocket className="w-4 h-4 shrink-0" />
@@ -55,7 +60,13 @@ const CollapsedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) =>
 );
 
 const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => string }> = ({
-    currentView, onChangeView, chatsCount, promptsCount, selectedProject, setShowPrompts, t
+    currentView,
+    onChangeView,
+    chatsCount,
+    promptsCount,
+    selectedProject,
+    setShowPrompts,
+    t,
 }) => (
     <SidebarSection
         id="workspace"
@@ -90,3 +101,5 @@ const ExpandedWorkspace: React.FC<WorkspaceSectionProps & { t: (key: string) => 
         />
     </SidebarSection>
 );
+
+WorkspaceSectionComponent.displayName = 'WorkspaceSection';

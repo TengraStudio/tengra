@@ -11,24 +11,41 @@ interface BulkArchiveModalProps {
     t: (key: string) => string;
 }
 
-export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({ isOpen, count, onClose, onSubmit, t }) => (
+export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
+    isOpen,
+    count,
+    onClose,
+    onSubmit,
+    t,
+}) => (
     <AnimatePresence>
         {isOpen && (
             <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')} <span className="font-semibold text-foreground">{count} {t('sidebar.projects').toLowerCase()}</span>?
-                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">{t('projects.archiveWarning')}</span>
+                            {t('projects.archiveConfirmation')}{' '}
+                            <span className="font-semibold text-foreground">
+                                {count} {t('sidebar.projects').toLowerCase()}
+                            </span>
+                            ?
+                            <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
+                                {t('projects.archiveWarning')}
+                            </span>
                         </p>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-lg text-sm hover:bg-white/5 transition-colors font-light"
+                        >
                             {t('common.cancel')}
                         </button>
                         <button
-                            onClick={() => { void onSubmit(); }}
-                            className="px-6 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-foreground hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
+                            onClick={() => {
+                                void onSubmit();
+                            }}
+                            className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
                             {t('projects.bulkArchive')}
                         </button>

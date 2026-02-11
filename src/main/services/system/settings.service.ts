@@ -1,4 +1,3 @@
-
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,17 +11,17 @@ const DEFAULT_SETTINGS: AppSettings = {
     ollama: {
         url: 'http://127.0.0.1:11434',
         numCtx: 16384,
-        orchestrationPolicy: 'auto'
+        orchestrationPolicy: 'auto',
     },
     embeddings: {
         provider: 'ollama',
-        model: 'all-minilm'
+        model: 'all-minilm',
     },
     autoUpdate: {
         enabled: true,
         checkOnStartup: true,
         downloadAutomatically: true,
-        notifyOnly: false
+        notifyOnly: false,
     },
     activeAccountId: 'default',
     general: {
@@ -32,6 +31,7 @@ const DEFAULT_SETTINGS: AppSettings = {
         fontSize: 14,
         onboardingCompleted: false,
         defaultModel: 'gpt-4o',
+        defaultTerminalBackend: 'node-pty',
         lastModel: '',
         lastProvider: '',
         responseStyle: 'balanced',
@@ -44,39 +44,39 @@ const DEFAULT_SETTINGS: AppSettings = {
         agentHardDeadlineMs: 25000,
         agentRequireLocalForActions: true,
         agentAllowLateSuggestions: true,
-        hiddenModels: []
+        hiddenModels: [],
     },
     github: {
         username: '',
-        token: ''
+        token: '',
     },
     openai: {
         apiKey: '',
-        model: 'gpt-4o'
+        model: 'gpt-4o',
     },
     anthropic: {
         apiKey: '',
-        model: 'claude-3-opus-20240229'
+        model: 'claude-3-opus-20240229',
     },
 
     groq: {
         apiKey: '',
-        model: 'llama3-70b-8192'
+        model: 'llama3-70b-8192',
     },
     nvidia: {
         apiKey: '',
-        model: 'nvidia/llama3-chatqa-1.5-70b'
+        model: 'nvidia/llama3-chatqa-1.5-70b',
     },
     antigravity: {
-        connected: false
+        connected: false,
     },
     copilot: {
-        connected: false
+        connected: false,
     },
     proxy: {
         enabled: false,
         url: 'http://localhost:8317/v1',
-        key: 'proxypal-local'
+        key: 'proxypal-local',
     },
     mcpDisabledServers: [],
     mcpUserServers: [],
@@ -89,8 +89,8 @@ const DEFAULT_SETTINGS: AppSettings = {
         x: 0,
         y: 0,
         startOnStartup: true,
-        workAtBackground: true
-    }
+        workAtBackground: true,
+    },
 };
 
 import { BaseService } from '@main/services/base.service';
@@ -165,11 +165,17 @@ export class SettingsService extends BaseService {
             }
 
             const loadedRecord = loaded as Record<string, unknown>;
-            if (loadedRecord.userAvatar) { delete loadedRecord.userAvatar; }
-            if (loadedRecord.aiAvatar) { delete loadedRecord.aiAvatar; }
-
+            if (loadedRecord.userAvatar) {
+                delete loadedRecord.userAvatar;
+            }
+            if (loadedRecord.aiAvatar) {
+                delete loadedRecord.aiAvatar;
+            }
         } catch (error) {
-            appLogger.error('SettingsService', `Failed to read/parse settings: ${getErrorMessage(error as Error)}`);
+            appLogger.error(
+                'SettingsService',
+                `Failed to read/parse settings: ${getErrorMessage(error as Error)}`
+            );
             loaded = {};
         }
 
@@ -197,17 +203,31 @@ export class SettingsService extends BaseService {
         }
     }
 
-    private async backupCorruptedSettings(originalData: string, type: 'recovered' | 'corrupted', recoveredData?: Partial<AppSettings>) {
+    private async backupCorruptedSettings(
+        originalData: string,
+        type: 'recovered' | 'corrupted',
+        recoveredData?: Partial<AppSettings>
+    ) {
         try {
             const backupPath = `${this.settingsPath}.${type}.${Date.now()}`;
             await fs.promises.writeFile(backupPath, originalData, 'utf8');
-            appLogger.info('SettingsService', `Backed up original/corrupted file to: ${backupPath}`);
+            appLogger.info(
+                'SettingsService',
+                `Backed up original/corrupted file to: ${backupPath}`
+            );
 
             if (recoveredData) {
-                await fs.promises.writeFile(this.settingsPath, JSON.stringify(recoveredData, null, 2), 'utf8');
+                await fs.promises.writeFile(
+                    this.settingsPath,
+                    JSON.stringify(recoveredData, null, 2),
+                    'utf8'
+                );
             }
         } catch (e) {
-            appLogger.warn('SettingsService', `Failed to backup ${type} settings: ${getErrorMessage(e as Error)}`);
+            appLogger.warn(
+                'SettingsService',
+                `Failed to backup ${type} settings: ${getErrorMessage(e as Error)}`
+            );
         }
     }
 
@@ -235,25 +255,27 @@ export class SettingsService extends BaseService {
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
             nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
-            window: loaded.window ?? DEFAULT_SETTINGS.window
+            window: loaded.window ?? DEFAULT_SETTINGS.window,
         };
 
         this.migrateDeprecatedSettings(res);
         return res;
     }
 
-    private mergeAutoUpdate(loaded?: Partial<AppSettings['autoUpdate']>): AppSettings['autoUpdate'] {
+    private mergeAutoUpdate(
+        loaded?: Partial<AppSettings['autoUpdate']>
+    ): AppSettings['autoUpdate'] {
         const def = DEFAULT_SETTINGS.autoUpdate ?? {
             enabled: true,
             checkOnStartup: true,
             downloadAutomatically: true,
-            notifyOnly: false
+            notifyOnly: false,
         };
         return {
             enabled: loaded?.enabled ?? def.enabled,
             checkOnStartup: loaded?.checkOnStartup ?? def.checkOnStartup,
             downloadAutomatically: loaded?.downloadAutomatically ?? def.downloadAutomatically,
-            notifyOnly: loaded?.notifyOnly ?? def.notifyOnly
+            notifyOnly: loaded?.notifyOnly ?? def.notifyOnly,
         };
     }
 
@@ -271,52 +293,68 @@ export class SettingsService extends BaseService {
         return {
             ...def,
             ...loadedObj,
-            [keyField]: token
+            [keyField]: token,
         } as AppSettings[T];
     }
 
-    private mergeCopilot(authAccounts: LinkedAccount[], loaded?: Partial<AppSettings['copilot']>): AppSettings['copilot'] {
+    private mergeCopilot(
+        authAccounts: LinkedAccount[],
+        loaded?: Partial<AppSettings['copilot']>
+    ): AppSettings['copilot'] {
         const def = DEFAULT_SETTINGS.copilot;
-        const token = this.findTokenInAuth(authAccounts, 'copilot') ||
+        const token =
+            this.findTokenInAuth(authAccounts, 'copilot') ||
             this.findTokenInAuth(authAccounts, 'github') ||
             (loaded?.token ?? '');
 
         return {
             connected: loaded?.connected ?? !!def?.connected,
-            token
+            token,
         };
     }
 
-    private mergeProxy(authAccounts: LinkedAccount[], loaded?: Partial<AppSettings['proxy']>): AppSettings['proxy'] {
+    private mergeProxy(
+        authAccounts: LinkedAccount[],
+        loaded?: Partial<AppSettings['proxy']>
+    ): AppSettings['proxy'] {
         const def = DEFAULT_SETTINGS.proxy ?? {
             enabled: false,
             url: 'http://localhost:8317/v1',
-            key: ''
+            key: '',
         };
         const token = this.findTokenInAuth(authAccounts, 'proxy') || (loaded?.key ?? '');
         return {
             enabled: loaded?.enabled ?? def.enabled,
             url: loaded?.url ?? def.url,
-            key: token
+            key: token,
         };
     }
 
     private migrateDeprecatedSettings(settings: AppSettings): void {
         const embeddings = settings.embeddings as { provider: string; model?: string } | undefined;
-        if (embeddings && (embeddings.provider === 'antigravity' || embeddings.provider === 'gemini')) {
+        if (
+            embeddings &&
+            (embeddings.provider === 'antigravity' || embeddings.provider === 'gemini')
+        ) {
             appLogger.info('SettingsService', 'Migrating deprecated embedding provider to Ollama');
             settings.embeddings.provider = 'ollama';
             settings.embeddings.model = 'all-minilm';
         }
     }
 
-    private attemptJsonRecovery(data: string): { data: Partial<AppSettings>; wasModified: boolean } | null {
+    private attemptJsonRecovery(
+        data: string
+    ): { data: Partial<AppSettings>; wasModified: boolean } | null {
         const cleanData = data.replace(/^\uFEFF/, '');
         const startIndex = cleanData.indexOf('{');
-        if (startIndex < 0) { return null; }
+        if (startIndex < 0) {
+            return null;
+        }
 
         const endIndex = this.findJsonObjectEnd(cleanData, startIndex);
-        if (endIndex < 0) { return null; }
+        if (endIndex < 0) {
+            return null;
+        }
 
         const jsonCandidate = cleanData.substring(startIndex, endIndex + 1);
         const wasModified = endIndex < cleanData.length - 1 || startIndex > 0;
@@ -351,14 +389,18 @@ export class SettingsService extends BaseService {
                 inString = !inString;
                 continue;
             }
-            if (inString) { continue; }
+            if (inString) {
+                continue;
+            }
 
             // Handle nesting
             if (char === '{') {
                 depth++;
             } else if (char === '}') {
                 depth--;
-                if (depth === 0) { return i; }
+                if (depth === 0) {
+                    return i;
+                }
             }
         }
         return -1;
@@ -399,7 +441,10 @@ export class SettingsService extends BaseService {
         return this.settings;
     }
 
-    private async syncTokensToAuth(newSettings: Partial<AppSettings>, oldSettings: AppSettings): Promise<void> {
+    private async syncTokensToAuth(
+        newSettings: Partial<AppSettings>,
+        oldSettings: AppSettings
+    ): Promise<void> {
         if (!this.authService) {
             return;
         }
@@ -418,17 +463,22 @@ export class SettingsService extends BaseService {
      * in the centralized account database.
      */
     private async syncAllTokensToAuth(): Promise<void> {
-        if (!this.authService) { return; }
+        if (!this.authService) {
+            return;
+        }
 
         const settings = this.getSettings();
         const providers: Record<string, string | undefined> = {
-            'openai_key': settings.openai?.apiKey,
-            'anthropic_key': settings.anthropic?.apiKey,
-            'groq_key': settings.groq?.apiKey,
-            'nvidia_key': settings.nvidia?.apiKey,
-            'antigravity_token': (settings.antigravity as Record<string, unknown> | undefined)?.token as string | undefined,
-            'copilot_token': (settings.copilot as Record<string, unknown> | undefined)?.token as string | undefined,
-            'proxy_key': settings.proxy?.key
+            openai_key: settings.openai?.apiKey,
+            anthropic_key: settings.anthropic?.apiKey,
+            groq_key: settings.groq?.apiKey,
+            nvidia_key: settings.nvidia?.apiKey,
+            antigravity_token: (settings.antigravity as Record<string, unknown> | undefined)
+                ?.token as string | undefined,
+            copilot_token: (settings.copilot as Record<string, unknown> | undefined)?.token as
+                | string
+                | undefined,
+            proxy_key: settings.proxy?.key,
         };
 
         for (const [providerKey, token] of Object.entries(providers)) {
@@ -443,20 +493,29 @@ export class SettingsService extends BaseService {
 
         try {
             const existingAccounts = await this.authService.getAccountsByProviderFull(providerKey);
-            const alreadyExists = existingAccounts.some(acc =>
-                acc.accessToken === token || acc.sessionToken === token
+            const alreadyExists = existingAccounts.some(
+                acc => acc.accessToken === token || acc.sessionToken === token
             );
 
             if (!alreadyExists) {
-                appLogger.info('SettingsService', `Syncing token for ${providerKey} to AuthService`);
+                appLogger.info(
+                    'SettingsService',
+                    `Syncing token for ${providerKey} to AuthService`
+                );
                 await this.authService.linkAccount(providerKey, { accessToken: token });
             }
         } catch (error) {
-            appLogger.warn('SettingsService', `Failed to sync token for ${providerKey}: ${getErrorMessage(error as Error)}`);
+            appLogger.warn(
+                'SettingsService',
+                `Failed to sync token for ${providerKey}: ${getErrorMessage(error as Error)}`
+            );
         }
     }
 
-    private getTokenMappings(newSettings: Partial<AppSettings>, oldSettings: AppSettings): Record<string, string | undefined> {
+    private getTokenMappings(
+        newSettings: Partial<AppSettings>,
+        oldSettings: AppSettings
+    ): Record<string, string | undefined> {
         const mappings: Record<string, string | undefined> = {};
 
         this.addCoreMappings(mappings, newSettings, oldSettings);
@@ -465,13 +524,36 @@ export class SettingsService extends BaseService {
         return mappings;
     }
 
-    private addCoreMappings(mappings: Record<string, string | undefined>, newSettings: Partial<AppSettings>, oldSettings: AppSettings): void {
-        this.checkTokenMapping(mappings, 'github_token', newSettings.github?.token, oldSettings.github?.token);
-        this.checkTokenMapping(mappings, 'copilot_token', newSettings.copilot?.token, oldSettings.copilot?.token);
-        this.checkTokenMapping(mappings, 'antigravity_token', newSettings.antigravity?.token, oldSettings.antigravity?.token);
+    private addCoreMappings(
+        mappings: Record<string, string | undefined>,
+        newSettings: Partial<AppSettings>,
+        oldSettings: AppSettings
+    ): void {
+        this.checkTokenMapping(
+            mappings,
+            'github_token',
+            newSettings.github?.token,
+            oldSettings.github?.token
+        );
+        this.checkTokenMapping(
+            mappings,
+            'copilot_token',
+            newSettings.copilot?.token,
+            oldSettings.copilot?.token
+        );
+        this.checkTokenMapping(
+            mappings,
+            'antigravity_token',
+            newSettings.antigravity?.token,
+            oldSettings.antigravity?.token
+        );
     }
 
-    private addProviderMappings(mappings: Record<string, string | undefined>, newSettings: Partial<AppSettings>, oldSettings: AppSettings): void {
+    private addProviderMappings(
+        mappings: Record<string, string | undefined>,
+        newSettings: Partial<AppSettings>,
+        oldSettings: AppSettings
+    ): void {
         const { openai, anthropic, groq, nvidia, proxy } = newSettings;
         const { openai: oO, anthropic: oA, groq: oG, nvidia: oN, proxy: oP } = oldSettings;
 
@@ -482,7 +564,12 @@ export class SettingsService extends BaseService {
         this.checkTokenMapping(mappings, 'proxy_key', proxy?.key, oP?.key);
     }
 
-    private checkTokenMapping(mappings: Record<string, string | undefined>, key: string, newVal: string | undefined, oldVal: string | undefined): void {
+    private checkTokenMapping(
+        mappings: Record<string, string | undefined>,
+        key: string,
+        newVal: string | undefined,
+        oldVal: string | undefined
+    ): void {
         if (newVal && newVal !== oldVal && newVal !== 'connected') {
             mappings[key] = newVal;
         }
@@ -497,7 +584,10 @@ export class SettingsService extends BaseService {
             await fs.promises.writeFile(tempPath, jsonString, 'utf8');
             await fs.promises.rename(tempPath, this.settingsPath);
         } catch (error) {
-            appLogger.error('SettingsService', `Failed to save settings: ${getErrorMessage(error as Error)}`);
+            appLogger.error(
+                'SettingsService',
+                `Failed to save settings: ${getErrorMessage(error as Error)}`
+            );
         }
     }
 
@@ -513,11 +603,21 @@ export class SettingsService extends BaseService {
 
     private stripSecrets(settings: AppSettings): void {
         const { github, openai, anthropic, groq } = settings;
-        if (github) { github.token = ''; }
-        if (openai) { openai.apiKey = ''; }
-        if (anthropic) { anthropic.apiKey = ''; }
-        if (groq) { groq.apiKey = ''; }
-        if (settings.nvidia) { settings.nvidia.apiKey = ''; }
+        if (github) {
+            github.token = '';
+        }
+        if (openai) {
+            openai.apiKey = '';
+        }
+        if (anthropic) {
+            anthropic.apiKey = '';
+        }
+        if (groq) {
+            groq.apiKey = '';
+        }
+        if (settings.nvidia) {
+            settings.nvidia.apiKey = '';
+        }
 
         this.stripOtherSecrets(settings);
     }
@@ -553,16 +653,33 @@ export class SettingsService extends BaseService {
         return this.settings;
     }
 
-    private findTokenInAuth(authAccounts: LinkedAccount[], provider: string, fallbackKeys: string[] = []): string {
+    private findTokenInAuth(
+        authAccounts: LinkedAccount[],
+        provider: string,
+        fallbackKeys: string[] = []
+    ): string {
         const providers: Record<string, string[]> = {
-            github: ['proxy-auth-token', 'proxy_auth_token', 'github_token', 'github', 'github.token'],
-            copilot: ['proxy-auth-token', 'proxy_auth_token', 'copilot_token', 'copilot', 'copilot.token', 'github_token'],
+            github: [
+                'proxy-auth-token',
+                'proxy_auth_token',
+                'github_token',
+                'github',
+                'github.token',
+            ],
+            copilot: [
+                'proxy-auth-token',
+                'proxy_auth_token',
+                'copilot_token',
+                'copilot',
+                'copilot.token',
+                'github_token',
+            ],
             antigravity: ['antigravity_token', 'antigravity'],
             openai: ['openai_key', 'openai'],
             anthropic: ['anthropic_key', 'anthropic'],
             groq: ['groq_key', 'groq'],
             nvidia: ['nvidia_key', 'nvidia'],
-            proxy: ['proxy_key', 'proxy']
+            proxy: ['proxy_key', 'proxy'],
         };
 
         const searchProviders = [provider, ...(providers[provider] ?? []), ...fallbackKeys];
@@ -584,11 +701,18 @@ export class SettingsService extends BaseService {
         return '';
     }
 
-    private deepMergeSettings(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
+    private deepMergeSettings(
+        target: Record<string, unknown>,
+        source: Record<string, unknown>
+    ): Record<string, unknown> {
         const res = { ...target };
         for (const key of Object.keys(source)) {
             const sourceValue = source[key];
-            if (sourceValue !== null && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+            if (
+                sourceValue !== null &&
+                typeof sourceValue === 'object' &&
+                !Array.isArray(sourceValue)
+            ) {
                 const targetValue = (target[key] as Record<string, unknown> | undefined) ?? {};
                 res[key] = { ...targetValue, ...sourceValue };
             } else {

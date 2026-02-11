@@ -7,7 +7,7 @@ export const zh = {
         copy: '复制',
         refresh: '刷新',
         rename: '重命名',
-        search: '搜索...',
+        search: '搜索',
         loading: '加载中...',
         error: '错误',
         success: '成功',
@@ -20,20 +20,64 @@ export const zh = {
         hour: '小时',
         hours: '小时',
         clear: '清除',
+        details: '详情',
+        hide: '隐藏',
+        showMore: '显示更多...',
+        kb: 'KB',
         add: '添加',
         done: '完成',
+        close: '关闭',
         pending: '待处理',
         confirm: '确认',
         processing: '处理中...',
         selectAll: '全选',
-        itemsSelected: '已选择 {{count}} 项'
+        itemsSelected: '已选择 {{count}} 项',
+        // Error messages
+        unknownError: '发生未知错误',
+        operationFailed: '操作失败',
+        invalidInput: '无效输入',
+        networkError: '网络错误',
+        permissionDenied: '权限被拒绝',
+        // Additional common keys
+        authType: '认证类型',
+        back: '返回',
+        commands: '命令',
+        connect: '连接',
+        favorites: '收藏',
+        fitView: '适应视图',
+        host: '主机',
+        next: '下一步',
+        previous: '上一步',
+        pageOf: '第 {{current}} 页，共 {{total}} 页',
+        passphrase: '密码短语',
+        password: '密码',
+        port: '端口',
+        privateKey: '私钥',
+        reset: '重置',
+        resetZoom: '重置缩放',
+        resume: '继续',
+        searching: '搜索中...',
+        send: '发送',
+        stop: '停止',
+        unarchive: '取消归档',
+        update: '更新',
+        username: '用户名',
+        zoomIn: '放大',
+        zoomOut: '缩小',
+        toClose: '关闭',
+        locale: 'zh-CN',
+        ai: 'AI',
+    },
+    loading: {
+        codeEditor: '正在加载代码编辑器',
+        chart: '正在加载图表',
     },
     app: {
-        name: 'Tandem'
+        name: 'Tandem',
     },
     errors: {
         unexpected: '抱歉，发生了错误。',
-        somethingWentWrong: '出了点问题：'
+        somethingWentWrong: '出了点问题：',
     },
     languages: {
         tr: '土耳其语',
@@ -43,7 +87,7 @@ export const zh = {
         es: '西班牙语',
         ja: '日语',
         zh: '中文',
-        ar: '阿拉伯语'
+        ar: '阿拉伯语',
     },
     themeStore: {
         title: '主题商店',
@@ -60,37 +104,37 @@ export const zh = {
         themes: {
             'dark-default': {
                 name: '默认深色',
-                description: '带有紫色装饰的默认深色主题'
+                description: '带有紫色装饰的默认深色主题',
             },
             'light-default': {
                 name: '默认浅色',
-                description: '适合日间使用的纯净浅色主题'
+                description: '适合日间使用的纯净浅色主题',
             },
-            'nord': {
+            nord: {
                 name: 'Nord',
-                description: '极地北欧蓝配色方案'
+                description: '极地北欧蓝配色方案',
             },
-            'dracula': {
+            dracula: {
                 name: 'Dracula',
-                description: '色彩鲜艳的深色主题'
+                description: '色彩鲜艳的深色主题',
             },
-            'monokai': {
+            monokai: {
                 name: 'Monokai Pro',
-                description: '带有温暖装饰的专业深色主题'
+                description: '带有温暖装饰的专业深色主题',
             },
             'github-dark': {
                 name: 'GitHub Dark',
-                description: 'GitHub 官方深色主题'
+                description: 'GitHub 官方深色主题',
             },
             'solarized-dark': {
                 name: 'Solarized Dark',
-                description: '为人与机器设计的精准色彩'
+                description: '为人与机器设计的精准色彩',
             },
             'tokyo-night': {
                 name: 'Tokyo Night',
-                description: '致敬东京之夜的纯净主题'
-            }
-        }
+                description: '致敬东京之夜的纯净主题',
+            },
+        },
     },
     modelSelector: {
         searchModels: '搜索模型...',
@@ -100,7 +144,7 @@ export const zh = {
         openCode: 'OpenCode',
         proxyCustom: '自定义代理 / 其他',
         model: '模型',
-        selectModel: '选择模型'
+        selectModel: '选择模型',
     },
     settings: {
         searchPlaceholder: '搜索设置...',
@@ -121,7 +165,7 @@ export const zh = {
         about: '关于',
         personas: '角色',
         factoryResetConfirm: '您确定要删除所有数据吗？',
-        language: '语言'
+        language: '语言',
     },
     projects: {
         newProject: '新项目',
@@ -170,7 +214,7 @@ export const zh = {
         changeLogo: '更改 LOGO',
         noDescription: '未提供描述',
         todoPlaceholder: '需要做什么？（按回车键）',
-        willActOn: '将作用于：'
+        willActOn: '将作用于：',
     },
     projectWizard: {
         title: '项目向导',
@@ -183,7 +227,7 @@ export const zh = {
         projectName: '项目名称',
         namePlaceholder: '例如：CRM 仪表板',
         placeholder: {
-            example: 'example.com'
+            example: 'example.com',
         },
         description: '描述（可选）',
         descPlaceholder: '这个项目的目标是什么？',
@@ -218,8 +262,8 @@ export const zh = {
             backend: '后端服务',
             cli: 'CLI / 脚本',
             mobile: '移动应用',
-            other: '自定义项目'
-        }
+            other: '自定义项目',
+        },
     },
     projectDashboard: {
         title: '项目仪表板',
@@ -292,7 +336,7 @@ export const zh = {
         todoList: '后续任务',
         gitStatus: {
             pulling: '正在拉取...',
-            pushing: '正在推送...'
+            pushing: '正在推送...',
         },
         noIssues: '项目中未发现重大问题。做的不错！',
         issuesDescription: 'Tandem 会扫描您的项目以查找潜在错误、警告和代码异味。',
@@ -314,7 +358,7 @@ export const zh = {
         logsDescription: '实时应用程序日志。',
         logsEmpty: '无可用日志。运行您的项目以生成日志输出。',
         logsClear: '清除日志',
-        logsFilter: '过滤日志...'
+        logsFilter: '过滤日志...',
     },
     git: {
         commitGenerator: 'Git 提交生成器',
@@ -327,7 +371,7 @@ export const zh = {
         copy: '复制',
         commit: '提交',
         cancel: '取消',
-        error: '发生错误'
+        error: '发生错误',
     },
     ssh: {
         title: 'SSH 管理器',
@@ -395,7 +439,7 @@ export const zh = {
             username: 'root',
             passwordOptional: '目前如果使用密钥则为可选',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: '我的服务器'
+            profileName: '我的服务器',
         },
         profileName: '配置文件名称',
         nginx: {
@@ -408,15 +452,15 @@ export const zh = {
             configPreview: '配置预览',
             placeholders: {
                 domain: 'api.myapp.com',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: '域名是必填项',
                 connecting: '正在连接服务器...',
                 moving: '正在将配置移动到 Nginx 目录...',
                 success: 'Nginx 已成功重载！',
-                error: '应用失败：{{error}}。请确保您拥有 sudo 权限。'
-            }
+                error: '应用失败：{{error}}。请确保您拥有 sudo 权限。',
+            },
         },
         presets: {
             title: '参数预设',
@@ -428,34 +472,34 @@ export const zh = {
             labels: {
                 name: '预设名称',
                 temperature: '温度',
-                topP: 'Top P'
+                topP: 'Top P',
             },
             placeholders: {
-                name: '例如：我的自定义预设'
-            }
+                name: '例如：我的自定义预设',
+            },
         },
         promptManager: {
             title: 'Prompt 库',
             newPrompt: '新 Prompt',
             labels: {
                 title: '标题',
-                content: '内容'
+                content: '内容',
             },
             placeholders: {
                 title: '例如：代码重构',
-                content: '输入 Prompt 内容...'
+                content: '输入 Prompt 内容...',
             },
             empty: {
                 title: '还没有 Prompt',
-                subtitle: '创建一个开始使用吧'
-            }
+                subtitle: '创建一个开始使用吧',
+            },
         },
         editor: {
             loading: '正在加载编辑器...',
             initializing: '正在初始化编辑器...',
             error: '编辑器错误：{{error}}',
-            aiRefactor: 'AI 重构 / 解释'
-        }
+            aiRefactor: 'AI 重构 / 解释',
+        },
     },
     sidebar: {
         chats: '聊天',
@@ -499,20 +543,20 @@ export const zh = {
         councilReady: '就绪',
         project: '项目',
         moveTo: '移动到...',
-        ideas: '想法'
+        ideas: '想法',
     },
     dateGroups: {
         today: '今天',
         yesterday: '昨天',
         lastWeek: '上周',
-        older: '更早'
+        older: '更早',
     },
     nav: {
         chat: '聊天',
         projects: '项目',
         settings: '设置',
         council: '评议会',
-        mcp: 'MCP 管理'
+        mcp: 'MCP 管理',
     },
     mcp: {
         management: 'MCP 管理',
@@ -545,8 +589,8 @@ export const zh = {
             database: '数据库',
             api: 'APIs',
             development: '开发',
-            ai: 'AI'
-        }
+            ai: 'AI',
+        },
     },
     memory: {
         title: '内存检查器',
@@ -569,7 +613,7 @@ export const zh = {
         confidence: '置信度',
         ago: '前',
         via: '通过',
-        chatId: '聊天 ID'
+        chatId: '聊天 ID',
     },
     terminal: {
         noShellsFound: '未找到 Shell',
@@ -577,7 +621,7 @@ export const zh = {
         startNewSession: '启动新会话',
         sessionFailed: '启动终端会话失败',
         closeAndCreate: '请关闭此标签并创建一个新的终端会话',
-        exitedWithCode: '终端已退出，代码 {{code}}'
+        exitedWithCode: '终端已退出，代码 {{code}}',
     },
     workspace: {
         editor: '编辑器',
@@ -612,13 +656,13 @@ export const zh = {
         convertToCode: '转换为代码',
         placeholders: {
             rootPath: 'C:\\\\Users\\\\Project',
-            name: '名称...'
+            name: '名称...',
         },
         run: '运行项目',
         toggleSidebar: '切换侧边栏',
         aiAssistant: 'AI 助手',
         online: '在线',
-        dev: '开发'
+        dev: '开发',
     },
     chat: {
         placeholder: '输入消息...',
@@ -631,11 +675,11 @@ export const zh = {
         collapse: '收起',
         moreLines: '更多行',
         scrollToBottom: '滚动到底部',
-        scrollToBottomWithCount: '滚动到底部（{{count}} 条新消息）'
+        scrollToBottomWithCount: '滚动到底部（{{count}} 条新消息）',
     },
     welcome: {
         title: 'Tandem',
-        tagline: '智慧与优雅并存。'
+        tagline: '智慧与优雅并存。',
     },
     auth: {
         authError: '身份验证错误',
@@ -643,14 +687,15 @@ export const zh = {
         connectionFailed: '连接到 Antigravity 服务器失败。请登录或检查您的 API 密钥。',
         sessionKeyRequired: '需要 Claude 会话密钥',
         completeConnection: '完成 {{email}} 的连接',
-        sessionKeyDescription: '为了跟踪额度和直接交互，Tandem 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。',
+        sessionKeyDescription:
+            '为了跟踪额度和直接交互，Tandem 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。',
         howToFindKey: '如何查找您的会话密钥',
         sessionKeyInstructions: {
             step1: '打开 claude.ai 并登录',
             step2: '右键点击并选择“检查”',
             step3: '前往“应用程序”选项卡（或存储区域）',
             step4: '展开 Cookie 并选择 https://claude.ai',
-            step5: '找到 sessionKey 并复制其值（以 sk-ant-sid 开头）'
+            step5: '找到 sessionKey 并复制其值（以 sk-ant-sid 开头）',
         },
         sessionKeyLabel: '会话密钥',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -663,7 +708,7 @@ export const zh = {
         openGithubToEnter: '打开 GitHub 输入代码',
         waitingForLogin: '正在等待登录...',
         connectedSuccessfully: '连接成功！',
-        connectionFailedGeneric: '连接失败'
+        connectionFailedGeneric: '连接失败',
     },
     accounts: {
         title: '已连接帐户',
@@ -671,33 +716,33 @@ export const zh = {
         categories: {
             aiProviders: 'AI 提供商',
             developerTools: '开发者工具',
-            localModels: '本地模型'
+            localModels: '本地模型',
         },
         providers: {
             github: {
                 name: 'GitHub',
-                description: '源码托管与协作'
+                description: '源码托管与协作',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'AI 辅助代码补全'
+                description: 'AI 辅助代码补全',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: '云端 AI 服务与网页访问'
+                description: '云端 AI 服务与网页访问',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4 及高级语言模型'
+                description: 'GPT-4 及高级语言模型',
             },
             claude: {
                 name: 'Claude',
-                description: 'Anthropic Claude 推理模型'
+                description: 'Anthropic Claude 推理模型',
             },
             ollama: {
                 name: 'Ollama',
-                description: '在本地运行 AI 模型'
-            }
+                description: '在本地运行 AI 模型',
+            },
         },
         connected: '已连接',
         disconnected: '未连接',
@@ -723,18 +768,18 @@ export const zh = {
         copilotDesc: 'GitHub Copilot 集成。',
         antigravityDesc: 'Antigravity 云服务。',
         codexDesc: 'OpenAI Codex API 访问。',
-        claudeDesc: 'Anthropic Claude 模型。'
+        claudeDesc: 'Anthropic Claude 模型。',
     },
     input: {
         placeholder: {
             copilot: '咨询 Copilot 生成代码...',
             ollama: '咨询本地大语言模型...',
-            default: '输入消息...'
+            default: '输入消息...',
         },
         attachFile: '附加文件',
         enhancePrompt: '使用 AI 优化提示词',
         startListening: '开始语音输入',
-        stopListening: '停止语音输入'
+        stopListening: '停止语音输入',
     },
     workspaceModals: {
         mountTitle: '添加现有文件夹或服务器',
@@ -750,29 +795,29 @@ export const zh = {
         closeModal: '关闭模态框',
         inputAriaLabel: '{{type}} 名称',
         deleteConfirm: '您确定要删除 {name} 吗？',
-        confirm: '确认'
+        confirm: '确认',
     },
     templates: {
         code: {
             title: '编程',
             description: '创建组件和算法。',
-            prompt: '您能帮我创建一个现代的 React 组件吗？带有一个精美的卡片设计。'
+            prompt: '您能帮我创建一个现代的 React 组件吗？带有一个精美的卡片设计。',
         },
         analyze: {
             title: '分析',
             description: '检查文件和数据。',
-            prompt: '您能分析这个项目的架构并提供改进建议吗？'
+            prompt: '您能分析这个项目的架构并提供改进建议吗？',
         },
         creative: {
             title: '创意写作',
             description: '生成文本和内容。',
-            prompt: '您能为名为 Tandem 的 AI 助手写一段精彩的介绍文案吗？'
+            prompt: '您能为名为 Tandem 的 AI 助手写一段精彩的介绍文案吗？',
         },
         debug: {
             title: '调试',
             description: '查找并修复问题。',
-            prompt: '您能帮我找到代码中的内存泄漏吗？'
-        }
+            prompt: '您能帮我找到代码中的内存泄漏吗？',
+        },
     },
     attachments: {
         image: '图像',
@@ -812,7 +857,7 @@ export const zh = {
         regenerate: '重新生成',
         rating: '评价回答',
         actions: '消息操作',
-        multiModelResponse: '来自多个模型的回答'
+        multiModelResponse: '来自多个模型的回答',
     },
     general: {
         turkish: '土耳其语',
@@ -825,7 +870,7 @@ export const zh = {
         databaseDesc: '管理应用数据和缓存。',
         onboardingTour: '新手引导',
         onboardingTourDesc: '重新启动应用程序功能介绍。',
-        startTour: '开始引导'
+        startTour: '开始引导',
     },
     appearance: {
         themeDesc: '更改应用程序的主题颜色。',
@@ -865,8 +910,8 @@ export const zh = {
             serenity: '宁静',
             neonPulse: '霓虹脉冲',
             cyberFuture: '赛博未来',
-            softVelvet: '柔滑丝绒'
-        }
+            softVelvet: '柔滑丝绒',
+        },
     },
     statistics: {
         title: '统计',
@@ -904,17 +949,18 @@ export const zh = {
         subscriptionActive: '订阅活跃',
         codingTimeByProject: '按项目划分的编程时间',
         timeSpentCodingInEachProject: '每个项目中编程花费的时间',
-        unknownProject: '未知项目'
+        unknownProject: '未知项目',
     },
     about: {
-        description: 'Tandem 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。',
+        description:
+            'Tandem 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。',
         checkUpdates: '检查更新',
         privacyPolicy: '隐私政策',
         github: 'GitHub',
         copyright: '© 2025 Tandem',
         factoryReset: '恢复出厂设置',
         factoryResetDesc: '重置应用程序并删除所有设置和数据。',
-        updateCheckAlert: '生产版本中已启用更新检查。'
+        updateCheckAlert: '生产版本中已启用更新检查。',
     },
     developer: {
         title: '开发者设置',
@@ -932,7 +978,7 @@ export const zh = {
         importSettingsDesc: '从 JSON 文件加载设置',
         import: '导入',
         settingsImported: '设置已导入',
-        invalidSettingsFile: '无效的设置文件'
+        invalidSettingsFile: '无效的设置文件',
     },
     gallery: {
         title: '画廊',
@@ -943,7 +989,7 @@ export const zh = {
         deleteConfirm: '您确定要删除这张图片吗？',
         openLocation: '打开文件位置',
         open: '打开',
-        delete: '删除'
+        delete: '删除',
     },
     advanced: {
         systemInfo: '系统信息',
@@ -962,7 +1008,7 @@ export const zh = {
         tokenRefreshInterval: 'Token 刷新',
         tokenRefreshIntervalDesc: 'OAuth Token 刷新的频率。',
         copilotRefreshInterval: 'Copilot 刷新',
-        copilotRefreshIntervalDesc: 'Copilot 会话 Token 刷新的频率。'
+        copilotRefreshIntervalDesc: 'Copilot 会话 Token 刷新的频率。',
     },
     tips: {
         title: '您知道吗？',
@@ -970,7 +1016,7 @@ export const zh = {
         tip2: 'Tandem 支持连接到远程 SSH 服务器进行开发。',
         tip3: '您可以直接将文件拖拽到聊天中。',
         tip4: '使用“评议会”选项卡可以获得多代理对您代码的见解。',
-        tip5: '在“设置 > 外观”中自定义您的体验。'
+        tip5: '在“设置 > 外观”中自定义您的体验。',
     },
     agents: {
         planner: '规划者',
@@ -1011,7 +1057,7 @@ export const zh = {
         on: '开',
         off: '关',
         local: '本地',
-        cloud: '云端'
+        cloud: '云端',
     },
     modelComparison: {
         title: '模型对比',
@@ -1020,7 +1066,7 @@ export const zh = {
         compare: '对比',
         addModel: '添加模型',
         responsePlaceholder: '回答将显示在这里',
-        copyResponse: '复制回答'
+        copyResponse: '复制回答',
     },
     council: {
         title: '代理评议会',
@@ -1039,8 +1085,8 @@ export const zh = {
             reviewing: '正在审查',
             waiting_for_approval: '等待批准',
             completed: '已完成',
-            failed: '失败'
-        }
+            failed: '失败',
+        },
     },
     shortcuts: {
         title: '键盘快捷键',
@@ -1061,7 +1107,7 @@ export const zh = {
         searchChat: '搜索聊天',
         showShortcuts: '显示快捷键',
         close: '关闭',
-        footer: '按 Esc 键关闭'
+        footer: '按 Esc 键关闭',
     },
     semanticSearch: {
         title: '语义搜索',
@@ -1070,7 +1116,7 @@ export const zh = {
         results: '搜索结果',
         noResults: '未找到语义匹配项。',
         relevance: '相关性',
-        filesIndex: '已建立索引的文件'
+        filesIndex: '已建立索引的文件',
     },
     commandPalette: {
         newChat: '新聊天',
@@ -1103,11 +1149,11 @@ export const zh = {
         close: '关闭',
         engineLabel: 'Tandem 命令引擎',
         previewEmpty: '选择一个项目以查看详情',
-        noResultsHint: '试着搜索聊天、模型或设置'
+        noResultsHint: '试着搜索聊天、模型或设置',
     },
     quickAction: {
         explain: '解释',
-        translate: '翻译'
+        translate: '翻译',
     },
     activityBar: {
         chat: '聊天',
@@ -1116,13 +1162,13 @@ export const zh = {
         sourceControl: '源代码管理',
         debug: '调试',
         extensions: '扩展',
-        settings: '设置'
+        settings: '设置',
     },
     statusBar: {
         error: '错误',
         errors: '错误',
         warning: '警告',
-        warnings: '警告'
+        warnings: '警告',
     },
     updateNotification: {
         checkingTitle: '正在检查更新...',
@@ -1134,27 +1180,27 @@ export const zh = {
         errorTitle: '更新失败',
         uptodateTitle: '已是最新版本',
         downloadAction: '下载',
-        restartAction: '立即重启'
+        restartAction: '立即重启',
     },
     panelLayout: {
         expand: '展开',
         collapse: '折叠',
-        maximize: '最大化'
+        maximize: '最大化',
     },
     diffViewer: {
-        loading: '正在加载差异...'
+        loading: '正在加载差异...',
     },
     fab: {
         openMenu: '打开菜单',
-        closeMenu: '关闭菜单'
+        closeMenu: '关闭菜单',
     },
     modal: {
-        close: '关闭弹窗'
+        close: '关闭弹窗',
     },
     titleBar: {
         minimize: '最小化',
         maximize: '最大化',
-        close: '关闭'
+        close: '关闭',
     },
     logging: {
         title: '日志仪表板',
@@ -1181,32 +1227,32 @@ export const zh = {
         lastUpdated: '最后更新',
         showing: '正在显示',
         of: '总计',
-        logs: '日志'
+        logs: '日志',
     },
     personas: {
         title: '角色',
         description: '影响回答风格的个性化配置文件。',
         namePlaceholder: '角色名称',
         descriptionPlaceholder: '简短描述',
-        promptPlaceholder: '提示词'
+        promptPlaceholder: '提示词',
     },
     advancedTab: {
         modelConfiguration: '模型配置',
         modelConfigurationDesc: '针对选定模型的自定义系统命令和参数。',
         customSystemMessage: '自定义系统消息',
         systemPromptPlaceholder: '针对该模型的自定义系统命令...',
-        parameterPreset: '参数预设'
+        parameterPreset: '参数预设',
     },
     toolDisplay: {
         markdownView: 'Markdown 视图',
         text: '文本',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
     },
     modelExplorer: {
         title: '模型浏览器',
         search: '搜索模型...',
         install: '安装',
-        installed: '已安装'
+        installed: '已安装',
     },
     docker: {
         title: 'Docker 管理',
@@ -1215,7 +1261,7 @@ export const zh = {
         remove: '移除',
         shell: 'Shell',
         logs: '日志',
-        stats: '统计'
+        stats: '统计',
     },
     onboarding: {
         welcome: '欢迎来到 Tandem',
@@ -1224,7 +1270,7 @@ export const zh = {
         step3: '开始编程',
         skip: '跳过',
         next: '下一步',
-        finish: '完成'
+        finish: '完成',
     },
     agentDashboard: {
         title: '代理评议会',
@@ -1237,7 +1283,7 @@ export const zh = {
         autoRun: '自动运行',
         step: '步骤',
         currentPlan: '当前计划',
-        selectSession: '选择一个会话或创建一个新会话以开始。'
+        selectSession: '选择一个会话或创建一个新会话以开始。',
     },
     ideas: {
         title: '项目想法',
@@ -1258,7 +1304,7 @@ export const zh = {
             cliTool: 'CLI 工具',
             apiBackend: 'API / 后端',
             desktop: '桌面应用',
-            other: '其他'
+            other: '其他',
         },
 
         // Research stages
@@ -1268,7 +1314,7 @@ export const zh = {
             sectorAnalysis: '行业分析',
             marketResearch: '市场研究',
             competitorAnalysis: '竞争对手分析',
-            complete: '研究完成'
+            complete: '研究完成',
         },
 
         // Generation
@@ -1276,7 +1322,7 @@ export const zh = {
             title: '正在生成想法',
             progress: '正在生成想法 {{current}} / {{total}}',
             enriching: '正在丰富想法详情...',
-            complete: '生成完成'
+            complete: '生成完成',
         },
 
         // Idea card
@@ -1294,7 +1340,7 @@ export const zh = {
             detailedDescription: '详细描述',
             roadmap: '项目路线图',
             techStack: '技术栈',
-            competitorAnalysis: '竞争对手分析'
+            competitorAnalysis: '竞争对手分析',
         },
 
         // Tech stack categories
@@ -1303,7 +1349,7 @@ export const zh = {
             backend: '后端',
             database: '数据库',
             infrastructure: '基础设施',
-            other: '其他工具'
+            other: '其他工具',
         },
 
         // Competitor analysis
@@ -1311,7 +1357,7 @@ export const zh = {
             strengths: '优势',
             weaknesses: '劣势',
             missingFeatures: '缺失功能',
-            opportunity: '差异化机会'
+            opportunity: '差异化机会',
         },
 
         // Generation stages (multi-stage pipeline)
@@ -1324,7 +1370,7 @@ export const zh = {
             techStack: '正在选择技术栈...',
             competitorAnalysis: '正在分析竞争对手...',
             finalizing: '正在定稿想法...',
-            complete: '想法已完成'
+            complete: '想法已完成',
         },
 
         // Logo generation
@@ -1333,7 +1379,7 @@ export const zh = {
             generate: '生成 Logo',
             generating: '正在生成 Logo...',
             requiresAntigravity: '生成 Logo 需要连接 Antigravity',
-            promptPlaceholder: '描述您的 Logo 构想...'
+            promptPlaceholder: '描述您的 Logo 构想...',
         },
 
         // Status
@@ -1345,7 +1391,7 @@ export const zh = {
             cancelled: '已取消',
             pending: '待定',
             approved: '已批准',
-            rejected: '已拒绝'
+            rejected: '已拒绝',
         },
 
         // Errors
@@ -1355,7 +1401,7 @@ export const zh = {
             researchFailed: '研究失败。请重试。',
             generationFailed: '想法生成失败。请重试。',
             approvalFailed: '项目创建失败。请重试。',
-            logoFailed: 'Logo 生成失败。请重试。'
+            logoFailed: 'Logo 生成失败。请重试。',
         },
 
         // Empty states
@@ -1363,7 +1409,7 @@ export const zh = {
             noSessions: '还没有想法会话',
             noSessionsDesc: '启动新会话以生成项目想法',
             noIdeas: '尚未生成想法',
-            noIdeasDesc: '完成研究阶段以生成想法'
+            noIdeasDesc: '完成研究阶段以生成想法',
         },
 
         // History
@@ -1377,11 +1423,11 @@ export const zh = {
             pendingReview: '待审查',
             viewDetails: '查看详情',
             noIdeasYet: '尚未生成想法',
-            daysAgo: '{{count}} 天前'
+            daysAgo: '{{count}} 天前',
         },
 
         // Session setup
-        modelSelectorHint: '使用顶部栏的模型选择器更改 AI 模型。'
+        modelSelectorHint: '使用顶部栏的模型选择器更改 AI 模型。',
     },
     tools: {
         usingTool: '正在使用工具',
@@ -1394,13 +1440,14 @@ export const zh = {
         input: '输入',
         output: '输出',
         filePreview: '文件预览',
-        path: '路径：'
+        path: '路径：',
     },
     extensionPrompt: {
         title: '提升你的体验',
         subtitle: '安装 Tandem 浏览器扩展',
         infoTitle: '什么是浏览器扩展？',
-        infoBody: 'Tandem 浏览器扩展允许 AI 直接与网页交互。它可以读取内容、填写表单、点击按钮，并根据你的指令执行自动化操作。',
+        infoBody:
+            'Tandem 浏览器扩展允许 AI 直接与网页交互。它可以读取内容、填写表单、点击按钮，并根据你的指令执行自动化操作。',
         featuresTitle: '功能：',
         features: {
             aiChatTitle: '浏览器内 AI 聊天：',
@@ -1410,7 +1457,7 @@ export const zh = {
             contentExtractionTitle: '内容提取：',
             contentExtractionDesc: '一键提取并总结页面内容',
             secureConnectionTitle: '安全连接：',
-            secureConnectionDesc: '所有通信都保留在你的电脑本地'
+            secureConnectionDesc: '所有通信都保留在你的电脑本地',
         },
         installTitle: '快速安装：',
         steps: {
@@ -1418,12 +1465,177 @@ export const zh = {
             step2: '启用“开发者模式”（右上角开关）',
             step3: '点击“加载已解压的扩展程序”',
             step4Prefix: '选择 Tandem 目录中的',
-            step4Suffix: '文件夹'
+            step4Suffix: '文件夹',
         },
         openFolder: '打开扩展文件夹',
         viewInstructions: '查看说明',
         dismiss: '不再显示',
-        remindLater: '稍后提醒我'
-    }
+        remindLater: '稍后提醒我',
+    },
+    speech: {
+        title: '语音与朗读',
+        subtitle: '配置助手响应的语音设置。',
+        voiceSelection: '语音选择',
+        systemDefault: '系统默认',
+        test: '测试语音',
+        speed: '语速',
+        previewText: '欢迎来到 Tandem 的未来。我是您的 AI 助手。',
+        microphone: '麦克风',
+        speaker: '扬声器 / 耳机',
+        microphoneSelection: '麦克风输入',
+        speakerSelection: '音频输出',
+        voiceCloning: '语音克隆',
+        voiceCloningDesc: '将您自己的声音集成到 Tandem 生态系统中。',
+        voiceCloningTitle: '使用您自己的声音！',
+        voiceCloningTeaser: '说话 1 分钟，让 AI 模仿您的声音。此功能现已激活！',
+        record: '开始录音',
+        stopRecord: '停止录音',
+        recording: '正在录音...',
+        startTraining: '开始克隆',
+        training: '正在建模语音...',
+        trainingDesc: '请稍候，这可能需要几分钟，具体取决于您的计算机速度。',
+        downloadModel: '下载模型 (2GB)',
+        modelRequired: '需要 XTTS v2 模型',
+        modelRequiredDesc: '要使用语音克隆功能，您需要下载 AI 模型（约 2GB）。',
+        downloadingModel: '正在下载模型...',
+        downloadComplete: '下载完成',
+    },
+    dragDrop: {
+        title: '放置订单',
+        description: '将文件发送到中心进行分析。',
+    },
+    markdown: {
+        loadingDiagram: '正在加载图表...',
+    },
+    build: {
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test',
+    },
+    devServer: {
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000',
+    },
+    agent: {
+        allStepsFinished: '所有步骤已完成。准备接受新指令。',
+        readyForInstructions: '准备接受指令',
+        waitingActivity: '等待活动...',
+        autonomousTitle: '自主代理',
+        autonomousDesc: '代理将独立工作以实现目标。',
+        executionPlan: '执行计划',
+        approveExecute: '批准并执行',
+        rejectPlan: '拒绝计划',
+        awaitingApproval: '等待批准',
+        noToolCalls: '尚无工具调用。',
+        activeTools: '活动工具',
+        snapshot: '快照',
+        promptPlaceholder: '描述您希望代理做什么...',
+        start: '启动代理',
+        stop: '停止代理',
+        pause: '暂停',
+        resume: '继续',
+        retry: '重试',
+        tokens: '令牌',
+        tokensShort: '{{count}}k 令牌',
+        cost: '成本',
+        live: '实时',
+        calls: '调用',
+        activitiesCount: '活动',
+        history: '历史',
+        viewCheckpoints: '查看检查点',
+        no_checkpoints: '无可用检查点',
+        no_tasks_yet: '尚无任务',
+        selectModel: '选择模型',
+        unknownModel: '未知模型',
+        continueWithModel: '继续使用所选模型',
+        selectAlternativeModel: '选择替代模型',
+        interruptionTitle: '中断',
+        interruptionReason: '原因:',
+        interruptionHelp: '代理需要您的帮助才能继续。',
+        failedLoadModels: '无法加载模型。',
+        justNow: '刚刚',
+        minutesAgo: '{{count}} 分钟前',
+        hoursAgo: '{{count}} 小时前',
+        daysAgo: '{{count}} 天前',
+        attachFiles: '附加文件',
+        aiProvider: 'AI 提供商',
+    },
+    projectAgent: {
+        changePreview: '更改预览',
+        reasoningTitle: '推理',
+        consoleTitle: '控制台',
+        consoleTab: '控制台',
+        planTab: '计划',
+        eventCount: '{{count}} 个事件',
+        waitingLogs: '等待日志...',
+        toolSummary: {
+            editing: '正在编辑文件',
+            command: '正在运行命令',
+            running: '正在运行工具',
+            fileFallback: '文件更改',
+        },
+        newTask: '新任务',
+        generatingPlan: '正在生成计划...',
+        executingTask: '正在执行任务...',
+        waitingApproval: '等待批准',
+        newStep: '新步骤',
+        addStep: '添加步骤',
+        noPlan: '尚无计划',
+        overallProgress: '总体进度',
+        selectAgentProfile: '选择代理配置文件',
+        agentSelected: '已选择代理',
+        defaultAgent: '默认代理',
+        defaultAgentDesc: '通用项目代理',
+        approveAndRun: '批准并运行',
+        planning: '正在计划',
+        running: '正在运行',
+        stopLabel: '停止',
+        planAction: '计划',
+        executeAction: '执行',
+        thinkingOn: '思考开启',
+        thinkingOff: '思考关闭',
+        selectAction: '选择操作',
+        noDescription: '未提供描述',
+        selectProject: '选择项目',
+    },
+    audioChat: {
+        listening: '正在聆听...',
+        listeningLabel: '聆听中',
+        listeningDesc: '我正在聆听您。',
+        speaking: '正在说话...',
+        speakingDesc: '我正在对您说话。',
+        thinking: '正在思考...',
+        thinkingDesc: '正在处理您的请求。',
+        stopSpeaking: '停止说话',
+        pauseListening: '暂停',
+        resumeListening: '继续',
+    },
+    canvas: {
+        selectArea: '选择区域',
+    },
+    inspector: {
+        analyzing: '正在分析...',
+        selectFolder: '选择要检查的文件夹',
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI',
+    },
+    exportChat: {
+        confirm: '导出',
+        exporting: '正在导出...',
+        title: '导出聊天',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)',
+    },
+    tasksPanel: {
+        createNew: '创建新任务',
+    },
+    tasks: {
+        createNew: '创建新任务',
+    },
 };
-

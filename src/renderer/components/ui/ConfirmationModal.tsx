@@ -5,15 +5,15 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface ConfirmationModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onConfirm: () => void
-    title: string
-    message: string
-    confirmLabel?: string
-    cancelText?: string
-    variant?: 'danger' | 'warning' | 'info'
-    isLoading?: boolean
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info';
+    isLoading?: boolean;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -25,22 +25,24 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmLabel,
     cancelText,
     variant = 'danger',
-    isLoading = false
+    isLoading = false,
 }) => {
     const { t } = useTranslation();
 
-    if (!isOpen) { return null; }
+    if (!isOpen) {
+        return null;
+    }
 
     const variantStyles = {
         danger: 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20',
         warning: 'bg-yellow/10 text-warning border-yellow/20 hover:bg-yellow/20',
-        info: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+        info: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20',
     };
 
     const confirmButtonStyles = {
         danger: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        warning: 'bg-yellow-600 text-white hover:bg-yellow-600/90',
-        info: 'bg-primary text-primary-foreground hover:bg-primary/90'
+        warning: 'bg-warning text-warning-foreground hover:bg-warning/90',
+        info: 'bg-primary text-primary-foreground hover:bg-primary/90',
     };
     const resolvedConfirmLabel = confirmLabel ?? t('common.confirm');
     const resolvedCancelText = cancelText ?? t('common.cancel');
@@ -55,10 +57,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <div className="relative w-full max-w-md bg-background border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-6">
                     <div className="flex items-start gap-4">
-                        <div className={cn(
-                            "p-3 rounded-xl border",
-                            variantStyles[variant]
-                        )}>
+                        <div className={cn('p-3 rounded-xl border', variantStyles[variant])}>
                             <AlertTriangle className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
@@ -84,7 +83,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                         onClick={onConfirm}
                         disabled={isLoading}
                         className={cn(
-                            "px-6 py-2 text-sm font-bold rounded-lg transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:active:scale-100",
+                            'px-6 py-2 text-sm font-bold rounded-lg transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:active:scale-100',
                             confirmButtonStyles[variant]
                         )}
                     >
@@ -93,7 +92,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                 {t('common.processing')}
                             </div>
-                        ) : resolvedConfirmLabel}
+                        ) : (
+                            resolvedConfirmLabel
+                        )}
                     </button>
                 </div>
 

@@ -546,5 +546,17 @@ export class DatabaseService extends BaseService {
         return this._knowledge.deleteAdvancedMemory(id);
     }
 
+    // --- Agent Template Methods ---
 
+    async getAgentTemplates(): Promise<import('@shared/types/project-agent').AgentTemplate[]> {
+        return this._system.getAgentTemplates();
+    }
+
+    async saveAgentTemplate(template: import('@shared/types/project-agent').AgentTemplate): Promise<void> {
+        return this._system.saveAgentTemplate(template);
+    }
+
+    async deleteAgentTemplate(id: string): Promise<void> {
+        return this._system.deleteAgentTemplate(id);
+    }
 }

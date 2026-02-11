@@ -2,7 +2,7 @@ import { ChatListItem } from '@renderer/components/layout/sidebar/ChatListItem';
 import { Edit2, FolderIcon, FolderOpen, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { AnimatePresence,motion } from '@/lib/framer-motion-compat';
+import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Chat, Folder } from '@/types';
 
@@ -23,8 +23,19 @@ interface FolderItemProps {
 }
 
 export const FolderItem: React.FC<FolderItemProps> = ({
-    folder, chats, expanded, onToggle, onRename, onDelete, onMoveChat,
-    currentChatId, onSelectChat, onDeleteChat, onTogglePinChat, isGenerating, t
+    folder,
+    chats,
+    expanded,
+    onToggle,
+    onRename,
+    onDelete,
+    onMoveChat,
+    currentChatId,
+    onSelectChat,
+    onDeleteChat,
+    onTogglePinChat,
+    isGenerating,
+    t,
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(folder.name);
@@ -40,13 +51,17 @@ export const FolderItem: React.FC<FolderItemProps> = ({
         <div className="space-y-0.5">
             <div
                 className={cn(
-                    "group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/10 cursor-pointer text-muted-foreground hover:text-foreground",
-                    expanded && "text-foreground"
+                    'group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/10 cursor-pointer text-muted-foreground hover:text-foreground',
+                    expanded && 'text-foreground'
                 )}
                 onClick={onToggle}
             >
                 <div className="flex items-center gap-2 min-w-0">
-                    {expanded ? <FolderOpen className="w-3.5 h-3.5 text-primary/70" /> : <FolderIcon className="w-3.5 h-3.5" />}
+                    {expanded ? (
+                        <FolderOpen className="w-3.5 h-3.5 text-primary/70" />
+                    ) : (
+                        <FolderIcon className="w-3.5 h-3.5" />
+                    )}
                     {isEditing ? (
                         <input
                             autoFocus
@@ -62,8 +77,20 @@ export const FolderItem: React.FC<FolderItemProps> = ({
                     <span className="text-xxs text-muted-foreground/40">{chats.length}</span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Edit2 className="w-3 h-3 hover:text-primary" onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} />
-                    <Trash2 className="w-3 h-3 hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(folder.id); }} />
+                    <Edit2
+                        className="w-3 h-3 hover:text-primary"
+                        onClick={e => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                        }}
+                    />
+                    <Trash2
+                        className="w-3 h-3 hover:text-destructive"
+                        onClick={e => {
+                            e.stopPropagation();
+                            onDelete(folder.id);
+                        }}
+                    />
                 </div>
             </div>
             <AnimatePresence>
@@ -93,3 +120,5 @@ export const FolderItem: React.FC<FolderItemProps> = ({
         </div>
     );
 };
+
+FolderItem.displayName = 'FolderItem';

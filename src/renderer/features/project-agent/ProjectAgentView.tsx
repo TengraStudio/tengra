@@ -5,6 +5,7 @@ import {
     Background,
     Connection,
     Edge,
+    MiniMap,
     Node,
     Panel,
     ReactFlow,
@@ -13,6 +14,8 @@ import {
     useNodesState,
     useReactFlow,
 } from '@xyflow/react';
+
+import { AnimatedEdge } from './components/AnimatedEdge';
 
 /** Canvas node shape from database */
 interface CanvasNodeRecord {
@@ -50,9 +53,26 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 
+import { PlanNode } from './nodes/PlanNode';
 import { TaskNode } from './nodes/TaskNode';
 
 import '@xyflow/react/dist/style.css';
+
+const PLAN_NODE_X_OFFSET_PX = 80;
+const PLAN_NODE_Y_OFFSET_PX = 420;
+const PLAN_NODE_X_STEP_DRIFT_PX = 36;
+const PLAN_NODE_Y_STEP_SPACING_PX = 170;
+
+const getPlanNodeId = (taskNodeId: string, stepId: string) => `plan-node-${taskNodeId}-${stepId}`;
+const getPlanEdgeId = (source: string, target: string) => `plan-edge-${source}-${target}`;
+
+const isAutoPlanNodeForTask = (node: Node, taskNodeId: string): boolean =>
+    (node.data as Record<string, unknown>)?.autoPlanNode === true &&
+    (node.data as Record<string, unknown>)?.planParentId === taskNodeId;
+
+const isAutoPlanEdgeForTask = (edge: Edge, taskNodeId: string): boolean =>
+    (edge.data as Record<string, unknown>)?.autoPlanEdge === true &&
+    (edge.data as Record<string, unknown>)?.planParentId === taskNodeId;
 
 /**
  * CommandCenter - A floating dock for centralizing canvas controls
@@ -73,14 +93,18 @@ const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
         <Panel position="bottom-center" className="mb-6">
             <div className="flex items-center gap-1 p-1.5 bg-background/60 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom duration-500">
                 <button
-                    onClick={() => { void zoomIn(); }}
+                    onClick={() => {
+                        void zoomIn();
+                    }}
                     className="p-2 hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95 text-muted-foreground hover:text-foreground"
                     title={t('common.zoomIn') || 'Zoom In'}
                 >
                     <ZoomIn className="w-4 h-4" />
                 </button>
                 <button
-                    onClick={() => { void zoomOut(); }}
+                    onClick={() => {
+                        void zoomOut();
+                    }}
                     className="p-2 hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95 text-muted-foreground hover:text-foreground"
                     title={t('common.zoomOut') || 'Zoom Out'}
                 >
@@ -88,7 +112,9 @@ const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
                 </button>
                 <div className="w-px h-4 bg-white/10 mx-1" />
                 <button
-                    onClick={() => { void fitView({ duration: 800 }); }}
+                    onClick={() => {
+                        void fitView({ duration: 800 });
+                    }}
                     className="p-2 hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95 text-muted-foreground hover:text-foreground"
                     title={t('common.fitView') || 'Fit View'}
                 >
@@ -112,12 +138,15 @@ const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
                             <Plus className="w-4 h-4" />
                         </button>
                     </PopoverTrigger>
-                    <PopoverContent side="top" className="w-48 p-1 bg-background/90 backdrop-blur-xl border-white/10">
+                    <PopoverContent
+                        side="top"
+                        className="w-48 p-1 bg-background/90 backdrop-blur-xl border-white/10"
+                    >
                         <button
                             onClick={() => onAddNode('planner')}
                             className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
                         >
-                            <Sparkles className="w-4 h-4 text-purple-400" />
+                            <Sparkles className="w-4 h-4 text-accent" />
                             <span>{t('agents.newTask')}</span>
                         </button>
                         <button
@@ -160,7 +189,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
             exit={{ opacity: 0, scale: 0.95 }}
             className="fixed z-[100] w-56 bg-background/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-2"
             style={{ left: x, top: y }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
         >
             <div className="flex flex-col gap-1">
                 <div
@@ -168,14 +197,14 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
                     onMouseEnter={() => setShowSubMenu(true)}
                     onMouseLeave={() => setShowSubMenu(false)}
                 >
-                    <button
-                        className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/10 rounded-xl transition-all text-sm text-left"
-                    >
+                    <button className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/10 rounded-xl transition-all text-sm text-left">
                         <div className="flex items-center gap-3">
                             <div className="p-1.5 bg-primary/10 rounded-lg group-hover/item:bg-primary/20 transition-colors">
                                 <Plus className="w-3.5 h-3.5 text-primary" />
                             </div>
-                            <span className="font-medium">{t('tasks.createNew') || 'New Task'}</span>
+                            <span className="font-medium">
+                                {t('tasks.createNew') || 'New Task'}
+                            </span>
                         </div>
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -193,7 +222,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
                                     onClick={() => handleAddNode('planner')}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
                                 >
-                                    <Sparkles className="w-4 h-4 text-purple-400" />
+                                    <Sparkles className="w-4 h-4 text-accent" />
                                     <span>{t('agents.newTask')}</span>
                                 </button>
                                 <button
@@ -217,7 +246,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
                     <div className="p-1.5 bg-muted rounded-lg">
                         <MousePointer2 className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
-                    <span className="font-medium text-muted-foreground">{t('canvas.selectArea') || 'Select Area'}</span>
+                    <span className="font-medium text-muted-foreground">
+                        {t('canvas.selectArea') || 'Select Area'}
+                    </span>
                 </button>
             </div>
         </motion.div>
@@ -228,7 +259,8 @@ const useProjectAgentState = (
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
     isLoaded: boolean,
     updateNodeData: (id: string, data: Record<string, unknown>) => void,
-    getNodes: () => Node[]
+    getNodes: () => Node[],
+    syncPlanNodesForTask: (taskNodeId: string, plan?: ProjectState['plan']) => void
 ) => {
     useEffect(() => {
         // Don't fetch initial state until canvas is loaded
@@ -240,20 +272,30 @@ const useProjectAgentState = (
         const fetchInitialState = async () => {
             try {
                 const projectState = await window.electron.projectAgent.getStatus();
-                appLogger.info('ProjectAgentView', `Fetched initial state - status: ${projectState.status}, plan: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`);
+                appLogger.info(
+                    'ProjectAgentView',
+                    `Fetched initial state - status: ${projectState.status}, plan: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
+                );
 
                 if (projectState.nodeId || projectState.status !== 'idle') {
-                    const shouldShowPlan = projectState.status === 'waiting_for_approval' && projectState.plan && projectState.plan.length > 0;
+                    let resolvedTaskNodeId: string | undefined;
 
-                    setNodes((nds) => {
+                    setNodes(nds => {
                         const targetNodeId = projectState.nodeId;
 
-                        appLogger.debug('ProjectAgentView', `Initial state: nodes count=${nds.length}, targetNodeId=${targetNodeId}`);
+                        appLogger.debug(
+                            'ProjectAgentView',
+                            `Initial state: nodes count=${nds.length}, targetNodeId=${targetNodeId}`
+                        );
 
                         // Check if node already exists
                         const existingNode = nds.find(n => n.id === targetNodeId);
                         if (existingNode) {
-                            appLogger.info('ProjectAgentView', `Found existing node ${targetNodeId}, applying initial state`);
+                            appLogger.info(
+                                'ProjectAgentView',
+                                `Found existing node ${targetNodeId}, applying initial state`
+                            );
+                            resolvedTaskNodeId = targetNodeId;
                             return nds.map(node => {
                                 if (node.id === targetNodeId) {
                                     return {
@@ -267,11 +309,18 @@ const useProjectAgentState = (
                                             totalTokens: projectState.totalTokens,
                                             timing: projectState.timing,
                                             // Restore model config if node doesn't have it
-                                            model: (node.data as Record<string, unknown>).model ?? projectState.config?.model,
-                                            systemMode: (node.data as Record<string, unknown>).systemMode ?? projectState.config?.systemMode,
-                                            agentProfileId: (node.data as Record<string, unknown>).agentProfileId ?? projectState.config?.agentProfileId,
-                                            ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
-                                        }
+                                            model:
+                                                (node.data as Record<string, unknown>).model ??
+                                                projectState.config?.model,
+                                            systemMode:
+                                                (node.data as Record<string, unknown>).systemMode ??
+                                                projectState.config?.systemMode,
+                                            agentProfileId:
+                                                (node.data as Record<string, unknown>)
+                                                    .agentProfileId ??
+                                                projectState.config?.agentProfileId,
+                                            isExpanded: true,
+                                        },
                                     };
                                 }
                                 return node;
@@ -280,9 +329,15 @@ const useProjectAgentState = (
 
                         // If node doesn't exist but we have state, apply to first planner node
                         if (!targetNodeId) {
-                            const plannerNode = nds.find(n => (n.data as Record<string, unknown>).taskType === 'planner');
+                            const plannerNode = nds.find(
+                                n => (n.data as Record<string, unknown>).taskType === 'planner'
+                            );
                             if (plannerNode) {
-                                appLogger.info('ProjectAgentView', `No targetNodeId, applying to first planner node ${plannerNode.id}`);
+                                appLogger.info(
+                                    'ProjectAgentView',
+                                    `No targetNodeId, applying to first planner node ${plannerNode.id}`
+                                );
+                                resolvedTaskNodeId = plannerNode.id;
                             }
                             return nds.map(node => {
                                 if ((node.data as Record<string, unknown>).taskType === 'planner') {
@@ -297,28 +352,48 @@ const useProjectAgentState = (
                                             totalTokens: projectState.totalTokens,
                                             timing: projectState.timing,
                                             // Restore model config
-                                            model: (node.data as Record<string, unknown>).model ?? projectState.config?.model,
-                                            systemMode: (node.data as Record<string, unknown>).systemMode ?? projectState.config?.systemMode,
-                                            agentProfileId: (node.data as Record<string, unknown>).agentProfileId ?? projectState.config?.agentProfileId,
-                                            ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
-                                        }
+                                            model:
+                                                (node.data as Record<string, unknown>).model ??
+                                                projectState.config?.model,
+                                            systemMode:
+                                                (node.data as Record<string, unknown>).systemMode ??
+                                                projectState.config?.systemMode,
+                                            agentProfileId:
+                                                (node.data as Record<string, unknown>)
+                                                    .agentProfileId ??
+                                                projectState.config?.agentProfileId,
+                                            isExpanded: true,
+                                        },
                                     };
                                 }
                                 return node;
                             });
                         }
 
-                        appLogger.warn('ProjectAgentView', `Target node ${targetNodeId} not found during initial state load`);
+                        appLogger.warn(
+                            'ProjectAgentView',
+                            `Target node ${targetNodeId} not found during initial state load`
+                        );
                         return nds;
                     });
+
+                    if (resolvedTaskNodeId) {
+                        window.requestAnimationFrame(() => {
+                            syncPlanNodesForTask(resolvedTaskNodeId as string, projectState.plan);
+                        });
+                    }
                 }
             } catch (error) {
-                appLogger.error('ProjectAgentView', 'Failed to fetch initial state', error as Error);
+                appLogger.error(
+                    'ProjectAgentView',
+                    'Failed to fetch initial state',
+                    error as Error
+                );
             }
         };
 
         void fetchInitialState();
-    }, [setNodes, isLoaded]);
+    }, [setNodes, isLoaded, syncPlanNodesForTask]);
 
     useEffect(() => {
         if (!isLoaded) {
@@ -329,19 +404,30 @@ const useProjectAgentState = (
         appLogger.info('ProjectAgentView', 'Setting up project:update event listener');
 
         const unsubscribe = window.electron.projectAgent.onUpdate((projectState: ProjectState) => {
-            appLogger.info('ProjectAgentView', `Received project:update - status: ${projectState.status}, plan steps: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`);
+            appLogger.info(
+                'ProjectAgentView',
+                `Received project:update - status: ${projectState.status}, plan steps: ${projectState.plan?.length ?? 0}, nodeId: ${projectState.nodeId ?? 'none'}`
+            );
 
             const nodes = getNodes();
             let targetNodeId = projectState.nodeId;
 
             // If no target node ID, try to find the first planner node
             if (!targetNodeId) {
-                const plannerNode = nodes.find(n => (n.data as Record<string, unknown>).taskType === 'planner');
+                const plannerNode = nodes.find(
+                    n => (n.data as Record<string, unknown>).taskType === 'planner'
+                );
                 if (plannerNode) {
                     targetNodeId = plannerNode.id;
-                    appLogger.debug('ProjectAgentView', `No targetNodeId, using first planner node: ${targetNodeId}`);
+                    appLogger.debug(
+                        'ProjectAgentView',
+                        `No targetNodeId, using first planner node: ${targetNodeId}`
+                    );
                 } else {
-                    appLogger.warn('ProjectAgentView', 'No targetNodeId and no planner node found to update');
+                    appLogger.warn(
+                        'ProjectAgentView',
+                        'No targetNodeId and no planner node found to update'
+                    );
                     return;
                 }
             }
@@ -349,14 +435,17 @@ const useProjectAgentState = (
             // Check if node exists
             const targetNode = nodes.find(n => n.id === targetNodeId);
             if (!targetNode) {
-                appLogger.warn('ProjectAgentView', `Target node ${targetNodeId} not found in canvas! Available nodes: ${nodes.map(n => n.id).join(', ')}`);
+                appLogger.warn(
+                    'ProjectAgentView',
+                    `Target node ${targetNodeId} not found in canvas! Available nodes: ${nodes.map(n => n.id).join(', ')}`
+                );
                 return;
             }
 
-            // Determine if we should expand and show plan tab
-            const shouldShowPlan = projectState.status === 'waiting_for_approval' && projectState.plan && projectState.plan.length > 0;
-
-            appLogger.info('ProjectAgentView', `Updating node ${targetNodeId} with status=${projectState.status}, plan=${projectState.plan?.length ?? 0} steps`);
+            appLogger.info(
+                'ProjectAgentView',
+                `Updating node ${targetNodeId} with status=${projectState.status}, plan=${projectState.plan?.length ?? 0} steps`
+            );
 
             // Use updateNodeData for reliable React Flow updates
             updateNodeData(targetNodeId, {
@@ -366,15 +455,16 @@ const useProjectAgentState = (
                 currentTask: projectState.currentTask,
                 totalTokens: projectState.totalTokens,
                 timing: projectState.timing,
-                // Auto-expand and show plan when waiting for approval
-                ...(shouldShowPlan ? { isExpanded: true, activeTab: 'plan' } : {})
+                isExpanded: true,
             });
+
+            syncPlanNodesForTask(targetNodeId, projectState.plan);
         });
 
         return () => {
             unsubscribe();
         };
-    }, [setNodes, isLoaded, updateNodeData, getNodes]);
+    }, [setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask]);
 };
 
 const InternalProjectAgentView: React.FC = () => {
@@ -382,13 +472,111 @@ const InternalProjectAgentView: React.FC = () => {
     const theme = appSettings?.general.theme ?? 'black';
     const isDark = theme !== 'white';
 
-    const nodeTypes = React.useMemo(() => ({ task: TaskNode }), []);
+    const nodeTypes = React.useMemo(() => ({ task: TaskNode, plan: PlanNode }), []);
+    const edgeTypes = React.useMemo(() => ({ animated: AnimatedEdge }), []);
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-    const [menu, setMenu] = useState<{ x: number, y: number } | null>(null);
+    const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const { screenToFlowPosition, updateNodeData, getNodes } = useReactFlow();
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const syncPlanNodesForTask = useCallback(
+        (taskNodeId: string, plan?: ProjectState['plan']) => {
+            const taskNode = getNodes().find((n: Node) => n.id === taskNodeId);
+            if (!taskNode) {
+                appLogger.warn(
+                    'ProjectAgentView',
+                    `Cannot sync plan nodes: task node ${taskNodeId} not found`
+                );
+                return;
+            }
+
+            const steps = plan ?? [];
+
+            setNodes(prevNodes => {
+                const existingPlanNodes = prevNodes.filter(node =>
+                    isAutoPlanNodeForTask(node, taskNodeId)
+                );
+                const existingById = new Map(existingPlanNodes.map(node => [node.id, node]));
+                const withoutTaskPlanNodes = prevNodes.filter(
+                    node => !isAutoPlanNodeForTask(node, taskNodeId)
+                );
+
+                if (steps.length === 0) {
+                    return withoutTaskPlanNodes;
+                }
+
+                const generatedPlanNodes: Node[] = steps.map((step, index) => {
+                    const nodeId = getPlanNodeId(taskNodeId, step.id);
+                    const existing = existingById.get(nodeId);
+
+                    return {
+                        id: nodeId,
+                        type: 'plan',
+                        position: existing?.position ?? {
+                            x:
+                                taskNode.position.x +
+                                PLAN_NODE_X_OFFSET_PX +
+                                index * PLAN_NODE_X_STEP_DRIFT_PX,
+                            y:
+                                taskNode.position.y +
+                                PLAN_NODE_Y_OFFSET_PX +
+                                index * PLAN_NODE_Y_STEP_SPACING_PX,
+                        },
+                        data: {
+                            ...((existing?.data as Record<string, unknown>) ?? {}),
+                            label: `Plan ${index + 1}`,
+                            description: step.text,
+                            status: step.status,
+                            stepIndex: index + 1,
+                            stepId: step.id,
+                            planParentId: taskNodeId,
+                            autoPlanNode: true,
+                        },
+                    };
+                });
+
+                return [...withoutTaskPlanNodes, ...generatedPlanNodes];
+            });
+
+            setEdges(prevEdges => {
+                const withoutTaskPlanEdges = prevEdges.filter(
+                    edge => !isAutoPlanEdgeForTask(edge, taskNodeId)
+                );
+                if (steps.length === 0) {
+                    return withoutTaskPlanEdges;
+                }
+
+                const generatedEdges: Edge[] = [];
+
+                const firstPlanNodeId = getPlanNodeId(taskNodeId, steps[0].id);
+                generatedEdges.push({
+                    id: getPlanEdgeId(taskNodeId, firstPlanNodeId),
+                    source: taskNodeId,
+                    target: firstPlanNodeId,
+                    type: 'animated',
+                    animated: true,
+                    data: { isActive: true, autoPlanEdge: true, planParentId: taskNodeId },
+                });
+
+                for (let i = 0; i < steps.length - 1; i += 1) {
+                    const source = getPlanNodeId(taskNodeId, steps[i].id);
+                    const target = getPlanNodeId(taskNodeId, steps[i + 1].id);
+                    generatedEdges.push({
+                        id: getPlanEdgeId(source, target),
+                        source,
+                        target,
+                        type: 'animated',
+                        animated: true,
+                        data: { isActive: true, autoPlanEdge: true, planParentId: taskNodeId },
+                    });
+                }
+
+                return [...withoutTaskPlanEdges, ...generatedEdges];
+            });
+        },
+        [getNodes, setEdges, setNodes]
+    );
 
     // Load saved nodes and edges on mount
     useEffect(() => {
@@ -397,7 +585,7 @@ const InternalProjectAgentView: React.FC = () => {
                 const [savedNodes, savedEdges, projectState] = await Promise.all([
                     window.electron.projectAgent.getCanvasNodes(),
                     window.electron.projectAgent.getCanvasEdges(),
-                    window.electron.projectAgent.getStatus()
+                    window.electron.projectAgent.getStatus(),
                 ]);
 
                 let nodesToSet: Node[] = [];
@@ -407,7 +595,7 @@ const InternalProjectAgentView: React.FC = () => {
                         id: n.id,
                         type: n.type,
                         position: n.position,
-                        data: n.data
+                        data: n.data,
                     }));
                 }
 
@@ -416,7 +604,10 @@ const InternalProjectAgentView: React.FC = () => {
                     const nodeExists = nodesToSet.some(n => n.id === projectState.nodeId);
 
                     if (!nodeExists) {
-                        appLogger.info('ProjectAgentView', `Active task found with nodeId ${projectState.nodeId} but node doesn't exist in canvas. Creating node.`);
+                        appLogger.info(
+                            'ProjectAgentView',
+                            `Active task found with nodeId ${projectState.nodeId} but node doesn't exist in canvas. Creating node.`
+                        );
 
                         // Create a new node for the orphaned task
                         const newNode: Node = {
@@ -437,19 +628,21 @@ const InternalProjectAgentView: React.FC = () => {
                                 // Restore model config from task state
                                 model: projectState.config?.model,
                                 systemMode: projectState.config?.systemMode,
-                                agentProfileId: projectState.config?.agentProfileId
-                            }
+                                agentProfileId: projectState.config?.agentProfileId,
+                            },
                         };
 
                         nodesToSet.push(newNode);
 
                         // Save this new node to the database
-                        void window.electron.projectAgent.saveCanvasNodes([{
-                            id: newNode.id,
-                            type: 'task',
-                            position: newNode.position,
-                            data: newNode.data as Record<string, unknown>
-                        }]);
+                        void window.electron.projectAgent.saveCanvasNodes([
+                            {
+                                id: newNode.id,
+                                type: 'task',
+                                position: newNode.position,
+                                data: newNode.data as Record<string, unknown>,
+                            },
+                        ]);
                     }
                 }
 
@@ -458,16 +651,21 @@ const InternalProjectAgentView: React.FC = () => {
                 }
 
                 if (savedEdges.length > 0) {
-                    setEdges(savedEdges.map((e: CanvasEdgeRecord) => ({
-                        id: e.id,
-                        source: e.source,
-                        target: e.target,
-                        sourceHandle: e.sourceHandle,
-                        targetHandle: e.targetHandle
-                    })));
+                    setEdges(
+                        savedEdges.map((e: CanvasEdgeRecord) => ({
+                            id: e.id,
+                            source: e.source,
+                            target: e.target,
+                            sourceHandle: e.sourceHandle,
+                            targetHandle: e.targetHandle,
+                        }))
+                    );
                 }
 
-                appLogger.info('ProjectAgentView', `Loaded ${nodesToSet.length} nodes and ${savedEdges.length} edges from database`);
+                appLogger.info(
+                    'ProjectAgentView',
+                    `Loaded ${nodesToSet.length} nodes and ${savedEdges.length} edges from database`
+                );
             } catch (error) {
                 appLogger.error('ProjectAgentView', 'Failed to load canvas state', error as Error);
             } finally {
@@ -480,7 +678,9 @@ const InternalProjectAgentView: React.FC = () => {
 
     // Save nodes and edges when they change (debounced)
     useEffect(() => {
-        if (!isLoaded) { return; }
+        if (!isLoaded) {
+            return;
+        }
 
         // Debounce save to avoid excessive DB writes
         if (saveTimeoutRef.current) {
@@ -495,7 +695,7 @@ const InternalProjectAgentView: React.FC = () => {
                         id: n.id,
                         type: n.type ?? 'task',
                         position: n.position,
-                        data: n.data as Record<string, unknown>
+                        data: n.data as Record<string, unknown>,
                     }));
                     await window.electron.projectAgent.saveCanvasNodes(nodesToSave);
 
@@ -505,13 +705,20 @@ const InternalProjectAgentView: React.FC = () => {
                         source: e.source,
                         target: e.target,
                         sourceHandle: e.sourceHandle ?? undefined,
-                        targetHandle: e.targetHandle ?? undefined
+                        targetHandle: e.targetHandle ?? undefined,
                     }));
                     await window.electron.projectAgent.saveCanvasEdges(edgesToSave);
 
-                    appLogger.debug('ProjectAgentView', `Saved ${nodes.length} nodes and ${edges.length} edges`);
+                    appLogger.debug(
+                        'ProjectAgentView',
+                        `Saved ${nodes.length} nodes and ${edges.length} edges`
+                    );
                 } catch (error) {
-                    appLogger.error('ProjectAgentView', 'Failed to save canvas state', error as Error);
+                    appLogger.error(
+                        'ProjectAgentView',
+                        'Failed to save canvas state',
+                        error as Error
+                    );
                 }
             };
 
@@ -525,23 +732,35 @@ const InternalProjectAgentView: React.FC = () => {
         };
     }, [nodes, edges, isLoaded]);
 
-    useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes);
+    useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
 
-    const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
-    const onAddNode = useCallback((type: 'planner' | 'action', position?: { x: number, y: number }) => {
-        const id = `node-${Date.now()}`;
-        const newNode: Node = {
-            id,
-            position: position ?? { x: Math.random() * 400, y: Math.random() * 400 },
-            data: {
-                label: type === 'planner' ? 'New Plan' : 'New Action',
-                taskType: type,
-                status: 'idle'
-            },
-            type: 'task',
-        };
-        setNodes((nds) => nds.concat(newNode));
-    }, [setNodes]);
+    const onConnect = useCallback(
+        (params: Connection) =>
+            setEdges(eds =>
+                addEdge(
+                    { ...params, type: 'animated', animated: true, data: { isActive: true } },
+                    eds
+                )
+            ),
+        [setEdges]
+    );
+    const onAddNode = useCallback(
+        (type: 'planner' | 'action', position?: { x: number; y: number }) => {
+            const id = `node-${Date.now()}`;
+            const newNode: Node = {
+                id,
+                position: position ?? { x: Math.random() * 400, y: Math.random() * 400 },
+                data: {
+                    label: type === 'planner' ? 'New Plan' : 'New Action',
+                    taskType: type,
+                    status: 'idle',
+                },
+                type: 'task',
+            };
+            setNodes(nds => nds.concat(newNode));
+        },
+        [setNodes]
+    );
 
     const onPaneContextMenu = useCallback((event: React.MouseEvent | MouseEvent) => {
         event.preventDefault();
@@ -553,14 +772,17 @@ const InternalProjectAgentView: React.FC = () => {
         setMenu(null);
     }, []);
 
-    const handleContextAddNode = useCallback((type: 'planner' | 'action') => {
-        if (menu) {
-            // Convert screen coordinates to flow coordinates
-            const flowPos = screenToFlowPosition({ x: menu.x, y: menu.y });
-            onAddNode(type, flowPos);
-            setMenu(null);
-        }
-    }, [menu, onAddNode, screenToFlowPosition]);
+    const handleContextAddNode = useCallback(
+        (type: 'planner' | 'action') => {
+            if (menu) {
+                // Convert screen coordinates to flow coordinates
+                const flowPos = screenToFlowPosition({ x: menu.x, y: menu.y });
+                onAddNode(type, flowPos);
+                setMenu(null);
+            }
+        },
+        [menu, onAddNode, screenToFlowPosition]
+    );
 
     return (
         <div className="h-full w-full relative overflow-hidden bg-background" onClick={onPaneClick}>
@@ -568,6 +790,7 @@ const InternalProjectAgentView: React.FC = () => {
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
@@ -577,11 +800,22 @@ const InternalProjectAgentView: React.FC = () => {
                 fitView
                 proOptions={{ hideAttribution: true }}
             >
-                <Background
-                    id="1"
-                    gap={40}
-                    size={1}
-                    color="hsl(var(--border) / 0.2)"
+                <Background id="1" gap={40} size={1} color="hsl(var(--border) / 0.2)" />
+                <MiniMap
+                    nodeStrokeColor={n => {
+                        if (n.type === 'task') {
+                            return 'hsl(var(--primary))';
+                        }
+                        return 'hsl(var(--muted-foreground))';
+                    }}
+                    nodeColor={n => {
+                        if (n.type === 'task') {
+                            return 'hsl(var(--card))';
+                        }
+                        return 'hsl(var(--background))';
+                    }}
+                    maskColor="hsl(var(--background) / 0.8)"
+                    className="!bg-background/50 !border-border/50 rounded-lg overflow-hidden"
                 />
                 <CommandCenter onAddNode={onAddNode} />
             </ReactFlow>
@@ -602,7 +836,7 @@ const InternalProjectAgentView: React.FC = () => {
 
 /**
  * ProjectAgentView - The Quantum Canvas for Tandem Autonomous Core (UAC)
- * 
+ *
  * Provides an infinite canvas with a grid system for visualizing autonomous nodes.
  */
 export const ProjectAgentView: React.FC = () => {

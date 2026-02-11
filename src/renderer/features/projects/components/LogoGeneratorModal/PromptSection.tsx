@@ -2,12 +2,12 @@ import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import React, { useCallback } from 'react';
 
 interface PromptSectionProps {
-    prompt: string
-    setPrompt: (value: string) => void
-    isAnalyzing: boolean
-    onAnalyze: () => Promise<void>
-    onImprovePrompt: () => Promise<void>
-    translateKey: (key: string) => string
+    prompt: string;
+    setPrompt: (value: string) => void;
+    isAnalyzing: boolean;
+    onAnalyze: () => Promise<void>;
+    onImprovePrompt: () => Promise<void>;
+    translateKey: (key: string) => string;
 }
 
 export const PromptSection: React.FC<PromptSectionProps> = ({
@@ -16,7 +16,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
     isAnalyzing,
     onAnalyze,
     onImprovePrompt,
-    translateKey
+    translateKey,
 }) => {
     const handleAnalyzeClick = useCallback(() => {
         void onAnalyze();
@@ -36,7 +36,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
                     <button
                         onClick={handleImproveClick}
                         disabled={isAnalyzing || !prompt}
-                        className="text-xxs font-bold text-success hover:text-emerald-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        className="text-xxs font-bold text-success hover:text-success-light transition-colors flex items-center gap-1 disabled:opacity-50"
                         title={translateKey('workspace.improvePromptWithAI')}
                     >
                         <Sparkles className="w-3 h-3" />
@@ -58,7 +58,7 @@ export const PromptSection: React.FC<PromptSectionProps> = ({
             </div>
             <textarea
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={e => setPrompt(e.target.value)}
                 className="w-full bg-muted/30 border border-border/50 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:border-primary/50 transition-colors outline-none text-foreground"
                 placeholder={translateKey('projects.logoPromptPlaceholder')}
             />

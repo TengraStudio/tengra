@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 import { GitCommitCard } from './GitCommitCard';
 import { GitCommitDiffView } from './GitCommitDiffView';
-import { GitCommitInfo,GitData } from './types';
+import { GitCommitInfo, GitData } from './types';
 
 interface CommitHistoryProps {
     gitData: GitData;
@@ -18,21 +18,36 @@ interface CommitHistoryProps {
     t: (key: string) => string;
 }
 
-export const GitCommitHistory: React.FC<CommitHistoryProps> = ({ gitData, selectedCommit, commitStats, loadingDiff, commitDiff, handleCommitSelect, fetchGitData, t }) => (
+export const GitCommitHistory: React.FC<CommitHistoryProps> = ({
+    gitData,
+    selectedCommit,
+    commitStats,
+    loadingDiff,
+    commitDiff,
+    handleCommitSelect,
+    fetchGitData,
+    t,
+}) => (
     <>
         <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-foreground">{t('projectDashboard.recentCommits')}</h3>
+            <h3 className="text-sm font-bold text-foreground">
+                {t('projectDashboard.recentCommits')}
+            </h3>
             <div className="flex items-center gap-2">
                 {selectedCommit && (
                     <button
-                        onClick={() => { void handleCommitSelect(null); }}
+                        onClick={() => {
+                            void handleCommitSelect(null);
+                        }}
                         className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
                     >
-                        Clear Selection
+                        {t('projectDashboard.clearSelection')}
                     </button>
                 )}
                 <button
-                    onClick={() => { void fetchGitData(); }}
+                    onClick={() => {
+                        void fetchGitData();
+                    }}
                     className="p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
                     title={t('common.refresh')}
                 >
@@ -52,13 +67,20 @@ export const GitCommitHistory: React.FC<CommitHistoryProps> = ({ gitData, select
                 {t('projectDashboard.noCommits')}
             </div>
         ) : (
-            <div className={cn("grid gap-4", selectedCommit ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
+            <div
+                className={cn(
+                    'grid gap-4',
+                    selectedCommit ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                )}
+            >
                 {gitData.recentCommits.map((commit: GitCommitInfo) => (
                     <GitCommitCard
                         key={commit.hash}
                         commit={commit}
                         isSelected={selectedCommit?.hash === commit.hash}
-                        onSelect={(c) => { void handleCommitSelect(c); }}
+                        onSelect={c => {
+                            void handleCommitSelect(c);
+                        }}
                     />
                 ))}
             </div>

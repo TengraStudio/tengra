@@ -1,4 +1,4 @@
-import { IpcRendererEvent } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 import { useEffect, useState } from 'react';
 
 export function useSidebarIPC() {
@@ -13,7 +13,10 @@ export function useSidebarIPC() {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: true }));
         };
 
-        const handleStatus = (_: IpcRendererEvent, data: { chatId: string, isGenerating: boolean }) => {
+        const handleStatus = (
+            _: IpcRendererEvent,
+            data: { chatId: string; isGenerating: boolean }
+        ) => {
             setLocalGeneratingMap(prev => ({ ...prev, [data.chatId]: data.isGenerating }));
         };
 

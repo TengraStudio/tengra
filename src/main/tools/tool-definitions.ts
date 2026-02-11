@@ -5,13 +5,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'read_file',
-            description: 'Belirtilen yoldaki dosyanŽñn iÇõeriŽYini okur. Metin dosyalarŽñ iÇõin kullanŽñn.',
+            description: 'Reads the content of the file at the specified path. Use for text files.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Okunacak dosyanŽñn yolu (Çôrn: C:/Users/kullanici/dosya.txt)'
+                        description: 'Path of the file to be read (e.g., C:/Users/user/file.txt)'
                     }
                 },
                 required: ['path']
@@ -22,17 +22,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'write_file',
-            description: 'Belirtilen yola dosya yazar veya mevcut dosyayŽñ gÇ¬nceller.',
+            description: 'Writes a file to the specified path or updates an existing file.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'YazŽñlacak dosyanŽñn yolu'
+                        description: 'Path of the file to be written'
                     },
                     content: {
                         type: 'string',
-                        description: 'Dosyaya yazŽñlacak iÇõerik'
+                        description: 'Content to be written to the file'
                     }
                 },
                 required: ['path', 'content']
@@ -43,13 +43,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'list_directory',
-            description: 'Belirtilen klasÇôrdeki dosya ve alt klasÇôrleri listeler.',
+            description: 'Lists files and subdirectories in the specified folder.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Listelenecek klasÇôrÇ¬n yolu'
+                        description: 'Path of the folder to be listed'
                     }
                 },
                 required: ['path']
@@ -60,13 +60,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'create_directory',
-            description: 'Yeni bir klasÇôr oluYturur.',
+            description: 'Creates a new folder.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'OluYturulacak klasÇôrÇ¬n yolu'
+                        description: 'Path of the folder to be created'
                     }
                 },
                 required: ['path']
@@ -77,13 +77,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'delete_file',
-            description: 'Belirtilen dosyayŽñ siler.',
+            description: 'Deletes the specified file.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Silinecek dosyanŽñn yolu'
+                        description: 'Path of the file to be deleted'
                     }
                 },
                 required: ['path']
@@ -94,13 +94,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'file_exists',
-            description: 'DosyanŽñn var olup olmadŽñŽYŽñnŽñ kontrol eder.',
+            description: 'Checks if a file exists.',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Kontrol edilecek dosyanŽñn yolu'
+                        description: 'Path of the file to be checked'
                     }
                 },
                 required: ['path']
@@ -111,17 +111,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'execute_command',
-            description: 'PowerShell komutu ÇõalŽñYtŽñrŽñr. Sistem iYlemleri, dosya iYlemleri, aŽY iYlemleri vb. iÇõin kullanŽñn.',
+            description: 'Runs a PowerShell command. Use for system operations, file operations, network operations, etc.',
             parameters: {
                 type: 'object',
                 properties: {
                     command: {
                         type: 'string',
-                        description: 'ÇÅalŽñYtŽñrŽñlacak PowerShell komutu'
+                        description: 'PowerShell command to be executed'
                     },
                     cwd: {
                         type: 'string',
-                        description: 'Komutun ÇõalŽñYtŽñrŽñlacaŽYŽñ dizin (opsiyonel)'
+                        description: 'Directory where the command will be executed (optional)'
                     }
                 },
                 required: ['command']
@@ -132,13 +132,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'get_file_info',
-            description: 'Dosya/klasÇôr bilgilerini (boyut, tarih vb.) dÇôndÇ¬rÇ¬r.',
+            description: 'Returns file/folder information (size, date, etc.).',
             parameters: {
                 type: 'object',
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Bilgisi alŽñnacak yol'
+                        description: 'Path to get information for'
                     }
                 },
                 required: ['path']
@@ -149,7 +149,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'capture_screenshot',
-            description: 'Ekran gÇôrÇ¬ntÇ¬sÇ¬ alŽñr.',
+            description: 'Takes a screenshot.',
             parameters: {
                 type: 'object',
                 properties: {},
@@ -161,13 +161,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'capture_window',
-            description: 'Belirtilen pencerenin ekran gÇôrÇ¬ntÇ¬sÇ¬nÇ¬ alŽñr (destekleniyorsa).',
+            description: 'Takes a screenshot of the specified window (if supported).',
             parameters: {
                 type: 'object',
                 properties: {
                     window_name: {
                         type: 'string',
-                        description: 'Pencere adŽñ/baYlŽñYi'
+                        description: 'Window name / title'
                     }
                 },
                 required: []
@@ -178,7 +178,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'list_windows',
-            description: 'ÇalŽñan pencereleri listeler (destekleniyorsa).',
+            description: 'Lists running windows (if supported).',
             parameters: {
                 type: 'object',
                 properties: {},
@@ -190,13 +190,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'fetch_webpage',
-            description: 'Belirtilen URL\'deki web sayfasŽñnŽñn iÇõeriŽYini Çõeker ve metin olarak dÇôndÇ¬rÇ¬r.',
+            description: 'Fetches the content of the specified URL and returns it as text.',
             parameters: {
                 type: 'object',
                 properties: {
                     url: {
                         type: 'string',
-                        description: 'ÇÅekilecek web sayfasŽñnŽñn URL\'i'
+                        description: 'URL of the webpage to fetch'
                     }
                 },
                 required: ['url']
@@ -207,13 +207,13 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'fetch_json',
-            description: 'Bir URL\'den JSON iÇõeriŽYi getirir.',
+            description: 'Fetches JSON content from a URL.',
             parameters: {
                 type: 'object',
                 properties: {
                     url: {
                         type: 'string',
-                        description: 'GET isteŽYi yapŽñlacak URL'
+                        description: 'URL for the GET request'
                     }
                 },
                 required: ['url']
@@ -224,17 +224,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'search_web',
-            description: 'Web\'de arama yapar ve sonuÇõlarŽñ dÇôndÇ¬rÇ¬r.',
+            description: 'Searches the web and returns results.',
             parameters: {
                 type: 'object',
                 properties: {
                     query: {
                         type: 'string',
-                        description: 'Arama sorgusu'
+                        description: 'Search query'
                     },
                     num_results: {
                         type: 'string',
-                        description: 'DÇôndÇ¬rÇ¬lecek sonuÇõ sayŽñsŽñ (varsayŽñlan: 5)'
+                        description: 'Number of results to return (default: 5)'
                     }
                 },
                 required: ['query']
@@ -245,7 +245,7 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'get_system_info',
-            description: 'Sistem bilgilerini dÇôndÇ¬rÇ¬r (hostname, kullanŽñcŽñ adŽñ, iYletim sistemi vb.)',
+            description: 'Returns system information (hostname, username, OS, etc.).',
             parameters: {
                 type: 'object',
                 properties: {},
@@ -257,17 +257,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'copy_file',
-            description: 'DosyayŽñ bir konumdan baYka bir konuma kopyalar.',
+            description: 'Copies a file from one location to another.',
             parameters: {
                 type: 'object',
                 properties: {
                     source: {
                         type: 'string',
-                        description: 'Kaynak dosya yolu'
+                        description: 'Source file path'
                     },
                     destination: {
                         type: 'string',
-                        description: 'Hedef dosya yolu'
+                        description: 'Destination file path'
                     }
                 },
                 required: ['source', 'destination']
@@ -278,17 +278,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'move_file',
-            description: 'DosyayŽñ bir konumdan baYka bir konuma taYŽñr.',
+            description: 'Moves a file from one location to another.',
             parameters: {
                 type: 'object',
                 properties: {
                     source: {
                         type: 'string',
-                        description: 'Kaynak dosya yolu'
+                        description: 'Source file path'
                     },
                     destination: {
                         type: 'string',
-                        description: 'Hedef dosya yolu'
+                        description: 'Destination file path'
                     }
                 },
                 required: ['source', 'destination']
@@ -299,17 +299,17 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'generate_image',
-            description: 'YALNIZCA kullanıcı AÇIKÇA görsel/resim/image oluşturulmasını/çizilmesini istediğinde kullan. Örnek: "bana bir kedi resmi çiz", "gökyüzü görseli oluştur", "generate an image of a sunset". Normal sohbet, sorular veya kodlama için ASLA kullanma.',
+            description: 'ONLY use when the user EXPLICITLY asks for a visual/image/drawing. Example: "draw me a cat", "create a sky visual", "generate an image of a sunset". NEVER use for normal chat, questions, or coding tasks.',
             parameters: {
                 type: 'object',
                 properties: {
                     prompt: {
                         type: 'string',
-                        description: 'Görsel için detaylı prompt (İngilizce veya Türkçe)'
+                        description: 'Detailed prompt for the image (English or Turkish)'
                     },
                     count: {
                         type: 'number',
-                        description: 'Uretilecek toplam resim sayisi. Eger kullanici birden fazla resim istediyse (or: "5 tane...") bu parametreyi mutlaka belirtin. (varsayilan: 1, maks: 5)'
+                        description: 'Total number of images to generate. If the user asked for multiple images (e.g., "5 images..."), be sure to specify this parameter. (default: 1, max: 5)'
                     }
                 },
                 required: ['prompt']
@@ -376,22 +376,22 @@ export const toolDefinitions: ToolDefinition[] = [
         type: 'function',
         function: {
             name: 'update_plan_step',
-            description: 'Mevcut plandaki bir adımın durumunu günceller. İlerlemenizi kullanıcıya raporlamak için kullanın.',
+            description: 'Updates the status of a step in the current implementation plan. Use to report your progress to the user.',
             parameters: {
                 type: 'object',
                 properties: {
                     index: {
                         type: 'number',
-                        description: 'Güncellenecek adımın dizini (0-tabanlı).'
+                        description: 'Index of the step to update (0-based).'
                     },
                     status: {
                         type: 'string',
                         enum: ['pending', 'running', 'completed', 'failed'],
-                        description: 'Adımın yeni durumu.'
+                        description: 'The new status of the step.'
                     },
                     message: {
                         type: 'string',
-                        description: 'Adım hakkında isteğe bağlı durum mesajı (örn: "Dosya oluşturuldu ve test edildi").'
+                        description: 'Optional status message about the step (e.g., "File created and tested").'
                     }
                 },
                 required: ['index', 'status']
@@ -413,6 +413,36 @@ export const toolDefinitions: ToolDefinition[] = [
                     }
                 },
                 required: ['steps']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'revise_plan',
+            description: 'AGT-PLN-02: Dynamically modify the execution plan during execution. Use this when you realize the plan needs adjustment based on what you learned during execution.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    action: {
+                        type: 'string',
+                        enum: ['add', 'remove', 'modify', 'insert'],
+                        description: 'The type of revision: add (append step), remove (delete step), modify (change step text), insert (add step at position)'
+                    },
+                    index: {
+                        type: 'number',
+                        description: 'The step index to modify/remove/insert at (0-based). Required for remove, modify, insert.'
+                    },
+                    step_text: {
+                        type: 'string',
+                        description: 'The new step text. Required for add, modify, insert.'
+                    },
+                    reason: {
+                        type: 'string',
+                        description: 'Explanation of why this revision is needed.'
+                    }
+                },
+                required: ['action', 'reason']
             }
         }
     }

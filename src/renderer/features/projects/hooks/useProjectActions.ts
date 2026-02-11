@@ -1,15 +1,15 @@
 import { Project } from '@/types';
 
 export interface ProjectActionsProps {
-    project: Project
-    notify: (type: 'success' | 'error' | 'info', message: string) => void
-    t: (key: string) => string
-    onUpdateProject?: (updates: Partial<Project>) => Promise<void>
-    agentChatMessage?: string
+    project: Project;
+    notify: (type: 'success' | 'error' | 'info', message: string) => void;
+    t: (key: string) => string;
+    onUpdateProject?: (updates: Partial<Project>) => Promise<void>;
+    agentChatMessage?: string;
 }
 
 export function useProjectActions({
-    project: _project,
+    project,
     notify,
     t,
     onUpdateProject,
@@ -19,6 +19,8 @@ export function useProjectActions({
         try {
             if (onUpdateProject) {
                 await onUpdateProject(updates);
+            } else {
+                await window.electron.db.updateProject(project.id, updates);
             }
         } catch (error) {
             console.error('[ProjectActions] Update failed:', error);
@@ -27,6 +29,6 @@ export function useProjectActions({
     };
 
     return {
-        handleUpdateProject
+        handleUpdateProject,
     };
 }

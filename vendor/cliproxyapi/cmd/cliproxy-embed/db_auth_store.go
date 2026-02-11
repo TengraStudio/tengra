@@ -59,9 +59,11 @@ func NewHTTPAuthStore(apiPort int, apiKey string) (*HTTPAuthStore, error) {
 		},
 	}
 
-	// Initial load
+	// Initial load - be resilient if the app is still starting up
 	if err := store.sync(context.Background()); err != nil {
-		return nil, fmt.Errorf("failed to sync auth: %w", err)
+		log.Printf("Warning: initial auth sync failed (will retry): %v", err)
+		// We don't return an error here to allow the proxy to start
+		// It will try to sync again on the first request or next periodic check
 	}
 
 	return store, nil

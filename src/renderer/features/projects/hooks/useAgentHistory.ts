@@ -8,6 +8,7 @@ import { TaskHistoryItem } from '../components/agent/TaskSidebar';
 export interface CheckpointItem {
     id: string;
     stepIndex: number;
+    trigger?: string;
     createdAt: Date;
 }
 
@@ -34,13 +35,16 @@ export const useAgentHistory = (project: Project) => {
 
     const loadTaskHistory = useCallback(async () => {
         try {
-            const result = await window.electron.batch.invoke([{
-                channel: 'project-agent:get-task-history',
-                args: [{ projectId: project.id }]
-            }]);
-            const tasks = result.results[0].data as import('@shared/types/project-agent').AgentTaskHistoryItem[];
+            const result = await window.electron.batch.invoke([
+                {
+                    channel: 'project-agent:get-task-history',
+                    args: [{ projectId: project.path }], // Use project.path instead of project.id
+                },
+            ]);
+            const tasks = result.results[0]
+                .data as import('@shared/types/project-agent').AgentTaskHistoryItem[];
 
-            if (tasks && Array.isArray(tasks)) {
+            if (Array.isArray(tasks)) {
                 const history: TaskHistoryItem[] = tasks.map(task => ({
                     id: task.id,
                     description: task.description,
@@ -50,10 +54,12 @@ export const useAgentHistory = (project: Project) => {
                     createdAt: new Date(task.createdAt),
                     updatedAt: new Date(task.updatedAt),
                     // completedAt is not in AgentTaskHistoryItem yet, need to add or infer
-                    completedAt: ['completed', 'failed', 'error'].includes(task.status) ? new Date(task.updatedAt) : undefined,
+                    completedAt: ['completed', 'failed', 'error'].includes(task.status)
+                        ? new Date(task.updatedAt)
+                        : undefined,
                     planCount: 0, // Not available in current history item
                     currentPlan: 0, // Not available
-                    latestCheckpointId: task.latestCheckpointId
+                    latestCheckpointId: task.latestCheckpointId,
                     // metrics deliberately omitted for now as they are not in history item
                 }));
                 setTaskHistory(history);
@@ -61,36 +67,41 @@ export const useAgentHistory = (project: Project) => {
         } catch (error) {
             window.electron.log.error('Failed to load task history', { error: String(error) });
         }
-    }, [project.id]);
+    }, [project.path]);
 
-    const deleteTask = useCallback(async (taskId: string) => {
-        // eslint-disable-next-line no-alert
-        if (!window.confirm('Are you sure you want to delete this task?')) {
-            return false;
-        }
-        try {
-            const batchResult = await window.electron.batch.invoke([{
-                channel: 'project-agent:delete-task',
-                args: [{ taskId }]
-            }]);
-            const result = batchResult.results[0].data as { success: boolean; error?: string };
-            if (result.success) {
-                await loadTaskHistory();
-                return true;
+    const deleteTask = useCallback(
+        async (taskId: string) => {
+            // eslint-disable-next-line no-alert
+            if (!window.confirm('Are you sure you want to delete this task?')) {
+                return false;
             }
-            return false;
-        } catch (error) {
-            window.electron.log.error('Failed to delete task', { error: String(error) });
-            return false;
-        }
-    }, [loadTaskHistory]);
+            try {
+                const batchResult = await window.electron.batch.invoke([
+                    {
+                        channel: 'project-agent:delete-task',
+                        args: [{ taskId }],
+                    },
+                ]);
+                const result = batchResult.results[0].data as { success: boolean; error?: string };
+                if (result.success) {
+                    await loadTaskHistory();
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                window.electron.log.error('Failed to delete task', { error: String(error) });
+                return false;
+            }
+        },
+        [loadTaskHistory]
+    );
 
     const getCheckpoints = useCallback(async (taskId: string): Promise<CheckpointItem[]> => {
         try {
             const result = await window.electron.projectAgent.getCheckpoints(taskId);
             return result.map(cp => ({
                 ...cp,
-                createdAt: new Date(cp.createdAt)
+                createdAt: new Date(cp.createdAt),
             }));
         } catch (error) {
             window.electron.log.error('Failed to load checkpoints', { error: String(error) });
@@ -120,6 +131,6 @@ export const useAgentHistory = (project: Project) => {
         loadTaskHistory,
         deleteTask,
         getCheckpoints,
-        groupedTasks
+        groupedTasks,
     };
 };

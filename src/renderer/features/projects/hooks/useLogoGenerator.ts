@@ -2,12 +2,16 @@ import { useState } from 'react';
 
 import { Project } from '@/types';
 
-export function useLogoGenerator(project: Project, onApply: (logoPath: string) => void, onClose: () => void) {
+export function useLogoGenerator(
+    project: Project,
+    onApply: (logoPath: string) => void,
+    onClose: () => void
+) {
     const [prompt, setPrompt] = useState('');
     const [style, setStyle] = useState('Minimalist');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [generatedLogo, setGeneratedLogo] = useState<string | null>(null);
+
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [palette, setPalette] = useState<string[]>([]);
 
@@ -27,14 +31,26 @@ export function useLogoGenerator(project: Project, onApply: (logoPath: string) =
         }
     };
 
+    const [model, setModel] = useState('openai/dall-e-3');
+    const [count, setCount] = useState(1);
+    const [generatedLogos, setGeneratedLogos] = useState<string[]>([]);
+
     const handleGenerate = async () => {
-        if (!prompt) {return;}
+        if (!prompt) {
+            return;
+        }
         setIsGenerating(true);
         try {
-            const colorContext = palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : '';
+            const colorContext =
+                palette.length > 0 ? ` Primary colors: ${palette.slice(0, 3).join(', ')}.` : '';
             const finalPrompt = `${prompt}${colorContext}`;
-            const logoPath = await window.electron.project.generateLogo(project.path, finalPrompt, style);
-            setGeneratedLogo(logoPath);
+            const logoPaths = await window.electron.project.generateLogo(project.path, {
+                prompt: finalPrompt,
+                style,
+                model,
+                count,
+            });
+            setGeneratedLogos(prev => [...prev, ...logoPaths]);
         } catch (error) {
             console.error('Generation failed', error);
         } finally {
@@ -43,7 +59,9 @@ export function useLogoGenerator(project: Project, onApply: (logoPath: string) =
     };
 
     const handleImprovePrompt = async () => {
-        if (!prompt || isAnalyzing) {return;}
+        if (!prompt || isAnalyzing) {
+            return;
+        }
         setIsAnalyzing(true);
         try {
             const improved = await window.electron.project.improveLogoPrompt(prompt);
@@ -55,29 +73,27 @@ export function useLogoGenerator(project: Project, onApply: (logoPath: string) =
         }
     };
 
-    const handleManualUpload = async () => {
-        try {
-            const uploadedPath = await window.electron.project.uploadLogo(project.path);
-            if (uploadedPath) {
-                onApply(uploadedPath);
-                onClose();
-            }
-        } catch (error) {
-            console.error('Manual upload failed', error);
-        }
-    };
-
-    const handleApply = async () => {
-        if (!generatedLogo) {return;}
+    const handleApply = async (logoPath: string) => {
         setIsGenerating(true);
         try {
-            const finalPath = await window.electron.project.applyLogo(project.path, generatedLogo);
+            const finalPath = await window.electron.project.applyLogo(project.path, logoPath);
             onApply(finalPath);
             onClose();
         } catch (error) {
             console.error('Apply failed', error);
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleManualUpload = async () => {
+        try {
+            const uploadedPath = await window.electron.project.uploadLogo(project.path);
+            if (uploadedPath) {
+                await handleApply(uploadedPath);
+            }
+        } catch (error) {
+            console.error('Manual upload failed', error);
         }
     };
 
@@ -90,9 +106,13 @@ export function useLogoGenerator(project: Project, onApply: (logoPath: string) =
         setPrompt,
         style,
         setStyle,
+        model,
+        setModel,
+        count,
+        setCount,
         isGenerating,
         isAnalyzing,
-        generatedLogo,
+        generatedLogos,
         suggestions,
         palette,
         handleAnalyze,
@@ -100,6 +120,6 @@ export function useLogoGenerator(project: Project, onApply: (logoPath: string) =
         handleImprovePrompt,
         handleManualUpload,
         handleApply,
-        selectIdea
+        selectIdea,
     };
 }
