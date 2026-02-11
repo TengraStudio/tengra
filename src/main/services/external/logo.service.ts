@@ -15,20 +15,26 @@ export class LogoService {
         private projectService: ProjectService,
         private localImageService: LocalImageService,
         private imagePersistenceService: ImagePersistenceService
-    ) { }
+    ) {}
 
     private getStylePrompt(style: string): string {
         const styles: Record<string, string> = {
-            'Minimalist': 'minimalist, vector art, flat design, simple shapes, monochrome or duotone, clean lines, professional app icon',
-            'Cyberpunk': 'cyberpunk, neon lights, futuristic, high contrast, glowing effects, grid background, dark mode aesthetic',
-            'Abstract': 'abstract geometry, mathematical shapes, fluid forms, creative composition, artistic, modern art',
-            'Retro': 'retro pixel art, 8-bit style, nostalgic, vibrant colors, blocky, arcade game aesthetic',
-            'Modern gradient': 'modern gradient, fluid colors, glassmorphism, 3d render, glossy finish, high end tech startup'
+            Minimalist:
+                'minimalist, vector art, flat design, simple shapes, monochrome or duotone, clean lines, professional app icon',
+            Cyberpunk:
+                'cyberpunk, neon lights, futuristic, high contrast, glowing effects, grid background, dark mode aesthetic',
+            Abstract:
+                'abstract geometry, mathematical shapes, fluid forms, creative composition, artistic, modern art',
+            Retro: 'retro pixel art, 8-bit style, nostalgic, vibrant colors, blocky, arcade game aesthetic',
+            'Modern gradient':
+                'modern gradient, fluid colors, glassmorphism, 3d render, glossy finish, high end tech startup',
         };
         return styles[style] || style;
     }
 
-    async analyzeProjectIdentity(projectPath: string): Promise<{ suggestedPrompts: string[], colors: string[] }> {
+    async analyzeProjectIdentity(
+        projectPath: string
+    ): Promise<{ suggestedPrompts: string[]; colors: string[] }> {
         let pkgData: JsonObject = {};
         try {
             const pkgPath = join(projectPath, 'package.json');
@@ -43,7 +49,7 @@ export class LogoService {
 
         const context = `
  Project Name: ${pkgData.name ?? projectPath.split(/[\\/]/).pop() ?? 'Untitled'}
- Description: ${pkgData.description ?? (analysis.type + ' project')}
+ Description: ${pkgData.description ?? analysis.type + ' project'}
 Type: ${analysis.type}
 Frameworks: ${analysis.frameworks.join(', ')}
 Main Languages: ${Object.keys(analysis.languages).join(', ')}
@@ -63,16 +69,19 @@ Project Info:
 ${context}`;
 
         try {
-            const response = await this.llmService.chat([
-                { role: 'user', content: analysisPrompt }
-            ], 'antigravity-3.5-sonnet', [], 'antigravity');
+            const response = await this.llmService.chat(
+                [{ role: 'user', content: analysisPrompt }],
+                'antigravity-3.5-sonnet',
+                [],
+                'antigravity'
+            );
 
             const jsonMatch = response.content.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 const data = safeJsonParse<JsonObject>(jsonMatch[0], {});
                 return {
                     suggestedPrompts: (data.concepts as string[] | undefined) ?? [],
-                    colors: (data.colors as string[] | undefined) ?? []
+                    colors: (data.colors as string[] | undefined) ?? [],
                 };
             }
         } catch (error) {
@@ -81,7 +90,7 @@ ${context}`;
 
         return {
             suggestedPrompts: [`Professional modern logo for a ${analysis.type} project`],
-            colors: ['#4F46E5', '#06B6D4', '#10B981']
+            colors: ['#4F46E5', '#06B6D4', '#10B981'],
         };
     }
 
@@ -92,9 +101,12 @@ ${context}`;
         Improved Prompt:`;
 
         try {
-            const response = await this.llmService.chat([
-                { role: 'user', content: improvementPrompt }
-            ], 'llama3', [], 'ollama'); // Using llama3 on Ollama as a safe default
+            const response = await this.llmService.chat(
+                [{ role: 'user', content: improvementPrompt }],
+                'llama3',
+                [],
+                'ollama'
+            ); // Using llama3 on Ollama as a safe default
 
             return response.content.trim();
         } catch (error) {
@@ -103,8 +115,17 @@ ${context}`;
         }
     }
 
-    async generateLogo(projectPath: string, prompt: string, style: string): Promise<string> {
-        appLogger.info('logo.service', `[LogoService] Generating logo for ${projectPath} with prompt: "${prompt}" and style: "${style}"`);
+    async generateLogo(
+        projectPath: string,
+        prompt: string,
+        style: string,
+        model: string,
+        count: number = 1
+    ): Promise<string[]> {
+        appLogger.info(
+            'logo.service',
+            `[LogoService] Generating ${count} logos for ${projectPath} with prompt: "${prompt}", style: "${style}", model: "${model}"`
+        );
 
         const styleKeywords = this.getStylePrompt(style);
         const enhancedPrompt = `Design a professional app icon for a project. 
@@ -112,64 +133,115 @@ ${context}`;
         Visual Style: ${styleKeywords}
         Constraints: Square aspect ratio, centered composition, high quality vector style, solid background, avoid text, avoid complex details, minimalist aesthetic, sharp edges.`;
 
-        try {
-            // Attempt local generation first
+        const results: string[] = [];
+        const errors: Error[] = [];
+
+        for (let i = 0; i < count; i++) {
+            try {
+                const savedPath = await this.generateSingleLogo(projectPath, enhancedPrompt, model);
+                results.push(savedPath);
+            } catch (error) {
+                appLogger.error(
+                    'LogoService',
+                    `Generation failed for attempt ${i + 1}:`,
+                    error as Error
+                );
+                errors.push(error as Error);
+            }
+        }
+
+        if (results.length === 0 && errors.length > 0) {
+            throw errors[0];
+        }
+
+        return results;
+    }
+
+    private async generateSingleLogo(
+        projectPath: string,
+        enhancedPrompt: string,
+        model: string
+    ): Promise<string> {
+        const isLocal = model.toLowerCase().includes('local') || model === '';
+
+        if (isLocal) {
             const tempPath = await this.localImageService.generateImage({
                 prompt: enhancedPrompt,
                 width: 1024,
-                height: 1024
+                height: 1024,
             });
 
             if (tempPath) {
-                const targetDir = join(projectPath, '.tandem', 'temp');
-                const timestamp = Date.now();
-                const targetPath = join(targetDir, `logo-${timestamp}.png`);
-
-                await fs.mkdir(targetDir, { recursive: true });
-                await fs.copyFile(tempPath, targetPath);
-
-                // Save to gallery with metadata
-                await this.imagePersistenceService.saveImage(`data:image/png;base64,${await fs.readFile(tempPath, 'base64')}`, {
-                    prompt: enhancedPrompt,
-                    model: 'local-stable-diffusion', // Assuming local
-                    width: 1024,
-                    height: 1024
-                });
-
-                return targetPath;
+                return await this.saveGeneratedImage(
+                    projectPath,
+                    tempPath,
+                    enhancedPrompt,
+                    'local-stable-diffusion'
+                );
             }
-
-            // Fallback to external API if local fails
-            const response = await this.llmService.chat([
-                { role: 'user', content: enhancedPrompt }
-            ], 'antigravity-gemini-3-pro-image', [], 'antigravity');
-
-            if (response.images && response.images.length > 0) {
-                const apiTempPath = response.images[0];
-                const targetDir = join(projectPath, '.tandem', 'temp');
-                const timestamp = Date.now();
-                const targetPath = join(targetDir, `logo-${timestamp}.png`);
-
-                await fs.mkdir(targetDir, { recursive: true });
-                await fs.copyFile(apiTempPath, targetPath);
-
-                // Save to gallery with metadata
-                await this.imagePersistenceService.saveImage(apiTempPath, {
-                    prompt: enhancedPrompt,
-                    model: 'antigravity-gemini-3-pro-image',
-                    width: 1024,
-                    height: 1024
-                });
-
-                return targetPath;
-            }
-
-            throw new Error('No image generated by either local or remote providers.');
-
-        } catch (error) {
-            console.error('[LogoService] Generation failed:', error);
-            throw error;
+            throw new Error('Local generation failed to produce an image.');
         }
+
+        // Remote API
+        const response = await this.llmService.chat(
+            [{ role: 'user', content: enhancedPrompt }],
+            model,
+            [],
+            undefined
+        );
+
+        if (response.images && response.images.length > 0) {
+            return await this.saveGeneratedImage(
+                projectPath,
+                response.images[0],
+                enhancedPrompt,
+                model
+            );
+        }
+
+        throw new Error('Remote generation returned no images.');
+    }
+
+    private async saveGeneratedImage(
+        projectPath: string,
+        sourcePathOrUrl: string,
+        prompt: string,
+        model: string
+    ): Promise<string> {
+        const targetDir = join(projectPath, '.tandem', 'temp');
+        const timestamp = Date.now();
+        const randomSuffix = Math.floor(Math.random() * 1000);
+        const targetPath = join(targetDir, `logo-${timestamp}-${randomSuffix}.png`);
+
+        await fs.mkdir(targetDir, { recursive: true });
+
+        // If source is a URL (remote), fetch it. If it's a path (local), copy it.
+        // ImagePersistenceService.saveImage handles data URIs and URLs.
+        // But here we want to save to the PROJECT temp folder first for the UI to display?
+        // Or does the UI use the gallery path?
+        // The original code copied to project/.tandem/temp AND saved to gallery.
+        // Let's keep that behavior.
+
+        if (sourcePathOrUrl.startsWith('http')) {
+            // download
+            const response = await fetch(sourcePathOrUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            await fs.writeFile(targetPath, buffer);
+        } else {
+            // copy local file
+            await fs.copyFile(sourcePathOrUrl, targetPath);
+        }
+
+        // Save to gallery with metadata
+        await this.imagePersistenceService.saveImage(sourcePathOrUrl, {
+            prompt: prompt,
+            model: model,
+            width: 1024,
+            height: 1024,
+        });
+
+        return targetPath;
     }
 
     async applyLogo(projectPath: string, tempLogoPath: string): Promise<string> {
@@ -205,9 +277,12 @@ Provide ONLY the completion text, no explanation, no markdown blocks.
 Context:
 ${text}`;
 
-        const response = await this.llmService.chat([
-            { role: 'user', content: prompt }
-        ], 'antigravity-flux-schnell', [], 'antigravity');
+        const response = await this.llmService.chat(
+            [{ role: 'user', content: prompt }],
+            'antigravity-flux-schnell',
+            [],
+            'antigravity'
+        );
         return response.content;
     }
 }

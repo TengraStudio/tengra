@@ -47,10 +47,12 @@ export class UtilityService extends BaseService {
         try {
             // Using a demo free API
             const res = await fetch(`${EXCHANGE_RATE_API_BASE}/${from.toUpperCase()}`);
-            const data = await res.json() as ExchangeRateResponse;
+            const data = (await res.json()) as ExchangeRateResponse;
             const rate = data.rates[to.toUpperCase()];
             // Standardized: return { rate } in data
-            return rate ? { success: true, data: { rate } } : { success: false, error: 'Rate not found' };
+            return rate
+                ? { success: true, data: { rate } }
+                : { success: false, error: 'Rate not found' };
         } catch (e) {
             const message = e instanceof Error ? e.message : String(e);
             this.logError(`Failed to get exchange rate from ${from} to ${to}`, e);
@@ -73,13 +75,15 @@ export class UtilityService extends BaseService {
 
         const interval = intervalSeconds * 1000;
         this.logInfo(`Monitoring ${url} every ${intervalSeconds}s`);
-        const timer = setInterval(async () => {
-            try {
-                await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-                this.logInfo(`${url} is UP`);
-            } catch (e) {
-                this.logError(`${url} is DOWN!`, e);
-            }
+        const timer = setInterval(() => {
+            void (async () => {
+                try {
+                    await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                    this.logInfo(`${url} is UP`);
+                } catch (e) {
+                    this.logError(`${url} is DOWN!`, e);
+                }
+            })();
         }, interval);
 
         this.monitors.set(url, timer);
@@ -101,7 +105,11 @@ export class UtilityService extends BaseService {
             this.reminders.delete(id);
         }, delayMs);
         this.reminders.set(id, timeout);
-        return { success: true, data: { id }, message: `Reminder set for ${new Date(Date.now() + delayMs).toLocaleTimeString()}` };
+        return {
+            success: true,
+            data: { id },
+            message: `Reminder set for ${new Date(Date.now() + delayMs).toLocaleTimeString()}`,
+        };
     }
 
     /**
@@ -139,11 +147,14 @@ export class UtilityService extends BaseService {
      */
     async checkVirusTotal(hash: string, apiKey?: string) {
         if (!apiKey) {
-            return { success: false, error: 'VirusTotal API key required in arguments or settings' };
+            return {
+                success: false,
+                error: 'VirusTotal API key required in arguments or settings',
+            };
         }
         try {
             const response = await fetch(`https://www.virustotal.com/api/v3/files/${hash}`, {
-                headers: { 'x-apikey': apiKey }
+                headers: { 'x-apikey': apiKey },
             });
             const data = await response.json();
             return { success: true, data };
@@ -177,7 +188,10 @@ export class UtilityService extends BaseService {
 
     // 37. Plugin System (Simplified)
     async loadPlugin() {
-        return { success: false, error: 'Plugin loading via eval is disabled for security reasons.' };
+        return {
+            success: false,
+            error: 'Plugin loading via eval is disabled for security reasons.',
+        };
     }
 
     // 39. Long-term Memory
@@ -194,7 +208,10 @@ export class UtilityService extends BaseService {
             return { success: true, message: `Memory stored for "${key}" (encrypted)` };
         } catch (error) {
             this.logError(`Failed to store encrypted memory for "${key}"`, error);
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
         }
     }
 
@@ -214,7 +231,10 @@ export class UtilityService extends BaseService {
             return { success: true, data: decryptedValue };
         } catch (error) {
             this.logError(`Failed to recall/decrypt memory for "${key}"`, error);
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
         }
     }
 

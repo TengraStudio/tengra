@@ -40,6 +40,7 @@ import { registerScreenshotIpc } from '@main/ipc/screenshot';
 import { registerSettingsIpc } from '@main/ipc/settings';
 import { registerSshIpc } from '@main/ipc/ssh';
 import { registerTerminalIpc } from '@main/ipc/terminal';
+import { registerThemeIpc } from '@main/ipc/theme';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
@@ -75,10 +76,14 @@ export function registerIpcHandlers(
         copilotService: services.copilotService,
         authService: services.authService,
         getMainWindow,
-        eventBus: services.eventBusService
+        eventBus: services.eventBusService,
     });
     registerProxyIpc(services.proxyService, undefined, services.authService);
-    registerUsageIpc(services.usageTrackingService, services.settingsService, services.proxyService);
+    registerUsageIpc(
+        services.usageTrackingService,
+        services.settingsService,
+        services.proxyService
+    );
     registerKeyRotationIpc(services.keyRotationService);
 
     registerChatIpc({
@@ -89,7 +94,7 @@ export function registerIpcHandlers(
         codeIntelligenceService: services.codeIntelligenceService,
         contextRetrievalService: services.contextRetrievalService,
         databaseService: services.databaseService,
-        rateLimitService: services.rateLimitService
+        rateLimitService: services.rateLimitService,
     });
 
     registerOllamaIpc({
@@ -99,7 +104,7 @@ export function registerIpcHandlers(
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
         proxyService: services.proxyService,
-        rateLimitService: services.rateLimitService
+        rateLimitService: services.rateLimitService,
     });
 
     registerProjectIpc(getMainWindow, {
@@ -107,7 +112,7 @@ export function registerIpcHandlers(
         logoService: services.logoService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
-        databaseService: services.databaseService
+        databaseService: services.databaseService,
     });
     registerAgentIpc(services.agentService);
     registerProcessIpc(services.processService);
@@ -128,7 +133,10 @@ export function registerIpcHandlers(
         updateOpenAIConnection: () => {
             const mainWindow = getMainWindow();
             if (mainWindow) {
-                mainWindow.webContents.send('openai:connection-status', services.llmService.isOpenAIConnected());
+                mainWindow.webContents.send(
+                    'openai:connection-status',
+                    services.llmService.isOpenAIConnected()
+                );
             }
         },
         updateOllamaConnection: async () => {
@@ -142,27 +150,36 @@ export function registerIpcHandlers(
                     mainWindow.webContents.send('ollama:connection-status', false);
                 }
             }
-        }
+        },
     });
 
     registerSshIpc(getMainWindow, services.sshService, services.rateLimitService);
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.rateLimitService);
+    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(services.modelCollaborationService);
 
     registerToolsIpc(toolExecutor, services.commandService);
     registerMcpIpc(mcpDispatcher);
-    registerMcpMarketplaceHandlers(services.mcpMarketplaceService, services.settingsService, services.mcpPluginService);
+    registerMcpMarketplaceHandlers(
+        services.mcpMarketplaceService,
+        services.settingsService,
+        services.mcpPluginService
+    );
 
     registerScreenshotIpc();
     registerLoggingIpc();
 
     // Terminal needs the instance - use getter for deferred access
-    registerTerminalIpc(getMainWindow, services.terminalService);
+    registerTerminalIpc(
+        getMainWindow,
+        services.terminalService,
+        services.terminalProfileService,
+        services.terminalSmartService,
+        services.dockerService
+    );
 
     registerDialogIpc(getMainWindow);
-
 
     registerProxyEmbedIpc(services.proxyService);
     registerExportIpc(services.exportService);
@@ -190,6 +207,9 @@ export function registerIpcHandlers(
 
     // Backup & Restore
     registerBackupIpc(services.backupService);
+
+    // Theme Management
+    registerThemeIpc(services.themeService);
 
     // Register Batch IPC
     registerBatchIpc();

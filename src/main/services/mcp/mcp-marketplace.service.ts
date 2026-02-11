@@ -286,12 +286,12 @@ export class McpMarketplaceService extends BaseService {
 
                             const server: McpMarketplaceServer = {
                                 id: dir.name,
-                                name: pkg.name || dir.name,
-                                description: pkg.description || `MCP server for ${dir.name}`,
-                                publisher: pkg.author?.name || pkg.author || 'Model Context Protocol',
+                                name: pkg.name ?? dir.name,
+                                description: pkg.description ?? `MCP server for ${dir.name}`,
+                                publisher: pkg.author?.name ?? pkg.author ?? 'Model Context Protocol',
                                 version: pkg.version,
                                 command: `npx -y ${pkg.name}`,
-                                repository: pkg.repository?.url || `https://github.com/modelcontextprotocol/servers/tree/main/src/${dir.name}`,
+                                repository: pkg.repository?.url ?? `https://github.com/modelcontextprotocol/servers/tree/main/src/${dir.name}`,
                                 license: pkg.license,
                                 categories: this.inferCategories(dir.name, pkg.description),
                                 isOfficial: true
@@ -334,7 +334,7 @@ export class McpMarketplaceService extends BaseService {
      */
     private inferCategories(name: string, description?: string): string[] {
         const categories: string[] = [];
-        const text = `${name} ${description || ''}`.toLowerCase();
+        const text = `${name} ${description ?? ''}`.toLowerCase();
 
         if (text.includes('github') || text.includes('git') || text.includes('gitlab')) {
             categories.push('Developer Tools', 'VCS');
@@ -373,8 +373,8 @@ export class McpMarketplaceService extends BaseService {
 
         return servers.filter(server =>
             server.name.toLowerCase().includes(lowerQuery) ||
-            server.description?.toLowerCase().includes(lowerQuery) ||
-            server.publisher?.toLowerCase().includes(lowerQuery) ||
+            server.description.toLowerCase().includes(lowerQuery) ||
+            server.publisher.toLowerCase().includes(lowerQuery) ||
             server.categories?.some(cat => cat.toLowerCase().includes(lowerQuery)) ||
             server.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))
         );

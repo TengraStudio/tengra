@@ -9,7 +9,15 @@ import { ModelCategory, ModelListItem } from '../types';
 import { ModelSelectorItem } from './ModelSelectorItem';
 
 export type ChatMode = 'instant' | 'thinking' | 'agent';
-export type ThinkingLevel = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | string;
+export type ThinkingLevel =
+    | 'none'
+    | 'minimal'
+    | 'low'
+    | 'medium'
+    | 'high'
+    | 'xhigh'
+    | 'max'
+    | string;
 interface ModelSelectorModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -31,9 +39,9 @@ interface ModelSelectorModalProps {
 }
 
 const MODE_CONFIG: Record<ChatMode, { icon: React.ElementType; color: string; bg: string }> = {
-    instant: { icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-    thinking: { icon: Brain, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    agent: { icon: Bot, color: 'text-blue-500', bg: 'bg-blue-500/10' }
+    instant: { icon: Zap, color: 'text-warning', bg: 'bg-warning/10' },
+    thinking: { icon: Brain, color: 'text-accent', bg: 'bg-accent/10' },
+    agent: { icon: Bot, color: 'text-info', bg: 'bg-info/10' },
 };
 
 const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
@@ -42,9 +50,11 @@ const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
     low: 'Low',
     medium: 'Medium',
     high: 'High',
-    xhigh: 'Max'
+    xhigh: 'Max',
 };
 
+// TODO: Split into smaller subcomponents; temporary suppression for legacy size limit.
+// eslint-disable-next-line max-lines-per-function
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen,
     onClose,
@@ -60,7 +70,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     onChatModeChange,
     thinkingLevel = 'medium',
     onThinkingLevelChange,
-    onConfirmSelection
+    onConfirmSelection,
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -71,19 +81,30 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     // Check if pending model requires reasoning level selection
     const pendingModelThinkingLevels = useMemo(() => {
-        if (!pendingModel) { return null; }
+        if (!pendingModel) {
+            return null;
+        }
         for (const cat of categories) {
-            const found = cat.models.find(m => m.id === pendingModel.id && m.provider === pendingModel.provider);
-            if (found?.thinkingLevels && found.thinkingLevels.length > 0) { return found.thinkingLevels; }
+            const found = cat.models.find(
+                m => m.id === pendingModel.id && m.provider === pendingModel.provider
+            );
+            if (found?.thinkingLevels && found.thinkingLevels.length > 0) {
+                return found.thinkingLevels;
+            }
         }
         return null;
     }, [categories, pendingModel]);
 
-    const requiresReasoningSelection = pendingModel !== null && pendingModelThinkingLevels !== null && pendingModelThinkingLevels.length > 0;
+    const requiresReasoningSelection =
+        pendingModel !== null &&
+        pendingModelThinkingLevels !== null &&
+        pendingModelThinkingLevels.length > 0;
     const canConfirm = !requiresReasoningSelection || pendingThinkingLevel !== null;
 
     const handleClose = useCallback(() => {
-        if (searchQuery) { setSearchQuery(''); }
+        if (searchQuery) {
+            setSearchQuery('');
+        }
         setActiveTab('models');
         setPendingModel(null);
         setPendingThinkingLevel(null);
@@ -98,7 +119,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     // ESC key handler
     useEffect(() => {
-        if (!isOpen) { return; }
+        if (!isOpen) {
+            return;
+        }
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 if (requiresReasoningSelection && !canConfirm) {
@@ -115,7 +138,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     // Body scroll lock
     useEffect(() => {
         document.body.style.overflow = isOpen ? 'hidden' : '';
-        return () => { document.body.style.overflow = ''; };
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     // Auto focus search input
@@ -133,7 +158,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     // Get recent models from all categories
     const recentModelItems = useMemo(() => {
-        if (recentModels.length === 0) { return []; }
+        if (recentModels.length === 0) {
+            return [];
+        }
         const items: ModelListItem[] = [];
         for (const recentId of recentModels.slice(0, 5)) {
             for (const cat of categories) {
@@ -151,7 +178,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const currentModelThinkingLevels = useMemo(() => {
         for (const cat of categories) {
             const found = cat.models.find(m => m.id === selectedModel);
-            if (found?.thinkingLevels) { return found.thinkingLevels; }
+            if (found?.thinkingLevels) {
+                return found.thinkingLevels;
+            }
         }
         return null;
     }, [categories, selectedModel]);
@@ -159,29 +188,41 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const currentModelInfo = useMemo(() => {
         for (const cat of categories) {
             const found = cat.models.find(m => m.id === selectedModel);
-            if (found) { return found; }
+            if (found) {
+                return found;
+            }
         }
         return null;
     }, [categories, selectedModel]);
 
     useEffect(() => {
         let timer: NodeJS.Timeout | undefined;
-        if (activeTab === 'reasoning' && (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0)) {
+        if (
+            activeTab === 'reasoning' &&
+            (!currentModelThinkingLevels || currentModelThinkingLevels.length === 0)
+        ) {
             // Use setTimeout to avoid synchronous setState in effect body
             timer = setTimeout(() => setActiveTab('models'), 0);
         }
         return () => {
-            if (timer) { clearTimeout(timer); }
+            if (timer) {
+                clearTimeout(timer);
+            }
         };
     }, [activeTab, currentModelThinkingLevels]);
 
-    const supportsReasoning = useCallback((provider: string, id: string) => {
-        for (const cat of categories) {
-            const found = cat.models.find(m => m.id === id && m.provider === provider);
-            if (found?.thinkingLevels && found.thinkingLevels.length > 0) { return true; }
-        }
-        return false;
-    }, [categories]);
+    const supportsReasoning = useCallback(
+        (provider: string, id: string) => {
+            for (const cat of categories) {
+                const found = cat.models.find(m => m.id === id && m.provider === provider);
+                if (found?.thinkingLevels && found.thinkingLevels.length > 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        [categories]
+    );
 
     // Filter categories based on search
     const filteredCategories = useMemo(() => {
@@ -193,52 +234,66 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             .filter(c => c.id !== 'favorites')
             .map(cat => ({
                 ...cat,
-                models: cat.models.filter(m =>
-                    m.label.toLowerCase().includes(query) ||
-                    m.id.toLowerCase().includes(query)
-                )
+                models: cat.models.filter(
+                    m => m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query)
+                ),
             }))
             .filter(cat => cat.models.length > 0);
     }, [categories, searchQuery]);
 
-    const handleSelect = useCallback((provider: string, id: string, isMulti: boolean) => {
-        if (isMulti) {
-            onSelect(provider, id, isMulti, true);
-            return;
-        }
+    const handleSelect = useCallback(
+        (provider: string, id: string, isMulti: boolean) => {
+            if (isMulti) {
+                onSelect(provider, id, isMulti, true);
+                return;
+            }
 
-        const hasReasoning = supportsReasoning(provider, id);
-        if (hasReasoning) {
-            setPendingModel({ provider, id });
-            setPendingThinkingLevel(null);
-            setActiveTab('reasoning');
-            return;
-        }
+            const hasReasoning = supportsReasoning(provider, id);
+            if (hasReasoning) {
+                setPendingModel({ provider, id });
+                setPendingThinkingLevel(null);
+                setActiveTab('reasoning');
+                return;
+            }
 
-        onSelect(provider, id, isMulti, false);
-        handleClose();
-    }, [handleClose, onSelect, supportsReasoning]);
+            onSelect(provider, id, isMulti, false);
+            handleClose();
+        },
+        [handleClose, onSelect, supportsReasoning]
+    );
 
-    const handlePendingThinkingLevelChange = useCallback((level: string) => {
-        setPendingThinkingLevel(level);
-        onThinkingLevelChange?.(level);
-    }, [onThinkingLevelChange]);
+    const handlePendingThinkingLevelChange = useCallback(
+        (level: string) => {
+            setPendingThinkingLevel(level);
+            onThinkingLevelChange?.(level);
+        },
+        [onThinkingLevelChange]
+    );
 
     const handleConfirmSelection = useCallback(() => {
-        if (!pendingModel || !canConfirm) { return; }
+        if (!pendingModel || !canConfirm) {
+            return;
+        }
         onSelect(pendingModel.provider, pendingModel.id, false, false);
         onConfirmSelection?.();
         handleClose();
     }, [pendingModel, canConfirm, onSelect, onConfirmSelection, handleClose]);
 
-    const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-        if (e.target === e.currentTarget) {
-            if (requiresReasoningSelection && !canConfirm) { return; }
-            handleClose();
-        }
-    }, [handleClose, requiresReasoningSelection, canConfirm]);
+    const handleBackdropClick = useCallback(
+        (e: React.MouseEvent) => {
+            if (e.target === e.currentTarget) {
+                if (requiresReasoningSelection && !canConfirm) {
+                    return;
+                }
+                handleClose();
+            }
+        },
+        [handleClose, requiresReasoningSelection, canConfirm]
+    );
 
-    if (!isOpen) { return null; }
+    if (!isOpen) {
+        return null;
+    }
 
     return createPortal(
         <div
@@ -285,7 +340,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 {/* Mode & Tabs */}
                 <div className="px-4 py-3 border-b border-border/50 flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-medium">{t('modelSelector.mode')}:</span>
+                        <span className="text-xs text-muted-foreground font-medium">
+                            {t('modelSelector.mode')}:
+                        </span>
                         <div className="flex gap-1 bg-muted/30 rounded-lg p-1">
                             {(Object.keys(MODE_CONFIG) as ChatMode[]).map(mode => {
                                 const config = MODE_CONFIG[mode];
@@ -297,7 +354,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                         onClick={() => onChatModeChange?.(mode)}
                                         className={cn(
                                             'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                                            isActive ? cn(config.bg, config.color) : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                            isActive
+                                                ? cn(config.bg, config.color)
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                         )}
                                     >
                                         <Icon className="w-3.5 h-3.5" />
@@ -314,7 +373,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 onClick={() => setActiveTab('models')}
                                 className={cn(
                                     'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                                    activeTab === 'models' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    activeTab === 'models'
+                                        ? 'bg-primary/20 text-primary'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 )}
                             >
                                 Models
@@ -323,7 +384,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 onClick={() => setActiveTab('reasoning')}
                                 className={cn(
                                     'px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-                                    activeTab === 'reasoning' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    activeTab === 'reasoning'
+                                        ? 'bg-primary/20 text-primary'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 )}
                             >
                                 Reasoning
@@ -342,7 +405,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 type="text"
                                 placeholder={t('modelSelector.searchModels')}
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={e => setSearchQuery(e.target.value)}
                                 className="bg-transparent border-none p-0 text-sm focus:ring-0 w-full placeholder:text-muted-foreground/50 outline-none text-foreground"
                             />
                         </div>
@@ -352,95 +415,113 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 {/* Content - Scrollable */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {/* Pending Model Reasoning Selection */}
-                    {activeTab === 'reasoning' && pendingModel && pendingModelThinkingLevels && pendingModelThinkingLevels.length > 0 && (
-                        <div className="p-4">
-                            <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Brain className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium text-foreground">
-                                        {t('modelSelector.selectReasoningLevel')}
-                                    </span>
+                    {activeTab === 'reasoning' &&
+                        pendingModel &&
+                        pendingModelThinkingLevels &&
+                        pendingModelThinkingLevels.length > 0 && (
+                            <div className="p-4">
+                                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Brain className="w-4 h-4 text-primary" />
+                                        <span className="text-sm font-medium text-foreground">
+                                            {t('modelSelector.selectReasoningLevel')}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('modelSelector.reasoningRequired')}
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    {t('modelSelector.reasoningRequired')}
-                                </p>
+                                <div className="text-xs text-muted-foreground font-medium mb-3">
+                                    {categories
+                                        .flatMap(c => c.models)
+                                        .find(m => m.id === pendingModel.id)?.label ??
+                                        pendingModel.id}
+                                </div>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {pendingModelThinkingLevels.map(level => {
+                                        const isActive = pendingThinkingLevel === level;
+                                        return (
+                                            <button
+                                                key={level}
+                                                onClick={() =>
+                                                    handlePendingThinkingLevelChange(level)
+                                                }
+                                                className={cn(
+                                                    'px-4 py-2 rounded-lg text-sm font-medium transition-all border',
+                                                    isActive
+                                                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                                        : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-border'
+                                                )}
+                                            >
+                                                {THINKING_LEVEL_LABELS[level as ThinkingLevel] ??
+                                                    level}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex items-center gap-2 pt-3 border-t border-border/50">
+                                    <button
+                                        onClick={handleCancelPending}
+                                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                                    >
+                                        {t('common.cancel')}
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmSelection}
+                                        disabled={!canConfirm}
+                                        className={cn(
+                                            'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                                            canConfirm
+                                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                : 'bg-muted text-muted-foreground cursor-not-allowed'
+                                        )}
+                                    >
+                                        {canConfirm
+                                            ? t('modelSelector.confirmModel')
+                                            : t('modelSelector.selectLevelFirst')}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="text-xs text-muted-foreground font-medium mb-3">
-                                {categories.flatMap(c => c.models).find(m => m.id === pendingModel.id)?.label ?? pendingModel.id}
-                            </div>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {pendingModelThinkingLevels.map(level => {
-                                    const isActive = pendingThinkingLevel === level;
-                                    return (
-                                        <button
-                                            key={level}
-                                            onClick={() => handlePendingThinkingLevelChange(level)}
-                                            className={cn(
-                                                'px-4 py-2 rounded-lg text-sm font-medium transition-all border',
-                                                isActive
-                                                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                                    : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-border'
-                                            )}
-                                        >
-                                            {THINKING_LEVEL_LABELS[level as ThinkingLevel] ?? level}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                                <button
-                                    onClick={handleCancelPending}
-                                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
-                                >
-                                    {t('common.cancel')}
-                                </button>
-                                <button
-                                    onClick={handleConfirmSelection}
-                                    disabled={!canConfirm}
-                                    className={cn(
-                                        'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                                        canConfirm
-                                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                            : 'bg-muted text-muted-foreground cursor-not-allowed'
-                                    )}
-                                >
-                                    {canConfirm ? t('modelSelector.confirmModel') : t('modelSelector.selectLevelFirst')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
                     {/* Current Model Reasoning (when not in pending state) */}
-                    {activeTab === 'reasoning' && !pendingModel && currentModelThinkingLevels && currentModelThinkingLevels.length > 0 && (
-                        <div className="p-4">
-                            <div className="text-xs text-muted-foreground font-medium mb-2">
-                                {t('modelSelector.reasoning')} • {currentModelInfo?.label ?? selectedModel}
+                    {activeTab === 'reasoning' &&
+                        !pendingModel &&
+                        currentModelThinkingLevels &&
+                        currentModelThinkingLevels.length > 0 && (
+                            <div className="p-4">
+                                <div className="text-xs text-muted-foreground font-medium mb-2">
+                                    {t('modelSelector.reasoning')} •{' '}
+                                    {currentModelInfo?.label ?? selectedModel}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {currentModelThinkingLevels.map(level => {
+                                        const isActive = thinkingLevel === level;
+                                        return (
+                                            <button
+                                                key={level}
+                                                onClick={() => onThinkingLevelChange?.(level)}
+                                                className={cn(
+                                                    'px-3 py-1.5 rounded-md text-xs font-medium transition-all border border-border/50',
+                                                    isActive
+                                                        ? 'bg-primary/20 text-primary'
+                                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                                )}
+                                            >
+                                                {THINKING_LEVEL_LABELS[level as ThinkingLevel] ??
+                                                    level}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                {currentModelThinkingLevels.map(level => {
-                                    const isActive = thinkingLevel === level;
-                                    return (
-                                        <button
-                                            key={level}
-                                            onClick={() => onThinkingLevelChange?.(level)}
-                                            className={cn(
-                                                'px-3 py-1.5 rounded-md text-xs font-medium transition-all border border-border/50',
-                                                isActive ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                                            )}
-                                        >
-                                            {THINKING_LEVEL_LABELS[level as ThinkingLevel] ?? level}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                        )}
 
                     {/* Favorites Section */}
                     {activeTab === 'models' && !searchQuery && favoriteModels.length > 0 && (
                         <ModelSection
                             title={t('common.favorites')}
-                            icon={<Star className="w-3.5 h-3.5 text-yellow-500" />}
+                            icon={<Star className="w-3.5 h-3.5 text-warning" />}
                             models={favoriteModels}
                             selectedModels={selectedModels}
                             selectedModel={selectedModel}
@@ -474,23 +555,39 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                         </div>
                     ) : activeTab === 'models' ? (
                         filteredCategories.map(category => (
-                            <div key={category.id} className="border-b border-border/30 last:border-b-0">
+                            <div
+                                key={category.id}
+                                className="border-b border-border/30 last:border-b-0"
+                            >
                                 <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-muted/20">
                                     <category.icon className={cn('w-3.5 h-3.5', category.color)} />
                                     <span>{category.name}</span>
-                                    <span className="text-muted-foreground/50 font-normal">({category.models.length})</span>
+                                    <span className="text-muted-foreground/50 font-normal">
+                                        ({category.models.length})
+                                    </span>
                                 </div>
                                 <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
                                     {category.models.map(model => (
                                         <ModelSelectorItem
                                             key={`${category.id}-${model.provider}-${model.id}`}
                                             model={model}
-                                            isSelected={selectedModels.some(m => m.provider === model.provider && m.model === model.id)}
-                                            isPrimary={selectedModel === model.id && selectedProvider === model.provider}
+                                            isSelected={selectedModels.some(
+                                                m =>
+                                                    m.provider === model.provider &&
+                                                    m.model === model.id
+                                            )}
+                                            isPrimary={
+                                                selectedModel === model.id &&
+                                                selectedProvider === model.provider
+                                            }
                                             onSelect={handleSelect}
                                             toggleFavorite={toggleFavorite}
                                             t={t}
-                                            modelIndex={selectedModels.findIndex(m => m.provider === model.provider && m.model === model.id)}
+                                            modelIndex={selectedModels.findIndex(
+                                                m =>
+                                                    m.provider === model.provider &&
+                                                    m.model === model.id
+                                            )}
                                         />
                                     ))}
                                 </div>
@@ -502,7 +599,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 {/* Footer */}
                 <div className="px-4 py-3 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground flex items-center justify-between">
                     {requiresReasoningSelection && !canConfirm ? (
-                        <span className="text-yellow-500">{t('modelSelector.mustSelectReasoning')}</span>
+                        <span className="text-warning">
+                            {t('modelSelector.mustSelectReasoning')}
+                        </span>
                     ) : (
                         <span>{t('modelSelector.shiftClickMulti')}</span>
                     )}
@@ -540,7 +639,7 @@ const ModelSection: React.FC<ModelSectionProps> = ({
     selectedProvider,
     onSelect,
     toggleFavorite,
-    t
+    t,
 }) => (
     <div className="border-b border-border/30">
         <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 bg-muted/20">
@@ -552,12 +651,16 @@ const ModelSection: React.FC<ModelSectionProps> = ({
                 <ModelSelectorItem
                     key={`section-${model.provider}-${model.id}`}
                     model={model}
-                    isSelected={selectedModels.some(m => m.provider === model.provider && m.model === model.id)}
+                    isSelected={selectedModels.some(
+                        m => m.provider === model.provider && m.model === model.id
+                    )}
                     isPrimary={selectedModel === model.id && selectedProvider === model.provider}
                     onSelect={onSelect}
                     toggleFavorite={toggleFavorite}
                     t={t}
-                    modelIndex={selectedModels.findIndex(m => m.provider === model.provider && m.model === model.id)}
+                    modelIndex={selectedModels.findIndex(
+                        m => m.provider === model.provider && m.model === model.id
+                    )}
                 />
             ))}
         </div>

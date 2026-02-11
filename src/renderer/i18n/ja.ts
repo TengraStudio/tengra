@@ -7,7 +7,7 @@ export const ja = {
         copy: 'コピー',
         refresh: '更新',
         rename: '名前変更',
-        search: '検索...',
+        search: '検索',
         loading: '読み込み中...',
         error: 'エラー',
         success: '成功',
@@ -20,20 +20,64 @@ export const ja = {
         hour: '時間',
         hours: '時間',
         clear: 'クリア',
+        details: '詳細',
+        hide: '非表示',
+        showMore: 'もっと見る...',
+        kb: 'KB',
         add: '追加',
         done: '完了',
+        close: '閉じる',
         pending: '保留中',
         confirm: '確認',
         processing: '処理中...',
         selectAll: 'すべて選択',
-        itemsSelected: '{{count}} 個選択済み'
+        itemsSelected: '{{count}} 個選択済み',
+        // Error messages
+        unknownError: '不明なエラーが発生しました',
+        operationFailed: '操作に失敗しました',
+        invalidInput: '無効な入力',
+        networkError: 'ネットワークエラー',
+        permissionDenied: '権限が拒否されました',
+        // Additional common keys
+        authType: '認証タイプ',
+        back: '戻る',
+        commands: 'コマンド',
+        connect: '接続',
+        favorites: 'お気に入り',
+        fitView: 'ビューに合わせる',
+        host: 'ホスト',
+        next: '次へ',
+        previous: '前へ',
+        pageOf: 'ページ {{current}} / {{total}}',
+        passphrase: 'パスフレーズ',
+        password: 'パスワード',
+        port: 'ポート',
+        privateKey: '秘密鍵',
+        reset: 'リセット',
+        resetZoom: 'ズームリセット',
+        resume: '再開',
+        searching: '検索中...',
+        send: '送信',
+        stop: '停止',
+        unarchive: 'アーカイブ解除',
+        update: '更新',
+        username: 'ユーザー名',
+        zoomIn: 'ズームイン',
+        zoomOut: 'ズームアウト',
+        toClose: '閉じる',
+        locale: 'ja-JP',
+        ai: 'AI',
+    },
+    loading: {
+        codeEditor: 'コードエディターを読み込み中',
+        chart: 'チャートを読み込み中',
     },
     app: {
-        name: 'Tandem'
+        name: 'Tandem',
     },
     errors: {
         unexpected: '申し訳ありません。エラーが発生しました。',
-        somethingWentWrong: '問題が発生しました:'
+        somethingWentWrong: '問題が発生しました:',
     },
     languages: {
         tr: 'トルコ語',
@@ -43,7 +87,7 @@ export const ja = {
         es: 'スペイン語',
         ja: '日本語',
         zh: '中国語',
-        ar: 'アラビア語'
+        ar: 'アラビア語',
     },
     themeStore: {
         title: 'テーマストア',
@@ -60,37 +104,37 @@ export const ja = {
         themes: {
             'dark-default': {
                 name: 'ダークデフォルト',
-                description: '紫のアクセントが効いたデフォルトのダークテーマ'
+                description: '紫のアクセントが効いたデフォルトのダークテーマ',
             },
             'light-default': {
                 name: 'ライトデフォルト',
-                description: '日中用のクリーンなライトテーマ'
+                description: '日中用のクリーンなライトテーマ',
             },
-            'nord': {
+            nord: {
                 name: 'Nord',
-                description: '北極の冷たい青色のパレット'
+                description: '北極の冷たい青色のパレット',
             },
-            'dracula': {
+            dracula: {
                 name: 'Dracula',
-                description: '鮮やかな色使いのダークテーマ'
+                description: '鮮やかな色使いのダークテーマ',
             },
-            'monokai': {
+            monokai: {
                 name: 'Monokai Pro',
-                description: '温かみのあるアクセントが効いたプロフェッショナルなダークテーマ'
+                description: '温かみのあるアクセントが効いたプロフェッショナルなダークテーマ',
             },
             'github-dark': {
                 name: 'GitHub Dark',
-                description: 'GitHubの公式ダークテーマ'
+                description: 'GitHubの公式ダークテーマ',
             },
             'solarized-dark': {
                 name: 'Solarized Dark',
-                description: '機械と人間のための精密な色使い'
+                description: '機械と人間のための精密な色使い',
             },
             'tokyo-night': {
                 name: 'Tokyo Night',
-                description: '東京の夜を祝うクリーンなテーマ'
-            }
-        }
+                description: '東京の夜を祝うクリーンなテーマ',
+            },
+        },
     },
     modelSelector: {
         searchModels: 'モデルを検索...',
@@ -100,7 +144,7 @@ export const ja = {
         openCode: 'OpenCode',
         proxyCustom: 'カスタムプロキシ / その他',
         model: 'モデル',
-        selectModel: 'モデルを選択'
+        selectModel: 'モデルを選択',
     },
     settings: {
         searchPlaceholder: '設定を検索...',
@@ -121,7 +165,7 @@ export const ja = {
         about: '詳細',
         personas: 'ペルソナ',
         factoryResetConfirm: 'すべてのデータを削除してもよろしいですか？',
-        language: '言語'
+        language: '言語',
     },
     projects: {
         newProject: '新規プロジェクト',
@@ -170,7 +214,7 @@ export const ja = {
         changeLogo: 'ロゴを変更',
         noDescription: '説明はありません',
         todoPlaceholder: '何をすべきか？（Enterキーを押す）',
-        willActOn: '次の項目を処理します:'
+        willActOn: '次の項目を処理します:',
     },
     projectWizard: {
         title: 'プロジェクトウィザード',
@@ -183,7 +227,7 @@ export const ja = {
         projectName: 'プロジェクト名',
         namePlaceholder: '例: CRMダッシュボード',
         placeholder: {
-            example: 'example.com'
+            example: 'example.com',
         },
         description: '説明（任意）',
         descPlaceholder: 'このプロジェクトの目的は何ですか？',
@@ -218,8 +262,8 @@ export const ja = {
             backend: 'バックエンドサービス',
             cli: 'CLI / スクリプト',
             mobile: 'モバイルアプリ',
-            other: 'カスタムプロジェクト'
-        }
+            other: 'カスタムプロジェクト',
+        },
     },
     projectDashboard: {
         title: 'プロジェクトダッシュボード',
@@ -292,10 +336,11 @@ export const ja = {
         todoList: '今後のタスク',
         gitStatus: {
             pulling: 'Pull中...',
-            pushing: 'Push中...'
+            pushing: 'Push中...',
         },
         noIssues: 'プロジェクト内に重大な問題は見つかりませんでした。お見事！',
-        issuesDescription: 'Tandemは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。',
+        issuesDescription:
+            'Tandemは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。',
         issueType: 'タイプ',
         issueMessage: 'メッセージ',
         issueLocation: '場所',
@@ -314,7 +359,7 @@ export const ja = {
         logsDescription: 'リアルタイムのアプリケーションログ。',
         logsEmpty: '利用可能なログはありません。プロジェクトを実行してログ出力を生成してください。',
         logsClear: 'ログをクリア',
-        logsFilter: 'ログをフィルタ...'
+        logsFilter: 'ログをフィルタ...',
     },
     git: {
         commitGenerator: 'Gitコミットジェネレーター',
@@ -323,11 +368,12 @@ export const ja = {
         selectProject: 'コミットメッセージを生成するプロジェクトを選択してください',
         suggestedMessage: '提案されたコミットメッセージ',
         stagedChanges: 'ステージングされた変更のプレビュー',
-        noStagedChanges: 'ステージングされた変更が見つかりません。最初に `git add` を使用して変更をステージングしてください。',
+        noStagedChanges:
+            'ステージングされた変更が見つかりません。最初に `git add` を使用して変更をステージングしてください。',
         copy: 'コピー',
         commit: 'コミット',
         cancel: 'キャンセル',
-        error: 'エラーが発生しました'
+        error: 'エラーが発生しました',
     },
     ssh: {
         title: 'SSHマネージャー',
@@ -395,7 +441,7 @@ export const ja = {
             username: 'root',
             passwordOptional: 'キーを使用する場合は現在は任意',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: 'マイサーバー'
+            profileName: 'マイサーバー',
         },
         profileName: 'プロファイル名',
         nginx: {
@@ -408,15 +454,15 @@ export const ja = {
             configPreview: '構成プレビュー',
             placeholders: {
                 domain: 'api.myapp.com',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: 'ドメイン名は必須です',
                 connecting: 'サーバーに接続中...',
                 moving: '構成をNginxディレクトリに移動中...',
                 success: 'Nginxは正常にリロードされました！',
-                error: '適用に失敗しました: {{error}}。sudo権限があることを確認してください。'
-            }
+                error: '適用に失敗しました: {{error}}。sudo権限があることを確認してください。',
+            },
         },
         presets: {
             title: 'パラメータプリセット',
@@ -428,34 +474,34 @@ export const ja = {
             labels: {
                 name: 'プリセット名',
                 temperature: '温度',
-                topP: 'Top P'
+                topP: 'Top P',
             },
             placeholders: {
-                name: '例: マイカスタムプリセット'
-            }
+                name: '例: マイカスタムプリセット',
+            },
         },
         promptManager: {
             title: 'プロンプトライブラリ',
             newPrompt: '新規プロンプト',
             labels: {
                 title: 'タイトル',
-                content: '内容'
+                content: '内容',
             },
             placeholders: {
                 title: '例: コードリファクタリング',
-                content: 'プロンプトの内容を入力してください...'
+                content: 'プロンプトの内容を入力してください...',
             },
             empty: {
                 title: 'プロンプトはまだありません',
-                subtitle: '作成して始めましょう'
-            }
+                subtitle: '作成して始めましょう',
+            },
         },
         editor: {
             loading: 'エディタを読み込み中...',
             initializing: 'エディタを初期化中...',
             error: 'エディタエラー: {{error}}',
-            aiRefactor: 'AIリファクタリング / 説明'
-        }
+            aiRefactor: 'AIリファクタリング / 説明',
+        },
     },
     sidebar: {
         chats: 'チャット',
@@ -499,20 +545,20 @@ export const ja = {
         councilReady: '準備完了',
         project: 'プロジェクト',
         moveTo: '移動...',
-        ideas: 'アイデア'
+        ideas: 'アイデア',
     },
     dateGroups: {
         today: '今日',
         yesterday: '昨日',
         lastWeek: '先週',
-        older: 'それ以前'
+        older: 'それ以前',
     },
     nav: {
         chat: 'チャット',
         projects: 'プロジェクト',
         settings: '設定',
         council: '評議会',
-        mcp: 'MCP管理'
+        mcp: 'MCP管理',
     },
     mcp: {
         management: 'MCP管理',
@@ -526,7 +572,8 @@ export const ja = {
         searchPlaceholder: 'サーバーやツールを検索...',
         searchTools: 'ツールを検索...',
         storeTitle: 'MCPツールストア',
-        toolsInstalled: '{{count}} 個のツールをインストール済み • Model Context Protocolサーバーを閲覧',
+        toolsInstalled:
+            '{{count}} 個のツールをインストール済み • Model Context Protocolサーバーを閲覧',
         noTools: 'ツールが見つかりません',
         noServers: '接続されているサーバーはありません',
         features: '機能',
@@ -545,8 +592,8 @@ export const ja = {
             database: 'データベース',
             api: 'API',
             development: '開発',
-            ai: 'AI'
-        }
+            ai: 'AI',
+        },
     },
     memory: {
         title: 'メモリインスペクター',
@@ -569,7 +616,7 @@ export const ja = {
         confidence: '信頼度',
         ago: '前',
         via: '経由',
-        chatId: 'チャットID'
+        chatId: 'チャットID',
     },
     terminal: {
         noShellsFound: 'シェルが見つかりません',
@@ -577,7 +624,7 @@ export const ja = {
         startNewSession: '新規セッションを開始',
         sessionFailed: 'ターミナルセッションの開始に失敗しました',
         closeAndCreate: 'このタブを閉じて新しいターミナルセッションを作成してください',
-        exitedWithCode: 'ターミナルが次のコードで終了しました: {{code}}'
+        exitedWithCode: 'ターミナルが次のコードで終了しました: {{code}}',
     },
     workspace: {
         editor: 'エディタ',
@@ -612,13 +659,13 @@ export const ja = {
         convertToCode: 'コードに変換',
         placeholders: {
             rootPath: 'C:\\\\Users\\\\Project',
-            name: '名前...'
+            name: '名前...',
         },
         run: 'プロジェクトを実行',
         toggleSidebar: 'サイドバーを切り替え',
         aiAssistant: 'AIアシスタント',
         online: 'オンライン',
-        dev: '開発'
+        dev: '開発',
     },
     chat: {
         placeholder: 'メッセージを入力...',
@@ -631,27 +678,29 @@ export const ja = {
         collapse: '折りたたむ',
         moreLines: 'さらに数行',
         scrollToBottom: '一番下へスクロール',
-        scrollToBottomWithCount: '一番下へスクロール（{{count}}件の新着）'
+        scrollToBottomWithCount: '一番下へスクロール（{{count}}件の新着）',
     },
     welcome: {
         title: 'Tandem',
-        tagline: '知性とエレガンスの融合。'
+        tagline: '知性とエレガンスの融合。',
     },
     auth: {
         authError: '認証エラー',
         goToAccounts: 'アカウントへ移動',
-        connectionFailed: 'Antigravityサーバーへの接続に失敗しました。サインインするか、APIキーを確認してください。',
+        connectionFailed:
+            'Antigravityサーバーへの接続に失敗しました。サインインするか、APIキーを確認してください。',
         // Manual Session Modal
         sessionKeyRequired: 'Claudeセッションキーが必要です',
         completeConnection: '{{email}} の接続を完了する',
-        sessionKeyDescription: 'クォータの追跡と直接対話を有効にするために、TandemにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。',
+        sessionKeyDescription:
+            'クォータの追跡と直接対話を有効にするために、TandemにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。',
         howToFindKey: 'セッションキーの見つけ方',
         sessionKeyInstructions: {
             step1: 'claude.aiを開いてログインする',
             step2: '任意の場所を右クリックして「検証」を選択する',
             step3: '「アプリケーション」タブ（またはストレージ）に移動する',
             step4: '「Cookie」を展開し、https://claude.ai を選択する',
-            step5: 'sessionKeyを見つけ、その値をコピーする（sk-ant-sidで始まります）'
+            step5: 'sessionKeyを見つけ、その値をコピーする（sk-ant-sidで始まります）',
         },
         sessionKeyLabel: 'セッションキー',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -666,7 +715,7 @@ export const ja = {
         openGithubToEnter: 'GitHubを開いてコードを入力する',
         waitingForLogin: 'ログインを待機中...',
         connectedSuccessfully: '正常に接続されました！',
-        connectionFailedGeneric: '接続に失敗しました'
+        connectionFailedGeneric: '接続に失敗しました',
     },
     accounts: {
         title: '接続済みアカウント',
@@ -674,33 +723,33 @@ export const ja = {
         categories: {
             aiProviders: 'AIプロバイダー',
             developerTools: '開発ツール',
-            localModels: 'ローカルモデル'
+            localModels: 'ローカルモデル',
         },
         providers: {
             github: {
                 name: 'GitHub',
-                description: 'ソースコードのホスティングとコラボレーション'
+                description: 'ソースコードのホスティングとコラボレーション',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'AI支援によるコード補完'
+                description: 'AI支援によるコード補完',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: 'クラウドAIサービスとWebアクセス'
+                description: 'クラウドAIサービスとWebアクセス',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4および高度な言語モデル'
+                description: 'GPT-4および高度な言語モデル',
             },
             claude: {
                 name: 'Claude',
-                description: 'Anthropic Claude 推論モデル'
+                description: 'Anthropic Claude 推論モデル',
             },
             ollama: {
                 name: 'Ollama',
-                description: 'AIモデルをローカルで実行'
-            }
+                description: 'AIモデルをローカルで実行',
+            },
         },
         connected: '接続済み',
         disconnected: '未接続',
@@ -726,18 +775,18 @@ export const ja = {
         copilotDesc: 'GitHub Copilot統合。',
         antigravityDesc: 'Antigravityクラウドサービス。',
         codexDesc: 'OpenAI Codex APIアクセス。',
-        claudeDesc: 'Anthropic Claudeモデル。'
+        claudeDesc: 'Anthropic Claudeモデル。',
     },
     input: {
         placeholder: {
             copilot: 'Copilotにコード生成を依頼...',
             ollama: 'ローカルLLMに質問...',
-            default: 'メッセージを入力...'
+            default: 'メッセージを入力...',
         },
         attachFile: 'ファイルを添付',
         enhancePrompt: 'AIでプロンプトを改善',
         startListening: '音声入力を開始',
-        stopListening: '音声入力を停止'
+        stopListening: '音声入力を停止',
     },
     workspaceModals: {
         mountTitle: '既存のフォルダまたはサーバーを追加',
@@ -753,29 +802,29 @@ export const ja = {
         closeModal: 'モーダルを閉じる',
         inputAriaLabel: '{{type}} 名',
         deleteConfirm: '{name} を削除してもよろしいですか？',
-        confirm: '確認'
+        confirm: '確認',
     },
     templates: {
         code: {
             title: 'コーディング',
             description: 'コンポーネントやアルゴリズムを作成します。',
-            prompt: '洗練されたカードデザインのモダンなReactコンポーネントを作成できますか？'
+            prompt: '洗練されたカードデザインのモダンなReactコンポーネントを作成できますか？',
         },
         analyze: {
             title: '分析',
             description: 'ファイルやデータを検査します。',
-            prompt: 'このプロジェクトのアーキテクチャを分析し、改善案を提案できますか？'
+            prompt: 'このプロジェクトのアーキテクチャを分析し、改善案を提案できますか？',
         },
         creative: {
             title: 'クリエイティブ・ライティング',
             description: 'テキストやコンテンツを生成します。',
-            prompt: 'Tandemという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？'
+            prompt: 'Tandemという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？',
         },
         debug: {
             title: 'デバッグ',
             description: '問題を見つけて修正します。',
-            prompt: 'コード内のメモリリークを見つけるのを手伝ってもらえますか？'
-        }
+            prompt: 'コード内のメモリリークを見つけるのを手伝ってもらえますか？',
+        },
     },
     attachments: {
         image: '画像',
@@ -793,7 +842,8 @@ export const ja = {
         copyAsHtml: 'HTMLとしてコピー',
         TandemDrawing: 'Tandem 描画中...',
         quotaExceeded: 'クォータ超過',
-        quotaMessage: 'モデルの使用クォータを超えました。後でもう一度試すか、プランをアップグレードしてください。',
+        quotaMessage:
+            'モデルの使用クォータを超えました。後でもう一度試すか、プランをアップグレードしてください。',
         resetsAt: 'リセット時刻:',
         checkQuotas: 'クォータを確認',
         stop: '停止',
@@ -815,7 +865,7 @@ export const ja = {
         regenerate: '再生成',
         rating: '回答を評価',
         actions: 'メッセージアクション',
-        multiModelResponse: '複数モデルからの回答'
+        multiModelResponse: '複数モデルからの回答',
     },
     general: {
         turkish: 'トルコ語',
@@ -828,7 +878,7 @@ export const ja = {
         databaseDesc: 'アプリケーションデータとキャッシュを管理します。',
         onboardingTour: 'オンボーディングツアー',
         onboardingTourDesc: 'アプリケーション機能を紹介するツアーを再開します。',
-        startTour: 'ツアーを開始'
+        startTour: 'ツアーを開始',
     },
     appearance: {
         themeDesc: 'アプリケーションのカラーテーマを変更します。',
@@ -868,8 +918,8 @@ export const ja = {
             serenity: 'セレニティ',
             neonPulse: 'ネオンプルス',
             cyberFuture: 'サイバーフューチャー',
-            softVelvet: 'ソフトベルベット'
-        }
+            softVelvet: 'ソフトベルベット',
+        },
     },
     statistics: {
         title: '統計',
@@ -907,17 +957,18 @@ export const ja = {
         subscriptionActive: 'サブスクリプション有効',
         codingTimeByProject: 'プロジェクト別コーディング時間',
         timeSpentCodingInEachProject: '各プロジェクトに費やしたコーディング時間',
-        unknownProject: '不明なプロジェクト'
+        unknownProject: '不明なプロジェクト',
     },
     about: {
-        description: 'Tandemは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。',
+        description:
+            'Tandemは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。',
         checkUpdates: 'アップデートを確認',
         privacyPolicy: 'プライバシーポリシー',
         github: 'GitHub',
         copyright: '© 2025 Tandem',
         factoryReset: '工場出荷時リセット',
         factoryResetDesc: 'すべての設定とデータを削除してアプリケーションをリセットします。',
-        updateCheckAlert: 'プロダクションビルドでのアップデート確認が有効です。'
+        updateCheckAlert: 'プロダクションビルドでのアップデート確認が有効です。',
     },
     developer: {
         title: '開発者設定',
@@ -935,7 +986,7 @@ export const ja = {
         importSettingsDesc: 'JSONファイルから設定を読み込みます',
         import: 'インポート',
         settingsImported: '設定をインポートしました',
-        invalidSettingsFile: '無効な設定ファイルです'
+        invalidSettingsFile: '無効な設定ファイルです',
     },
     gallery: {
         title: 'ギャラリー',
@@ -946,7 +997,7 @@ export const ja = {
         deleteConfirm: 'この画像を削除してもよろしいですか？',
         openLocation: 'ファイルの場所を開く',
         open: '開く',
-        delete: '削除'
+        delete: '削除',
     },
     advanced: {
         systemInfo: 'システム情報',
@@ -965,7 +1016,7 @@ export const ja = {
         tokenRefreshInterval: 'トークン更新',
         tokenRefreshIntervalDesc: 'OAuthトークンを更新する頻度。',
         copilotRefreshInterval: 'Copilot更新',
-        copilotRefreshIntervalDesc: 'Copilotセッショントークンを更新する頻度。'
+        copilotRefreshIntervalDesc: 'Copilotセッショントークンを更新する頻度。',
     },
     tips: {
         title: 'ご存知でしたか？',
@@ -973,7 +1024,7 @@ export const ja = {
         tip2: 'Tandemは開発用のリモートSSHサーバーへの接続をサポートしています。',
         tip3: 'ファイルをチャットに直接ドラッグ＆ドロップできます。',
         tip4: '「評議会」タブを使用して、コードに関するマルチエージェントの洞察を得ることができます。',
-        tip5: '設定 > 外観 で体験をカスタマイズしてください。'
+        tip5: '設定 > 外観 で体験をカスタマイズしてください。',
     },
     agents: {
         planner: 'プランナー',
@@ -983,7 +1034,8 @@ export const ja = {
         reviewer: 'レビュアー',
         reviewerRole: 'コード品質監査人',
         refactorPrompt: 'このコード行（{{line}}行目）をリファクタリングする: {{content}}',
-        welcomeMessage: 'こんにちは、あなたのAIアシスタントです。コードについて何かお手伝いできることはありますか？',
+        welcomeMessage:
+            'こんにちは、あなたのAIアシスタントです。コードについて何かお手伝いできることはありますか？',
         council: '評議会',
         enabled: '有効',
         disabled: '無効',
@@ -1014,7 +1066,7 @@ export const ja = {
         on: 'オン',
         off: 'オフ',
         local: 'ローカル',
-        cloud: 'クラウド'
+        cloud: 'クラウド',
     },
     modelComparison: {
         title: 'モデル比較',
@@ -1023,7 +1075,7 @@ export const ja = {
         compare: '比較',
         addModel: 'モデルを追加',
         responsePlaceholder: '回答がここに表示されます',
-        copyResponse: '回答をコピー'
+        copyResponse: '回答をコピー',
     },
     council: {
         title: 'エージェント評議会',
@@ -1035,15 +1087,16 @@ export const ja = {
         entry: 'エントリ',
         entries: 'エントリ',
         noActiveSession: 'アクティブなセッションはありません',
-        noActiveSessionDesc: 'タスクを開始して評議会エージェントの活動を確認してください。活動ログがここに表示されます。',
+        noActiveSessionDesc:
+            'タスクを開始して評議会エージェントの活動を確認してください。活動ログがここに表示されます。',
         status: {
             planning: '計画中',
             working: '作業中',
             reviewing: 'レビュー中',
             waiting_for_approval: '承認待機中',
             completed: '完了',
-            failed: '失敗'
-        }
+            failed: '失敗',
+        },
     },
     shortcuts: {
         title: 'キーボードショートカット',
@@ -1064,7 +1117,7 @@ export const ja = {
         searchChat: 'チャットを検索',
         showShortcuts: 'ショートカットを表示',
         close: '閉じる',
-        footer: 'Escキーで閉じる'
+        footer: 'Escキーで閉じる',
     },
     semanticSearch: {
         title: '意味論的検索',
@@ -1073,7 +1126,7 @@ export const ja = {
         results: '検索結果',
         noResults: '意味論的な一致が見つかりませんでした。',
         relevance: '関連性',
-        filesIndex: 'インデックス済みファイル'
+        filesIndex: 'インデックス済みファイル',
     },
     commandPalette: {
         newChat: '新規チャット',
@@ -1106,11 +1159,11 @@ export const ja = {
         close: '閉じる',
         engineLabel: 'Tandem コマンドエンジン',
         previewEmpty: '詳細を表示するには項目を選択してください',
-        noResultsHint: 'チャット、モデル、設定を検索してみてください'
+        noResultsHint: 'チャット、モデル、設定を検索してみてください',
     },
     quickAction: {
         explain: '説明',
-        translate: '翻訳'
+        translate: '翻訳',
     },
     activityBar: {
         chat: 'チャット',
@@ -1119,13 +1172,13 @@ export const ja = {
         sourceControl: 'ソース管理',
         debug: 'デバッグ',
         extensions: '拡張機能',
-        settings: '設定'
+        settings: '設定',
     },
     statusBar: {
         error: 'エラー',
         errors: 'エラー',
         warning: '警告',
-        warnings: '警告'
+        warnings: '警告',
     },
     updateNotification: {
         checkingTitle: '更新を確認しています...',
@@ -1137,27 +1190,27 @@ export const ja = {
         errorTitle: '更新に失敗しました',
         uptodateTitle: '最新の状態です',
         downloadAction: 'ダウンロード',
-        restartAction: '今すぐ再起動'
+        restartAction: '今すぐ再起動',
     },
     panelLayout: {
         expand: '展開',
         collapse: '折りたたむ',
-        maximize: '最大化'
+        maximize: '最大化',
     },
     diffViewer: {
-        loading: '差分を読み込み中...'
+        loading: '差分を読み込み中...',
     },
     fab: {
         openMenu: 'メニューを開く',
-        closeMenu: 'メニューを閉じる'
+        closeMenu: 'メニューを閉じる',
     },
     modal: {
-        close: 'モーダルを閉じる'
+        close: 'モーダルを閉じる',
     },
     titleBar: {
         minimize: '最小化',
         maximize: '最大化',
-        close: '閉じる'
+        close: '閉じる',
     },
     logging: {
         title: 'ログダッシュボード',
@@ -1184,32 +1237,32 @@ export const ja = {
         lastUpdated: '最終更新',
         showing: '表示中',
         of: '合計',
-        logs: 'ログ'
+        logs: 'ログ',
     },
     personas: {
         title: 'ペルソナ',
         description: '回答の傾向を形作るカスタマイズプロファイル。',
         namePlaceholder: 'ペルソナ名',
         descriptionPlaceholder: '簡単な説明',
-        promptPlaceholder: 'プロンプト'
+        promptPlaceholder: 'プロンプト',
     },
     advancedTab: {
         modelConfiguration: 'モデル構成',
         modelConfigurationDesc: '選択されたモデルのカスタムシステムコマンドとパラメータ。',
         customSystemMessage: 'カスタムシステムメッセージ',
         systemPromptPlaceholder: 'このモデルのカスタムシステムコマンド...',
-        parameterPreset: 'パラメータプリセット'
+        parameterPreset: 'パラメータプリセット',
     },
     toolDisplay: {
         markdownView: 'Markdown表示',
         text: 'テキスト',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
     },
     modelExplorer: {
         title: 'モデルエクスプローラー',
         search: 'モデルを検索...',
         install: 'インストール',
-        installed: 'インストール済み'
+        installed: 'インストール済み',
     },
     docker: {
         title: 'Docker管理',
@@ -1218,7 +1271,7 @@ export const ja = {
         remove: '削除',
         shell: 'シェル',
         logs: 'ログ',
-        stats: '統計'
+        stats: '統計',
     },
     onboarding: {
         welcome: 'Tandemへようこそ',
@@ -1227,7 +1280,7 @@ export const ja = {
         step3: 'コーディングを開始',
         skip: 'スキップ',
         next: '次へ',
-        finish: '完了'
+        finish: '完了',
     },
     agentDashboard: {
         title: 'エージェント評議会',
@@ -1240,7 +1293,7 @@ export const ja = {
         autoRun: '自動実行',
         step: 'ステップ',
         currentPlan: '現在のプラン',
-        selectSession: 'セッションを選択するか、新しく作成して開始してください。'
+        selectSession: 'セッションを選択するか、新しく作成して開始してください。',
     },
     ideas: {
         title: 'プロジェクトアイデア',
@@ -1261,7 +1314,7 @@ export const ja = {
             cliTool: 'CLIツール',
             apiBackend: 'API / バックエンド',
             desktop: 'デスクトップアプリ',
-            other: 'その他'
+            other: 'その他',
         },
 
         // Research stages
@@ -1271,7 +1324,7 @@ export const ja = {
             sectorAnalysis: 'セクター分析',
             marketResearch: '市場調査',
             competitorAnalysis: '競合分析',
-            complete: 'リサーチ完了'
+            complete: 'リサーチ完了',
         },
 
         // Generation
@@ -1279,7 +1332,7 @@ export const ja = {
             title: 'アイデアを生成中',
             progress: 'アイデアを生成中 {{current}} / {{total}}',
             enriching: 'アイデアの詳細を充実させています...',
-            complete: '生成完了'
+            complete: '生成完了',
         },
 
         // Idea card
@@ -1297,7 +1350,7 @@ export const ja = {
             detailedDescription: '詳細な説明',
             roadmap: 'プロジェクトロードマップ',
             techStack: '技術スタック',
-            competitorAnalysis: '競合分析'
+            competitorAnalysis: '競合分析',
         },
 
         // Tech stack categories
@@ -1306,7 +1359,7 @@ export const ja = {
             backend: 'バックエンド',
             database: 'データベース',
             infrastructure: 'インフラ',
-            other: 'その他のツール'
+            other: 'その他のツール',
         },
 
         // Competitor analysis
@@ -1314,7 +1367,7 @@ export const ja = {
             strengths: '強み',
             weaknesses: '弱み',
             missingFeatures: '不足している機能',
-            opportunity: '差別化の機会'
+            opportunity: '差別化の機会',
         },
 
         // Generation stages (multi-stage pipeline)
@@ -1327,7 +1380,7 @@ export const ja = {
             techStack: '技術スタックを選択中...',
             competitorAnalysis: '競合を分析中...',
             finalizing: 'アイデアを最終調整中...',
-            complete: 'アイデア完了'
+            complete: 'アイデア完了',
         },
 
         // Logo generation
@@ -1336,7 +1389,7 @@ export const ja = {
             generate: 'ロゴを生成',
             generating: 'ロゴを生成中...',
             requiresAntigravity: 'ロゴ生成にはAntigravityの接続が必要です',
-            promptPlaceholder: 'ロゴのコンセプトを説明してください...'
+            promptPlaceholder: 'ロゴのコンセプトを説明してください...',
         },
 
         // Status
@@ -1348,7 +1401,7 @@ export const ja = {
             cancelled: 'キャンセル済み',
             pending: '待機中',
             approved: '承認済み',
-            rejected: '却下済み'
+            rejected: '却下済み',
         },
 
         // Errors
@@ -1358,7 +1411,7 @@ export const ja = {
             researchFailed: 'リサーチに失敗しました。もう一度お試しください。',
             generationFailed: 'アイデア生成に失敗しました。もう一度お試しください。',
             approvalFailed: 'プロジェクトの作成に失敗しました。もう一度お試しください。',
-            logoFailed: 'ロゴ生成に失敗しました。もう一度お試しください。'
+            logoFailed: 'ロゴ生成に失敗しました。もう一度お試しください。',
         },
 
         // Empty states
@@ -1366,7 +1419,7 @@ export const ja = {
             noSessions: 'アイデアセッションはまだありません',
             noSessionsDesc: '新しいセッションを開始してプロジェクトアイデアを生成しましょう',
             noIdeas: 'アイデアは生成されていません',
-            noIdeasDesc: 'リサーチフェーズを完了してアイデアを生成してください'
+            noIdeasDesc: 'リサーチフェーズを完了してアイデアを生成してください',
         },
 
         // History
@@ -1380,11 +1433,11 @@ export const ja = {
             pendingReview: 'レビュー待ち',
             viewDetails: '詳細を表示',
             noIdeasYet: 'アイデアはまだ生成されていません',
-            daysAgo: '{{count}} 日前'
+            daysAgo: '{{count}} 日前',
         },
 
         // Session setup
-        modelSelectorHint: '上部バーのモデルセレクターを使用してAIモデルを変更します。'
+        modelSelectorHint: '上部バーのモデルセレクターを使用してAIモデルを変更します。',
     },
     tools: {
         usingTool: 'ツールを使用中',
@@ -1397,13 +1450,14 @@ export const ja = {
         input: '入力',
         output: '出力',
         filePreview: 'ファイルプレビュー',
-        path: 'パス:'
+        path: 'パス:',
     },
     extensionPrompt: {
         title: '体験を強化しましょう',
         subtitle: 'Tandem ブラウザー拡張機能をインストール',
         infoTitle: 'ブラウザー拡張機能とは？',
-        infoBody: 'Tandem のブラウザー拡張機能により、AI がウェブページと直接やり取りできるようになります。コンテンツの読み取り、フォーム入力、ボタンのクリック、コマンドに基づく自動操作が可能です。',
+        infoBody:
+            'Tandem のブラウザー拡張機能により、AI がウェブページと直接やり取りできるようになります。コンテンツの読み取り、フォーム入力、ボタンのクリック、コマンドに基づく自動操作が可能です。',
         featuresTitle: '機能:',
         features: {
             aiChatTitle: 'ブラウザー内AIチャット:',
@@ -1413,7 +1467,7 @@ export const ja = {
             contentExtractionTitle: 'コンテンツ抽出:',
             contentExtractionDesc: 'ワンクリックでページ内容を抽出して要約',
             secureConnectionTitle: '安全な接続:',
-            secureConnectionDesc: 'すべての通信はお使いのコンピューター内に留まります'
+            secureConnectionDesc: 'すべての通信はお使いのコンピューター内に留まります',
         },
         installTitle: 'クイックインストール:',
         steps: {
@@ -1421,12 +1475,179 @@ export const ja = {
             step2: '「デベロッパーモード」を有効にする（右上の切り替え）',
             step3: '「パッケージ化されていない拡張機能を読み込む」をクリック',
             step4Prefix: 'Tandem ディレクトリ内の',
-            step4Suffix: 'フォルダーを選択'
+            step4Suffix: 'フォルダーを選択',
         },
         openFolder: '拡張機能フォルダーを開く',
         viewInstructions: '手順を見る',
         dismiss: 'もう表示しない',
-        remindLater: '後でリマインド'
-    }
+        remindLater: '後でリマインド',
+    },
+    speech: {
+        title: '音声とスピーチ',
+        subtitle: 'アシスタントの応答用に音声設定を構成します。',
+        voiceSelection: '音声選択',
+        systemDefault: 'システムデフォルト',
+        test: '音声をテスト',
+        speed: 'スピーチレート',
+        previewText: 'Tandemで未来へようこそ。私はあなたのAIアシスタントです。',
+        microphone: 'マイク',
+        speaker: 'スピーカー / ヘッドフォン',
+        microphoneSelection: 'マイク入力',
+        speakerSelection: 'オーディオ出力',
+        voiceCloning: '音声クローニング',
+        voiceCloningDesc: 'Tandemエコシステムに独自の音声を統合します。',
+        voiceCloningTitle: '独自の音声を使用しましょう！',
+        voiceCloningTeaser:
+            '1分間話すとAIがあなたの音声を模倣します。この機能は現在アクティブです！',
+        record: '録音開始',
+        stopRecord: '録音停止',
+        recording: '録音中...',
+        startTraining: 'クローニング開始',
+        training: '音声をモデリング中...',
+        trainingDesc: 'お待ちください。コンピューターの速度によっては数分かかる場合があります。',
+        downloadModel: 'モデルをダウンロード（2GB）',
+        modelRequired: 'XTTS v2モデルが必要です',
+        modelRequiredDesc:
+            '音声クローニング機能を使用するには、AIモデル（約2GB）をダウンロードする必要があります。',
+        downloadingModel: 'モデルをダウンロード中...',
+        downloadComplete: 'ダウンロード完了',
+    },
+    dragDrop: {
+        title: '注文をドロップ',
+        description: '分析のためにファイルを中央に送信します。',
+    },
+    markdown: {
+        loadingDiagram: '図を読み込み中...',
+    },
+    build: {
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test',
+    },
+    devServer: {
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000',
+    },
+    agent: {
+        allStepsFinished: 'すべてのステップが完了しました。新しい指示を受け付けます。',
+        readyForInstructions: '指示を待機中',
+        waitingActivity: 'アクティビティを待機中...',
+        autonomousTitle: '自律エージェント',
+        autonomousDesc: 'エージェントは目標を達成するために独立して作業します。',
+        executionPlan: '実行計画',
+        approveExecute: '承認して実行',
+        rejectPlan: '計画を却下',
+        awaitingApproval: '承認待ち',
+        noToolCalls: 'ツール呼び出しはまだありません。',
+        activeTools: 'アクティブなツール',
+        snapshot: 'スナップショット',
+        promptPlaceholder: 'エージェントに何をさせたいか説明してください...',
+        start: 'エージェント開始',
+        stop: 'エージェント停止',
+        pause: '一時停止',
+        resume: '再開',
+        retry: '再試行',
+        tokens: 'トークン',
+        tokensShort: '{{count}}k トークン',
+        cost: 'コスト',
+        live: 'ライブ',
+        calls: '呼び出し',
+        activitiesCount: 'アクティビティ',
+        history: '履歴',
+        viewCheckpoints: 'チェックポイントを表示',
+        no_checkpoints: 'チェックポイントはありません',
+        no_tasks_yet: 'タスクはまだありません',
+        selectModel: 'モデルを選択',
+        unknownModel: '不明なモデル',
+        continueWithModel: '選択したモデルで続行',
+        selectAlternativeModel: '代替モデルを選択',
+        interruptionTitle: '中断',
+        interruptionReason: '理由:',
+        interruptionHelp: 'エージェントは続行するためにあなたの助けが必要です。',
+        failedLoadModels: 'モデルの読み込みに失敗しました。',
+        justNow: 'たった今',
+        minutesAgo: '{{count}}分前',
+        hoursAgo: '{{count}}時間前',
+        daysAgo: '{{count}}日前',
+        attachFiles: 'ファイルを添付',
+        aiProvider: 'AIプロバイダー',
+    },
+    projectAgent: {
+        changePreview: '変更プレビュー',
+        reasoningTitle: '推論',
+        consoleTitle: 'コンソール',
+        consoleTab: 'コンソール',
+        planTab: '計画',
+        eventCount: '{{count}} イベント',
+        waitingLogs: 'ログを待機中...',
+        toolSummary: {
+            editing: 'ファイルを編集中',
+            command: 'コマンドを実行中',
+            running: 'ツールを実行中',
+            fileFallback: 'ファイル変更',
+        },
+        newTask: '新しいタスク',
+        generatingPlan: '計画を生成中...',
+        executingTask: 'タスクを実行中...',
+        waitingApproval: '承認待ち',
+        newStep: '新しいステップ',
+        addStep: 'ステップを追加',
+        noPlan: '計画はまだありません',
+        overallProgress: '全体的な進捗',
+        selectAgentProfile: 'エージェントプロファイルを選択',
+        agentSelected: 'エージェントが選択されました',
+        defaultAgent: 'デフォルトエージェント',
+        defaultAgentDesc: '汎用プロジェクトエージェント',
+        approveAndRun: '承認して実行',
+        planning: '計画中',
+        running: '実行中',
+        stopLabel: '停止',
+        planAction: '計画',
+        executeAction: '実行',
+        thinkingOn: '思考オン',
+        thinkingOff: '思考オフ',
+        selectAction: 'アクションを選択',
+        noDescription: '説明が提供されていません',
+        selectProject: 'プロジェクトを選択',
+    },
+    audioChat: {
+        listening: '聴いています...',
+        listeningLabel: '聴取中',
+        listeningDesc: 'あなたの声を聴いています。',
+        speaking: '話しています...',
+        speakingDesc: 'あなたに話しています。',
+        thinking: '考えています...',
+        thinkingDesc: 'あなたのリクエストを処理しています。',
+        stopSpeaking: '話すのを止める',
+        pauseListening: '一時停止',
+        resumeListening: '再開',
+    },
+    canvas: {
+        selectArea: 'エリアを選択',
+    },
+    inspector: {
+        analyzing: '分析中...',
+        selectFolder: '検査するフォルダーを選択',
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI',
+    },
+    exportChat: {
+        confirm: 'エクスポート',
+        exporting: 'エクスポート中...',
+        title: 'チャットをエクスポート',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)',
+    },
+    tasksPanel: {
+        createNew: '新しいタスクを作成',
+    },
+    tasks: {
+        createNew: '新しいタスクを作成',
+    },
 };
-

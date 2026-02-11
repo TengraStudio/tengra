@@ -8,7 +8,12 @@ import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.
 import { Message } from '@shared/types/chat';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
+/**
+ * Registers IPC handlers for model collaboration
+ * @param collaborationService Service for model collaboration
+ */
 export function registerCollaborationIpc(collaborationService: ModelCollaborationService) {
+
     /**
      * Run multiple models in collaboration
      */

@@ -66,16 +66,20 @@ export const en = {
         zoomOut: 'Zoom Out',
         toClose: 'to close',
         locale: 'en-US',
-        ai: 'AI'
+        ai: 'AI',
+    },
+    loading: {
+        codeEditor: 'Loading code editor',
+        chart: 'Loading chart',
     },
     app: {
         name: 'Tandem',
-        versionShort: 'V {{version}}'
+        versionShort: 'V {{version}}',
     },
     errors: {
         unexpected: 'Sorry, there was an error.',
         somethingWentWrong: 'Something went wrong:',
-        rootNotFound: 'Root element not found'
+        rootNotFound: 'Root element not found',
     },
     languages: {
         tr: 'Turkish',
@@ -85,7 +89,7 @@ export const en = {
         es: 'Spanish',
         ja: 'Japanese',
         zh: 'Chinese',
-        ar: 'Arabic'
+        ar: 'Arabic',
     },
     themeStore: {
         title: 'Theme Store',
@@ -102,37 +106,37 @@ export const en = {
         themes: {
             'dark-default': {
                 name: 'Dark Default',
-                description: 'The default dark theme with purple accents'
+                description: 'The default dark theme with purple accents',
             },
             'light-default': {
                 name: 'Light Default',
-                description: 'A clean light theme for daytime use'
+                description: 'A clean light theme for daytime use',
             },
-            'nord': {
+            nord: {
                 name: 'Nord',
-                description: 'An arctic, north-bluish color palette'
+                description: 'An arctic, north-bluish color palette',
             },
-            'dracula': {
+            dracula: {
                 name: 'Dracula',
-                description: 'A dark theme with vibrant colors'
+                description: 'A dark theme with vibrant colors',
             },
-            'monokai': {
+            monokai: {
                 name: 'Monokai Pro',
-                description: 'Professional dark theme with warm accents'
+                description: 'Professional dark theme with warm accents',
             },
             'github-dark': {
                 name: 'GitHub Dark',
-                description: 'The official GitHub dark theme'
+                description: 'The official GitHub dark theme',
             },
             'solarized-dark': {
                 name: 'Solarized Dark',
-                description: 'Precision colors for machines and people'
+                description: 'Precision colors for machines and people',
             },
             'tokyo-night': {
                 name: 'Tokyo Night',
-                description: 'A clean theme celebrating the lights of Tokyo'
-            }
-        }
+                description: 'A clean theme celebrating the lights of Tokyo',
+            },
+        },
     },
     modelSelector: {
         searchModels: 'Search Models...',
@@ -160,8 +164,8 @@ export const en = {
             claude: 'Claude',
             local: 'Local',
             github: 'GitHub',
-            openai: 'OpenAI'
-        }
+            openai: 'OpenAI',
+        },
     },
     assistantIdentity: {
         openai: 'OpenAI',
@@ -174,7 +178,7 @@ export const en = {
         mistral: 'Mistral',
         deepseek: 'DeepSeek',
         qwen: 'Qwen',
-        phi: 'Phi'
+        phi: 'Phi',
     },
     settings: {
         tabs: {
@@ -187,7 +191,7 @@ export const en = {
             statistics: 'Statistics',
             advanced: 'Advanced',
             developer: 'Developer',
-            about: 'About'
+            about: 'About',
         },
         searchPlaceholder: 'Search settings...',
         searchResults: 'Found {count} matching settings',
@@ -222,63 +226,66 @@ export const en = {
             maxPercentagePlaceholder: '50',
             typeLabel: 'Type:',
             limitLabel: '{{period}} Limit',
-            percentHint: 'Will limit to {{count}} requests ({{percentage}}% of {{remaining}} remaining)',
+            percentHint:
+                'Will limit to {{count}} requests ({{percentage}}% of {{remaining}} remaining)',
             types: {
                 requests: 'Requests',
-                percentage: 'Percentage'
+                percentage: 'Percentage',
             },
             periods: {
                 hourly: 'Hourly',
                 daily: 'Daily',
-                weekly: 'Weekly'
+                weekly: 'Weekly',
             },
             copilot: {
                 title: 'Copilot',
-                current: 'Current: {{remaining}} / {{limit}} remaining'
+                current: 'Current: {{remaining}} / {{limit}} remaining',
             },
             antigravity: {
                 title: 'Antigravity Models',
-                description: "Set percentage limit based on each model's remaining quota"
+                description: "Set percentage limit based on each model's remaining quota",
             },
             codex: {
                 title: 'Codex',
-                description: 'Set percentage limits based on daily/weekly remaining quota'
-            }
+                description: 'Set percentage limits based on daily/weekly remaining quota',
+            },
         },
         browserClosure: {
             title: 'Browser Closure Required',
-            description: 'To authenticate with {{provider}}, Tandem needs to read protected cookies.',
+            description:
+                'To authenticate with {{provider}}, Tandem needs to read protected cookies.',
             warningPrefix: 'We must',
             warningEmphasis: 'automatically close your browser',
             warningSuffix: 'to release the file lock.',
-            saveWork: 'Please save your work in the browser before proceeding. We will re-open it invisibly to extract the session key.',
-            confirm: 'Close Browser & Connect'
+            saveWork:
+                'Please save your work in the browser before proceeding. We will re-open it invisibly to extract the session key.',
+            confirm: 'Close Browser & Connect',
         },
         hyperparameters: {
             title: 'Hyperparameters',
             temperature: {
                 label: 'Temperature',
-                description: 'Creativity level (0: deterministic, 2: very creative)'
+                description: 'Creativity level (0: deterministic, 2: very creative)',
             },
             topP: {
                 label: 'Top-P',
-                description: 'Nucleus sampling probability threshold'
+                description: 'Nucleus sampling probability threshold',
             },
             topK: {
                 label: 'Top-K',
-                description: 'Number of most likely tokens to consider'
+                description: 'Number of most likely tokens to consider',
             },
             repeatPenalty: {
                 label: 'Repeat Penalty',
-                description: 'Repetition penalty (1: none, 2: high)'
-            }
+                description: 'Repetition penalty (1: none, 2: high)',
+            },
         },
         mcp: {
             title: 'Model Context Protocol',
             subtitle: 'Manage your MCP servers and install new tools',
             tabs: {
                 servers: 'Servers',
-                marketplace: 'Marketplace'
+                marketplace: 'Marketplace',
             },
             servers: {
                 title: 'Configured Servers',
@@ -288,8 +295,9 @@ export const en = {
                 emptyHint: 'Install servers from the Marketplace tab',
                 enabled: 'enabled',
                 note: 'Note',
-                noteText: 'Only enabled servers are accessible to AI assistants. Toggle the power button to enable/disable each server.',
-                internalAlwaysEnabled: 'Internal tools are always enabled'
+                noteText:
+                    'Only enabled servers are accessible to AI assistants. Toggle the power button to enable/disable each server.',
+                internalAlwaysEnabled: 'Internal tools are always enabled',
             },
             status: {
                 connected: 'Connected',
@@ -298,9 +306,9 @@ export const en = {
                 enabled: 'Enabled',
                 disabled: 'Disabled',
                 active: 'Active',
-                inactive: 'Inactive'
-            }
-        }
+                inactive: 'Inactive',
+            },
+        },
     },
     projects: {
         newProject: 'New Project',
@@ -364,7 +372,8 @@ export const en = {
         statusArchived: 'Archived',
         statusDraft: 'Draft',
         councilEnabledLabel: 'Enabled',
-        councilThresholdHint: 'Higher thresholds require more agents to agree before a step is considered final.',
+        councilThresholdHint:
+            'Higher thresholds require more agents to agree before a step is considered final.',
         generalAI: 'General AI',
         projectSettings: 'Project Settings',
         projectTitle: 'Project',
@@ -402,7 +411,7 @@ export const en = {
         dangerZone: 'Danger Zone',
         consensusThreshold: 'Consensus Threshold',
         councilAI: 'Council AI',
-        councilAIDesc: 'Pick which agents participate in the council.'
+        councilAIDesc: 'Pick which agents participate in the council.',
     },
     projectWizard: {
         title: 'Project Wizard',
@@ -415,7 +424,7 @@ export const en = {
         projectName: 'PROJECT NAME',
         namePlaceholder: 'Ex: CRM Dashboard',
         placeholder: {
-            example: 'example.com'
+            example: 'example.com',
         },
         description: 'DESCRIPTION (OPTIONAL)',
         descPlaceholder: 'What is the goal of this project?',
@@ -450,8 +459,8 @@ export const en = {
             backend: 'Backend Service',
             cli: 'CLI / Script',
             mobile: 'Mobile App',
-            other: 'Custom Project'
-        }
+            other: 'Custom Project',
+        },
     },
     projectDashboard: {
         title: 'Project Dashboard',
@@ -484,6 +493,7 @@ export const en = {
         failedLoad: 'Failed to load tasks.',
         noTasks: 'No tasks found.',
         createTodo: 'Create a TODO.md file to get started.',
+        clearSelection: 'Clear Selection',
         projectTasks: 'Project Tasks',
         pending: 'Pending',
         terminalFailedStart: 'Failed to start terminal.',
@@ -535,11 +545,12 @@ export const en = {
         todoList: 'Upcoming Tasks',
         gitStatus: {
             pulling: 'Pulling...',
-            pushing: 'Pushing...'
+            pushing: 'Pushing...',
         },
         noIssues: 'No significant issues found in the project. Good job!',
         noIssuesDesc: 'Project analysis did not detect critical issues.',
-        issuesDescription: 'Tandem scans your project for potential errors, warnings, and code smells.',
+        issuesDescription:
+            'Tandem scans your project for potential errors, warnings, and code smells.',
         issueType: 'TYPE',
         issueMessage: 'MESSAGE',
         issueLocation: 'LOCATION',
@@ -564,7 +575,7 @@ export const en = {
         editor: {
             loading: 'Loading editor...',
             error: 'Editor error: {{error}}',
-            failed: 'Failed to load editor'
+            failed: 'Failed to load editor',
         },
         filesTab: {
             noFileSelected: 'No File Selected',
@@ -572,7 +583,7 @@ export const en = {
             shortcuts: 'Shortcuts',
             quickSearch: 'Quick Search',
             navigation: 'Navigation',
-            toggleExplorer: 'Toggle Explorer'
+            toggleExplorer: 'Toggle Explorer',
         },
         folderInspector: {
             files: 'Files',
@@ -584,7 +595,7 @@ export const en = {
             packageName: 'Name:',
             packageVersion: 'Version:',
             readme: 'Readme',
-            root: 'Root'
+            root: 'Root',
         },
         contributions: {
             lastYear: '{{count}} contributions in the last year',
@@ -603,15 +614,15 @@ export const en = {
                 sep: 'Sep',
                 oct: 'Oct',
                 nov: 'Nov',
-                dec: 'Dec'
+                dec: 'Dec',
             },
             days: {
                 mon: 'Mon',
                 wed: 'Wed',
                 fri: 'Fri',
-                sun: 'Sun'
-            }
-        }
+                sun: 'Sun',
+            },
+        },
     },
     git: {
         commitGenerator: 'Git Commit Generator',
@@ -624,7 +635,7 @@ export const en = {
         copy: 'Copy',
         commit: 'Commit',
         cancel: 'Cancel',
-        error: 'An error occurred'
+        error: 'An error occurred',
     },
     ssh: {
         title: 'SSH Manager',
@@ -699,7 +710,7 @@ export const en = {
             username: 'root',
             passwordOptional: 'Currently optional if key used',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: 'My Server'
+            profileName: 'My Server',
         },
         profileName: 'Profile Name',
         nginx: {
@@ -712,15 +723,15 @@ export const en = {
             configPreview: 'Configuration Preview',
             placeholders: {
                 domain: 'api.myapp.com',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: 'Domain name is required',
                 connecting: 'Connecting to server...',
                 moving: 'Moving configuration to Nginx directory...',
                 success: 'Nginx reloaded successfully!',
-                error: 'Failed to apply: {{error}}. Make sure you have sudo privileges.'
-            }
+                error: 'Failed to apply: {{error}}. Make sure you have sudo privileges.',
+            },
         },
         presets: {
             title: 'Parameter Presets',
@@ -732,34 +743,34 @@ export const en = {
             labels: {
                 name: 'Preset Name',
                 temperature: 'Temperature',
-                topP: 'Top P'
+                topP: 'Top P',
             },
             placeholders: {
-                name: 'e.g. My Custom Preset'
-            }
+                name: 'e.g. My Custom Preset',
+            },
         },
         promptManager: {
             title: 'Prompt Library',
             newPrompt: 'New Prompt',
             labels: {
                 title: 'Title',
-                content: 'Content'
+                content: 'Content',
             },
             placeholders: {
                 title: 'e.g. Code Refactor',
-                content: 'Enter prompt content...'
+                content: 'Enter prompt content...',
             },
             empty: {
                 title: 'No prompts yet',
-                subtitle: 'Create one to get started'
-            }
+                subtitle: 'Create one to get started',
+            },
         },
         editor: {
             loading: 'Loading editor...',
             initializing: 'Initializing Editor...',
             error: 'Editor error: {{error}}',
-            aiRefactor: 'AI Refactor / Explain'
-        }
+            aiRefactor: 'AI Refactor / Explain',
+        },
     },
     accounts: {
         title: 'Connected Accounts',
@@ -782,39 +793,39 @@ export const en = {
         categories: {
             aiProviders: 'AI Providers',
             developerTools: 'Developer Tools',
-            localModels: 'Local Models'
+            localModels: 'Local Models',
         },
 
         // Provider descriptions
         providers: {
             github: {
                 name: 'GitHub',
-                description: 'Source code hosting and collaboration'
+                description: 'Source code hosting and collaboration',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'AI-powered code completion'
+                description: 'AI-powered code completion',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: 'Cloud AI services and web access'
+                description: 'Cloud AI services and web access',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4 and advanced language models'
+                description: 'GPT-4 and advanced language models',
             },
             claude: {
                 name: 'Claude',
-                description: 'Anthropic Claude reasoning models'
+                description: 'Anthropic Claude reasoning models',
             },
             ollama: {
                 name: 'Ollama',
-                description: 'Run AI models locally on your machine'
+                description: 'Run AI models locally on your machine',
             },
             nvidia: {
                 name: 'NVIDIA',
-                description: 'Local GPU acceleration and model runtime'
-            }
+                description: 'Local GPU acceleration and model runtime',
+            },
         },
 
         // Status labels
@@ -858,7 +869,7 @@ export const en = {
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
             claude: 'Claude',
-        }
+        },
     },
     speech: {
         title: 'Voice & Speech',
@@ -875,7 +886,8 @@ export const en = {
         voiceCloning: 'Voice Cloning',
         voiceCloningDesc: 'Integrate your own voice into the Tandem ecosystem.',
         voiceCloningTitle: 'Use Your Own Voice!',
-        voiceCloningTeaser: 'Speak for 1 minute and let the AI imitate your voice This feature is now active!',
+        voiceCloningTeaser:
+            'Speak for 1 minute and let the AI imitate your voice This feature is now active!',
         record: 'Start Recording',
         stopRecord: 'Stop Recording',
         recording: 'Recording...',
@@ -884,14 +896,15 @@ export const en = {
         trainingDesc: 'Please wait, this may take a few minutes depending on your computer speed.',
         downloadModel: 'Download Model (2GB)',
         modelRequired: 'XTTS v2 Model Required',
-        modelRequiredDesc: 'To use the voice cloning feature, you need to download the AI model (~2GB).',
+        modelRequiredDesc:
+            'To use the voice cloning feature, you need to download the AI model (~2GB).',
         downloadingModel: 'Downloading Model...',
-        downloadComplete: 'Download Complete'
+        downloadComplete: 'Download Complete',
     },
 
     dragDrop: {
         title: 'DROP THE ORDER',
-        description: 'Send files to the center for analysis.'
+        description: 'Send files to the center for analysis.',
     },
     sidebar: {
         chats: 'Chats',
@@ -940,21 +953,21 @@ export const en = {
         agent: 'Agent',
         project: 'Project',
         moveTo: 'Move to...',
-        ideas: 'Ideas'
+        ideas: 'Ideas',
     },
     dateGroups: {
         today: 'Today',
         yesterday: 'Yesterday',
         lastWeek: 'Last Week',
-        older: 'Older'
+        older: 'Older',
     },
     nav: {
         chat: 'Chat',
         projects: 'Projects',
-        "project-agent": 'Project Agent',
+        'project-agent': 'Project Agent',
         settings: 'Settings',
         council: 'Council',
-        mcp: 'MCP Management'
+        mcp: 'MCP Management',
     },
     mcp: {
         management: 'MCP Management',
@@ -997,7 +1010,7 @@ export const en = {
             cloud: 'Cloud',
             productivity: 'Productivity',
             devops: 'DevOps',
-            utility: 'Utility'
+            utility: 'Utility',
         },
         tool: 'tool',
         tools: 'tools',
@@ -1008,7 +1021,7 @@ export const en = {
         searchingTools: 'Searching tools...',
         toolsAvailable: 'Tools Available',
         installedTools: 'Installed Tools',
-        availableTools: 'Available Tools'
+        availableTools: 'Available Tools',
     },
     memory: {
         title: 'Memory Inspector',
@@ -1027,10 +1040,18 @@ export const en = {
         noEpisodesRecorded: 'No episodes recorded',
         episodesDescription: 'Chat summaries are generated after long conversations.',
         noEntitiesDetected: 'No entities detected',
-        entitiesDescription: 'Structured knowledge about people, places and tools will show up here.',
+        entitiesDescription:
+            'Structured knowledge about people, places and tools will show up here.',
         ago: 'ago',
         via: 'via',
         chatId: 'Chat ID',
+        stats: {
+            pending: 'Pending',
+            confirmed: 'Confirmed',
+            archived: 'Archived',
+            avgConfidence: 'Avg. Confidence',
+            contradictions: 'Contradictions',
+        },
         // Memory component placeholders - I18N-001-4
         searchMemoriesPlaceholder: 'Search memories...',
         addMemoryPlaceholder: 'Add a new memory...',
@@ -1086,7 +1107,7 @@ export const en = {
             pending: 'Pending',
             confirmed: 'Confirmed',
             archived: 'Archived',
-            stats: 'Stats'
+            stats: 'Stats',
         },
         categories: {
             preference: 'Preference',
@@ -1096,9 +1117,9 @@ export const en = {
             workflow: 'Workflow',
             relationship: 'Relationship',
             fact: 'Fact',
-            instruction: 'Instruction'
+            instruction: 'Instruction',
         },
-        stats: {
+        memoryStats: {
             memoriesByCategory: 'Memories by Category',
             memoriesBySource: 'Memories by Source',
             healthMetrics: 'Memory Health Metrics',
@@ -1110,20 +1131,81 @@ export const en = {
             categoryDistribution: 'Category Distribution',
             memoriesCount: 'Memories Count',
             globalContext: 'Global Context',
-            totalActiveFragments: 'Total Active Fragments'
-        }
+            totalActiveFragments: 'Total Active Fragments',
+        },
     },
     terminal: {
         title: 'Terminal',
         new: 'New Terminal',
+        select_connection: 'Select Connection',
+        local: 'Local',
+        local_terminal: 'Local Terminal',
+        local_terminal_desc: 'Standard shell on your computer',
+        ssh_connections: 'SSH Connections',
+        no_ssh_profiles: 'No saved SSH profiles found',
+        docker_containers: 'Docker Containers',
+        no_containers: 'No running containers found',
         hide: 'Hide Terminal',
+        paste: 'Paste',
+        clearOutput: 'Clear Output',
+        split: 'Split Terminal',
+        detach: 'Detach Terminal',
+        commandHistory: 'Command History',
+        clearHistory: 'Clear History',
+        noHistory: 'No command history yet',
+        historySearchPlaceholder: 'Search command history...',
+        appearance: 'Appearance',
+        theme: 'Theme',
+        defaultTheme: 'Default',
+        communityTheme: 'Community',
+        font: 'Font',
+        fontLigatures: 'Font ligatures',
+        transparency: 'Transparency',
+        blur: 'Blur',
+        exportTheme: 'Export',
+        importTheme: 'Import',
+        galleryView: 'Gallery View',
+        exitGalleryView: 'Exit Gallery View',
+        floatTerminal: 'Float Terminal',
+        dockTerminal: 'Dock Terminal',
+        runTask: 'Run Task',
+        taskRunner: 'Task Runner',
+        tasksSearchPlaceholder: 'Search tasks...',
+        noTasksFound: 'No tasks found for this project',
+        closeSplit: 'Close Split',
+        toggleSplitOrientation: 'Toggle Split Orientation',
+        searchRegex: 'Regex Search',
+        semanticIssues: 'Semantic Issues',
+        semanticErrors: 'Errors',
+        semanticWarnings: 'Warnings',
+        semanticNoIssues: 'No warnings or errors detected yet',
+        clearIssues: 'Clear',
+        invalidRegex: 'Invalid regex pattern',
         noShellsFound: 'No shells found',
         noActiveSessions: 'No active terminal sessions',
         startNewSession: 'Start New Session',
         sessionFailed: 'Terminal session failed to start',
         closeAndCreate: 'Close this tab and create a new terminal session',
         exitedWithCode: 'Terminal exited with code {{code}}',
-        dashboardPlaceholder: '[ Terminal Dashboard Placeholder ]'
+        detachedExited: 'Session ended. You can close this detached terminal window.',
+        dashboardPlaceholder: '[ Terminal Dashboard Placeholder ]',
+        defaultBackend: 'Default Backend',
+        integratedSessions: 'Integrated Sessions',
+        externalTerminals: 'External Terminals',
+        noBackendsAvailable: 'No terminal backends available',
+        aiExplainError: 'Explain Error',
+        aiFixError: 'Fix Error',
+        aiExplainCommand: 'Explain Command',
+        aiAnalyzing: 'Analyzing with AI...',
+        aiSummary: 'Summary',
+        aiCause: 'Cause',
+        aiSolution: 'Solution',
+        aiSteps: 'Steps to Fix',
+        aiSuggestedCommand: 'Suggested Command',
+        aiRunCommand: 'Run',
+        aiConfidence: 'Confidence',
+        aiExplanation: 'Explanation',
+        aiAlternatives: 'Alternative Commands',
     },
     workspace: {
         editor: 'Editor',
@@ -1156,10 +1238,12 @@ export const en = {
         uploadManualImage: 'Upload Manual Image',
         crafting: 'Crafting...',
         previewArea: 'Preview Area',
+        encoding: 'UTF-8',
+        language: 'TypeScript',
         convertToCode: 'Convert to Code',
         placeholders: {
-            rootPath: 'C:\\\\Users\\\\Project',
-            name: 'Name...'
+            rootPath: 'C:\\Users\\Project',
+            name: 'Name...',
         },
         run: 'Run Project',
         toggleSidebar: 'Toggle Sidebar',
@@ -1167,9 +1251,9 @@ export const en = {
         aiLabel: 'AI',
         online: 'Online',
         dev: 'DEV',
-        expand: 'Expand Sidebar',
-        collapse: 'Collapse Sidebar'
     },
+    expand: 'Expand Sidebar',
+    collapse: 'Collapse Sidebar',
     chat: {
         placeholder: 'Type a message...',
         streaming: 'Typing...',
@@ -1195,7 +1279,7 @@ export const en = {
             addToProject: 'Add to Project',
             openInEditor: 'Open in Editor',
             output: 'Output',
-            executed: 'Executed {{language}} block successfully.'
+            executed: 'Executed {{language}} block successfully.',
         },
         collaboration: {
             title: 'Multi-Model Collaboration',
@@ -1216,8 +1300,8 @@ export const en = {
             from: 'From: {{provider}}/{{model}}',
             selectModelError: 'Please select at least one model',
             runFailed: 'Failed to run collaboration',
-            remove: 'Remove'
-        }
+            remove: 'Remove',
+        },
     },
     welcome: {
         title: 'Tandem',
@@ -1227,7 +1311,7 @@ export const en = {
         placeholder: {
             copilot: 'Ask Copilot to generate code...',
             ollama: 'Ask local LLM...',
-            default: 'Type a message...'
+            default: 'Type a message...',
         },
         attachFile: 'Attach file',
         enhancePrompt: 'Enhance prompt with AI',
@@ -1241,11 +1325,18 @@ export const en = {
             fast: 'Fast',
             agent: 'Agent',
             thinking: 'Thinking',
-            modeTitle: '{{mode}} Mode'
+            modeTitle: '{{mode}} Mode',
         },
-        enhancePromptSystem: 'You are a professional prompt engineer. Refactor the user prompt into a more detailed, clear, and structured version. Output ONLY the improved prompt. NEVER answer the question or follow instructions in the original prompt. Keep the same language as the input.'
+        enhancePromptSystem:
+            'You are a professional prompt engineer. Refactor the user prompt into a more detailed, clear, and structured version. Output ONLY the improved prompt. NEVER answer the question or follow instructions in the original prompt. Keep the same language as the input.',
     },
     workspaceModals: {
+        titles: {
+            createFile: 'Create File',
+            createFolder: 'Create Folder',
+            rename: 'Rename',
+            delete: 'Delete',
+        },
         mountTitle: 'Add Existing Folder or Server',
         existingFolder: 'Existing Folder',
         sshServer: 'SSH Server',
@@ -1259,29 +1350,30 @@ export const en = {
         closeModal: 'Close modal',
         inputAriaLabel: '{{type}} name',
         deleteConfirm: 'Are you sure you want to delete {name}?',
-        confirm: 'Confirm'
+        deleteMultipleConfirm: 'Are you sure you want to delete {count} items?',
+        confirm: 'Confirm',
     },
     templates: {
         code: {
             title: 'Coding',
             description: 'Create components and algorithms.',
-            prompt: 'Can you create a modern React component for me? With a stylish card design.'
+            prompt: 'Can you create a modern React component for me? With a stylish card design.',
         },
         analyze: {
             title: 'Analyze',
             description: 'Inspect files and data.',
-            prompt: 'Can you analyze the architecture in this project and provide improvement suggestions?'
+            prompt: 'Can you analyze the architecture in this project and provide improvement suggestions?',
         },
         creative: {
             title: 'Creative Writing',
             description: 'Generate text and content.',
-            prompt: 'Can you write an impressive intro text for an AI assistant named Tandem?'
+            prompt: 'Can you write an impressive intro text for an AI assistant named Tandem?',
         },
         debug: {
             title: 'Debug',
             description: 'Find and fix issues.',
-            prompt: 'Can you help me find the memory leak in my code?'
-        }
+            prompt: 'Can you help me find the memory leak in my code?',
+        },
     },
     attachments: {
         image: 'Image',
@@ -1299,16 +1391,18 @@ export const en = {
         copyAsHtml: 'Copy as HTML',
         TandemDrawing: 'Tandem Drawing...',
         quotaExceeded: 'Quota Exceeded',
-        quotaMessage: 'You have exceeded the model usage quota. Please try again later or upgrade your plan.',
+        quotaMessage:
+            'You have exceeded the model usage quota. Please try again later or upgrade your plan.',
         resetsAt: 'Resets at:',
         checkQuotas: 'Check Quotas',
         stop: 'Stop',
+        react: 'React',
+        emojiReactions: 'Emoji reactions',
         speakAloud: 'Read Aloud',
         convertToCode: 'Convert to Code',
         approvePlan: 'Approve Plan',
         TandemThinking: 'Tandem Thinking',
         showThought: 'Show Thought',
-        react: 'React',
         renderingDiagram: 'Rendering Diagram...',
         imageAlt: 'Image',
         unknownModel: 'Unknown Model',
@@ -1320,7 +1414,7 @@ export const en = {
             mistral: 'Mistral Family',
             deepseek: 'DeepSeek',
             qwen: 'Qwen',
-            phi: 'Phi'
+            phi: 'Phi',
         },
         runBenchmark: 'Run Benchmark',
         running: 'Running...',
@@ -1334,7 +1428,7 @@ export const en = {
         regenerate: 'Regenerate',
         rating: 'Rate response',
         actions: 'Message actions',
-        multiModelResponse: 'Responses from multiple models'
+        multiModelResponse: 'Responses from multiple models',
     },
     general: {
         turkish: 'Turkish',
@@ -1359,10 +1453,12 @@ export const en = {
         startOnStartup: 'Start on system startup',
         startOnStartupDesc: 'Automatically launch Tandem when your computer starts.',
         workAtBackground: 'Run in background',
-        workAtBackgroundDesc: 'Keep Tandem running in the background after closing the window.'
+        workAtBackgroundDesc: 'Keep Tandem running in the background after closing the window.',
     },
     appearance: {
         themeDesc: 'Change the application color theme.',
+        themesFolder: 'Themes Folder',
+        openThemesFolder: 'Open Themes Folder',
         font: 'Font',
         fontDesc: 'Customize application font and size.',
         fontFamily: 'FONT FAMILY',
@@ -1373,9 +1469,9 @@ export const en = {
         highContrast: 'High Contrast Mode',
         highContrastDesc: 'Increases contrast for better readability',
         reduceMotion: 'Reduce Motion',
-        reduceMotionDesc: 'Minimize animations and transitions for accessibility',
+        reduceMotionDesc: 'Reduces animations and transitions',
         default: 'Default',
-        system: 'System Font',
+        system: 'System Default',
         themes: {
             black: 'Black',
             white: 'White',
@@ -1401,8 +1497,8 @@ export const en = {
             serenity: 'Serenity',
             neonPulse: 'Neon Pulse',
             cyberFuture: 'Cyber Future',
-            softVelvet: 'Soft Velvet'
-        }
+            softVelvet: 'Soft Velvet',
+        },
     },
     statistics: {
         title: 'Statistics',
@@ -1468,10 +1564,11 @@ export const en = {
         output: 'Output',
         claudeTitle: 'Anthropic Claude',
         codexTitle: 'ChatGPT Codex',
-        copilotTitle: 'GitHub Copilot'
+        copilotTitle: 'GitHub Copilot',
     },
     about: {
-        description: 'Tandem is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.',
+        description:
+            'Tandem is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.',
         checkUpdates: 'Check for Updates',
         privacyPolicy: 'Privacy Policy',
         github: 'GitHub',
@@ -1484,7 +1581,7 @@ export const en = {
         forceReload: 'FORCE RELOAD',
         sessionStart: 'Session Start',
         buildVersion: 'Build Ver',
-        notAvailable: 'N/A'
+        notAvailable: 'N/A',
     },
     developer: {
         title: 'Developer Settings',
@@ -1502,7 +1599,7 @@ export const en = {
         importSettingsDesc: 'Load settings from a JSON file',
         import: 'Import',
         settingsImported: 'Settings imported',
-        invalidSettingsFile: 'Invalid settings file'
+        invalidSettingsFile: 'Invalid settings file',
     },
     gallery: {
         title: 'Gallery',
@@ -1520,7 +1617,7 @@ export const en = {
         delete: 'Delete',
         steps: 'Steps',
         cfg: 'CFG',
-        seed: 'Seed'
+        seed: 'Seed',
     },
     advanced: {
         systemInfo: 'System Info',
@@ -1539,7 +1636,7 @@ export const en = {
         tokenRefreshInterval: 'Token Refresh',
         tokenRefreshIntervalDesc: 'How often to refresh OAuth tokens.',
         copilotRefreshInterval: 'Copilot Refresh',
-        copilotRefreshIntervalDesc: 'How often to refresh Copilot session tokens.'
+        copilotRefreshIntervalDesc: 'How often to refresh Copilot session tokens.',
     },
     tips: {
         title: 'Did you know?',
@@ -1551,7 +1648,7 @@ export const en = {
         didYouKnow: 'Did you know?',
         discoverMore: 'Discover more',
         dontShowAgain: "Don't show again",
-        gotIt: 'Got it'
+        gotIt: 'Got it',
     },
     agents: {
         planner: 'Planner',
@@ -1571,7 +1668,7 @@ export const en = {
         active: 'active',
         addAgent: 'Add agent',
         goal: 'Goal',
-        describeObjective: 'Describe the council\'s objective...',
+        describeObjective: "Describe the council's objective...",
         complexGoalPlaceholder: 'Describe a complex goal for the council...',
         runCouncil: 'Run council',
         thoughtStream: 'Thought Stream',
@@ -1609,7 +1706,7 @@ export const en = {
         failedToRetryStep: 'Failed to retry step',
         newTask: 'New Task',
         addAction: 'Add Action',
-        overallProgress: 'Overall Progress'
+        overallProgress: 'Overall Progress',
     },
     modelComparison: {
         title: 'Model Comparison',
@@ -1618,7 +1715,10 @@ export const en = {
         compare: 'Compare',
         addModel: 'Add Model',
         responsePlaceholder: 'Response will appear here',
-        copyResponse: 'Copy response'
+        copyResponse: 'Copy response',
+        removeSlot: 'Remove model slot',
+        loadingResponse: 'Loading response',
+        metrics: 'Comparison metrics',
     },
     council: {
         title: 'Agent Council',
@@ -1630,15 +1730,16 @@ export const en = {
         entry: 'entry',
         entries: 'entries',
         noActiveSession: 'No active session',
-        noActiveSessionDesc: 'Start a task to see the council agents in action. Activity logs will appear here.',
+        noActiveSessionDesc:
+            'Start a task to see the council agents in action. Activity logs will appear here.',
         status: {
             planning: 'Planning',
             working: 'Working',
             reviewing: 'Reviewing',
             waiting_for_approval: 'Waiting for Approval',
             completed: 'Completed',
-            failed: 'Failed'
-        }
+            failed: 'Failed',
+        },
     },
     shortcuts: {
         title: 'Keyboard Shortcuts',
@@ -1646,6 +1747,7 @@ export const en = {
         navigation: 'Navigation',
         chat: 'Chat',
         newChat: 'New Chat',
+        ctrl: 'Ctrl',
         openSettings: 'Open Settings',
         commandPalette: 'Command Palette',
         toggleSidebar: 'Toggle Sidebar',
@@ -1659,7 +1761,7 @@ export const en = {
         searchChat: 'Search Chat',
         showShortcuts: 'Show Shortcuts',
         close: 'Close',
-        footer: 'Press Esc to close'
+        footer: 'Press Esc to close',
     },
     semanticSearch: {
         title: 'Semantic Search',
@@ -1668,7 +1770,7 @@ export const en = {
         results: 'Search Results',
         noResults: 'No semantic matches found.',
         relevance: 'Relevance',
-        filesIndex: 'Files Indexed'
+        filesIndex: 'Files Indexed',
     },
     commandPalette: {
         newChat: 'New Chat',
@@ -1701,13 +1803,13 @@ export const en = {
         close: 'Close',
         engineLabel: 'Tandem Command Engine',
         previewEmpty: 'Select an item to view details',
-        noResultsHint: 'Try searching for chats, models, or settings'
+        noResultsHint: 'Try searching for chats, models, or settings',
     },
     quickAction: {
         explain: 'Explain',
         translate: 'Translate',
         explainPrefix: 'Explain: ',
-        translatePrefix: 'Translate: '
+        translatePrefix: 'Translate: ',
     },
     activityBar: {
         chat: 'Chat',
@@ -1716,13 +1818,13 @@ export const en = {
         sourceControl: 'Source Control',
         debug: 'Debug',
         extensions: 'Extensions',
-        settings: 'Settings'
+        settings: 'Settings',
     },
     statusBar: {
         error: 'Error',
         errors: 'Errors',
         warning: 'Warning',
-        warnings: 'Warnings'
+        warnings: 'Warnings',
     },
     updateNotification: {
         checkingTitle: 'Checking for updates...',
@@ -1734,44 +1836,46 @@ export const en = {
         errorTitle: 'Update Failed',
         uptodateTitle: 'You are up to date',
         downloadAction: 'Download',
-        restartAction: 'Restart Now'
+        restartAction: 'Restart Now',
     },
     panelLayout: {
         expand: 'Expand',
         collapse: 'Collapse',
-        maximize: 'Maximize'
+        maximize: 'Maximize',
     },
     diffViewer: {
-        loading: 'Loading Diff...'
+        loading: 'Loading Diff...',
     },
     fab: {
         openMenu: 'Open menu',
-        closeMenu: 'Close menu'
+        closeMenu: 'Close menu',
     },
     modal: {
-        close: 'Close modal'
+        close: 'Close modal',
     },
     titleBar: {
         minimize: 'Minimize',
         maximize: 'Maximize',
-        close: 'Close'
+        close: 'Close',
     },
     auth: {
         authError: 'Authentication Error',
         goToAccounts: 'Go to Accounts',
-        connectionFailed: 'Connection to Antigravity server failed. Please sign in or check your API key.',
+        connectionFailed:
+            'Connection to Antigravity server failed. Please sign in or check your API key.',
         logout: 'Log out',
         // Manual Session Modal
         sessionKeyRequired: 'Claude Session Key Required',
         completeConnection: 'Complete Connection for {{email}}',
-        sessionKeyDescription: 'To enable quota tracking and direct interaction, Tandem needs your Claude session key. We encrypt and store this key locally on your device.',
+        sessionKeyDescription:
+            'To enable quota tracking and direct interaction, Tandem needs your Claude session key. We encrypt and store this key locally on your device.',
         howToFindKey: 'How to find your session key',
         sessionKeyInstructions: {
             step1: 'Open claude.ai and log in',
             step2: 'Right-click anywhere and select Inspect',
             step3: 'Go to the Application tab (or Storage)',
             step4: 'Expand Cookies and select https://claude.ai',
-            step5: 'Find sessionKey and copy its value (starts with sk-ant-sid)'
+            step5: 'Find sessionKey and copy its value (starts with sk-ant-sid)',
         },
         sessionKeyLabel: 'Session Key',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -1786,7 +1890,7 @@ export const en = {
         openGithubToEnter: 'Open GitHub to enter code',
         waitingForLogin: 'Waiting for login...',
         connectedSuccessfully: 'Connected successfully!',
-        connectionFailedGeneric: 'Connection failed'
+        connectionFailedGeneric: 'Connection failed',
     },
     logging: {
         title: 'Logging Dashboard',
@@ -1813,29 +1917,29 @@ export const en = {
         lastUpdated: 'Last updated',
         showing: 'Showing',
         of: 'of',
-        logs: 'logs'
+        logs: 'logs',
     },
     personas: {
         title: 'Personas',
         description: 'Customization profiles that shape responses.',
         namePlaceholder: 'Persona name',
         descriptionPlaceholder: 'Short description',
-        promptPlaceholder: 'Prompt'
+        promptPlaceholder: 'Prompt',
     },
     advancedTab: {
         modelConfiguration: 'Model Configuration',
         modelConfigurationDesc: 'Custom system commands and parameters for the selected model.',
         customSystemMessage: 'Custom System Message',
         systemPromptPlaceholder: 'Custom system command for this model...',
-        parameterPreset: 'Parameter Preset'
+        parameterPreset: 'Parameter Preset',
     },
     toolDisplay: {
         markdownView: 'Markdown View',
         text: 'Text',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
     },
     markdown: {
-        loadingDiagram: 'Loading diagram...'
+        loadingDiagram: 'Loading diagram...',
     },
     modelExplorer: {
         title: 'Model Explorer',
@@ -1881,7 +1985,7 @@ export const en = {
         noCompatible: 'No compatible files found',
         defaultDescription: 'Open-source model',
         install: 'Install',
-        installed: 'Installed'
+        installed: 'Installed',
     },
     docker: {
         title: 'Docker Management',
@@ -1897,29 +2001,38 @@ export const en = {
         remove: 'Remove',
         shell: 'Shell',
         logs: 'Logs',
-        stats: 'Stats'
+        stats: 'Stats',
     },
     onboarding: {
         // OnboardingFlow steps (4-step wizard) - flat keys for i18n compatibility
         welcomeTitle: 'Welcome to Tandem',
-        welcomeDescription: 'Your AI-powered coding companion. Tandem helps you write, debug, and understand code with multiple AI providers at your fingertips.',
+        welcomeDescription:
+            'Your AI-powered coding companion. Tandem helps you write, debug, and understand code with multiple AI providers at your fingertips.',
         multiModelTitle: 'Multi-Model Support',
-        multiModelDescription: 'Connect to OpenAI, Anthropic, Google, Ollama, and more. Switch between models instantly or let Tandem choose the best one for your task.',
+        multiModelDescription:
+            'Connect to OpenAI, Anthropic, Google, Ollama, and more. Switch between models instantly or let Tandem choose the best one for your task.',
         workspaceTitle: 'Your Workspace',
-        workspaceDescription: 'Organize projects, manage conversations, and access your coding history. Everything stays local and secure on your machine.',
+        workspaceDescription:
+            'Organize projects, manage conversations, and access your coding history. Everything stays local and secure on your machine.',
         privacyTitle: 'Privacy First',
-        privacyDescription: 'Your code stays yours. Tandem runs locally with optional cloud features. Full control over what data leaves your computer.',
+        privacyDescription:
+            'Your code stays yours. Tandem runs locally with optional cloud features. Full control over what data leaves your computer.',
         // OnboardingTour steps (5-step feature tour)
         step1Title: 'Meet Your AI Assistant',
-        step1Desc: 'Tandem combines multiple AI models to help you code faster. Ask questions, generate code, or debug issues with natural language.',
+        step1Desc:
+            'Tandem combines multiple AI models to help you code faster. Ask questions, generate code, or debug issues with natural language.',
         step2Title: 'Command Palette',
-        step2Desc: 'Press Cmd+K (or Ctrl+K on Windows) to access the command palette. Quickly navigate, search, and execute actions from anywhere.',
+        step2Desc:
+            'Press Cmd+K (or Ctrl+K on Windows) to access the command palette. Quickly navigate, search, and execute actions from anywhere.',
         step3Title: 'Workspaces & Projects',
-        step3Desc: 'Organize your work with projects. Each project maintains its own context, chat history, and AI memory for smarter suggestions.',
+        step3Desc:
+            'Organize your work with projects. Each project maintains its own context, chat history, and AI memory for smarter suggestions.',
         step4Title: 'Security Built-In',
-        step4Desc: 'API keys are encrypted locally. All conversations can stay offline with Ollama. You control what gets shared and what stays private.',
+        step4Desc:
+            'API keys are encrypted locally. All conversations can stay offline with Ollama. You control what gets shared and what stays private.',
         step5Title: 'Start Chatting',
-        step5Desc: 'Type your first message below. Ask for help with code, explain a concept, or generate something new. Tandem is ready when you are.',
+        step5Desc:
+            'Type your first message below. Ask for help with code, explain a concept, or generate something new. Tandem is ready when you are.',
         // Navigation buttons
         skip: 'Skip',
         next: 'Next',
@@ -1931,7 +2044,7 @@ export const en = {
         welcome: 'Welcome to Tandem',
         step1: 'Connect AI Providers',
         step2: 'Setup Workspace',
-        step3: 'Start Coding'
+        step3: 'Start Coding',
     },
     agentDashboard: {
         title: 'Council of Agents',
@@ -1944,12 +2057,13 @@ export const en = {
         autoRun: 'Auto Run',
         step: 'Step',
         currentPlan: 'Current Plan',
-        selectSession: 'Select a session or create a new one to begin.'
+        selectSession: 'Select a session or create a new one to begin.',
     },
     ideas: {
         title: 'Project Ideas',
         subtitle: 'AI-powered project idea generation with market research',
         newSession: 'New Session',
+        backToSetup: 'Back to Setup',
         selectModel: 'Select AI Model',
         selectCategories: 'Select Categories',
         maxIdeas: 'Maximum Ideas',
@@ -1965,7 +2079,7 @@ export const en = {
             cliTool: 'CLI Tool',
             apiBackend: 'API / Backend',
             desktop: 'Desktop App',
-            other: 'Other'
+            other: 'Other',
         },
 
         // Research stages
@@ -1975,7 +2089,7 @@ export const en = {
             sectorAnalysis: 'Sector Analysis',
             marketResearch: 'Market Research',
             competitorAnalysis: 'Competitor Analysis',
-            complete: 'Research Complete'
+            complete: 'Research Complete',
         },
 
         // Generation
@@ -1983,7 +2097,7 @@ export const en = {
             title: 'Generating Ideas',
             progress: 'Generating idea {{current}} of {{total}}',
             enriching: 'Enriching idea details...',
-            complete: 'Generation Complete'
+            complete: 'Generation Complete',
         },
 
         // Idea card
@@ -2004,7 +2118,13 @@ export const en = {
             detailedDescription: 'Detailed Description',
             roadmap: 'Project Roadmap',
             techStack: 'Technology Stack',
-            competitorAnalysis: 'Competitor Analysis'
+            competitorAnalysis: 'Competitor Analysis',
+            technicalDetails: 'Technical Details',
+            impact: 'Impact',
+            impactHigh: 'High (Estimated)',
+            effort: 'Effort',
+            effortMedium: 'Medium',
+            openFullProject: 'Open Full Project',
         },
 
         // Tech stack categories
@@ -2013,7 +2133,7 @@ export const en = {
             backend: 'Backend',
             database: 'Database',
             infrastructure: 'Infrastructure',
-            other: 'Other Tools'
+            other: 'Other Tools',
         },
 
         // Competitor analysis
@@ -2021,7 +2141,7 @@ export const en = {
             strengths: 'Strengths',
             weaknesses: 'Weaknesses',
             missingFeatures: 'Missing Features',
-            opportunity: 'Differentiation Opportunity'
+            opportunity: 'Differentiation Opportunity',
         },
 
         // Generation stages (multi-stage pipeline)
@@ -2034,7 +2154,7 @@ export const en = {
             techStack: 'Selecting technology stack...',
             competitorAnalysis: 'Analyzing competitors...',
             finalizing: 'Finalizing idea...',
-            complete: 'Idea complete'
+            complete: 'Idea complete',
         },
 
         // Logo generation
@@ -2043,7 +2163,7 @@ export const en = {
             generate: 'Generate Logo',
             generating: 'Generating logo...',
             requiresAntigravity: 'Logo generation requires Antigravity connection',
-            promptPlaceholder: 'Describe your logo concept...'
+            promptPlaceholder: 'Describe your logo concept...',
         },
 
         // Status
@@ -2056,7 +2176,7 @@ export const en = {
             pending: 'Pending',
             approved: 'Approved',
             rejected: 'Rejected',
-            archived: 'Archived'
+            archived: 'Archived',
         },
 
         // Errors
@@ -2066,7 +2186,7 @@ export const en = {
             researchFailed: 'Research failed. Please try again.',
             generationFailed: 'Idea generation failed. Please try again.',
             approvalFailed: 'Failed to create project. Please try again.',
-            logoFailed: 'Logo generation failed. Please try again.'
+            logoFailed: 'Logo generation failed. Please try again.',
         },
 
         // Empty states
@@ -2074,34 +2194,35 @@ export const en = {
             noSessions: 'No idea sessions yet',
             noSessionsDesc: 'Start a new session to generate project ideas',
             noIdeas: 'No ideas generated',
-            noIdeasDesc: 'Complete the research phase to generate ideas'
+            noIdeasDesc: 'Complete the research phase to generate ideas',
         },
 
         // Search and filter
         search: {
-            placeholder: 'Search ideas by title or description...'
+            placeholder: 'Search ideas by title or description...',
         },
         filter: {
             allStatuses: 'All Statuses',
             allCategories: 'All Categories',
             pending: 'Pending',
             approved: 'Approved',
-            rejected: 'Rejected'
+            rejected: 'Rejected',
         },
 
         // Export
         export: {
             button: 'Export',
             markdown: 'Export as Markdown',
-            json: 'Export as JSON'
+            json: 'Export as JSON',
         },
 
         // Custom prompt
         customPrompt: {
             label: 'Custom Requirements',
             optional: 'Optional',
-            placeholder: 'e.g., Must use TypeScript, focus on accessibility, target small businesses...',
-            hint: 'Add specific constraints or requirements for the AI to consider during idea generation.'
+            placeholder:
+                'e.g., Must use TypeScript, focus on accessibility, target small businesses...',
+            hint: 'Add specific constraints or requirements for the AI to consider during idea generation.',
         },
 
         previewMarket: 'Preview Market Research',
@@ -2113,14 +2234,15 @@ export const en = {
             keyTrends: 'Key Trends',
             marketSize: 'Market Size',
             empty: 'No preview data available',
-            continue: 'Continue with Full Research'
+            continue: 'Continue with Full Research',
         },
 
         delete: {
             title: 'Delete Idea',
             bulkTitle: 'Delete Multiple Ideas',
             message: 'Are you sure you want to delete this idea? This action cannot be undone.',
-            bulkMessage: 'Are you sure you want to delete {{count}} ideas? This action cannot be undone.'
+            bulkMessage:
+                'Are you sure you want to delete {{count}} ideas? This action cannot be undone.',
         },
 
         // History
@@ -2146,8 +2268,8 @@ export const en = {
             filter: {
                 searchLabel: 'Search',
                 statusLabel: 'Status',
-                categoryLabel: 'Category'
-            }
+                categoryLabel: 'Category',
+            },
         },
 
         details: {
@@ -2158,7 +2280,7 @@ export const en = {
                 users: 'User Profiles',
                 business: 'Business Case',
                 technology: 'Technology',
-                roadmap: 'Roadmap'
+                roadmap: 'Roadmap',
             },
             statusLabel: 'Status',
             readyForPilot: 'Ready for Pilot',
@@ -2170,7 +2292,8 @@ export const en = {
             deleteTitle: 'Delete Idea',
             closeTitle: 'Close (Esc)',
             rejectTitle: 'Reject this idea?',
-            rejectBody: 'Are you sure you want to reject "{{title}}"? This action cannot be undone.',
+            rejectBody:
+                'Are you sure you want to reject "{{title}}"? This action cannot be undone.',
             rejectReasonLabel: 'Reason (Optional)',
             rejectReasonPlaceholder: 'Why are you rejecting this idea?',
             rejectAction: 'Reject Idea',
@@ -2185,7 +2308,7 @@ export const en = {
                 strengths: 'Strengths',
                 weaknesses: 'Weaknesses',
                 opportunities: 'Opportunities',
-                threats: 'Threats'
+                threats: 'Threats',
             },
             revenueModel: 'Revenue Model',
             breakEvenStrategy: 'Break-even Strategy',
@@ -2193,14 +2316,15 @@ export const en = {
             goToMarket: 'Go-To-Market Plan',
             first100Users: 'First 100 Users Strategy',
             researchAssistant: 'Research Assistant',
-            researchEmpty: 'Ask me anything about the market research, competition, or tech stack for this idea!',
+            researchEmpty:
+                'Ask me anything about the market research, competition, or tech stack for this idea!',
             researchPlaceholder: 'Ask about competitors, gaps, or logic...',
             researchError: "I'm sorry, I couldn't reach the research laboratory right now.",
             coreConcept: 'Core Concept',
             visualIdentity: 'Visual Identity',
             editDescriptionPlaceholder: 'Edit description...',
             categoryAnalysis: 'Category Analysis',
-            analysisPending: 'Analysis pending deep dive...'
+            analysisPending: 'Analysis pending deep dive...',
         },
 
         // Session setup
@@ -2208,7 +2332,7 @@ export const en = {
 
         // Idea Details Modal placeholders - I18N-001-3
         detailsTitlePlaceholder: 'Enter idea title...',
-        detailsDescriptionPlaceholder: 'Enter idea description...'
+        detailsDescriptionPlaceholder: 'Enter idea description...',
     },
     tools: {
         usingTool: 'Using Tool',
@@ -2237,19 +2361,19 @@ export const en = {
         errorLabel: 'error:',
         // Task Node placeholders - I18N-001-2
         taskTitlePlaceholder: 'Task Title (Optional)',
-        taskDescriptionPlaceholder: 'Describe what you want to build...'
+        taskDescriptionPlaceholder: 'Describe what you want to build...',
     },
     build: {
         // Build Section placeholders - I18N-001-5
         buildCommandPlaceholder: 'npm run build',
         buildOutputDirPlaceholder: './dist',
         prebuildCommandPlaceholder: 'npm install',
-        postbuildCommandPlaceholder: 'npm run test'
+        postbuildCommandPlaceholder: 'npm run test',
     },
     devServer: {
         // Dev Server placeholders - I18N-001-6
         startCommandPlaceholder: 'npm run dev',
-        portPlaceholder: '3000'
+        portPlaceholder: '3000',
     },
     agent: {
         allStepsFinished: 'All steps finished. Ready for new instructions.',
@@ -2261,6 +2385,9 @@ export const en = {
         approveExecute: 'Approve & Execute',
         rejectPlan: 'Reject Plan',
         awaitingApproval: 'Awaiting Approval',
+        estimatedCost: 'Est. Cost',
+        inputCost: 'Input',
+        outputCost: 'Output',
         noToolCalls: 'No tool calls yet.',
         activeTools: 'Active Tools',
         snapshot: 'Snapshot',
@@ -2278,6 +2405,8 @@ export const en = {
         activitiesCount: 'Activities',
         history: 'History',
         viewCheckpoints: 'View Checkpoints',
+        rollback: 'Rollback',
+        confirmRollback: 'Click again to confirm rollback',
         no_checkpoints: 'No checkpoints available',
         no_tasks_yet: 'No tasks yet',
 
@@ -2294,7 +2423,39 @@ export const en = {
         hoursAgo: '{{count}}h ago',
         daysAgo: '{{count}}d ago',
         attachFiles: 'Attach Files',
-        aiProvider: 'AI Provider'
+        aiProvider: 'AI Provider',
+        // AGT-COL: Multi-model collaboration
+        modelAssignment: 'Model Assignment',
+        taskRouting: 'Task Routing',
+        votingSession: 'Voting Session',
+        consensusBuilding: 'Building Consensus',
+        modelVote: 'Model Vote',
+        votingResolved: 'Voting Resolved',
+        votingDeadlocked: 'Voting Deadlocked',
+        // AGT-TPL: Templates
+        templates: 'Templates',
+        templateName: 'Template Name',
+        templateDescription: 'Description',
+        templateCategory: 'Category',
+        templateVariables: 'Variables',
+        createTemplate: 'Create Template',
+        editTemplate: 'Edit Template',
+        deleteTemplate: 'Delete Template',
+        exportTemplate: 'Export Template',
+        importTemplate: 'Import Template',
+        builtInTemplates: 'Built-in Templates',
+        userTemplates: 'User Templates',
+        useTemplate: 'Use Template',
+        templateCategories: {
+            refactor: 'Refactoring',
+            'bug-fix': 'Bug Fix',
+            feature: 'New Feature',
+            documentation: 'Documentation',
+            testing: 'Testing',
+            security: 'Security',
+            performance: 'Performance',
+            custom: 'Custom',
+        },
     },
     projectAgent: {
         changePreview: 'Change preview',
@@ -2308,7 +2469,7 @@ export const en = {
             editing: 'Editing files',
             command: 'Running command',
             running: 'Running tool',
-            fileFallback: 'File change'
+            fileFallback: 'File change',
         },
         newTask: 'New Task',
         generatingPlan: 'Generating plan...',
@@ -2332,7 +2493,7 @@ export const en = {
         thinkingOff: 'Thinking off',
         selectAction: 'Select action',
         noDescription: 'No description provided',
-        selectProject: 'Select project'
+        selectProject: 'Select project',
     },
     audioChat: {
         listening: 'Listening...',
@@ -2344,39 +2505,35 @@ export const en = {
         thinkingDesc: 'Processing your request.',
         stopSpeaking: 'Stop Speaking',
         pauseListening: 'Pause',
-        resumeListening: 'Resume'
+        resumeListening: 'Resume',
     },
     canvas: {
-        selectArea: 'Select Area'
+        selectArea: 'Select Area',
     },
     inspector: {
         analyzing: 'Analyzing...',
-        selectFolder: 'Select a folder to inspect'
+        selectFolder: 'Select a folder to inspect',
     },
     providerLabels: {
         anthropic: 'Anthropic',
         antigravity: 'Antigravity',
         githubCopilot: 'GitHub Copilot',
         ollama: 'Ollama',
-        openai: 'OpenAI'
+        openai: 'OpenAI',
     },
     exportChat: {
         confirm: 'Export',
         exporting: 'Exporting...',
-        title: 'Export Chat'
-    },
-    export: {
         title: 'Export Chat',
-        confirm: 'Export',
-        exporting: 'Exporting...',
         formatMarkdown: 'Markdown (.md)',
-        formatPdf: 'PDF (.pdf)'
+        formatPdf: 'PDF (.pdf)',
     },
     extensionPrompt: {
         title: 'Enhance Your Experience',
         subtitle: 'Install the Tandem Browser Extension',
         infoTitle: 'What is the browser extension?',
-        infoBody: 'The Tandem browser extension allows the AI to interact directly with web pages. It can read content, fill forms, click buttons, and perform automated actions based on your commands.',
+        infoBody:
+            'The Tandem browser extension allows the AI to interact directly with web pages. It can read content, fill forms, click buttons, and perform automated actions based on your commands.',
         featuresTitle: 'Features:',
         features: {
             aiChatTitle: 'AI Chat in Browser:',
@@ -2386,7 +2543,7 @@ export const en = {
             contentExtractionTitle: 'Content Extraction:',
             contentExtractionDesc: 'Extract and summarize page content with one click',
             secureConnectionTitle: 'Secure Connection:',
-            secureConnectionDesc: 'All communication stays local on your computer'
+            secureConnectionDesc: 'All communication stays local on your computer',
         },
         installTitle: 'Quick Installation:',
         steps: {
@@ -2394,18 +2551,12 @@ export const en = {
             step2: 'Enable "Developer mode" (toggle in top-right)',
             step3: 'Click "Load unpacked"',
             step4Prefix: 'Select the',
-            step4Suffix: 'folder from Tandem directory'
+            step4Suffix: 'folder from Tandem directory',
         },
         openFolder: 'Open Extension Folder',
         viewInstructions: 'View Instructions',
         dismiss: "Don't show this again",
-        remindLater: 'Remind me later'
+        remindLater: 'Remind me later',
+        buttonTitle: 'Browser Extension',
     },
-    tasksPanel: {
-        createNew: 'Create New Task'
-    },
-    tasks: {
-        createNew: 'Create New Task'
-    }
 };
-

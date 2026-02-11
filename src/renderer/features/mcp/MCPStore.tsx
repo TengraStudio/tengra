@@ -5,35 +5,35 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface McpMarketplaceServer {
-    id: string
-    name: string
-    description: string
-    publisher: string
-    version?: string
-    categories?: string[]
-    tags?: string[]
-    repository?: string
-    npmPackage?: string
-    command?: string
-    license?: string
-    downloads?: number
-    rating?: number
-    isOfficial?: boolean
+    id: string;
+    name: string;
+    description: string;
+    publisher: string;
+    version?: string;
+    categories?: string[];
+    tags?: string[];
+    repository?: string;
+    npmPackage?: string;
+    command?: string;
+    license?: string;
+    downloads?: number;
+    rating?: number;
+    isOfficial?: boolean;
 }
 
 interface MCPServerConfig {
-    id: string
-    name: string
-    command: string
-    args: string[]
-    description?: string
-    env?: Record<string, string>
-    enabled?: boolean
-    tools?: { name: string; description: string }[]
-    category?: string
-    publisher?: string
-    version?: string
-    isOfficial?: boolean
+    id: string;
+    name: string;
+    command: string;
+    args: string[];
+    description?: string;
+    env?: Record<string, string>;
+    enabled?: boolean;
+    tools?: { name: string; description: string }[];
+    category?: string;
+    publisher?: string;
+    version?: string;
+    isOfficial?: boolean;
 }
 
 const CATEGORIES = [
@@ -45,7 +45,7 @@ const CATEGORIES = [
     { id: 'Productivity', labelKey: 'mcp.categories.productivity', icon: Plug },
     { id: 'AI', labelKey: 'mcp.categories.ai', icon: Plug },
     { id: 'DevOps', labelKey: 'mcp.categories.devops', icon: Plug },
-    { id: 'Utility', labelKey: 'mcp.categories.utility', icon: Plug }
+    { id: 'Utility', labelKey: 'mcp.categories.utility', icon: Plug },
 ];
 
 const ToolCard = ({
@@ -55,15 +55,15 @@ const ToolCard = ({
     onInstall,
     onUninstall,
     onConfigure,
-    t
+    t,
 }: {
-    tool: McpMarketplaceServer
-    isInstalled: boolean
-    onSelect: (t: McpMarketplaceServer) => void
-    onInstall?: (id: string) => void
-    onUninstall?: (id: string) => void
-    onConfigure?: (id: string) => void
-    t: (key: string, options?: Record<string, string | number>) => string
+    tool: McpMarketplaceServer;
+    isInstalled: boolean;
+    onSelect: (t: McpMarketplaceServer) => void;
+    onInstall?: (id: string) => void;
+    onUninstall?: (id: string) => void;
+    onConfigure?: (id: string) => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }) => (
     <div
         onClick={() => onSelect(tool)}
@@ -89,11 +89,13 @@ const ToolCard = ({
                     {tool.isOfficial && <Shield className="w-3.5 h-3.5 text-primary" />}
                     {isInstalled && <Check className="w-3.5 h-3.5 text-primary" />}
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{tool.description}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                    {tool.description}
+                </p>
                 <div className="flex items-center gap-3 text-xxs text-muted-foreground/60">
                     {tool.rating && (
                         <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-warning fill-amber-500" />
+                            <Star className="w-3 h-3 text-warning fill-warning" />
                             {tool.rating.toFixed(1)}
                         </span>
                     )}
@@ -111,7 +113,7 @@ const ToolCard = ({
             {isInstalled ? (
                 <>
                     <button
-                        onClick={(e) => {
+                        onClick={e => {
                             e.stopPropagation();
                             onConfigure?.(tool.id);
                         }}
@@ -120,7 +122,7 @@ const ToolCard = ({
                         <Settings className="w-3 h-3" /> {t('mcp.configure')}
                     </button>
                     <button
-                        onClick={(e) => {
+                        onClick={e => {
                             e.stopPropagation();
                             onUninstall?.(tool.id);
                         }}
@@ -131,7 +133,7 @@ const ToolCard = ({
                 </>
             ) : (
                 <button
-                    onClick={(e) => {
+                    onClick={e => {
                         e.stopPropagation();
                         onInstall?.(tool.id);
                     }}
@@ -151,18 +153,24 @@ const ToolDetailModal = ({
     onUninstall,
     onConfigure,
     onClose,
-    t
+    t,
 }: {
-    tool: McpMarketplaceServer
-    isInstalled: boolean
-    onInstall?: (id: string) => void
-    onUninstall?: (id: string) => void
-    onConfigure?: (id: string) => void
-    onClose: () => void
-    t: (key: string, options?: Record<string, string | number>) => string
+    tool: McpMarketplaceServer;
+    isInstalled: boolean;
+    onInstall?: (id: string) => void;
+    onUninstall?: (id: string) => void;
+    onConfigure?: (id: string) => void;
+    onClose: () => void;
+    t: (key: string, options?: Record<string, string | number>) => string;
 }) => (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-        <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-xl max-w-lg w-full overflow-hidden shadow-2xl">
+    <div
+        className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+        onClick={onClose}
+    >
+        <div
+            onClick={e => e.stopPropagation()}
+            className="bg-card rounded-xl max-w-lg w-full overflow-hidden shadow-2xl"
+        >
             <div className="p-4 border-b border-border/30 flex items-center gap-3">
                 <div className="p-3 rounded-lg bg-primary/10 text-primary">
                     <Plug className="w-6 h-6" />
@@ -177,7 +185,10 @@ const ToolDetailModal = ({
                         )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        {t('mcp.byAuthor', { author: tool.publisher, version: tool.version || '1.0.0' })}
+                        {t('mcp.byAuthor', {
+                            author: tool.publisher,
+                            version: tool.version ?? '1.0.0',
+                        })}
                     </p>
                 </div>
             </div>
@@ -200,7 +211,7 @@ const ToolDetailModal = ({
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     {tool.rating && (
                         <span className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-warning fill-amber-500" />
+                            <Star className="w-4 h-4 text-warning fill-warning" />
                             {tool.rating.toFixed(1)}
                         </span>
                     )}
@@ -259,9 +270,9 @@ const ToolDetailModal = ({
 const ITEMS_PER_PAGE = 24;
 
 export const MCPStore: React.FC<{
-    onInstall?: (id: string) => void
-    onUninstall?: (id: string) => void
-    onConfigure?: (id: string) => void
+    onInstall?: (id: string) => void;
+    onUninstall?: (id: string) => void;
+    onConfigure?: (id: string) => void;
 }> = ({ onInstall, onUninstall, onConfigure }) => {
     const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
@@ -338,25 +349,28 @@ export const MCPStore: React.FC<{
         [loadInstalled, onUninstall]
     );
 
-    const installedIds = useMemo(() => new Set(installedServers.map((s) => s.id)), [installedServers]);
+    const installedIds = useMemo(
+        () => new Set(installedServers.map(s => s.id)),
+        [installedServers]
+    );
 
     const filteredTools = useMemo(() => {
         let filtered = marketplaceServers;
 
         // Filter by category
         if (selectedCategory !== 'all') {
-            filtered = filtered.filter((server) => server.categories?.includes(selectedCategory));
+            filtered = filtered.filter(server => server.categories?.includes(selectedCategory));
         }
 
         // Filter by search query
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(
-                (server) =>
+                server =>
                     server.name?.toLowerCase().includes(q) ||
                     server.description?.toLowerCase().includes(q) ||
                     server.publisher?.toLowerCase().includes(q) ||
-                    server.categories?.some((cat) => cat.toLowerCase().includes(q))
+                    server.categories?.some(cat => cat.toLowerCase().includes(q))
             );
         }
 
@@ -399,7 +413,7 @@ export const MCPStore: React.FC<{
                         type="text"
                         placeholder={t('mcp.searchTools')}
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={e => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/30 border border-border/30 rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
                     />
                 </div>
@@ -429,14 +443,18 @@ export const MCPStore: React.FC<{
                 ) : (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {paginatedTools.map((tool) => (
+                            {paginatedTools.map(tool => (
                                 <ToolCard
                                     key={tool.id}
                                     tool={tool}
                                     isInstalled={installedIds.has(tool.id)}
                                     onSelect={setSelectedTool}
-                                    onInstall={handleInstall}
-                                    onUninstall={handleUninstall}
+                                    onInstall={id => {
+                                        void handleInstall(id);
+                                    }}
+                                    onUninstall={id => {
+                                        void handleUninstall(id);
+                                    }}
                                     onConfigure={onConfigure}
                                     t={t}
                                 />
@@ -463,7 +481,10 @@ export const MCPStore: React.FC<{
                                     {t('common.previous')}
                                 </button>
                                 <span className="text-sm text-muted-foreground px-3">
-                                    {t('common.pageOf', { current: currentPage, total: totalPages })}
+                                    {t('common.pageOf', {
+                                        current: currentPage,
+                                        total: totalPages,
+                                    })}
                                 </span>
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -486,8 +507,12 @@ export const MCPStore: React.FC<{
                 <ToolDetailModal
                     tool={selectedTool}
                     isInstalled={installedIds.has(selectedTool.id)}
-                    onInstall={handleInstall}
-                    onUninstall={handleUninstall}
+                    onInstall={id => {
+                        void handleInstall(id);
+                    }}
+                    onUninstall={id => {
+                        void handleUninstall(id);
+                    }}
                     onConfigure={onConfigure}
                     onClose={() => setSelectedTool(null)}
                     t={t}

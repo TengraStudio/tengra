@@ -16,7 +16,7 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
     isCollapsed,
     currentView,
     onChangeView,
-    language
+    language,
 }) => {
     const { t } = useTranslation(language as Language); // i18n helper might need cast if types are rigid
 
@@ -60,3 +60,5 @@ export const ToolsSectionComponent: React.FC<ToolsSectionProps> = ({
         </SidebarSection>
     );
 };
+
+ToolsSectionComponent.displayName = 'ToolsSection';

@@ -78,7 +78,7 @@ export function registerMcpMarketplaceHandlers(
             }
 
             // Parse command into command and args
-            const cmdParts = server.command?.split(' ') || [];
+            const cmdParts = server.command?.split(' ') ?? [];
             const command = cmdParts[0] || '';
             const args = cmdParts.slice(1);
 
@@ -98,7 +98,7 @@ export function registerMcpMarketplaceHandlers(
 
             // Add to settings
             const settings = settingsService.getSettings();
-            const existing = settings.mcpUserServers || [];
+            const existing = settings.mcpUserServers ?? [];
 
             // Check if already installed
             if (existing.some(s => s.id === serverId)) {
@@ -123,7 +123,7 @@ export function registerMcpMarketplaceHandlers(
     ipcMain.handle('mcp:marketplace:uninstall', async (_event, serverId: string) => {
         try {
             const settings = settingsService.getSettings();
-            const existing = settings.mcpUserServers || [];
+            const existing = settings.mcpUserServers ?? [];
 
             const filtered = existing.filter(s => s.id !== serverId);
 
@@ -149,7 +149,7 @@ export function registerMcpMarketplaceHandlers(
     ipcMain.handle('mcp:marketplace:installed', async () => {
         try {
             const settings = settingsService.getSettings();
-            const userServers = settings.mcpUserServers || [];
+            const userServers = settings.mcpUserServers ?? [];
 
             // Get internal built-in plugins
             const internalPlugins = await mcpPluginService.listPlugins();
@@ -186,7 +186,7 @@ export function registerMcpMarketplaceHandlers(
     ipcMain.handle('mcp:marketplace:toggle', async (_event, serverId: string, enabled: boolean) => {
         try {
             const settings = settingsService.getSettings();
-            const existing = settings.mcpUserServers || [];
+            const existing = settings.mcpUserServers ?? [];
 
             const updated = existing.map(s =>
                 s.id === serverId ? { ...s, enabled } : s

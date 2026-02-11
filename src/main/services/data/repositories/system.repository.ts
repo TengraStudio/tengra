@@ -3,7 +3,7 @@ import { PromptTemplate } from '@main/utils/prompt-templates.util';
 import { JsonObject } from '@shared/types/common';
 import { DatabaseAdapter, SqlValue } from '@shared/types/database';
 import { DbDetailedStats, DbStats, DbTokenStats } from '@shared/types/db-api';
-import { AgentProfile } from '@shared/types/project-agent';
+import { AgentProfile, AgentTemplate } from '@shared/types/project-agent';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuditLogEntry, Folder, JobState, LinkedAccount, Prompt, TokenUsageRecord } from '../database.service';
@@ -592,5 +592,69 @@ export class SystemRepository extends BaseRepository {
 
     async deleteAgentProfile(id: string): Promise<void> {
         await this.adapter.prepare('DELETE FROM agent_profiles WHERE id = ?').run(id);
+    }
+
+    // --- Agent Templates ---
+    async getAgentTemplates(): Promise<AgentTemplate[]> {
+        const rows = await this.adapter.prepare('SELECT * FROM agent_templates ORDER BY name').all<JsonObject>();
+        return rows.map(row => ({
+            id: String(row.id),
+            name: String(row.name),
+            description: String(row.description ?? ''),
+            category: String(row.category ?? 'custom') as AgentTemplate['category'],
+            systemPromptOverride: row.system_prompt_override as string | undefined,
+            taskTemplate: String(row.task_template ?? ''),
+            predefinedSteps: this.parseJsonField(row.predefined_steps as string | null, undefined),
+            variables: this.parseJsonField(row.variables as string | null, []),
+            modelRouting: this.parseJsonField(row.model_routing as string | null, undefined),
+            tags: this.parseJsonField(row.tags as string | null, []),
+            isBuiltIn: Boolean(row.is_built_in),
+            authorId: row.author_id as string | undefined,
+            createdAt: Number(row.created_at),
+            updatedAt: Number(row.updated_at),
+        }));
+    }
+
+    async saveAgentTemplate(template: AgentTemplate): Promise<void> {
+        const now = Date.now();
+        await this.adapter.prepare(`
+            INSERT INTO agent_templates (
+                id, name, description, category, system_prompt_override,
+                task_template, predefined_steps, variables, model_routing,
+                tags, is_built_in, author_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = EXCLUDED.name,
+                description = EXCLUDED.description,
+                category = EXCLUDED.category,
+                system_prompt_override = EXCLUDED.system_prompt_override,
+                task_template = EXCLUDED.task_template,
+                predefined_steps = EXCLUDED.predefined_steps,
+                variables = EXCLUDED.variables,
+                model_routing = EXCLUDED.model_routing,
+                tags = EXCLUDED.tags,
+                is_built_in = EXCLUDED.is_built_in,
+                author_id = EXCLUDED.author_id,
+                updated_at = EXCLUDED.updated_at
+        `).run(
+            template.id,
+            template.name,
+            template.description,
+            template.category,
+            template.systemPromptOverride ?? null,
+            template.taskTemplate,
+            template.predefinedSteps ? JSON.stringify(template.predefinedSteps) : null,
+            JSON.stringify(template.variables),
+            template.modelRouting ? JSON.stringify(template.modelRouting) : null,
+            JSON.stringify(template.tags),
+            template.isBuiltIn ? 1 : 0,
+            template.authorId ?? null,
+            template.createdAt ?? now,
+            now
+        );
+    }
+
+    async deleteAgentTemplate(id: string): Promise<void> {
+        await this.adapter.prepare('DELETE FROM agent_templates WHERE id = ?').run(id);
     }
 }

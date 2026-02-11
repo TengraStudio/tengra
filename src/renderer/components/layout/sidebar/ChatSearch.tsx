@@ -1,4 +1,4 @@
-import { FolderPlus,Search } from 'lucide-react';
+import { FolderPlus, Search } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
     searchQuery,
     setSearchQuery,
     setIsCreatingFolder,
-    t
+    t,
 }) => {
     return (
         <div className="px-4 py-2 space-y-2">
@@ -24,7 +24,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
                     type="text"
                     placeholder={t('sidebar.searchChats')}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="w-full bg-muted/20 border border-border/40 focus:border-primary/50 focus:bg-muted/30 text-xs rounded-lg pl-8 pr-3 py-2 outline-none transition-all font-medium placeholder:text-muted-foreground/50"
                 />
             </div>
@@ -40,3 +40,5 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({
         </div>
     );
 };
+
+ChatSearch.displayName = 'ChatSearch';

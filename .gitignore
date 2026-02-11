@@ -161,3 +161,8 @@ dist/
 node_modules/
 
 docs/components_checklist.md
+
+# Binaries
+*.exe
+resources/bin/
+vendor/**/*.exe

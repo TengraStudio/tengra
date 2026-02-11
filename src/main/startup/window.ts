@@ -37,8 +37,8 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
             preload: path.join(__dirname, '../preload/preload.js'),
             sandbox: true,
             contextIsolation: true,
-            nodeIntegration: false
-        }
+            nodeIntegration: false,
+        },
     });
 
     // Setup Security & Event Handlers
@@ -81,7 +81,7 @@ function getWindowInitialSettings(settingsService?: SettingsService) {
         width: win?.width ?? 1280,
         height: win?.height ?? 800,
         x: win?.x,
-        y: win?.y
+        y: win?.y,
     };
 }
 
@@ -91,9 +91,11 @@ function getWindowInitialSettings(settingsService?: SettingsService) {
 function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsService) {
     win.on('ready-to-show', () => {
         const settings = settingsService?.getSettings();
-        const isHidden = process.argv.includes('--hidden') ||
+        const isHidden =
+            process.argv.includes('--hidden') ||
             process.argv.includes('/hidden') ||
-            (settings?.window?.workAtBackground === true && app.getLoginItemSettings().wasOpenedAtLogin);
+            (settings?.window?.workAtBackground === true &&
+                app.getLoginItemSettings().wasOpenedAtLogin);
 
         if (!isHidden) {
             win.show();
@@ -112,9 +114,9 @@ function setupWebContentsSecurity(win: BrowserWindow) {
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
-                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https://fonts.gstatic.com;"
-                ]
-            }
+                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https://fonts.gstatic.com;",
+                ],
+            },
         });
     });
 
@@ -134,14 +136,20 @@ function setupWebContentsSecurity(win: BrowserWindow) {
  * Uses new Event<WebContentsConsoleMessageEventParams> API (Electron 29+)
  */
 function setupConsoleRedirect(win: BrowserWindow) {
-    win.webContents.on('console-message', (event) => {
+    win.webContents.on('console-message', event => {
         const { level, message, lineNumber, sourceId } = event;
+        if (
+            message.includes('[DEP0180]') &&
+            message.includes('fs.Stats constructor is deprecated')
+        ) {
+            return;
+        }
         // level is now a string: 'info' | 'warning' | 'error' | 'debug'
         const levelMap: Record<string, 'debug' | 'info' | 'warn' | 'error'> = {
-            'debug': 'debug',
-            'info': 'info',
-            'warning': 'warn',
-            'error': 'error'
+            debug: 'debug',
+            info: 'info',
+            warning: 'warn',
+            error: 'error',
         };
         const lvl = levelMap[level] ?? 'info';
         const context = `renderer:${path.basename(sourceId)}:${lineNumber} `;
@@ -149,10 +157,17 @@ function setupConsoleRedirect(win: BrowserWindow) {
     });
 }
 
-function setupWindowStatePersistence(win: BrowserWindow, settingsService?: SettingsService, defaultWidth: number = 1280, defaultHeight: number = 800) {
+function setupWindowStatePersistence(
+    win: BrowserWindow,
+    settingsService?: SettingsService,
+    defaultWidth: number = 1280,
+    defaultHeight: number = 800
+) {
     let saveTimeout: NodeJS.Timeout | null = null;
     const saveWindowState = () => {
-        if (saveTimeout) { clearTimeout(saveTimeout); }
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+        }
         saveTimeout = setTimeout(() => {
             if (settingsService && !win.isDestroyed()) {
                 const bounds = win.getBounds();
@@ -166,8 +181,8 @@ function setupWindowStatePersistence(win: BrowserWindow, settingsService?: Setti
                         height: bounds.height,
                         x: bounds.x,
                         y: bounds.y,
-                        fullscreen: isFullscreen
-                    }
+                        fullscreen: isFullscreen,
+                    },
                 });
             }
         }, 500);
@@ -187,8 +202,8 @@ function setupWindowStatePersistence(win: BrowserWindow, settingsService?: Setti
                     height: currentWindow?.height ?? defaultHeight,
                     x: currentWindow?.x ?? 0,
                     y: currentWindow?.y ?? 0,
-                    fullscreen: true
-                }
+                    fullscreen: true,
+                },
             });
         }
     });
@@ -204,15 +219,17 @@ function setupWindowStatePersistence(win: BrowserWindow, settingsService?: Setti
                     height: currentWindow?.height ?? defaultHeight,
                     x: currentWindow?.x ?? 0,
                     y: currentWindow?.y ?? 0,
-                    fullscreen: false
-                }
+                    fullscreen: false,
+                },
             });
         }
     });
 }
 
 export function setupTray(settingsService?: SettingsService) {
-    if (tray) { return; }
+    if (tray) {
+        return;
+    }
 
     try {
         const iconPath = app.isPackaged
@@ -232,14 +249,14 @@ export function setupTray(settingsService?: SettingsService) {
                     } else if (settingsService) {
                         mainWindow = createWindow(settingsService);
                     }
-                }
+                },
             },
             {
                 label: 'Quit',
                 click: () => {
                     app.quit();
-                }
-            }
+                },
+            },
         ]);
 
         tray.setToolTip('Tandem');

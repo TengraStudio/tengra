@@ -60,12 +60,11 @@ export class LlamaService extends BaseService {
             this.modelsDir = path.join(process.cwd(), 'models');
         }
 
-        // llama-server binary path
-        this.binDir = path.join(process.cwd(), 'vendor/llama-bin');
-
-        // Fallback to project root if not in dist
-        if (!fs.existsSync(this.binDir)) {
-            this.binDir = path.join(process.cwd(), 'vendor', 'llama-bin');
+        // Llama binary location: resources/bin/llama-server.exe
+        if (!app.isPackaged) {
+            this.binDir = path.join(process.cwd(), 'resources', 'bin');
+        } else {
+            this.binDir = path.join(process.resourcesPath, 'bin');
         }
     }
 
@@ -105,13 +104,13 @@ export class LlamaService extends BaseService {
             if (!fs.existsSync(serverPath)) {
                 return {
                     success: false,
-                    error: `llama-server.exe bulunamadı: ${serverPath}`
+                    error: `llama-server.exe not found: ${serverPath}`
                 };
             }
 
             // Check if model exists
             if (!fs.existsSync(modelPath)) {
-                return { success: false, error: `Model dosyası bulunamadı: ${modelPath}` };
+                return { success: false, error: `Model file not found: ${modelPath}` };
             }
 
             // Stop existing server
@@ -222,7 +221,7 @@ export class LlamaService extends BaseService {
 
         // Server didn't start
         await this.stopServer();
-        return { success: false, error: 'llama-server başlatılamadı (timeout)' };
+        return { success: false, error: 'Failed to start llama-server (timeout)' };
     }
 
     async stopServer(): Promise<void> {

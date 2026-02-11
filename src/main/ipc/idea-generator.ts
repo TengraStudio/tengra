@@ -7,7 +7,7 @@ import {
     IdeaCategory,
     IdeaProgress,
     IdeaSessionConfig,
-    ResearchProgress
+    ResearchProgress,
 } from '@shared/types/ideas';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -79,8 +79,10 @@ function setupEventForwarding(eventBus: EventBusService): void {
  */
 function registerSessionHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Create a new session
-    ipcMain.handle('ideas:createSession',
-        createIpcHandler('ideas:createSession',
+    ipcMain.handle(
+        'ideas:createSession',
+        createIpcHandler(
+            'ideas:createSession',
             async (_event: IpcMainInvokeEvent, config: IdeaSessionConfig) => {
                 return await ideaGeneratorService.createSession(config);
             }
@@ -88,31 +90,36 @@ function registerSessionHandlers(ideaGeneratorService: IdeaGeneratorService): vo
     );
 
     // Get a session by ID
-    ipcMain.handle('ideas:getSession',
-        createSafeIpcHandler('ideas:getSession',
+    ipcMain.handle(
+        'ideas:getSession',
+        createSafeIpcHandler(
+            'ideas:getSession',
             async (_event: IpcMainInvokeEvent, id: string) => {
                 return await ideaGeneratorService.getSession(id);
-            }, null
+            },
+            null
         )
     );
 
     // Get all sessions
-    ipcMain.handle('ideas:getSessions',
-        createSafeIpcHandler('ideas:getSessions',
+    ipcMain.handle(
+        'ideas:getSessions',
+        createSafeIpcHandler(
+            'ideas:getSessions',
             async () => {
                 return await ideaGeneratorService.getSessions();
-            }, []
+            },
+            []
         )
     );
 
     // Cancel a session
-    ipcMain.handle('ideas:cancelSession',
-        createIpcHandler('ideas:cancelSession',
-            async (_event: IpcMainInvokeEvent, id: string) => {
-                await ideaGeneratorService.cancelSession(id);
-                return { success: true };
-            }
-        )
+    ipcMain.handle(
+        'ideas:cancelSession',
+        createIpcHandler('ideas:cancelSession', async (_event: IpcMainInvokeEvent, id: string) => {
+            await ideaGeneratorService.cancelSession(id);
+            return { success: true };
+        })
     );
 }
 
@@ -121,18 +128,24 @@ function registerSessionHandlers(ideaGeneratorService: IdeaGeneratorService): vo
  */
 function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Generate market preview
-    ipcMain.handle('ideas:generateMarketPreview',
-        createIpcHandler('ideas:generateMarketPreview',
+    ipcMain.handle(
+        'ideas:generateMarketPreview',
+        createIpcHandler(
+            'ideas:generateMarketPreview',
             async (_event: IpcMainInvokeEvent, categories: string[]) => {
-                const preview = await ideaGeneratorService.generateMarketPreview(categories as IdeaCategory[]);
+                const preview = await ideaGeneratorService.generateMarketPreview(
+                    categories as IdeaCategory[]
+                );
                 return { success: true, data: preview };
             }
         )
     );
 
     // Start research pipeline
-    ipcMain.handle('ideas:startResearch',
-        createIpcHandler('ideas:startResearch',
+    ipcMain.handle(
+        'ideas:startResearch',
+        createIpcHandler(
+            'ideas:startResearch',
             async (_event: IpcMainInvokeEvent, sessionId: string) => {
                 const researchData = await ideaGeneratorService.runResearchPipeline(sessionId);
                 return { success: true, data: researchData };
@@ -141,8 +154,10 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
     );
 
     // Start idea generation
-    ipcMain.handle('ideas:startGeneration',
-        createIpcHandler('ideas:startGeneration',
+    ipcMain.handle(
+        'ideas:startGeneration',
+        createIpcHandler(
+            'ideas:startGeneration',
             async (_event: IpcMainInvokeEvent, sessionId: string) => {
                 await ideaGeneratorService.generateIdeas(sessionId);
                 return { success: true };
@@ -151,13 +166,12 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
     );
 
     // Enrich a specific idea
-    ipcMain.handle('ideas:enrichIdea',
-        createIpcHandler('ideas:enrichIdea',
-            async (_event: IpcMainInvokeEvent, ideaId: string) => {
-                const enrichedIdea = await ideaGeneratorService.enrichIdea(ideaId);
-                return { success: true, data: enrichedIdea };
-            }
-        )
+    ipcMain.handle(
+        'ideas:enrichIdea',
+        createIpcHandler('ideas:enrichIdea', async (_event: IpcMainInvokeEvent, ideaId: string) => {
+            const enrichedIdea = await ideaGeneratorService.enrichIdea(ideaId);
+            return { success: true, data: enrichedIdea };
+        })
     );
 }
 
@@ -166,26 +180,34 @@ function registerGenerationHandlers(ideaGeneratorService: IdeaGeneratorService):
  */
 function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Get an idea by ID
-    ipcMain.handle('ideas:getIdea',
-        createSafeIpcHandler('ideas:getIdea',
+    ipcMain.handle(
+        'ideas:getIdea',
+        createSafeIpcHandler(
+            'ideas:getIdea',
             async (_event: IpcMainInvokeEvent, id: string) => {
                 return await ideaGeneratorService.getIdea(id);
-            }, null
+            },
+            null
         )
     );
 
     // Get ideas (optionally filtered by session)
-    ipcMain.handle('ideas:getIdeas',
-        createSafeIpcHandler('ideas:getIdeas',
+    ipcMain.handle(
+        'ideas:getIdeas',
+        createSafeIpcHandler(
+            'ideas:getIdeas',
             async (_event: IpcMainInvokeEvent, sessionId?: string) => {
                 return await ideaGeneratorService.getIdeas(sessionId);
-            }, []
+            },
+            []
         )
     );
 
     // Regenerate a single idea
-    ipcMain.handle('ideas:regenerateIdea',
-        createIpcHandler('ideas:regenerateIdea',
+    ipcMain.handle(
+        'ideas:regenerateIdea',
+        createIpcHandler(
+            'ideas:regenerateIdea',
             async (_event: IpcMainInvokeEvent, ideaId: string) => {
                 const newIdea = await ideaGeneratorService.regenerateIdea(ideaId);
                 return { success: true, idea: newIdea };
@@ -199,23 +221,33 @@ function registerIdeaHandlers(ideaGeneratorService: IdeaGeneratorService): void 
  */
 function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Approve an idea and create a project
-    ipcMain.handle('ideas:approveIdea',
-        createIpcHandler('ideas:approveIdea',
-            async (_event: IpcMainInvokeEvent, ideaId: string, projectPath: string, selectedName?: string) => {
-                const project = await ideaGeneratorService.approveIdea(ideaId, projectPath, selectedName);
+    ipcMain.handle(
+        'ideas:approveIdea',
+        createIpcHandler(
+            'ideas:approveIdea',
+            async (
+                _event: IpcMainInvokeEvent,
+                ideaId: string,
+                projectPath: string,
+                selectedName?: string
+            ) => {
+                const project = await ideaGeneratorService.approveIdea(
+                    ideaId,
+                    projectPath,
+                    selectedName
+                );
                 return { success: true, project };
             }
         )
     );
 
     // Reject an idea
-    ipcMain.handle('ideas:rejectIdea',
-        createIpcHandler('ideas:rejectIdea',
-            async (_event: IpcMainInvokeEvent, ideaId: string) => {
-                await ideaGeneratorService.rejectIdea(ideaId);
-                return { success: true };
-            }
-        )
+    ipcMain.handle(
+        'ideas:rejectIdea',
+        createIpcHandler('ideas:rejectIdea', async (_event: IpcMainInvokeEvent, ideaId: string) => {
+            await ideaGeneratorService.rejectIdea(ideaId);
+            return { success: true };
+        })
     );
 }
 
@@ -224,20 +256,29 @@ function registerApprovalHandlers(ideaGeneratorService: IdeaGeneratorService): v
  */
 function registerLogoHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Check if logo generation is available
-    ipcMain.handle('ideas:canGenerateLogo',
-        createSafeIpcHandler('ideas:canGenerateLogo',
+    ipcMain.handle(
+        'ideas:canGenerateLogo',
+        createSafeIpcHandler(
+            'ideas:canGenerateLogo',
             async () => {
                 return await ideaGeneratorService.canGenerateLogo();
-            }, false
+            },
+            false
         )
     );
 
     // Generate a logo for an idea
-    ipcMain.handle('ideas:generateLogo',
-        createIpcHandler('ideas:generateLogo',
-            async (_event: IpcMainInvokeEvent, ideaId: string, prompt: string) => {
-                const logoPath = await ideaGeneratorService.generateLogo(ideaId, prompt);
-                return { success: true, logoPath };
+    ipcMain.handle(
+        'ideas:generateLogo',
+        createIpcHandler(
+            'ideas:generateLogo',
+            async (
+                _event: IpcMainInvokeEvent,
+                ideaId: string,
+                options: { prompt: string; style: string; model: string; count: number }
+            ) => {
+                const logoPaths = await ideaGeneratorService.generateLogo(ideaId, options);
+                return { success: true, logoPaths };
             }
         )
     );
@@ -248,8 +289,10 @@ function registerLogoHandlers(ideaGeneratorService: IdeaGeneratorService): void 
  */
 function registerDeepResearchHandlers(deepResearchService: DeepResearchService): void {
     // Perform deep research on a topic
-    ipcMain.handle('ideas:deepResearch',
-        createIpcHandler('ideas:deepResearch',
+    ipcMain.handle(
+        'ideas:deepResearch',
+        createIpcHandler(
+            'ideas:deepResearch',
             async (_event: IpcMainInvokeEvent, topic: string, category: string) => {
                 const report = await deepResearchService.performDeepResearch(
                     topic,
@@ -258,7 +301,10 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
                         // Forward progress to renderer
                         const windows = BrowserWindow.getAllWindows();
                         for (const win of windows) {
-                            win.webContents.send('ideas:deep-research-progress', { stage, progress });
+                            win.webContents.send('ideas:deep-research-progress', {
+                                stage,
+                                progress,
+                            });
                         }
                     }
                 );
@@ -268,9 +314,16 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
     );
 
     // Validate an idea with deep research
-    ipcMain.handle('ideas:validateIdea',
-        createIpcHandler('ideas:validateIdea',
-            async (_event: IpcMainInvokeEvent, title: string, description: string, category: string) => {
+    ipcMain.handle(
+        'ideas:validateIdea',
+        createIpcHandler(
+            'ideas:validateIdea',
+            async (
+                _event: IpcMainInvokeEvent,
+                title: string,
+                description: string,
+                category: string
+            ) => {
                 const validation = await deepResearchService.validateIdea(
                     title,
                     description,
@@ -282,8 +335,10 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
     );
 
     // Clear research cache
-    ipcMain.handle('ideas:clearResearchCache',
-        createSafeIpcHandler('ideas:clearResearchCache',
+    ipcMain.handle(
+        'ideas:clearResearchCache',
+        createSafeIpcHandler(
+            'ideas:clearResearchCache',
             async () => {
                 deepResearchService.clearCache();
                 return { success: true };
@@ -301,27 +356,30 @@ function registerScoringHandlers(
     ideaGeneratorService: IdeaGeneratorService
 ): void {
     // Score a single idea
-    ipcMain.handle('ideas:scoreIdea',
-        createIpcHandler('ideas:scoreIdea',
-            async (_event: IpcMainInvokeEvent, ideaId: string) => {
-                const idea = await ideaGeneratorService.getIdea(ideaId);
-                if (!idea) {
-                    throw new Error(`Idea not found: ${ideaId}`);
-                }
-                const score = await ideaScoringService.scoreIdea(idea);
-                return { success: true, score };
+    ipcMain.handle(
+        'ideas:scoreIdea',
+        createIpcHandler('ideas:scoreIdea', async (_event: IpcMainInvokeEvent, ideaId: string) => {
+            const idea = await ideaGeneratorService.getIdea(ideaId);
+            if (!idea) {
+                throw new Error(`Idea not found: ${ideaId}`);
             }
-        )
+            const score = await ideaScoringService.scoreIdea(idea);
+            return { success: true, score };
+        })
     );
 
     // Rank multiple ideas
-    ipcMain.handle('ideas:rankIdeas',
-        createIpcHandler('ideas:rankIdeas',
+    ipcMain.handle(
+        'ideas:rankIdeas',
+        createIpcHandler(
+            'ideas:rankIdeas',
             async (_event: IpcMainInvokeEvent, ideaIds: string[]) => {
                 const ideas = await Promise.all(
                     ideaIds.map(id => ideaGeneratorService.getIdea(id))
                 );
-                const validIdeas = ideas.filter((idea): idea is NonNullable<typeof idea> => idea !== null);
+                const validIdeas = ideas.filter(
+                    (idea): idea is NonNullable<typeof idea> => idea !== null
+                );
                 const ranked = await ideaScoringService.rankIdeas(validIdeas);
                 return { success: true, ranked };
             }
@@ -329,12 +387,14 @@ function registerScoringHandlers(
     );
 
     // Compare two ideas
-    ipcMain.handle('ideas:compareIdeas',
-        createIpcHandler('ideas:compareIdeas',
+    ipcMain.handle(
+        'ideas:compareIdeas',
+        createIpcHandler(
+            'ideas:compareIdeas',
             async (_event: IpcMainInvokeEvent, ideaId1: string, ideaId2: string) => {
                 const [idea1, idea2] = await Promise.all([
                     ideaGeneratorService.getIdea(ideaId1),
-                    ideaGeneratorService.getIdea(ideaId2)
+                    ideaGeneratorService.getIdea(ideaId2),
                 ]);
                 if (!idea1 || !idea2) {
                     throw new Error('One or both ideas not found');
@@ -346,9 +406,16 @@ function registerScoringHandlers(
     );
 
     // Quick score without full analysis
-    ipcMain.handle('ideas:quickScore',
-        createSafeIpcHandler('ideas:quickScore',
-            async (_event: IpcMainInvokeEvent, title: string, description: string, category: string) => {
+    ipcMain.handle(
+        'ideas:quickScore',
+        createSafeIpcHandler(
+            'ideas:quickScore',
+            async (
+                _event: IpcMainInvokeEvent,
+                title: string,
+                description: string,
+                category: string
+            ) => {
                 const score = await ideaScoringService.quickScore(
                     title,
                     description,
@@ -366,18 +433,19 @@ function registerScoringHandlers(
  */
 function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorService): void {
     // Delete a single idea
-    ipcMain.handle('ideas:deleteIdea',
-        createIpcHandler('ideas:deleteIdea',
-            async (_event: IpcMainInvokeEvent, ideaId: string) => {
-                await ideaGeneratorService.deleteIdea(ideaId);
-                return { success: true };
-            }
-        )
+    ipcMain.handle(
+        'ideas:deleteIdea',
+        createIpcHandler('ideas:deleteIdea', async (_event: IpcMainInvokeEvent, ideaId: string) => {
+            await ideaGeneratorService.deleteIdea(ideaId);
+            return { success: true };
+        })
     );
 
     // Delete an entire session and its ideas
-    ipcMain.handle('ideas:deleteSession',
-        createIpcHandler('ideas:deleteSession',
+    ipcMain.handle(
+        'ideas:deleteSession',
+        createIpcHandler(
+            'ideas:deleteSession',
             async (_event: IpcMainInvokeEvent, sessionId: string) => {
                 await ideaGeneratorService.deleteSession(sessionId);
                 return { success: true };
@@ -386,8 +454,10 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
     );
 
     // Archive an idea (soft delete)
-    ipcMain.handle('ideas:archiveIdea',
-        createIpcHandler('ideas:archiveIdea',
+    ipcMain.handle(
+        'ideas:archiveIdea',
+        createIpcHandler(
+            'ideas:archiveIdea',
             async (_event: IpcMainInvokeEvent, ideaId: string) => {
                 await ideaGeneratorService.archiveIdea(ideaId);
                 return { success: true };
@@ -396,8 +466,10 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
     );
 
     // Restore an archived idea
-    ipcMain.handle('ideas:restoreIdea',
-        createIpcHandler('ideas:restoreIdea',
+    ipcMain.handle(
+        'ideas:restoreIdea',
+        createIpcHandler(
+            'ideas:restoreIdea',
             async (_event: IpcMainInvokeEvent, ideaId: string) => {
                 await ideaGeneratorService.restoreIdea(ideaId);
                 return { success: true };
@@ -406,8 +478,10 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
     );
 
     // Get archived ideas
-    ipcMain.handle('ideas:getArchivedIdeas',
-        createSafeIpcHandler('ideas:getArchivedIdeas',
+    ipcMain.handle(
+        'ideas:getArchivedIdeas',
+        createSafeIpcHandler(
+            'ideas:getArchivedIdeas',
             async (_event: IpcMainInvokeEvent, sessionId?: string) => {
                 return await ideaGeneratorService.getArchivedIdeas(sessionId);
             },
@@ -420,8 +494,10 @@ function registerDataManagementHandlers(ideaGeneratorService: IdeaGeneratorServi
  * Register interactive research query handlers
  */
 function registerResearchQueryHandlers(ideaGeneratorService: IdeaGeneratorService): void {
-    ipcMain.handle('ideas:queryResearch',
-        createIpcHandler('ideas:queryResearch',
+    ipcMain.handle(
+        'ideas:queryResearch',
+        createIpcHandler(
+            'ideas:queryResearch',
             async (_event: IpcMainInvokeEvent, ideaId: string, question: string) => {
                 const answer = await ideaGeneratorService.queryIdeaResearch(ideaId, question);
                 return { success: true, answer };

@@ -8,7 +8,7 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**
  * Auth API Service
- * 
+ *
  * Provides HTTP endpoints for the Go proxy to fetch auth tokens from the database
  * without needing to write temporary JSON files.
  */
@@ -17,9 +17,7 @@ export class AuthAPIService extends BaseService {
     private port: number = 0;
     private apiKey: string = '';
 
-    constructor(
-        private authService: AuthService
-    ) {
+    constructor(private authService: AuthService) {
         super('AuthAPIService');
     }
 
@@ -48,7 +46,10 @@ export class AuthAPIService extends BaseService {
 
                     if (req.url === '/api/auth/accounts' && req.method === 'GET') {
                         await this.handleGetAccounts(req, res);
-                    } else if (req.url?.startsWith('/api/auth/accounts/') && req.method === 'POST') {
+                    } else if (
+                        req.url?.startsWith('/api/auth/accounts/') &&
+                        req.method === 'POST'
+                    ) {
                         await this.handleUpdateAccount(req, res);
                     } else {
                         res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -57,7 +58,7 @@ export class AuthAPIService extends BaseService {
                 })();
             });
 
-            this.server.on('error', (err) => {
+            this.server.on('error', err => {
                 appLogger.error('AuthAPIService', `Server error: ${err.message}`);
                 reject(err);
             });
@@ -84,7 +85,7 @@ export class AuthAPIService extends BaseService {
     override async cleanup(): Promise<void> {
         const server = this.server;
         if (server) {
-            return new Promise((resolve) => {
+            return new Promise(resolve => {
                 server.close(() => {
                     appLogger.info('AuthAPIService', 'Auth API server stopped');
                     resolve();
@@ -139,7 +140,7 @@ export class AuthAPIService extends BaseService {
             await this.authService.linkAccount(provider, {
                 ...tokenData,
                 // Ensure accessToken is present as it's required for linkAccount type
-                accessToken: tokenData.accessToken ?? ''
+                accessToken: tokenData.accessToken ?? '',
             });
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -171,28 +172,42 @@ export class AuthAPIService extends BaseService {
             sessionToken: this.getString(data, 'session_token', 'sessionToken'),
             expiresAt: this.getNumber(data, 'expires_at', 'expiresAt'),
             email: this.getString(data, 'email') ?? this.getString(metadata, 'email'),
-            displayName: this.getString(data, 'label', 'displayName') ?? this.getString(metadata, 'label', 'displayName'),
-            avatarUrl: this.getString(data, 'avatar_url', 'avatarUrl') ?? this.getString(metadata, 'avatar_url', 'avatarUrl'),
-            metadata
+            displayName:
+                this.getString(data, 'label', 'displayName') ??
+                this.getString(metadata, 'label', 'displayName'),
+            avatarUrl:
+                this.getString(data, 'avatar_url', 'avatarUrl') ??
+                this.getString(metadata, 'avatar_url', 'avatarUrl'),
+            metadata,
         };
     }
 
     private getString(obj: JsonObject | undefined, ...keys: string[]): string | undefined {
-        if (!obj) { return undefined; }
+        if (!obj) {
+            return undefined;
+        }
         for (const key of keys) {
-            if (typeof obj[key] === 'string') { return obj[key] as string; }
+            if (typeof obj[key] === 'string') {
+                return obj[key] as string;
+            }
         }
         return undefined;
     }
 
     private getNumber(obj: JsonObject | undefined, ...keys: string[]): number | undefined {
-        if (!obj) { return undefined; }
+        if (!obj) {
+            return undefined;
+        }
         for (const key of keys) {
             const val = obj[key];
-            if (typeof val === 'number') { return val; }
+            if (typeof val === 'number') {
+                return val;
+            }
             if (typeof val === 'string') {
                 const parsed = Number(val);
-                if (!isNaN(parsed)) { return parsed; }
+                if (!isNaN(parsed)) {
+                    return parsed;
+                }
             }
         }
         return undefined;
@@ -203,13 +218,22 @@ export class AuthAPIService extends BaseService {
         res.end(JSON.stringify({ error: message }));
     }
 
-    private mapAccountToAuthData(acc: import('@main/services/data/database.service').LinkedAccount) {
+    private mapAccountToAuthData(
+        acc: import('@main/services/data/database.service').LinkedAccount
+    ) {
         const normalizedProvider = this.normalizeProviderName(acc.provider);
         // Go proxy expects 'claude' for model routing
         const providerForGo = normalizedProvider === 'anthropic' ? 'claude' : normalizedProvider;
         const isClaudeProvider = providerForGo === 'claude';
+        const isCodexProvider = providerForGo === 'codex';
 
-        const metadata = this.prepareMetadata(acc.metadata, providerForGo, isClaudeProvider, acc.email);
+        const metadata = this.prepareMetadata(
+            acc.metadata,
+            providerForGo,
+            isClaudeProvider,
+            isCodexProvider,
+            acc.email
+        );
 
         return {
             id: acc.id,
@@ -218,13 +242,13 @@ export class AuthAPIService extends BaseService {
             email: acc.email,
             label: acc.displayName ?? acc.email ?? acc.provider,
             access_token: acc.accessToken,
-            refresh_token: isClaudeProvider ? undefined : acc.refreshToken,
+            refresh_token: isClaudeProvider || isCodexProvider ? undefined : acc.refreshToken,
             session_token: acc.sessionToken,
             expires_at: acc.expiresAt,
             scope: acc.scope,
             metadata,
             created_at: acc.createdAt,
-            updated_at: acc.updatedAt
+            updated_at: acc.updatedAt,
         };
     }
 
@@ -232,12 +256,13 @@ export class AuthAPIService extends BaseService {
         existingMetadata: JsonObject | undefined,
         providerForGo: string,
         isClaudeProvider: boolean,
+        isCodexProvider: boolean,
         email?: string
     ): JsonObject {
         const baseMetadata: JsonObject = { ...(existingMetadata ?? {}) };
 
-        if (isClaudeProvider) {
-            // Let Rust token-service own Claude refresh; proxy sees only access token
+        if (isClaudeProvider || isCodexProvider) {
+            // Let Rust token-service own Claude/Codex refresh; proxy sees only access token
             delete (baseMetadata as { refresh_token?: unknown }).refresh_token;
             delete (baseMetadata as { refreshToken?: unknown }).refreshToken;
         }
@@ -246,7 +271,7 @@ export class AuthAPIService extends BaseService {
             ...baseMetadata,
             type: providerForGo,
             auth_type: isClaudeProvider ? 'oauth' : (existingMetadata?.auth_type ?? 'oauth'),
-            email: email
+            email: email,
         };
     }
 
@@ -262,15 +287,22 @@ export class AuthAPIService extends BaseService {
         p = p.replace(/(_token|_key|_auth)$/, '');
 
         const mappings: Record<string, string> = {
-            'github': 'github', 'github_token': 'github',
-            'copilot': 'copilot', 'copilot_token': 'copilot',
-            'antigravity': 'antigravity', 'antigravity_token': 'antigravity',
-            'anthropic': 'claude', 'anthropic_key': 'claude', 'claude': 'claude',
-            'openai': 'codex', 'openai_key': 'codex', 'codex': 'codex',
-            'gemini': 'gemini', 'gemini_key': 'gemini'
+            github: 'github',
+            github_token: 'github',
+            copilot: 'copilot',
+            copilot_token: 'copilot',
+            antigravity: 'antigravity',
+            antigravity_token: 'antigravity',
+            anthropic: 'claude',
+            anthropic_key: 'claude',
+            claude: 'claude',
+            openai: 'codex',
+            openai_key: 'codex',
+            codex: 'codex',
+            gemini: 'gemini',
+            gemini_key: 'gemini',
         };
 
         return mappings[p] ?? p;
     }
 }
-

@@ -16,6 +16,15 @@ export interface AuthIpcDependencies {
     eventBus: EventBusService;
 }
 
+/**
+ * Registers IPC handlers for authentication.
+ * @param deps Dependencies for the authentication IPC handlers.
+ * @param deps.proxyService Service for proxy authentication.
+ * @param deps.copilotService Service for Copilot integration.
+ * @param deps.authService Service for GitHub authentication.
+ * @param deps.getMainWindow Function to get the main browser window.
+ * @param deps.eventBus Service for event broadcasting.
+ */
 export function registerAuthIpc(deps: AuthIpcDependencies) {
     const { proxyService, copilotService, authService, getMainWindow, eventBus } = deps;
     // --- GitHub/Copilot Device Code Flow ---

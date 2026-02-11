@@ -86,38 +86,38 @@ export async function startOllama(
 ): Promise<{ success: boolean; message: string }> {
     try {
         if (await isOllamaRunning()) {
-            return { success: true, message: 'Ollama zaten çalışıyor' };
+            return { success: true, message: 'Ollama is already running' };
         }
 
         const installed = await isOllamaInstalled();
         if (!installed) {
-            return { success: false, message: 'Ollama kurulu değil. https://ollama.com adresinden indirin.' };
+            return { success: false, message: 'Ollama is not installed. Please download it from https://ollama.com.' };
         }
 
         if (askPermission) {
             const allowed = await askUserPermission(getMainWindow);
             if (!allowed) {
-                return { success: false, message: 'Kullanıcı Ollama başlatmayı reddetti' };
+                return { success: false, message: 'User refused to start Ollama' };
             }
         }
 
         appLogger.info('Ollama', 'Attempting to start Ollama...');
         const commandSuccess = await executeStartCommand();
         if (!commandSuccess) {
-            return { success: false, message: 'Ollama başlatılamadı' };
+            return { success: false, message: 'Failed to start Ollama' };
         }
 
         const ready = await waitForReady();
         if (ready) {
             appLogger.info('Ollama', 'Ollama started successfully');
-            return { success: true, message: 'Ollama başlatıldı' };
+            return { success: true, message: 'Ollama started' };
         }
 
-        return { success: false, message: 'Ollama başlatılamadı. Lütfen manuel olarak başlatın.' };
+        return { success: false, message: 'Failed to start Ollama. Please start it manually.' };
     } catch (error) {
         const message = getErrorMessage(error as Error);
         appLogger.error('Ollama', `Unexpected error starting Ollama: ${message}`);
-        return { success: false, message: `Ollama başlatma hatası: ${message}` };
+        return { success: false, message: `Ollama startup error: ${message}` };
     }
 }
 
@@ -127,11 +127,11 @@ async function askUserPermission(getMainWindow: () => BrowserWindow | null): Pro
 
     const result = await dialog.showMessageBox(win, {
         type: 'question',
-        buttons: ['Evet', 'Hayır'],
+        buttons: ['Yes', 'No'],
         defaultId: 0,
-        title: 'Ollama Başlat',
-        message: 'Ollama başlatılsın mı?',
-        detail: 'AI modellerini kullanmak için Ollama\'nın çalışıyor olması gerekiyor.'
+        title: 'Start Ollama',
+        message: 'Should Ollama be started?',
+        detail: 'Ollama must be running to use local AI models.'
     });
 
     return result.response === 0;

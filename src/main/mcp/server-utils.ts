@@ -33,35 +33,35 @@ import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface McpDeps {
-    web: WebService
-    utility: UtilityService
-    system: SystemService
-    ssh: SSHService
-    screenshot: ScreenshotService
-    scanner: ScannerService
-    notification: NotificationService
-    network: NetworkService
-    monitoring: MonitoringService
-    git: GitService
-    security: SecurityService
-    settings: SettingsService
-    filesystem: FileSystemService
-    file: FileManagementService
-    embedding: EmbeddingService
-    docker: DockerService
-    database: DatabaseService
-    content: ContentService
-    command: CommandService
-    clipboard: ClipboardService
-    ollama: OllamaService
-    advancedMemory: AdvancedMemoryService
-    ideaGenerator: IdeaGeneratorService
-    modelCollaboration: ModelCollaborationService
-    rateLimit: RateLimitService
-    auditLog: AuditLogService
+    web: WebService;
+    utility: UtilityService;
+    system: SystemService;
+    ssh: SSHService;
+    screenshot: ScreenshotService;
+    scanner: ScannerService;
+    notification: NotificationService;
+    network: NetworkService;
+    monitoring: MonitoringService;
+    git: GitService;
+    security: SecurityService;
+    settings: SettingsService;
+    filesystem: FileSystemService;
+    file: FileManagementService;
+    embedding: EmbeddingService;
+    docker: DockerService;
+    database: DatabaseService;
+    content: ContentService;
+    command: CommandService;
+    clipboard: ClipboardService;
+    ollama: OllamaService;
+    advancedMemory: AdvancedMemoryService;
+    ideaGenerator: IdeaGeneratorService;
+    modelCollaboration: ModelCollaborationService;
+    rateLimit: RateLimitService;
+    auditLog: AuditLogService;
 }
 
-export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | unknown
+export type McpHandlerResult = JsonValue | ServiceResponse<JsonValue | void> | void | unknown;
 
 export function wrap(
     handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>,
@@ -77,18 +77,22 @@ export function wrap(
 
             // Audit log successful operation
             if (auditLog) {
-                await auditLog.log({
-                    action: `mcp:${serviceName}:${actionName}`,
-                    category: 'system',
-                    success: result.success,
-                    details: {
-                        serviceName,
-                        actionName,
-                        duration: Date.now() - startTime,
-                        argsKeys: Object.keys(args)
-                    },
-                    error: result.success ? undefined : result.error
-                }).catch(() => { /* Ignore audit log errors */ });
+                await auditLog
+                    .log({
+                        action: `mcp:${serviceName}:${actionName}`,
+                        category: 'system',
+                        success: result.success,
+                        details: {
+                            serviceName,
+                            actionName,
+                            duration: Date.now() - startTime,
+                            argsKeys: Object.keys(args),
+                        },
+                        error: result.success ? undefined : result.error,
+                    })
+                    .catch(() => {
+                        /* Ignore audit log errors */
+                    });
             }
 
             return result;
@@ -97,18 +101,22 @@ export function wrap(
 
             // Audit log failed operation
             if (auditLog) {
-                await auditLog.log({
-                    action: `mcp:${serviceName}:${actionName}`,
-                    category: 'system',
-                    success: false,
-                    details: {
-                        serviceName,
-                        actionName,
-                        duration: Date.now() - startTime,
-                        argsKeys: Object.keys(args)
-                    },
-                    error: errorMsg
-                }).catch(() => { /* Ignore audit log errors */ });
+                await auditLog
+                    .log({
+                        action: `mcp:${serviceName}:${actionName}`,
+                        category: 'system',
+                        success: false,
+                        details: {
+                            serviceName,
+                            actionName,
+                            duration: Date.now() - startTime,
+                            argsKeys: Object.keys(args),
+                        },
+                        error: errorMsg,
+                    })
+                    .catch(() => {
+                        /* Ignore audit log errors */
+                    });
             }
 
             return { success: false, error: errorMsg };
@@ -129,22 +137,31 @@ export function isServiceResponse(result: unknown): result is ServiceResponse<un
 
 export function normalizeServiceResponse(res: ServiceResponse<unknown>): McpResult {
     if (res.success === false) {
-        return { success: false, error: (res.error ?? res.message) ?? 'Unknown error' };
+        return { success: false, error: res.error ?? res.message ?? 'Unknown error' };
     }
     const data = res.data ?? res.result ?? res.content ?? res;
     return { success: true, data: data as JsonValue };
 }
 
 export const buildActions = (
-    actions: Array<Omit<McpAction, 'handler'> & { handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult> }>,
+    actions: Array<
+        Omit<McpAction, 'handler'> & {
+            handler: (args: JsonObject) => McpHandlerResult | Promise<McpHandlerResult>;
+        }
+    >,
     serviceName?: string,
     auditLog?: AuditLogService
 ): McpAction[] =>
-    actions.map(a => ({ ...a, handler: wrap(a.handler, serviceName ?? 'unknown', a.name, auditLog) }));
+    actions.map(a => ({
+        ...a,
+        handler: wrap(a.handler, serviceName ?? 'unknown', a.name, auditLog),
+    }));
 
 export const normalizeTarget = (target: string): string => {
     const trimmed = String(target).trim();
-    if (!trimmed) { return ''; }
+    if (!trimmed) {
+        return '';
+    }
     try {
         const url = new URL(trimmed.includes('://') ? trimmed : `http://${trimmed}`);
         return url.hostname;
@@ -191,7 +208,7 @@ export const validatePath = (basePath: string, inputPath: string): string => {
             throw new Error(`Symlink traversal detected: ${inputPath}`);
         }
         return realPath;
-    } catch (error) {
+    } catch {
         // If file doesn't exist yet, that's okay for write operations
         // Just verify the parent directory doesn't escape
         const parentDir = path.dirname(resolved);
@@ -208,15 +225,12 @@ export const validatePath = (basePath: string, inputPath: string): string => {
  * @param timeoutMs - Timeout in milliseconds (default: 30000)
  * @returns Wrapped handler with timeout
  */
-export const withTimeout = <T>(
-    handler: () => Promise<T>,
-    timeoutMs = 30000
-): Promise<T> => {
+export const withTimeout = <T>(handler: () => Promise<T>, timeoutMs = 30000): Promise<T> => {
     return Promise.race([
         handler(),
         new Promise<T>((_, reject) =>
             setTimeout(() => reject(new Error(`Operation timeout after ${timeoutMs}ms`)), timeoutMs)
-        )
+        ),
     ]);
 };
 

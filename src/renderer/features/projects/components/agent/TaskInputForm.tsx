@@ -2,12 +2,15 @@ import {
     Bot,
     Camera,
     ChevronDown,
+    Command,
     Loader2,
     Paperclip,
     Pause,
     Play,
+    Send,
     Square,
-    X
+    X,
+    Zap,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -16,21 +19,21 @@ import type { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { cn } from '@/lib/utils';
 import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
 
-/**
- * Extract available models from grouped models structure
- */
-const getAvailableModels = (t: (key: string, options?: Record<string, string | number>) => string, groupedModels?: GroupedModels): ModelOption[] => {
+const getAvailableModels = (
+    t: (key: string, options?: Record<string, string | number>) => string,
+    groupedModels?: GroupedModels
+): ModelOption[] => {
     if (!groupedModels) {
         return [];
     }
     const models: ModelOption[] = [];
-    Object.values(groupedModels).forEach((providerModels) => {
+    Object.values(groupedModels).forEach(providerModels => {
         if (Array.isArray(providerModels)) {
-            providerModels.forEach((m) => {
+            providerModels.forEach(m => {
                 models.push({
                     provider: m.provider ?? '',
                     model: m.id ?? m.name ?? '',
-                    displayName: m.name ?? m.id ?? t('agent.unknownModel')
+                    displayName: m.name ?? m.id ?? t('agent.unknownModel'),
                 });
             });
         }
@@ -74,23 +77,34 @@ const FilePreview: React.FC<FilePreviewProps> = ({ files, onRemove }) => {
     }
 
     return (
-        <div className="flex flex-wrap gap-2">
-            {files.map((file) => (
-                <div key={file.id} className="relative group bg-muted/20 border border-border/50 rounded-xl p-2 flex items-center gap-2 pr-8 animate-in fade-in slide-in-from-bottom-1 duration-200">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+        <div className="flex flex-wrap gap-2 px-4">
+            {files.map(file => (
+                <div
+                    key={file.id}
+                    className="relative group bg-card/40 border border-border rounded-lg p-2 flex items-center gap-2 pr-8 animate-in fade-in slide-in-from-bottom-1 duration-200 font-mono"
+                >
+                    <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
                         {file.preview ? (
-                            <img src={file.preview} alt={file.name} className="w-full h-full object-cover" />
+                            <img
+                                src={file.preview}
+                                alt={file.name}
+                                className="w-full h-full object-cover"
+                            />
                         ) : (
-                            <Paperclip className="w-4 h-4 text-primary" />
+                            <Paperclip className="w-3.5 h-3.5 text-primary" />
                         )}
                     </div>
                     <div className="min-w-0 max-w-[120px]">
-                        <p className="text-xs font-bold text-foreground truncate">{file.name}</p>
-                        <p className="text-xxs text-muted-foreground uppercase">{formatFileSize(file.size)}</p>
+                        <p className="text-[10px] font-bold text-foreground/80 truncate">
+                            {file.name}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground uppercase">
+                            {formatFileSize(file.size)}
+                        </p>
                     </div>
                     <button
                         onClick={() => onRemove(file.id)}
-                        className="absolute right-1 top-1 p-1 hover:bg-destructive/10 rounded-lg text-destructive/50 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                        className="absolute right-1 top-1 p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                     >
                         <X className="w-3 h-3" />
                     </button>
@@ -119,47 +133,52 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     onSelect,
     dropdownRef,
     disabled,
-    t
+    t,
 }) => (
     <div className="relative" ref={dropdownRef}>
         <button
             onClick={onToggle}
             disabled={disabled}
-            className="w-[200px] flex items-center justify-between p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-muted/30 transition-all text-left disabled:opacity-50"
+            className="w-[200px] flex items-center justify-between p-3 bg-card/40 border border-border rounded-xl hover:border-primary/30 transition-all text-left disabled:opacity-50 font-mono"
         >
             <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                     <Bot className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-bold text-foreground truncate">
+                    <p className="text-[10px] font-bold text-foreground/80 truncate">
                         {selectedModel?.displayName ?? t('agent.selectModel')}
                     </p>
-                    <p className="text-xxs text-muted-foreground uppercase leading-none">
+                    <p className="text-[9px] text-primary/50 uppercase leading-none">
                         {selectedModel?.provider ?? t('agent.aiProvider')}
                     </p>
                 </div>
             </div>
-            <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-300", showDropdown && "rotate-180")} />
+            <ChevronDown
+                className={cn(
+                    'w-4 h-4 text-muted-foreground transition-transform duration-300',
+                    showDropdown && 'rotate-180 text-primary'
+                )}
+            />
         </button>
 
         {showDropdown && (
-            <div className="absolute bottom-full left-0 w-full mb-2 bg-background/95 border border-border/50 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+            <div className="absolute bottom-full left-0 w-full mb-2 bg-popover border border-border rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
                 <div className="max-h-[240px] overflow-y-auto scrollbar-thin py-2">
-                    {availableModels.map((model) => (
+                    {availableModels.map(model => (
                         <button
                             key={`${model.provider}-${model.model}`}
                             onClick={() => onSelect(model)}
                             className={cn(
-                                "w-full px-4 py-2.5 text-left hover:bg-primary/10 transition-colors flex items-center justify-between group",
-                                selectedModel?.model === model.model && "bg-primary/10"
+                                'w-full px-4 py-2.5 text-left hover:bg-primary/10 transition-colors flex items-center justify-between group font-mono',
+                                selectedModel?.model === model.model && 'bg-primary/5'
                             )}
                         >
                             <div className="min-w-0">
-                                <p className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                <p className="text-[10px] font-bold text-foreground/80 truncate group-hover:text-primary transition-colors">
                                     {model.displayName}
                                 </p>
-                                <p className="text-xxs text-muted-foreground uppercase">
+                                <p className="text-[9px] text-muted-foreground uppercase">
                                     {model.provider}
                                 </p>
                             </div>
@@ -191,18 +210,18 @@ const ControlButtons: React.FC<ControlButtonsProps> = ({
     onPause,
     onStop,
     onSnapshot,
-    t
+    t,
 }) => {
     if (!hasTaskId) {
         return null;
     }
 
     return (
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
             <button
                 onClick={onPause}
                 disabled={!isRunning || isPaused}
-                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-secondary/10 hover:border-secondary/30 hover:text-secondary-foreground transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
+                className="p-2.5 bg-card/40 border border-border rounded-lg hover:border-warning/30 hover:bg-warning/10 hover:text-warning transition-all text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-border"
                 title={t('agent.pause')}
             >
                 <Pause className="w-4 h-4" />
@@ -210,14 +229,14 @@ const ControlButtons: React.FC<ControlButtonsProps> = ({
             <button
                 onClick={onStop}
                 disabled={!isRunning && !isPaused}
-                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
+                className="p-2.5 bg-card/40 border border-border rounded-lg hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive transition-all text-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-border"
                 title={t('agent.stop')}
             >
                 <Square className="w-4 h-4 fill-current" />
             </button>
             <button
                 onClick={onSnapshot}
-                className="flex-1 p-3 bg-muted/20 border border-border/50 rounded-2xl hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all text-muted-foreground disabled:opacity-30 flex items-center justify-center"
+                className="p-2.5 bg-card/40 border border-border rounded-lg hover:border-secondary/30 hover:bg-secondary/10 hover:text-secondary transition-all text-muted-foreground"
                 title={t('agent.snapshot')}
             >
                 <Camera className="w-4 h-4" />
@@ -260,7 +279,16 @@ const RemoteModelSelector: React.FC<{
     quotas?: { accounts: QuotaResponse[] } | null;
     codexUsage?: { accounts: { usage: CodexUsage }[] } | null;
     onSelect: (provider: string, model: string) => void;
-}> = ({ groupedModels, selectedModel, selectedProvider, parentSelectedModel, settings, quotas, codexUsage, onSelect }) => (
+}> = ({
+    groupedModels,
+    selectedModel,
+    selectedProvider,
+    parentSelectedModel,
+    settings,
+    quotas,
+    codexUsage,
+    onSelect,
+}) => (
     <div className="w-[240px]">
         <FullModelSelector
             groupedModels={groupedModels}
@@ -270,7 +298,7 @@ const RemoteModelSelector: React.FC<{
             settings={settings}
             quotas={quotas ?? null}
             codexUsage={codexUsage ?? null}
-            toggleFavorite={() => { }}
+            toggleFavorite={() => {}}
             isFavorite={() => false}
         />
     </div>
@@ -286,7 +314,17 @@ const LocalModelSelectorSection: React.FC<{
     isRunning: boolean;
     isLoading: boolean;
     t: (key: string, options?: Record<string, string | number>) => string;
-}> = ({ selectedModel, showModelDropdown, onToggleDropdown, availableModels, onSelectModelFallback, modelDropdownRef, isRunning, isLoading, t }) => (
+}> = ({
+    selectedModel,
+    showModelDropdown,
+    onToggleDropdown,
+    availableModels,
+    onSelectModelFallback,
+    modelDropdownRef,
+    isRunning,
+    isLoading,
+    t,
+}) => (
     <ModelSelector
         selectedModel={selectedModel}
         showDropdown={showModelDropdown}
@@ -362,8 +400,13 @@ interface ActionButtonProps {
     t: (key: string, options?: Record<string, string | number>) => string;
 }
 
-const LoadingButton: React.FC<{ t: (key: string, options?: Record<string, string | number>) => string }> = ({ t }) => (
-    <button disabled className="px-4 py-2 bg-muted text-muted-foreground rounded-xl text-xs-bold flex items-center gap-2">
+const LoadingButton: React.FC<{
+    t: (key: string, options?: Record<string, string | number>) => string;
+}> = ({ t }) => (
+    <button
+        disabled
+        className="px-4 py-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-2 border border-border"
+    >
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
         {t('agent.start')}
     </button>
@@ -378,7 +421,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
     selectedModel,
     onStart,
     onResume,
-    t
+    t,
 }) => {
     if (isLoading) {
         return <LoadingButton t={t} />;
@@ -389,8 +432,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
             <button
                 onClick={onResume}
                 className={cn(
-                    "px-4 py-2 rounded-xl text-xs-bold transition-all shadow-xl active:scale-[0.98] flex items-center gap-2 text-white",
-                    isStuck ? "bg-warning glow-warning hover:bg-warning/90" : "bg-secondary shadow-secondary/20 hover:bg-secondary/90"
+                    'px-4 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all active:scale-[0.98] flex items-center gap-2 border',
+                    isStuck
+                        ? 'bg-warning/10 text-warning border-warning/30 hover:bg-warning/20 shadow-[0_0_15px_hsl(var(--warning)/0.1)]'
+                        : 'bg-secondary/10 text-secondary border-secondary/30 hover:bg-secondary/20'
                 )}
             >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -403,7 +448,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         return (
             <button
                 onClick={onResume}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-xs-bold hover:bg-destructive/90 transition-all shadow-xl shadow-destructive/20 active:scale-[0.98] flex items-center gap-2"
+                className="px-4 py-2 bg-destructive/10 text-destructive rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all border border-destructive/30 active:scale-[0.98] flex items-center gap-2"
             >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 {t('agent.retry')}
@@ -417,14 +462,14 @@ const ActionButton: React.FC<ActionButtonProps> = ({
                 window.electron.log.info('[TaskInputForm] ActionButton CLICKED', {
                     hasValue: !!value.trim(),
                     hasSelectedModel: !!selectedModel,
-                    model: selectedModel?.model
+                    model: selectedModel?.model,
                 });
                 onStart();
             }}
             disabled={!value.trim() || !selectedModel}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs-bold hover:bg-primary/90 transition-all glow-primary active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2"
+            className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider hover:bg-primary/20 transition-all border border-primary/30 active:scale-[0.98] disabled:opacity-30 disabled:scale-100 flex items-center gap-2 shadow-[0_0_15px_hsl(var(--primary)/0.1)] hover:shadow-[0_0_20px_hsl(var(--primary)/0.2)]"
         >
-            <Play className="w-3.5 h-3.5 fill-current" />
+            <Send className="w-3.5 h-3.5" />
             {t('agent.start')}
         </button>
     );
@@ -443,19 +488,19 @@ const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     onChange,
     onStart,
     isLoading,
-    t
+    t,
 }) => (
     <textarea
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
                 e.preventDefault();
                 onStart();
             }
         }}
         placeholder={t('agent.promptPlaceholder')}
-        className="w-full bg-muted/20 border border-border/50 rounded-2xl p-4 pr-32 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all min-h-[100px] resize-none scrollbar-thin placeholder:text-muted-foreground/50"
+        className="w-full bg-card/40 border border-border rounded-xl p-4 pr-32 text-sm font-mono focus:ring-1 focus:ring-primary/30 focus:border-primary/30 outline-none transition-all min-h-[100px] resize-none scrollbar-thin placeholder:text-muted-foreground/50 text-foreground/80"
         disabled={isLoading}
     />
 );
@@ -485,7 +530,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
     isStuck,
     selectedModel,
     onResume,
-    t
+    t,
 }) => (
     <div className="flex-1 relative group">
         <PromptTextArea
@@ -496,11 +541,22 @@ const PromptInput: React.FC<PromptInputProps> = ({
             t={t}
         />
 
+        {/* Decorative corner accents */}
+        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary/20 rounded-tl-xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary/20 rounded-tr-xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary/20 rounded-bl-xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary/20 rounded-br-xl pointer-events-none" />
+
         <div className="absolute right-3 bottom-3 flex items-center gap-2">
+            <div className="text-[9px] font-mono text-muted-foreground/50 mr-2 flex items-center gap-1">
+                <Command className="w-3 h-3" />
+                <span>+</span>
+                <span>ENTER</span>
+            </div>
             <button
                 onClick={onFileSelect}
                 disabled={isLoading}
-                className="p-2 hover:bg-muted/30 rounded-xl text-muted-foreground hover:text-foreground transition-all duration-200 disabled:opacity-50"
+                className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-primary transition-all duration-200 disabled:opacity-50 border border-transparent hover:border-border"
                 title={t('agent.attachFiles')}
             >
                 <Paperclip className="w-4 h-4" />
@@ -540,7 +596,6 @@ export interface TaskInputFormProps {
     agentState: string;
     taskId: string | null;
     t: (key: string, options?: Record<string, string | number>) => string;
-    // Full ModelSelector props
     groupedModels?: GroupedModels;
     quotas?: { accounts: QuotaResponse[] } | null;
     codexUsage?: { accounts: { usage: CodexUsage }[] } | null;
@@ -575,29 +630,38 @@ const TaskInputLayout: React.FC<{
     selectedModel,
     onResumeTask,
     t,
-    modelControlProps
+    modelControlProps,
 }) => (
-        <div className="bg-card/50 border-t border-border p-4 backdrop-blur-md">
-            <div className="max-w-5xl mx-auto space-y-4">
-                <div className="flex gap-4 items-start">
-                    <PromptInput
-                        value={userPrompt}
-                        onChange={setUserPrompt}
-                        onStart={onStartTask}
-                        onFileSelect={onFileSelectClick}
-                        isLoading={isLoading}
-                        isPaused={isPaused}
-                        isFailed={isFailed}
-                        isStuck={isStuck}
-                        selectedModel={selectedModel}
-                        onResume={onResumeTask}
-                        t={t}
-                    />
-                    <ModelControlSection {...modelControlProps} />
-                </div>
+    <div className="bg-card/40 border-t border-border p-4 backdrop-blur-xl relative">
+        {/* Top decorative line */}
+        <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
+        <div className="max-w-5xl mx-auto space-y-4">
+            <div className="flex gap-4 items-start">
+                <PromptInput
+                    value={userPrompt}
+                    onChange={setUserPrompt}
+                    onStart={onStartTask}
+                    onFileSelect={onFileSelectClick}
+                    isLoading={isLoading}
+                    isPaused={isPaused}
+                    isFailed={isFailed}
+                    isStuck={isStuck}
+                    selectedModel={selectedModel}
+                    onResume={onResumeTask}
+                    t={t}
+                />
+                <ModelControlSection {...modelControlProps} />
             </div>
         </div>
-    );
+
+        {/* System status indicator */}
+        <div className="absolute bottom-1 left-4 flex items-center gap-2 text-[9px] font-mono text-muted-foreground/50">
+            <Zap className="w-3 h-3 text-primary/40" />
+            <span>AGENT.INPUT.READY</span>
+        </div>
+    </div>
+);
 
 export const TaskInputForm: React.FC<TaskInputFormProps> = ({
     userPrompt,
@@ -624,43 +688,51 @@ export const TaskInputForm: React.FC<TaskInputFormProps> = ({
     settings,
     selectedProvider,
     parentSelectedModel,
-    onSelectModel
+    onSelectModel,
 }) => {
     const isStuck = agentState === 'waiting_llm' || agentState === 'waiting_tool';
     const isStopped = agentState === 'stopped';
     const isPaused = agentState === 'paused';
     const isFailed = agentState === 'failed' || isStopped;
-    const isRunning = taskId ? (
-        agentState !== 'idle' &&
-        agentState !== 'completed' &&
-        agentState !== 'failed' &&
-        agentState !== 'paused' &&
-        agentState !== 'stopped' &&
-        !isStuck
-    ) : false;
+    const isRunning = taskId
+        ? agentState !== 'idle' &&
+          agentState !== 'completed' &&
+          agentState !== 'failed' &&
+          agentState !== 'paused' &&
+          agentState !== 'stopped' &&
+          !isStuck
+        : false;
     const hasTaskId = !!taskId;
 
     const [showModelDropdown, setShowModelDropdown] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+            if (
+                modelDropdownRef.current &&
+                !modelDropdownRef.current.contains(event.target as Node)
+            ) {
                 setShowModelDropdown(false);
             }
         };
         if (showModelDropdown) {
             document.addEventListener('mousedown', handleClickOutside);
-            return () => { document.removeEventListener('mousedown', handleClickOutside); };
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
         }
         return undefined;
     }, [showModelDropdown, modelDropdownRef]);
 
-    const handleFullModelSelect = useCallback((provider: string, model: string) => {
-        setSelectedModel({ provider, model, displayName: model });
-        if (onSelectModel) {
-            onSelectModel(provider, model);
-        }
-    }, [setSelectedModel, onSelectModel]);
+    const handleFullModelSelect = useCallback(
+        (provider: string, model: string) => {
+            setSelectedModel({ provider, model, displayName: model });
+            if (onSelectModel) {
+                onSelectModel(provider, model);
+            }
+        },
+        [setSelectedModel, onSelectModel]
+    );
 
     const availableModels = useMemo(() => getAvailableModels(t, groupedModels), [groupedModels, t]);
     const hasFullModelSelector = !!(groupedModels && settings);
@@ -690,7 +762,7 @@ export const TaskInputForm: React.FC<TaskInputFormProps> = ({
         onPause: onPauseTask,
         onStop: onStopTask,
         onSnapshot: onSaveSnapshot,
-        t
+        t,
     };
 
     return (
@@ -710,7 +782,13 @@ export const TaskInputForm: React.FC<TaskInputFormProps> = ({
                 t={t}
                 modelControlProps={modelControlProps}
             />
-            <input type="file" ref={fileInputRef} onChange={onFileSelect} className="hidden" multiple />
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={onFileSelect}
+                className="hidden"
+                multiple
+            />
         </div>
     );
 };

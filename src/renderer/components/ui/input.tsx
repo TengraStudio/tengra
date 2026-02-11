@@ -10,7 +10,7 @@ const inputVariants = cva(
             variant: {
                 default: 'border-input',
                 error: 'border-destructive focus-visible:ring-destructive',
-                success: 'border-success focus-visible:ring-emerald-500',
+                success: 'border-success focus-visible:ring-success',
             },
             size: {
                 sm: 'h-8 px-2 text-xs',
@@ -26,13 +26,13 @@ const inputVariants = cva(
 );
 
 export interface InputProps
-    extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants> {
-}
+    extends
+        Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+        VariantProps<typeof inputVariants> {}
 
 /**
  * Standardized Input component with consistent variants.
- * 
+ *
  * @example
  * ```tsx
  * <Input placeholder="Enter text..." />
@@ -48,7 +48,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 className={cn(inputVariants({ variant, size, className }))}
                 ref={ref}
                 aria-invalid={variant === 'error' ? 'true' : undefined}
-                aria-describedby={props['aria-describedby'] ?? (variant === 'error' ? `${props.id ?? 'input'}-error` : undefined)}
+                aria-describedby={
+                    props['aria-describedby'] ??
+                    (variant === 'error' ? `${props.id ?? 'input'}-error` : undefined)
+                }
                 {...props}
             />
         );

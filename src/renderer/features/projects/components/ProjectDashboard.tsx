@@ -18,6 +18,7 @@ import { ProjectDashboardTab } from '@/types';
 interface ProjectDashboardProps {
     project: Project;
     onUpdate?: (updates: Partial<Project>) => Promise<void>;
+    onAddMount?: () => void;
     onOpenLogoGenerator?: () => void;
     language?: Language;
     activeTab?: ProjectDashboardTab;
@@ -30,13 +31,14 @@ interface ProjectDashboardProps {
 export const ProjectDashboard = ({
     project,
     onUpdate,
+    onAddMount,
     onOpenLogoGenerator,
     language = 'en',
     activeTab: externalTab,
     onTabChange,
     onDelete,
     selectedEntry,
-    onOpenFile
+    onOpenFile,
 }: ProjectDashboardProps) => {
     const { t, state, actions, editing } = useProjectDashboardLogic({
         project,
@@ -45,7 +47,7 @@ export const ProjectDashboard = ({
         selectedEntry,
         onOpenFile,
         onUpdate,
-        language
+        language,
     });
 
     const analysis = state.analysis;
@@ -60,7 +62,11 @@ export const ProjectDashboard = ({
     }
 
     if (!analysis) {
-        return <div className="p-8 text-center text-muted-foreground">{t('projectDashboard.noProject')}</div>;
+        return (
+            <div className="p-8 text-center text-muted-foreground">
+                {t('projectDashboard.noProject')}
+            </div>
+        );
     }
 
     const tabs: Record<string, JSX.Element> = {
@@ -105,7 +111,9 @@ export const ProjectDashboard = ({
                 isSearching={state.isSearching}
                 searchResults={state.searchResults}
                 projectRoot={state.projectRoot}
-                handleFileSelect={(path, line) => { void actions.handleFileSelect(path, line); }}
+                handleFileSelect={(path, line) => {
+                    void actions.handleFileSelect(path, line);
+                }}
                 t={t}
             />
         ),
@@ -113,11 +121,15 @@ export const ProjectDashboard = ({
             <div className="h-full">
                 <ProjectSettingsPanel
                     project={project}
-                    onUpdate={async (updates) => { await onUpdate?.(updates); }}
+                    onUpdate={async updates => {
+                        await onUpdate?.(updates);
+                    }}
                     language={language}
                     availableAgents={state.availableAgents}
-                    onAddMount={() => { console.warn('Add mount requested from settings'); }}
-                    onRemoveMount={(id) => {
+                    onAddMount={() => {
+                        onAddMount?.();
+                    }}
+                    onRemoveMount={id => {
                         const nextMounts = project.mounts.filter(m => m.id !== id);
                         void onUpdate?.({ mounts: nextMounts });
                     }}
@@ -129,7 +141,9 @@ export const ProjectDashboard = ({
             <ProjectIssuesTab
                 analysis={analysis}
                 projectRoot={state.projectRoot}
-                onOpenFile={(path, line) => { void actions.handleFileSelect(path, line); }}
+                onOpenFile={(path, line) => {
+                    void actions.handleFileSelect(path, line);
+                }}
                 language={language}
             />
         ),
@@ -148,7 +162,7 @@ export const ProjectDashboard = ({
                 projectRoot={state.projectRoot}
                 t={t}
             />
-        )
+        ),
     };
 
     return (
@@ -156,6 +170,6 @@ export const ProjectDashboard = ({
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-2">
                 {tabs[state.activeTab]}
             </div>
-        </div >
+        </div>
     );
 };

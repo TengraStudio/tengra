@@ -13,7 +13,11 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, projectRo
     const { t } = useTranslation();
 
     if (results.length === 0) {
-        return <div className="text-center text-muted-foreground mt-10">{t('projectDashboard.noResults')}</div>;
+        return (
+            <div className="text-center text-muted-foreground mt-10">
+                {t('projectDashboard.noResults')}
+            </div>
+        );
     }
 
     return (
@@ -21,18 +25,22 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, projectRo
             {results.map((res, i) => (
                 <div
                     key={i}
-                    onClick={() => { void onSelect(res.file, res.line); }}
+                    onClick={() => {
+                        void onSelect(res.file, res.line);
+                    }}
                     className="p-2 hover:bg-muted/20 rounded cursor-pointer group"
                 >
                     <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
-                        <span className="font-mono">{res.file.replace(projectRoot, '')}:{res.line}</span>
+                        <span className="font-mono">
+                            {res.file.replace(projectRoot, '')}:{res.line}
+                        </span>
                         {res.type && (
                             <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
                                 {res.type}
                             </span>
                         )}
                     </div>
-                    <div className="text-sm text-gray-300 font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
+                    <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
                         {res.text.trim()}
                     </div>
                 </div>

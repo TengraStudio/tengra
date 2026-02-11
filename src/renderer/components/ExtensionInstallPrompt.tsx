@@ -13,7 +13,7 @@ interface ExtensionInstallPromptProps {
  */
 export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
     onClose,
-    onDismiss
+    onDismiss,
 }) => {
     const { t } = useTranslation();
 
@@ -36,26 +36,26 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="relative w-full max-w-2xl mx-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/30 backdrop-blur-sm">
+            <div className="relative w-full max-w-2xl mx-4 bg-background rounded-xl shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+                <div className="relative bg-background px-6 py-4">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+                        className="absolute top-4 right-4 text-foreground transition-colors"
                         aria-label={t('common.close')}
                     >
                         <X size={20} />
                     </button>
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/10 rounded-lg backdrop-blur">
-                            <Download size={24} className="text-white" />
+                            <Download size={24} className="text-foreground" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white">
+                            <h2 className="text-xl font-bold text-foreground">
                                 {t('extensionPrompt.title')}
                             </h2>
-                            <p className="text-white/80 text-sm">
+                            <p className="text-foreground/80 text-sm">
                                 {t('extensionPrompt.subtitle')}
                             </p>
                         </div>
@@ -65,47 +65,55 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                 {/* Content */}
                 <div className="px-6 py-5 space-y-4">
                     {/* Info Box */}
-                    <div className="flex gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                        <AlertCircle size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-gray-300">
-                            <p className="font-medium text-white mb-1">
+                    <div className="flex gap-3 p-4 bg-info/10 border border-info/20 rounded-lg">
+                        <AlertCircle size={20} className="text-info-light flex-shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                            <p className="font-medium text-foreground mb-1">
                                 {t('extensionPrompt.infoTitle')}
                             </p>
-                            <p>
-                                {t('extensionPrompt.infoBody')}
-                            </p>
+                            <p className="text-muted-foreground">{t('extensionPrompt.infoBody')}</p>
                         </div>
                     </div>
 
                     {/* Features */}
                     <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-white">{t('extensionPrompt.featuresTitle')}</h3>
-                        <ul className="space-y-2 text-sm text-gray-300">
+                        <h3 className="text-sm font-semibold text-foreground">
+                            {t('extensionPrompt.featuresTitle')}
+                        </h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">✓</span>
+                                <span className="text-success-light mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">{t('extensionPrompt.features.aiChatTitle')}</strong>{' '}
+                                    <strong className="text-foreground">
+                                        {t('extensionPrompt.features.aiChatTitle')}
+                                    </strong>{' '}
                                     {t('extensionPrompt.features.aiChatDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">✓</span>
+                                <span className="text-success-light mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">{t('extensionPrompt.features.pageInteractionTitle')}</strong>{' '}
+                                    <strong className="text-foreground">
+                                        {t('extensionPrompt.features.pageInteractionTitle')}
+                                    </strong>{' '}
                                     {t('extensionPrompt.features.pageInteractionDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">✓</span>
+                                <span className="text-success-light mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">{t('extensionPrompt.features.contentExtractionTitle')}</strong>{' '}
+                                    <strong className="text-foreground">
+                                        {t('extensionPrompt.features.contentExtractionTitle')}
+                                    </strong>{' '}
                                     {t('extensionPrompt.features.contentExtractionDesc')}
                                 </span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">✓</span>
+                                <span className="text-success-light mt-1">✓</span>
                                 <span>
-                                    <strong className="text-white">{t('extensionPrompt.features.secureConnectionTitle')}</strong>{' '}
+                                    <strong className="text-foreground">
+                                        {t('extensionPrompt.features.secureConnectionTitle')}
+                                    </strong>{' '}
                                     {t('extensionPrompt.features.secureConnectionDesc')}
                                 </span>
                             </li>
@@ -114,14 +122,18 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
 
                     {/* Installation Steps */}
                     <div className="space-y-2 mt-4">
-                        <h3 className="text-sm font-semibold text-white">{t('extensionPrompt.installTitle')}</h3>
-                        <ol className="space-y-2 text-sm text-gray-300 list-decimal list-inside">
+                        <h3 className="text-sm font-semibold text-foreground">
+                            {t('extensionPrompt.installTitle')}
+                        </h3>
+                        <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
                             <li>{t('extensionPrompt.steps.step1')}</li>
                             <li>{t('extensionPrompt.steps.step2')}</li>
                             <li>{t('extensionPrompt.steps.step3')}</li>
                             <li>
                                 {t('extensionPrompt.steps.step4Prefix')}{' '}
-                                <code className="text-purple-400 bg-gray-800 px-1 rounded">extension</code>{' '}
+                                <code className="text-foreground bg-background px-1 rounded">
+                                    extension
+                                </code>{' '}
                                 {t('extensionPrompt.steps.step4Suffix')}
                             </li>
                         </ol>
@@ -129,17 +141,17 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div className="px-6 py-4 bg-gray-800/50 border-t border-gray-700 flex gap-3">
+                <div className="px-6 py-4 bg-card/50 border-t border-border flex gap-3">
                     <button
                         onClick={handleOpenExtensionFolder}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-lg transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/80 font-medium rounded-lg"
                     >
                         <Download size={18} />
                         {t('extensionPrompt.openFolder')}
                     </button>
                     <button
                         onClick={handleOpenInstructions}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium rounded-lg transition-colors"
                     >
                         <ExternalLink size={18} />
                         {t('extensionPrompt.viewInstructions')}
@@ -147,16 +159,16 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-3 bg-gray-900/50 border-t border-gray-800 flex justify-between items-center">
+                <div className="px-6 py-3 bg-muted/50 border-t border-border flex justify-between items-center">
                     <button
                         onClick={handleDismiss}
-                        className="text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                         {t('extensionPrompt.dismiss')}
                     </button>
                     <button
                         onClick={onClose}
-                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                        className="text-sm text-info hover:text-info-light transition-colors font-medium"
                     >
                         {t('extensionPrompt.remindLater')}
                     </button>
@@ -165,3 +177,5 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
         </div>
     );
 };
+
+ExtensionInstallPrompt.displayName = 'ExtensionInstallPrompt';

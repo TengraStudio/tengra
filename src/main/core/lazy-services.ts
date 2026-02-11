@@ -1,10 +1,16 @@
 import { appLogger } from '@main/logging/logger';
 
 /**
- * Lazy service registry for services that should only be loaded when first accessed
+ * Factory function for lazily loaded services.
+ * @template T The service type to be created
  */
 type LazyServiceFactory<T> = () => Promise<T>
 
+/**
+ * Registry that manages lazy-loaded services.
+ * Services are only instantiated when first accessed, reducing startup time.
+ * Handles concurrent load requests by deduplicating via a loading promise cache.
+ */
 class LazyServiceRegistry {
     private readonly lazyServices = new Map<string, LazyServiceFactory<unknown>>();
     private readonly loadedServices = new Map<string, unknown>();
@@ -53,11 +59,12 @@ class LazyServiceRegistry {
     }
 
     private async loadService<T>(name: string, factory: LazyServiceFactory<T>): Promise<T> {
-        // const startTime = Date.now();
+        const startTime = Date.now();
 
         try {
             const service = await factory();
-            // const loadTime = Date.now() - startTime;
+            const loadTime = Date.now() - startTime;
+            appLogger.info('LazyServices', `Loaded service '${name}' in ${loadTime}ms`);
             return service;
         } catch (error) {
             appLogger.error('LazyServices', `Failed to load service '${name}': ${error}`);
@@ -87,14 +94,21 @@ class LazyServiceRegistry {
     }
 }
 
+/** Singleton instance of the lazy service registry. */
 export const lazyServiceRegistry = new LazyServiceRegistry();
 
 /**
- * Lazy service proxy that loads the service on first access
+ * Creates a Proxy that lazily loads a service on first property access.
+ * Any method call on the proxy will trigger async service loading and then
+ * forward the call to the real service instance.
+ *
+ * @template T The service interface type
+ * @param serviceName - Name of the service registered in the lazy registry
+ * @returns A proxy object that behaves like T but loads on demand
  */
 export function createLazyServiceProxy<T extends object>(serviceName: string): T {
     return new Proxy({} as T, {
-        get(_target, prop, _receiver) {
+        get(_target: T, prop: string | symbol, _receiver: T): unknown {
             // Handle async service loading
             if (prop === 'then') {
                 // If accessed via await/Promise, return the actual service

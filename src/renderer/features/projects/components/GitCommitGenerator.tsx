@@ -6,19 +6,19 @@ import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface GitCommitGeneratorProps {
-    projectPath?: string
-    onClose?: () => void
+    projectPath?: string;
+    onClose?: () => void;
 }
 
 interface HeaderProps {
-    t: (key: string) => string
-    isLoading: boolean
-    projectPath: string | undefined
-    onFetch: () => void
+    t: (key: string) => string;
+    isLoading: boolean;
+    projectPath: string | undefined;
+    onFetch: () => void;
 }
 
 const GeneratorHeader = ({ t, isLoading, projectPath, onFetch }: HeaderProps) => (
-    <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+    <div className="flex items-center gap-3 p-4 border-b border-white/5 bg-gradient-to-r from-success/10 to-success-light/10">
         <div className="p-2 rounded-xl bg-success/20 border border-success/30">
             <GitCommit size={20} className="text-success" />
         </div>
@@ -38,20 +38,26 @@ const GeneratorHeader = ({ t, isLoading, projectPath, onFetch }: HeaderProps) =>
 );
 
 interface SuggestionAreaProps {
-    t: (key: string) => string
-    suggestion: string
-    setSuggestion: (val: string) => void
-    onCopy: () => void
-    isCopied: boolean
+    t: (key: string) => string;
+    suggestion: string;
+    setSuggestion: (val: string) => void;
+    onCopy: () => void;
+    isCopied: boolean;
 }
 
-const SuggestionArea = ({ t, suggestion, setSuggestion, onCopy, isCopied }: SuggestionAreaProps) => (
+const SuggestionArea = ({
+    t,
+    suggestion,
+    setSuggestion,
+    onCopy,
+    isCopied,
+}: SuggestionAreaProps) => (
     <div className="space-y-2">
         <label className="text-xs text-muted-foreground">{t('git.suggestedMessage')}</label>
         <div className="relative">
             <textarea
                 value={suggestion}
-                onChange={(e) => setSuggestion(e.target.value)}
+                onChange={e => setSuggestion(e.target.value)}
                 className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-sm text-foreground font-mono focus:outline-none focus:border-success/50 resize-none"
                 rows={3}
             />
@@ -75,17 +81,25 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     const [error, setError] = useState<string | null>(null);
 
     const fetchStagedDiff = async () => {
-        if (!projectPath) { return; }
+        if (!projectPath) {
+            return;
+        }
         setIsLoading(true);
         setError(null);
         try {
-            const result = await window.electron.runCommand('git', ['diff', '--staged'], projectPath);
+            const result = await window.electron.runCommand(
+                'git',
+                ['diff', '--staged'],
+                projectPath
+            );
             if (result.stderr && !result.stdout) {
                 setError(t('git.noStagedChanges'));
                 return;
             }
             setDiff(result.stdout || '');
-            if (result.stdout) { await generateCommitMessage(result.stdout); }
+            if (result.stdout) {
+                await generateCommitMessage(result.stdout);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : t('git.error'));
         } finally {
@@ -98,26 +112,36 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             const truncatedDiff = diffContent.slice(0, 8000);
             const prompt = `Based on the following git diff, generate a concise and descriptive commit message following conventional commit format (feat/fix/docs/style/refactor/test/chore). Output ONLY the commit message, nothing else.\n\nGit Diff:\n\`\`\`diff\n${truncatedDiff}\n\`\`\`\n\nCommit message:`;
             const stream = chatStream({
-                messages: [{ role: 'user', content: prompt, id: 'temp-git', timestamp: new Date() }],
+                messages: [
+                    { role: 'user', content: prompt, id: 'temp-git', timestamp: new Date() },
+                ],
                 model: 'llama3.2',
                 tools: [],
-                provider: 'ollama'
+                provider: 'ollama',
             });
             let fullContent = '';
             for await (const chunk of stream) {
-                if (chunk.type === 'content') { fullContent += chunk.content; }
+                if (chunk.type === 'content') {
+                    fullContent += chunk.content;
+                }
             }
             if (fullContent) {
                 setSuggestion(fullContent.trim().replace(/^["']|["']$/g, ''));
             }
         } catch (err) {
-            appLogger.error('GitCommitGenerator', 'Failed to generate commit message', err as Error);
+            appLogger.error(
+                'GitCommitGenerator',
+                'Failed to generate commit message',
+                err as Error
+            );
             setSuggestion('feat: update code');
         }
     };
 
     const copyToClipboard = async () => {
-        if (!suggestion) { return; }
+        if (!suggestion) {
+            return;
+        }
         try {
             await navigator.clipboard.writeText(suggestion);
             setIsCopied(true);
@@ -128,9 +152,15 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     };
 
     const executeCommit = async () => {
-        if (!projectPath || !suggestion) { return; }
+        if (!projectPath || !suggestion) {
+            return;
+        }
         try {
-            const result = await window.electron.runCommand('git', ['commit', '-m', suggestion], projectPath);
+            const result = await window.electron.runCommand(
+                'git',
+                ['commit', '-m', suggestion],
+                projectPath
+            );
             if (result.stderr && !result.stdout) {
                 setError(result.stderr);
                 return;
@@ -142,17 +172,42 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
     };
 
     return (
-        <div className="bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
-            <GeneratorHeader t={t} isLoading={isLoading} projectPath={projectPath} onFetch={() => { void fetchStagedDiff(); }} />
+        <div className="bg-muted rounded-2xl border border-white/10 overflow-hidden max-w-2xl w-full">
+            <GeneratorHeader
+                t={t}
+                isLoading={isLoading}
+                projectPath={projectPath}
+                onFetch={() => {
+                    void fetchStagedDiff();
+                }}
+            />
             <div className="p-4 space-y-4">
-                {error && <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
-                {!projectPath && <div className="text-center py-8 text-muted-foreground text-sm">{t('git.selectProject')}</div>}
+                {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                        {error}
+                    </div>
+                )}
+                {!projectPath && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                        {t('git.selectProject')}
+                    </div>
+                )}
                 {suggestion && (
-                    <SuggestionArea t={t} suggestion={suggestion} setSuggestion={setSuggestion} onCopy={() => { void copyToClipboard(); }} isCopied={isCopied} />
+                    <SuggestionArea
+                        t={t}
+                        suggestion={suggestion}
+                        setSuggestion={setSuggestion}
+                        onCopy={() => {
+                            void copyToClipboard();
+                        }}
+                        isCopied={isCopied}
+                    />
                 )}
                 {diff && (
                     <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">{t('git.stagedChanges')}</label>
+                        <label className="text-xs text-muted-foreground">
+                            {t('git.stagedChanges')}
+                        </label>
                         <pre className="bg-black/30 border border-white/5 rounded-lg p-3 text-xs font-mono text-muted-foreground max-h-48 overflow-y-auto">
                             {diff.slice(0, 2000)}
                             {diff.length > 2000 && '\n... (truncated)'}
@@ -162,8 +217,20 @@ export function GitCommitGenerator({ projectPath, onClose }: GitCommitGeneratorP
             </div>
             {suggestion && (
                 <div className="flex gap-3 p-4 border-t border-white/5">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white/5 text-muted-foreground text-sm font-medium hover:bg-white/10">{t('git.cancel')}</button>
-                    <button onClick={() => { void executeCommit(); }} className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-foreground text-sm font-medium">{t('git.commit')}</button>
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2.5 rounded-lg bg-white/5 text-muted-foreground text-sm font-medium hover:bg-white/10"
+                    >
+                        {t('git.cancel')}
+                    </button>
+                    <button
+                        onClick={() => {
+                            void executeCommit();
+                        }}
+                        className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-success to-success-light text-foreground text-sm font-medium"
+                    >
+                        {t('git.commit')}
+                    </button>
                 </div>
             )}
         </div>

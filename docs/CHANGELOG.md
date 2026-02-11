@@ -1,16 +1,244 @@
-# Changelog & Updates
+# Changelog
+
+---
+## [2026-02-11] - IPC Audit Part 1 (First 10 Files)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Audited, documented, and refactored the first 10 IPC handler files (`src/main/ipc`).
+- [x] **Refactoring**: Converted `agent.ts`, `brain.ts`, `code-intelligence.ts`, and `advanced-memory.ts` to use `createSafeIpcHandler` / `createIpcHandler` for robust error handling and logging.
+- [x] **Type Safety**: Fixed strict type issues, added explicit generics to IPC wrappers (e.g., `createSafeIpcHandler<void>`), and ensured no `any` usage in modified files.
+- [x] **Documentation**: Added JSDoc to all exported `register...` functions and key classes in `auth.ts`, `chat.ts`, `db.ts`, `audit.ts`, `backup.ts`, and `collaboration.ts`.
+- [x] **Standardization**: Unified error response shapes where possible, while preserving legacy error behaviors for complex handlers (e.g., `advancedMemory:deleteMany`).
+
+## [2026-02-11] - API & Core File-by-File Audit
+
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Full audit, refactor, and documentation pass on 8 files across `src/main/api` and `src/main/core`.
+- [x] **Dead Code Cleanup**: Deleted `api-auth.middleware.ts` and `api-router.ts` (100% commented-out, no live imports).
+- [x] **JSDoc**: Added comprehensive JSDoc (`@param`/`@returns`/`@throws`) to `circuit-breaker.ts`, `container.ts`, `lazy-services.ts`, `service-registry.ts`, `repository.interface.ts`, and `api-server.service.ts`.
+- [x] **Type Safety**: Added explicit return types to private methods in `circuit-breaker.ts`, `service-registry.ts`, and `lazy-services.ts`. Documented intentional `unknown` map usage.
+- [x] **Pagination Types**: Added `PaginationOptions` and `PaginatedResult<T>` interfaces to `repository.interface.ts`.
+- [x] **Observability**: Uncommented load-time logging in `lazy-services.ts` for service startup visibility.
+- [x] **New Tests**: Created `lazy-services.test.ts` (7 tests) and `service-registry.test.ts` (9 tests) — all 30 core tests pass.
+
+
+## [2026-02-11] - Lint Warning Cleanup
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Eliminated all ESLint warnings and errors across the codebase (114 → 0).
+- [x] **Nullish Coalescing**: Replaced `||` with `??` across `mcp-marketplace.ts` (5), `mcp-marketplace.service.ts` (7), `MCPStore.tsx` (1).
+- [x] **Unnecessary Conditions**: Removed redundant optional chains on required properties in `mcp-marketplace.service.ts`.
+- [x] **Type Safety**: Replaced `any[]` rest params with properly typed `Error` param in `agent-task-executor.ts`.
+- [x] **Non-null Assertions**: Replaced `config!` with guard clauses in `agent-task-executor.ts`.
+- [x] **Optional Chains**: Restructured condition in `getModelConfig` to use optional chaining properly.
+- [x] **Import Sorting**: Auto-fixed imports in `cost-estimation.service.ts` and `ExecutionPlanView.tsx`.
+- [x] **Unused Variables**: Removed unused catch variable in `agent-task-executor.ts`.
+
+---
+## [2026-02-11] - LLM Infrastructure & Localization
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Consolidated LLM binaries and localized system messages/tools from Turkish to English.
+- [x] **Binary Consolidation**: Moved `llama-server.exe` to `resources/bin/` and updated `LlamaService` to use the standardized path.
+- [x] **Internationalization**: Translated `Ollama` startup dialogs, `Chat` system prompts, and `Tool` definitions from Turkish to English across 6 core services.
+- [x] **Service Reliability**: Fixed missing resource logic and resource disposal in `PerformanceMonitorService`.
+- [x] **Standardization**: Both Go (`cliproxy-embed`) and C++ (`llama-server`) binaries now reside in `resources/bin/`.
+
+## [2026-02-11] - Script Consolidation & Cleanup
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Consolidated build environment setup scripts and standardized proxy binary management.
+- [x] **Proxy Consolidation**: Standardized `cliproxy-embed.exe` to `resources/bin/` with auto-rebuild integration in `ProxyProcessManager`.
+- [x] **Script Consolidation**: Merged `src/scripts/setup-build-env.js` and `scripts/setup-build-env.js` into a single root `scripts/setup-build-env.js` file.
+- [x] **VS Detection Integration**: Integrated Visual Studio version detection and `.npmrc` configuration into the main setup script.
+- [x] **Cleanup**: Removed redundant `src/scripts/` directory, orphaned `vendor/cmd`, `vendor/native`, `vendor/package`, and absolute `proxy.exe` and unused llama binaries.
+
+## [2026-02-11] - Workspace Explorer Polish & UX
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Significant performance and productivity overhaul for the workspace explorer.
+- [x] **Performance**: Parallelized `fs.stat` in `listDirectory` and optimized `readFile` with combined binary detection.
+- [x] **UX Stability**: Fixed infinite loading spinners/icons by optimizing React hook dependencies and adding state guards.
+- [x] **Multi-selection**: Implemented standard Ctrl/Cmd and Shift selection support.
+- [x] **Keyboard Navigation**: Added full keyboard control (Arrows, F2 for Rename, Delete/Del, Enter to Open/Toggle).
+- [x] **Batch Actions**: Added support for deleting multiple selected items simultaneously with confirmation.
+- [x] **DND Hardening**: Added distance (8px) and delay (250ms) thresholds to prevent accidental drag-and-drop operations.
+
+## [2026-02-11] - Workspace File Operations (DND Polish & Windows Support)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Improved workspace explorer stability with DND activation constraints and fixed Windows path issues.
+- [x] **DND Hardening**: Implemented `distance` (8px) and `delay` (250ms) thresholds for `PointerSensor` to distinguish between clicks and drags.
+- [x] **Plan Step DND**: Applied similar constraints to AI plan step reordering to prevent accidental displacement.
+- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
+
+## [2026-02-11] - Proxy Resilience & Process Management
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Resolved startup crashes and process termination issues for the embedded Go proxy.
+- [x] **Auth Sync Resilience**: Modified the Go proxy to warning-log instead of fatal-exit if the initial auth sync fails, allowing it to start even if the Electron server is slightly delayed.
+- [x] **Process Lifecycle**: Removed `detached` mode in development to ensure the proxy process is correctly cleaned up by the main process.
+- [x] **Hardened Termination**: Improved `taskkill` logic on Windows using force (`/F`) and tree-kill (`/T`) flags with better error handling.
+- [x] **Port Verification**: Added pre-start port checking to ensure the proxy doesn't attempt to start on an occupied port.
+
+## [2026-02-11] - Workspace File Operations (Windows Support & Localization)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Fixed critical bugs in workspace file operations on Windows and localized the UI.
+- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
+- [x] **Path Normalization**: Updated `createEntry`, `renameEntry`, and `moveEntry` to correctly handle Windows backslashes (`\`) and forward slashes (`/`).
+- [x] **UI Localization**: Added Turkish and English translations for workspace modal titles (Delete, Rename, Create).
+- [x] **Type Safety**: Ensured 100% type safety and resolved linting warnings.
+
+## [2026-02-11] - Workspace File Operations (Delete & Drag-and-Drop)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented file system manipulation features in the workspace explorer, including secure deletion and VS Code-style drag-and-drop for moving files and folders.
+- [x] **File Deletion**: Added "Delete" action to workspace context menu with confirmation modal.
+- [x] **Drag-and-Drop Move**: Integrated `@dnd-kit` to enable moving files and folders by dragging them onto target directories within the same mount.
+- [x] **Virtualization Support**: Ensured drag-and-drop works seamlessly with the virtualized tree view for large projects.
+- [x] **Type Safety**: achieved full type safety for Move/Delete operations and resolved multiple existing lint/type errors.
+- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules (fixed braces, function length, etc.) in modified hooks.
+- [x] **Bug Fix**: Resolved an incorrect IPC handler signature for `registerFilesIpc` in the main process.
+
+## [2026-02-11] - Go Proxy Build Fix
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Resolved Go build failures in the embedded proxy caused by "declared and not used" variables.
+- [x] **Watcher Fix**: Added debug logging for `totalNewClients` in `internal/watcher/clients.go`.
+- [x] **Server Fix**: Added debug logging for `total` in `internal/api/server.go`.
+- [x] **Build Verification**: Confirmed successful build of `cliproxy-embed.exe` using `node scripts/build-native.js`.
+
+## [2026-02-11] - Logo Generation System Refinement
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Modernized the logo generation system for both Projects and Ideas. Added support for multiple models, styles, and batch generation (up to 4 logos at once). Improved UX with drag-and-drop file uploads and a refined selection UI.
+- [x] **Project Logo Generator**: Complete redesign of `LogoGeneratorModal.tsx` with Model/Style selection.
+- [x] **Batch Generation**: Added support for generating multiple logos in a single request.
+- [x] **Drag-and-Drop**: Implemented file drop handling for manual logo application.
+- [x] **Idea Logo Generation**: Refactored `IdeaGeneratorService` to support mandatory model/style arguments and return multiple logo paths.
+- [x] **UI Components**: Created custom `Label` component and consolidated UI exports in `@/components/ui`.
+- [x] **Type Safety**: Achieved 100% type safety across the new logo generation IPC handlers and services.
+
+## [2026-02-10] - Debugging Codex Token Refresh
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Resolved a race condition between the `tandem-token-service` (Node/Rust) and embedded Go Proxy that caused Codex (OpenAI) token reuse errors.
+- [x] **Race Condition Fix**: Modified `AuthAPIService` to hide `refresh_token` from the Go Proxy for `codex` provider, ensuring only `TokenService` manages refreshes (BUG-002).
+- [x] **Verification**: Validated fix with lint checks.
+
+## [2026-02-10] - Project Agent Visual Enhancements
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented comprehensive visual enhancements for the Project Agent canvas, improving usability and feedback during plan execution.
+- [x] **Animated Data Flow**: Added `AnimatedEdge` component to visualize active data flow between nodes (AGT-VIS-01).
+- [x] **Canvas Mini-Map**: Integrated `MiniMap` for easier navigation of large plan graphs (AGT-VIS-02).
+- [x] **Real-time Log Streaming**: Enhanced `LogConsole` with auto-scrolling and virtualized list support (AGT-VIS-03).
+- [x] **Drag & Drop Reordering**: Implemented drag-and-drop functionality for plan steps using `@dnd-kit` (AGT-VIS-04).
+- [x] **Collapsible Step Groups**: Added ability to group and collapse plan steps for better organization (AGT-VIS-05).
+- [x] **Zero Lint/Type Errors**: Ensured all new components pass strict linting and type checking.
+
+## [2026-02-09] - Terminal Smart Suggestions (AI-powered)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented AI-powered command completion (ghost-text) in the integrated terminal.
+- [x] **Smart Service**: Created `TerminalSmartService` for command prediction using LLMs.
+- [x] **IPC Handlers**: Added `terminal:getSuggestions` IPC endpoint.
+- [x] **Ghost Text UI**: Implemented `useTerminalSmartSuggestions` hook using xterm.js decorations.
+- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules and strict React linting.
+
+## [2026-02-09] - Terminal Backend Selection & UI Refinements
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Refined the terminal backend selection UI with persistent user preferences and full localization.
+- [x] **Backend Selection UI**: Implemented backend selection dropdown in the "New Terminal" menu.
+- [x] **Persistence**: Added dual-persistence for preferred terminal backend (localStorage + AppSettings).
+- [x] **Localization**: Completed Turkish and English localization for all terminal backend related strings.
+- [x] **Reliability**: Refactored `TerminalPanel.tsx` for NASA rule compliance and improved fallback logic in `TerminalService.ts`.
+
+## [2026-02-09] - Advanced Terminal System - Phase 2 (Warp)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented the Warp backend for modern AI-powered terminal sessions.
+- [x] **Warp Backend**: Added `WarpBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `WarpBackend` in `TerminalService`.
+
+## [2026-02-09] - Advanced Terminal System - Phase 2 (Alacritty)
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented the Alacritty backend for cross-platform GPU-accelerated terminal sessions.
+- [x] **Alacritty Backend**: Added `AlacrittyBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `AlacrittyBackend` in `TerminalService`.
+
+## [2026-02-09] - Advanced Terminal System - Phase 2 (Ghostty)
+
+- **Status**: ✅ IN PROGRESS
+- **Summary**: Implemented the Ghostty backend for GPU-accelerated terminal sessions.
+- [x] **Ghostty Backend**: Added `GhosttyBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `GhosttyBackend` in `TerminalService` for session management.
+
+## [2026-02-09] - Advanced Terminal System - Phase 1
+
+- **Status**: ✅ COMPLETED
+- **Summary**: Implemented a modular terminal architecture with plugin-based backends, user profiles, and workspace integration.
+- [x] **Modular Architecture**: Introduced `ITerminalBackend` interface and `NodePtyBackend` implementation.
+- [x] **Session Persistence**: Enhanced session management with asynchronous creation and backend-aware snapshots.
+- [x] **Terminal Profiles**: Added `TerminalProfileService` to manage custom shell configurations and environments.
+- [x] **Workspace Isolation**: Added `workspaceId` support to terminal sessions for per-project terminal isolation.
+- [x] **IPC Layer**: Updated IPC handlers to support profiles, backends, and reliable asynchronous session creation.
+
+## [2026-02-09] - UI Optimization
+
+- Removed: Resizable sidebar functionality. Sidebar width is now fixed (280px for main, 350px for agent panel) to improve UI stability.
+- Fixed: Resolved lint errors in `LayoutManager` and `WorkspaceSidebar` related to unused resizing hooks and props.
+
+## [2026-02-09] - Database Stability & Stale Port Handling
+
+- Fixed: `DatabaseClientService` now correctly handles `db-service` restarts and stale ports.
+- Added: Stale port re-discovery mechanism in `DatabaseClientService.apiCall`.
+- Added: Event listener in `DatabaseClientService` for `db-service:ready` to update cached port automatically.
+- Improved: `ProcessManagerService` now clears cached ports on connection errors (`ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`).
+- Technical Debt: Improved reliability of local service communication across app restarts.
+
+## 2026-02-09 (Update 30): ✨ Chat UI Polish & Math Rendering Improvements
+
+**Status**: ✅ COMPLETED
+**Summary**: Removed message collapsing functionality for a better reading experience and significantly improved mathematical equation rendering.
+
+- [x] **Message Collapsing**: Removed `COLLAPSE_THRESHOLD` and all logic related to partial message rendering. Messages are now always displayed in full.
+- [x] **Math Styling**: Improved KaTeX rendering by removing background colors, increasing font size (1.15em), and ensuring perfect theme synchronization.
+- [x] **Type Safety**: Hardened type safety in `MessageBubble.tsx` by replacing `unknown`/`any` in quota handling with a strict `QuotaErrorResponse` interface.
+- [x] **Code Quality**: Cleaned up unused imports and obsolete props/interfaces related to the collapse functionality.
+
+## 2026-02-08 (Update 29): 🤖 AGT Checkpoint & Recovery Completion (AGT-CP-01..06)
+
+**Status**: ✅ COMPLETED
+**Summary**: Completed AGT checkpoint/recovery phase with a unified UAC-backed checkpoint service, rollback support, plan version history, and legacy IPC compatibility.
+
+- [x] **AGT-CP-01**: Added `uac_checkpoints` schema and indexes in `UacRepository`.
+- [x] **AGT-CP-02**: Added `AgentCheckpointService` facade for snapshot serialization/hydration and checkpoint orchestration.
+- [x] **AGT-CP-03**: Wired auto-checkpoint saves on step completion and state sync through `ProjectAgentService`.
+- [x] **AGT-CP-04**: Stabilized resume-from-checkpoint flow and aligned with renderer history/sidebar usage.
+- [x] **AGT-CP-05**: Implemented rollback-to-checkpoint with pre-rollback snapshot guard and UI rollback action.
+- [x] **AGT-CP-06**: Added `uac_plan_versions` schema and version tracking for proposed/approved/rollback plan states.
+- [x] **IPC Compatibility**: Added batchable `project-agent:*` compatibility handlers and new `project:rollback-checkpoint` / `project:get-plan-versions` endpoints.
 
 ## 2026-02-08 (Update 28): 🌐 Internationalization (Phase 4) - Sidebar Components
+
 **Status**: ✅ COMPLETED
 **Summary**: Successfully implemented Phase 4 of the internationalization (i18n) project, focusing on the remaining layout components within the sidebar.
+
 - [x] **Sidebar Localization**: Localized `SidebarNavigation`, `WorkspaceSection`, `ToolsSection`, and `ProvidersSection`.
 - [x] **Hardcoded String Removal**: Replaced hardcoded labels for Memory, Agent, Docker, Terminal, and AI providers with localized strings.
 - [x] **Translation Synchronization**: Added missing keys to `en.ts` and `tr.ts` to support sidebar localization.
 - [x] **Quality Control**: Confirmed compliance with `npm run lint` and `npm run type-check` (zero errors).
 
 ## 2026-02-08 (Update 27): 🌐 Internationalization (Phase 3) - Layout & Settings
+
 **Status**: ✅ COMPLETED
 **Summary**: Successfully implemented Phase 3 of the internationalization (i18n) project, focusing on layout and settings components. Unified MCP i18n keys and refactored the MCP Servers tab for better performance and compliance.
+
 - [x] **Settings Tabs Localization**: Internationalized `General`, `Appearance`, `Accounts`, `Developer`, `Models`, `Speech`, `Statistics`, and `MCP` settings tabs.
 - [x] **MCP i18n Consolidation**: Unified disparate `mcp` translation blocks in `en.ts` and `tr.ts` into a single root block for consistency.
 - [x] **MCPServersTab Refactor**: Completely refactored `MCPServersTab.tsx` to reduce complexity (from 21 to low single digits), extracted `ServerItem` component, and replaced `console.log` with `appLogger` (NASA rules).
@@ -18,8 +246,10 @@
 - [x] **Quality Control**: Achieved 100% pass rate on `npm run build`, `npm run lint`, and `npm run type-check`.
 
 ## 2026-02-08 (Update 26): 📝 Component Inventory & Documentation
+
 **Status**: ✅ COMPLETED
 **Summary**: Created a comprehensive inventory of all React components in the `src/renderer` directory (330+ files) and generated a checklist for tracking.
+
 - [x] **Component Audit**: Scanned all subdirectories in `src/renderer` to identify every `.tsx` component.
 - [x] **Checklist Generation**: Created `docs/components_checklist.md` with links and checkboxes for all components.
 - [x] **Security/Secrecy**: Updated `.gitignore` to ensure the checklist remains local and is not pushed to GitHub.
@@ -31,6 +261,7 @@
 **Summary**: Implemented UZAY-level (space-grade) performance optimizations for build system, created comprehensive Performance Monitor Service, and designed next-generation terminal system architecture.
 
 ### 🚀 Build Performance Optimizations
+
 - [x] **Aggressive Code Splitting**: 12 separate chunks (react-core, monaco, react-flow, ui-libs, syntax, katex, markdown, virtualization, icons, charts, vendor)
 - [x] **Terser Minification**: 2-pass optimization, console.log removal, comment stripping
 - [x] **Tree Shaking**: Preset recommended, no side effects on external modules
@@ -40,6 +271,7 @@
 - [x] **Preload Minification**: esbuild optimization
 
 ### ⚡ Performance Monitor Service
+
 - [x] **Real-time Monitoring**: Memory (30s intervals), CPU, IPC latency, DB queries, LLM responses
 - [x] **Startup Metrics**: Track appReady, windowReady, servicesInit, databaseInit
 - [x] **Space-Grade Alerts**: Memory >1GB, IPC >100ms, DB query >50ms, CPU >80%
@@ -47,12 +279,14 @@
 - [x] **Performance API**: `measure()`, `recordDuration()`, `getSummary()`, `getResourceUsage()`
 
 ### 🖥️ Terminal System V2 Architecture
+
 - [x] **33 Terminal Tasks**: 5 phases covering infrastructure, backends, features, UI, performance
 - [x] **Backend Integrations**: Ghostty, Alacritty, Warp, WezTerm, Windows Terminal, Kitty, xterm.js fallback
 - [x] **Advanced Features**: Split panes, AI suggestions, semantic parsing, recording, remote terminals
 - [x] **Architecture Document**: Comprehensive design spec (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
 
 ### 📊 Build Results
+
 - **Renderer Build**: 3m 26s
 - **Main Process**: 12.27s
 - **Preload**: 67ms
@@ -60,6 +294,7 @@
 - **Largest Chunks**: Reduced via intelligent splitting
 
 ### 📝 Files Created/Modified
+
 - `src/main/services/performance/performance-monitor.service.ts` - Space-grade monitoring
 - `docs/architecture/TERMINAL_SYSTEM_V2.md` - Terminal system design
 - `docs/TODO.md` - Added 33 terminal system tasks
@@ -73,20 +308,24 @@
 **Summary**: Enhanced the visual polish and user experience with micro-animations, chat UI improvements, and 3D interactions. Conducted a color contrast accessibility audit.
 
 ### ✨ Animations & Interactions
+
 - [x] **Modal Springs**: Implemented spring-based pop-in animations for all modals using custom CSS keyframes.
 - [x] **List Transitions**: Added fade-in/slide-in animations for sidebar chat list insertions.
 - [x] **Card Flips**: Implemented 3D card flip animation for Idea cards to reveal technical details.
 - [x] **Micro-interactions**: Added smooth rotation for the Settings gear and hover-to-reveal effects for timestamps.
 
 ### 🎨 UI Polish
+
 - **Chat Experience**: Added message bubble tails and a bouncing dot typing indicator.
 - **Loading States**: Implemented a shimmering skeleton loader for initial message states.
 - **Visual Feedback**: Added vibrant gradient borders for high-potential ideas.
 
 ### ♿ Accessibility
+
 - **Contrast Audit**: Conducted WCAG 2.1 contrast audit for primary colors (findings in `contrast_audit.md`).
 
 ### 📝 Files Modified
+
 - `src/renderer/index.css` - Custom animations and utilities
 - `src/renderer/features/chat/components/*` - Message bubbles, list, skeleton, typing indicator
 - `src/renderer/features/ideas/components/IdeaCard.tsx` - Flip animation and styles
@@ -100,6 +339,7 @@
 **Summary**: Enhanced CI/CD infrastructure with automated workflow cleanup and added comprehensive marketplace system planning for VSCode-style extensions.
 
 ### 🤖 GitHub Actions Automation
+
 - [x] **Cleanup Workflow**: Created automated workflow to clean old runs (Sundays, UTC midnight)
 - [x] **Cleanup Scripts**: Node.js and PowerShell scripts for manual workflow run deletion
 - [x] **CI/CD Fixes**: Simplified CI workflow, enhanced release workflow with Rust/Go toolchains
@@ -107,12 +347,14 @@
 - [x] **NPM Scripts**: Added `gh:cleanup`, `gh:cleanup:all`, `gh:cleanup:dry` commands
 
 ### 🛍️ Marketplace System Planning
+
 - [x] **Architecture Design**: Added 25 marketplace tasks across 5 phases
 - [x] **Extension Types**: MCP servers, themes, commands, languages, agent templates
 - [x] **Security Model**: Signing, sandboxing, code review, user ratings
 - [x] **Developer Experience**: SDK, documentation, testing framework, publishing workflow
 
 ### 📝 Files Created/Modified
+
 - `.github/workflows/cleanup.yml` - Automated workflow cleanup (weekly)
 - `scripts/cleanup-workflow-runs.js` - Node.js cleanup script
 - `scripts/cleanup-workflow-runs.ps1` - PowerShell cleanup script
@@ -128,12 +370,14 @@
 **Summary**: Implemented comprehensive security improvements across all 13 MCP (Model Context Protocol) servers covering 34 services and 80+ actions. Added validation framework, rate limiting, audit logging, encryption, path traversal protection, SSRF prevention, and command injection protection.
 
 ### 🔐 Security Frameworks
+
 - [x] **Validation Framework**: 6 validators (string, number, path, URL, git command, SSH command)
 - [x] **Rate Limiting**: Token bucket algorithm with 13 MCP-specific rate limits
 - [x] **Audit Logging**: Comprehensive logging of all MCP operations with timing and error tracking
 - [x] **Encryption at Rest**: Memory storage encrypted using Electron safeStorage
 
 ### 🛡️ Server-Specific Hardening
+
 - [x] **Git Server**: Command injection prevention, timeout protection (30s)
 - [x] **Network Server**: SSRF protection via URL validation and IP filtering
 - [x] **Filesystem Server**: Path traversal protection on all 26 operations, symlink detection
@@ -143,6 +387,7 @@
 - [x] **Project Server**: Scan path validation against allowedFileRoots
 
 ### 📝 Files Modified (20 Files)
+
 - `src/main/mcp/server-utils.ts` - Validation framework, audit logging integration
 - `src/main/services/security/rate-limit.service.ts` - 13 MCP rate limits
 - `src/main/mcp/servers/*.ts` - All 12 MCP server files hardened
@@ -151,6 +396,7 @@
 - `.claude/projects/.../memory/MEMORY.md` - Comprehensive documentation
 
 ### ✅ All 20 Security Tasks Completed
+
 1. Validation framework 2. Git injection fixes 3. Network SSRF 4. SSH hardening 5. Internet URL validation 6. UI clipboard 7. LLM quota 8. Rate limiting 9. Audit logging 10. Memory encryption 11. DB pagination 12. DB size limits 13. FS path traversal 14. FS symlinks 15. FS size limits 16. Docker env 17. GitHub auth 18. Clipboard consent 19. Memory bounds 20. Idea timeouts
 
 ## 2026-02-06 (Update 21): 💾 Agent Canvas Persistence
@@ -160,6 +406,7 @@
 **Summary**: Implemented canvas state persistence for the autonomous agent system. Task nodes and edges are now saved to the database and automatically restored when the application restarts.
 
 ### 💾 Persistence Features
+
 - [x] **Database Schema**: Added `uac_canvas_nodes` and `uac_canvas_edges` tables to store canvas state.
 - [x] **Repository Methods**: Implemented CRUD operations in `UacRepository` for canvas nodes and edges.
 - [x] **IPC Handlers**: Added IPC handlers for `save/get/delete` canvas nodes and edges.
@@ -167,6 +414,7 @@
 - [x] **Auto-Load**: Canvas state is restored on app startup before user interaction.
 
 ### 📝 Files Modified
+
 - `src/main/services/data/repositories/uac.repository.ts` - Added canvas tables and methods
 - `src/main/ipc/project-agent.ts` - Added canvas persistence IPC handlers
 - `src/main/startup/ipc.ts` - Passed databaseService to registerProjectAgentIpc
@@ -175,7 +423,6 @@
 - `src/renderer/web-bridge.ts` - Added canvas API stubs
 - `src/renderer/features/project-agent/ProjectAgentView.tsx` - Implemented load/save logic
 
-
 ## 2026-02-06 (Update 20): 🤖 Agent System Token Tracking & Visual Enhancements
 
 **Status**: ✅ COMPLETED
@@ -183,23 +430,25 @@
 **Summary**: Implemented token usage tracking and visual enhancements for the autonomous agent system, including real-time token counters, step timing display, and progress ring indicators.
 
 ### 🤖 Agent System Enhancements
+
 - [x] **Token Tracking Backend**: Added `currentStepTokens` tracking in `ProjectAgentService` to accumulate token usage per step from LLM stream chunks.
 - [x] **Step Timing**: Implemented `startStep()` and `completeStep()` helper methods that record timing data (startedAt, completedAt, durationMs) for each plan step.
 - [x] **Type Definitions**: Extended `ProjectStep` and `ProjectState` interfaces with `tokens` and `timing` fields.
 
 ### 🎨 UI Enhancements
+
 - [x] **Token Counter Component**: Created `TokenCounter` component displaying token usage with formatted numbers (1.2k, 5.5k) and duration (ms/s/m).
 - [x] **Progress Ring**: Implemented `ProgressRing` SVG component showing circular progress around the task node icon during execution.
 - [x] **Step-Level Tokens**: Added token and timing display for each completed/running step in the plan list.
 - [x] **Total Tokens**: Added aggregate token counter and total duration in the progress bar area.
 
 ### 📝 Files Modified
+
 - `src/main/services/project/project-agent.service.ts`
 - `src/shared/types/project-agent.ts`
 - `src/renderer/features/project-agent/nodes/TaskNode.tsx`
 - `src/renderer/features/project-agent/ProjectAgentView.tsx`
 - `docs/TODO.md`
-
 
 ## 2026-02-06 (Update 19): ✨ Settings UI Refinement & Visual Excellence
 
@@ -208,6 +457,7 @@
 **Summary**: Standardized the Settings UI by grouping scattered settings into logical "Glass Cards", updating the `ToggleSwitch` component, and implementing reactive tab highlighting in the restored settings sidebar.
 
 ### ✨ Visual & UX Polish
+
 - [x] **Glass Card Standard**: Standardized all section cards to use `premium-glass` and premium shadows across `AppearanceTab.tsx`, `GeneralTab.tsx`, `AboutTab.tsx`, and `StatisticsTab.tsx`.
 - [x] **Statistics Standardization**: Refactored the entire `StatisticsTab.tsx` and all quota cards (`AntigravityCard`, `ClaudeCard`, `CodexCard`, `CopilotCard`) to follow the "Premium Glass" unified header and layout system.
 - [x] **Sidebar Restoration**: Restored the missing settings sidebar and implemented reactive `active` state highlighting with `lucide-react` icons.
@@ -215,10 +465,12 @@
 - [x] **Custom Scrollbars**: Implemented a modern, subtle scrollbar system in `index.css` with smooth transitions.
 
 ### 🧹 Code Health & Maintenance
+
 - [x] **GeneralTab Refactor**: Grouped scattered settings into logical categories (Project Basics, App Intelligence, Lifecycle, Privacy).
 - [x] **Syntax & Lints**: Fixed trailing parenthesis errors in `GeneralTab.tsx` and removed unused imports in `SettingsPage.tsx`.
 
 ### 📝 Files Modified
+
 - `src/renderer/index.css`
 - `src/renderer/features/settings/SettingsPage.tsx`
 - `src/renderer/features/settings/components/AppearanceTab.tsx`
@@ -231,7 +483,6 @@
 - `src/renderer/features/settings/components/statistics/CodexCard.tsx`
 - `src/renderer/features/settings/components/statistics/CopilotCard.tsx`
 
-
 ## 2026-02-06 (Update 18): 🧹 Technical Debt Refactor & Visual Polish
 
 **Status**: ✅ COMPLETED
@@ -239,19 +490,23 @@
 **Summary**: Refactored core services to reduce complexity, hardened type safety across the database layer, and implemented a premium HSL-based shadow system in the UI.
 
 ### 🧹 Refactoring & Type Safety
+
 - [x] **Time Tracking Service**: Extracted helper methods from `getTimeStats` to reduce cyclomatic complexity and improve readability.
 - [x] **Database Layer Hardening**: Standardized return types for `Project`, `DbStats`, and `KnowledgeRepository` methods. Resolved implicit `any` and `unknown` types.
 - [x] **Interface Standardization**: Updated `DbStats` to extend `JsonObject` for IPC compatibility and fixed fallback logic in `DatabaseClientService`.
 
 ### ✨ Visual & UX Polish
+
 - [x] **Premium Shadows**: Implemented a set of HSL-based shadow tokens in `index.css` for consistent, tinted shadow aesthetics.
 - [x] **Smooth Transitions**: Added `transition-premium` (cubic-bezier) and hover shadow effects to statistics cards and dashboard components.
 
 ### 🧪 Quality Control
+
 - [x] Achieved 100% pass rate for build and type-check.
 - [x] Adhered to NASA Power of Ten rules for simplified function logic.
 
 ### 📝 Files Modified
+
 - `src/main/services/analysis/time-tracking.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/database-client.service.ts`
@@ -261,7 +516,6 @@
 - `src/renderer/features/projects/components/ProjectStatsCards.tsx`
 - `src/renderer/features/ssh/StatsDashboard.tsx`
 
-
 ## 2026-02-06 (Update 17): 📊 Statistics Accuracy & Data Integrity
 
 **Status**: ✅ COMPLETED
@@ -269,6 +523,7 @@
 **Summary**: Resolved inaccuracies in the statistics dashboard by correctly integrating the `TimeTrackingService` and implementing robust database queries for chat, message, and token usage metrics.
 
 ### ✅ Fixes
+
 - [x] **Time Tracking**: Integrated and initialized `TimeTrackingService` in the main process, ensuring active app and coding time are accurately captured.
 - [x] **Data Integrity**: Refactored `SystemRepository` to use actual database queries instead of default values for message counts, chat counts, and token usage breakdown.
 - [x] **Circular Dependency**: Resolved a circular dependency between `DatabaseService` and `TimeTrackingService` by refactoring the latter to depend on `DatabaseClientService`.
@@ -276,11 +531,13 @@
 - [x] **Type Safety**: Ensured 100% type safety across the new statistics implementation, removing `any` casts and defining strict interfaces.
 
 ### 🧹 Quality & Stability
+
 - [x] Resolved legacy type errors in `ProxyService` IPC handlers (`deleteAuthFile`, `getAuthFileContent`).
 - [x] Updated unit and integration tests to accommodate the new service architecture.
 - [x] Achieved 100% pass rate for build, lint, and type-check.
 
 ### 📝 Files Modified
+
 - `src/main/startup/services.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/repositories/system.repository.ts`
@@ -290,9 +547,10 @@
 - `src/tests/main/services/data/database.service.test.ts`
 - `src/tests/main/tests/integration/repository-db.integration.test.ts`
 
-
 ## [Unreleased]
+
 ### Removed
+
 - Removed `HistoryImportService` and `history:import` IPC handlers.
 - Removed file-based auth management from `ProxyService` (`getAuthFiles`, `syncAuthFiles`, `deleteAuthFile`, etc.).
 - Updated `useBrowserAuth` hook to use the database-backed multi-account API.
@@ -305,15 +563,18 @@
 **Summary**: Resolved "OpenAI API Key not set" error for Codex and Copilot providers by correctly routing them through the embedded proxy.
 
 ### ✅ Fixes
+
 - [x] **LLM Routing**: Updated `LLMService` to route `codex` and `copilot` providers through the embedded proxy.
 - [x] **Model Normalization**: Fixed missing provider prefixes for `codex` and `copilot` models when hitting the proxy.
 - [x] **Code Quality**: Refactored `getRouteConfig` to reduce cyclomatic complexity and adhere to NASA Power of Ten rules.
 
 ### 🧪 Testing
+
 - [x] Verified existing `LLMService` tests pass.
 - [x] Added new test case for Codex proxy routing in `llm.service.test.ts`.
 
 ### 📝 Files Modified
+
 - `src/main/services/llm/llm.service.ts`
 - `src/tests/main/services/llm/llm.service.test.ts`
 - `docs/CHANGELOG.md`
@@ -325,6 +586,7 @@
 **Summary**: Resolved critical termination errors during NVIDIA model streaming and performed project-wide code quality improvements.
 
 ### ✅ Fixes
+
 - [x] Fix NVIDIA Stream: Corrected `Accept` header to `application/json` and fixed method corruption in `LLMService`.
 - [x] Fix NVIDIA Body: Removed non-standard `provider` field and added default `max_tokens: 4096`.
 - [x] Fix Model Logic: Refined `applyReasoningEffort` to target only reasoning-capable models (o1/o3).
@@ -334,11 +596,11 @@
 - [x] Cleanup: Finalized `LLMService` refactor to reduce complexity (NASA Power of Ten).
 
 ### 📝 Files Modified
+
 - `src/main/services/llm/llm.service.ts`
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/main/services/proxy/proxy.service.ts`
 - `src/renderer/features/models/components/ModelSelectorModal.tsx`
-
 
 Track the evolution of Tandem.
 
@@ -351,17 +613,20 @@ Track the evolution of Tandem.
 **Summary**: Implemented a sophisticated multi-agent orchestration system and persistent agent profiles. This update allows for coordinated workflows between specialized agents (Planner, Worker, Reviewer) and ensures that agent personalities and system prompts are persisted across sessions.
 
 ### 🤖 Multi-Agent Orchestration
+
 - **Orchestration Service**: Created `MultiAgentOrchestratorService` to manage complex, multi-step tasks using a "Planner-Worker" architecture.
 - **Planner Phase**: Implemented an "Architect" agent that breaks down high-level user goals into granular tasks and assigns them to specialized agent profiles.
 - **Worker Phase**: Developed an execution loop that cycles through assigned steps, utilizing specific agent personas for targeted implementation.
 - **Interactive Approval**: Added a "Waiting for Approval" state, allowing users to review and modify agent-generated plans before execution begins.
 
 ### 👥 Persistent Agent Profiles
+
 - **Database Persistence**: Implemented `agent_profiles` table and `SystemRepository` methods for saving, retrieving, and deleting agent configurations.
 - **Agent Registry**: Refactored `AgentRegistryService` to serve as a persistent store for specialized agent personas (e.g., Senior Architect, Full-Stack Engineer).
 - **Profile Management**: Exposed profile registration and deletion via `ProjectAgentService` and IPC, enabling future UI-driven agent customization.
 
 ### 🛡️ Type Safety & Integration
+
 - **Strict Typing**: Achieved 100% type safety for orchestrated messages and state updates, utilizing strictly defined interfaces and avoiding `any`/`unknown`.
 - **Event-Driven UI**: Enhanced the system-wide `EventBus` to propagate real-time orchestration updates to the frontend.
 - **IPC Layer**: Finalized new IPC handlers (`orchestrator:start`, `orchestrator:approve`, `orchestrator:get-state`) for seamless communication with the renderer.
@@ -375,16 +640,19 @@ Track the evolution of Tandem.
 **Summary**: Full consolidation of memory services and finalization of the Rust-based database migration. Unified the RAG system and removed redundant legacy binary dependencies.
 
 ### 🧠 Memory Core & RAG
+
 - **Service Consolidation**: Merged `MemoryService` into `AdvancedMemoryService`, creating a single source of truth for all memory operations (Semantic, Episodic, Entity, Personality).
 - **Unified Vector Ops**: Integrated all vector storage and search operations with the Rust `db-service`, eliminating the need for the legacy `memory-service` binary.
 - **RAG Hardening**: Implemented a content-validation staging buffer for new memories to reduce noise and improve retrieval quality.
 
 ### 🗄️ Database Service Evolution
+
 - **Migration Finalization**: Successfully transitioned all database operations to the standalone Rust service.
 - **Dependency Cleanup**: Removed legacy `@electric-sql/pglite` and `better-sqlite3` dependencies from the project.
 - **Orphan Cleanup**: Deleted legacy migration files (`migrations.ts`, `db-migration.service.ts`) and the deprecated native `memory-service` implementation.
 
 ### 🛡️ Quality & Performance
+
 - **Zero Any Policy**: Overhauled `AdvancedMemoryService` to achieve 100% type safety, removing all `any` and `unknown` casts.
 - **Startup Optimization**: Optimized the service initialization sequence in `startup/services.ts`.
 - **Build Pass**: Confirmed 0 build errors and 0 type-check warnings across the entire main process.
@@ -392,6 +660,7 @@ Track the evolution of Tandem.
 ---
 
 **Summary**: Refactored the LLM service to eliminate hardcoded model names and context window- ### Security & Type Safety
+
 - Implemented rate limiting for API requests using `RateLimitService` token bucket (SEC-009)
 - Added validation for Agent Profile registration to prevent system profile overwrites (AGENT-001)
 - Refactored `Message.content` and `UACNode` to use discriminated union types for strict type safety (TYPE-001)
@@ -404,19 +673,21 @@ Track the evolution of Tandem.
 - **LLM**: Fixed `OllamaService` streaming timeouts and added `AbortSignal` support.
 
 ### 🧠 LLM Intelligence & Scalability
+
 - **LLM-001-1**: Improved token counting accuracy using a hybrid word/character heuristic.
 - **LLM-001-4**: Fixed streaming timeouts in `OllamaService` by setting consistent defaults.
 - **Dynamic Context Windows**: Added `registerModelLimit` to `TokenEstimationService`. `ModelRegistryService` now automatically pushes context window metadata (fetched from the Rust service) to the estimator.
 - **Constant Extraction**: Completed the extraction of all default model names (`DEFAULT_MODELS`) across OpenAI, Anthropic, Groq, and Embedding providers.
 
 ### 🧪 Testing & Reliability
+
 - **TEST-003-L1**: Built a comprehensive test suite for `OllamaService` with 100% coverage of connection and availability logic.
 - **Reliable History**: Implemented `MAX_MESSAGE_HISTORY` and `MAX_EVENT_HISTORY` limits in the Agent state machine to prevent memory bloat and context overflow.
 
 ---
 
-
 ### 🛡️ IPC & Security
+
 - **SEC-011-3**: Implemented rate limiting for Git operations (`commit`, `push`, `pull`, `stage`, `unstage`, `checkout`) to prevent rapid-fire process spawning.
 - **SEC-011-4**: Added rate limiting to all database write operations including chats, messages, projects, folders, and prompts.
 - **SEC-011-5**: Ensured tool execution is strictly rate-limited.
@@ -424,6 +695,7 @@ Track the evolution of Tandem.
 - **IPC-001-5**: Centralized rate limiting utility for write-heavy operations including token usage and usage recording.
 
 ### 🧹 Quality & Stability
+
 - Fixed React Compiler errors in `TaskNode.tsx` by adding missing dependencies to `useCallback`.
 - Extracted `AgentProfileSelector` and `TaskMetaInfo` sub-components in `TaskNode.tsx` to reduce complexity.
 - Resolved multiple "Sort imports" and "Unnecessary conditional" lint warnings across the codebase.
@@ -440,13 +712,16 @@ Track the evolution of Tandem.
 ### 🔐 Security Improvements (3 items completed)
 
 **Electron Security Hardening**:
+
 - **SEC-004-3**: Added `certificate-error` handler in the main process to deny all certificate errors by default, preventing potential MITM attacks.
 - **SEC-004-4**: Implemented `setPermissionRequestHandler` and `setPermissionCheckHandler` in the main process to deny all device and notification permission requests by default.
 
 **External Process Security**:
+
 - **SEC-005-4**: Implemented privilege escalation checks for SSH commands by creating a centralized `CommandValidator` and integrating it into `SSHService` and `CommandService`.
 
 **Cryptography Improvements**:
+
 - **SEC-007-3**: Implemented at-rest encryption for the application's master key using Electron's `safeStorage`, with automatic migration for legacy plain-text keys.
 
 ---
@@ -460,18 +735,21 @@ Track the evolution of Tandem.
 ### 🔐 Security Improvements (28 items completed)
 
 **Command Injection Prevention**:
+
 - **SEC-001-1**: Fixed command injection in `security.server.ts` nmap execution with strict parameter validation
 - **SEC-001-2**: Enhanced shell command execution in `command.service.ts` with proper argument escaping
 - **SEC-001-3**: Sanitized command/args in `process.ts` IPC handler to prevent spawn injection
 - **SEC-001-4**: Fixed command concatenation in `process.service.ts` using `quoteShellArg` utility
 
 **Path Traversal Prevention**:
+
 - **SEC-002-1**: Fixed path validation bypass in `filesystem.service.ts` using strict directory boundary checks
 - **SEC-002-2**: Added path validation to `filesystem.server.ts` downloadFile function
 - **SEC-002-3**: Validated file paths in `files.ts` IPC handler against allowedRoots
 - **SEC-002-4**: Fixed direct path concatenation in `ExtensionInstallPrompt.tsx`
 
 **Secrets & Credentials Management**:
+
 - **SEC-003-1**: Removed hardcoded API key 'opencode' from `chat.ts`
 - **SEC-003-2**: Removed hardcoded 'public' key from `llm.service.ts`
 - **SEC-003-3**: Moved CLIENT_ID to environment variables in `local-auth-server.util.ts`
@@ -479,25 +757,30 @@ Track the evolution of Tandem.
 - **SEC-003-5**: Fixed hardcoded 'connected' proxyKey in `llm.service.ts`
 
 **Electron Security Hardening**:
+
 - **SEC-004-1**: Hardened CSP policy, removed unsafe-eval/unsafe-inline where possible
 - **SEC-004-2**: Enabled sandbox mode in Electron browser windows
 - **SEC-004-5**: Removed ELECTRON_DISABLE_SECURITY_WARNINGS suppression
 
 **External Process Security**:
+
 - **SEC-005-1**: Added resource limits (max buffer size) to MCP plugin spawns
 - **SEC-005-2**: Implemented environment variable whitelisting for plugin execution
 
 **SQL Injection Prevention**:
+
 - **SEC-006-1**: Fixed dynamic SQL in `knowledge.repository.ts` with proper parameterization
 - **SEC-006-2**: Parameterized LIMIT clause in `chat.repository.ts`
 - **SEC-006-3**: Added LIKE pattern sanitization to prevent wildcard injection
 - **SEC-006-4**: Fixed LIKE-based DoS vulnerability with pattern sanitization
 
 **Cryptography Improvements**:
+
 - **SEC-007-1**: Replaced `Math.random()` with `crypto.randomBytes()` for token generation
 - **SEC-007-2**: Fixed random ID generation in `utility.service.ts`
 
 **API Security**:
+
 - **SEC-008-2**: Added tool name validation (alphanumeric + `._-` only)
 - **SEC-008-3**: Implemented message schema validation (role, content structure)
 - **SEC-008-4**: Added MCP parameter validation (URL, query, count limits)
@@ -507,44 +790,53 @@ Track the evolution of Tandem.
 - **SEC-010-3**: Added LIKE pattern sanitization in knowledge repository methods
 
 **Input Validation**:
+
 - **IPC-001-4**: Terminal input validation (cols: 1-500, rows: 1-200, data: 1MB max)
 
 **File Permissions**:
+
 - **SEC-014-4**: Added secure file permissions (mode 0o700) for 7 critical directories:
-  - Logs directory (`logger.ts`)
-  - Backup + config directories (`backup.service.ts`)
-  - Data directory + all subdirs (`data.service.ts`)
-  - SSH storage directory (`ssh.service.ts`)
-  - Migration directory (`migration.service.ts`)
-  - Feature flag config (`feature-flag.service.ts`)
+    - Logs directory (`logger.ts`)
+    - Backup + config directories (`backup.service.ts`)
+    - Data directory + all subdirs (`data.service.ts`)
+    - SSH storage directory (`ssh.service.ts`)
+    - Migration directory (`migration.service.ts`)
+    - Feature flag config (`feature-flag.service.ts`)
 
 **Prompt Injection Prevention**:
+
 - **SEC-015-1**: Sanitized user brain content in `brain.service.ts` (5000 char limit, remove code blocks, limit newlines)
 - **SEC-015-2**: Validated custom prompts in `idea-generator.service.ts` (1000 char limit, sanitize markers)
 
 **Rate Limiting**:
+
 - **SEC-011-1**: Added rate limiting to chat streaming
 - **SEC-011-2**: Added rate limiting to file search operations
 
 ### 🚀 Performance Optimizations (15 items completed)
 
 **State Management**:
+
 - **PERF-002-1**: Consolidated 5 separate `useState` calls into single state object in `useProjectManager.ts`
 
 **Database Query Optimization**:
+
 - **PERF-003-1**: Fixed N+1 query in `prompt.repository.ts` with direct WHERE query
 - **PERF-003-2**: Fixed N+1 query in `folder.repository.ts` with direct WHERE query
 - **PERF-003-3**: Converted loop inserts to bulk VALUES insert in `uac.repository.ts`
 - **PERF-003-5**: Optimized expensive EXISTS clause to IN subquery in `chat.repository.ts`
 
 **Caching**:
+
 - **PERF-005-1**: Added 1-minute cache for model loads in `model-fetcher.ts`
 - **PERF-005-4**: Fixed expensive deep copy to shallow copy for immutable messages in `useChatHistory.ts`
 
 **Debouncing**:
+
 - **PERF-006-1**: Added 300ms debounce to FileExplorer folder toggles
 
 **Verified Already Optimized**:
+
 - **PERF-002-4**: ChatInput handlers already use stable refs
 - **PERF-002-5**: MCPStore filteredTools already memoized
 - **PERF-006-2**: ChatInput typing already efficient
@@ -553,12 +845,14 @@ Track the evolution of Tandem.
 ### 📚 Documentation (7 items completed)
 
 **New Documentation Files**:
+
 - **Created `docs/CONFIG.md`**: Environment variables and configuration precedence
 - **Created `docs/API.md`**: REST API endpoint documentation
 - **Created `docs/MCP.md`**: MCP server contracts and tool documentation
 - **Created `docs/IPC.md`**: IPC handler contracts and validation requirements
 
 **Code Documentation**:
+
 - **QUAL-001-1**: Added JSDoc to `utility.service.ts` public methods
 - **QUAL-001-2**: Added JSDoc to `copilot.service.ts` public methods
 - **QUAL-001-3**: Added JSDoc to `project.service.ts` public methods
@@ -567,38 +861,45 @@ Track the evolution of Tandem.
 ### 🧹 Code Quality Improvements (31 items completed)
 
 **Logging Migration** (32 files):
+
 - Migrated all `console.error` calls to `appLogger.error` across IPC handlers, services, and utilities
 - Standardized error logging format: `appLogger.error('ServiceName', 'Message', error as Error)`
 - Files: auth.ts, ollama.ts, code-intelligence.ts, chat.ts, db.ts, git.ts, files.ts, and 25+ service files
 
 **Error Handling**:
+
 - **ERR-001**: Added proper error property to catch blocks in repositories (5 files)
 - Fixed: chat, folder, knowledge, llm, project, prompt, settings repositories
 
 **Type Safety**:
+
 - **TYPE-001-1**: Fixed unsafe double cast in `sanitize.util.ts`
 - **TYPE-001-2**: Fixed unsafe casts in `ipc-wrapper.util.ts`
 - **TYPE-001-3**: Verified `response-normalizer.util.ts` already uses safe helpers
 
 **Code Organization**:
+
 - **QUAL-005-1**: Removed unused `_scanner`, `_embedding` parameters from `utility.service.ts`
 
 **IPC Handler Optimization**:
+
 - **IPC-001-1**: Removed 5 duplicate handler registrations in `db.ts` (getChat, getAllChats, getProjects, getFolders, getStats)
 - **IPC-001-2**: Removed 3 duplicate handler registrations in `git.ts` (getBranch, getStatus, getBranches)
 - **IPC-001-3**: Removed 3 duplicate handler registrations in `auth.ts` (get-linked-accounts, get-active-linked-account, has-linked-account)
 - Added comments explaining batch handler optimization pattern
 
 **Constant Extraction**:
+
 - Extracted hardcoded values to named constants:
-  - `COPILOT_USER_AGENT`
-  - `EXCHANGE_RATE_API_BASE`
-  - `MCP_REQUEST_TIMEOUT_MS`
-  - Message schema validation constants
+    - `COPILOT_USER_AGENT`
+    - `EXCHANGE_RATE_API_BASE`
+    - `MCP_REQUEST_TIMEOUT_MS`
+    - Message schema validation constants
 
 ### 🌐 Internationalization (11 items completed)
 
 **Translation Keys Added**:
+
 - Added 30+ missing translation keys to both `en.ts` and `tr.ts`
 - Fixed duplicate key consolidation causing type errors
 - Categories: Terminal, SSH, Memory, Models, Settings, Chat, Projects, Prompts
@@ -606,12 +907,14 @@ Track the evolution of Tandem.
 ### 🗄️ Database Improvements (8 items completed)
 
 **Schema Enhancement**:
+
 - **DB-001-4**: Created migration 24 with 3 new indexes:
-  - `idx_chat_messages_embedding` (INTEGER field for vector search optimization)
-  - `idx_chats_folder_id` (Foreign key index)
-  - `idx_chat_messages_chat_id_created_at` (Composite index for message retrieval)
+    - `idx_chat_messages_embedding` (INTEGER field for vector search optimization)
+    - `idx_chats_folder_id` (Foreign key index)
+    - `idx_chat_messages_chat_id_created_at` (Composite index for message retrieval)
 
 **Query Optimization**:
+
 - Fixed N+1 patterns in prompt and folder repositories
 - Implemented bulk insert operations
 - Optimized subquery patterns
@@ -619,6 +922,7 @@ Track the evolution of Tandem.
 ### ♿ Accessibility (30 items completed)
 
 **ARIA Labels & Keyboard Navigation**:
+
 - Added `aria-label`, `role`, and keyboard handlers to 30+ interactive components
 - Fixed form labels and semantic HTML across the application
 - Categories: Chat, Projects, Settings, Terminal, Memory, SSH, Models
@@ -626,21 +930,25 @@ Track the evolution of Tandem.
 ### ⚛️ React Best Practices (17 items completed)
 
 **Effect Cleanup**:
+
 - Added cleanup functions to useEffect hooks in 10+ components
 - Fixed memory leaks from interval timers, event listeners, and subscriptions
 
 **Debouncing**:
+
 - Implemented debouncing for search inputs and resize handlers in 7 components
 
 ### 📊 Statistics
 
 **Overall Progress**: 169 of 210 items completed (80.5%)
+
 - Critical: 7 remaining (was 47)
 - High: 39 remaining (was 113)
 - Medium: 32 remaining (was 93)
 - Low: 13 remaining (was 49)
 
 **Categories Fully Completed** (16 categories, 109 items):
+
 - Logging (32 items)
 - Error Handling (4 items)
 - Database (8 items)
@@ -654,6 +962,7 @@ Track the evolution of Tandem.
 ### 🎯 Remaining Work (41 items)
 
 **Priority Areas**:
+
 - Security: Rate limiting, resource limits, auth/authorization, master key encryption (31 items)
 - Code Quality: OpenAPI docs, unused params, unimplemented TODOs (4 items)
 - Performance: Virtualization, connection pooling, caching (6 items)
@@ -670,12 +979,13 @@ Track the evolution of Tandem.
 ### Key Fixes
 
 1.  **Logging Standardization (LOG-001 continuation)**:
-    -   **LOG-001-6**: Replaced `console.error` with `appLogger.error` in `auth.ts` for all authentication-related error handlers (get-linked-accounts, get-active-linked-account, set-active-linked-account, link-account, unlink-account, unlink-provider, has-linked-account).
-    -   **LOG-001-7**: Replaced `console.error` with `appLogger.error` in `ollama.ts` for chat stream and library models error handlers.
-    -   **LOG-001-8**: Replaced `console.error` with `appLogger.error` in `index.ts` for Ollama connection check error handler.
-    -   **LOG-001-9**: Replaced `console.error` with `appLogger.error` in `code-intelligence.ts` for all code intelligence handlers (scanTodos, findSymbols, searchFiles, indexProject, queryIndexedSymbols).
+    - **LOG-001-6**: Replaced `console.error` with `appLogger.error` in `auth.ts` for all authentication-related error handlers (get-linked-accounts, get-active-linked-account, set-active-linked-account, link-account, unlink-account, unlink-provider, has-linked-account).
+    - **LOG-001-7**: Replaced `console.error` with `appLogger.error` in `ollama.ts` for chat stream and library models error handlers.
+    - **LOG-001-8**: Replaced `console.error` with `appLogger.error` in `index.ts` for Ollama connection check error handler.
+    - **LOG-001-9**: Replaced `console.error` with `appLogger.error` in `code-intelligence.ts` for all code intelligence handlers (scanTodos, findSymbols, searchFiles, indexProject, queryIndexedSymbols).
 
 ### Files Impacted
+
 - `src/main/ipc/auth.ts`
 - `src/main/ipc/ollama.ts`
 - `src/main/ipc/index.ts`
@@ -692,19 +1002,20 @@ Track the evolution of Tandem.
 ### Key Fixes
 
 1.  **Critical Security Hardening**:
-    -   **SEC-001-2**: Blocked dangerous shell control operators (`;`, `&&`, `||`) in `CommandService` to prevent injection attacks.
-    -   **SEC-002-1**: Fixed path traversal vulnerability in `FilesystemService` by enforcing strict directory boundary checks (preventing partial matches).
-    -   **SEC-001-1**: Analyzed and secured `CommandService` usage in `security.server.ts` (nmap command) with strict input validation.
-    -   **SEC-002-2**: Fixed path traversal vulnerability in `FilesystemService.downloadFile` by enforcing allowed path check.
-    -   **LOG-001-5**: Implemented audit logging for External MCP Plugin dispatching to track all tool executions.
+    - **SEC-001-2**: Blocked dangerous shell control operators (`;`, `&&`, `||`) in `CommandService` to prevent injection attacks.
+    - **SEC-002-1**: Fixed path traversal vulnerability in `FilesystemService` by enforcing strict directory boundary checks (preventing partial matches).
+    - **SEC-001-1**: Analyzed and secured `CommandService` usage in `security.server.ts` (nmap command) with strict input validation.
+    - **SEC-002-2**: Fixed path traversal vulnerability in `FilesystemService.downloadFile` by enforcing allowed path check.
+    - **LOG-001-5**: Implemented audit logging for External MCP Plugin dispatching to track all tool executions.
 
 2.  **Performance & Quality**:
-    -   **DB-001-1 / PERF-003**: Optimized `PromptRepository` and `SystemRepository` to eliminate N+1 query patterns by implementing direct ID lookups.
-    -   **DB-001-2 / DB-001-3**: Optimized `FolderRepository` and `DatabaseService` to eliminate N+1 query patterns for folder lookups.
-    -   **TYPE-001-2**: Removed unsafe `as unknown` double casts in `ipc-wrapper.util.ts`, improving type safety for IPC handlers.
-    -   **QUAL-001**: Added comprehensive JSDoc documentation to `CopilotService`, `ProjectService`, and `UtilityService`.
+    - **DB-001-1 / PERF-003**: Optimized `PromptRepository` and `SystemRepository` to eliminate N+1 query patterns by implementing direct ID lookups.
+    - **DB-001-2 / DB-001-3**: Optimized `FolderRepository` and `DatabaseService` to eliminate N+1 query patterns for folder lookups.
+    - **TYPE-001-2**: Removed unsafe `as unknown` double casts in `ipc-wrapper.util.ts`, improving type safety for IPC handlers.
+    - **QUAL-001**: Added comprehensive JSDoc documentation to `CopilotService`, `ProjectService`, and `UtilityService`.
 
 ### Files Impacted
+
 - `src/main/services/system/command.service.ts`
 - `src/main/services/data/filesystem.service.ts`
 - `src/main/mcp/servers/security.server.ts`
@@ -725,21 +1036,22 @@ Track the evolution of Tandem.
 ### Key Fixes
 
 1.  **Security Hardening**:
-    -   **SEC-004-2**: Enabled `sandbox: true` in `main.ts` for Electron `BrowserWindow`, enhancing preload script isolation.
-    -   **SEC-004-5**: Removed development-mode suppression of Electron security warnings in `main.ts` to ensure deeper security awareness.
-    -   **SEC-003-1/2/3/5**: Removed hardcoded secrets/API keys from `chat.ts`, `llm.service.ts`, and `local-auth-server.util.ts`, ensuring they are loaded via configuration/environment variables.
-    -   **SEC-001-3**: Added input validation for `command` string in `process:spawn` IPC handler to prevent shell injection.
-    -   **SEC-007-1/2**: Replaced weak `Math.random` with `crypto.randomBytes` for token/ID generation in `api-server.service.ts` and `utility.service.ts`.
-    -   **SEC-008-1**: Added type validation for arguments in `ToolExecutor` to prevent invalid casting.
-    -   **SEC-009-1**: Restricted CORS in `api-server.service.ts` to allow only extensions and localhost, mitigating wildcard access risks.
+    - **SEC-004-2**: Enabled `sandbox: true` in `main.ts` for Electron `BrowserWindow`, enhancing preload script isolation.
+    - **SEC-004-5**: Removed development-mode suppression of Electron security warnings in `main.ts` to ensure deeper security awareness.
+    - **SEC-003-1/2/3/5**: Removed hardcoded secrets/API keys from `chat.ts`, `llm.service.ts`, and `local-auth-server.util.ts`, ensuring they are loaded via configuration/environment variables.
+    - **SEC-001-3**: Added input validation for `command` string in `process:spawn` IPC handler to prevent shell injection.
+    - **SEC-007-1/2**: Replaced weak `Math.random` with `crypto.randomBytes` for token/ID generation in `api-server.service.ts` and `utility.service.ts`.
+    - **SEC-008-1**: Added type validation for arguments in `ToolExecutor` to prevent invalid casting.
+    - **SEC-009-1**: Restricted CORS in `api-server.service.ts` to allow only extensions and localhost, mitigating wildcard access risks.
 
 2.  **Code Quality & Cleanup**:
-    -   **LOG-001-1/2/3/4**: Replaced `console.error` with `appLogger.error` in memory, agent, llama, and terminal IPC handlers for consistent logging.
-    -   **TYPE-001-1**: Reinstated safe casting in `src/shared/utils/sanitize.util.ts` to resolve build errors while maintaining type safety.
-    -   **QUAL-005-1**: Removed unused parameters from `UtilityService` methods.
-    -   **QUAL-002-5**: Refactored hardcoded window dimensions in `window.ts`.
+    - **LOG-001-1/2/3/4**: Replaced `console.error` with `appLogger.error` in memory, agent, llama, and terminal IPC handlers for consistent logging.
+    - **TYPE-001-1**: Reinstated safe casting in `src/shared/utils/sanitize.util.ts` to resolve build errors while maintaining type safety.
+    - **QUAL-005-1**: Removed unused parameters from `UtilityService` methods.
+    - **QUAL-002-5**: Refactored hardcoded window dimensions in `window.ts`.
 
 ### Files Impacted
+
 - `src/main/main.ts`
 - `src/main/services/external/utility.service.ts`
 - `src/main/ipc/window.ts`
@@ -757,67 +1069,68 @@ Track the evolution of Tandem.
 ### Key Achievements
 
 1. **Performance & Intelligence Refinement**:
-   - Integrated **Skills** and **MCP Tools** directory into the Master Commandments for enhanced agent capabilities.
-   - Enforced the **Boy Scout Rule**: Agents must fix at least one existing lint warning or type issue in any file they edit.
-   - Strictly prohibited both `any` and `unknown` types across all updates and new files.
-   - Optimized `MASTER_COMMANDMENTS.md` to serve as the unified core logic for Gemini, Claude, and Copilot.
+    - Integrated **Skills** and **MCP Tools** directory into the Master Commandments for enhanced agent capabilities.
+    - Enforced the **Boy Scout Rule**: Agents must fix at least one existing lint warning or type issue in any file they edit.
+    - Strictly prohibited both `any` and `unknown` types across all updates and new files.
+    - Optimized `MASTER_COMMANDMENTS.md` to serve as the unified core logic for Gemini, Claude, and Copilot.
 
 2. **Cross-Platform Rule Synchronization**:
-   - Updated `.agent/rules/code-style-guide.md` with assertive, "always-on" triggers.
-   - Overhauled `.claude/CLAUDE.md`, `.gemini/GEMINI.md`, and `.copilot/COPILOT.md` to point to the new Master Commandments.
-   - Standardized the "Prohibited Actions" list across all configurations.
+    - Updated `.agent/rules/code-style-guide.md` with assertive, "always-on" triggers.
+    - Overhauled `.claude/CLAUDE.md`, `.gemini/GEMINI.md`, and `.copilot/COPILOT.md` to point to the new Master Commandments.
+    - Standardized the "Prohibited Actions" list across all configurations.
 
 3. **Type Usage Audit**:
-   - Developed a PowerShell script (`scripts/generate_type_report.ps1`) to scan the codebase for `any` and `unknown` types.
-   - Generated `docs/TYPE_USAGE_REPORT.md` documenting 673 instances across 200+ files.
-   - Identified top "any-heavy" files (e.g., `backup.service.test.ts`, `web-bridge.ts`, `error.util.ts`) to prioritize for future type-hardening.
+    - Developed a PowerShell script (`scripts/generate_type_report.ps1`) to scan the codebase for `any` and `unknown` types.
+    - Generated `docs/TYPE_USAGE_REPORT.md` documenting 673 instances across 200+ files.
+    - Identified top "any-heavy" files (e.g., `backup.service.test.ts`, `web-bridge.ts`, `error.util.ts`) to prioritize for future type-hardening.
 
 4. **Documentation & Process**:
-   - Added a "TL;DR" critical summary to the top of `docs/AI_RULES.md`.
-   - Updated `docs/TODO.md` with completed rule and audit tasks.
-   - Verified that all rule files are properly formatted and accessible to agents.
+    - Added a "TL;DR" critical summary to the top of `docs/AI_RULES.md`.
+    - Updated `docs/TODO.md` with completed rule and audit tasks.
+    - Verified that all rule files are properly formatted and accessible to agents.
 
 ## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - Session 2 (111 → 61 Warnings)
 
-**Status**: ✅ IN PROGRESS  
+**Status**: ✅ IN PROGRESS
 
 **Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **111 to 61** (45% reduction this session). Fixed unnecessary condition warnings, misused promises, optional chaining issues, and extracted more sub-components.
 
 ### Latest Session Fixes
 
 1. **Import/Autofix (14 warnings)**:
-   - Applied `--fix` for simple-import-sort/imports warnings
-   - Removed unused imports (Language, useEffect, useState from App.tsx)
-   - Removed unused variables (chats from useChatGenerator, t from AdvancedMemoryInspector)
-   - Removed unused type imports (MemoryCategory from useMemoryLogic)
+    - Applied `--fix` for simple-import-sort/imports warnings
+    - Removed unused imports (Language, useEffect, useState from App.tsx)
+    - Removed unused variables (chats from useChatGenerator, t from AdvancedMemoryInspector)
+    - Removed unused type imports (MemoryCategory from useMemoryLogic)
 
 2. **Promise Handling Fixes**:
-   - `MemoryModals.tsx`: Added `void` wrapper for async onClick handlers
+    - `MemoryModals.tsx`: Added `void` wrapper for async onClick handlers
 
 3. **Unnecessary Condition Fixes**:
-   - `useChatManager.ts`: Simplified streaming state access with currentStreamState variable
-   - `IdeasPage.tsx`: Removed unnecessary `??` operator
-   - `Terminal.tsx`: Removed unnecessary `&& term` conditionals (always truthy)
-   - `useAgentTask.ts`: Made payload types optional to validate `?.` usage
-   - `useAgentHandlers.ts`: Typed payload properly with optional data field
-   - `TaskInputForm.tsx`: Changed `??` to `||` for boolean operators
+    - `useChatManager.ts`: Simplified streaming state access with currentStreamState variable
+    - `IdeasPage.tsx`: Removed unnecessary `??` operator
+    - `Terminal.tsx`: Removed unnecessary `&& term` conditionals (always truthy)
+    - `useAgentTask.ts`: Made payload types optional to validate `?.` usage
+    - `useAgentHandlers.ts`: Typed payload properly with optional data field
+    - `TaskInputForm.tsx`: Changed `??` to `||` for boolean operators
 
 4. **Other ESLint Fixes**:
-   - `useWorkspaceManager.ts`: Removed non-null assertion with proper null check
-   - `ProjectWizardModal.tsx`: Wrapped handleSSHConnect in useCallback to fix exhaustive-deps
-   - `useAgentTask.ts`: Changed `||` to `??` for prefer-nullish-coalescing
+    - `useWorkspaceManager.ts`: Removed non-null assertion with proper null check
+    - `ProjectWizardModal.tsx`: Wrapped handleSSHConnect in useCallback to fix exhaustive-deps
+    - `useAgentTask.ts`: Changed `||` to `??` for prefer-nullish-coalescing
 
 5. **Sub-Component Extraction**:
-   - `MemoryInspector.tsx`: Extracted `AddFactModal` component
-   - `StatisticsTab.tsx`: Extracted `CodingTimeCard`, `TokenUsageCard` components
-   - `OverviewCards.tsx`: Extracted `getStatsValues` helper function
-   - `SidebarMenuItem.tsx`: Extracted `MenuItemActions` component
-   - `ChatContext.tsx`: Extracted `isUndoKey`, `isRedoKey` helper functions
+    - `MemoryInspector.tsx`: Extracted `AddFactModal` component
+    - `StatisticsTab.tsx`: Extracted `CodingTimeCard`, `TokenUsageCard` components
+    - `OverviewCards.tsx`: Extracted `getStatsValues` helper function
+    - `SidebarMenuItem.tsx`: Extracted `MenuItemActions` component
+    - `ChatContext.tsx`: Extracted `isUndoKey`, `isRedoKey` helper functions
 
 6. **Function Parameter Refactoring**:
-   - `IdeaDetailsModal.tsx`: Converted 9-parameter function to options object interface
+    - `IdeaDetailsModal.tsx`: Converted 9-parameter function to options object interface
 
 ### Files Modified (20+)
+
 - App.tsx, useChatGenerator.ts, AdvancedMemoryInspector.tsx, useMemoryLogic.ts
 - MemoryModals.tsx, MemoryInspector.tsx, useChatManager.ts, IdeasPage.tsx
 - Terminal.tsx, useAgentTask.ts, useAgentHandlers.ts, TaskInputForm.tsx
@@ -825,6 +1138,7 @@ Track the evolution of Tandem.
 - OverviewCards.tsx, SidebarMenuItem.tsx, IdeaDetailsModal.tsx, ChatContext.tsx
 
 ### Impact
+
 - ✅ Reduced warnings from **111 to 61** (45% reduction this session)
 - ✅ Total reduction from **310 to 61** (80% overall reduction)
 - ✅ Zero TypeScript errors maintained
@@ -834,60 +1148,60 @@ Track the evolution of Tandem.
 
 ## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - 232+ WARNINGS FIXED (75% REDUCTION)
 
-**Status**: ✅ COMPLETED  
+**Status**: ✅ COMPLETED
 
 **Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **310 to 78** (75% reduction). Fixed 5 TypeScript `any` type errors and applied lookup tables, custom hooks, and sub-component extraction patterns across more files.
 
 ### Latest Session Fixes
 
 1. **TypeScript Error Fixes (5 errors → 0)**:
-   - `useTaskInputLogic.ts`: Replaced `any` types with `AppSettings | null` and `(key: string) => string`
-   - `useTerminal.ts`: Created `TerminalCleanups` interface, replaced `(term as any)` with ref-based cleanup tracking
+    - `useTaskInputLogic.ts`: Replaced `any` types with `AppSettings | null` and `(key: string) => string`
+    - `useTerminal.ts`: Created `TerminalCleanups` interface, replaced `(term as any)` with ref-based cleanup tracking
 
 2. **Sub-Component Extraction**:
-   - `PanelLayout.tsx`: Sidebar, BottomPanelView, CenterArea components
-   - `ModelCard.tsx`: ModelHeader, ModelTags components
-   - `WorkspaceTreeItem.tsx`: DirectoryExpandIcon component
+    - `PanelLayout.tsx`: Sidebar, BottomPanelView, CenterArea components
+    - `ModelCard.tsx`: ModelHeader, ModelTags components
+    - `WorkspaceTreeItem.tsx`: DirectoryExpandIcon component
 
 3. **Type Safety Improvements**:
-   - `useChatGenerator.ts`: Changed `Record<string, T>` to `Partial<Record<string, T>>` for streamingStates
-   - `ModelCard.tsx`: Fixed unnecessary type check for `model.provider === 'ollama'`
-   - `ToolDisplay.tsx`: Added Boolean() wrappers for nullish coalescing preference
+    - `useChatGenerator.ts`: Changed `Record<string, T>` to `Partial<Record<string, T>>` for streamingStates
+    - `ModelCard.tsx`: Fixed unnecessary type check for `model.provider === 'ollama'`
+    - `ToolDisplay.tsx`: Added Boolean() wrappers for nullish coalescing preference
 
 4. **Complexity Reductions**:
-   - `useWorkspaceManager.ts`: Extracted `validateSSHMount` helper function
-   - `OverviewCards.tsx`: Pre-computed stats values to reduce inline `??` operators
+    - `useWorkspaceManager.ts`: Extracted `validateSSHMount` helper function
+    - `OverviewCards.tsx`: Pre-computed stats values to reduce inline `??` operators
 
 ### Additional Refactoring Applied
 
 1. **Lookup Tables Added**:
-   - `SessionHistory.tsx`: STATUS_ICONS, IDEA_STATUS_BADGES for status indicators
-   - `SelectDropdown.tsx`: TriggerButton, FloatingMenu components
-   - `ToolDisplay.tsx`: Added ExpandedToolContent, useAutoExpandCommand hook
-   - `SSHContentPanel.tsx`: TAB_COMPONENTS lookup for tab rendering
+    - `SessionHistory.tsx`: STATUS_ICONS, IDEA_STATUS_BADGES for status indicators
+    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu components
+    - `ToolDisplay.tsx`: Added ExpandedToolContent, useAutoExpandCommand hook
+    - `SSHContentPanel.tsx`: TAB_COMPONENTS lookup for tab rendering
 
 2. **Custom Hooks Extracted**:
-   - `useAutoExpandCommand()` in ToolDisplay for terminal expansion logic
-   - `useSpeechDevices()` in SpeechTab for device enumeration
-   - `TabContent` component in MemoryInspector for cleaner tab rendering
+    - `useAutoExpandCommand()` in ToolDisplay for terminal expansion logic
+    - `useSpeechDevices()` in SpeechTab for device enumeration
+    - `TabContent` component in MemoryInspector for cleaner tab rendering
 
 3. **Sub-Component Extraction**:
-   - `IdeaDetailsContent.tsx`: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
-   - `SelectDropdown.tsx`: TriggerButton, FloatingMenu
-   - `MemoryInspector.tsx`: TabContent
-   - `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
-   - `process-stream.ts`: buildNewStreamingState helper
-   - `StatisticsTab.tsx`: PeriodSelector component
-   - `SpeechTab.tsx`: VoiceSection, DeviceSection components
-   - `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
-   - `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
-   - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry with lookup tables
-   - `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
-   - `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
+    - `IdeaDetailsContent.tsx`: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
+    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu
+    - `MemoryInspector.tsx`: TabContent
+    - `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
+    - `process-stream.ts`: buildNewStreamingState helper
+    - `StatisticsTab.tsx`: PeriodSelector component
+    - `SpeechTab.tsx`: VoiceSection, DeviceSection components
+    - `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
+    - `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
+    - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry with lookup tables
+    - `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
+    - `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
 
 4. **Reducer/Helper Refactoring**:
-   - `useProjectListStateMachine.ts`: Extracted 12 handler functions from 33-complexity reducer
-   - `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
+    - `useProjectListStateMachine.ts`: Extracted 12 handler functions from 33-complexity reducer
+    - `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
 
 ### Files Modified (25+)
 
@@ -902,9 +1216,11 @@ Track the evolution of Tandem.
 - **Project Utils**: git-utils.ts
 
 ### i18n Keys Added
+
 - `ideas.status.archived` (EN/TR)
 
 ### Impact
+
 - ✅ Reduced warnings from **310 to 78** (75% reduction)
 - ✅ Zero TypeScript errors (fixed 5 `any` type errors)
 - ✅ Improved component readability with tab-based content rendering
@@ -916,39 +1232,39 @@ Track the evolution of Tandem.
 
 ## 2026-02-01: 🧹 MAJOR LINT CLEANUP - 216 WARNINGS FIXED (69% REDUCTION)
 
-**Status**: ✅ COMPLETED  
+**Status**: ✅ COMPLETED
 
 **Summary**: Massive ESLint warning cleanup reducing total warnings from **310 to 94** (69.7% reduction). Implemented systematic refactoring patterns including lookup tables, custom hooks, and sub-component extraction.
 
 ### Refactoring Patterns Applied
 
 1. **Lookup Tables (Record<Type, Config>)**: Replaced complex if-else chains with type-safe lookup objects
-   - `AssistantIdentity.tsx`: PROVIDER_CONFIGS, MODEL_CONFIGS with brand styling
-   - `TerminalView.tsx`: STATUS_CLASSES for terminal states
-   - `AudioChatOverlay.tsx`: State configs for listening/speaking/processing
-   - `SidebarSection.tsx`: BADGE_CLASSES for variants
-   - `UpdateNotification.tsx`: STATE_CONFIGS for update states
+    - `AssistantIdentity.tsx`: PROVIDER_CONFIGS, MODEL_CONFIGS with brand styling
+    - `TerminalView.tsx`: STATUS_CLASSES for terminal states
+    - `AudioChatOverlay.tsx`: State configs for listening/speaking/processing
+    - `SidebarSection.tsx`: BADGE_CLASSES for variants
+    - `UpdateNotification.tsx`: STATE_CONFIGS for update states
 
 2. **Custom Hooks Extraction**: Reduced component complexity by extracting effects
-   - `useSelectionHandler()` for QuickActionBar text selection
-   - `useChatInitialization()` for chat loading
-   - `useLazyMessageLoader()` for message lazy loading  
-   - `useUndoRedoKeyboard()` for keyboard shortcuts
-   - `useHistorySync()` for chat history management
+    - `useSelectionHandler()` for QuickActionBar text selection
+    - `useChatInitialization()` for chat loading
+    - `useLazyMessageLoader()` for message lazy loading
+    - `useUndoRedoKeyboard()` for keyboard shortcuts
+    - `useHistorySync()` for chat history management
 
 3. **Sub-Component Extraction**: Split large components into focused pieces
-   - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-   - `TerminalView.tsx`: TerminalHeader, OutputContent
-   - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Controls
-   - `MessageBubble.tsx`: MessageFooter component
-   - `GlassModal.tsx`: ModalHeader component
-   - `SidebarSection.tsx`: SectionHeader, SectionContent
-   - `UpdateNotification.tsx`: UpdateContent, UpdateActions
+    - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
+    - `TerminalView.tsx`: TerminalHeader, OutputContent
+    - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Controls
+    - `MessageBubble.tsx`: MessageFooter component
+    - `GlassModal.tsx`: ModalHeader component
+    - `SidebarSection.tsx`: SectionHeader, SectionContent
+    - `UpdateNotification.tsx`: UpdateContent, UpdateActions
 
 4. **Helper Function Extraction**: Moved logic to pure functions
-   - `getStatusText()`, `getAudioState()`, `getStateConfig()`
-   - `handleTextSelection()`, `handleSelectionClear()`
-   - `applyHistoryState()`, `formatRateLimitError()`
+    - `getStatusText()`, `getAudioState()`, `getStateConfig()`
+    - `handleTextSelection()`, `handleSelectionClear()`
+    - `applyHistoryState()`, `formatRateLimitError()`
 
 ### Files Modified (30+)
 
@@ -958,6 +1274,7 @@ Track the evolution of Tandem.
 - **UI Components**: GlassModal.tsx, SelectDropdown.tsx
 
 ### Impact
+
 - ✅ Reduced warnings from **310 to 94** (69.7% reduction)
 - ✅ Complexity scores reduced (e.g., AssistantIdentity 25→8, AudioChatOverlay 23→8)
 - ✅ Zero TypeScript errors
@@ -969,34 +1286,36 @@ Track the evolution of Tandem.
 
 ## 2026-01-31: 🧹 LINT WARNING CLEANUP - 48 WARNINGS FIXED
 
-**Status**: ✅ COMPLETED  
+**Status**: ✅ COMPLETED
 
 **Summary**: Fixed 48 ESLint warnings across the codebase, improving code quality and type safety. Reduced total warnings from **354 to 306** (13.6% reduction).
 
 ### Fixes Applied
 
 1. **Prefer Nullish Coalescing (26 fixes)**: Replaced logical OR operators (`||`) with nullish coalescing operators (`??`) for safer null/undefined checks.
-   - Files: `SessionSetup.tsx`, `ModelSelector.tsx`, `ProjectDashboard.tsx`, `ProjectWizardModal.tsx`, `WorkspaceTreeItem.tsx`, `FileExplorer.tsx`, `CouncilPanel.tsx`, `WorkspaceModals.tsx`, `useAgentEvents.ts`, `AdvancedTab.tsx`, `AppearanceTab.tsx`, `IdeaDetailsContent.tsx`, `SessionHistory.tsx`, `CategorySelector.tsx`, `vite.config.ts`, and others.
+    - Files: `SessionSetup.tsx`, `ModelSelector.tsx`, `ProjectDashboard.tsx`, `ProjectWizardModal.tsx`, `WorkspaceTreeItem.tsx`, `FileExplorer.tsx`, `CouncilPanel.tsx`, `WorkspaceModals.tsx`, `useAgentEvents.ts`, `AdvancedTab.tsx`, `AppearanceTab.tsx`, `IdeaDetailsContent.tsx`, `SessionHistory.tsx`, `CategorySelector.tsx`, `vite.config.ts`, and others.
 
 2. **No Unnecessary Conditions (15 fixes)**: Removed unnecessary optional chains and conditional checks on non-nullish values.
-   - Files: `DockerDashboard.tsx`, `ModelExplorer.tsx`, `ModelSelector.tsx`, `ModelSelectorTrigger.tsx`, `useModelCategories.ts`, `useModelSelectorLogic.ts`, `model-fetcher.ts`, `LogoGeneratorModal.tsx`, `useAgentTask.ts`, and others.
+    - Files: `DockerDashboard.tsx`, `ModelExplorer.tsx`, `ModelSelector.tsx`, `ModelSelectorTrigger.tsx`, `useModelCategories.ts`, `useModelSelectorLogic.ts`, `model-fetcher.ts`, `LogoGeneratorModal.tsx`, `useAgentTask.ts`, and others.
 
 3. **Removed Unused Variables (4 fixes)**: Cleaned up unused imports and variable assignments.
-   - Files: `WorkspaceSection.tsx`, `extension-detector.service.ts`, `WizardSSHBrowserStep.tsx`, `useChatGenerator.ts`, `AdvancedMemoryInspector.tsx`.
+    - Files: `WorkspaceSection.tsx`, `extension-detector.service.ts`, `WizardSSHBrowserStep.tsx`, `useChatGenerator.ts`, `AdvancedMemoryInspector.tsx`.
 
 4. **Promise Handler Fixes (1 fix)**: Wrapped async handlers with `void` to satisfy ESLint promise rules.
-   - File: `App.tsx`.
+    - File: `App.tsx`.
 
 5. **Refactoring for Better Practices (2 fixes)**:
-   - Extracted complex nested logic into helper method `calculateQuotaPercentage()` in `local-image.service.ts` (fixes max-depth warning).
-   - Converted method with 8 parameters to use parameter object in `advanced-memory.service.ts` (fixes max-params warning).
+    - Extracted complex nested logic into helper method `calculateQuotaPercentage()` in `local-image.service.ts` (fixes max-depth warning).
+    - Converted method with 8 parameters to use parameter object in `advanced-memory.service.ts` (fixes max-params warning).
 
 ### Files Modified
+
 - **Main Process** (9 files): `api-server.service.ts`, `extension-detector.service.ts`, `job-scheduler.service.ts`, `tool-executor.ts`, `model-router.util.ts`, `response-parser.ts`, `local-image.service.ts`, `advanced-memory.service.ts`, `project-agent.service.ts`
 - **Renderer** (35+ files): Components in `features/chat/`, `features/ideas/`, `features/models/`, `features/projects/`, `features/settings/`, and core components
 - **Config** (1 file): `vite.config.ts`
 
 ### Impact
+
 - ✅ Reduced warnings from **354 to 306** (13.6% reduction)
 - ✅ Improved code maintainability and type safety
 - ✅ Better null/undefined handling across the application
@@ -1017,6 +1336,7 @@ Track the evolution of Tandem.
     - Restored 13 missing IPC registration calls in `src/main/startup/ipc.ts`.
     - Systems restored include: Browser Extension management, Audit Logs, Backup/Restore, Brain (Memory), Multi-Model Comparison, Model Collaboration, Health Checks, Metrics, and Token Estimation.
     - Resolved the "No handler registered" runtime error for `extension:shouldShowWarning`.
+
 - Fixed Browser Extension initialization by rectifying service worker script loading paths and moving `service-worker.js` to the extension root.
 - Resolved "Could not establish connection" errors in the extension by correcting message formats and ensuring `page-analyzer.js` is properly loaded in the content script's isolated world.
 - Improved Proxy Service reliability by fixing status reporting when reusing existing proxy processes.
@@ -1031,6 +1351,7 @@ Track the evolution of Tandem.
     - Confirmed that restored handlers have correct type-safe dependency injection from the services container.
 
 ### Files Impacted
+
 - **Main Process Infrastructure**: `src/main/startup/ipc.ts`.
 - **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
 
@@ -1064,6 +1385,7 @@ Track the evolution of Tandem.
     - Verified full build, lint, and type-check passing status.
 
 ### Files Impacted
+
 - **Agent Services**: `src/main/services/project/project-agent.service.ts`, `src/main/tools/tool-executor.ts`, `src/main/tools/tool-definitions.ts`.
 - **UI Components**: `src/renderer/features/project-agent/nodes/TaskNode.tsx`.
 - **Infrastructure**: `src/shared/types/events.ts`, `src/main/ipc/project-agent.ts`, `src/renderer/electron.d.ts`, `src/renderer/web-bridge.ts`.
@@ -1100,6 +1422,7 @@ Track the evolution of Tandem.
     - Cleaned up unused imports and props discovered during the refactoring pass.
 
 ### Files Impacted
+
 - **Main Process**: `src/main/services/data/database.service.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/startup/services.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`, `src/main/preload.ts`, `src/main/services/llm/agent-council.service.ts` (deleted), `src/main/ipc/council.ts` (deleted).
 - **Renderer Hooks**: `src/renderer/features/projects/hooks/useProjectState.ts`, `src/renderer/features/projects/hooks/useProjectWorkspaceController.ts`, `src/renderer/features/projects/hooks/useWorkspaceManager.ts`, `src/renderer/features/projects/hooks/useProjectActions.ts`, `src/renderer/hooks/useKeyboardShortcuts.ts`.
 - **Renderer Components**: `src/renderer/features/projects/components/ProjectWorkspace.tsx`, `src/renderer/features/projects/components/workspace/WorkspaceSidebar.tsx`, `src/renderer/features/projects/components/workspace/AIAssistantSidebar.tsx`.
@@ -1137,6 +1460,7 @@ Track the evolution of Tandem.
     - Verified 100% build compatibility with the refactored architecture.
 
 ### Files Impacted
+
 - **Model Selector**: `src/renderer/features/models/components/ModelSelector.tsx`, `ModelsSelectorTrigger.tsx`, `ModelSelectorContent.tsx`, `ModelSelectorItem.tsx`
 - **Project Wizard**: `src/renderer/features/projects/components/ProjectWizardModal.tsx`, `WizardDetailsStep.tsx`, `WizardSelectionStep.tsx`, `WizardSSHConnectStep.tsx`, `WizardSSHBrowserStep.tsx`, `WizardCreatingStep.tsx`
 - **Terminal**: `src/renderer/features/terminal/components/TerminalSession.tsx`
@@ -1173,6 +1497,7 @@ Track the evolution of Tandem.
     - Verified that long-running operations like project indexing are correctly scheduled and associated with the physical workspace.
 
 ### Files Impacted
+
 - **Core Services**: `src/main/services/data/database.service.ts`, `src/main/services/project/code-intelligence.service.ts`, `src/main/services/llm/context-retrieval.service.ts`
 - **Repositories**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/project.repository.ts`
 - **IPC Handlers**: `src/main/ipc/project.ts`, `src/main/ipc/code-intelligence.ts`
@@ -1207,6 +1532,7 @@ Track the evolution of Tandem.
     - Verified end-to-end consistency with a successful Rust backend build and clean TypeScript type-checks.
 
 ### Files Impacted
+
 - **Rust Backend**: `src/services/db-service/src/database.rs`
 - **Main Process Services**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/services/system/settings.service.ts`, `src/main/services/project/ssh.service.ts`, `src/main/tools/tool-executor.ts`
 - **Renderer Components**: `src/renderer/components/layout/CommandPalette.tsx`, `src/renderer/components/layout/sidebar/ChatHistorySection.tsx`, `src/renderer/features/models/components/ModelSelector.tsx`
@@ -1224,28 +1550,29 @@ Track the evolution of Tandem.
 ### Key Achievements
 
 1.  **Remote Database Client**:
-    -   Refactored `DatabaseService` to delegate all operations to `DatabaseClientService`.
-    -   Removed all legacy `PGlite` dependencies and local file system paths from the main database service.
-    -   Implemented a remote `DatabaseAdapter` bridged via HTTP/JSON-RPC.
-    -   Maintained full backward compatibility with the existing Repository pattern.
+    - Refactored `DatabaseService` to delegate all operations to `DatabaseClientService`.
+    - Removed all legacy `PGlite` dependencies and local file system paths from the main database service.
+    - Implemented a remote `DatabaseAdapter` bridged via HTTP/JSON-RPC.
+    - Maintained full backward compatibility with the existing Repository pattern.
 
 2.  **Service Lifecycle & Discovery**:
-    -   Integrated `DatabaseClientService` into the main application container.
-    -   Established dependency-based startup order: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
-    -   Automated service discovery using port files in `%APPDATA%`.
+    - Integrated `DatabaseClientService` into the main application container.
+    - Established dependency-based startup order: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
+    - Automated service discovery using port files in `%APPDATA%`.
 
 3.  **Build Stabilization**:
-    -   Resolved all 19 TypeScript errors introduced by the architectural shift.
-    -   Fixed critical syntax errors in `PanelLayout.tsx` (movePanel) and `rate-limiter.util.ts` (getRateLimiter) caused by previous merge conflicts.
-    -   Hardened type safety in `message-normalizer.util.ts` with explicit role casting.
-    -   Fixed a long-standing type error in `ollama.ts` related to response status codes.
+    - Resolved all 19 TypeScript errors introduced by the architectural shift.
+    - Fixed critical syntax errors in `PanelLayout.tsx` (movePanel) and `rate-limiter.util.ts` (getRateLimiter) caused by previous merge conflicts.
+    - Hardened type safety in `message-normalizer.util.ts` with explicit role casting.
+    - Fixed a long-standing type error in `ollama.ts` related to response status codes.
 
 4.  **Test Suite Alignment**:
-    -   Updated `DatabaseService` unit tests to use mocked remote client behavior.
-    -   Updated `repository-db.integration.test.ts` to support the new constructor signature and remote communication patterns.
-    -   Verified build with clean `npm run type-check` and `npm run lint` results.
+    - Updated `DatabaseService` unit tests to use mocked remote client behavior.
+    - Updated `repository-db.integration.test.ts` to support the new constructor signature and remote communication patterns.
+    - Verified build with clean `npm run type-check` and `npm run lint` results.
 
 ### Files Impacted
+
 - **Core Services**: `src/main/services/data/database.service.ts`, `src/main/startup/services.ts`, `src/main/services/data/database-client.service.ts`
 - **Utilities**: `src/main/utils/rate-limiter.util.ts`, `src/main/utils/message-normalizer.util.ts`, `src/main/startup/ollama.ts`
 - **Renderer**: `src/renderer/components/layout/PanelLayout.tsx`
@@ -1293,16 +1620,19 @@ Track the evolution of Tandem.
     - `DbServiceClient` interface for type safety
 
 ### Files Created
-- **Rust Service**: `src/services/db-service/` (Cargo.toml, main.rs, database.rs, server.rs, types.rs, handlers/*)
+
+- **Rust Service**: `src/services/db-service/` (Cargo.toml, main.rs, database.rs, server.rs, types.rs, handlers/\*)
 - **TypeScript**: `src/shared/types/db-api.ts`, `src/main/services/data/database-client.service.ts`
 - **Scripts**: `scripts/install-db-service.ps1`
 
 ### Files Modified
+
 - `src/services/Cargo.toml` - Added db-service to workspace
 - `src/shared/types/index.ts` - Export db-api types
 - `docs/TODO/architecture.md` - Updated task 4.3 status
 
 ### Next Steps
+
 - Migration testing with existing data
 - Performance benchmarking vs embedded PGlite
 - Cloud sync integration (deferred)
@@ -1318,25 +1648,26 @@ Track the evolution of Tandem.
 ### Key Achievements
 
 1.  **Modular Server Architecture**:
-    -   Extracted 20+ internal tools from a monolithic `registry.ts` into specialized server modules:
-        -   `core.server.ts`: File system, command execution, and system info.
-        -   `network.server.ts`: Web search, SSH, and network utilities.
-        -   `utility.server.ts`: Screenshots, notifications, monitoring, and clipboard.
-        -   `project.server.ts`: Git, Docker, and project scanning.
-        -   `data.server.ts`: Database, embeddings, and Ollama utilities.
-        -   `security.server.ts`: Security helpers and network auditing.
-    -   Implemented `server-utils.ts` for shared types, result normalization, and security guardrails.
+    - Extracted 20+ internal tools from a monolithic `registry.ts` into specialized server modules:
+        - `core.server.ts`: File system, command execution, and system info.
+        - `network.server.ts`: Web search, SSH, and network utilities.
+        - `utility.server.ts`: Screenshots, notifications, monitoring, and clipboard.
+        - `project.server.ts`: Git, Docker, and project scanning.
+        - `data.server.ts`: Database, embeddings, and Ollama utilities.
+        - `security.server.ts`: Security helpers and network auditing.
+    - Implemented `server-utils.ts` for shared types, result normalization, and security guardrails.
 
 2.  **Lint & Maintenance**:
-    -   Further reduced global warning count from **655** to **468**.
-    -   Resolved all import sorting issues in the new MCP modules.
-    -   Improved code readability by moving distinct domain logic into separate, focused files.
+    - Further reduced global warning count from **655** to **468**.
+    - Resolved all import sorting issues in the new MCP modules.
+    - Improved code readability by moving distinct domain logic into separate, focused files.
 
 3.  **Documentation & Roadmap Update**:
-    -   Completed task 3.2 in the Architecture Roadmap.
-    -   Updated the central TODO tracking to reflect the current state of the codebase and lint progress.
+    - Completed task 3.2 in the Architecture Roadmap.
+    - Updated the central TODO tracking to reflect the current state of the codebase and lint progress.
 
 ### Files Impacted
+
 - **MCP**: `src/main/mcp/registry.ts`, `src/main/mcp/server-utils.ts`
 - **MCP Servers**: `src/main/mcp/servers/core.server.ts`, `src/main/mcp/servers/network.server.ts`, `src/main/mcp/servers/utility.server.ts`, `src/main/mcp/servers/project.server.ts`, `src/main/mcp/servers/data.server.ts`, `src/main/mcp/servers/security.server.ts`
 - **Docs**: `docs/TODO/architecture.md`, `docs/TODO.md`, `docs/CHANGELOG.md`
@@ -1344,7 +1675,6 @@ Track the evolution of Tandem.
 ---
 
 ## 2026-01-26: 🛠️ MAIN-PROCESS REFACTORING & COMPLEXITY REDUCTION (Batch 7)
-
 
 **Status**: ✅ COMPLETED
 
@@ -1369,6 +1699,7 @@ Track the evolution of Tandem.
     - Minimized variable scope and strictly checked all return values.
 
 ### Files Impacted
+
 - **Utilities**: `src/main/utils/stream-parser.util.ts`, `src/main/utils/response-normalizer.util.ts`
 - **Services**: `src/main/services/system/settings.service.ts`, `src/main/services/external/history-import.service.ts`
 - **Repositories**: `src/main/repositories/folder.repository.ts`
@@ -1418,6 +1749,7 @@ Track the evolution of Tandem.
     - Verified project-wide type safety after refactoring.
 
 ### Files Impacted
+
 - **Main**: `src/main/ipc/auth.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`
 - **Renderer**: `src/renderer/features/settings/hooks/useLinkedAccounts.ts`
 
@@ -1432,21 +1764,21 @@ Track the evolution of Tandem.
 ### Core Architecture Improvements
 
 1. **Repository Pattern Implementation**:
-   - **BaseRepository**: Standardized database adapter access and error handling.
-   - **ChatRepository**: Isolated chat history and message persistence logic.
-   - **ProjectRepository**: Managed project metadata and environment state.
-   - **KnowledgeRepository**: Optimized vector storage and code symbol indexing.
-   - **SystemRepository**: Unified system stats, folder management, and auth accounts.
-   - **DatabaseService**: Refactored as a lightweight delegation layer, adhering to NASA's Power of Ten rules.
+    - **BaseRepository**: Standardized database adapter access and error handling.
+    - **ChatRepository**: Isolated chat history and message persistence logic.
+    - **ProjectRepository**: Managed project metadata and environment state.
+    - **KnowledgeRepository**: Optimized vector storage and code symbol indexing.
+    - **SystemRepository**: Unified system stats, folder management, and auth accounts.
+    - **DatabaseService**: Refactored as a lightweight delegation layer, adhering to NASA's Power of Ten rules.
 
 2. **Unified Usage Tracking**:
-   - Standardized `TokenUsageRecord` across main and renderer processes.
-   - Fixed cost estimation accuracy and provider-specific mapping in IPC bridges.
+    - Standardized `TokenUsageRecord` across main and renderer processes.
+    - Fixed cost estimation accuracy and provider-specific mapping in IPC bridges.
 
 3. **Gallery & Media Persistence**:
-   - Implemented `gallery_items` schema for high-fidelity image metadata storage.
-   - Enhanced `ImagePersistenceService` with robust error handling and automated metadata mapping.
-   - Integrated logic into `LogoService` for seamless asset generation history.
+    - Implemented `gallery_items` schema for high-fidelity image metadata storage.
+    - Enhanced `ImagePersistenceService` with robust error handling and automated metadata mapping.
+    - Integrated logic into `LogoService` for seamless asset generation history.
 
 ### Technical Hardening
 
@@ -1456,6 +1788,7 @@ Track the evolution of Tandem.
 - **Test Integrity**: Updated and fixed `DatabaseService` tests to align with the new repository-based architecture.
 
 ### Files Impacted (30+ files)
+
 - **Services**: `DatabaseService`, `ImagePersistenceService`, `FileChangeTracker`, `LogoService`
 - **Repositories**: `ChatRepository`, `ProjectRepository`, `KnowledgeRepository`, `SystemRepository`
 - **Infrastructure**: `migrations.ts`, `db-migration.service.ts`, `ipc/db.ts`, `ipc/file-diff.ts`
@@ -1473,75 +1806,76 @@ Track the evolution of Tandem.
 
 **Session 1: Search, Export, and Retry Logic (3 items)**
 
-1. **ENH-IDX-004**: Search and Filter Session History *(~45 min)*
-   - **Search**: Real-time search across idea titles and descriptions
-   - **Filters**: Status (pending/approved/rejected) and category dropdowns
-   - **Active Filters UI**: Visual indicator showing applied filters with "Clear all" option
-   - **Smart Filtering**: Sessions with no matching ideas are automatically hidden
-   - **Performance**: Uses useMemo for efficient filtering without repeated computation
-   - Files: `SessionHistory.tsx`, `en.ts`, `tr.ts`
+1. **ENH-IDX-004**: Search and Filter Session History _(~45 min)_
+    - **Search**: Real-time search across idea titles and descriptions
+    - **Filters**: Status (pending/approved/rejected) and category dropdowns
+    - **Active Filters UI**: Visual indicator showing applied filters with "Clear all" option
+    - **Smart Filtering**: Sessions with no matching ideas are automatically hidden
+    - **Performance**: Uses useMemo for efficient filtering without repeated computation
+    - Files: `SessionHistory.tsx`, `en.ts`, `tr.ts`
 
-2. **ENH-IDX-009**: Export Ideas to Markdown/JSON *(~50 min)*
-   - **Markdown Export**: Professional formatted document with:
-     - Session metadata (ID, date, idea count)
-     - Each idea with status emoji (✅/❌/⏳)
-     - Full details: category, description, market analysis, tech stack, effort estimate
-   - **JSON Export**: Structured data export for programmatic use
-   - **Export Button**: Dropdown menu in review stage header
-   - **Naming**: Auto-generated filenames with session ID and date
-   - Files: `IdeasPage.tsx`, `IdeasHeader.tsx`, `en.ts`, `tr.ts`
+2. **ENH-IDX-009**: Export Ideas to Markdown/JSON _(~50 min)_
+    - **Markdown Export**: Professional formatted document with:
+        - Session metadata (ID, date, idea count)
+        - Each idea with status emoji (✅/❌/⏳)
+        - Full details: category, description, market analysis, tech stack, effort estimate
+    - **JSON Export**: Structured data export for programmatic use
+    - **Export Button**: Dropdown menu in review stage header
+    - **Naming**: Auto-generated filenames with session ID and date
+    - Files: `IdeasPage.tsx`, `IdeasHeader.tsx`, `en.ts`, `tr.ts`
 
-3. **ENH-IDX-017**: Retry Logic for LLM Failures *(~40 min)*
-   - **Retry Wrapper**: `retryLLMCall()` method wraps all 13 LLM operations in idea-generator
-   - **Smart Detection**: Retries only on transient errors (rate limit, timeout, network issues)
-   - **Exponential Backoff**: 1s → 2s → 4s delays (max 30s cap)
-   - **Max 3 Retries**: Prevents infinite loops while handling most transient failures
-   - **Error Types**: Handles 429, quota exceeded, ECONNRESET, ETIMEDOUT, network errors
-   - **Logging**: Warns on each retry attempt with clear context
-   - Files: `idea-generator.service.ts` (13 LLM calls wrapped)
+3. **ENH-IDX-017**: Retry Logic for LLM Failures _(~40 min)_
+    - **Retry Wrapper**: `retryLLMCall()` method wraps all 13 LLM operations in idea-generator
+    - **Smart Detection**: Retries only on transient errors (rate limit, timeout, network issues)
+    - **Exponential Backoff**: 1s → 2s → 4s delays (max 30s cap)
+    - **Max 3 Retries**: Prevents infinite loops while handling most transient failures
+    - **Error Types**: Handles 429, quota exceeded, ECONNRESET, ETIMEDOUT, network errors
+    - **Logging**: Warns on each retry attempt with clear context
+    - Files: `idea-generator.service.ts` (13 LLM calls wrapped)
 
 **Session 2: Regeneration and Custom Prompts (2 items)**
 
-4. **ENH-IDX-011**: Regenerate Single Idea *(~45 min)*
-   - **UI**: "Regenerate" button in IdeaDetailsModal header (only for pending ideas)
-   - **Backend**: New `regenerateIdea()` method in IdeaGeneratorService
-   - **Process**: Runs full 9-stage pipeline with same category, replaces existing idea
-   - **Deduplication**: Excludes current idea from similarity check to avoid conflicts
-   - **IPC**: New handler `ideas:regenerateIdea` with success/idea response
-   - **State Management**: Loading state with disabled button and pulsing icon
-   - **Event**: Emits `idea:regenerated` event for real-time updates
-   - Files: `idea-generator.service.ts`, `idea-generator.ts`, `IdeaDetailsModal.tsx`, `IdeasPage.tsx`, `preload.ts`, `electron.d.ts`
+4. **ENH-IDX-011**: Regenerate Single Idea _(~45 min)_
+    - **UI**: "Regenerate" button in IdeaDetailsModal header (only for pending ideas)
+    - **Backend**: New `regenerateIdea()` method in IdeaGeneratorService
+    - **Process**: Runs full 9-stage pipeline with same category, replaces existing idea
+    - **Deduplication**: Excludes current idea from similarity check to avoid conflicts
+    - **IPC**: New handler `ideas:regenerateIdea` with success/idea response
+    - **State Management**: Loading state with disabled button and pulsing icon
+    - **Event**: Emits `idea:regenerated` event for real-time updates
+    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `IdeaDetailsModal.tsx`, `IdeasPage.tsx`, `preload.ts`, `electron.d.ts`
 
-5. **ENH-IDX-012**: Custom Prompt Input *(~60 min)*
-   - **UI**: Optional textarea in SessionSetup for custom requirements/constraints
-   - **Schema**: Added `customPrompt` field to IdeaSessionConfig and IdeaSession types
-   - **Database**: Migration #21 adds `custom_prompt` column to idea_sessions table
-   - **Storage**: Persisted in database, loaded with session, passed to generation
-   - **Integration**: Incorporated into seed generation prompts as "USER CONSTRAINTS" section
-   - **UX**: Placeholder text with examples, character count would be helpful
-   - **Translation**: Full i18n support (EN/TR)
-   - Files: `SessionSetup.tsx`, `ideas.ts` (types), `migrations.ts`, `idea-generator.service.ts`, `en.ts`, `tr.ts`
+5. **ENH-IDX-012**: Custom Prompt Input _(~60 min)_
+    - **UI**: Optional textarea in SessionSetup for custom requirements/constraints
+    - **Schema**: Added `customPrompt` field to IdeaSessionConfig and IdeaSession types
+    - **Database**: Migration #21 adds `custom_prompt` column to idea_sessions table
+    - **Storage**: Persisted in database, loaded with session, passed to generation
+    - **Integration**: Incorporated into seed generation prompts as "USER CONSTRAINTS" section
+    - **UX**: Placeholder text with examples, character count would be helpful
+    - **Translation**: Full i18n support (EN/TR)
+    - Files: `SessionSetup.tsx`, `ideas.ts` (types), `migrations.ts`, `idea-generator.service.ts`, `en.ts`, `tr.ts`
 
 **Session 3: Market Research Preview (1 item)**
 
-6. **ENH-IDX-013**: Market Research Preview *(~50 min)*
-   - **Quick Analysis**: Lightweight preview before full research commitment
-   - **Backend**: New `generateMarketPreview()` method using gpt-4o-mini for speed/cost
-   - **Preview Data**: For each category, shows:
-     - Market Summary (2-3 sentences)
-     - Top 3 Key Trends (bulleted list)
-     - Market Size/Growth estimate
-     - Competition Level (low/medium/high with visual badge)
-   - **UI**: MarketPreviewModal with beautiful card-based layout
-   - **Preview Button**: Appears in SessionSetup when categories are selected
-   - **Flow**: Preview → Continue → Full Research (or Cancel)
-   - **Performance**: Parallel processing of all categories (~5-10 seconds total)
-   - **IPC**: New handler `ideas:generateMarketPreview` with category array input
-   - Files: `idea-generator.service.ts`, `idea-generator.ts`, `SessionSetup.tsx`, `MarketPreviewModal.tsx`, `preload.ts`, `electron.d.ts`, `en.ts`, `tr.ts`
+6. **ENH-IDX-013**: Market Research Preview _(~50 min)_
+    - **Quick Analysis**: Lightweight preview before full research commitment
+    - **Backend**: New `generateMarketPreview()` method using gpt-4o-mini for speed/cost
+    - **Preview Data**: For each category, shows:
+        - Market Summary (2-3 sentences)
+        - Top 3 Key Trends (bulleted list)
+        - Market Size/Growth estimate
+        - Competition Level (low/medium/high with visual badge)
+    - **UI**: MarketPreviewModal with beautiful card-based layout
+    - **Preview Button**: Appears in SessionSetup when categories are selected
+    - **Flow**: Preview → Continue → Full Research (or Cancel)
+    - **Performance**: Parallel processing of all categories (~5-10 seconds total)
+    - **IPC**: New handler `ideas:generateMarketPreview` with category array input
+    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `SessionSetup.tsx`, `MarketPreviewModal.tsx`, `preload.ts`, `electron.d.ts`, `en.ts`, `tr.ts`
 
 ### Technical Details
 
 **Regenerate Implementation:**
+
 - Backend creates new idea using same category and session context
 - Filters out the current idea from deduplication checks
 - Preserves original ID and createdAt timestamp
@@ -1549,6 +1883,7 @@ Track the evolution of Tandem.
 - Full pipeline: seed → research → names → description → roadmap → tech stack → competitors
 
 **Custom Prompt Integration:**
+
 - Stored as optional TEXT column in database (NULL if not provided)
 - Passed through entire generation pipeline via session object
 - Injected into `buildSeedGenerationPrompt()` as "USER CONSTRAINTS" section
@@ -1556,11 +1891,13 @@ Track the evolution of Tandem.
 - Only included if non-empty (trimmed during session creation)
 
 **Database Changes:**
+
 - Migration #21: `ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`
 - No default value (NULL allowed for existing sessions)
 - Backward compatible - existing sessions work without custom prompts
 
 **Market Preview Implementation:**
+
 - Uses gpt-4o-mini for faster, cheaper analysis
 - Parallel Promise.all() for all categories (~5-10s total)
 - JSON-based response parsing with fallback defaults
@@ -1569,6 +1906,7 @@ Track the evolution of Tandem.
 - "Continue with Full Research" button triggers form submission
 
 ### Files Modified (19 files)
+
 1. `src/renderer/features/ideas/components/SessionHistory.tsx` - Search/filter UI
 2. `src/renderer/features/ideas/components/IdeasHeader.tsx` - Export dropdown
 3. `src/renderer/features/ideas/IdeasPage.tsx` - Export & regenerate handlers
@@ -1589,6 +1927,7 @@ Track the evolution of Tandem.
 18. `docs/CHANGELOG.md` - This entry
 
 ### Translation Keys Added
+
 ```typescript
 // Custom prompt
 customPrompt: {
@@ -1603,11 +1942,13 @@ previewMarket: 'Preview Market Research'
 ```
 
 ### Type Check Status
+
 - ✅ 33 errors (all pre-existing in db.ts/proxy.ts)
 - ✅ No new errors introduced
 - ✅ All features type-safe
 
 ### Performance & UX
+
 - **Search/Filter**: Instant, no perceptible lag even with 100+ ideas
 - **Export**: Client-side, no server load, downloads in <100ms
 - **Retry Logic**: Transparent to users, automatic recovery
@@ -1618,6 +1959,7 @@ previewMarket: 'Preview Market Research'
 ### Total Session Progress
 
 **Completed Today (12 items):**
+
 1. ✅ ENH-IDX-005: Keyboard shortcuts
 2. ✅ ENH-IDX-001: Rejection confirmation
 3. ✅ ENH-IDX-002: Edit/rename ideas
@@ -1636,7 +1978,9 @@ previewMarket: 'Preview Market Research'
 ---
 
 ## [2026-01-26]
+
 ### Added
+
 - Comprehensive JSDoc documentation for core services:
     - [SettingsService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
     - [SecurityService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
@@ -1644,6 +1988,7 @@ previewMarket: 'Preview Market Research'
 - Enhanced type safety in `ipc-batch.util.ts` for quota related operations.
 
 ### Fixed
+
 - A critical argument mismatch in `src/main/ipc/chat.ts`'s `sanitizeStreamInputs` call.
 - Type mismatches in `AccountManager.tsx` related to `LinkedAccountInfo` interface update.
 - Minor lint warnings in `SettingsService` regarding unnecessary conditionals.
@@ -1658,30 +2003,34 @@ previewMarket: 'Preview Market Research'
 **Summary**: Implemented fastest actionable MEDIUM priority items + added complete idea deletion system with bulk operations.
 
 ### Ideas System Enhancements (6 items completed)
+
 - [x] **ENH-IDX-005**: Keyboard shortcuts for workflow
 - [x] **ENH-IDX-001**: Rejection confirmation dialog
-- [x] **ENH-IDX-002**: Edit/Rename generated ideas *(NEW)*
-- [x] **ENH-IDX-016**: Session caching *(NEW)*
-- [x] **ENH-IDX-015**: Optimistic UI updates *(NEW)*
-- [x] **NEW FEATURE**: Complete Idea Deletion System *(USER REQUEST)*
+- [x] **ENH-IDX-002**: Edit/Rename generated ideas _(NEW)_
+- [x] **ENH-IDX-016**: Session caching _(NEW)_
+- [x] **ENH-IDX-015**: Optimistic UI updates _(NEW)_
+- [x] **NEW FEATURE**: Complete Idea Deletion System _(USER REQUEST)_
 
 **Idea Deletion Implementation:**
+
 1. **Single Delete**: Trash button in IdeaDetailsModal header with confirmation
-2. **Bulk Delete**: 
-   - Checkboxes for each idea in SessionHistory
-   - Selection counter showing N ideas selected
-   - "Delete Selected" button with bulk confirmation
-   - Clear selection option
+2. **Bulk Delete**:
+    - Checkboxes for each idea in SessionHistory
+    - Selection counter showing N ideas selected
+    - "Delete Selected" button with bulk confirmation
+    - Clear selection option
 3. **Backend**: IPC handlers already existed (deleteIdea, deleteSession)
 4. **Confirmation**: Native confirm() dialogs prevent accidental deletion
 
 **Implementation Details:**
+
 1. **Title & Description Editing**: Users can now edit both idea title and description before approval. Shows "Reset" button when modified.
 2. **Session Caching**: Added useMemo for ideas and sessions to avoid repeated fetches, improving performance.
 3. **Optimistic Updates**: UI updates immediately on approve/reject actions, with automatic rollback if API fails. Dramatically improved perceived responsiveness.
 4. **Deletion System**: Checkbox selection + bulk operations similar to project management system.
 
 ### Files Modified (8 files)
+
 - `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added delete button & confirmation
 - `src/renderer/features/ideas/components/SessionHistory.tsx` - Added checkboxes & bulk delete UI
 - `src/renderer/features/ideas/components/IdeaDetailsContent.tsx` - Description editing
@@ -1691,6 +2040,7 @@ previewMarket: 'Preview Market Research'
 - `docs/CHANGELOG.md` - Updated
 
 ### Type Check
+
 ✅ No new errors (33 pre-existing errors in db.ts/proxy.ts)
 
 ---
@@ -1702,23 +2052,27 @@ previewMarket: 'Preview Market Research'
 **Summary**: Implemented easiest MEDIUM priority items after upgrading all LOW todos.
 
 ### Ideas System Enhancements (2 items completed)
-- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow *(COMPLETED)*
-  - Added Escape to close modal
-  - Added Ctrl+Enter to approve idea (when folder selected)
-  - Added Ctrl+Backspace to reject idea (with confirmation)
-  - Visual keyboard hints on buttons (hover to see)
 
-- [x] **ENH-IDX-001**: Rejection confirmation dialog *(COMPLETED)*
-  - Show "Are you sure?" modal before rejecting ideas
-  - Optional reason text field for tracking why ideas were rejected
-  - Integrated with keyboard shortcuts (Esc to cancel confirmation)
+- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow _(COMPLETED)_
+    - Added Escape to close modal
+    - Added Ctrl+Enter to approve idea (when folder selected)
+    - Added Ctrl+Backspace to reject idea (with confirmation)
+    - Visual keyboard hints on buttons (hover to see)
+
+- [x] **ENH-IDX-001**: Rejection confirmation dialog _(COMPLETED)_
+    - Show "Are you sure?" modal before rejecting ideas
+    - Optional reason text field for tracking why ideas were rejected
+    - Integrated with keyboard shortcuts (Esc to cancel confirmation)
 
 ### Files Modified
+
 - `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added keyboard shortcuts and rejection confirmation
 - `src/renderer/features/ideas/components/ApprovalFooter.tsx` - Added keyboard hint badges
 
 ### Priority Upgrades
+
 All LOW priority items upgraded to MEDIUM across all TODO files:
+
 - features.md: Keyboard Shortcut Customization, Theme Creator
 - architecture.md: Linux Support, Database Service refactoring
 - quality.md: Property-based testing, Advanced linting, Code metrics
@@ -1735,6 +2089,7 @@ All LOW priority items upgraded to MEDIUM across all TODO files:
 **Summary**: Comprehensive TODO audit and implementation session completed. All actionable LOW and MEDIUM priority items addressed. Remaining items are large features requiring significant architectural work.
 
 ### Session Achievements
+
 1. **Council Critical Fixes** (3 items) - Dynamic model/provider, tool permissions, retry logic
 2. **Theme Color Migration** (50+ files) - Migrated to CSS variables
 3. **LOW Priority Audit** (6 items) - Verified existing features, reviewed code quality
@@ -1742,17 +2097,22 @@ All LOW priority items upgraded to MEDIUM across all TODO files:
 5. **Bug Fixes** (2 items) - Artificial delays optimization, EventBus enablement
 
 ### Files Modified This Session
+
 **Core Services:**
+
 - `src/main/services/llm/idea-generator.service.ts` - Made artificial delays configurable (90% faster by default)
 - `src/main/services/data/file-change-tracker.service.ts` - Enabled real-time EventBus emissions
 
 **Documentation:**
+
 - `docs/TODO/security.md` - Marked MEDIUM items complete
 - `docs/TODO/ideas.md` - Marked BUG-IDX-007 fixed
 - `docs/CHANGELOG.md` - Comprehensive session documentation
 
 ### Remaining Work Analysis
+
 **Large Features (Require dedicated sprints):**
+
 - Memory/RAG management system
 - Custom agent system and workflow engine
 - Test coverage infrastructure (React Testing Library, E2E)
@@ -1760,12 +2120,14 @@ All LOW priority items upgraded to MEDIUM across all TODO files:
 - Advanced project scaffolding
 
 **Medium Features (Multiple days each):**
+
 - API documentation generation (TypeDoc)
 - Specialized agent library
 - Project template system
 - Idea system enhancements
 
 **Technical Debt:**
+
 - JSDoc coverage (86 services to document)
 - Linux packaging and testing
 - Database architecture refactoring
@@ -1781,11 +2143,12 @@ All quick wins and actionable items have been completed. Future work requires pr
 **Summary**: Fixed medium priority bugs including artificial delays in idea generation pipeline.
 
 ### Ideas (MEDIUM Bugs) - ideas.md
-- [x] **BUG-IDX-007**: Research pipeline artificial delays *(OPTIMIZED)*
-  - Made delays configurable via `IDEA_DELAY_MULTIPLIER` environment variable
-  - Default reduced to 0.1 (10% of original delays: 1000ms → 100ms)
-  - Can be disabled with `IDEA_DELAY_MULTIPLIER=0` or restored with `IDEA_DELAY_MULTIPLIER=1`
-  - Significantly improves UX when AI research is fast while maintaining slight pacing for visual feedback
+
+- [x] **BUG-IDX-007**: Research pipeline artificial delays _(OPTIMIZED)_
+    - Made delays configurable via `IDEA_DELAY_MULTIPLIER` environment variable
+    - Default reduced to 0.1 (10% of original delays: 1000ms → 100ms)
+    - Can be disabled with `IDEA_DELAY_MULTIPLIER=0` or restored with `IDEA_DELAY_MULTIPLIER=1`
+    - Significantly improves UX when AI research is fast while maintaining slight pacing for visual feedback
 
 ---
 
@@ -1796,13 +2159,16 @@ All quick wins and actionable items have been completed. Future work requires pr
 **Summary**: Audited and verified MEDIUM priority security items. All items are implemented or verified as complete.
 
 ### Security (MEDIUM) - security.md
+
 - [x] **Audit logging for credential leakage** - Reviewed: AuditLogService exists, credential logging audited in auth.service.ts, token.service.ts, ssh.service.ts - no passwords/tokens are logged, only email/accountId
 - [x] **Permission checks for privileged actions** - Verified: ToolPermissions system handles tool-based permissions in agent-council.service.ts. Single-user desktop app relies on OS-level permissions for file system/process actions
 
 ### Access Control (MEDIUM) - security.md
+
 All IPC security items already completed:
+
 - Schema validation for all IPC payloads ✅
-- Rate limiting on sensitive channels (60-120 req/min) ✅  
+- Rate limiting on sensitive channels (60-120 req/min) ✅
 - Tool security restrictions (ToolPermissions, Protected Paths) ✅
 
 ---
@@ -1814,15 +2180,18 @@ All IPC security items already completed:
 **Summary**: Audited all LOW priority items across TODO files. Many items already existed or were verified complete.
 
 ### Features (LOW) - features.md
+
 - [x] **Chat Export/Import** - Already exists: `ExportModal.tsx` (Markdown/PDF), `history-import.service.ts` (ChatGPT/Claude import)
 - [x] **Log Viewer** - Already exists: `LoggingDashboard.tsx` accessible via Ctrl+L
 - [ ] Keyboard Shortcut Customization - Requires new settings UI
 - [ ] Theme Creator - Requires complex UI builder
 
 ### Security (LOW) - security.md
+
 - [x] **Context Isolation** - Verified: `contextIsolation: true` in all window creation (main.ts, export.service.ts, project-scaffold.service.ts, window.ts)
 
 ### Quality (LOW) - quality.md
+
 - [x] **Consolidate duplicate utilities** - Reviewed: No true duplicates. ipc-batch.util.ts in main/renderer are complementary (register vs invoke). error.util.ts have different purposes.
 - [x] **Remove dead code** - Reviewed: ~8 commented lines across entire codebase, mostly debug-related. No action needed.
 
@@ -1836,22 +2205,27 @@ All IPC security items already completed:
 Global migration of hardcoded `text-white`, `text-black`, `bg-white`, and `bg-black` to theme variables across 50+ files.
 
 ### Changes Made
+
 - `text-white` → `text-foreground` (all instances)
 - `text-black` → `text-background` (all instances)
 - `bg-black` (solid) → `bg-background` (where appropriate)
 - `bg-white/XX`, `bg-black/XX` (transparency overlays) → preserved intentionally
 
 ### Files Updated (50+ files)
+
 **UI Components:**
+
 - `modal.tsx`, `LoggingDashboard.tsx`, `FloatingActionButton.tsx`
 - `ScrollToBottomButton.tsx`, `SelectDropdown.tsx`, `tooltip.tsx`, `TipModal.tsx`
 
 **Layout Components:**
+
 - `SidebarUI.tsx`, `SidebarBadge.tsx`, `StatusBar.tsx`
 - `UpdateNotification.tsx`, `ResultsList.tsx`, `CommandHeader.tsx`
 - `Sidebar.css`
 
 **Feature Components:**
+
 - Chat: `GalleryView.tsx`, `AudioChatOverlay.tsx`, `AgentCouncil.tsx`, `WelcomeScreen.tsx`, `SlashMenu.tsx`, `MonacoBlock.tsx`, `MarkdownRenderer.tsx`, `AssistantIdentity.tsx`
 - Settings: `GeneralTab.tsx`, `SpeechTab.tsx`, `ManualSessionModal.tsx`, `PresetCard.tsx`, `QuotaRing.tsx`
 - Ideas: `CategorySelector.tsx`, `IdeaDetailsContent.tsx`, `ResearchProgress.tsx`, `SessionInfo.tsx`
@@ -1870,6 +2244,7 @@ Global migration of hardcoded `text-white`, `text-black`, `bg-white`, and `bg-bl
 Comprehensive implementation of Agent Council critical fixes and full audit of all TODO roadmap files.
 
 ### COUNCIL-CRIT-001: Dynamic Model/Provider Configuration
+
 - Added `model` and `provider` columns to `council_sessions` table
 - Modified `createCouncilSession()` to accept model/provider parameters
 - Updated `runSessionStep()` to use session-configured model/provider
@@ -1877,6 +2252,7 @@ Comprehensive implementation of Agent Council critical fixes and full audit of a
 - Database migration #20 for schema update
 
 ### COUNCIL-CRIT-002: Tool Permission System
+
 - Implemented `ToolPermissions` interface with `allowed`, `restricted`, `forbidden` levels
 - Added `PROTECTED_PATHS` regex patterns (node_modules, .git, .env, lock files)
 - Added `ALLOWED_SYSTEM_SERVICES` whitelist (codeIntel, web only)
@@ -1885,18 +2261,21 @@ Comprehensive implementation of Agent Council critical fixes and full audit of a
 - Added `setToolPermissions()` method for runtime configuration
 
 ### COUNCIL-CRIT-003: Error Recovery & Retry Logic
+
 - Implemented exponential backoff with 3 max retries
 - Added `isRetryableError()` method detecting rate limits, timeouts, network errors
 - Consecutive error tracking to prevent infinite retry loops
 - Detailed logging of retry attempts and final failures
 
 ### TODO Roadmap Audit
+
 - **ideas.md**: Marked BUG-IDX-002 and BUG-IDX-006 as reviewed/fixed
 - **council.md**: All Phase 1 critical items marked complete
 - **features.md**: Council critical fixes marked complete
 - **security.md**: Tool security items marked complete
 
 **Files Modified**:
+
 - `src/main/services/llm/agent-council.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/migrations.ts`
@@ -1914,31 +2293,36 @@ Comprehensive implementation of Agent Council critical fixes and full audit of a
 Comprehensive audit and update of all TODO roadmap files in `docs/TODO/` directory with accurate status tracking and summary sections.
 
 ### Architecture (architecture.md)
+
 - **BaseService Adoption**: 42/86 services (49%), 76% with lifecycle methods
 - **LLM Plugin System**: ILLMProvider interface and LLMProviderRegistry already implemented
 - **EventBus**: 56 usages, ~300 IPC handlers to migrate
 - Added summary section with completion percentages
 
 ### Council System (council.md)
+
 - **Model/Provider**: ✅ Now configurable per session
 - **Error Recovery**: ✅ Exponential backoff with 3 retries
 - **Tool Permissions**: ✅ ToolPermissions system implemented
 - Updated Phase 1 status - ALL CRITICAL ITEMS COMPLETE
 
 ### Projects (projects.md)
+
 - **Phase 1**: ✅ All critical fixes complete (type safety, confirmations, state machine)
 - **Phase 2**: ✅ All core features complete:
-  - Batch operations (useProjectListActions.ts)
-  - Environment variables (ProjectEnvironmentTab.tsx)
-  - Project settings panel (full UI)
+    - Batch operations (useProjectListActions.ts)
+    - Environment variables (ProjectEnvironmentTab.tsx)
+    - Project settings panel (full UI)
 
 ### Security (security.md)
+
 - **Path Traversal**: Protected via FileSystemService and SSHService
 - **Rate Limiting**: RateLimitService with provider-specific limits
 - **Tool Security**: ✅ ToolPermissions + callSystem whitelist implemented
 - Added summary section
 
 ### Quality (quality.md)
+
 - **Type Safety**: Critical services fixed
 - **CI/CD**: Pipeline complete with type-check and E2E
 - **Lint**: 0 errors, 794 warnings remaining
@@ -1946,6 +2330,7 @@ Comprehensive audit and update of all TODO roadmap files in `docs/TODO/` directo
 - Added summary section
 
 ### Ideas & Features
+
 - Reviewed but no changes needed - detailed feature lists already accurate
 
 ---
@@ -1958,6 +2343,7 @@ Comprehensive audit and update of all TODO roadmap files in `docs/TODO/` directo
 Implemented the **Tandem Project Agent**, a fully autonomous AI developer capable of executing complex, multi-step coding tasks directly within the IDE. The agent operates in a "Think -> Plan -> Act -> Observe" loop, maintains context across sessions, and includes built-in resilience for API limits.
 
 **Key Achievements**:
+
 - **Autonomous Agent Service**:
     - Created `ProjectAgentService` with a robust execution loop.
     - Implemented state persistence (`project-state.json`) to track tasks, plans, and history.
@@ -1973,64 +2359,69 @@ Implemented the **Tandem Project Agent**, a fully autonomous AI developer capabl
     - Hardened IPC batching utilities (`ipc-batch.util.ts`) with explicit casting to resolve build-time type conflicts.
 
 **Technical Details**:
+
 - **Backend**: `project-agent.service.ts` implements the ReAct loop pattern.
 - **Frontend**: `ProjectAgentView.tsx` provides real-time visibility into the agent's state.
 - **Verification**: ✅ Passes full `npm run type- [x] Build and lint verification passed (Reduced warnings from 804 to 736)
-107: *Last Updated: January 26, 2026*
--01-24: 🤖 AUTONOMOUS TOOL USE & MULTI-TURN EXECUTION
- 
- **Status**: ✅ COMPLETED
- 
- **Summary**:
- Implemented full autonomous tool use capabilities, allowing AI models to execute tools, process their results, and iterate until a task is completed. This includes a robust multi-turn execution loop, real-time UI feedback for tool calls, and complete type safety for tool-related messages.
+  107: _Last Updated: January 26, 2026_
+  -01-24: 🤖 AUTONOMOUS TOOL USE & MULTI-TURN EXECUTION
 
- **Key Achievements**:
- - **Multi-Turn Tool Execution**:
-     - Implemented `executeToolTurnLoop` in `useChatGenerator` to handle recursive tool calls (max 5 iterations).
-     - Models now automatically process tool results and decide whether to call more tools or provide a final response.
- - **Real-Time UI Feedback**:
-     - Updated streaming state to include `toolCalls`, providing instant feedback to the user while tools are running.
-     - Refined `processChatStream` to synchronize tool call metadata with the React UI.
- - **Type Safety & Normalization**:
-     - Hardened the `Message` interface with a dedicated `tool` role and `toolCallId`.
-     - Standardized normalization logic for OpenAI and custom providers to ensure consistent tool handling.
- - **Architecture Cleanup**:
-     - Refactored logic into modular standalone functions to meet complexity and line-count limits.
-     - Resolved lingering React hook lint errors in `LayoutManager`.
+    **Status**: ✅ COMPLETED
 
- **Technical Details**:
- - **Backend**: Updated `message-normalizer.util.ts` for consistent role/id mapping.
- - **Frontend**: Enhanced `useChatGenerator` and `process-stream` for tool loop orchestration.
- - **Verification**: ✅ Passes full build, targeted lint, and type-check verification.
+    **Summary**:
+    Implemented full autonomous tool use capabilities, allowing AI models to execute tools, process their results, and iterate until a task is completed. This includes a robust multi-turn execution loop, real-time UI feedback for tool calls, and complete type safety for tool-related messages.
+
+    **Key Achievements**:
+
+- **Multi-Turn Tool Execution**:
+    - Implemented `executeToolTurnLoop` in `useChatGenerator` to handle recursive tool calls (max 5 iterations).
+    - Models now automatically process tool results and decide whether to call more tools or provide a final response.
+- **Real-Time UI Feedback**:
+    - Updated streaming state to include `toolCalls`, providing instant feedback to the user while tools are running.
+    - Refined `processChatStream` to synchronize tool call metadata with the React UI.
+- **Type Safety & Normalization**:
+    - Hardened the `Message` interface with a dedicated `tool` role and `toolCallId`.
+    - Standardized normalization logic for OpenAI and custom providers to ensure consistent tool handling.
+- **Architecture Cleanup**:
+    - Refactored logic into modular standalone functions to meet complexity and line-count limits.
+    - Resolved lingering React hook lint errors in `LayoutManager`.
+
+**Technical Details**:
+
+- **Backend**: Updated `message-normalizer.util.ts` for consistent role/id mapping.
+- **Frontend**: Enhanced `useChatGenerator` and `process-stream` for tool loop orchestration.
+- **Verification**: ✅ Passes full build, targeted lint, and type-check verification.
 
 ---
 
 ## 2026-01-23: 📊 TOKEN USAGE CHART REDESIGN
- 
- **Status**: ✅ COMPLETED
- 
- **Summary**:
- Redesigned the Token Usage Chart (Statistics Tab) with a premium, engaging UI. Replaced simple bars with animated gradient bars, added a cost estimation calculator, and improved tooltips with detailed timestamp information. Also resolved localization issues by adding missing translation keys for English and Turkish.
- 
- **Key Achievements**:
- - **Premium Chart UI**:
-     - Gradient bars (blue-to-cyan for input, emerald-to-teal for output).
-     - CSS-driven entry animations (`growUp` keyframes).
-     - Interactive tooltips with backdrop blur and arrow indicators.
- - **Cost Estimation**:
-     - Added real-time estimated cost calculation based on token usage ($2.50/1M input, $10.00/1M output).
-     - Displayed prominently in the chart header.
- - **Localization**:
-     - Fixed duplicate keys in `i18n` files.
-     - Added comprehensive translation support for statistics keys in `en.ts` and `tr.ts`.
- 
- **Technical Details**:
- - **Components**: `TokenUsageChart.tsx` completely rewritten using pure React + Tailwind (no heavy chart libraries added).
- - **i18n**: Cleaned up duplicate `statistics` keys and ensured type safety.
- 
- ---
- 
- ## 2026-01-23: 📊 CHAT PERSISTENCE & USAGE ANALYTICS OVERHAUL
+
+**Status**: ✅ COMPLETED
+
+**Summary**:
+Redesigned the Token Usage Chart (Statistics Tab) with a premium, engaging UI. Replaced simple bars with animated gradient bars, added a cost estimation calculator, and improved tooltips with detailed timestamp information. Also resolved localization issues by adding missing translation keys for English and Turkish.
+
+**Key Achievements**:
+
+- **Premium Chart UI**:
+    - Gradient bars (blue-to-cyan for input, emerald-to-teal for output).
+    - CSS-driven entry animations (`growUp` keyframes).
+    - Interactive tooltips with backdrop blur and arrow indicators.
+- **Cost Estimation**:
+    - Added real-time estimated cost calculation based on token usage ($2.50/1M input, $10.00/1M output).
+    - Displayed prominently in the chart header.
+- **Localization**:
+    - Fixed duplicate keys in `i18n` files.
+    - Added comprehensive translation support for statistics keys in `en.ts` and `tr.ts`.
+
+**Technical Details**:
+
+- **Components**: `TokenUsageChart.tsx` completely rewritten using pure React + Tailwind (no heavy chart libraries added).
+- **i18n**: Cleaned up duplicate `statistics` keys and ensured type safety.
+
+---
+
+## 2026-01-23: 📊 CHAT PERSISTENCE & USAGE ANALYTICS OVERHAUL
 
 **Status**: ✅ COMPLETED
 
@@ -2038,7 +2429,8 @@ Implemented the **Tandem Project Agent**, a fully autonomous AI developer capabl
 Implemented comprehensive token usage tracking and visualization across the application. Added persistence for chat tokens, enabled parallel local model execution, and delivered high-fidelity usage charts in the Statistics dashboard.
 
 **Key Achievements**:
-- **Token Usage Persistence**: 
+
+- **Token Usage Persistence**:
     - Integrated automatic token recording for every chat message (Input/Output).
     - Database migration with dedicated `token_usage` table and optimized queries.
 - **Analytics Dashboard**:
@@ -2052,6 +2444,7 @@ Implemented comprehensive token usage tracking and visualization across the appl
     - Improved consistency between user message display and intent.
 
 **Technical Details**:
+
 - **Backend**: Updated `DatabaseService` with period-aware aggregation and `token_usage` integration.
 - **Frontend**: Created reusable `TokenUsageChart` component with interactive tooltips.
 - **Verification**: ✅ Passes full `type-check` and `lint` verification.
@@ -2066,6 +2459,7 @@ Implemented comprehensive token usage tracking and visualization across the appl
 Implemented comprehensive enterprise-grade quality standards including full testing infrastructure, security hardening, and automated quality gates. The application now meets production-ready standards with 75% test coverage, secrets detection, and bundle monitoring.
 
 **Key Achievements**:
+
 - **Testing Infrastructure**:
     - React Testing Library integration for renderer components (8 tests, 100% passing)
     - Enhanced vitest configuration with dual main/renderer testing
@@ -2083,6 +2477,7 @@ Implemented comprehensive enterprise-grade quality standards including full test
     - TypeScript strict mode preparation documented
 
 **Technical Details**:
+
 - Main process: 37+ test files, 300+ tests with robust mocking
 - CI/CD pipeline: 9 quality gates vs previous 5 steps
 - Test performance: ~7.8s renderer suite execution
@@ -2102,6 +2497,7 @@ Implemented comprehensive enterprise-grade quality standards including full test
 Successfully migrated the entire `Ideas` module to the centralized theme system, ensuring consistent aesthetics across light and dark modes. Simultaneously performed critical system stabilization by resolving lint errors and syntax issues in core services.
 
 **Key Achievements**:
+
 - **Ideas Module Migration**:
     - Converted `IdeasPage`, `IdeaCard`, `StageGeneration`, `ApprovalFooter`, `IdeaDetailsContent`, `IdeaGrid`, and `LogoGenerator` to use semantic theme tokens.
     - Standardized `bg-card`, `text-muted-foreground`, and `border-border` usage throughout the feature.
@@ -2113,7 +2509,6 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 
 ---
 
-
 ### 2026-01-23: 🎉 ENTERPRISE TRANSFORMATION COMPLETE - Performance, Security, Architecture & Type Safety Overhaul
 
 **Status**: ✅ FULLY COMPLETED - All Phases Successful
@@ -2124,8 +2519,9 @@ Tandem has been completely transformed into an enterprise-ready application with
 **🚀 PHASE 1 & 2: Enterprise Performance Optimization**
 
 **Performance Impact**:
+
 - **Startup Time**: ~50% faster application launch
-- **Memory Usage**: ~50% reduction in RAM consumption  
+- **Memory Usage**: ~50% reduction in RAM consumption
 - **UI Responsiveness**: ~60% fewer unnecessary re-renders
 - **IPC Efficiency**: ~100% improvement in inter-process communication
 - **List Rendering**: Infinite scalability for large datasets (10K+ items)
@@ -2134,58 +2530,60 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Phase 1: Critical Foundation Optimizations**:
 
 1. **Context Memoization System (60% re-render reduction)**:
-   - Added `useMemo()` to all 6 context providers (Model, Project, Auth, Theme, Chat, Settings)
-   - Wrapped heavy components with `React.memo()` (MonacoBlock, ProjectCard, ChatListItem, MarkdownRenderer, StatisticsTab)
-   - Eliminated unnecessary cascade re-renders throughout the application
+    - Added `useMemo()` to all 6 context providers (Model, Project, Auth, Theme, Chat, Settings)
+    - Wrapped heavy components with `React.memo()` (MonacoBlock, ProjectCard, ChatListItem, MarkdownRenderer, StatisticsTab)
+    - Eliminated unnecessary cascade re-renders throughout the application
 
 2. **Library Lazy Loading (40% startup improvement)**:
-   - Converted Monaco Editor to dynamic import with loading states
-   - Converted Mermaid to dynamic import with proper initialization
-   - Leveraged existing CodeMirror lazy loading optimization
-   - Added graceful loading states for all dynamically loaded components
+    - Converted Monaco Editor to dynamic import with loading states
+    - Converted Mermaid to dynamic import with proper initialization
+    - Leveraged existing CodeMirror lazy loading optimization
+    - Added graceful loading states for all dynamically loaded components
 
 3. **Service Lazy Loading (50% startup time + 30% RAM)**:
-   - Implemented sophisticated lazy service registry with proxy pattern
-   - Converted 5 non-essential services to lazy loading: Docker, SSH, Logo, Scanner, PageSpeed
-   - Services now load on first method access, dramatically reducing startup overhead
-   - Proper code splitting ensures lazy services are separate chunks
+    - Implemented sophisticated lazy service registry with proxy pattern
+    - Converted 5 non-essential services to lazy loading: Docker, SSH, Logo, Scanner, PageSpeed
+    - Services now load on first method access, dramatically reducing startup overhead
+    - Proper code splitting ensures lazy services are separate chunks
 
 4. **IPC Batching Infrastructure (70% fewer IPC calls)**:
-   - Enhanced existing IPC batching system with comprehensive TypeScript support
-   - Added batch interface definitions to `electron.d.ts`
-   - Created reusable batch utilities and common batch operations
-   - Fixed all type errors and added web bridge mock implementations
+    - Enhanced existing IPC batching system with comprehensive TypeScript support
+    - Added batch interface definitions to `electron.d.ts`
+    - Created reusable batch utilities and common batch operations
+    - Fixed all type errors and added web bridge mock implementations
 
 **Phase 2: Advanced Performance Optimizations**:
 
 5. **Expanded IPC Batching (Additional 30% efficiency)**:
-   - Added batchable handlers for database operations (CRUD, queries, stats)
-   - Added batchable handlers for Git operations (status, branches, commits, history)
-   - Added batchable handlers for settings and quota operations
-   - Created high-level batch patterns: `loadSettingsData`, `loadProjectData`, `updateChatsBatch`
-   - Updated hooks to use efficient batching: chat CRUD, settings stats, Git data loading
+    - Added batchable handlers for database operations (CRUD, queries, stats)
+    - Added batchable handlers for Git operations (status, branches, commits, history)
+    - Added batchable handlers for settings and quota operations
+    - Created high-level batch patterns: `loadSettingsData`, `loadProjectData`, `updateChatsBatch`
+    - Updated hooks to use efficient batching: chat CRUD, settings stats, Git data loading
 
 6. **Advanced Memory Management (20% additional RAM reduction)**:
-   - Implemented sophisticated LRU (Least Recently Used) cache system
-   - Created intelligent cached database layer with pattern-based invalidation
-   - Added cache wrappers with appropriate TTL: chats (120s), projects (120s), folders (60s), stats (30-60s)
-   - Automatic cache cleanup every 5 minutes prevents memory leaks
-   - Cache statistics available for monitoring and debugging
+    - Implemented sophisticated LRU (Least Recently Used) cache system
+    - Created intelligent cached database layer with pattern-based invalidation
+    - Added cache wrappers with appropriate TTL: chats (120s), projects (120s), folders (60s), stats (30-60s)
+    - Automatic cache cleanup every 5 minutes prevents memory leaks
+    - Cache statistics available for monitoring and debugging
 
 7. **Component Performance Optimization (10-15% UI improvement)**:
-   - Created `VirtualizedProjectGrid` for handling 1000+ projects efficiently
-   - Created `VirtualizedIdeaGrid` for handling 1000+ ideas efficiently  
-   - Maintained existing `MessageList` virtualization (react-virtuoso)
-   - Added smart virtualization thresholds (activates only for >20 items)
-   - Enhanced debounced search infrastructure for instant filtering
+    - Created `VirtualizedProjectGrid` for handling 1000+ projects efficiently
+    - Created `VirtualizedIdeaGrid` for handling 1000+ ideas efficiently
+    - Maintained existing `MessageList` virtualization (react-virtuoso)
+    - Added smart virtualization thresholds (activates only for >20 items)
+    - Enhanced debounced search infrastructure for instant filtering
 
 **Technical Excellence**:
+
 - **Zero Breaking Changes**: All existing functionality preserved
 - **100% Type Safety**: No `any` types added, full TypeScript compliance
 - **Clean Build**: ✅ Passes TypeScript compilation and ESLint checks
 - **Smart Activation**: Optimizations activate intelligently based on data size
 
 **Files Added**:
+
 - `src/main/core/lazy-services.ts` - Lazy service registry and proxy system
 - `src/renderer/utils/ipc-batch.util.ts` - Enhanced IPC batching utilities
 - `src/renderer/utils/lru-cache.util.ts` - LRU cache implementation
@@ -2194,6 +2592,7 @@ Tandem has been completely transformed into an enterprise-ready application with
 - `src/renderer/features/ideas/components/VirtualizedIdeaGrid.tsx` - Virtualized idea rendering
 
 **Files Enhanced**:
+
 - `src/main/startup/services.ts` - Added lazy service registration
 - `src/main/ipc/*.ts` - Added batchable handlers (auth, db, git, proxy, settings)
 - `src/renderer/context/*.tsx` - Added context memoization (4 providers)
@@ -2206,17 +2605,19 @@ Tandem has been completely transformed into an enterprise-ready application with
 
 **🔒 PHASE 3: Security Hardening - Comprehensive JSON Safety**
 
-**Status**: ✅ Completed  
+**Status**: ✅ Completed
 
 **Security Achievements**:
-- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application  
+
+- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
 - **13+ Critical Security Fixes** across 6 major services (auth-api, idea-generator, copilot, idea-scoring, agent, deep-research)
 - **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
 - **Graceful Error Handling** with intelligent defaults when parsing fails
 - **Attack Vector Elimination** - JSON-based injection attacks now impossible
 
 **Critical Services Secured**:
-1. **AuthAPIService**: Secured token update endpoint with validation  
+
+1. **AuthAPIService**: Secured token update endpoint with validation
 2. **IdeaGeneratorService**: Hardened 6 LLM response parsing methods
 3. **CopilotService**: Protected error response parsing
 4. **IdeaScoringService**: Secured scoring and comparison data parsing
@@ -2228,6 +2629,7 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Status**: ✅ Completed
 
 **Architecture Improvements**:
+
 - **Enhanced EventBusService** with advanced subscription management and debugging
 - **Unique Subscription IDs** for proper lifecycle cleanup and memory management
 - **Event History Persistence** for debugging with 100 events and full metadata
@@ -2236,6 +2638,7 @@ Tandem has been completely transformed into an enterprise-ready application with
 - **Service Integration** across 8+ core services (Database, Auth, FileChangeTracker, Token, etc.)
 
 **New Capabilities**:
+
 - Priority-based event handling for ordered execution
 - One-time subscriptions with automatic cleanup
 - Custom event filtering for selective processing
@@ -2247,13 +2650,15 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Status**: ✅ Completed
 
 **Type Safety Achievements**:
+
 - **Zero Remaining Unsafe Type Casts** - eliminated ALL `as any` and `as unknown` instances
 - **BackupService Hardening** - replaced 5 unsafe casts with proper JSON serialization
-- **SettingsService Enhancement** - fixed authentication token lookup with proper LinkedAccount types  
+- **SettingsService Enhancement** - fixed authentication token lookup with proper LinkedAccount types
 - **Improved Type Contracts** between services with accurate interface definitions
 - **Enhanced IDE Support** with perfect type inference and autocomplete accuracy
 
 **Benefits Realized**:
+
 - Compile-time error detection prevents runtime failures
 - Better developer experience with accurate IntelliSense
 - Safer refactoring capabilities with type-guided changes
@@ -2273,14 +2678,16 @@ Tandem has been completely transformed into an enterprise-ready application with
 | **Architecture Quality** | Enterprise | Centralized event management |
 
 **Build Quality Validation**:
+
 - ✅ **TypeScript Compilation** - Zero errors across 1,955+ modules
-- ✅ **ESLint Compliance** - No linting issues found  
+- ✅ **ESLint Compliance** - No linting issues found
 - ✅ **Vite Production Build** - Successful with optimized code splitting
 - ✅ **Native Services** - Rust binaries compiled successfully
 - ✅ **Bundle Analysis** - Proper chunk splitting (7,504 modules transformed)
 - ✅ **Backward Compatibility** - 100% existing functionality preserved
 
 **Enterprise Capabilities Now Available**:
+
 - Handles 10,000+ chats, projects, and messages without performance degradation
 - Secure processing of untrusted external data (LLM responses, API calls)
 - Centralized event-driven architecture for complex workflows
@@ -2300,6 +2707,7 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Status**: ✅ Completed (Included in Enterprise Transformation above)
 
 **Security Impact**:
+
 - **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
 - **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
 - **Graceful Error Handling** with sensible defaults when parsing fails
@@ -2308,29 +2716,31 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Critical Services Hardened**:
 
 1. **Authentication Service** (`auth-api.service.ts`):
-   - Secured token update endpoint JSON parsing
-   - Added validation for malformed authentication data
-   - Proper type casting for token fields
+    - Secured token update endpoint JSON parsing
+    - Added validation for malformed authentication data
+    - Proper type casting for token fields
 
 2. **AI/LLM Services** (6 services, 13+ instances):
-   - `idea-generator.service.ts`: Secured all LLM response parsing (6 methods)
-   - `idea-scoring.service.ts`: Protected scoring and comparison data (2 methods)
-   - `copilot.service.ts`: Hardened error response parsing
-   - `agent.service.ts`: Secured database field parsing (2 methods)
-   - `deep-research.service.ts`: Protected research data parsing (2 methods)
+    - `idea-generator.service.ts`: Secured all LLM response parsing (6 methods)
+    - `idea-scoring.service.ts`: Protected scoring and comparison data (2 methods)
+    - `copilot.service.ts`: Hardened error response parsing
+    - `agent.service.ts`: Secured database field parsing (2 methods)
+    - `deep-research.service.ts`: Protected research data parsing (2 methods)
 
 3. **Pattern Applied**:
-   ```typescript
-   // Before: Unsafe
-   const data = JSON.parse(untrustedInput)
-   
-   // After: Safe with defaults
-   const data = safeJsonParse(untrustedInput, { 
-       sensibleDefaults: 'here' 
-   })
-   ```
+
+    ```typescript
+    // Before: Unsafe
+    const data = JSON.parse(untrustedInput);
+
+    // After: Safe with defaults
+    const data = safeJsonParse(untrustedInput, {
+        sensibleDefaults: 'here',
+    });
+    ```
 
 **Benefits**:
+
 - **Crash Prevention**: Malformed JSON no longer crashes the application
 - **Data Integrity**: All parsing operations have sensible fallbacks
 - **Security Posture**: Eliminates JSON-based attack vectors
@@ -2343,6 +2753,7 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Status**: ✅ Completed
 
 **Architecture Impact**:
+
 - **Centralized Event System**: Enhanced existing EventBusService with subscription management and debugging capabilities
 - **Type-Safe Events**: Extended SystemEvents with new event types (`system:error` and more)
 - **Subscription Management**: Added unique subscription IDs with proper cleanup mechanisms
@@ -2352,41 +2763,46 @@ Tandem has been completely transformed into an enterprise-ready application with
 **Key Features Added**:
 
 1. **Enhanced Subscription Management**:
-   - Unique subscription IDs for proper cleanup
-   - Support for one-time subscriptions with auto-cleanup
-   - Backward compatible function-based unsubscribe
-   - Subscription priority levels for ordered event handling
+    - Unique subscription IDs for proper cleanup
+    - Support for one-time subscriptions with auto-cleanup
+    - Backward compatible function-based unsubscribe
+    - Subscription priority levels for ordered event handling
 
 2. **Event Persistence & Debugging**:
-   - Event history storage (configurable size, default 100 events)
-   - Event statistics and monitoring (listener counts, recent activity)
-   - Enhanced logging with event IDs and metadata
-   - Error handling with graceful degradation
+    - Event history storage (configurable size, default 100 events)
+    - Event statistics and monitoring (listener counts, recent activity)
+    - Enhanced logging with event IDs and metadata
+    - Error handling with graceful degradation
 
 3. **Custom Event Support**:
-   - Support for custom events beyond SystemEvents
-   - Extensible event system for plugins and features
-   - Event filtering capabilities for selective handling
+    - Support for custom events beyond SystemEvents
+    - Extensible event system for plugins and features
+    - Event filtering capabilities for selective handling
 
 4. **Improved Error Handling**:
-   - Wrapped listeners with try-catch for fault isolation
-   - System error event monitoring and logging
-   - Graceful service initialization and cleanup
+    - Wrapped listeners with try-catch for fault isolation
+    - System error event monitoring and logging
+    - Graceful service initialization and cleanup
 
 **API Examples**:
+
 ```typescript
 // Traditional usage (returns unsubscribe function)
-const unsubscribe = eventBus.on('auth:changed', (payload) => {
-    console.log('Auth changed:', payload)
-})
+const unsubscribe = eventBus.on('auth:changed', payload => {
+    console.log('Auth changed:', payload);
+});
 
 // Enhanced usage (returns subscription ID)
-const id = eventBus.on('auth:changed', (payload) => {
-    console.log('Auth changed:', payload)
-}, { once: true, priority: 10 })
+const id = eventBus.on(
+    'auth:changed',
+    payload => {
+        console.log('Auth changed:', payload);
+    },
+    { once: true, priority: 10 }
+);
 
 // Custom events
-eventBus.emitCustom('my:custom:event', { data: 'value' })
+eventBus.emitCustom('my:custom:event', { data: 'value' });
 ```
 
 **Services Integration**: EventBusService is used by 8+ core services including DatabaseService, AuthService, FileChangeTracker, and TokenService.
@@ -2396,6 +2812,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: ✅ Completed
 
 **Code Quality Impact**:
+
 - **Zero Remaining `as any` Casts**: Eliminated all unsafe type casting in critical services
 - **Proper Type Definitions**: Replaced unsafe casts with correct type imports and interfaces
 - **JSON Serialization Safety**: Improved backup/restore operations with proper type handling
@@ -2404,29 +2821,31 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Critical Services Hardened**:
 
 1. **BackupService** (`backup.service.ts`):
-   - Replaced 5 instances of `as unknown as JsonObject[]` with proper JSON serialization
-   - Used `JSON.parse(JSON.stringify())` pattern for safe type conversion
-   - Proper date handling for database object serialization
-   - Type-safe chat, prompt, and folder backup/restore operations
+    - Replaced 5 instances of `as unknown as JsonObject[]` with proper JSON serialization
+    - Used `JSON.parse(JSON.stringify())` pattern for safe type conversion
+    - Proper date handling for database object serialization
+    - Type-safe chat, prompt, and folder backup/restore operations
 
 2. **SettingsService** (`settings.service.ts`):
-   - Fixed unsafe `as unknown as Record<string, unknown>[]` cast
-   - Added proper `LinkedAccount` type import from database service
-   - Corrected authentication token lookup with proper typing
-   - Improved function signatures for better type safety
+    - Fixed unsafe `as unknown as Record<string, unknown>[]` cast
+    - Added proper `LinkedAccount` type import from database service
+    - Corrected authentication token lookup with proper typing
+    - Improved function signatures for better type safety
 
 3. **Previous Services** (from earlier phases):
-   - **DatabaseService**: Fixed ~10 instances of unsafe type usage
-   - **LLMService, QuotaService, HealthCheckService**: All type issues resolved
-   - **IdeaGeneratorService**: Secured LLM response parsing with safeJsonParse defaults
+    - **DatabaseService**: Fixed ~10 instances of unsafe type usage
+    - **LLMService, QuotaService, HealthCheckService**: All type issues resolved
+    - **IdeaGeneratorService**: Secured LLM response parsing with safeJsonParse defaults
 
 **Benefits**:
+
 - **Compile-Time Safety**: TypeScript can now catch more errors at build time
 - **Runtime Reliability**: Eliminates potential runtime type errors
 - **Better IDE Support**: Improved IntelliSense and autocomplete accuracy
 - **Maintainability**: Clearer type contracts between services
 
 **Next Steps Ready**:
+
 - Enable `noImplicitAny` in `tsconfig.json` (now safe to activate)
 - Enable strict null checks without breaking changes
 - Add additional TypeScript strict mode flags
@@ -2438,23 +2857,27 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: ✅ Completed
 
 **Features**:
+
 - **Simplified Theme System**: Restricted application themes to a clean "Tandem White" (Light) and "Tandem Black" (Dark) model, enforcing consistency.
 - **Typography Standardization**: Introduced `typography.css` to unify font usage (Inter for UI, JetBrains Mono for code) across the renderer.
 - **Color Token Migration**: Successfully migrated major application components from hardcoded colors (`bg-white`, `bg-black`, `text-gray-300`) to semantic theme tokens (`bg-card`, `bg-background`, `text-muted-foreground`), enabling true dark/light mode compatibility.
 - **Premium Design Enhancements**: Added advanced CSS utilities for glassmorphism, vibrant mesh gradients, and smooth micro-animations.
 
 **Migrated Components**:
+
 - **Chat**: `MessageBubble.tsx`, `ChatInput.tsx`
 - **Settings**: `OverviewCards.tsx`, `AntigravityCard.tsx`, `ClaudeCard.tsx`, `CopilotCard.tsx`, `CodexCard.tsx`, `PersonasTab.tsx`, `InstalledModelsList.tsx`
 - **IDE**: `FileExplorer.tsx`, `CodeEditor.tsx`, `Terminal.tsx`, `FolderInspector.tsx`
 - **General**: `Sidebar.tsx`, `ProjectDashboard.tsx`, `TerminalPanel.tsx`
 
 **Technical Changes**:
+
 - **CSS**: Overhauled `index.css` with a new HSL-based color palette and premium UI utilities (`premium-glass`, `bg-mesh`).
 - **Standardization**: Removed ~200+ instances of hardcoded hex/Tailwind color classes.
 - **Theme Engine**: Enhanced `ThemeContext.tsx` to properly propagate semantic tokens.
 
 **Files Modified**:
+
 - `src/renderer/index.css`
 - `src/renderer/features/chat/components/MessageBubble.tsx`
 - `src/renderer/features/chat/components/ChatInput.tsx`
@@ -2470,17 +2893,20 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **Problem Solved**:
+
 - Race conditions in project list operations (edit, delete, archive, bulk operations)
 - Multiple operations could be triggered simultaneously, causing UI inconsistencies
 - State could become out of sync during rapid user interactions
 
 **Solution**:
+
 - **New Hook**: Created `useProjectListStateMachine` - a reducer-based state machine for project list operations
 - **Explicit States**: Defined clear states (`idle`, `editing`, `deleting`, `archiving`, `bulk_deleting`, `bulk_archiving`, `loading`, `error`)
 - **Guarded Transitions**: Operations can only start from `idle` state, preventing overlapping actions
 - **Coordinated Async**: All async operations go through a central dispatcher with proper loading/success/error handling
 
 **Files Added/Modified**:
+
 - `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [NEW] - State machine implementation
 - `src/renderer/features/projects/ProjectsPage.tsx` - Migrated to use state machine
 
@@ -2489,11 +2915,13 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **Features**:
+
 - **Expanded Settings**: Added dedicated sections for Build & Test, Dev Server, and Advanced Options.
 - **Refactored UI**: Improved `ProjectSettingsPanel` by extracting state management into a custom `useProjectSettingsForm` hook and splitting UI into modular section components.
 - **Form Handling**: Implemented robust dirty state checking, form reset, and split-view sections.
 
 **Files Modified**:
+
 - `src/renderer/features/projects/components/ProjectSettingsPanel.tsx`
 - `src/shared/types/project.ts` (extended Project interface)
 
@@ -2502,6 +2930,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **Optimizations**:
+
 - **Code Splitting**: Implemented lazy loading for all core views (`ChatView`, `ProjectsView`, `SettingsView`) to reduce initial bundle size.
 - **Render Performance**: Memoized expensive project filtering operations in `ProjectsPage` to prevent unnecessary re-computations.
 - **Animation Tuning**: Optimized view transitions for smoother (120fps feel) interaction.
@@ -2509,6 +2938,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Granular Chunking**: Refined `vite.config.ts` to split React, Monaco, and heavy libs into separate chunks for better caching.
 
 **Files Modified**:
+
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/features/projects/ProjectsPage.tsx`
 
@@ -2517,6 +2947,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **Refactoring**:
+
 - **ProjectDashboard Modularization**: Extracted the Git integration logic into a dedicated `ProjectGitTab` component, significantly reducing the complexity of the main `ProjectDashboard` component.
 - **Custom Hook**: Implemented `useGitData` hook to encapsulate all Git-related state management (fetching, staging, committing, pushing, pulling), improving separation of concerns.
 - **Linting Fixes**: Resolved numerous ESLint warnings in `ProjectDashboard.tsx` and `ProjectGitTab.tsx`, including:
@@ -2527,6 +2958,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Performance**: Optimized re-renders by moving complex Git logic out of the main dashboard rendering path.
 
 **Files Modified**:
+
 - `src/renderer/features/projects/components/ProjectDashboard.tsx` - Removed Git logic, integrated `ProjectGitTab`.
 - `src/renderer/features/projects/components/ProjectGitTab.tsx` [NEW] - Dedicated Git interface component.
 - `src/renderer/features/projects/hooks/useGitData.ts` [NEW] - Git state management hook.
@@ -2536,22 +2968,25 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed (Phase 1 & Phase 2 Early Items)
 
 **New Features**:
+
 - **Multi-Selection System**: Added checkboxes to project cards for selecting multiple projects.
 - **Bulk Actions**: Implemented "Archive Selected" and "Delete Selected" with batch processing.
 - **Improved Confirmations**: Added specific confirmation modals for single and bulk delete/archive actions, including a "Delete project files" option.
 - **Progress Tracking**: Added loading states and success notifications for batch operations.
 
 **Technical Changes**:
-- **Component Refactoring**: 
+
+- **Component Refactoring**:
     - Split `ProjectCard.tsx` into smaller, focused sub-components.
     - Split `ProjectModals.tsx` into specialized modal components to reduce complexity.
 - **Action Decoupling**: Created `useProjectListActions` hook to isolate list-level logic from workspace-level logic.
-- **Type Safety**: 
+- **Type Safety**:
     - Hardened project-related interfaces and eliminated unsafe type assertions.
     - Fixed pre-existing type mismatch in `idea-generator.service.ts` where Date objects were incorrectly used as timestamps.
 - **Internationalization**: Added 10+ new translation keys for bulk operations and confirmation dialogs.
 
 **Files Added/Modified**:
+
 - `src/renderer/features/projects/ProjectsPage.tsx` - Integrated multi-selection and bulk actions.
 - `src/renderer/features/projects/components/ProjectCard.tsx` - Modularized card UI.
 - `src/renderer/features/projects/components/ProjectModals.tsx` - Modularized modal components.
@@ -2563,15 +2998,16 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 
 ---
 
-
 **Status**: Completed
 
 **New Features**:
+
 - **New Language Support**: Added German (de), French (fr), and Spanish (es) language files
 - **Enhanced Translation Keys**: Added memory, terminal, and auth sections to translation files
 - **CHANGELOG Consolidation**: Merged `docs/CHANGELOG.md` into root `CHANGELOG.md`
 
 **Technical Changes**:
+
 - Added `de.ts`, `fr.ts`, `es.ts` language files with comprehensive translations
 - Updated `index.ts` to export new languages and support 5 languages total (en, tr, de, fr, es)
 - Added `memory` section: inspector, facts, episodes, entities translations
@@ -2580,6 +3016,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - Added missing `mcp` keys: noServers, remove, official, byAuthor
 
 **Files Added/Modified**:
+
 - `src/renderer/i18n/de.ts` [NEW] - German translations
 - `src/renderer/i18n/fr.ts` [NEW] - French translations
 - `src/renderer/i18n/es.ts` [NEW] - Spanish translations
@@ -2595,12 +3032,14 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Issues Resolved**:
 
 #### **Bug #1: Sidebar Links Disappearing** ✅
+
 - **Problem**: When user selected a project, entire sidebar disappeared, preventing navigation back to other views
 - **Root Cause**: Conditional rendering in App.tsx completely hid sidebar when `currentView === 'projects' && selectedProject`
 - **Fix**: Removed conditional logic - sidebar now always visible, allowing users to navigate between views even while in project workspace
 - **File**: `src/renderer/App.tsx` - Simplified sidebar rendering logic
 
-#### **Bug #2: Vector Dimension Error in Code Intelligence** ✅  
+#### **Bug #2: Vector Dimension Error in Code Intelligence** ✅
+
 - **Problem**: Project analysis failed with "vector must have at least 1 dimension" error during code indexing
 - **Root Cause**: When embedding provider set to 'none', service returned empty array `[]` which database rejected (PostgreSQL vector type requires 1+ dimensions)
 - **Fix**: Return 384-dimensional zero vector `new Array(384).fill(0)` instead of empty array for 'none' provider
@@ -2608,18 +3047,21 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Additional**: Fixed unreachable code (duplicate return statement) in getCurrentProvider()
 
 **Technical Details**:
+
 - **Sidebar Fix**: Users can now access all navigation options while viewing projects, maintaining consistent UX
 - **Vector Fix**: Code intelligence indexing will work with 'none' embedding provider using zero vectors, preventing database constraint violations
 - **Database Compatibility**: Zero vectors maintain proper dimensions for PostgreSQL vector operations while indicating no semantic meaning
 
 **Files Modified**:
+
 - `src/renderer/App.tsx` - Removed problematic conditional sidebar rendering
 - `src/main/services/llm/embedding.service.ts` - Fixed vector dimension issue and unreachable code
 - `CHANGELOG.md` - Added fix documentation
 
 **Testing Status**: TypeScript compilation successful, no type errors found
 
-**User Impact**: 
+**User Impact**:
+
 - Project navigation now works properly without losing sidebar access
 - Code analysis/indexing will complete successfully regardless of embedding provider choice
 - Improved reliability and user experience in project management workflow
@@ -2631,23 +3073,27 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Analysis Completed
 
 **Review Findings**:
+
 - **Strengths Identified**: Solid multi-agent architecture with three-phase workflow (Planning→Execution→Review), autonomous execution with safety limits, comprehensive tool system (6 tools + service invocation), real-time WebSocket integration
 - **Critical Issues Found**: Hardcoded model/provider configuration, security vulnerabilities in tool system, no error recovery mechanisms, limited collaboration patterns
 - **Missing Features**: Custom agent creation, advanced workflows (parallel execution, voting), enhanced UI controls, specialized agent library
 
 **Major Concerns Discovered**:
+
 - **Security Risk**: `callSystem` tool can invoke any service method without restrictions - potential system damage
 - **Configuration Lock**: Hardcoded to `gpt-4o`+`openai` with TODO comment in code (line 193)
 - **Poor Error Recovery**: Step failure stops entire session with no retry logic
 - **Limited Agent Types**: Only 3 fixed agents (planner, executor, reviewer) - no customization
 
 **Strategic Roadmap Created**:
+
 - **Phase 1** (Critical): Fix model configuration, implement tool security, add error recovery
 - **Phase 2** (High Priority): Custom agent system, enhanced UI controls, session templates
 - **Phase 3** (Advanced): Multi-agent workflows, specialized agents, advanced planning
 - **Phase 4** (Platform): Analytics, integrations, cloud-native features
 
 **Documentation Added**:
+
 - `docs/TODO/council.md` - Comprehensive 30+ item roadmap with security analysis and implementation phases
 
 ### 2026-01-23: Project System Comprehensive Review & Roadmap
@@ -2655,17 +3101,20 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Analysis Completed
 
 **Review Findings**:
+
 - **Strengths Identified**: Intelligent project analysis (40+ languages), rich scaffolding system (6 categories), advanced workspace integration with multi-mount support, robust PGlite database persistence
 - **Critical Issues Found**: Type safety problems, missing confirmation dialogs, state management race conditions, limited batch operations
 - **Missing Features**: Custom templates, project exports, environment variable management, advanced Git integration
 
 **Strategic Roadmap Created**:
+
 - **Phase 1** (Critical): Fix type safety, add confirmations, proper state management
 - **Phase 2** (High Priority): Batch operations, environment manager, project settings panel
 - **Phase 3** (Advanced): Custom templates, export system, AI-driven scaffolding
 - **Phase 4** (Platform): Dependency management, analytics dashboard, Git integration
 
 **Documentation Added**:
+
 - `docs/TODO/projects.md` - Comprehensive 50+ item roadmap with priorities and implementation phases
 
 ### 2026-01-23: Deep Research & Idea Scoring Services
@@ -2673,11 +3122,13 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **New Features**:
+
 - **Deep Research Service**: Multi-source research system performing 13 targeted queries per topic with credibility scoring and AI synthesis
 - **AI-Powered Idea Scoring**: 6-dimension scoring system (innovation, market need, feasibility, business potential, target clarity, competitive moat) with detailed breakdowns
 - **Idea Management**: Complete CRUD operations including delete, archive, restore functionality for ideas and sessions
 
 **API Enhancements**:
+
 - New IPC handlers: `ideas:deepResearch`, `ideas:validateIdea`, `ideas:scoreIdea`, `ideas:rankIdeas`, `ideas:compareIdeas`
 - Data management handlers: `ideas:deleteIdea`, `ideas:deleteSession`, `ideas:archiveIdea`, `ideas:restoreIdea`
 
@@ -2686,20 +3137,23 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **New Features**:
+
 - **Automatic Project Navigation**: When users approve an idea and create a project, they are now automatically navigated to the newly created project page instead of staying on the Ideas page. This provides a seamless workflow from idea generation to project development.
 - **Complete IPC Handler Coverage**: Added missing IPC handlers for the Ideas system that were implemented in the backend but not exposed to the renderer process.
 
 **Technical Changes**:
+
 - **IdeasPage**: Added `onNavigateToProject` callback prop to handle navigation after project creation
 - **ViewManager**: Updated to accept and pass navigation callback to IdeasPage
 - **AppShell**: Added `handleNavigateToProject` callback that reloads projects, selects the new project, and navigates to the projects view
 - **Preload Bridge**: Added 13 missing IPC handlers:
-  - Deep Research: `deepResearch`, `validateIdea`, `clearResearchCache`
-  - Scoring: `scoreIdea`, `rankIdeas`, `compareIdeas`, `quickScore`
-  - Data Management: `deleteIdea`, `deleteSession`, `archiveIdea`, `restoreIdea`, `getArchivedIdeas`
-  - Events: `onDeepResearchProgress`
+    - Deep Research: `deepResearch`, `validateIdea`, `clearResearchCache`
+    - Scoring: `scoreIdea`, `rankIdeas`, `compareIdeas`, `quickScore`
+    - Data Management: `deleteIdea`, `deleteSession`, `archiveIdea`, `restoreIdea`, `getArchivedIdeas`
+    - Events: `onDeepResearchProgress`
 
 **Files Modified**:
+
 - `src/renderer/features/ideas/IdeasPage.tsx`
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/AppShell.tsx`
@@ -2713,18 +3167,21 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **New Features**:
+
 - **Strategic Research Pipeline**: Expanded the `IdeaGeneratorService` with a 12-stage analysis framework, generating Personas, SWOT matrices, GTM plans, and Financial strategies.
 - **Local & Free Image Generation**: Introduced `LocalImageService` supporting Ollama, SD-WebUI (A1111), and Pollinations.ai (Flux) as a no-key fallback.
 - **Research Assistant RAG**: Integrated interactive research chat side-panel for deep-diving into generated project insights.
 - **Roadmap Expansion**: Audited and expanded `docs/TODO.md` with 7 new strategic milestones focusing on local AI maturity and research exports.
 
 **Technical Changes**:
+
 - **Services**: Created `LocalImageService`, refactored `LogoService` and `IdeaGeneratorService` to prioritize local hardware and community APIs.
 - **Settings**: Updated `AppSettings` schema to include granular image provider configurations.
 - **Type Safety**: Improved type safety and error boundaries in the 12-stage generation pipeline.
 - **Documentation**: Updated `walkthrough.md`, `i18n.md`, and the entire `docs/TODO/` system.
 
 **Files Modified**:
+
 - `CHANGELOG.md`
 - `docs/TODO.md`
 - `docs/TODO/ideas.md`
@@ -2739,13 +3196,15 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **Features**:
+
 - **Ideas View Refactoring**: Modularized the complex `IdeasView.tsx` by extracting sub-components: `IdeaList`, `IdeaDetail`, `SessionConfig`, `ResearchVisualizer`, and `GenerationProgress`. Improved readability and maintainability.
 - **Enhanced Type Safety**: Fixed several type mismatches in the Ideas feature and shared Project types.
 - **Sidebar Integration**: Added 'Ideas' view to the Sidebar navigation with proper type support.
 
 **Technical Changes**:
+
 - **Refactoring**: Extracted 5 sub-components from `IdeasView.tsx` into `src/renderer/features/ideas/components/`.
-- **Type Fixes**: 
+- **Type Fixes**:
     - Updated `DatabaseService` to use shared `WorkspaceMount` type and provide `updatedAt` field.
     - Updated shared `Project` type to include `updatedAt: Date`.
     - Fixed `AppView` and `SidebarProps` to consistently include `'ideas'`.
@@ -2753,6 +3212,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Service Layer**: Fixed type casting in `IdeaGeneratorService` for `ResearchData` parsing.
 
 **Files Modified**:
+
 - `src/renderer/features/ideas/IdeasView.tsx`
 - `src/renderer/features/ideas/components/IdeaList.tsx`
 - `src/renderer/features/ideas/components/IdeaDetail.tsx`
@@ -2771,11 +3231,13 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed (Phase 1 & 3)
 
 **New Features**:
+
 - **Token Usage Database Layer**: Added comprehensive token usage tracking infrastructure including migration #17 with `token_usage` table, `addTokenUsage()` and `getTokenUsageStats()` methods in DatabaseService.
 - **Token Statistics API**: New IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) for frontend access to token usage statistics with aggregation by provider, model, and timeline.
 - **Account Email Visibility**: Updated `AccountRow.tsx` to always display email address prominently for clear account identification.
 
 **Technical Changes**:
+
 - `src/main/services/data/migrations.ts`: Added migration #17 with `token_usage` table schema.
 - `src/main/services/data/database.service.ts`: Added `addTokenUsage()`, `getTokenUsageStats()`, and `getPeriodMs()` methods.
 - `src/main/ipc/db.ts`: Added `db:getTokenStats` and `db:addTokenUsage` IPC handlers.
@@ -2785,6 +3247,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - `src/renderer/features/settings/components/accounts/AccountRow.tsx`: Email now always displayed.
 
 **Files Modified**:
+
 - `src/main/services/data/migrations.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/ipc/db.ts`
@@ -2798,17 +3261,20 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed
 
 **New Features**:
+
 - **Multi-Model Response Tabs**: When users select multiple models (up to 4) using Shift+Click, the system now sends requests to ALL selected models in parallel and displays responses in a tabbed interface instead of chevron navigation.
 - **Prompt Enhancement Button**: Added a sparkle button (✨) in the chat input area that enhances user prompts using AI. Automatically selects Ollama models if available, otherwise falls back to Anthropic/Copilot lightweight models.
 - **Improved Chat Titles**: Fixed chat title generation to properly use the assistant's first response line instead of the user's input message.
 
 **Technical Changes**:
+
 - `useChatGenerator.ts`: Added `generateMultiModelResponse` function for parallel multi-model responses.
 - `MessageBubble.tsx`: Replaced chevron navigation with styled tab buttons for multi-model variants.
 - `ChatInput.tsx`: Added `handleEnhancePrompt` function and enhance button UI.
 - `process-stream.ts`: Fixed title generation condition from `messages.length <= 1` to `messages.length <= 2`.
 
 **Files Modified**:
+
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/renderer/features/chat/hooks/useChatManager.ts`
 - `src/renderer/features/chat/hooks/process-stream.ts`
@@ -2822,6 +3288,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed (00:55:00)
 
 **Fixes**:
+
 - **Rust token-service**: Fixed a critical panic when printing to `stdout` in a detached state (Windows pipe closing). Replaced `println!` with non-panicking `writeln!`.
 - **ProcessManagerService**:
     - Implemented **auto-restart logic** for persistent services (token-service, model-service, etc.) if they crash with a non-zero exit code.
@@ -2833,6 +3300,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Service Stability**: Rebuilt all native binaries to include the Rust stability fix.
 
 **Files Modified**:
+
 - `src/services/token-service/src/main.rs`: Replaced panicking `println!` with robust logging.
 - `src/main/services/system/process-manager.service.ts`: Added auto-restart and timeout implementation.
 - `resources/bin/*.exe`: Updated binaries via a clean rebuild.
@@ -2842,19 +3310,23 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed (20:30:00)
 
 **Bug Fixed**:
+
 - When a Claude/Antigravity/Codex account was unlinked (logout), the Rust `token-service` continued attempting to refresh the old account's tokens, causing "invalid_grant" errors.
 
 **Changes**:
+
 - **Rust token-service**: Added `/unregister` endpoint to remove tokens from the background refresh queue when accounts are unlinked.
 - **TypeScript AuthService**: Now emits `account:unlinked` event when an account is removed.
 - **TypeScript TokenService**: Listens for `account:unlinked` events and calls `/unregister` on the Rust token-service to stop refreshing deleted accounts.
 - **Event System**: Added new `account:unlinked` event type to `SystemEvents` interface.
 
 ### 2026-01-21: Bug Fixes
+
 - **PromptTemplatesService**: Fixed `TS5076` error where `||` and `??` operations were mixed without parentheses in the `search` method. Improved logic to ensure boolean results for the search filter.
 - **DI Container**: Updated `AuthService` registration to include `EventBusService` dependency.
 
 **Files Modified**:
+
 - `src/services/token-service/src/main.rs`: Added `UnregisterRequest` struct and `handle_unregister` handler.
 - `src/shared/types/events.ts`: Added `account:unlinked` event type.
 - `src/main/services/security/auth.service.ts`: Added EventBusService dependency and event emission.
@@ -2863,6 +3335,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - `src/tests/main/services/security/auth.migration.test.ts`: Updated mock for new constructor signature.
 
 ### Batch 10: MCP Plugin Architecture (2026-01-27)
+
 - **Refactoring**: Implemented modular MCP Plugin Architecture.
 - **Service Layer**: Created `McpPluginService` to manage tool lifecycles.
 - **Plugin System**: Added `IMcpPlugin` interface with `InternalMcpPlugin` and `ExternalMcpPlugin` implementations.
@@ -2874,6 +3347,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Completed (20:15:00)
 
 **Core Architectural Changes**:
+
 - **Bidirectional Persistence** ✅:
     - Implemented `POST /api/auth/accounts/:id` in `AuthAPIService.ts` to receive token updates from external services.
     - Updated Go proxy's `HTTPAuthStore.Save` to push refreshed tokens back to Tandem's database immediately upon refresh.
@@ -2884,6 +3358,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Improved security by ensuring zero plain-text/loose JSON credentials reside in the `auth/` directory.
 
 **Build & Stability Fixes**:
+
 - **Renderer UI** ✅:
     - Fixed polymorphic ref type mismatch in `AnimatedCard.tsx` (TS2322).
     - Implemented a robust callback ref pattern to handle dynamic components (`div`, `button`, `article`) while satisfying strict intersection types.
@@ -2893,6 +3368,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - **Themes**: Resolved type mismatch in `theme-store.util.ts` by providing a non-null schema to `safeJsonParse`.
 
 **Verification**:
+
 - Verified full build chain consistency: `tsc` → `lint` → `vite build` → `native build`.
 - Final build succeeded at 20:12:00.
 
@@ -2901,34 +3377,36 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Fixed 113 warnings (1044 → 931)
 
 **Fixes Applied**:
+
 - **Nullish Coalescing** (`prefer-nullish-coalescing`): 83 fixes
-  - Converted `||` to `??` across IPC handlers, services, and renderer components
-  - Files: `ipc/chat.ts`, `ipc/git.ts`, `ipc/ollama.ts`, `ipc/process.ts`, `ipc/logging.ts`
-  - Services: `mcp/dispatcher.ts`, `mcp/registry.ts`, repositories
-  - Renderer: `ChatContext.tsx`, `SettingsContext.tsx`, feature components
+    - Converted `||` to `??` across IPC handlers, services, and renderer components
+    - Files: `ipc/chat.ts`, `ipc/git.ts`, `ipc/ollama.ts`, `ipc/process.ts`, `ipc/logging.ts`
+    - Services: `mcp/dispatcher.ts`, `mcp/registry.ts`, repositories
+    - Renderer: `ChatContext.tsx`, `SettingsContext.tsx`, feature components
 
 - **Explicit Any Types** (`no-explicit-any`): 12 fixes
-  - `event-bus.service.ts`: Changed `any[]` to `unknown[]` for event args
-  - `theme-store.util.ts`: Added proper theme config types
-  - `App.tsx`: Fixed view parameter to use proper union type
-  - `AnimatedCard.tsx`: Added proper motion component types
-  - `ChatContext.tsx`: Typed event handlers properly
-  - `Terminal.tsx`: Used type assertions for xterm internal properties
+    - `event-bus.service.ts`: Changed `any[]` to `unknown[]` for event args
+    - `theme-store.util.ts`: Added proper theme config types
+    - `App.tsx`: Fixed view parameter to use proper union type
+    - `AnimatedCard.tsx`: Added proper motion component types
+    - `ChatContext.tsx`: Typed event handlers properly
+    - `Terminal.tsx`: Used type assertions for xterm internal properties
 
 - **Unnecessary Conditions** (`no-unnecessary-condition`): 8 fixes
-  - Removed unnecessary nullish coalescing where types guaranteed values
-  - Fixed `ipc/screenshot.ts`: Added undefined check with proper type assertion
-  - Fixed `logging/logger.ts`: Removed dead else branch
+    - Removed unnecessary nullish coalescing where types guaranteed values
+    - Fixed `ipc/screenshot.ts`: Added undefined check with proper type assertion
+    - Fixed `logging/logger.ts`: Removed dead else branch
 
 - **Misused Promises** (`no-misused-promises`): 5 fixes
-  - `ipc/settings.ts`: Wrapped async `updateOllamaConnection()` with `void Promise.resolve().catch()`
-  - Various IPC handlers: Added proper void handling
+    - `ipc/settings.ts`: Wrapped async `updateOllamaConnection()` with `void Promise.resolve().catch()`
+    - Various IPC handlers: Added proper void handling
 
 - **Unused Variables**: 5 fixes
-  - Prefixed unused parameters with underscore (`_processManager`, `_event`)
-  - Removed unused imports (`os` from proxy-process.service.ts)
+    - Prefixed unused parameters with underscore (`_processManager`, `_event`)
+    - Removed unused imports (`os` from proxy-process.service.ts)
 
 **Remaining Warnings (931)**:
+
 - `no-unnecessary-condition`: 402
 - `complexity`: 238 (requires function refactoring)
 - `prefer-nullish-coalescing`: 218 (complex patterns)
@@ -2938,6 +3416,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - `max-params`: 9
 
 ### 2026-01-19: Codebase Audit & Security Review
+
 - **Audit Report Created**: Generated `docs/AUDIT_REPORT_2026_01_19.md` covering technical debt, type safety, and security.
 - **Security Verification**: Confirmed safety of `dangerouslySetInnerHTML` usage in React components (correctly sanitized).
 - **Compliance Check**: Verified adherence to `AI_RULES.md` (no forbidden patterns found).
@@ -2947,12 +3426,14 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Status**: Fixed 351 warnings per AI_RULES Rule 10 (25% reduction: 1408 → 1057)
 
 **Phase 1 - Automated Fixes (200 warnings)**:
+
 - ✅ **Nullish Coalescing**: Replaced 191 instances of `||` with `??` operator (64 files)
 - ✅ **Console Statements**: Converted 42 renderer console.log/info/debug to console.warn (14 files)
 - ✅ **Alert Calls**: Replaced 17 alert() with console.warn() in renderer UI (5 files)
 - ✅ **Non-Null Assertions**: Removed 18 instances of `!` operators (15 files)
 
 **Phase 2 - Manual Fixes via Task Agents (151 warnings)**:
+
 - ✅ **Unused Variables** (31 fixed): Removed unused imports (uuidv4, fsPromises, app, useEffect, etc.), prefixed unused parameters with underscore
 - ✅ **Explicit Any Types** (53 fixed): Replaced all `any` with proper types (`unknown`, `Record<string, unknown>`, `JsonValue`, proper interfaces)
 - ✅ **Floating Promises** (81 fixed): Added `void` prefix for fire-and-forget, `await` for critical paths, `.catch()` for error handling
@@ -2960,6 +3441,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - ✅ **Console/Alert** (25 fixed): Fixed remaining console statements and replaced alert/confirm/prompt with console.warn
 
 **Automation Scripts Created**:
+
 - `scripts/fix-easy-eslint.ps1` - Nullish coalescing operator fixes
 - `scripts/fix-eslint-warnings.ps1` - Console.log to appLogger.info (main process)
 - `scripts/fix-renderer-console.ps1` - Renderer console statement fixes
@@ -2968,6 +3450,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - `scripts/fix-manual-warnings.ps1` - Manual warning pattern detection
 
 **Remaining Warnings (1057)**:
+
 - 428 no-unnecessary-condition (type system improvements, may require tsconfig changes)
 - 298 prefer-nullish-coalescing (complex patterns requiring manual review)
 - 89 no-misused-promises (async/await context issues)
@@ -2978,6 +3461,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Total Changes**: 351 warnings eliminated
 
 ### 2026-01-19: Critical Security & Architecture Improvements
+
 - **Security Enhancements** ✅:
     - **SSH Path Traversal Protection**: Added `validateRemotePath()` method to `SSHService` to prevent path traversal attacks across 9 file operation methods (listDirectory, readFile, writeFile, deleteFile, deleteDirectory, createDirectory, rename, uploadFile, downloadFile). Paths are now validated against allowed base directories.
     - **Safe JSON Parsing**: Added `safeJsonParse<T>()` utility to `sanitize.util.ts` with proper error handling and default fallback values.
@@ -3009,6 +3493,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 **Lines of Code Changed**: ~150+ (security-critical fixes)
 
 ### 2026-01-19: Phase 18 - Internationalization (Completed)
+
 - **UI Components**:
     - Replaced hardcoded strings with `t()` calls in `MCPStore.tsx`, `ModelComparison.tsx`, `ProjectDashboard.tsx`, `AgentDashboard.tsx`, `AgentCouncil.tsx`, and `ToolDisplay.tsx`.
     - Resolved key collisions (e.g., `gitStatus`) and updated `ToolDisplay` to properly handle nested translations.
@@ -3017,6 +3502,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Verified strict type safety for all new translation keys.
 
 ### 2026-01-18: Claude Authentication & Service Reliability
+
 - **Claude Authentication**:
     - Implemented **headless session capture** for Claude (claude.ai) using Electron cookies, moving away from internal browser windows.
     - Added **manual sessionKey fallback** in the UI for cases where automatic capture fails.
@@ -3029,12 +3515,14 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Achieved cleaner type-check results by adding missing types to `@shared/types/quota`.
 
 ### 2026-01-17: Antigravity Model Fetching Refinement
+
 - **Antigravity Executor**:
     - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.
     - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.
     - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application.
 
 ### 2026-01-16: Phase 20 - Independent Microservices Architecture
+
 - **Microservices Refactoring**:
     - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.
     - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\Tandem\services\{service}.port` for discovery.
@@ -3052,6 +3540,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Tandem now minimizes to **System Tray** by default instead of closing.
 
 ### 2026-01-16: Phase 19 - Technical Debt & Security (Current)
+
 - **Security**:
     - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.
     - Implemented robust command argument handling for Windows platforms.
@@ -3068,6 +3557,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`.
 
 ### 2026-01-16: Phase 18 - Internationalization (Prioritized)
+
 - **Hardcoded String Fixes**:
     - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).
     - Replaced hardcoded placeholders in `SSHManager.tsx` and `NginxWizard.tsx`.
@@ -3079,6 +3569,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Fixed hardcoded Turkish text in `AdvancedTab.tsx` presets.
 
 ### 2026-01-16: Phase 17 - Stability & Reliability
+
 - **Critical Fixes**:
     - Fixed production crash ("Blank Page") by correcting `preload` and `index.html` path resolution in `src/main/main.ts`.
     - Resolved React crash (circular dependency) by removing problematic `react-vendor` chunk in `vite.config.ts`.
@@ -3089,6 +3580,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Added `data-testid` to Window Actions and critical UI flows.
 
 ### 2026-01-15: Phase 16 - Bundle Optimization
+
 - **Performance**:
     - Implemented granular code splitting in `vite.config.ts`.
     - Created separate chunks for heavy dependencies: `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.
@@ -3096,6 +3588,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Reduced initial bundle load by deferring unused features.
 
 ### 2026-01-15: Phase 15 - Linting Recovery & Cleanup
+
 - **Project Structure**:
     - Deleted redundant `job-scheduler.service.test.ts` (consolidated into `services/system/`).
 - **Development Health**:
@@ -3105,6 +3598,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Updated `TODO.md` to mark Service Architecture, Database Migration, and Testing gaps as resolved.
 
 ### 2026-01-15: Phase 14 - Deployment Readiness
+
 - **Build Fixes**:
     - Fixed unused `init` method error in `ProxyService` by implementing `initialize`.
     - Removed unused `fs` import in `proxy.service.test.ts` to fix `tsc` error.
@@ -3114,6 +3608,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - **Build Verified**: `npm run build` passes successfully. Code is ready for deployment.
 
 ### 2026-01-15: Phase 13 - Type Safety & Service Architecture
+
 - **Type Safety**:
     - Verified `quota.service.ts`, `preload.ts`, and `ipc/ollama.ts` have no `any` types.
 - **Async Operations**:
@@ -3122,6 +3617,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Audited 30+ services extending `BaseService` for consistent lifecycle management.
 
 ### 2026-01-15: Phase 12 - Code Quality & E2E Testing
+
 - **Code Quality**:
     - Verified ESLint configuration runs successfully on individual files.
     - Audited `TerminalPanel.tsx` (9 useEffect hooks) - all have proper cleanup.
@@ -3131,6 +3627,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Verified `app.spec.ts` covers app launch.
 
 ### 2026-01-15: Phase 11 - Test Coverage & Database Optimization
+
 - **Test Coverage**:
     - Added `JobSchedulerService` unit tests (7 tests) covering scheduling, recurring jobs, and cleanup.
     - Enhanced `ModelRegistryService` unit tests (8 tests) with proper types and error handling coverage.
@@ -3140,6 +3637,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Verified `stream-parser.util.ts` and `agent.service.ts` have no `any` types.
 
 ### 2026-01-15: Phase 10 - Full Database Migration
+
 - **Legacy Data Migration**:
     - Implemented `handleChatMigration` and `handleMessageMigration` in `DatabaseService` to import legacy SQLite data into PGlite.
     - Added `chatsPath` and `messagesPath` to `DatabaseService` constructor for migration path management.
@@ -3152,6 +3650,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Created `walkthrough.md` documenting the migration implementation.
 
 ### 2026-01-15: Phase 9 - Comprehensive Error Handling & Testing Pass
+
 - **ProxyService Modernization**:
     - Complete reconstruction of `ProxyService` to eliminate all `any` types and modularize high-complexity logic.
     - Standardized error handling with robust logging via `appLogger`.
@@ -3167,6 +3666,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Optimized `PGlite` and `electron.net` mocks for better stability in the development environment.
 
 ### 2026-01-15: Phase 8 - Global Async & Type Safety Pass
+
 - **Async Modernization**:
     - Converted `TerminalService`, `GitService`, `MigrationService`, and `ExportService` to use `fs.promises` for all file I/O.
     - Optimized the main process responsiveness by eliminating blocking synchronous calls in core data services.
@@ -3181,6 +3681,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Verified and improved the `QuotaService` unit test suite.
 
 ### 2026-01-15: Phase 7 - Service Architecture Refactoring & SSH Modernization
+
 - **Service Architecture**:
     - Systematically relocated 30+ services into domain-specific folders (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).
     - Standardized directory structure for better modularity and maintainability.
@@ -3197,7 +3698,8 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
     - Verified and updated all IPC handlers to work with the refactored service structure.
 
 ### 2026-01-15: Phase 5 - Critical Async Conversions & Type Safety
-- **Database Service**: 
+
+- **Database Service**:
     - Successfully removed ALL explicit `any` types from `DatabaseService.ts` (2,200+ lines).
     - Modularized high-complexity methods (`searchChats`, `getDetailedStats`, `performChatDuplication`) into granular helpers, satisfying strict cyclomatic complexity limits.
     - Restored and standardized legacy migration paths for `Folders` and `Prompts`, ensuring reliable data transition to PostgreSQL.
@@ -3214,7 +3716,8 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Verification**: Zero build errors, zero type-check failures, and zero critical lints remaining in the service layer.
 
 ### 2026-01-15: Phase 6 - Test Infrastructure Repair & Verification
-- **Test Configuration**: 
+
+- **Test Configuration**:
     - Resolved `vitest` vs `playwright` conflict by explicitly excluding E2E tests from the unit test runner in `vitest.config.ts`.
 - **Test Fixes**:
     - **LLM Settings**: Fixed `ReferenceError` in integration tests by correcting `vi.mock` hoisting logic.
@@ -3223,13 +3726,16 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Verification Status**:
     - **Pass Rate**: 100% (298/298 tests passed).
     - **Coverage**: All 36 test suites executed successfully.
+
 ### 2026-01-15: Phase 4 - Silent Error Handling Cleanup
+
 - **Error Handling**: Systematically eliminated silent error swallowing in `UtilityService`, `SecurityService`, `SystemService`, and `QuotaService`. All catch blocks now log errors via `appLogger`.
 - **Standardization**: Refactored `BaseService` to inherit from `appLogger`, providing `this.logError`, `this.logDebug`, etc., to all derived services.
 - **Refactoring**: Significantly reduced cyclomatic complexity in `logger.ts` (`init`, `getStats`, `formatValue`) and replaced forbidden `require('electron')` with safe ESM imports.
 - **QuotaService**: Fixed unawaited promises, replaced debug `console.log` with `appLogger.debug`, and resolved numerous logical operator and type lints.
 
 ### 2026-01-15: Critical TODO Items Resolved
+
 - **TypeScript**: Fixed 13 compilation errors across `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts`, and `audit-log.service.test.ts`.
 - **Logging**: Replaced ~25 `console.log`/`console.error` statements with `appLogger` in `main.ts`, `dispatcher.ts`, and `window.ts`.
 - **Types**: Added `idToken` and `email` fields to `AuthToken` interface.
@@ -3241,6 +3747,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Code Quality**: Fixed 22+ `||` to `??` nullish coalescing conversions in `token.service.ts` and `ssh.service.ts`. Fixed unused variables.
 
 ### 2026-01-15: Build Fixes & Type Safety
+
 - **SettingsService**: Converted all synchronous file operations (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) to async equivalents (`fs.promises`). Added `initialize()` lifecycle method for proper async loading.
 - **BackupService**: Already using async file operations - verified and confirmed no changes needed.
 - **Tests**: Updated `settings.service.test.ts` to use async patterns and mock `fs.promises` API.
@@ -3254,6 +3761,7 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Types**: Aligned `CouncilSession` status types across shared and database definitions (added `planning`, `reviewing` states).
 
 ### 2026-01-15: Database Migrations (Legacy JSON to PostgreSQL)
+
 - **AuthService**: Migrated from file-based JSON storage to `auth_tokens` table. Implemented secure token encryption/decryption in the database layer.
 - **TokenService**: Complete rewrite to remove synchronous file I/O dependencies. Now uses `AuthService` for token management and `JobSchedulerService` for refresh tasks.
 - **CopilotService**: Updated to support asynchronous token retrieval from `AuthService`, resolving startup race conditions.
@@ -3265,16 +3773,17 @@ eventBus.emitCustom('my:custom:event', { data: 'value' })
 - **Schema**: Added new tables: `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`.
 
 ### 2026-01-15: Security & Fixes
+
 - **Security Check**: Fixed critical path traversal and shell injection vulnerabilities in `SSHService`.
 - **Memory Leak**: Fixed memory leak in `TokenService` by implementing proper interval cleanup.
 - **Secrets Management**: Removed hardcoded credentials and migrated vendor secrets (iFlow, Qwen, Codex, Claude, Gemini) to environment variables.
 - **XSS Protection**: Enforced `DOMPurify` sanitization for Mermaid diagrams in `MarkdownRenderer` and `MessageBubble`.
 - **Injection Prevention**: Hardened `LocalAIService` by removing unnecessary `shell: true`.
 
-
 ### 2026-01-14: Stats & Performance
+
 - **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats`- [x] Development of the Statistics dashboard (Charts and Token Usage)
-rectly.
+  rectly.
 - **DatabaseService**: Replaced `console` calls with `appLogger` and cleaned up relative imports.
 - **SettingsService**: Integrated `appLogger`, cleaned up relative imports, and enhanced `JSON.parse` with recovery/error handling.
 - **SecurityService**: Integrated `appLogger` and improved error handling for encryption/decryption.
@@ -3286,11 +3795,12 @@ rectly.
 - **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).
 - **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.
 - **Chat**: Resolved "placeholder ghosting" when API generation fails.
-- - Replaced silent error catches and console calls with `appLogger` across core services.
+-   - Replaced silent error catches and console calls with `appLogger` across core services.
 - **Docs**: Consolidated 19 markdown files into 6 themed documents.
 - **Audit**: Completed initial small cleanup tasks from `TODO.md`.
 
 ### 2026-01-14: Build Improvements
+
 - **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.
 - **IPC**: Standardized `onStreamChunk` return types.
 
@@ -3299,6 +3809,7 @@ rectly.
 ## Version History
 
 ### v1.2.0: Unified Microservice Sync
+
 - Transitioned to HTTP-based bidirectional token synchronization.
 - Eliminated persistent file-based credentials for improved security.
 - Standardized cross-process communication between Electron and Go/Rust services.
@@ -3306,6 +3817,7 @@ rectly.
 ### v1.1.0: Multi-LLM Support
 
 ### v1.0.0: Initial Release
+
 - Basic chat functionality with OpenAI and Anthropic.
 - Local Ollama support.
 - Project management view.

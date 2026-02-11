@@ -2,7 +2,7 @@
  * Simple CSS-based Resizable Layout
  * No external dependencies, no useLayoutEffect issues
  */
-import React, { useCallback,useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -27,7 +27,7 @@ export const ResizablePane: React.FC<ResizablePaneProps> = ({
     initialSize = 50,
     className,
     onResize,
-    direction = 'horizontal'
+    direction = 'horizontal',
 }) => {
     const [size, setSize] = useState(initialSize);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +51,7 @@ export const ResizablePane: React.FC<ResizablePaneProps> = ({
                 width: direction === 'horizontal' ? `${size}%` : '100%',
                 height: direction === 'vertical' ? `${size}%` : '100%',
                 flexShrink: 0,
-                flexGrow: 0
+                flexGrow: 0,
             }}
         >
             {children}
@@ -67,14 +67,19 @@ export const ResizableHandle: React.FC<{
     const [isDragging, setIsDragging] = useState(false);
     const startPosRef = useRef<number>(0);
 
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-        startPosRef.current = direction === 'horizontal' ? e.clientX : e.clientY;
-    }, [direction]);
+    const handleMouseDown = useCallback(
+        (e: React.MouseEvent) => {
+            e.preventDefault();
+            setIsDragging(true);
+            startPosRef.current = direction === 'horizontal' ? e.clientX : e.clientY;
+        },
+        [direction]
+    );
 
     useEffect(() => {
-        if (!isDragging) {return;}
+        if (!isDragging) {
+            return;
+        }
 
         const handleMouseMove = (e: MouseEvent) => {
             const currentPos = direction === 'horizontal' ? e.clientX : e.clientY;
@@ -108,13 +113,15 @@ export const ResizableHandle: React.FC<{
             style={{
                 width: direction === 'horizontal' ? '4px' : '100%',
                 height: direction === 'vertical' ? '4px' : '100%',
-                flexShrink: 0
+                flexShrink: 0,
             }}
         >
-            <div className={cn(
-                'rounded-full bg-border/50 group-hover:bg-primary/50 transition-colors',
-                direction === 'horizontal' ? 'h-8 w-1' : 'w-8 h-1'
-            )} />
+            <div
+                className={cn(
+                    'rounded-full bg-border/50 group-hover:bg-primary/50 transition-colors',
+                    direction === 'horizontal' ? 'h-8 w-1' : 'w-8 h-1'
+                )}
+            />
         </div>
     );
 };
@@ -122,7 +129,7 @@ export const ResizableHandle: React.FC<{
 export const ResizableContainer: React.FC<ResizableContainerProps> = ({
     children,
     direction = 'horizontal',
-    className
+    className,
 }) => {
     return (
         <div
@@ -136,3 +143,7 @@ export const ResizableContainer: React.FC<ResizableContainerProps> = ({
         </div>
     );
 };
+
+ResizablePane.displayName = 'ResizablePane';
+ResizableHandle.displayName = 'ResizableHandle';
+ResizableContainer.displayName = 'ResizableContainer';

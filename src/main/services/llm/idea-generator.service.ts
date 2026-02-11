@@ -32,7 +32,7 @@ import {
     SWOTAnalysis,
     TechChoice,
     TechStack,
-    UserPersona
+    UserPersona,
 } from '@shared/types/ideas';
 import { Project } from '@shared/types/project';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -54,14 +54,14 @@ export class IdeaGeneratorService extends BaseService {
 
     constructor(
         private deps: {
-            databaseService: DatabaseService,
-            llmService: LLMService,
-            marketResearchService: MarketResearchService,
-            projectScaffoldService: ProjectScaffoldService,
-            authService: AuthService,
-            eventBus: EventBusService,
-            localImageService: LocalImageService,
-            brainService: BrainService
+            databaseService: DatabaseService;
+            llmService: LLMService;
+            marketResearchService: MarketResearchService;
+            projectScaffoldService: ProjectScaffoldService;
+            authService: AuthService;
+            eventBus: EventBusService;
+            localImageService: LocalImageService;
+            brainService: BrainService;
         }
     ) {
         super('IdeaGeneratorService');
@@ -79,7 +79,11 @@ export class IdeaGeneratorService extends BaseService {
             await this.ensureTables(db);
             appLogger.info(this.name, 'Idea generator service initialized');
         } catch (error) {
-            appLogger.error(this.name, 'Failed to initialize idea generator service', error as Error);
+            appLogger.error(
+                this.name,
+                'Failed to initialize idea generator service',
+                error as Error
+            );
             throw error;
         }
     }
@@ -97,10 +101,14 @@ export class IdeaGeneratorService extends BaseService {
      */
     private async ensureTables(db: DatabaseAdapter): Promise<void> {
         // Check if idea_sessions table exists, create if not
-        const tableCheck = await db.prepare(`
+        const tableCheck = await db
+            .prepare(
+                `
             SELECT name FROM sqlite_master 
             WHERE type='table' AND name='idea_sessions'
-        `).get<{ name: string }>();
+        `
+            )
+            .get<{ name: string }>();
 
         if (!tableCheck) {
             this.logInfo('Creating idea_sessions table');
@@ -114,27 +122,33 @@ export class IdeaGeneratorService extends BaseService {
      * Create a new idea generation session
      */
     async createSession(config: IdeaSessionConfig): Promise<IdeaSession> {
-        this.logInfo(`Creating idea session: model=${config.model}, categories=${config.categories.join(', ')}`);
+        this.logInfo(
+            `Creating idea session: model=${config.model}, categories=${config.categories.join(', ')}`
+        );
 
         const db = await this.getDb();
         const id = uuidv4();
         const now = Date.now();
 
-        await db.prepare(`
+        await db
+            .prepare(
+                `
             INSERT INTO idea_sessions (id, model, provider, categories, max_ideas, ideas_generated, status, custom_prompt, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            id,
-            config.model,
-            config.provider,
-            JSON.stringify(config.categories),
-            config.maxIdeas,
-            0,
-            'active',
-            config.customPrompt ?? null,
-            now,
-            now
-        );
+        `
+            )
+            .run(
+                id,
+                config.model,
+                config.provider,
+                JSON.stringify(config.categories),
+                config.maxIdeas,
+                0,
+                'active',
+                config.customPrompt ?? null,
+                now,
+                now
+            );
 
         return {
             id,
@@ -146,7 +160,7 @@ export class IdeaGeneratorService extends BaseService {
             status: 'active',
             customPrompt: config.customPrompt,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
         };
     }
 
@@ -155,7 +169,9 @@ export class IdeaGeneratorService extends BaseService {
      */
     async getSession(id: string): Promise<IdeaSession | null> {
         const db = await this.getDb();
-        const row = await db.prepare('SELECT * FROM idea_sessions WHERE id = ?').get<JsonObject>(id);
+        const row = await db
+            .prepare('SELECT * FROM idea_sessions WHERE id = ?')
+            .get<JsonObject>(id);
         return row ? this.mapRowToSession(row) : null;
     }
 
@@ -164,7 +180,9 @@ export class IdeaGeneratorService extends BaseService {
      */
     async getSessions(): Promise<IdeaSession[]> {
         const db = await this.getDb();
-        const rows = await db.prepare('SELECT * FROM idea_sessions ORDER BY created_at DESC').all<JsonObject>();
+        const rows = await db
+            .prepare('SELECT * FROM idea_sessions ORDER BY created_at DESC')
+            .all<JsonObject>();
         return rows.map(row => this.mapRowToSession(row));
     }
 
@@ -173,7 +191,8 @@ export class IdeaGeneratorService extends BaseService {
      */
     async updateSessionStatus(id: string, status: IdeaSessionStatus): Promise<void> {
         const db = await this.getDb();
-        await db.prepare('UPDATE idea_sessions SET status = ?, updated_at = ? WHERE id = ?')
+        await db
+            .prepare('UPDATE idea_sessions SET status = ?, updated_at = ? WHERE id = ?')
             .run(status, Date.now(), id);
     }
 
@@ -189,17 +208,19 @@ export class IdeaGeneratorService extends BaseService {
      * Generate a quick market research preview (lightweight, fast)
      * Used before full research to validate category choices
      */
-    async generateMarketPreview(categories: IdeaCategory[]): Promise<{
-        category: IdeaCategory
-        summary: string
-        keyTrends: string[]
-        marketSize: string
-        competition: string
-    }[]> {
+    async generateMarketPreview(categories: IdeaCategory[]): Promise<
+        {
+            category: IdeaCategory;
+            summary: string;
+            keyTrends: string[];
+            marketSize: string;
+            competition: string;
+        }[]
+    > {
         this.logInfo(`Generating market preview for categories: ${categories.join(', ')}`);
 
         const previews = await Promise.all(
-            categories.map(async (category) => {
+            categories.map(async category => {
                 const prompt = `Provide a BRIEF market overview for ${category} development in ${CURRENT_YEAR}.
 
 Include:
@@ -219,30 +240,36 @@ Respond in JSON:
 }`;
 
                 const messages: Message[] = [
-                    { id: uuidv4(), role: 'system', content: `You are a market analyst. Provide brief, data-driven insights for ${CURRENT_YEAR}. Always respond in valid JSON.`, timestamp: new Date() },
-                    { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+                    {
+                        id: uuidv4(),
+                        role: 'system',
+                        content: `You are a market analyst. Provide brief, data-driven insights for ${CURRENT_YEAR}. Always respond in valid JSON.`,
+                        timestamp: new Date(),
+                    },
+                    { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
                 ];
 
                 const response = await this.retryLLMCall(
-                    async () => await this.deps.llmService.chat(
-                        messages,
-                        'gpt-4o-mini', // Use faster/cheaper model for preview
-                        undefined,
-                        'openai'
-                    ),
+                    async () =>
+                        await this.deps.llmService.chat(
+                            messages,
+                            'gpt-4o-mini', // Use faster/cheaper model for preview
+                            undefined,
+                            'openai'
+                        ),
                     'Generate market preview'
                 );
 
                 const parsed = this.parseJsonResponse<{
-                    summary?: string
-                    keyTrends?: string[]
-                    marketSize?: string
-                    competition?: string
+                    summary?: string;
+                    keyTrends?: string[];
+                    marketSize?: string;
+                    competition?: string;
                 }>(response.content, {
                     summary: 'Market data unavailable',
                     keyTrends: [],
                     marketSize: 'Unknown',
-                    competition: 'Unknown'
+                    competition: 'Unknown',
                 });
 
                 return {
@@ -250,7 +277,7 @@ Respond in JSON:
                     summary: parsed.summary ?? 'Market data unavailable',
                     keyTrends: parsed.keyTrends ?? [],
                     marketSize: parsed.marketSize ?? 'Unknown',
-                    competition: parsed.competition ?? 'Unknown'
+                    competition: parsed.competition ?? 'Unknown',
                 };
             })
         );
@@ -277,12 +304,17 @@ Respond in JSON:
             sectors: [],
             marketTrends: [],
             competitors: [],
-            opportunities: []
+            opportunities: [],
         };
 
         try {
             // Stage 1: Initial Analysis
-            this.emitResearchProgress(sessionId, 'understanding', 10, 'Analyzing selected categories...');
+            this.emitResearchProgress(
+                sessionId,
+                'understanding',
+                10,
+                'Analyzing selected categories...'
+            );
 
             for (let i = 0; i < session.categories.length; i++) {
                 const category = session.categories[i];
@@ -290,9 +322,14 @@ Respond in JSON:
                 // Perform DEEP, granular research sequentially
                 const marketData = await this.deps.marketResearchService.getDeepMarketData(
                     category,
-                    (stageMessage) => {
+                    stageMessage => {
                         const baseProgress = 10 + Math.floor((i / session.categories.length) * 80);
-                        this.emitResearchProgress(sessionId, 'market-research', baseProgress, stageMessage);
+                        this.emitResearchProgress(
+                            sessionId,
+                            'market-research',
+                            baseProgress,
+                            stageMessage
+                        );
                     }
                 );
 
@@ -305,13 +342,13 @@ Respond in JSON:
                 if (marketData.productHuntProducts) {
                     researchData.productHuntProducts = [
                         ...(researchData.productHuntProducts ?? []),
-                        ...marketData.productHuntProducts
+                        ...marketData.productHuntProducts,
                     ];
                 }
                 if (marketData.crunchbaseCompanies) {
                     researchData.crunchbaseCompanies = [
                         ...(researchData.crunchbaseCompanies ?? []),
-                        ...marketData.crunchbaseCompanies
+                        ...marketData.crunchbaseCompanies,
                     ];
                 }
 
@@ -320,7 +357,8 @@ Respond in JSON:
 
             // Save research data to session
             const db = await this.getDb();
-            await db.prepare('UPDATE idea_sessions SET research_data = ?, updated_at = ? WHERE id = ?')
+            await db
+                .prepare('UPDATE idea_sessions SET research_data = ?, updated_at = ? WHERE id = ?')
                 .run(JSON.stringify(researchData), Date.now(), sessionId);
 
             this.emitResearchProgress(sessionId, 'complete', 100, 'Research complete!');
@@ -341,9 +379,9 @@ Respond in JSON:
      */
     private async getAllPreviousIdeas(): Promise<ProjectIdea[]> {
         const db = await this.getDb();
-        const rows = await db.prepare(
-            'SELECT * FROM project_ideas ORDER BY created_at DESC LIMIT 200'
-        ).all<JsonObject>();
+        const rows = await db
+            .prepare('SELECT * FROM project_ideas ORDER BY created_at DESC LIMIT 200')
+            .all<JsonObject>();
         return rows.map(row => this.mapRowToIdea(row));
     }
 
@@ -363,7 +401,9 @@ Respond in JSON:
 
             // Check for high word overlap (>70% similarity)
             const newWords = new Set(normalizedNew.split(/\s+/).filter(w => w.length > 2));
-            const existingWords = new Set(normalizedExisting.split(/\s+/).filter(w => w.length > 2));
+            const existingWords = new Set(
+                normalizedExisting.split(/\s+/).filter(w => w.length > 2)
+            );
 
             if (newWords.size === 0 || existingWords.size === 0) {
                 continue;
@@ -399,7 +439,10 @@ Respond in JSON:
 
         // Check description similarity
         const newDescWords = new Set(
-            newIdea.description.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+            newIdea.description
+                .toLowerCase()
+                .split(/\s+/)
+                .filter(w => w.length > 3)
         );
         if (newDescWords.size === 0) {
             return false;
@@ -407,7 +450,10 @@ Respond in JSON:
 
         for (const existing of existingIdeas) {
             const existingWords = new Set(
-                existing.description.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+                existing.description
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(w => w.length > 3)
             );
             if (existingWords.size === 0) {
                 continue;
@@ -541,7 +587,9 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             const remainingIdeas = session.maxIdeas - session.ideasGenerated;
             // Ensure research data exists, if not, run a quick version or the full pipeline
             if (!session.researchData) {
-                this.logInfo(`No research data found for session ${sessionId}, running research pipeline first...`);
+                this.logInfo(
+                    `No research data found for session ${sessionId}, running research pipeline first...`
+                );
                 await this.runResearchPipeline(sessionId);
                 // Refresh session data
                 const updatedSession = await this.getSession(sessionId);
@@ -582,7 +630,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                     previousIdeasContext,
                     sessionIdeas,
                     ideaIndex,
-                    allExisting
+                    allExisting,
                 });
 
                 // Save idea to database
@@ -591,7 +639,10 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
 
                 // Update session counter
                 const db = await this.getDb();
-                await db.prepare('UPDATE idea_sessions SET ideas_generated = ?, updated_at = ? WHERE id = ?')
+                await db
+                    .prepare(
+                        'UPDATE idea_sessions SET ideas_generated = ?, updated_at = ? WHERE id = ?'
+                    )
                     .run(ideaIndex, Date.now(), sessionId);
 
                 // Emit final completion
@@ -602,7 +653,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                     currentIdea: idea,
                     stage: 'complete',
                     stageProgress: 100,
-                    stageMessage: 'Idea fully generated'
+                    stageMessage: 'Idea fully generated',
                 });
 
                 await this.delay(500);
@@ -623,7 +674,9 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
     async regenerateIdea(ideaId: string): Promise<ProjectIdea> {
         // Get the original idea to find session and category
         const db = await this.getDb();
-        const original = await db.prepare('SELECT * FROM project_ideas WHERE id = ?').get(ideaId) as ProjectIdea | undefined;
+        const original = (await db
+            .prepare('SELECT * FROM project_ideas WHERE id = ?')
+            .get(ideaId)) as ProjectIdea | undefined;
 
         if (!original) {
             throw new Error(`Idea not found: ${ideaId}`);
@@ -658,7 +711,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             previousIdeasContext,
             sessionIdeas: [],
             ideaIndex: 1, // Single idea regeneration
-            allExisting: filteredIdeas
+            allExisting: filteredIdeas,
         });
 
         // Replace the old idea with the new one (keep same ID and timestamps)
@@ -667,25 +720,29 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
         newIdea.updatedAt = Date.now();
 
         // Update in database
-        await db.prepare(`
+        await db
+            .prepare(
+                `
             UPDATE project_ideas 
             SET title = ?, description = ?, category = ?, market_analysis = ?, 
                 tech_stack = ?, estimated_effort = ?, status = ?, roadmap = ?, 
                 competitors = ?, updated_at = ?
             WHERE id = ?
-        `).run(
-            newIdea.title,
-            newIdea.description,
-            newIdea.category,
-            newIdea.marketAnalysis ?? null,
-            newIdea.techStack ? JSON.stringify(newIdea.techStack) : null,
-            newIdea.estimatedEffort ?? null,
-            'pending', // Reset status to pending
-            newIdea.roadmap ? JSON.stringify(newIdea.roadmap) : null,
-            newIdea.ideaCompetitors ? JSON.stringify(newIdea.ideaCompetitors) : null,
-            newIdea.updatedAt,
-            ideaId
-        );
+        `
+            )
+            .run(
+                newIdea.title,
+                newIdea.description,
+                newIdea.category,
+                newIdea.marketAnalysis ?? null,
+                newIdea.techStack ? JSON.stringify(newIdea.techStack) : null,
+                newIdea.estimatedEffort ?? null,
+                'pending', // Reset status to pending
+                newIdea.roadmap ? JSON.stringify(newIdea.roadmap) : null,
+                newIdea.ideaCompetitors ? JSON.stringify(newIdea.ideaCompetitors) : null,
+                newIdea.updatedAt,
+                ideaId
+            );
 
         this.logInfo(`Successfully regenerated idea: ${ideaId}`);
 
@@ -699,14 +756,21 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
      * Run the full 9-stage pipeline for a single idea
      */
     private async runIdeaPipeline(params: {
-        session: IdeaSession
-        categoryResearch: string
-        previousIdeasContext: string
-        sessionIdeas: ProjectIdea[]
-        ideaIndex: number
-        allExisting: ProjectIdea[]
+        session: IdeaSession;
+        categoryResearch: string;
+        previousIdeasContext: string;
+        sessionIdeas: ProjectIdea[];
+        ideaIndex: number;
+        allExisting: ProjectIdea[];
     }): Promise<ProjectIdea> {
-        const { session, categoryResearch, previousIdeasContext, sessionIdeas, ideaIndex, allExisting } = params;
+        const {
+            session,
+            categoryResearch,
+            previousIdeasContext,
+            sessionIdeas,
+            ideaIndex,
+            allExisting,
+        } = params;
         const sessionId = session.id;
 
         // Select category for this idea
@@ -720,7 +784,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             totalIdeas: session.maxIdeas,
             stage: 'seed-generation',
             stageProgress: 0,
-            stageMessage: 'Generating initial idea concept...'
+            stageMessage: 'Generating initial idea concept...',
         });
 
         const seedIdea = await this.stageGenerateSeed({
@@ -730,7 +794,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             previousIdeasContext,
             sessionIdeas,
             ideaIndex,
-            allExisting
+            allExisting,
         });
         await this.delay(1500);
 
@@ -742,7 +806,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'idea-research',
             stageProgress: 15,
-            stageMessage: `Researching market for "${seedIdea.title}"...`
+            stageMessage: `Researching market for "${seedIdea.title}"...`,
         });
 
         const researchContext = await this.stageIdeaResearch(session, seedIdea);
@@ -757,7 +821,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'naming',
             stageProgress: 30,
-            stageMessage: 'Generating project name suggestions...'
+            stageMessage: 'Generating project name suggestions...',
         });
 
         const nameSuggestions = await this.stageGenerateNames(session, seedIdea, researchContext);
@@ -772,10 +836,14 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'long-description',
             stageProgress: 45,
-            stageMessage: 'Writing detailed project description...'
+            stageMessage: 'Writing detailed project description...',
         });
 
-        const { longDescription, valueProposition, explanation } = await this.stageLongDescription(session, seedIdea, researchContext);
+        const { longDescription, valueProposition, explanation } = await this.stageLongDescription(
+            session,
+            seedIdea,
+            researchContext
+        );
         seedIdea.longDescription = longDescription;
         seedIdea.valueProposition = valueProposition;
         seedIdea.explanation = explanation;
@@ -803,7 +871,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'roadmap',
             stageProgress: 60,
-            stageMessage: 'Creating project roadmap...'
+            stageMessage: 'Creating project roadmap...',
         });
 
         const roadmap = await this.stageGenerateRoadmap(session, seedIdea);
@@ -818,7 +886,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'tech-stack',
             stageProgress: 75,
-            stageMessage: 'Selecting technology stack...'
+            stageMessage: 'Selecting technology stack...',
         });
 
         const techStack = await this.stageSelectTechStack(session, seedIdea);
@@ -833,10 +901,14 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'competitor-analysis',
             stageProgress: 85,
-            stageMessage: 'Analyzing competitors and market position...'
+            stageMessage: 'Analyzing competitors and market position...',
         });
 
-        const { competitors, advantages } = await this.stageCompetitorAnalysis(session, seedIdea, researchContext);
+        const { competitors, advantages } = await this.stageCompetitorAnalysis(
+            session,
+            seedIdea,
+            researchContext
+        );
         seedIdea.ideaCompetitors = competitors;
         seedIdea.competitiveAdvantages = advantages;
         await this.delay(2000);
@@ -852,7 +924,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'personas',
             stageProgress: 88,
-            stageMessage: 'Generating user personas and journey maps...'
+            stageMessage: 'Generating user personas and journey maps...',
         });
 
         const { personas, journey } = await this.stageGeneratePersonas(session, seedIdea);
@@ -868,7 +940,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'business-strategy',
             stageProgress: 92,
-            stageMessage: 'Developing SWOT analysis and monetization strategy...'
+            stageMessage: 'Developing SWOT analysis and monetization strategy...',
         });
 
         const { swot, businessModel } = await this.stageGenerateBusinessStrategy(session, seedIdea);
@@ -884,7 +956,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'marketing-plan',
             stageProgress: 96,
-            stageMessage: 'Creating Go-To-Market plan and launch checklist...'
+            stageMessage: 'Creating Go-To-Market plan and launch checklist...',
         });
 
         const marketingPlan = await this.stageGenerateGTMPlan(session, seedIdea);
@@ -899,7 +971,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             currentIdea: seedIdea,
             stage: 'finalizing',
             stageProgress: 98,
-            stageMessage: 'Finalizing project idea...'
+            stageMessage: 'Finalizing project idea...',
         });
 
         seedIdea.generationStage = 'complete';
@@ -914,18 +986,27 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
      * Stage 2: Generate initial idea seed
      */
     private async stageGenerateSeed(params: {
-        session: IdeaSession
-        category: IdeaCategory
-        categoryResearch: string
-        previousIdeasContext: string
-        sessionIdeas: ProjectIdea[]
-        ideaIndex: number
-        allExisting: ProjectIdea[]
+        session: IdeaSession;
+        category: IdeaCategory;
+        categoryResearch: string;
+        previousIdeasContext: string;
+        sessionIdeas: ProjectIdea[];
+        ideaIndex: number;
+        allExisting: ProjectIdea[];
     }): Promise<ProjectIdea> {
-        const { session, category, categoryResearch, previousIdeasContext, sessionIdeas, ideaIndex, allExisting } = params;
-        const sessionContext = sessionIdeas.length > 0
-            ? `\nIdeas already in this session:\n${sessionIdeas.map(i => `- ${i.title}`).join('\n')}\n`
-            : '';
+        const {
+            session,
+            category,
+            categoryResearch,
+            previousIdeasContext,
+            sessionIdeas,
+            ideaIndex,
+            allExisting,
+        } = params;
+        const sessionContext =
+            sessionIdeas.length > 0
+                ? `\nIdeas already in this session:\n${sessionIdeas.map(i => `- ${i.title}`).join('\n')}\n`
+                : '';
 
         // Try up to 3 times to generate a unique idea
         const maxRetries = 3;
@@ -937,7 +1018,7 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                 sessionContext,
                 ideaIndex,
                 attemptNumber: attempt,
-                customPrompt: session.customPrompt
+                customPrompt: session.customPrompt,
             });
 
             const systemPrompt = await this.getSeedSystemPrompt(session.goal);
@@ -947,24 +1028,25 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                     id: uuidv4(),
                     role: 'system',
                     content: systemPrompt,
-                    timestamp: new Date()
+                    timestamp: new Date(),
                 },
                 {
                     id: uuidv4(),
                     role: 'user',
                     content: prompt,
-                    timestamp: new Date()
-                }
+                    timestamp: new Date(),
+                },
             ];
 
             const response = await this.retryLLMCall(
-                async () => await this.deps.llmService.chat(
-                    messages,
-                    session.model,
-                    undefined,
-                    session.provider,
-                    { temperature: 0.9 }
-                ),
+                async () =>
+                    await this.deps.llmService.chat(
+                        messages,
+                        session.model,
+                        undefined,
+                        session.provider,
+                        { temperature: 0.9 }
+                    ),
                 'Generate seed idea'
             );
 
@@ -974,7 +1056,9 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
                 return idea;
             }
 
-            this.logWarn(`Seed "${idea.title}" too similar, retrying (${attempt + 1}/${maxRetries})`);
+            this.logWarn(
+                `Seed "${idea.title}" too similar, retrying (${attempt + 1}/${maxRetries})`
+            );
             await this.delay(1000);
         }
 
@@ -986,18 +1070,25 @@ IMPORTANT: Your new idea must be distinctly different from ALL of the above. Do 
             sessionContext,
             ideaIndex,
             attemptNumber: maxRetries,
-            customPrompt: session.customPrompt
+            customPrompt: session.customPrompt,
         });
 
         const systemPrompt = await this.getSeedSystemPrompt(session.goal);
 
         const messages: Message[] = [
             { id: uuidv4(), role: 'system', content: systemPrompt, timestamp: new Date() },
-            { id: uuidv4(), role: 'user', content: fallbackPrompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: fallbackPrompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider, { temperature: 1.0 }),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider,
+                    { temperature: 1.0 }
+                ),
             'Generate seed idea (fallback)'
         );
         const idea = this.parseSeedResponse(response.content, category, session.id);
@@ -1030,13 +1121,19 @@ Format as a comprehensive research brief that will guide product development.`;
                 id: uuidv4(),
                 role: 'system',
                 content: `You are a senior market research analyst specializing in ${idea.category} products. Provide detailed, actionable research based on ${CURRENT_YEAR} market conditions. Be specific and data-driven.`,
-                timestamp: new Date()
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate category research'
         );
         return response.content;
@@ -1045,7 +1142,11 @@ Format as a comprehensive research brief that will guide product development.`;
     /**
      * Stage 4: Generate 10 project names
      */
-    private async stageGenerateNames(session: IdeaSession, idea: ProjectIdea, research: string): Promise<string[]> {
+    private async stageGenerateNames(
+        session: IdeaSession,
+        idea: ProjectIdea,
+        research: string
+    ): Promise<string[]> {
         const prompt = `Generate exactly 10 unique, memorable project names for:
 
 Title: ${idea.title}
@@ -1071,14 +1172,21 @@ Respond in JSON:
             {
                 id: uuidv4(),
                 role: 'system',
-                content: 'You are a branding expert. Generate creative, memorable project names. Always respond in valid JSON.',
-                timestamp: new Date()
+                content:
+                    'You are a branding expert. Generate creative, memorable project names. Always respond in valid JSON.',
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate alternative names'
         );
         return this.parseNamesResponse(response.content);
@@ -1087,10 +1195,14 @@ Respond in JSON:
     /**
      * Stage 5: Long-form description
      */
-    private async stageLongDescription(session: IdeaSession, idea: ProjectIdea, research: string): Promise<{
-        longDescription: string
-        valueProposition: string
-        explanation: string
+    private async stageLongDescription(
+        session: IdeaSession,
+        idea: ProjectIdea,
+        research: string
+    ): Promise<{
+        longDescription: string;
+        valueProposition: string;
+        explanation: string;
     }> {
         const prompt = `Write a comprehensive, professional description for this project:
 
@@ -1130,14 +1242,21 @@ Respond in JSON:
             {
                 id: uuidv4(),
                 role: 'system',
-                content: 'You are a senior product copywriter. Write compelling, professional product descriptions. Always respond in valid JSON.',
-                timestamp: new Date()
+                content:
+                    'You are a senior product copywriter. Write compelling, professional product descriptions. Always respond in valid JSON.',
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate long description'
         );
         return this.parseLongDescriptionResponse(response.content);
@@ -1146,7 +1265,10 @@ Respond in JSON:
     /**
      * Stage 6: Generate project roadmap
      */
-    private async stageGenerateRoadmap(session: IdeaSession, idea: ProjectIdea): Promise<ProjectRoadmap> {
+    private async stageGenerateRoadmap(
+        session: IdeaSession,
+        idea: ProjectIdea
+    ): Promise<ProjectRoadmap> {
         const prompt = `Create a realistic development roadmap for:
 
 Title: ${idea.title}
@@ -1185,14 +1307,21 @@ Respond in JSON:
             {
                 id: uuidv4(),
                 role: 'system',
-                content: 'You are a technical product manager. Create realistic, actionable development roadmaps. Always respond in valid JSON.',
-                timestamp: new Date()
+                content:
+                    'You are a technical product manager. Create realistic, actionable development roadmaps. Always respond in valid JSON.',
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate roadmap'
         );
         return this.parseRoadmapResponse(response.content);
@@ -1201,14 +1330,18 @@ Respond in JSON:
     /**
      * Stage 7: Select technology stack
      */
-    private async stageSelectTechStack(session: IdeaSession, idea: ProjectIdea): Promise<TechStack> {
+    private async stageSelectTechStack(
+        session: IdeaSession,
+        idea: ProjectIdea
+    ): Promise<TechStack> {
         const categoryTechContext: Record<IdeaCategory, string> = {
-            'website': 'web technologies, frameworks like React/Vue/Angular, Node.js, databases',
-            'mobile-app': 'mobile frameworks like React Native/Flutter/Swift/Kotlin, mobile backends',
-            'game': 'game engines like Unity/Unreal/Godot, graphics libraries, multiplayer tech',
+            website: 'web technologies, frameworks like React/Vue/Angular, Node.js, databases',
+            'mobile-app':
+                'mobile frameworks like React Native/Flutter/Swift/Kotlin, mobile backends',
+            game: 'game engines like Unity/Unreal/Godot, graphics libraries, multiplayer tech',
             'cli-tool': 'languages like Rust/Go/Python/Node.js, CLI frameworks, distribution',
-            'desktop': 'Electron/Tauri/native frameworks, cross-platform considerations',
-            'other': 'appropriate technologies for the specific use case'
+            desktop: 'Electron/Tauri/native frameworks, cross-platform considerations',
+            other: 'appropriate technologies for the specific use case',
         };
 
         const prompt = `Recommend a technology stack for:
@@ -1243,13 +1376,19 @@ Respond in JSON:
                 id: uuidv4(),
                 role: 'system',
                 content: `You are a senior software architect with expertise in ${idea.category} development. Recommend modern, production-ready technologies for ${CURRENT_YEAR}. Always respond in valid JSON.`,
-                timestamp: new Date()
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate tech stack'
         );
         return this.parseTechStackResponse(response.content);
@@ -1258,9 +1397,13 @@ Respond in JSON:
     /**
      * Stage 8: Competitor analysis
      */
-    private async stageCompetitorAnalysis(session: IdeaSession, idea: ProjectIdea, research: string): Promise<{
-        competitors: IdeaCompetitor[]
-        advantages: string[]
+    private async stageCompetitorAnalysis(
+        session: IdeaSession,
+        idea: ProjectIdea,
+        research: string
+    ): Promise<{
+        competitors: IdeaCompetitor[];
+        advantages: string[];
     }> {
         const prompt = `Analyze competitors for this specific project idea:
 
@@ -1302,13 +1445,19 @@ Respond in JSON:
                 id: uuidv4(),
                 role: 'system',
                 content: `You are a competitive intelligence analyst. Provide thorough competitor analysis based on ${CURRENT_YEAR} market conditions. Always respond in valid JSON.`,
-                timestamp: new Date()
+                timestamp: new Date(),
             },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Analyze competitors'
         );
         return this.parseCompetitorResponse(response.content);
@@ -1354,19 +1503,26 @@ Respond in JSON format:
             {
                 id: uuidv4(),
                 role: 'system',
-                content: 'You are a product strategist. Provide detailed enrichment for project ideas. Always respond in valid JSON format.',
-                timestamp: new Date()
+                content:
+                    'You are a product strategist. Provide detailed enrichment for project ideas. Always respond in valid JSON format.',
+                timestamp: new Date(),
             },
             {
                 id: uuidv4(),
                 role: 'user',
                 content: prompt,
-                timestamp: new Date()
-            }
+                timestamp: new Date(),
+            },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Enrich idea'
         );
 
@@ -1375,25 +1531,29 @@ Respond in JSON format:
 
         // Update idea in database
         const db = await this.getDb();
-        await db.prepare(`
+        await db
+            .prepare(
+                `
             UPDATE project_ideas
             SET explanation = ?, value_proposition = ?, name_suggestions = ?, competitive_advantages = ?, updated_at = ?
             WHERE id = ?
-        `).run(
-            enrichment.explanation,
-            enrichment.valueProposition,
-            JSON.stringify(enrichment.nameSuggestions),
-            JSON.stringify(enrichment.competitiveAdvantages),
-            Date.now(),
-            ideaId
-        );
+        `
+            )
+            .run(
+                enrichment.explanation,
+                enrichment.valueProposition,
+                JSON.stringify(enrichment.nameSuggestions),
+                JSON.stringify(enrichment.competitiveAdvantages),
+                Date.now(),
+                ideaId
+            );
 
         return {
             ...idea,
             explanation: enrichment.explanation,
             valueProposition: enrichment.valueProposition,
             nameSuggestions: enrichment.nameSuggestions,
-            competitiveAdvantages: enrichment.competitiveAdvantages
+            competitiveAdvantages: enrichment.competitiveAdvantages,
         };
     }
 
@@ -1404,7 +1564,9 @@ Respond in JSON format:
      */
     async getIdea(id: string): Promise<ProjectIdea | null> {
         const db = await this.getDb();
-        const row = await db.prepare('SELECT * FROM project_ideas WHERE id = ?').get<JsonObject>(id);
+        const row = await db
+            .prepare('SELECT * FROM project_ideas WHERE id = ?')
+            .get<JsonObject>(id);
         return row ? this.mapRowToIdea(row) : null;
     }
 
@@ -1431,35 +1593,39 @@ Respond in JSON format:
         const db = await this.getDb();
         const serialized = this.serializeIdeaForDb(idea);
 
-        await db.prepare(`
+        await db
+            .prepare(
+                `
             INSERT INTO project_ideas (
                 id, session_id, title, category, description, explanation, value_proposition,
                 name_suggestions, competitive_advantages, market_research, status, metadata,
                 long_description, roadmap, tech_stack, idea_competitors, generation_stage, research_context,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            idea.id,
-            idea.sessionId,
-            idea.title,
-            idea.category,
-            idea.description,
-            idea.explanation ?? null,
-            idea.valueProposition ?? null,
-            serialized.nameSuggestions,
-            serialized.competitiveAdvantages,
-            serialized.marketResearch,
-            idea.status,
-            serialized.meta,
-            idea.longDescription ?? null,
-            serialized.roadmap,
-            serialized.techStack,
-            serialized.competitors,
-            idea.generationStage ?? 'complete',
-            idea.researchContext ?? null,
-            idea.createdAt,
-            idea.updatedAt
-        );
+        `
+            )
+            .run(
+                idea.id,
+                idea.sessionId,
+                idea.title,
+                idea.category,
+                idea.description,
+                idea.explanation ?? null,
+                idea.valueProposition ?? null,
+                serialized.nameSuggestions,
+                serialized.competitiveAdvantages,
+                serialized.marketResearch,
+                idea.status,
+                serialized.meta,
+                idea.longDescription ?? null,
+                serialized.roadmap,
+                serialized.techStack,
+                serialized.competitors,
+                idea.generationStage ?? 'complete',
+                idea.researchContext ?? null,
+                idea.createdAt,
+                idea.updatedAt
+            );
     }
 
     private serializeIdeaForDb(idea: ProjectIdea) {
@@ -1469,8 +1635,10 @@ Respond in JSON format:
             techStack: idea.techStack ? JSON.stringify(idea.techStack) : null,
             competitors: idea.ideaCompetitors ? JSON.stringify(idea.ideaCompetitors) : null,
             nameSuggestions: idea.nameSuggestions ? JSON.stringify(idea.nameSuggestions) : null,
-            competitiveAdvantages: idea.competitiveAdvantages ? JSON.stringify(idea.competitiveAdvantages) : null,
-            marketResearch: idea.marketResearch ? JSON.stringify(idea.marketResearch) : null
+            competitiveAdvantages: idea.competitiveAdvantages
+                ? JSON.stringify(idea.competitiveAdvantages)
+                : null,
+            marketResearch: idea.marketResearch ? JSON.stringify(idea.marketResearch) : null,
         };
     }
 
@@ -1479,7 +1647,8 @@ Respond in JSON format:
      */
     async updateIdeaStatus(id: string, status: IdeaStatus): Promise<void> {
         const db = await this.getDb();
-        await db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
+        await db
+            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
             .run(status, Date.now(), id);
     }
 
@@ -1488,7 +1657,11 @@ Respond in JSON format:
     /**
      * Approve an idea and create a project
      */
-    async approveIdea(ideaId: string, projectPath: string, selectedName?: string): Promise<Project> {
+    async approveIdea(
+        ideaId: string,
+        projectPath: string,
+        selectedName?: string
+    ): Promise<Project> {
         const idea = await this.getIdea(ideaId);
         if (!idea) {
             throw new Error(`Idea not found: ${ideaId}`);
@@ -1519,7 +1692,10 @@ Respond in JSON format:
 
         // Update idea with project reference
         const db = await this.getDb();
-        await db.prepare('UPDATE project_ideas SET status = ?, project_id = ?, updated_at = ? WHERE id = ?')
+        await db
+            .prepare(
+                'UPDATE project_ideas SET status = ?, project_id = ?, updated_at = ? WHERE id = ?'
+            )
             .run('approved', project.id, Date.now(), ideaId);
 
         this.logInfo(`Project created: ${project.id} from idea ${ideaId}`);
@@ -1543,10 +1719,8 @@ Respond in JSON format:
     async canGenerateLogo(): Promise<boolean> {
         try {
             const accounts = await this.deps.databaseService.getLinkedAccounts();
-            return accounts.some(acc =>
-                acc.provider === 'antigravity' &&
-                acc.isActive &&
-                acc.accessToken
+            return accounts.some(
+                acc => acc.provider === 'antigravity' && acc.isActive && acc.accessToken
             );
         } catch {
             return false;
@@ -1554,66 +1728,81 @@ Respond in JSON format:
     }
 
     /**
-     * Generate a logo for an idea using the best available provider
+     * Generate logos for an idea using the best available provider
      */
-    async generateLogo(ideaId: string, prompt: string): Promise<string> {
+    async generateLogo(
+        ideaId: string,
+        options: { prompt: string; style: string; model: string; count: number }
+    ): Promise<string[]> {
         const idea = await this.getIdea(ideaId);
         if (!idea) {
             throw new Error(`Idea not found: ${ideaId}`);
         }
 
-        this.logInfo(`Generating logo for idea: ${ideaId}`);
+        const { prompt, style, model, count } = options;
+        this.logInfo(`Generating ${count} logo(s) for idea: ${ideaId} using ${model} (${style})`);
 
         const logoPrompt = `Create a professional, modern app icon or logo for: "${idea.title}".
 ${prompt ? `Additional requirements: ${prompt}` : ''}
-Style: Clean, minimal, suitable for app store listing.
+Style: ${style || 'Minimalist'}, Clean, minimal, suitable for app store listing.
 The logo should be simple, memorable, and work well at small sizes.`;
 
         try {
-            // Priority 1: Local Image Generation (Ollama/SD-WebUI/Pollinations)
-            const localLogoPath = await this.deps.localImageService.generateImage({
-                prompt: logoPrompt,
-                width: 1024,
-                height: 1024
-            });
+            // For ideas, we'll keep it simple and just generate one or more logos
+            // If the model is not specified or is 'local', we try local generation
+            if (!model || model === 'local') {
+                const localLogoPath = await this.deps.localImageService.generateImage({
+                    prompt: logoPrompt,
+                    width: 1024,
+                    height: 1024,
+                });
 
-            if (localLogoPath) {
-                const db = await this.getDb();
-                await db.prepare('UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?')
-                    .run(localLogoPath, Date.now(), ideaId);
+                if (localLogoPath) {
+                    const db = await this.getDb();
+                    await db
+                        .prepare(
+                            'UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?'
+                        )
+                        .run(localLogoPath, Date.now(), ideaId);
 
-                this.logInfo(`Local logo generated for idea: ${ideaId}`);
-                return localLogoPath;
+                    this.logInfo(`Local logo generated for idea: ${ideaId}`);
+                    return [localLogoPath];
+                }
             }
 
-            // Priority 2: Remote Image Generation (Gemini)
+            // Otherwise, use LLM Service (which covers remote providers like Gemini/DALL-E)
             const messages: Message[] = [
                 {
                     id: uuidv4(),
                     role: 'user',
                     content: logoPrompt,
-                    timestamp: new Date()
-                }
+                    timestamp: new Date(),
+                },
             ];
 
             const response = await this.retryLLMCall(
-                async () => await this.deps.llmService.chat(
-                    messages,
-                    'gemini-2.0-flash-preview-image-generation',
-                    undefined,
-                    'antigravity'
-                ),
+                async () =>
+                    await this.deps.llmService.chat(
+                        messages,
+                        model || 'gemini-2.0-flash-preview-image-generation',
+                        undefined,
+                        'antigravity'
+                    ),
                 'Generate logo'
             );
 
             if (response.images && response.images.length > 0) {
-                const logoPath = response.images[0];
-                const db = await this.getDb();
-                await db.prepare('UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?')
-                    .run(logoPath, Date.now(), ideaId);
+                // Take up to 'count' images if available
+                const logoPaths = response.images.slice(0, count);
 
-                this.logInfo(`Remote logo generated for idea: ${ideaId}`);
-                return logoPath;
+                // Update the idea with the first generated logo path
+                const db = await this.getDb();
+                await db
+                    .prepare('UPDATE project_ideas SET logo_path = ?, updated_at = ? WHERE id = ?')
+                    .run(logoPaths[0], Date.now(), ideaId);
+
+                this.logInfo(`${logoPaths.length} logo(s) generated for idea: ${ideaId}`);
+                return logoPaths;
             }
 
             throw new Error('No logo image generated by any provider');
@@ -1644,7 +1833,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
                 : undefined,
             customPrompt: row.custom_prompt ? String(row.custom_prompt) : undefined,
             createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
+            updatedAt: Number(row.updated_at),
         };
     }
 
@@ -1659,31 +1848,33 @@ The logo should be simple, memorable, and work well at small sizes.`;
             valueProposition: row.value_proposition as string | undefined,
             longDescription: row.long_description as string | undefined,
             nameSuggestions: row.name_suggestions
-                ? safeJsonParse(row.name_suggestions as string, []) as string[]
+                ? (safeJsonParse(row.name_suggestions as string, []) as string[])
                 : undefined,
             competitiveAdvantages: row.competitive_advantages
-                ? safeJsonParse(row.competitive_advantages as string, []) as string[]
+                ? (safeJsonParse(row.competitive_advantages as string, []) as string[])
                 : undefined,
             roadmap: row.roadmap
-                ? safeJsonParse(row.roadmap as string, undefined) as ProjectRoadmap | undefined
+                ? (safeJsonParse(row.roadmap as string, undefined) as ProjectRoadmap | undefined)
                 : undefined,
             techStack: row.tech_stack
-                ? safeJsonParse(row.tech_stack as string, undefined) as TechStack | undefined
+                ? (safeJsonParse(row.tech_stack as string, undefined) as TechStack | undefined)
                 : undefined,
             ideaCompetitors: row.idea_competitors
-                ? safeJsonParse(row.idea_competitors as string, []) as IdeaCompetitor[]
+                ? (safeJsonParse(row.idea_competitors as string, []) as IdeaCompetitor[])
                 : undefined,
             marketResearch: row.market_research
                 ? safeJsonParse(row.market_research as string, undefined)
                 : undefined,
-            generationStage: row.generation_stage ? (row.generation_stage as IdeaGenerationStage) : 'complete',
+            generationStage: row.generation_stage
+                ? (row.generation_stage as IdeaGenerationStage)
+                : 'complete',
             researchContext: row.research_context as string | undefined,
             status: String(row.status) as IdeaStatus,
             projectId: row.project_id as string | undefined,
             logoPath: row.logo_path as string | undefined,
             metadata: safeJsonParse(row.metadata as string, {}),
             createdAt: Number(row.created_at),
-            updatedAt: Number(row.updated_at)
+            updatedAt: Number(row.updated_at),
         };
     }
 
@@ -1698,13 +1889,13 @@ The logo should be simple, memorable, and work well at small sizes.`;
     }
 
     private emitIdeaProgress(options: {
-        sessionId: string
-        ideaIndex: number
-        totalIdeas: number
-        currentIdea?: Partial<ProjectIdea>
-        stage: IdeaGenerationStage
-        stageProgress?: number
-        stageMessage?: string
+        sessionId: string;
+        ideaIndex: number;
+        totalIdeas: number;
+        currentIdea?: Partial<ProjectIdea>;
+        stage: IdeaGenerationStage;
+        stageProgress?: number;
+        stageMessage?: string;
     }): void {
         const event: IdeaProgress = {
             sessionId: options.sessionId,
@@ -1713,7 +1904,7 @@ The logo should be simple, memorable, and work well at small sizes.`;
             currentIdea: options.currentIdea,
             stage: options.stage,
             stageProgress: options.stageProgress,
-            stageMessage: options.stageMessage
+            stageMessage: options.stageMessage,
         };
         this.deps.eventBus.emit('ideas:idea-progress', event);
     }
@@ -1730,19 +1921,31 @@ The logo should be simple, memorable, and work well at small sizes.`;
         }
 
         if (research.marketTrends.length > 0) {
-            context += `Market Trends:\n${research.marketTrends.slice(0, 10).map(t => `- ${t.title}: ${t.description}`).join('\n')}\n\n`;
+            context += `Market Trends:\n${research.marketTrends
+                .slice(0, 10)
+                .map(t => `- ${t.title}: ${t.description}`)
+                .join('\n')}\n\n`;
         }
 
         if (research.competitors.length > 0) {
-            context += `Top Competitors:\n${research.competitors.slice(0, 10).map(c => `- ${c.name}: ${c.description}`).join('\n')}\n\n`;
+            context += `Top Competitors:\n${research.competitors
+                .slice(0, 10)
+                .map(c => `- ${c.name}: ${c.description}`)
+                .join('\n')}\n\n`;
         }
 
         if (research.productHuntProducts && research.productHuntProducts.length > 0) {
-            context += `Successful Products (Product Hunt):\n${research.productHuntProducts.slice(0, 5).map(p => `- ${p.name}: ${p.tagline} (${p.votesCount} votes)`).join('\n')}\n\n`;
+            context += `Successful Products (Product Hunt):\n${research.productHuntProducts
+                .slice(0, 5)
+                .map(p => `- ${p.name}: ${p.tagline} (${p.votesCount} votes)`)
+                .join('\n')}\n\n`;
         }
 
         if (research.crunchbaseCompanies && research.crunchbaseCompanies.length > 0) {
-            context += `Funded Companies (Crunchbase):\n${research.crunchbaseCompanies.slice(0, 5).map(c => `- ${c.name}: ${c.description} (Funding: ${c.fundingTotal ?? 'N/A'})`).join('\n')}\n\n`;
+            context += `Funded Companies (Crunchbase):\n${research.crunchbaseCompanies
+                .slice(0, 5)
+                .map(c => `- ${c.name}: ${c.description} (Funding: ${c.fundingTotal ?? 'N/A'})`)
+                .join('\n')}\n\n`;
         }
 
         if (research.opportunities.length > 0) {
@@ -1782,42 +1985,54 @@ CRITICAL RULE: You MUST strictly adhere to the user's selected category. Do NOT 
             }
         } catch (error) {
             // Gracefully handle brain errors - don't fail idea generation
-            appLogger.warn(this.name, `Could not fetch brain context: ${getErrorMessage(error as Error)}`);
+            appLogger.warn(
+                this.name,
+                `Could not fetch brain context: ${getErrorMessage(error as Error)}`
+            );
         }
 
         return basePrompt;
     }
 
     private buildSeedGenerationPrompt(options: {
-        category: IdeaCategory
-        categoryResearch: string
-        previousIdeasContext: string
-        sessionContext: string
-        ideaIndex: number
-        attemptNumber: number
-        customPrompt?: string
+        category: IdeaCategory;
+        categoryResearch: string;
+        previousIdeasContext: string;
+        sessionContext: string;
+        ideaIndex: number;
+        attemptNumber: number;
+        customPrompt?: string;
     }): string {
-        const { category, categoryResearch, previousIdeasContext, sessionContext, ideaIndex, attemptNumber, customPrompt } = options;
+        const {
+            category,
+            categoryResearch,
+            previousIdeasContext,
+            sessionContext,
+            ideaIndex,
+            attemptNumber,
+            customPrompt,
+        } = options;
 
         const categoryNames: Record<IdeaCategory, string> = {
-            'website': 'web application',
+            website: 'web application',
             'mobile-app': 'mobile application',
-            'game': 'video game',
+            game: 'video game',
             'cli-tool': 'command-line tool',
-            'desktop': 'desktop application',
-            'other': 'software application'
+            desktop: 'desktop application',
+            other: 'software application',
         };
 
-        const attemptGuidance = attemptNumber > 0
-            ? `\n\n⚠️ CRITICAL: Previous attempts generated ideas too similar to existing ones. This is attempt #${attemptNumber + 1}. You MUST be MORE CREATIVE. Try a completely different angle, niche, or approach.\n`
-            : '';
+        const attemptGuidance =
+            attemptNumber > 0
+                ? `\n\n⚠️ CRITICAL: Previous attempts generated ideas too similar to existing ones. This is attempt #${attemptNumber + 1}. You MUST be MORE CREATIVE. Try a completely different angle, niche, or approach.\n`
+                : '';
 
         const creativityPrompts = [
             'Focus on an underserved niche or demographic that is often overlooked',
             'Combine two unrelated industries in an innovative way',
             'Address a problem that has emerged or intensified in the last 2 years',
             'Think about daily frustrations professionals face but accept as normal',
-            'Consider accessibility, inclusion, or sustainability opportunities'
+            'Consider accessibility, inclusion, or sustainability opportunities',
         ];
         const creativityHint = creativityPrompts[ideaIndex % creativityPrompts.length];
 
@@ -1851,12 +2066,16 @@ Respond ONLY with valid JSON:
 }`;
     }
 
-    private parseSeedResponse(content: string, category: IdeaCategory, sessionId: string): ProjectIdea {
+    private parseSeedResponse(
+        content: string,
+        category: IdeaCategory,
+        sessionId: string
+    ): ProjectIdea {
         const now = Date.now();
         try {
             const parsed = this.parseJsonResponse<{
-                title?: string
-                description?: string
+                title?: string;
+                description?: string;
             }>(content, { title: 'Generated Project Idea', description: content.slice(0, 500) });
 
             return {
@@ -1868,7 +2087,7 @@ Respond ONLY with valid JSON:
                 status: 'pending',
                 generationStage: 'seed-generation',
                 createdAt: now,
-                updatedAt: now
+                updatedAt: now,
             };
         } catch (error) {
             this.logWarn(`Failed to parse seed response: ${getErrorMessage(error as Error)}`);
@@ -1882,7 +2101,7 @@ Respond ONLY with valid JSON:
                 status: 'pending',
                 generationStage: 'seed-generation',
                 createdAt: now,
-                updatedAt: now
+                updatedAt: now,
             };
         }
     }
@@ -1913,7 +2132,10 @@ Respond ONLY with valid JSON:
         try {
             const parsed = this.parseJsonResponse<{ names: string[] }>(content, { names: [] });
             if (parsed.names.length === 0) {
-                appLogger.warn('IdeaGeneratorService', 'Failed to parse alternative names response');
+                appLogger.warn(
+                    'IdeaGeneratorService',
+                    'Failed to parse alternative names response'
+                );
                 return ['Alternative Name 1', 'Alternative Name 2', 'Alternative Name 3'];
             }
             return parsed.names;
@@ -1924,50 +2146,59 @@ Respond ONLY with valid JSON:
     }
 
     private parseLongDescriptionResponse(content: string): {
-        longDescription: string
-        valueProposition: string
-        explanation: string
+        longDescription: string;
+        valueProposition: string;
+        explanation: string;
     } {
         try {
             const parsed = this.parseJsonResponse<{
-                longDescription?: string
-                valueProposition?: string
-                explanation?: string
+                longDescription?: string;
+                valueProposition?: string;
+                explanation?: string;
             }>(content, {
                 longDescription: 'A comprehensive solution addressing key user needs.',
                 valueProposition: 'Delivers unique value to users.',
-                explanation: 'An innovative approach to solving the problem.'
+                explanation: 'An innovative approach to solving the problem.',
             });
 
             return {
-                longDescription: parsed.longDescription ?? 'A comprehensive solution addressing key user needs.',
+                longDescription:
+                    parsed.longDescription ?? 'A comprehensive solution addressing key user needs.',
                 valueProposition: parsed.valueProposition ?? 'Delivers unique value to users.',
-                explanation: parsed.explanation ?? 'An innovative approach to solving the problem.'
+                explanation: parsed.explanation ?? 'An innovative approach to solving the problem.',
             };
         } catch (error) {
             this.logWarn(`Failed to parse description: ${getErrorMessage(error as Error)}`);
             return {
                 longDescription: 'A comprehensive solution addressing key user needs.',
                 valueProposition: 'Delivers unique value to users.',
-                explanation: 'An innovative approach to solving the problem.'
+                explanation: 'An innovative approach to solving the problem.',
             };
         }
     }
 
-    private getPhaseDetails(phase: Partial<RoadmapPhase> | undefined, defaultName: string, defaultOrder: number): { name: string; description: string; duration: string; order: number } {
+    private getPhaseDetails(
+        phase: Partial<RoadmapPhase> | undefined,
+        defaultName: string,
+        defaultOrder: number
+    ): { name: string; description: string; duration: string; order: number } {
         return {
             name: phase?.name ?? defaultName,
             description: phase?.description ?? 'Development phase',
             duration: phase?.duration ?? '1-2 months',
-            order: phase?.order ?? defaultOrder
+            order: phase?.order ?? defaultOrder,
         };
     }
 
-    private sanitizeRoadmapPhase(phase: Partial<RoadmapPhase> | undefined, defaultName: string, defaultOrder: number): RoadmapPhase {
+    private sanitizeRoadmapPhase(
+        phase: Partial<RoadmapPhase> | undefined,
+        defaultName: string,
+        defaultOrder: number
+    ): RoadmapPhase {
         const details = this.getPhaseDetails(phase, defaultName, defaultOrder);
         return {
             ...details,
-            deliverables: Array.isArray(phase?.deliverables) ? phase.deliverables : []
+            deliverables: Array.isArray(phase?.deliverables) ? phase.deliverables : [],
         };
     }
 
@@ -1978,10 +2209,10 @@ Respond ONLY with valid JSON:
                 description: 'Minimum viable product',
                 duration: '2-3 months',
                 deliverables: ['Core features'],
-                order: 0
+                order: 0,
             },
             phases: [],
-            totalDuration: '6-12 months'
+            totalDuration: '6-12 months',
         };
     }
 
@@ -1993,7 +2224,7 @@ Respond ONLY with valid JSON:
             return {
                 mvp: this.sanitizeRoadmapPhase(parsed.mvp, 'MVP', 0),
                 phases: phases.map((p, i) => this.sanitizeRoadmapPhase(p, `Phase ${i + 1}`, i + 1)),
-                totalDuration: parsed.totalDuration
+                totalDuration: parsed.totalDuration,
             };
         } catch (error) {
             this.logWarn(`Failed to parse roadmap: ${getErrorMessage(error as Error)}`);
@@ -2010,19 +2241,45 @@ Respond ONLY with valid JSON:
             }
 
             const parsed = safeJsonParse(jsonStr, {
-                frontend: [{ name: 'React', reason: 'Popular frontend library', alternatives: ['Vue', 'Angular'] }],
-                backend: [{ name: 'Node.js', reason: 'JavaScript runtime', alternatives: ['Python', 'Go'] }],
-                database: [{ name: 'PostgreSQL', reason: 'Reliable database', alternatives: ['MySQL', 'MongoDB'] }],
-                infrastructure: [{ name: 'AWS', reason: 'Cloud platform', alternatives: ['Google Cloud', 'Azure'] }],
-                other: []
+                frontend: [
+                    {
+                        name: 'React',
+                        reason: 'Popular frontend library',
+                        alternatives: ['Vue', 'Angular'],
+                    },
+                ],
+                backend: [
+                    {
+                        name: 'Node.js',
+                        reason: 'JavaScript runtime',
+                        alternatives: ['Python', 'Go'],
+                    },
+                ],
+                database: [
+                    {
+                        name: 'PostgreSQL',
+                        reason: 'Reliable database',
+                        alternatives: ['MySQL', 'MongoDB'],
+                    },
+                ],
+                infrastructure: [
+                    {
+                        name: 'AWS',
+                        reason: 'Cloud platform',
+                        alternatives: ['Google Cloud', 'Azure'],
+                    },
+                ],
+                other: [],
             });
 
-            const mapTechChoices = (arr?: Array<{ name?: string; reason?: string; alternatives?: string[] }>): TechChoice[] => {
+            const mapTechChoices = (
+                arr?: Array<{ name?: string; reason?: string; alternatives?: string[] }>
+            ): TechChoice[] => {
                 const safeArr = Array.isArray(arr) ? arr : [];
                 return safeArr.map(t => ({
                     name: t.name ?? 'Unknown',
                     reason: t.reason ?? 'Recommended for this project',
-                    alternatives: t.alternatives ?? []
+                    alternatives: t.alternatives ?? [],
                 }));
             };
 
@@ -2031,7 +2288,7 @@ Respond ONLY with valid JSON:
                 backend: mapTechChoices(parsed.backend),
                 database: mapTechChoices(parsed.database),
                 infrastructure: mapTechChoices(parsed.infrastructure),
-                other: mapTechChoices(parsed.other)
+                other: mapTechChoices(parsed.other),
             };
         } catch {
             this.logWarn('Failed to parse tech stack response');
@@ -2040,7 +2297,7 @@ Respond ONLY with valid JSON:
                 backend: [],
                 database: [],
                 infrastructure: [],
-                other: []
+                other: [],
             };
         }
     }
@@ -2057,8 +2314,8 @@ Respond ONLY with valid JSON:
     }
 
     private parseCompetitorResponse(content: string): {
-        competitors: IdeaCompetitor[]
-        advantages: string[]
+        competitors: IdeaCompetitor[];
+        advantages: string[];
     } {
         try {
             let jsonStr = content;
@@ -2068,41 +2325,43 @@ Respond ONLY with valid JSON:
             }
 
             const parsed = safeJsonParse(jsonStr, {
-                competitors: [{
-                    name: 'Unknown Competitor',
-                    description: 'Competitor analysis unavailable',
-                    url: '',
-                    strengths: [],
-                    weaknesses: [],
-                    missingFeatures: [],
-                    marketPosition: '',
-                    differentiationOpportunity: ''
-                }],
-                advantages: ['Unique value proposition']
+                competitors: [
+                    {
+                        name: 'Unknown Competitor',
+                        description: 'Competitor analysis unavailable',
+                        url: '',
+                        strengths: [],
+                        weaknesses: [],
+                        missingFeatures: [],
+                        marketPosition: '',
+                        differentiationOpportunity: '',
+                    },
+                ],
+                advantages: ['Unique value proposition'],
             });
 
             const competitors: IdeaCompetitor[] = Array.isArray(parsed.competitors)
                 ? parsed.competitors.map(c => ({
-                    name: c.name,
-                    description: c.description,
-                    url: c.url,
-                    strengths: c.strengths,
-                    weaknesses: c.weaknesses,
-                    missingFeatures: c.missingFeatures,
-                    marketPosition: c.marketPosition,
-                    differentiationOpportunity: c.differentiationOpportunity
-                }))
+                      name: c.name,
+                      description: c.description,
+                      url: c.url,
+                      strengths: c.strengths,
+                      weaknesses: c.weaknesses,
+                      missingFeatures: c.missingFeatures,
+                      marketPosition: c.marketPosition,
+                      differentiationOpportunity: c.differentiationOpportunity,
+                  }))
                 : [];
 
             return {
                 competitors,
-                advantages: Array.isArray(parsed.advantages) ? parsed.advantages.slice(0, 5) : []
+                advantages: Array.isArray(parsed.advantages) ? parsed.advantages.slice(0, 5) : [],
             };
         } catch {
             this.logWarn('Failed to parse competitor response');
             return {
                 competitors: [],
-                advantages: []
+                advantages: [],
             };
         }
     }
@@ -2110,7 +2369,10 @@ Respond ONLY with valid JSON:
     /**
      * Stage 9: User personas & journey maps
      */
-    private async stageGeneratePersonas(session: IdeaSession, idea: ProjectIdea): Promise<{ personas: UserPersona[]; journey: JourneyStep[] }> {
+    private async stageGeneratePersonas(
+        session: IdeaSession,
+        idea: ProjectIdea
+    ): Promise<{ personas: UserPersona[]; journey: JourneyStep[] }> {
         const prompt = `Create 3 detailed user personas and a 4-step journey map for:
 Title: ${idea.title}
 Description: ${idea.description}
@@ -2132,12 +2394,23 @@ Respond in JSON:
 }`;
 
         const messages: Message[] = [
-            { id: uuidv4(), role: 'system', content: 'You are a senior UX researcher. Always respond in valid JSON.', timestamp: new Date() },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            {
+                id: uuidv4(),
+                role: 'system',
+                content: 'You are a senior UX researcher. Always respond in valid JSON.',
+                timestamp: new Date(),
+            },
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate personas'
         );
         return this.parsePersonasResponse(response.content);
@@ -2146,7 +2419,10 @@ Respond in JSON:
     /**
      * Stage 10: SWOT & monetization
      */
-    private async stageGenerateBusinessStrategy(session: IdeaSession, idea: ProjectIdea): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
+    private async stageGenerateBusinessStrategy(
+        session: IdeaSession,
+        idea: ProjectIdea
+    ): Promise<{ swot: SWOTAnalysis; businessModel: BusinessModel }> {
         const prompt = `Develop a SWOT analysis and business model for:
 Title: ${idea.title}
 Target Market: ${idea.marketResearch?.targetAudience ?? idea.category}
@@ -2168,12 +2444,23 @@ Respond in JSON:
 }`;
 
         const messages: Message[] = [
-            { id: uuidv4(), role: 'system', content: 'You are a senior business strategist. Always respond in valid JSON.', timestamp: new Date() },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            {
+                id: uuidv4(),
+                role: 'system',
+                content: 'You are a senior business strategist. Always respond in valid JSON.',
+                timestamp: new Date(),
+            },
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate business model'
         );
         return this.parseBusinessResponse(response.content);
@@ -2182,7 +2469,10 @@ Respond in JSON:
     /**
      * Stage 11: GTM & first 100 users
      */
-    private async stageGenerateGTMPlan(session: IdeaSession, idea: ProjectIdea): Promise<MarketingPlan> {
+    private async stageGenerateGTMPlan(
+        session: IdeaSession,
+        idea: ProjectIdea
+    ): Promise<MarketingPlan> {
         const prompt = `Create a Go-To-Market plan for:
 Title: ${idea.title}
 Value Prop: ${idea.valueProposition}
@@ -2201,12 +2491,23 @@ Respond in JSON:
 }`;
 
         const messages: Message[] = [
-            { id: uuidv4(), role: 'system', content: 'You are a growth marketing expert. Always respond in valid JSON.', timestamp: new Date() },
-            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() }
+            {
+                id: uuidv4(),
+                role: 'system',
+                content: 'You are a growth marketing expert. Always respond in valid JSON.',
+                timestamp: new Date(),
+            },
+            { id: uuidv4(), role: 'user', content: prompt, timestamp: new Date() },
         ];
 
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(messages, session.model, undefined, session.provider),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session.model,
+                    undefined,
+                    session.provider
+                ),
             'Generate marketing plan'
         );
         return this.parseMarketingResponse(response.content);
@@ -2217,8 +2518,12 @@ Respond in JSON:
      */
     async queryIdeaResearch(ideaId: string, question: string): Promise<string> {
         const db = await this.getDb();
-        const row = await db.prepare('SELECT * FROM project_ideas WHERE id = ?').get<JsonObject>(ideaId);
-        if (!row) { throw new Error('Idea not found'); }
+        const row = await db
+            .prepare('SELECT * FROM project_ideas WHERE id = ?')
+            .get<JsonObject>(ideaId);
+        if (!row) {
+            throw new Error('Idea not found');
+        }
         const idea = this.mapRowToIdea(row);
 
         const context = `
@@ -2230,18 +2535,30 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
 `;
 
         const messages: Message[] = [
-            { id: uuidv4(), role: 'system', content: 'You are a deep research assistant. Answer the users question based ONLY on the provided research context.', timestamp: new Date() },
-            { id: uuidv4(), role: 'user', content: `Context: ${context}\n\nQuestion: ${question}`, timestamp: new Date() }
+            {
+                id: uuidv4(),
+                role: 'system',
+                content:
+                    'You are a deep research assistant. Answer the users question based ONLY on the provided research context.',
+                timestamp: new Date(),
+            },
+            {
+                id: uuidv4(),
+                role: 'user',
+                content: `Context: ${context}\n\nQuestion: ${question}`,
+                timestamp: new Date(),
+            },
         ];
 
         const session = await this.getSession(idea.sessionId);
         const response = await this.retryLLMCall(
-            async () => await this.deps.llmService.chat(
-                messages,
-                session?.model ?? 'gpt-4o',
-                undefined,
-                session?.provider ?? 'openai'
-            ),
+            async () =>
+                await this.deps.llmService.chat(
+                    messages,
+                    session?.model ?? 'gpt-4o',
+                    undefined,
+                    session?.provider ?? 'openai'
+                ),
             'Query idea research'
         );
 
@@ -2251,17 +2568,17 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
     // ==================== Enrichment Parser ====================
 
     private parseEnrichmentResponse(content: string): {
-        explanation: string
-        valueProposition: string
-        nameSuggestions: string[]
-        competitiveAdvantages: string[]
+        explanation: string;
+        valueProposition: string;
+        nameSuggestions: string[];
+        competitiveAdvantages: string[];
     } {
         try {
             const parsed = safeJsonParse(content, {}) as {
-                explanation?: string
-                valueProposition?: string
-                nameSuggestions?: string[]
-                competitiveAdvantages?: string[]
+                explanation?: string;
+                valueProposition?: string;
+                nameSuggestions?: string[];
+                competitiveAdvantages?: string[];
             };
 
             return {
@@ -2272,43 +2589,70 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
                     : [],
                 competitiveAdvantages: Array.isArray(parsed.competitiveAdvantages)
                     ? parsed.competitiveAdvantages.slice(0, 5)
-                    : []
+                    : [],
             };
         } catch {
             return {
                 explanation: 'A innovative project idea.',
                 valueProposition: 'Solves real problems for users.',
                 nameSuggestions: [],
-                competitiveAdvantages: []
+                competitiveAdvantages: [],
             };
         }
     }
 
     // ==================== Parsers for new data ====================
 
-    private parsePersonasResponse(content: string): { personas: UserPersona[]; journey: JourneyStep[] } {
+    private parsePersonasResponse(content: string): {
+        personas: UserPersona[];
+        journey: JourneyStep[];
+    } {
         try {
-            const parsed = safeJsonParse(content, {}) as { personas?: UserPersona[]; journey?: JourneyStep[] };
+            const parsed = safeJsonParse(content, {}) as {
+                personas?: UserPersona[];
+                journey?: JourneyStep[];
+            };
             return {
                 personas: Array.isArray(parsed.personas) ? parsed.personas : [],
-                journey: Array.isArray(parsed.journey) ? parsed.journey : []
+                journey: Array.isArray(parsed.journey) ? parsed.journey : [],
             };
         } catch {
             return { personas: [], journey: [] };
         }
     }
 
-    private parseBusinessResponse(content: string): { swot: SWOTAnalysis; businessModel: BusinessModel } {
+    private parseBusinessResponse(content: string): {
+        swot: SWOTAnalysis;
+        businessModel: BusinessModel;
+    } {
         try {
-            const parsed = safeJsonParse(content, {}) as { swot?: SWOTAnalysis; businessModel?: BusinessModel };
+            const parsed = safeJsonParse(content, {}) as {
+                swot?: SWOTAnalysis;
+                businessModel?: BusinessModel;
+            };
             return {
-                swot: parsed.swot ?? { strengths: [], weaknesses: [], opportunities: [], threats: [] },
-                businessModel: parsed.businessModel ?? { monetizationType: '', revenueStreams: [], costStructure: [], breakEvenStrategy: '' }
+                swot: parsed.swot ?? {
+                    strengths: [],
+                    weaknesses: [],
+                    opportunities: [],
+                    threats: [],
+                },
+                businessModel: parsed.businessModel ?? {
+                    monetizationType: '',
+                    revenueStreams: [],
+                    costStructure: [],
+                    breakEvenStrategy: '',
+                },
             };
         } catch {
             return {
                 swot: { strengths: [], weaknesses: [], opportunities: [], threats: [] },
-                businessModel: { monetizationType: '', revenueStreams: [], costStructure: [], breakEvenStrategy: '' }
+                businessModel: {
+                    monetizationType: '',
+                    revenueStreams: [],
+                    costStructure: [],
+                    breakEvenStrategy: '',
+                },
             };
         }
     }
@@ -2316,19 +2660,28 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
     private parseMarketingResponse(content: string): MarketingPlan {
         try {
             const parsed = safeJsonParse(content, {}) as {
-                channels?: MarketingPlan['channels']
-                first100UsersActionableSteps?: string[]
-                contentStrategy?: string
-                launchChecklist?: string[]
+                channels?: MarketingPlan['channels'];
+                first100UsersActionableSteps?: string[];
+                contentStrategy?: string;
+                launchChecklist?: string[];
             };
             return {
                 channels: Array.isArray(parsed.channels) ? parsed.channels : [],
-                first100UsersActionableSteps: Array.isArray(parsed.first100UsersActionableSteps) ? parsed.first100UsersActionableSteps : [],
+                first100UsersActionableSteps: Array.isArray(parsed.first100UsersActionableSteps)
+                    ? parsed.first100UsersActionableSteps
+                    : [],
                 contentStrategy: parsed.contentStrategy ?? '',
-                launchChecklist: Array.isArray(parsed.launchChecklist) ? parsed.launchChecklist : []
+                launchChecklist: Array.isArray(parsed.launchChecklist)
+                    ? parsed.launchChecklist
+                    : [],
             };
         } catch {
-            return { channels: [], first100UsersActionableSteps: [], contentStrategy: '', launchChecklist: [] };
+            return {
+                channels: [],
+                first100UsersActionableSteps: [],
+                contentStrategy: '',
+                launchChecklist: [],
+            };
         }
     }
 
@@ -2364,7 +2717,8 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      */
     async archiveIdea(ideaId: string): Promise<void> {
         const db = await this.getDb();
-        await db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
+        await db
+            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
             .run('archived', Date.now(), ideaId);
         this.logInfo(`Idea archived: ${ideaId}`);
     }
@@ -2374,7 +2728,8 @@ Competitive Landscape: ${JSON.stringify(idea.ideaCompetitors)}
      */
     async restoreIdea(ideaId: string): Promise<void> {
         const db = await this.getDb();
-        await db.prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
+        await db
+            .prepare('UPDATE project_ideas SET status = ?, updated_at = ? WHERE id = ?')
             .run('pending', Date.now(), ideaId);
         this.logInfo(`Idea restored: ${ideaId}`);
     }

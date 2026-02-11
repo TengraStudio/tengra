@@ -1,13 +1,25 @@
 import { spawn } from 'child_process';
+import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
 const COMPACT_WIDTH = 400;
 const COMPACT_HEIGHT = 600;
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 800;
+const DETACHED_TERMINAL_WIDTH = 1000;
+const DETACHED_TERMINAL_HEIGHT = 420;
+const MAX_TEXT_LENGTH = 512;
+const detachedTerminalWindows = new Map<string, BrowserWindow>();
+
+interface DetachedTerminalWindowOptions {
+    sessionId: string;
+    title?: string;
+    shell?: string;
+    cwd?: string;
+}
 
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     registerWindowControlHandlers(getMainWindow);
@@ -16,21 +28,28 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
 }
 
 function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
-    const validateSender = (event: Electron.IpcMainEvent) => {
+    const validateSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
         const win = getMainWindow();
         // SEC-013-3: Auth check for window operations
         if (event.sender.id !== win?.webContents.id) {
-            appLogger.warn('Security', `Unauthorized window operation attempt from sender ${event.sender.id}`);
+            appLogger.warn(
+                'Security',
+                `Unauthorized window operation attempt from sender ${event.sender.id}`
+            );
             throw new Error('Unauthorized window operation');
         }
         return win;
     };
 
-    ipcMain.on('window:minimize', (event) => {
-        try { validateSender(event).minimize(); } catch { /* ignore */ }
+    ipcMain.on('window:minimize', event => {
+        try {
+            validateSender(event).minimize();
+        } catch {
+            /* ignore */
+        }
     });
 
-    ipcMain.on('window:maximize', (event) => {
+    ipcMain.on('window:maximize', event => {
         try {
             const win = validateSender(event);
             if (win.isMaximized()) {
@@ -38,11 +57,17 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
             } else {
                 win.maximize();
             }
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     });
 
-    ipcMain.on('window:close', (event) => {
-        try { validateSender(event).close(); } catch { /* ignore */ }
+    ipcMain.on('window:close', event => {
+        try {
+            validateSender(event).close();
+        } catch {
+            /* ignore */
+        }
     });
 
     ipcMain.on('window:toggle-compact', (event, enabled) => {
@@ -53,7 +78,9 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
             } else {
                 win.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
             }
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     });
 
     ipcMain.on('window:resize', (event, resolution: string) => {
@@ -64,15 +91,127 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
                 win.setSize(width, height);
                 win.center();
             }
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     });
 
-    ipcMain.on('window:toggle-fullscreen', (event) => {
+    ipcMain.on('window:toggle-fullscreen', event => {
         try {
             const win = validateSender(event);
             win.setFullScreen(!win.isFullScreen());
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     });
+
+    ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: unknown) => {
+        const win = validateSender(event);
+        if (!win) {
+            return false;
+        }
+
+        const options = parseDetachedTerminalOptions(optionsRaw);
+        if (!options) {
+            return false;
+        }
+
+        const existing = detachedTerminalWindows.get(options.sessionId);
+        if (existing && !existing.isDestroyed()) {
+            if (existing.isMinimized()) {
+                existing.restore();
+            }
+            existing.focus();
+            return true;
+        }
+
+        try {
+            const detachedWindow = new BrowserWindow({
+                width: DETACHED_TERMINAL_WIDTH,
+                height: DETACHED_TERMINAL_HEIGHT,
+                minWidth: 640,
+                minHeight: 260,
+                show: false,
+                autoHideMenuBar: true,
+                backgroundColor: '#000000',
+                title: options.title ? `${options.title} - Terminal` : 'Detached Terminal',
+                webPreferences: {
+                    preload: path.join(__dirname, '../preload/preload.js'),
+                    sandbox: true,
+                    contextIsolation: true,
+                    nodeIntegration: false,
+                },
+            });
+
+            const query = {
+                detachedTerminal: '1',
+                sessionId: options.sessionId,
+                title: options.title ?? options.sessionId,
+                shell: options.shell ?? '',
+                cwd: options.cwd ?? '',
+            };
+
+            if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
+                const url = new URL(process.env['ELECTRON_RENDERER_URL']);
+                Object.entries(query).forEach(([key, value]) => {
+                    url.searchParams.set(key, value);
+                });
+                await detachedWindow.loadURL(url.toString());
+            } else {
+                await detachedWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
+                    query,
+                });
+            }
+
+            detachedWindow.on('ready-to-show', () => {
+                detachedWindow.show();
+                detachedWindow.focus();
+            });
+
+            detachedWindow.on('closed', () => {
+                detachedTerminalWindows.delete(options.sessionId);
+            });
+
+            detachedTerminalWindows.set(options.sessionId, detachedWindow);
+            return true;
+        } catch (error) {
+            appLogger.error(
+                'WindowIPC',
+                `Failed to open detached terminal: ${getErrorMessage(error)}`
+            );
+            return false;
+        }
+    });
+}
+
+function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOptions | null {
+    if (!value || typeof value !== 'object') {
+        return null;
+    }
+
+    const raw = value as Record<string, unknown>;
+    const sessionId = typeof raw.sessionId === 'string' ? raw.sessionId.trim() : '';
+    if (!sessionId) {
+        return null;
+    }
+
+    const normalize = (input: unknown): string | undefined => {
+        if (typeof input !== 'string') {
+            return undefined;
+        }
+        const trimmed = input.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        return trimmed.slice(0, MAX_TEXT_LENGTH);
+    };
+
+    return {
+        sessionId: sessionId.slice(0, MAX_TEXT_LENGTH),
+        title: normalize(raw.title),
+        shell: normalize(raw.shell),
+        cwd: normalize(raw.cwd),
+    };
 }
 
 function registerShellHandlers() {
@@ -106,7 +245,10 @@ function registerShellHandlers() {
                     await shell.openExternal(urlString);
                     return { success: true };
                 } catch (e) {
-                    appLogger.error('WindowIPC', `shell.openExternal failed: ${getErrorMessage(e as Error)}`);
+                    appLogger.error(
+                        'WindowIPC',
+                        `shell.openExternal failed: ${getErrorMessage(e as Error)}`
+                    );
                     return { success: false, error: String(e) };
                 }
             } else {
@@ -135,17 +277,20 @@ function registerShellHandlers() {
             spawn('cmd', ['/k', sanitized], { shell: false });
         } else {
             // Basic fallback for Linux/Mac
-            appLogger.warn('WindowIPC', `Open terminal not fully supported on non-windows yet: ${command}`);
+            appLogger.warn(
+                'WindowIPC',
+                `Open terminal not fully supported on non-windows yet: ${command}`
+            );
         }
         return true;
     });
 
     ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             appLogger.info('WindowIPC', `Running command: ${command} ${args.join(' ')}`);
             const child = spawn(command, args, {
                 cwd: cwd ?? process.cwd(),
-                shell: false // Disable shell for security
+                shell: false, // Disable shell for security
             });
 
             let stdout = '';
@@ -176,9 +321,12 @@ function registerCookieHandlers() {
      * Useful for capturing session cookies after OAuth completes in an external browser.
      */
     ipcMain.handle('window:captureCookies', async (_event, url: string, timeoutMs = 5000) => {
-        return new Promise<{ success: boolean }>((resolve) => {
+        return new Promise<{ success: boolean }>(resolve => {
             try {
-                appLogger.info('WindowIPC', `Creating hidden window to capture cookies from: ${url}`);
+                appLogger.info(
+                    'WindowIPC',
+                    `Creating hidden window to capture cookies from: ${url}`
+                );
 
                 const hiddenWin = new BrowserWindow({
                     width: 1,
@@ -187,8 +335,8 @@ function registerCookieHandlers() {
                     webPreferences: {
                         partition: 'default', // Use default session for cookie sharing
                         nodeIntegration: false,
-                        contextIsolation: true
-                    }
+                        contextIsolation: true,
+                    },
                 });
 
                 let resolved = false;
@@ -215,7 +363,10 @@ function registerCookieHandlers() {
                             if (!hiddenWin.isDestroyed()) {
                                 hiddenWin.close();
                             }
-                            appLogger.info('WindowIPC', 'Cookie capture window closed after page load');
+                            appLogger.info(
+                                'WindowIPC',
+                                'Cookie capture window closed after page load'
+                            );
                             resolve({ success: true });
                         }, 1000);
                     }
@@ -231,10 +382,12 @@ function registerCookieHandlers() {
 
                 void hiddenWin.loadURL(url);
             } catch (error) {
-                appLogger.error('WindowIPC', `Failed to create cookie capture window: ${getErrorMessage(error)}`);
+                appLogger.error(
+                    'WindowIPC',
+                    `Failed to create cookie capture window: ${getErrorMessage(error)}`
+                );
                 resolve({ success: false });
             }
         });
     });
 }
-

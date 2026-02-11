@@ -1,11 +1,12 @@
-import { Clock, Hash,Play } from 'lucide-react';
-import React from 'react';
+import { Check, Clock, Hash, Play, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
 
 import { CheckpointItem } from '@/features/projects/hooks/useAgentHistory';
 
 interface CheckpointListProps {
     checkpoints: CheckpointItem[];
     onResume: (checkpointId: string) => void;
+    onRollback: (checkpointId: string) => void;
     isLoading?: boolean;
     formatTime: (date: Date) => string;
     t: (key: string, options?: Record<string, string | number>) => string;
@@ -14,10 +15,13 @@ interface CheckpointListProps {
 export const CheckpointList: React.FC<CheckpointListProps> = ({
     checkpoints,
     onResume,
+    onRollback,
     isLoading,
     formatTime,
-    t
+    t,
 }) => {
+    const [confirmRollbackId, setConfirmRollbackId] = useState<string | null>(null);
+
     if (isLoading) {
         return (
             <div className="p-4 text-center text-muted-foreground text-sm">
@@ -36,7 +40,7 @@ export const CheckpointList: React.FC<CheckpointListProps> = ({
 
     return (
         <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto p-1">
-            {checkpoints.map((cp) => (
+            {checkpoints.map(cp => (
                 <div
                     key={cp.id}
                     className="flex items-center justify-between p-2 rounded hover:bg-muted/10 border border-transparent hover:border-border/20 transition-all group"
@@ -55,13 +59,41 @@ export const CheckpointList: React.FC<CheckpointListProps> = ({
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => onResume(cp.id)}
-                        className="p-1.5 hover:bg-primary/20 text-primary/50 hover:text-primary rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                        title={t('common.resume')}
-                    >
-                        <Play className="w-3 h-3 fill-current" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={() => onResume(cp.id)}
+                            className="p-1.5 hover:bg-primary/20 text-primary/50 hover:text-primary rounded-md transition-colors"
+                            title={t('common.resume')}
+                        >
+                            <Play className="w-3 h-3 fill-current" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (confirmRollbackId === cp.id) {
+                                    onRollback(cp.id);
+                                    setConfirmRollbackId(null);
+                                    return;
+                                }
+                                setConfirmRollbackId(cp.id);
+                            }}
+                            className={`p-1.5 rounded-md transition-colors ${
+                                confirmRollbackId === cp.id
+                                    ? 'bg-destructive/20 text-destructive'
+                                    : 'hover:bg-destructive/10 text-destructive/60 hover:text-destructive'
+                            }`}
+                            title={
+                                confirmRollbackId === cp.id
+                                    ? t('agent.confirmRollback')
+                                    : t('agent.rollback')
+                            }
+                        >
+                            {confirmRollbackId === cp.id ? (
+                                <Check className="w-3 h-3" />
+                            ) : (
+                                <RotateCcw className="w-3 h-3" />
+                            )}
+                        </button>
+                    </div>
                 </div>
             ))}
         </div>

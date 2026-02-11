@@ -14,7 +14,7 @@ interface ProvidersSectionProps {
 export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
     isCollapsed,
     language,
-    onOpenSettings
+    onOpenSettings,
 }) => {
     const { t } = useTranslation(language as Language);
 
@@ -67,3 +67,5 @@ export const ProvidersSectionComponent: React.FC<ProvidersSectionProps> = ({
         </SidebarSection>
     );
 };
+
+ProvidersSectionComponent.displayName = 'ProvidersSection';

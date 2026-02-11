@@ -1,5 +1,11 @@
-﻿
-import { ArrowLeft, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil } from 'lucide-react';
+﻿import {
+    ArrowLeft,
+    PanelLeftClose,
+    PanelLeftOpen,
+    PanelRightClose,
+    PanelRightOpen,
+    Pencil,
+} from 'lucide-react';
 import React from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -35,7 +41,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     onDashboardTabChange,
     handleRunProject,
     showAgentPanel,
-    toggleAgentPanel
+    toggleAgentPanel,
 }) => {
     const { t } = useTranslation(language);
     const [isEditingName, setIsEditingName] = React.useState(false);
@@ -67,7 +73,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     };
 
     return (
-        <div className="h-14 border-b border-white/10 bg-black/40 flex items-center justify-between px-4 shrink-0 relative z-20">
+        <div className="h-14 border-b border-white/10 bg-background flex items-center justify-between px-4 shrink-0 relative z-20">
             {/* Left Section: Back & Title */}
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
                 <button
@@ -84,7 +90,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                                 ref={nameInputRef}
                                 type="text"
                                 value={editedName}
-                                onChange={(e) => setEditedName(e.target.value)}
+                                onChange={e => setEditedName(e.target.value)}
                                 onBlur={handleNameSubmit}
                                 onKeyDown={handleKeyDown}
                                 className="bg-white/10 text-sm font-medium px-1.5 py-0.5 rounded border border-white/20 focus:outline-none focus:border-primary/50 text-foreground min-w-[200px]"
@@ -112,10 +118,19 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
                 {/* Sidebar Toggle */}
                 <button
                     onClick={toggleSidebar}
-                    className={cn("p-1.5 rounded-md transition-colors", sidebarCollapsed ? "text-muted-foreground hover:text-foreground" : "text-foreground bg-white/10")}
+                    className={cn(
+                        'p-1.5 rounded-md transition-colors',
+                        sidebarCollapsed
+                            ? 'text-muted-foreground hover:text-foreground'
+                            : 'text-foreground bg-white/10'
+                    )}
                     title={t('workspace.toggleSidebar')}
                 >
-                    {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
+                    {sidebarCollapsed ? (
+                        <PanelLeftOpen className="w-3.5 h-3.5" />
+                    ) : (
+                        <PanelLeftClose className="w-3.5 h-3.5" />
+                    )}
                 </button>
                 <div className="w-px h-4 bg-white/10 mx-2" />
 
@@ -130,10 +145,19 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             <div className="flex items-center gap-3">
                 <button
                     onClick={toggleAgentPanel}
-                    className={cn("p-1.5 rounded-md transition-colors", showAgentPanel ? "text-foreground bg-white/10" : "text-muted-foreground hover:text-foreground")}
+                    className={cn(
+                        'p-1.5 rounded-md transition-colors',
+                        showAgentPanel
+                            ? 'text-foreground bg-white/10'
+                            : 'text-muted-foreground hover:text-foreground'
+                    )}
                     title={t('workspace.toggleAgentPanel')}
                 >
-                    {showAgentPanel ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+                    {showAgentPanel ? (
+                        <PanelRightClose className="w-3.5 h-3.5" />
+                    ) : (
+                        <PanelRightOpen className="w-3.5 h-3.5" />
+                    )}
                 </button>
             </div>
         </div>

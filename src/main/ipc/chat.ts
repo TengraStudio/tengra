@@ -39,13 +39,24 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
 }
 
 const PROVIDER_INSTRUCTIONS: Record<string, string> = {
-    'antigravity': "Ben, **Antigravity** tarafından **Tandem** platformu üzerinden sağlanan gelişmiş bir yapay zeka asistanıyım. Size en iyi şekilde yardımcı olmak için buradayım.",
-    'copilot': "Ben GitHub Copilot tarafından sağlanan bir yapay zeka programlama asistanıyım.",
-    'ollama': "Ben yerel olarak çalışan bir Ollama modeliyim.",
-    'nvidia': "Ben NVIDIA NIM API üzerinden sağlanan bir yapay zeka asistanıyım."
+    'antigravity': "I am an advanced AI assistant provided by **Antigravity** on the **Tandem** platform. I am here to help you in the best way possible.",
+    'copilot': "I am an AI programming assistant provided by GitHub Copilot.",
+    'ollama': "I am an Ollama model running locally.",
+    'nvidia': "I am an AI assistant provided via NVIDIA NIM API."
 };
 
+/**
+ * Utility class for chat operations
+ */
 class ChatUtils {
+    /**
+     * Injects a system prompt into the message list, combining branding, custom prompts, and existing system messages.
+     * @param messages The array of chat messages.
+     * @param provider The AI provider name (e.g., 'antigravity', 'copilot').
+     * @param model The specific AI model being used.
+     * @param settingsService The service to retrieve application settings.
+     * @returns The updated array of messages with the system prompt injected.
+     */
     static injectSystemPrompt(messages: Message[], provider: string, model: string, settingsService: SettingsService): Message[] {
         const settings = settingsService.getSettings();
         const customPrompt = this.getCustomPrompt(settings, provider);
@@ -79,7 +90,7 @@ class ChatUtils {
         const base = PROVIDER_INSTRUCTIONS[provider.toLowerCase()] ?? PROVIDER_INSTRUCTIONS['antigravity'];
 
         if (provider === 'antigravity' && isImage) {
-            return base + "\n\n**Önemli:** Sen bir görüntü oluşturma (Image Generation) modelisin. Kullanıcı senden bir şey çizmeni, oluşturmanı veya bir görsel yapmanı istediğinde, bunu doğrudan gerçekleştirebilirsin. Görseller otomatik olarak oluşturulup kullanıcıya gösterilecektir.";
+            return base + "\n\n**Important:** You are an Image Generation model. When the user asks you to draw something, create something, or make a visual, you can perform this directly. Images will be automatically generated and shown to the user.";
         }
         return base;
     }
@@ -140,7 +151,7 @@ class RAGUtils {
     }
 
     static injectContext(messages: Message[], context: string) {
-        const ragPrompt = `\n\nBu soruyu cevaplamana yardımcı olabilecek ilgili kod parçacıkları:\n\n${context}`;
+        const ragPrompt = `\n\nRelevant code snippets that may help you answer this question:\n\n${context}`;
         const systemMessage = messages.find(m => m.role === 'system');
 
         if (systemMessage) {

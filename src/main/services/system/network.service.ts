@@ -5,11 +5,10 @@ import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { INetworkService } from '@main/types/services';
+import { ServiceResponse } from '@shared/types';
+import { JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
-
-import { ServiceResponse } from '@/types';
-import { JsonObject } from '@/types/common';
 
 const execAsync = promisify(exec);
 
@@ -33,8 +32,12 @@ export class NetworkService implements INetworkService {
         }
     }
 
-    async scanPort(host: string, port: number, timeout: number = 2000): Promise<ServiceResponse<{ port: number; status: string }>> {
-        return new Promise((resolve) => {
+    async scanPort(
+        host: string,
+        port: number,
+        timeout: number = 2000
+    ): Promise<ServiceResponse<{ port: number; status: string }>> {
+        return new Promise(resolve => {
             const socket = new net.Socket();
             socket.setTimeout(timeout);
             socket.on('connect', () => {
@@ -66,7 +69,7 @@ export class NetworkService implements INetworkService {
     startWebSocketServer(port: number = 8080): ServiceResponse {
         try {
             const wsServer = new WebSocketServer({ port });
-            wsServer.on('connection', (ws) => {
+            wsServer.on('connection', ws => {
                 appLogger.info('network.service', '[WS] Connected');
                 ws.on('message', (message: string) => {
                     appLogger.info('network.service', '[WS] Received:', message);
@@ -89,7 +92,7 @@ export class NetworkService implements INetworkService {
     async getPublicIP(): Promise<ServiceResponse<{ ip: string }>> {
         try {
             const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json() as { ip: string };
+            const data = (await response.json()) as { ip: string };
             return { success: true, result: { ip: data.ip } };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };

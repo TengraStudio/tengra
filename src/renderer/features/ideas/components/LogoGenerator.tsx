@@ -7,22 +7,29 @@ import { cn } from '@/lib/utils';
 import { useLogoGeneration } from '../hooks/useLogoGeneration';
 
 interface LogoGeneratorProps {
-    ideaId: string
-    ideaTitle: string
-    onClose: () => void
+    ideaId: string;
+    ideaTitle: string;
+    onClose: () => void;
 }
 
-const LogoPreview: React.FC<{ logoPath: string | null }> = ({ logoPath }) => {
-    if (!logoPath) {
+const LogoGallery: React.FC<{ logoPaths: string[] }> = ({ logoPaths }) => {
+    if (logoPaths.length === 0) {
         return null;
     }
     return (
-        <div className="mb-4 p-4 bg-muted/20 border border-border/50 rounded-lg flex items-center justify-center backdrop-blur-sm">
-            <img
-                src={`file://${logoPath}`}
-                alt="Generated logo"
-                className="max-w-[200px] max-h-[200px] object-contain drop-shadow-2xl"
-            />
+        <div className="mb-4 grid grid-cols-2 gap-4">
+            {logoPaths.map((path, idx) => (
+                <div
+                    key={idx}
+                    className="p-4 bg-muted/20 border border-border/50 rounded-lg flex items-center justify-center backdrop-blur-sm group relative overflow-hidden"
+                >
+                    <img
+                        src={`safe-file://${path}`}
+                        alt={`Generated logo ${idx + 1}`}
+                        className="max-w-full max-h-[120px] object-contain drop-shadow-lg"
+                    />
+                </div>
+            ))}
         </div>
     );
 };
@@ -39,20 +46,22 @@ const LogoError: React.FC<{ error: string | null }> = ({ error }) => {
     );
 };
 
-export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
-    ideaId,
-    ideaTitle,
-    onClose
-}) => {
+export const LogoGenerator: React.FC<LogoGeneratorProps> = ({ ideaId, ideaTitle, onClose }) => {
     const { t } = useTranslation();
     const [prompt, setPrompt] = useState(`Modern minimalist logo for ${ideaTitle}`);
-    const { isGenerating, logoPath, error, generateLogo } = useLogoGeneration();
+    const [style, setStyle] = useState('Minimalist');
+    const { isGenerating, logoPaths, error, generateLogo } = useLogoGeneration();
 
     const handleGenerate = async () => {
         if (!prompt.trim()) {
             return;
         }
-        await generateLogo(ideaId, prompt);
+        await generateLogo(ideaId, {
+            prompt: prompt.trim(),
+            style,
+            model: 'gemini-2.0-flash-preview-image-generation',
+            count: 1,
+        });
     };
 
     return (
@@ -71,7 +80,7 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                 </button>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 space-y-3">
                 <textarea
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
@@ -83,9 +92,26 @@ export const LogoGenerator: React.FC<LogoGeneratorProps> = ({
                         'focus:outline-none focus:border-primary/50 transition-all text-sm'
                     )}
                 />
+                <div className="flex gap-2">
+                    {['Minimalist', 'Corporate', 'Playful', 'Abstract'].map(s => (
+                        <button
+                            key={s}
+                            type="button"
+                            onClick={() => setStyle(s)}
+                            className={cn(
+                                'flex-1 py-1.5 text-[10px] uppercase tracking-wider font-bold rounded-md border transition-all',
+                                style === s
+                                    ? 'bg-primary/20 border-primary/40 text-primary'
+                                    : 'bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20'
+                            )}
+                        >
+                            {s}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            <LogoPreview logoPath={logoPath} />
+            <LogoGallery logoPaths={logoPaths} />
             <LogoError error={error} />
 
             <button

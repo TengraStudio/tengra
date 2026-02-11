@@ -1,60 +1,81 @@
-import { Palette, Type } from 'lucide-react';
-import React from 'react';
+import { ThemeManifest } from '@shared/types/theme';
+import { FolderOpen, Palette, Type } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types/settings';
+import { themeIpc } from '@/utils/theme-ipc.util';
 
 interface AppearanceTabProps {
-    settings: AppSettings | null
-    updateGeneral: (patch: Partial<AppSettings['general']>) => void
-    t: (key: string) => string
+    settings: AppSettings | null;
+    updateGeneral: (patch: Partial<AppSettings['general']>) => void;
+    t: (key: string) => string;
 }
 
-interface ThemeOption { id: string; label: string }
-interface FontOption { id: string; label: string }
-
-const getThemeOptions = (t: (key: string) => string): ThemeOption[] => [
-    { id: 'black', label: t('appearance.themes.black') },
-    { id: 'white', label: t('appearance.themes.white') }
-];
+interface FontOption {
+    id: string;
+    label: string;
+}
 
 const createFontOptions = (t: (key: string) => string): FontOption[] => [
     { id: "'Inter', system-ui, sans-serif", label: `Inter (${t('appearance.default')})` },
     { id: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
     { id: "'Roboto', sans-serif", label: 'Roboto' },
     { id: "'Outfit', sans-serif", label: 'Outfit' },
-    { id: "system-ui, sans-serif", label: t('appearance.system') }
+    { id: 'system-ui, sans-serif', label: t('appearance.system') },
 ];
 
 interface ThemeSectionProps {
     currentTheme: string;
     onThemeChange: (id: string) => void;
+    themes: ThemeManifest[];
+    onOpenThemesFolder: () => void;
     t: (key: string) => string;
 }
 
-const ThemeSection: React.FC<ThemeSectionProps> = ({ currentTheme, onThemeChange, t }) => (
+const ThemeSection: React.FC<ThemeSectionProps> = ({
+    currentTheme,
+    onThemeChange,
+    themes,
+    onOpenThemesFolder,
+    t,
+}) => (
     <div className="premium-glass p-8 space-y-8">
-        <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
-                <Palette className="w-6 h-6" />
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/10">
+                    <Palette className="w-6 h-6" />
+                </div>
+                <div>
+                    <div className="text-base font-black text-foreground uppercase tracking-tight">
+                        {t('settings.theme')}
+                    </div>
+                    <div className="text-xs font-medium text-muted-foreground/70">
+                        {t('appearance.themeDesc')}
+                    </div>
+                </div>
             </div>
-            <div>
-                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('settings.theme')}</div>
-                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.themeDesc')}</div>
-            </div>
+            <button
+                onClick={onOpenThemesFolder}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/10 hover:bg-muted/20 border border-border/40 hover:border-primary/30 transition-all"
+                title={t('appearance.openThemesFolder')}
+            >
+                <FolderOpen className="w-4 h-4" />
+                <span className="text-xs font-medium">{t('appearance.themesFolder')}</span>
+            </button>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {getThemeOptions(t).map((theme: ThemeOption) => {
+            {themes.map((theme: ThemeManifest) => {
                 const isActive = currentTheme === theme.id;
                 return (
                     <button
                         key={theme.id}
                         onClick={() => onThemeChange(theme.id)}
                         className={cn(
-                            "group relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-500",
+                            'group relative flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all duration-500',
                             isActive
-                                ? "border-primary/50 bg-primary/10 shadow-xl shadow-primary/5 ring-1 ring-primary/20 scale-[1.02]"
-                                : "border-border/40 bg-muted/5 hover:border-primary/30 hover:bg-muted/10"
+                                ? 'border-primary/50 bg-primary/10 shadow-xl shadow-primary/5 ring-1 ring-primary/20 scale-[1.02]'
+                                : 'border-border/40 bg-muted/5 hover:border-primary/30 hover:bg-muted/10'
                         )}
                     >
                         <div
@@ -62,14 +83,24 @@ const ThemeSection: React.FC<ThemeSectionProps> = ({ currentTheme, onThemeChange
                             className="h-16 w-16 rounded-2xl border-2 flex items-end p-2.5 transition-all duration-500 group-hover:scale-110 shadow-2xl"
                             style={{
                                 background: 'hsl(var(--background))',
-                                borderColor: isActive ? 'hsl(var(--primary))' : 'hsl(var(--border) / 0.5)'
+                                borderColor: isActive
+                                    ? 'hsl(var(--primary))'
+                                    : 'hsl(var(--border) / 0.5)',
                             }}
                         >
-                            <span className="h-2.5 w-8 rounded-full shadow-sm" style={{ background: 'hsl(var(--primary))' }} />
+                            <span
+                                className="h-2.5 w-8 rounded-full shadow-sm"
+                                style={{ background: 'hsl(var(--primary))' }}
+                            />
                         </div>
                         <div className="text-center">
-                            <div className={cn("text-xs font-black uppercase tracking-widest transition-colors", isActive ? "text-primary" : "text-muted-foreground")}>
-                                {theme.label}
+                            <div
+                                className={cn(
+                                    'text-xs font-black uppercase tracking-widest transition-colors',
+                                    isActive ? 'text-primary' : 'text-muted-foreground'
+                                )}
+                            >
+                                {theme.displayName}
                             </div>
                         </div>
                         {isActive && (
@@ -91,30 +122,43 @@ interface TypographySectionProps {
     t: (key: string) => string;
 }
 
-const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, fontSize, fontOptions, onFontChange, onFontSizeChange, t }) => (
+const TypographySection: React.FC<TypographySectionProps> = ({
+    currentFont,
+    fontSize,
+    fontOptions,
+    onFontChange,
+    onFontSizeChange,
+    t,
+}) => (
     <div className="premium-glass p-8 space-y-8">
         <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-success/10 text-success border border-success/20 shadow-lg shadow-success/10">
                 <Type className="w-6 h-6" />
             </div>
             <div>
-                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('appearance.font')}</div>
-                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.fontDesc')}</div>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">
+                    {t('appearance.font')}
+                </div>
+                <div className="text-xs font-medium text-muted-foreground/70">
+                    {t('appearance.fontDesc')}
+                </div>
             </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">{t('appearance.fontFamily')}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-1">
+                    {t('appearance.fontFamily')}
+                </div>
                 <div className="grid gap-2">
-                    {fontOptions.map((font) => (
+                    {fontOptions.map(font => (
                         <button
                             key={font.id}
                             onClick={() => onFontChange(font.id)}
                             className={cn(
-                                "w-full px-5 py-4 rounded-xl border text-left text-sm transition-all duration-300",
+                                'w-full px-5 py-4 rounded-xl border text-left text-sm transition-all duration-300',
                                 currentFont === font.id
-                                    ? "border-primary/50 bg-primary/10 text-primary shadow-lg shadow-primary/5 ring-1 ring-primary/20"
-                                    : "border-border/40 bg-muted/5 text-muted-foreground hover:bg-muted/10 hover:text-foreground"
+                                    ? 'border-primary/50 bg-primary/10 text-primary shadow-lg shadow-primary/5 ring-1 ring-primary/20'
+                                    : 'border-border/40 bg-muted/5 text-muted-foreground hover:bg-muted/10 hover:text-foreground'
                             )}
                             style={{ fontFamily: font.id }}
                         >
@@ -129,7 +173,10 @@ const TypographySection: React.FC<TypographySectionProps> = ({ currentFont, font
                     <span className="text-primary">{fontSize}px</span>
                 </div>
                 <div className="p-8 rounded-3xl bg-muted/5 border border-border/40 flex flex-col items-center gap-8 shadow-inner">
-                    <div className="text-center transition-all bg-background/50 backdrop-blur-md p-6 rounded-2xl border border-border/40 w-full shadow-2xl" style={{ fontSize: `${fontSize}px`, fontFamily: currentFont }}>
+                    <div
+                        className="text-center transition-all bg-background/50 backdrop-blur-md p-6 rounded-2xl border border-border/40 w-full shadow-2xl"
+                        style={{ fontSize: `${fontSize}px`, fontFamily: currentFont }}
+                    >
                         {t('appearance.previewText')}
                     </div>
                     <div className="w-full space-y-2">
@@ -163,11 +210,18 @@ interface ToggleSwitchProps {
 const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, title, description }) => (
     <div className="flex items-center justify-between p-5 rounded-2xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-colors group">
         <div>
-            <div className="text-sm font-black text-foreground uppercase tracking-tight">{title}</div>
+            <div className="text-sm font-black text-foreground uppercase tracking-tight">
+                {title}
+            </div>
             <div className="text-xs font-medium text-muted-foreground/70">{description}</div>
         </div>
         <label className="relative inline-flex items-center cursor-pointer scale-110">
-            <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="sr-only peer" />
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={e => onChange(e.target.checked)}
+                className="sr-only peer"
+            />
             <div className="w-12 h-6.5 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:shadow-lg after:transition-all peer-checked:bg-primary border border-border/20"></div>
         </label>
     </div>
@@ -181,27 +235,51 @@ interface AccessibilitySectionProps {
     t: (key: string) => string;
 }
 
-const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({ highContrast, reduceMotion, onHighContrastChange, onReduceMotionChange, t }) => (
+const AccessibilitySection: React.FC<AccessibilitySectionProps> = ({
+    highContrast,
+    reduceMotion,
+    onHighContrastChange,
+    onReduceMotionChange,
+    t,
+}) => (
     <div className="premium-glass p-8 space-y-8">
         <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-warning/10 text-orange border border-warning/20 shadow-lg shadow-warning/10">
                 <Palette className="w-6 h-6 rotate-180" />
             </div>
             <div>
-                <div className="text-base font-black text-foreground uppercase tracking-tight">{t('appearance.accessibility')}</div>
-                <div className="text-xs font-medium text-muted-foreground/70">{t('appearance.accessibilityDesc')}</div>
+                <div className="text-base font-black text-foreground uppercase tracking-tight">
+                    {t('appearance.accessibility')}
+                </div>
+                <div className="text-xs font-medium text-muted-foreground/70">
+                    {t('appearance.accessibilityDesc')}
+                </div>
             </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ToggleSwitch checked={highContrast} onChange={onHighContrastChange} title={t('appearance.highContrast')} description={t('appearance.highContrastDesc')} />
-            <ToggleSwitch checked={reduceMotion} onChange={onReduceMotionChange} title={t('appearance.reduceMotion')} description={t('appearance.reduceMotionDesc')} />
+            <ToggleSwitch
+                checked={highContrast}
+                onChange={onHighContrastChange}
+                title={t('appearance.highContrast')}
+                description={t('appearance.highContrastDesc')}
+            />
+            <ToggleSwitch
+                checked={reduceMotion}
+                onChange={onReduceMotionChange}
+                title={t('appearance.reduceMotion')}
+                description={t('appearance.reduceMotionDesc')}
+            />
         </div>
     </div>
 );
 
 const normalizeTheme = (rawTheme: string): string => {
-    if (rawTheme === 'dark' || rawTheme === 'system') { return 'graphite'; }
-    if (rawTheme === 'light') { return 'snow'; }
+    if (rawTheme === 'dark' || rawTheme === 'system') {
+        return 'black';
+    }
+    if (rawTheme === 'light') {
+        return 'white';
+    }
     return rawTheme;
 };
 
@@ -210,6 +288,20 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
     const currentTheme = normalizeTheme(settings?.general.theme ?? 'black');
     const currentFont = settings?.general.fontFamily ?? fontOptions[0].id;
     const fontSize = settings?.general.fontSize ?? 14;
+    const [themes, setThemes] = useState<ThemeManifest[]>([]);
+
+    // Load themes from runtime directory
+    useEffect(() => {
+        const loadThemes = async () => {
+            try {
+                const loadedThemes = await themeIpc.getAllThemes();
+                setThemes(loadedThemes);
+            } catch (error) {
+                console.error('[AppearanceTab] Failed to load themes:', error);
+            }
+        };
+        void loadThemes();
+    }, []);
 
     const handleThemeChange = (themeId: string) => {
         updateGeneral({ theme: themeId });
@@ -231,10 +323,27 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
         document.documentElement.classList.toggle('reduce-motion', checked);
     };
 
+    const handleOpenThemesFolder = () => {
+        void themeIpc.openThemesDirectory();
+    };
+
     return (
         <div className="space-y-6">
-            <ThemeSection currentTheme={currentTheme} onThemeChange={handleThemeChange} t={t} />
-            <TypographySection currentFont={currentFont} fontSize={fontSize} fontOptions={fontOptions} onFontChange={handleFontChange} onFontSizeChange={size => updateGeneral({ fontSize: size })} t={t} />
+            <ThemeSection
+                currentTheme={currentTheme}
+                onThemeChange={handleThemeChange}
+                themes={themes}
+                onOpenThemesFolder={handleOpenThemesFolder}
+                t={t}
+            />
+            <TypographySection
+                currentFont={currentFont}
+                fontSize={fontSize}
+                fontOptions={fontOptions}
+                onFontChange={handleFontChange}
+                onFontSizeChange={size => updateGeneral({ fontSize: size })}
+                t={t}
+            />
             <AccessibilitySection
                 highContrast={Boolean(settings?.general.highContrast)}
                 reduceMotion={Boolean(settings?.general.reduceMotion)}

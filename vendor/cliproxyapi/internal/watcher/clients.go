@@ -93,6 +93,7 @@ func (w *Watcher) reloadClients(rescanAuth bool, affectedOAuthProviders []string
 	}
 
 	totalNewClients := authFileCount + geminiAPIKeyCount + vertexCompatAPIKeyCount + claudeAPIKeyCount + codexAPIKeyCount + openAICompatCount
+	log.Debugf("client load refresh complete: %d total clients active", totalNewClients)
 
 	if w.reloadCallback != nil {
 		log.Debugf("triggering server update callback before auth refresh")
@@ -100,16 +101,6 @@ func (w *Watcher) reloadClients(rescanAuth bool, affectedOAuthProviders []string
 	}
 
 	w.refreshAuthState(forceAuthRefresh)
-
-	log.Infof("full client load complete - %d clients (%d auth files + %d Gemini API keys + %d Vertex API keys + %d Claude API keys + %d Codex keys + %d OpenAI-compat)",
-		totalNewClients,
-		authFileCount,
-		geminiAPIKeyCount,
-		vertexCompatAPIKeyCount,
-		claudeAPIKeyCount,
-		codexAPIKeyCount,
-		openAICompatCount,
-	)
 }
 
 func (w *Watcher) addOrUpdateClient(path string) {

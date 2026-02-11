@@ -10,7 +10,7 @@ const INITIAL_MODAL_STATE: DeviceCodeModalState = {
     verificationUri: '',
     provider: 'github',
     status: 'pending',
-    errorMessage: undefined
+    errorMessage: undefined,
 };
 
 export function useDeviceAuth(
@@ -20,10 +20,13 @@ export function useDeviceAuth(
     setAuthNotice: (msg: string, duration?: number) => void,
     onRefreshModels?: (bypassCache?: boolean) => void
 ) {
-    const [deviceCodeModal, setDeviceCodeModal] = useState<DeviceCodeModalState>(INITIAL_MODAL_STATE);
+    const [deviceCodeModal, setDeviceCodeModal] =
+        useState<DeviceCodeModalState>(INITIAL_MODAL_STATE);
 
     const connectGitHubProfile = useCallback(async () => {
-        if (!settings) { return; }
+        if (!settings) {
+            return;
+        }
         setAuthBusy('github');
         setAuthNotice('');
         try {
@@ -37,34 +40,52 @@ export function useDeviceAuth(
                     verificationUri: data.verification_uri,
                     provider: 'github',
                     status: 'pending',
-                    errorMessage: undefined
+                    errorMessage: undefined,
                 });
                 window.electron.openExternal(data.verification_uri);
             }
 
-            const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'profile');
+            const pollResult = await window.electron.pollToken(
+                data.device_code,
+                data.interval,
+                'profile'
+            );
             if (pollResult.success && pollResult.token) {
                 const updated: AppSettings = {
                     ...settings,
-                    github: { username: (settings.github as { username?: string }).username ?? 'GitHub User', token: pollResult.token }
+                    github: {
+                        username:
+                            (settings.github as { username?: string }).username ?? 'GitHub User',
+                        token: pollResult.token,
+                    },
                 };
                 await updateSettings(updated, true);
                 onRefreshModels?.(true);
                 setDeviceCodeModal(prev => ({ ...prev, status: 'success' }));
                 setTimeout(() => setDeviceCodeModal(INITIAL_MODAL_STATE), 2000);
             } else {
-                setDeviceCodeModal(prev => ({ ...prev, status: 'error', errorMessage: 'GitHub bağlanamadı.' }));
+                setDeviceCodeModal(prev => ({
+                    ...prev,
+                    status: 'error',
+                    errorMessage: 'GitHub bağlanamadı.',
+                }));
             }
         } catch (error) {
             console.error('GitHub auth failed:', error);
-            setDeviceCodeModal(prev => ({ ...prev, status: 'error', errorMessage: 'GitHub bağlanamadı.' }));
+            setDeviceCodeModal(prev => ({
+                ...prev,
+                status: 'error',
+                errorMessage: 'GitHub bağlanamadı.',
+            }));
         } finally {
             setAuthBusy(null);
         }
-    }, [settings, updateSettings, setAuthBusy, setAuthNotice]);
+    }, [settings, updateSettings, setAuthBusy, setAuthNotice, onRefreshModels]);
 
     const connectCopilot = useCallback(async () => {
-        if (!settings) { return; }
+        if (!settings) {
+            return;
+        }
         setAuthBusy('copilot');
         setAuthNotice('');
         try {
@@ -78,27 +99,43 @@ export function useDeviceAuth(
                     verificationUri: data.verification_uri,
                     provider: 'copilot',
                     status: 'pending',
-                    errorMessage: undefined
+                    errorMessage: undefined,
                 });
                 window.electron.openExternal(data.verification_uri);
             }
 
-            const pollResult = await window.electron.pollToken(data.device_code, data.interval, 'copilot');
+            const pollResult = await window.electron.pollToken(
+                data.device_code,
+                data.interval,
+                'copilot'
+            );
             if (pollResult.success && pollResult.token) {
                 const updated: AppSettings = {
                     ...settings,
-                    copilot: { ...(settings.copilot ?? { connected: false }), connected: true, token: pollResult.token }
+                    copilot: {
+                        ...(settings.copilot ?? { connected: false }),
+                        connected: true,
+                        token: pollResult.token,
+                    },
                 };
                 await updateSettings(updated, true);
                 onRefreshModels?.(true);
                 setDeviceCodeModal(prev => ({ ...prev, status: 'success' }));
                 setTimeout(() => setDeviceCodeModal(INITIAL_MODAL_STATE), 2000);
             } else {
-                setDeviceCodeModal(prev => ({ ...prev, status: 'error', errorMessage: 'Copilot bağlanamadı.' }));
+                setDeviceCodeModal(prev => ({
+                    ...prev,
+                    status: 'error',
+                    errorMessage: 'Copilot bağlanamadı.',
+                }));
             }
         } catch (error) {
             console.error('Copilot auth failed:', error);
-            setDeviceCodeModal(prev => ({ ...prev, status: 'error', errorMessage: 'Copilot bağlanamadı.' }));
+            setDeviceCodeModal(prev => ({
+                ...prev,
+                status: 'error',
+                errorMessage: 'Copilot bağlanamadı.',
+            }));
         } finally {
             setAuthBusy(null);
         }
@@ -112,6 +149,6 @@ export function useDeviceAuth(
         deviceCodeModal,
         connectGitHubProfile,
         connectCopilot,
-        closeDeviceCodeModal
+        closeDeviceCodeModal,
     };
 }

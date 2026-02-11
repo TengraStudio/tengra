@@ -57,15 +57,19 @@ export const de = {
         update: 'Aktualisieren',
         username: 'Benutzername',
         zoomIn: 'Hineinzoomen',
-        zoomOut: 'Herauszoomen'
+        zoomOut: 'Herauszoomen',
+    },
+    loading: {
+        codeEditor: 'Code-Editor wird geladen',
+        chart: 'Diagramm wird geladen',
     },
     app: {
         name: 'Tandem',
-        versionShort: 'V {{version}}'
+        versionShort: 'V {{version}}',
     },
     errors: {
         unexpected: 'Entschuldigung, es ist ein Fehler aufgetreten.',
-        somethingWentWrong: 'Etwas ist schiefgelaufen:'
+        somethingWentWrong: 'Etwas ist schiefgelaufen:',
     },
     languages: {
         tr: 'Türkisch',
@@ -75,7 +79,7 @@ export const de = {
         es: 'Spanisch',
         ja: 'Japanisch',
         zh: 'Chinesisch',
-        ar: 'Arabisch'
+        ar: 'Arabisch',
     },
     themeStore: {
         title: 'Theme-Shop',
@@ -92,37 +96,37 @@ export const de = {
         themes: {
             'dark-default': {
                 name: 'Dunkel Standard',
-                description: 'Das Standard-Dunkelthema mit violetten Akzenten'
+                description: 'Das Standard-Dunkelthema mit violetten Akzenten',
             },
             'light-default': {
                 name: 'Hell Standard',
-                description: 'Ein sauberes helles Theme für den Tag'
+                description: 'Ein sauberes helles Theme für den Tag',
             },
-            'nord': {
+            nord: {
                 name: 'Nord',
-                description: 'Eine arktische, nordblaue Farbpalette'
+                description: 'Eine arktische, nordblaue Farbpalette',
             },
-            'dracula': {
+            dracula: {
                 name: 'Dracula',
-                description: 'Ein dunkles Theme mit lebhaften Farben'
+                description: 'Ein dunkles Theme mit lebhaften Farben',
             },
-            'monokai': {
+            monokai: {
                 name: 'Monokai Pro',
-                description: 'Professionelles dunkles Theme mit warmen Akzenten'
+                description: 'Professionelles dunkles Theme mit warmen Akzenten',
             },
             'github-dark': {
                 name: 'GitHub Dark',
-                description: 'Das offizielle GitHub-Dunkelthema'
+                description: 'Das offizielle GitHub-Dunkelthema',
             },
             'solarized-dark': {
                 name: 'Solarized Dark',
-                description: 'Präzise Farben für Maschinen und Menschen'
+                description: 'Präzise Farben für Maschinen und Menschen',
             },
             'tokyo-night': {
                 name: 'Tokyo Night',
-                description: 'Ein sauberes Theme, das Tokios Lichter feiert'
-            }
-        }
+                description: 'Ein sauberes Theme, das Tokios Lichter feiert',
+            },
+        },
     },
     modelSelector: {
         searchModels: 'Modelle suchen...',
@@ -132,7 +136,7 @@ export const de = {
         openCode: 'OpenCode',
         proxyCustom: 'Benutzerdefinierter Proxy / Andere',
         model: 'Modell',
-        selectModel: 'Modell auswählen'
+        selectModel: 'Modell auswählen',
     },
     assistantIdentity: {
         openai: 'OpenAI',
@@ -145,7 +149,7 @@ export const de = {
         mistral: 'Mistral',
         deepseek: 'DeepSeek',
         qwen: 'Qwen',
-        phi: 'Phi'
+        phi: 'Phi',
     },
     settings: {
         searchPlaceholder: 'Einstellungen suchen...',
@@ -177,76 +181,81 @@ export const de = {
             maxPercentagePlaceholder: '50',
             typeLabel: 'Typ:',
             limitLabel: '{{period}}-Limit',
-            percentHint: 'Wird auf {{count}} Anfragen begrenzt ({{percentage}} % von {{remaining}} verbleibend)',
+            percentHint:
+                'Wird auf {{count}} Anfragen begrenzt ({{percentage}} % von {{remaining}} verbleibend)',
             types: {
                 requests: 'Anfragen',
-                percentage: 'Prozent'
+                percentage: 'Prozent',
             },
             periods: {
                 hourly: 'Stündlich',
                 daily: 'Täglich',
-                weekly: 'Wöchentlich'
+                weekly: 'Wöchentlich',
             },
             copilot: {
                 title: 'Copilot',
-                current: 'Aktuell: {{remaining}} / {{limit}} verbleibend'
+                current: 'Aktuell: {{remaining}} / {{limit}} verbleibend',
             },
             antigravity: {
                 title: 'Antigravity-Modelle',
-                description: 'Prozentsatzlimit basierend auf der verbleibenden Quote je Modell festlegen'
+                description:
+                    'Prozentsatzlimit basierend auf der verbleibenden Quote je Modell festlegen',
             },
             codex: {
                 title: 'Codex',
-                description: 'Prozentsatzlimits basierend auf täglicher/wöchentlicher Restquote festlegen'
-            }
+                description:
+                    'Prozentsatzlimits basierend auf täglicher/wöchentlicher Restquote festlegen',
+            },
         },
         browserClosure: {
             title: 'Browser muss geschlossen werden',
-            description: 'Zur Authentifizierung mit {{provider}} muss Tandem geschützte Cookies lesen.',
+            description:
+                'Zur Authentifizierung mit {{provider}} muss Tandem geschützte Cookies lesen.',
             warningPrefix: 'Wir müssen',
             warningEmphasis: 'Ihren Browser automatisch schließen',
             warningSuffix: 'um die Dateisperre zu lösen.',
-            saveWork: 'Bitte speichern Sie Ihre Arbeit im Browser, bevor Sie fortfahren. Wir öffnen ihn unsichtbar erneut, um den Sitzungsschlüssel zu extrahieren.',
-            confirm: 'Browser schließen & verbinden'
+            saveWork:
+                'Bitte speichern Sie Ihre Arbeit im Browser, bevor Sie fortfahren. Wir öffnen ihn unsichtbar erneut, um den Sitzungsschlüssel zu extrahieren.',
+            confirm: 'Browser schließen & verbinden',
         },
         hyperparameters: {
             title: 'Hyperparameter',
             temperature: {
                 label: 'Temperatur',
-                description: 'Kreativitätsgrad (0: deterministisch, 2: sehr kreativ)'
+                description: 'Kreativitätsgrad (0: deterministisch, 2: sehr kreativ)',
             },
             topP: {
                 label: 'Top-P',
-                description: 'Schwelle der Nucleus-Sampling-Wahrscheinlichkeit'
+                description: 'Schwelle der Nucleus-Sampling-Wahrscheinlichkeit',
             },
             topK: {
                 label: 'Top-K',
-                description: 'Anzahl der wahrscheinlichsten Tokens'
+                description: 'Anzahl der wahrscheinlichsten Tokens',
             },
             repeatPenalty: {
                 label: 'Wiederholungsstrafe',
-                description: 'Wiederholungsstrafe (1: keine, 2: hoch)'
-            }
+                description: 'Wiederholungsstrafe (1: keine, 2: hoch)',
+            },
         },
         mcp: {
             title: 'Model Context Protocol',
             subtitle: 'MCP-Server verwalten und neue Tools installieren',
             tabs: {
                 servers: 'Server',
-                marketplace: 'Marketplace'
+                marketplace: 'Marketplace',
             },
             servers: {
                 title: 'Konfigurierte Server',
                 subtitle: 'Verwalten Sie Ihre Model-Context-Protocol-Serververbindungen',
                 connect: 'Server verbinden',
-                empty: 'Keine Server verbunden'
+                empty: 'Keine Server verbunden',
             },
             status: {
                 connected: 'Verbunden',
                 disconnected: 'Getrennt',
-                error: 'Fehler'
-            }
-        }
+                error: 'Fehler',
+            },
+        },
     },
     projects: {
         newProject: 'Neues Projekt',
@@ -300,8 +309,9 @@ export const de = {
         statusArchived: 'Archiviert',
         statusDraft: 'Entwurf',
         councilEnabledLabel: 'Aktiviert',
-        councilThresholdHint: 'Höhere Schwellen erfordern, dass mehr Agenten zustimmen, bevor ein Schritt als final gilt.',
-        generalAI: 'Allgemeine KI'
+        councilThresholdHint:
+            'Höhere Schwellen erfordern, dass mehr Agenten zustimmen, bevor ein Schritt als final gilt.',
+        generalAI: 'Allgemeine KI',
     },
     projectWizard: {
         title: 'Projekt-Assistent',
@@ -314,7 +324,7 @@ export const de = {
         projectName: 'PROJEKTNAME',
         namePlaceholder: 'z.B. CRM Dashboard',
         placeholder: {
-            example: 'beispiel.de'
+            example: 'beispiel.de',
         },
         description: 'BESCHREIBUNG (OPTIONAL)',
         descPlaceholder: 'Was ist das Ziel dieses Projekts?',
@@ -349,8 +359,8 @@ export const de = {
             backend: 'Backend-Dienst',
             cli: 'CLI / Skript',
             mobile: 'Mobile App',
-            other: 'Benutzerdefiniertes Projekt'
-        }
+            other: 'Benutzerdefiniertes Projekt',
+        },
     },
     projectDashboard: {
         title: 'Projekt-Dashboard',
@@ -430,10 +440,11 @@ export const de = {
         todoList: 'Anstehende Aufgaben',
         gitStatus: {
             pulling: 'Pulling...',
-            pushing: 'Pushing...'
+            pushing: 'Pushing...',
         },
         noIssues: 'Keine signifikanten Probleme im Projekt gefunden. Gute Arbeit!',
-        issuesDescription: 'Tandem scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.',
+        issuesDescription:
+            'Tandem scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.',
         issueType: 'TYP',
         issueMessage: 'NACHRICHT',
         issueLocation: 'ORT',
@@ -441,7 +452,8 @@ export const de = {
         envDescription: 'Verwalten Sie Ihre Projekt-Umgebungsvariablen.',
         envKey: 'SCHLÜSSEL',
         envValue: 'WERT',
-        envNoVars: 'Keine Umgebungsvariablen gefunden. Erstellen Sie eine .env Datei, um zu beginnen.',
+        envNoVars:
+            'Keine Umgebungsvariablen gefunden. Erstellen Sie eine .env Datei, um zu beginnen.',
         envNamePlaceholder: 'VARIABLEN_NAME',
         envAddVar: 'Variable hinzufügen',
         envSave: 'Änderungen speichern',
@@ -450,21 +462,23 @@ export const de = {
         envActions: 'AKTIONEN',
         // Logs Tab
         logsDescription: 'Anwendungsprotokolle in Echtzeit.',
-        logsEmpty: 'Keine Protokolle verfügbar. Führen Sie Ihr Projekt aus, um Protokollausgaben zu generieren.',
+        logsEmpty:
+            'Keine Protokolle verfügbar. Führen Sie Ihr Projekt aus, um Protokollausgaben zu generieren.',
         logsClear: 'Protokolle löschen',
         logsFilter: 'Protokolle filtern...',
         editor: {
             loading: 'Editor wird geladen...',
             error: 'Editorfehler: {{error}}',
-            failed: 'Editor konnte nicht geladen werden'
+            failed: 'Editor konnte nicht geladen werden',
         },
         filesTab: {
             noFileSelected: 'Keine Datei ausgewählt',
-            noFileDesc: 'Wählen Sie eine Datei im Explorer, um ihren Inhalt anzuzeigen und zu bearbeiten.',
+            noFileDesc:
+                'Wählen Sie eine Datei im Explorer, um ihren Inhalt anzuzeigen und zu bearbeiten.',
             shortcuts: 'Kürzel',
             quickSearch: 'Schnellsuche',
             navigation: 'Navigation',
-            toggleExplorer: 'Explorer umschalten'
+            toggleExplorer: 'Explorer umschalten',
         },
         folderInspector: {
             files: 'Dateien',
@@ -476,7 +490,7 @@ export const de = {
             packageName: 'Name:',
             packageVersion: 'Version:',
             readme: 'Readme',
-            root: 'Stamm'
+            root: 'Stamm',
         },
         contributions: {
             lastYear: '{{count}} Beiträge im letzten Jahr',
@@ -495,15 +509,15 @@ export const de = {
                 sep: 'Sep',
                 oct: 'Okt',
                 nov: 'Nov',
-                dec: 'Dez'
+                dec: 'Dez',
             },
             days: {
                 mon: 'Mo',
                 wed: 'Mi',
                 fri: 'Fr',
-                sun: 'So'
-            }
-        }
+                sun: 'So',
+            },
+        },
     },
     git: {
         commitGenerator: 'Git Commit Generator',
@@ -512,11 +526,12 @@ export const de = {
         selectProject: 'Wählen Sie ein Projekt aus, um Commit-Nachrichten zu generieren',
         suggestedMessage: 'Vorgeschlagene Commit-Nachricht',
         stagedChanges: 'Vorschau der indexierten Änderungen',
-        noStagedChanges: 'Keine indexierten Änderungen gefunden. Verwenden Sie zuerst `git add`, um Änderungen zu indexieren.',
+        noStagedChanges:
+            'Keine indexierten Änderungen gefunden. Verwenden Sie zuerst `git add`, um Änderungen zu indexieren.',
         copy: 'Kopieren',
         commit: 'Commit',
         cancel: 'Abbrechen',
-        error: 'Ein Fehler ist aufgetreten'
+        error: 'Ein Fehler ist aufgetreten',
     },
     ssh: {
         title: 'SSH-Manager',
@@ -584,7 +599,7 @@ export const de = {
             username: 'root',
             passwordOptional: 'Derzeit optional, wenn Schlüssel verwendet wird',
             privateKey: '-----BEGIN RSA PRIVATE KEY-----',
-            profileName: 'Mein Server'
+            profileName: 'Mein Server',
         },
         profileName: 'Profilname',
         nginx: {
@@ -597,15 +612,15 @@ export const de = {
             configPreview: 'Konfigurationsvorschau',
             placeholders: {
                 domain: 'api.meineapp.de',
-                port: '3000'
+                port: '3000',
             },
             status: {
                 domainRequired: 'Domain-Name ist erforderlich',
                 connecting: 'Verbindung zum Server wird hergestellt...',
                 moving: 'Konfiguration wird in das Nginx-Verzeichnis verschoben...',
                 success: 'Nginx erfolgreich neu geladen!',
-                error: 'Anwenden fehlgeschlagen: {{error}}. Stellen Sie sicher, dass Sie sudo-Rechte haben.'
-            }
+                error: 'Anwenden fehlgeschlagen: {{error}}. Stellen Sie sicher, dass Sie sudo-Rechte haben.',
+            },
         },
         presets: {
             title: 'Parameter-Voreinstellungen',
@@ -617,34 +632,34 @@ export const de = {
             labels: {
                 name: 'Voreinstellungsname',
                 temperature: 'Temperatur',
-                topP: 'Top P'
+                topP: 'Top P',
             },
             placeholders: {
-                name: 'z.B. Meine eigene Voreinstellung'
-            }
+                name: 'z.B. Meine eigene Voreinstellung',
+            },
         },
         promptManager: {
             title: 'Prompt-Bibliothek',
             newPrompt: 'Neuer Prompt',
             labels: {
                 title: 'Titel',
-                content: 'Inhalt'
+                content: 'Inhalt',
             },
             placeholders: {
                 title: 'z.B. Code-Refactoring',
-                content: 'Prompt-Inhalt eingeben...'
+                content: 'Prompt-Inhalt eingeben...',
             },
             empty: {
                 title: 'Noch keine Prompts',
-                subtitle: 'Erstellen Sie einen, um zu beginnen'
-            }
+                subtitle: 'Erstellen Sie einen, um zu beginnen',
+            },
         },
         editor: {
             loading: 'Editor wird geladen...',
             initializing: 'Editor wird initialisiert...',
             error: 'Editor-Fehler: {{error}}',
-            aiRefactor: 'KI-Refactoring / Erklären'
-        }
+            aiRefactor: 'KI-Refactoring / Erklären',
+        },
     },
     sidebar: {
         chats: 'Chats',
@@ -688,20 +703,20 @@ export const de = {
         councilReady: 'Bereit',
         project: 'Projekt',
         moveTo: 'Verschieben nach...',
-        ideas: 'Ideen'
+        ideas: 'Ideen',
     },
     dateGroups: {
         today: 'Heute',
         yesterday: 'Gestern',
         lastWeek: 'Letzte Woche',
-        older: 'Älter'
+        older: 'Älter',
     },
     nav: {
         chat: 'Chat',
         projects: 'Projekte',
         settings: 'Einstellungen',
         council: 'Rat',
-        mcp: 'MCP-Verwaltung'
+        mcp: 'MCP-Verwaltung',
     },
     mcp: {
         management: 'MCP-Verwaltung',
@@ -734,8 +749,8 @@ export const de = {
             database: 'Datenbank',
             api: 'APIs',
             development: 'Entwicklung',
-            ai: 'KI'
-        }
+            ai: 'KI',
+        },
     },
     memory: {
         title: 'Speicherinspektor',
@@ -748,7 +763,8 @@ export const de = {
         addFact: 'Fakt hinzufügen',
         addManualFact: 'Manuellen Fakt hinzufügen',
         addMemory: 'Speicher hinzufügen',
-        factPlaceholder: 'z.B. Der Benutzer mag React und bevorzugt TypeScript für Frontend-Entwicklung...',
+        factPlaceholder:
+            'z.B. Der Benutzer mag React und bevorzugt TypeScript für Frontend-Entwicklung...',
         noFactsFound: 'Keine Fakten gefunden',
         factsDescription: 'Semantisches Wissen erscheint hier bei Interaktion mit dem Agenten.',
         noEpisodesRecorded: 'Keine Episoden aufgezeichnet',
@@ -758,7 +774,7 @@ export const de = {
         confidence: 'Konfidenz',
         ago: 'vor',
         via: 'über',
-        chatId: 'Chat-ID'
+        chatId: 'Chat-ID',
     },
     terminal: {
         noShellsFound: 'Keine Shells gefunden',
@@ -766,7 +782,7 @@ export const de = {
         startNewSession: 'Neue Sitzung starten',
         sessionFailed: 'Terminal-Sitzung konnte nicht gestartet werden',
         closeAndCreate: 'Schließen Sie diesen Tab und erstellen Sie eine neue Terminal-Sitzung',
-        exitedWithCode: 'Terminal beendet mit Code {{code}}'
+        exitedWithCode: 'Terminal beendet mit Code {{code}}',
     },
     workspace: {
         editor: 'Editor',
@@ -801,14 +817,14 @@ export const de = {
         convertToCode: 'In Code umwandeln',
         placeholders: {
             rootPath: 'C:\\\\Benutzer\\\\Projekt',
-            name: 'Name...'
+            name: 'Name...',
         },
         run: 'Projekt ausführen',
         toggleSidebar: 'Seitenleiste umschalten',
         aiAssistant: 'KI-Assistent',
         aiLabel: 'KI',
         online: 'Online',
-        dev: 'ENTW'
+        dev: 'ENTW',
     },
     chat: {
         placeholder: 'Nachricht eingeben...',
@@ -821,26 +837,28 @@ export const de = {
         collapse: 'Reduzieren',
         moreLines: 'weitere Zeilen',
         scrollToBottom: 'Nach unten scrollen',
-        scrollToBottomWithCount: 'Nach unten scrollen ({{count}} neue Nachrichten)'
+        scrollToBottomWithCount: 'Nach unten scrollen ({{count}} neue Nachrichten)',
     },
     welcome: {
         title: 'Tandem',
-        tagline: 'Intelligenz trifft Eleganz.'
+        tagline: 'Intelligenz trifft Eleganz.',
     },
     auth: {
         authError: 'Authentifizierungsfehler',
         goToAccounts: 'Zu Konten gehen',
-        connectionFailed: 'Verbindung zum Antigravity-Server fehlgeschlagen. Bitte melden Sie sich an oder überprüfen Sie Ihren API-Schlüssel.',
+        connectionFailed:
+            'Verbindung zum Antigravity-Server fehlgeschlagen. Bitte melden Sie sich an oder überprüfen Sie Ihren API-Schlüssel.',
         sessionKeyRequired: 'Claude-Sitzungsschlüssel erforderlich',
         completeConnection: 'Verbindung für {{email}} abschließen',
-        sessionKeyDescription: 'Für Kontingent-Tracking und direkte Interaktion benötigt Tandem Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.',
+        sessionKeyDescription:
+            'Für Kontingent-Tracking und direkte Interaktion benötigt Tandem Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.',
         howToFindKey: 'So finden Sie Ihren Sitzungsschlüssel',
         sessionKeyInstructions: {
             step1: 'Öffnen Sie claude.ai und melden Sie sich an',
             step2: 'Rechtsklicken Sie und wählen Sie Untersuchen',
             step3: 'Gehen Sie zum Tab Anwendung (oder Speicher)',
             step4: 'Erweitern Sie Cookies und wählen Sie https://claude.ai',
-            step5: 'Finden Sie sessionKey und kopieren Sie den Wert (beginnt mit sk-ant-sid)'
+            step5: 'Finden Sie sessionKey und kopieren Sie den Wert (beginnt mit sk-ant-sid)',
         },
         sessionKeyLabel: 'Sitzungsschlüssel',
         sessionKeyPlaceholder: 'sk-ant-sid-...',
@@ -848,12 +866,48 @@ export const de = {
         invalidSessionFormat: 'Ungültiges Format. Der Schlüssel muss mit "sk-ant-sid" beginnen',
         saveSessionKey: 'Sitzungsschlüssel speichern',
         validatedAndSaved: 'Validiert & gespeichert',
-        enterCodeOnGithub: 'Geben Sie den folgenden Code auf GitHub ein, um die Verbindung abzuschließen:',
+        enterCodeOnGithub:
+            'Geben Sie den folgenden Code auf GitHub ein, um die Verbindung abzuschließen:',
         copyCode: 'Code kopieren',
         openGithubToEnter: 'GitHub öffnen um Code einzugeben',
         waitingForLogin: 'Warten auf Anmeldung...',
         connectedSuccessfully: 'Erfolgreich verbunden!',
-        connectionFailedGeneric: 'Verbindung fehlgeschlagen'
+        connectionFailedGeneric: 'Verbindung fehlgeschlagen',
+    },
+    speech: {
+        title: 'Stimme & Sprache',
+        subtitle: 'Spracheinstellungen für Assistentenantworten konfigurieren.',
+        voiceSelection: 'Stimmauswahl',
+        systemDefault: 'Systemstandard',
+        test: 'Stimme testen',
+        speed: 'Sprachgeschwindigkeit',
+        previewText: 'Willkommen in der Zukunft mit Tandem. Ich bin Ihr KI-Assistent.',
+        microphone: 'Mikrofon',
+        speaker: 'Lautsprecher / Kopfhörer',
+        microphoneSelection: 'Mikrofoneingabe',
+        speakerSelection: 'Audioausgabe',
+        voiceCloning: 'Stimmklonen',
+        voiceCloningDesc: 'Integrieren Sie Ihre eigene Stimme in das Tandem-Ökosystem.',
+        voiceCloningTitle: 'Verwenden Sie Ihre eigene Stimme!',
+        voiceCloningTeaser:
+            'Sprechen Sie 1 Minute und lassen Sie die KI Ihre Stimme imitieren. Diese Funktion ist jetzt aktiv!',
+        record: 'Aufnahme starten',
+        stopRecord: 'Aufnahme beenden',
+        recording: 'Aufnahme läuft...',
+        startTraining: 'Klonen starten',
+        training: 'Stimme wird modelliert...',
+        trainingDesc:
+            'Bitte warten Sie, dies kann je nach Computergeschwindigkeit einige Minuten dauern.',
+        downloadModel: 'Modell herunterladen (2GB)',
+        modelRequired: 'XTTS v2 Modell erforderlich',
+        modelRequiredDesc:
+            'Um die Stimmklonfunktion zu verwenden, müssen Sie das KI-Modell (~2GB) herunterladen.',
+        downloadingModel: 'Modell wird heruntergeladen...',
+        downloadComplete: 'Download abgeschlossen',
+    },
+    dragDrop: {
+        title: 'BESTELLUNG ABLEGEN',
+        description: 'Dateien zur Analyse in die Mitte senden.',
     },
     accounts: {
         title: 'Verbundene Konten',
@@ -861,33 +915,33 @@ export const de = {
         categories: {
             aiProviders: 'KI-Anbieter',
             developerTools: 'Entwicklertools',
-            localModels: 'Lokale Modelle'
+            localModels: 'Lokale Modelle',
         },
         providers: {
             github: {
                 name: 'GitHub',
-                description: 'Quellcode-Hosting und Zusammenarbeit'
+                description: 'Quellcode-Hosting und Zusammenarbeit',
             },
             copilot: {
                 name: 'GitHub Copilot',
-                description: 'KI-gestützte Code-Vervollständigung'
+                description: 'KI-gestützte Code-Vervollständigung',
             },
             antigravity: {
                 name: 'Antigravity',
-                description: 'Cloud-KI-Dienste und Webzugriff'
+                description: 'Cloud-KI-Dienste und Webzugriff',
             },
             codex: {
                 name: 'OpenAI / ChatGPT',
-                description: 'GPT-4 und fortgeschrittene Sprachmodelle'
+                description: 'GPT-4 und fortgeschrittene Sprachmodelle',
             },
             claude: {
                 name: 'Claude',
-                description: 'Anthropic Claude Reasoning-Modelle'
+                description: 'Anthropic Claude Reasoning-Modelle',
             },
             ollama: {
                 name: 'Ollama',
-                description: 'KI-Modelle lokal ausführen'
-            }
+                description: 'KI-Modelle lokal ausführen',
+            },
         },
         connected: 'VERBUNDEN',
         disconnected: 'GETRENNT',
@@ -919,8 +973,8 @@ export const de = {
             copilot: 'GitHub Copilot',
             antigravity: 'Antigravity',
             codex: 'ChatGPT Codex',
-            claude: 'Claude'
-        }
+            claude: 'Claude',
+        },
     },
     ideas: {
         title: 'Projektideen',
@@ -939,7 +993,7 @@ export const de = {
             cliTool: 'CLI-Tool',
             apiBackend: 'API / Backend',
             desktop: 'Desktop-App',
-            other: 'Andere'
+            other: 'Andere',
         },
         research: {
             title: 'Recherche-Pipeline',
@@ -947,13 +1001,13 @@ export const de = {
             sectorAnalysis: 'Sektoranalyse',
             marketResearch: 'Marktforschung',
             competitorAnalysis: 'Wettbewerbsanalyse',
-            complete: 'Recherche abgeschlossen'
+            complete: 'Recherche abgeschlossen',
         },
         generation: {
             title: 'Ideen generieren',
             progress: 'Generiere Idee {{current}} von {{total}}',
             enriching: 'Ideendetails werden angereichert...',
-            complete: 'Generierung abgeschlossen'
+            complete: 'Generierung abgeschlossen',
         },
         idea: {
             viewDetails: 'Details anzeigen',
@@ -972,20 +1026,20 @@ export const de = {
             detailedDescription: 'Detaillierte Beschreibung',
             roadmap: 'Projekt-Roadmap',
             techStack: 'Technologie-Stack',
-            competitorAnalysis: 'Wettbewerbsanalyse'
+            competitorAnalysis: 'Wettbewerbsanalyse',
         },
         techStack: {
             frontend: 'Frontend',
             backend: 'Backend',
             database: 'Datenbank',
             infrastructure: 'Infrastruktur',
-            other: 'Andere Tools'
+            other: 'Andere Tools',
         },
         competitor: {
             strengths: 'Stärken',
             weaknesses: 'Schwächen',
             missingFeatures: 'Fehlende Funktionen',
-            opportunity: 'Differenzierungsmöglichkeit'
+            opportunity: 'Differenzierungsmöglichkeit',
         },
         stages: {
             seedGeneration: 'Erstes Konzept wird generiert...',
@@ -996,14 +1050,14 @@ export const de = {
             techStack: 'Technologie-Stack wird ausgewählt...',
             competitorAnalysis: 'Wettbewerber werden analysiert...',
             finalizing: 'Idee wird finalisiert...',
-            complete: 'Idee abgeschlossen'
+            complete: 'Idee abgeschlossen',
         },
         logo: {
             title: 'Logo-Generierung',
             generate: 'Logo generieren',
             generating: 'Logo wird generiert...',
             requiresAntigravity: 'Logo-Generierung erfordert Antigravity-Verbindung',
-            promptPlaceholder: 'Beschreiben Sie Ihr Logo-Konzept...'
+            promptPlaceholder: 'Beschreiben Sie Ihr Logo-Konzept...',
         },
         status: {
             active: 'Aktiv',
@@ -1014,7 +1068,7 @@ export const de = {
             pending: 'Ausstehend',
             approved: 'Genehmigt',
             rejected: 'Abgelehnt',
-            archived: 'Archiviert'
+            archived: 'Archiviert',
         },
         errors: {
             modelRequired: 'Bitte wählen Sie ein Modell',
@@ -1022,34 +1076,35 @@ export const de = {
             researchFailed: 'Recherche fehlgeschlagen. Bitte versuchen Sie es erneut.',
             generationFailed: 'Ideengenerierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
             approvalFailed: 'Projekt konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
-            logoFailed: 'Logo-Generierung fehlgeschlagen. Bitte versuchen Sie es erneut.'
+            logoFailed: 'Logo-Generierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
         },
         empty: {
             noSessions: 'Noch keine Ideensitzungen',
             noSessionsDesc: 'Starten Sie eine neue Sitzung um Projektideen zu generieren',
             noIdeas: 'Noch keine Ideen generiert',
-            noIdeasDesc: 'Schließen Sie die Recherchephase ab um Ideen zu generieren'
+            noIdeasDesc: 'Schließen Sie die Recherchephase ab um Ideen zu generieren',
         },
         search: {
-            placeholder: 'Ideen nach Titel oder Beschreibung suchen...'
+            placeholder: 'Ideen nach Titel oder Beschreibung suchen...',
         },
         filter: {
             allStatuses: 'Alle Status',
             allCategories: 'Alle Kategorien',
             pending: 'Ausstehend',
             approved: 'Genehmigt',
-            rejected: 'Abgelehnt'
+            rejected: 'Abgelehnt',
         },
         export: {
             button: 'Exportieren',
             markdown: 'Als Markdown exportieren',
-            json: 'Als JSON exportieren'
+            json: 'Als JSON exportieren',
         },
         customPrompt: {
             label: 'Benutzerdefinierte Anforderungen',
             optional: 'Optional',
-            placeholder: 'z.B. Muss TypeScript verwenden, Barrierefreiheit priorisieren, kleine Unternehmen ansprechen...',
-            hint: 'Fügen Sie spezifische Einschränkungen oder Anforderungen hinzu, die die KI bei der Ideengenerierung berücksichtigen soll.'
+            placeholder:
+                'z.B. Muss TypeScript verwenden, Barrierefreiheit priorisieren, kleine Unternehmen ansprechen...',
+            hint: 'Fügen Sie spezifische Einschränkungen oder Anforderungen hinzu, die die KI bei der Ideengenerierung berücksichtigen soll.',
         },
         previewMarket: 'Marktforschungsvorschau',
         history: {
@@ -1073,8 +1128,8 @@ export const de = {
             filter: {
                 searchLabel: 'Suche',
                 statusLabel: 'Status',
-                categoryLabel: 'Kategorie'
-            }
+                categoryLabel: 'Kategorie',
+            },
         },
         details: {
             tabs: {
@@ -1084,7 +1139,7 @@ export const de = {
                 users: 'Benutzerprofile',
                 business: 'Business Case',
                 technology: 'Technologie',
-                roadmap: 'Roadmap'
+                roadmap: 'Roadmap',
             },
             statusLabel: 'Status',
             readyForPilot: 'Bereit für Pilot',
@@ -1096,7 +1151,8 @@ export const de = {
             deleteTitle: 'Idee löschen',
             closeTitle: 'Schließen (Esc)',
             rejectTitle: 'Diese Idee ablehnen?',
-            rejectBody: 'Möchten Sie „{{title}}“ wirklich ablehnen? Diese Aktion kann nicht rückgängig gemacht werden.',
+            rejectBody:
+                'Möchten Sie „{{title}}“ wirklich ablehnen? Diese Aktion kann nicht rückgängig gemacht werden.',
             rejectReasonLabel: 'Grund (optional)',
             rejectReasonPlaceholder: 'Warum lehnen Sie diese Idee ab?',
             rejectAction: 'Idee ablehnen',
@@ -1111,7 +1167,7 @@ export const de = {
                 strengths: 'Stärken',
                 weaknesses: 'Schwächen',
                 opportunities: 'Chancen',
-                threats: 'Risiken'
+                threats: 'Risiken',
             },
             revenueModel: 'Erlösmodell',
             breakEvenStrategy: 'Break-even-Strategie',
@@ -1119,14 +1175,15 @@ export const de = {
             goToMarket: 'Go-to-Market-Plan',
             first100Users: 'Strategie für die ersten 100 Nutzer',
             researchAssistant: 'Recherche-Assistent',
-            researchEmpty: 'Fragen Sie mich alles über Markt, Wettbewerb oder Tech-Stack für diese Idee!',
+            researchEmpty:
+                'Fragen Sie mich alles über Markt, Wettbewerb oder Tech-Stack für diese Idee!',
             researchPlaceholder: 'Fragen zu Wettbewerbern, Lücken oder Logik...',
             researchError: 'Entschuldigung, ich konnte das Forschungslabor gerade nicht erreichen.',
             coreConcept: 'Kernkonzept',
             visualIdentity: 'Visuelle Identität',
             editDescriptionPlaceholder: 'Beschreibung bearbeiten...',
             categoryAnalysis: 'Kategorieanalyse',
-            analysisPending: 'Analyse für die Tiefenprüfung ausstehend...'
+            analysisPending: 'Analyse für die Tiefenprüfung ausstehend...',
         },
         marketPreview: {
             title: 'Marktforschungs-Vorschau',
@@ -1135,15 +1192,18 @@ export const de = {
             keyTrends: 'Wichtige Trends',
             marketSize: 'Marktgröße',
             empty: 'Keine Vorschau-Daten verfügbar',
-            continue: 'Mit vollständiger Recherche fortfahren'
+            continue: 'Mit vollständiger Recherche fortfahren',
         },
         delete: {
             title: 'Idee löschen',
             bulkTitle: 'Mehrere Ideen löschen',
-            message: 'Möchten Sie diese Idee wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
-            bulkMessage: 'Möchten Sie wirklich {{count}} Ideen löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+            message:
+                'Möchten Sie diese Idee wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+            bulkMessage:
+                'Möchten Sie wirklich {{count}} Ideen löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
         },
-        modelSelectorHint: 'Verwenden Sie die Modellauswahl in der oberen Leiste um das KI-Modell zu ändern.'
+        modelSelectorHint:
+            'Verwenden Sie die Modellauswahl in der oberen Leiste um das KI-Modell zu ändern.',
     },
     tools: {
         usingTool: 'Tool wird verwendet',
@@ -1156,18 +1216,18 @@ export const de = {
         input: 'EINGABE',
         output: 'AUSGABE',
         filePreview: 'Dateivorschau',
-        path: 'Pfad:'
+        path: 'Pfad:',
     },
     input: {
         placeholder: {
             copilot: 'Fragen Sie Copilot, um Code zu generieren...',
             ollama: 'Fragen Sie das lokale LLM...',
-            default: 'Nachricht eingeben...'
+            default: 'Nachricht eingeben...',
         },
         attachFile: 'Datei anhängen',
         enhancePrompt: 'Prompt mit KI verbessern',
         startListening: 'Spracheingabe starten',
-        stopListening: 'Spracheingabe stoppen'
+        stopListening: 'Spracheingabe stoppen',
     },
     workspaceModals: {
         mountTitle: 'Vorhandenen Ordner oder Server hinzufügen',
@@ -1183,29 +1243,29 @@ export const de = {
         closeModal: 'Modal schließen',
         inputAriaLabel: '{{type}} Name',
         deleteConfirm: 'Sind Sie sicher, dass Sie {name} löschen möchten?',
-        confirm: 'Bestätigen'
+        confirm: 'Bestätigen',
     },
     templates: {
         code: {
             title: 'Programmierung',
             description: 'Komponenten und Algorithmen erstellen.',
-            prompt: 'Können Sie eine moderne React-Komponente für mich erstellen? Mit einem schicken Kartendesign.'
+            prompt: 'Können Sie eine moderne React-Komponente für mich erstellen? Mit einem schicken Kartendesign.',
         },
         analyze: {
             title: 'Analysieren',
             description: 'Dateien und Daten inspizieren.',
-            prompt: 'Können Sie die Architektur in diesem Projekt analysieren und Verbesserungsvorschläge machen?'
+            prompt: 'Können Sie die Architektur in diesem Projekt analysieren und Verbesserungsvorschläge machen?',
         },
         creative: {
             title: 'Kreatives Schreiben',
             description: 'Texte und Inhalte generieren.',
-            prompt: 'Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Tandem schreiben?'
+            prompt: 'Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Tandem schreiben?',
         },
         debug: {
             title: 'Debuggen',
             description: 'Probleme finden und beheben.',
-            prompt: 'Können Sie mir helfen, das Speicherleck in meinem Code zu finden?'
-        }
+            prompt: 'Können Sie mir helfen, das Speicherleck in meinem Code zu finden?',
+        },
     },
     attachments: {
         image: 'Bild',
@@ -1223,7 +1283,8 @@ export const de = {
         copyAsHtml: 'Als HTML kopieren',
         TandemDrawing: 'Tandem Zeichnung...',
         quotaExceeded: 'Kontingent überschritten',
-        quotaMessage: 'Sie haben das Nutzungskontingent für das Modell überschritten. Bitte versuchen Sie es später erneut oder erweitern Sie Ihren Plan.',
+        quotaMessage:
+            'Sie haben das Nutzungskontingent für das Modell überschritten. Bitte versuchen Sie es später erneut oder erweitern Sie Ihren Plan.',
         resetsAt: 'Wird zurückgesetzt am:',
         checkQuotas: 'Kontingente prüfen',
         stop: 'Stopp',
@@ -1245,7 +1306,7 @@ export const de = {
         regenerate: 'Regenerieren',
         rating: 'Antwort bewerten',
         actions: 'Nachrichtenaktionen',
-        multiModelResponse: 'Antworten von mehreren Modellen'
+        multiModelResponse: 'Antworten von mehreren Modellen',
     },
     general: {
         turkish: 'Türkisch',
@@ -1269,7 +1330,7 @@ export const de = {
         startOnStartup: 'Beim Start ausführen',
         startOnStartupDesc: 'Startet die App automatisch beim Systemstart.',
         workAtBackground: 'Im Hintergrund arbeiten',
-        workAtBackgroundDesc: 'App im Hintergrund weiterlaufen lassen'
+        workAtBackgroundDesc: 'App im Hintergrund weiterlaufen lassen',
     },
     appearance: {
         themeDesc: 'Ändern Sie das Farbthema der Anwendung.',
@@ -1309,13 +1370,14 @@ export const de = {
             serenity: 'Gelassenheit',
             neonPulse: 'Neon-Puls',
             cyberFuture: 'Cyber-Zukunft',
-            softVelvet: 'Weicher Samt'
-        }
+            softVelvet: 'Weicher Samt',
+        },
     },
     statistics: {
         title: 'Statistiken',
         tokenUsageOverTime: 'Token-Nutzung im Zeitverlauf',
-        visualizeTokenConsumption: 'Visualisieren Sie Ihre KI-Modell-Nutzungstrends im Zeitverlauf.',
+        visualizeTokenConsumption:
+            'Visualisieren Sie Ihre KI-Modell-Nutzungstrends im Zeitverlauf.',
         totalPrompt: 'Gesamt-Prompt',
         totalCompletion: 'Gesamt-Vervollständigung',
         cost: 'Geschätzte Kosten',
@@ -1358,23 +1420,25 @@ export const de = {
         output: 'Ausgabe',
         claudeTitle: 'Anthropic Claude',
         codexTitle: 'ChatGPT Codex',
-        copilotTitle: 'GitHub Copilot'
+        copilotTitle: 'GitHub Copilot',
     },
     about: {
-        description: 'Tandem ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.',
+        description:
+            'Tandem ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.',
         checkUpdates: 'Auf Updates prüfen',
         privacyPolicy: 'Datenschutzerklärung',
         github: 'GitHub',
         copyright: '© 2025 Tandem',
         factoryReset: 'Werksreset',
-        factoryResetDesc: 'Setzt die Anwendung zurück, indem alle Einstellungen und Daten gelöscht werden.',
+        factoryResetDesc:
+            'Setzt die Anwendung zurück, indem alle Einstellungen und Daten gelöscht werden.',
         updateCheckAlert: 'Update-Prüfung in Produktions-Builds aktiviert.',
         locale: 'Gebietsschema',
         buildSync: 'Build-Sync',
         forceReload: 'NEU LADEN',
         sessionStart: 'Sitzungsstart',
         buildVersion: 'Build-Ver.',
-        notAvailable: 'k. A.'
+        notAvailable: 'k. A.',
     },
     developer: {
         title: 'Entwickler-Einstellungen',
@@ -1392,7 +1456,7 @@ export const de = {
         importSettingsDesc: 'Einstellungen aus einer JSON-Datei laden',
         import: 'Importieren',
         settingsImported: 'Einstellungen importiert',
-        invalidSettingsFile: 'Ungültigeinstellungsdatei'
+        invalidSettingsFile: 'Ungültigeinstellungsdatei',
     },
     advanced: {
         systemInfo: 'Systeminfo',
@@ -1411,7 +1475,7 @@ export const de = {
         tokenRefreshInterval: 'Token-Aktualisierung',
         tokenRefreshIntervalDesc: 'Wie oft OAuth-Token aktualisiert werden.',
         copilotRefreshInterval: 'Copilot-Aktualisierung',
-        copilotRefreshIntervalDesc: 'Wie oft Copilot-Sitzungstoken aktualisiert werden.'
+        copilotRefreshIntervalDesc: 'Wie oft Copilot-Sitzungstoken aktualisiert werden.',
     },
     tips: {
         title: 'Wussten Sie schon?',
@@ -1419,7 +1483,7 @@ export const de = {
         tip2: 'Tandem unterstützt die Verbindung zu Remote-SSH-Servern für die Entwicklung.',
         tip3: 'Sie können Dateien direkt per Drag & Drop in den Chat ziehen.',
         tip4: 'Nutzen Sie den Tab "Rat", um Multi-Agenten-Perspektiven auf Ihren Code zu erhalten.',
-        tip5: 'Passen Sie Ihr Erlebnis unter Einstellungen > Erscheinungsbild an.'
+        tip5: 'Passen Sie Ihr Erlebnis unter Einstellungen > Erscheinungsbild an.',
     },
     agents: {
         planner: 'Planer',
@@ -1429,7 +1493,8 @@ export const de = {
         reviewer: 'Prüfer',
         reviewerRole: 'Code-Qualitätsprüfer',
         refactorPrompt: 'Refaktorisieren Sie diese Codezeile (Zeile {{line}}): {{content}}',
-        welcomeMessage: 'Hallo, ich bin Ihr KI-Assistent. Wie kann ich Ihnen bei Ihrem Code helfen?',
+        welcomeMessage:
+            'Hallo, ich bin Ihr KI-Assistent. Wie kann ich Ihnen bei Ihrem Code helfen?',
         council: 'Rat',
         enabled: 'Aktiviert',
         disabled: 'Deaktiviert',
@@ -1460,7 +1525,7 @@ export const de = {
         on: 'An',
         off: 'Aus',
         local: 'lokal',
-        cloud: 'cloud'
+        cloud: 'cloud',
     },
     modelComparison: {
         title: 'Modellvergleich',
@@ -1469,7 +1534,7 @@ export const de = {
         compare: 'Vergleichen',
         addModel: 'Modell hinzufügen',
         responsePlaceholder: 'Die Antwort erscheint hier',
-        copyResponse: 'Antwort kopieren'
+        copyResponse: 'Antwort kopieren',
     },
     council: {
         title: 'Agentenrat',
@@ -1481,15 +1546,16 @@ export const de = {
         entry: 'Eintrag',
         entries: 'Einträge',
         noActiveSession: 'Keine aktive Sitzung',
-        noActiveSessionDesc: 'Starten Sie eine Aufgabe, um die Ratsagenten in Aktion zu sehen. Aktivitätsprotokolle erscheinen hier.',
+        noActiveSessionDesc:
+            'Starten Sie eine Aufgabe, um die Ratsagenten in Aktion zu sehen. Aktivitätsprotokolle erscheinen hier.',
         status: {
             planning: 'Planung',
             working: 'Arbeitet',
             reviewing: 'Prüft',
             waiting_for_approval: 'Wartet auf Genehmigung',
             completed: 'Abgeschlossen',
-            failed: 'Fehlgeschlagen'
-        }
+            failed: 'Fehlgeschlagen',
+        },
     },
     shortcuts: {
         title: 'Tastenkombinationen',
@@ -1510,7 +1576,7 @@ export const de = {
         searchChat: 'Chat durchsuchen',
         showShortcuts: 'Tastenkombinationen anzeigen',
         close: 'Schließen',
-        footer: 'Drücken Sie Esc zum Schließen'
+        footer: 'Drücken Sie Esc zum Schließen',
     },
     semanticSearch: {
         title: 'Semantische Suche',
@@ -1519,7 +1585,7 @@ export const de = {
         results: 'Suchergebnisse',
         noResults: 'Keine semantischen Treffer gefunden.',
         relevance: 'Relevanz',
-        filesIndex: 'Dateien indiziert'
+        filesIndex: 'Dateien indiziert',
     },
     commandPalette: {
         newChat: 'Neuer Chat',
@@ -1552,11 +1618,11 @@ export const de = {
         close: 'Schließen',
         engineLabel: 'Tandem Befehls-Engine',
         previewEmpty: 'Wählen Sie ein Element aus, um Details anzuzeigen',
-        noResultsHint: 'Versuchen Sie, nach Chats, Modellen oder Einstellungen zu suchen'
+        noResultsHint: 'Versuchen Sie, nach Chats, Modellen oder Einstellungen zu suchen',
     },
     quickAction: {
         explain: 'Erklären',
-        translate: 'Übersetzen'
+        translate: 'Übersetzen',
     },
     activityBar: {
         chat: 'Chat',
@@ -1565,13 +1631,13 @@ export const de = {
         sourceControl: 'Quellcodeverwaltung',
         debug: 'Debuggen',
         extensions: 'Erweiterungen',
-        settings: 'Einstellungen'
+        settings: 'Einstellungen',
     },
     statusBar: {
         error: 'Fehler',
         errors: 'Fehler',
         warning: 'Warnung',
-        warnings: 'Warnungen'
+        warnings: 'Warnungen',
     },
     updateNotification: {
         checkingTitle: 'Nach Updates wird gesucht...',
@@ -1583,27 +1649,27 @@ export const de = {
         errorTitle: 'Update fehlgeschlagen',
         uptodateTitle: 'Sie sind auf dem neuesten Stand',
         downloadAction: 'Herunterladen',
-        restartAction: 'Jetzt neu starten'
+        restartAction: 'Jetzt neu starten',
     },
     panelLayout: {
         expand: 'Erweitern',
         collapse: 'Einklappen',
-        maximize: 'Maximieren'
+        maximize: 'Maximieren',
     },
     diffViewer: {
-        loading: 'Diff wird geladen...'
+        loading: 'Diff wird geladen...',
     },
     fab: {
         openMenu: 'Menü öffnen',
-        closeMenu: 'Menü schließen'
+        closeMenu: 'Menü schließen',
     },
     modal: {
-        close: 'Modal schließen'
+        close: 'Modal schließen',
     },
     titleBar: {
         minimize: 'Minimieren',
         maximize: 'Maximieren',
-        close: 'Schließen'
+        close: 'Schließen',
     },
     logging: {
         title: 'Protokoll-Dashboard',
@@ -1630,32 +1696,54 @@ export const de = {
         lastUpdated: 'Zuletzt aktualisiert',
         showing: 'Anzeige von',
         of: 'von',
-        logs: 'Protokollen'
+        logs: 'Protokollen',
     },
     personas: {
         title: 'Personas',
         description: 'Anpassungsprofile, die die Antworten beeinflussen.',
         namePlaceholder: 'Persona-Name',
         descriptionPlaceholder: 'Kurzbeschreibung',
-        promptPlaceholder: 'Prompt'
+        promptPlaceholder: 'Prompt',
     },
     advancedTab: {
         modelConfiguration: 'Modellkonfiguration',
-        modelConfigurationDesc: 'Benutzerdefinierte Systembefehle und Parameter für das ausgewählte Modell.',
+        modelConfigurationDesc:
+            'Benutzerdefinierte Systembefehle und Parameter für das ausgewählte Modell.',
         customSystemMessage: 'Benutzerdefinierte Systemnachricht',
         systemPromptPlaceholder: 'Benutzerdefinierter Systembefehl für dieses Modell...',
-        parameterPreset: 'Parameter-Voreinstellung'
+        parameterPreset: 'Parameter-Voreinstellung',
     },
     toolDisplay: {
         markdownView: 'Markdown-Ansicht',
         text: 'Text',
-        markdown: 'Markdown'
+        markdown: 'Markdown',
+    },
+    markdown: {
+        loadingDiagram: 'Diagramm wird geladen...',
     },
     modelExplorer: {
         title: 'Modell-Explorer',
         search: 'Modelle suchen...',
         install: 'Installieren',
-        installed: 'Installiert'
+        installed: 'Installiert',
+    },
+    gallery: {
+        title: 'Galerie',
+        imageCount: '{{count}} Bilder',
+        imageCount_one: '1 Bild',
+        imageCount_other: '{{count}} Bilder',
+        refresh: 'Aktualisieren',
+        noImages: 'Noch keine Bilder',
+        emptyState: 'Ihre generierten Bilder werden hier erscheinen',
+        prompt: 'PROMPT',
+        viewPrompt: 'Prompt anzeigen',
+        deleteConfirm: 'Möchten Sie dieses Bild wirklich löschen?',
+        openLocation: 'Dateispeicherort öffnen',
+        open: 'Öffnen',
+        delete: 'Löschen',
+        steps: 'Schritte',
+        cfg: 'CFG',
+        seed: 'Seed',
     },
     docker: {
         title: 'Docker-Verwaltung',
@@ -1664,7 +1752,7 @@ export const de = {
         remove: 'Entfernen',
         shell: 'Shell',
         logs: 'Protokolle',
-        stats: 'Statistiken'
+        stats: 'Statistiken',
     },
     onboarding: {
         welcome: 'Willkommen bei Tandem',
@@ -1673,7 +1761,7 @@ export const de = {
         step3: 'Programmierung starten',
         skip: 'Überspringen',
         next: 'Weiter',
-        finish: 'Abschließen'
+        finish: 'Abschließen',
     },
     agentDashboard: {
         title: 'Rat der Agenten',
@@ -1686,23 +1774,25 @@ export const de = {
         autoRun: 'Auto-Run',
         step: 'Schritt',
         currentPlan: 'Aktueller Plan',
-        selectSession: 'Wählen Sie eine Sitzung oder erstellen Sie eine neue, um zu beginnen.'
+        selectSession: 'Wählen Sie eine Sitzung oder erstellen Sie eine neue, um zu beginnen.',
     },
     extensionPrompt: {
         title: 'Verbessern Sie Ihr Erlebnis',
         subtitle: 'Installieren Sie die Tandem-Browsererweiterung',
         infoTitle: 'Was ist die Browsererweiterung?',
-        infoBody: 'Die Tandem-Browsererweiterung ermöglicht der KI, direkt mit Webseiten zu interagieren. Sie kann Inhalte lesen, Formulare ausfüllen, Schaltflächen klicken und automatisierte Aktionen basierend auf Ihren Befehlen ausführen.',
+        infoBody:
+            'Die Tandem-Browsererweiterung ermöglicht der KI, direkt mit Webseiten zu interagieren. Sie kann Inhalte lesen, Formulare ausfüllen, Schaltflächen klicken und automatisierte Aktionen basierend auf Ihren Befehlen ausführen.',
         featuresTitle: 'Funktionen:',
         features: {
             aiChatTitle: 'KI-Chat im Browser:',
             aiChatDesc: 'Chatten Sie direkt auf jeder Webseite mit der KI',
             pageInteractionTitle: 'Seiteninteraktion:',
-            pageInteractionDesc: 'Die KI kann Seiten lesen, klicken und Formulare automatisch ausfüllen',
+            pageInteractionDesc:
+                'Die KI kann Seiten lesen, klicken und Formulare automatisch ausfüllen',
             contentExtractionTitle: 'Inhaltsextraktion:',
             contentExtractionDesc: 'Seiteninhalte mit einem Klick extrahieren und zusammenfassen',
             secureConnectionTitle: 'Sichere Verbindung:',
-            secureConnectionDesc: 'Die gesamte Kommunikation bleibt lokal auf Ihrem Computer'
+            secureConnectionDesc: 'Die gesamte Kommunikation bleibt lokal auf Ihrem Computer',
         },
         installTitle: 'Schnelle Installation:',
         steps: {
@@ -1710,12 +1800,144 @@ export const de = {
             step2: 'Aktivieren Sie den "Entwicklermodus" (Schalter oben rechts)',
             step3: 'Klicken Sie auf "Entpackte Erweiterung laden"',
             step4Prefix: 'Wählen Sie den',
-            step4Suffix: 'Ordner im Tandem-Verzeichnis aus'
+            step4Suffix: 'Ordner im Tandem-Verzeichnis aus',
         },
         openFolder: 'Erweiterungsordner öffnen',
         viewInstructions: 'Anleitung anzeigen',
         dismiss: 'Nicht mehr anzeigen',
-        remindLater: 'Später erinnern'
-    }
+        remindLater: 'Später erinnern',
+    },
+    build: {
+        buildCommandPlaceholder: 'npm run build',
+        buildOutputDirPlaceholder: './dist',
+        prebuildCommandPlaceholder: 'npm install',
+        postbuildCommandPlaceholder: 'npm run test',
+    },
+    devServer: {
+        startCommandPlaceholder: 'npm run dev',
+        portPlaceholder: '3000',
+    },
+    agent: {
+        allStepsFinished: 'Alle Schritte abgeschlossen. Bereit für neue Anweisungen.',
+        readyForInstructions: 'Bereit für Anweisungen',
+        waitingActivity: 'Warte auf Aktivität...',
+        autonomousTitle: 'Autonomer Agent',
+        autonomousDesc: 'Der Agent wird unabhängig arbeiten, um das Ziel zu erreichen.',
+        executionPlan: 'Ausführungsplan',
+        approveExecute: 'Genehmigen & Ausführen',
+        rejectPlan: 'Plan ablehnen',
+        awaitingApproval: 'Warte auf Genehmigung',
+        noToolCalls: 'Noch keine Tool-Aufrufe.',
+        activeTools: 'Aktive Tools',
+        snapshot: 'Snapshot',
+        promptPlaceholder: 'Beschreiben Sie, was der Agent tun soll...',
+        start: 'Agent starten',
+        stop: 'Agent stoppen',
+        pause: 'Pause',
+        resume: 'Fortsetzen',
+        retry: 'Wiederholen',
+        tokens: 'Tokens',
+        tokensShort: '{{count}}k tkn',
+        cost: 'Kosten',
+        live: 'LIVE',
+        calls: 'Aufrufe',
+        activitiesCount: 'Aktivitäten',
+        history: 'Verlauf',
+        viewCheckpoints: 'Checkpoints anzeigen',
+        rollback: 'Zurücksetzen',
+        confirmRollback: 'Zum Bestätigen erneut klicken',
+        no_checkpoints: 'Keine Checkpoints verfügbar',
+        no_tasks_yet: 'Noch keine Aufgaben',
+        selectModel: 'Modell auswählen',
+        unknownModel: 'Unbekanntes Modell',
+        continueWithModel: 'Mit ausgewähltem Modell fortfahren',
+        selectAlternativeModel: 'Alternatives Modell auswählen',
+        interruptionTitle: 'Unterbrechung',
+        interruptionReason: 'Grund:',
+        interruptionHelp: 'Der Agent benötigt Ihre Hilfe, um fortzufahren.',
+        failedLoadModels: 'Modelle konnten nicht geladen werden.',
+        justNow: 'Gerade eben',
+        minutesAgo: 'vor {{count}}m',
+        hoursAgo: 'vor {{count}}h',
+        daysAgo: 'vor {{count}}d',
+        attachFiles: 'Dateien anhängen',
+        aiProvider: 'KI-Anbieter',
+    },
+    projectAgent: {
+        changePreview: 'Änderungsvorschau',
+        reasoningTitle: 'Begründung',
+        consoleTitle: 'Konsole',
+        consoleTab: 'Konsole',
+        planTab: 'Plan',
+        eventCount: '{{count}} Ereignisse',
+        waitingLogs: 'Warte auf Protokolle...',
+        toolSummary: {
+            editing: 'Dateien bearbeiten',
+            command: 'Befehl ausführen',
+            running: 'Tool ausführen',
+            fileFallback: 'Dateiänderung',
+        },
+        newTask: 'Neue Aufgabe',
+        generatingPlan: 'Plan wird generiert...',
+        executingTask: 'Aufgabe wird ausgeführt...',
+        waitingApproval: 'Warte auf Genehmigung',
+        newStep: 'Neuer Schritt',
+        addStep: 'Schritt hinzufügen',
+        noPlan: 'Noch kein Plan',
+        overallProgress: 'Gesamtfortschritt',
+        selectAgentProfile: 'Agentenprofil auswählen',
+        agentSelected: 'Agent ausgewählt',
+        defaultAgent: 'Standard-Agent',
+        defaultAgentDesc: 'Allzweck-Projektagent',
+        approveAndRun: 'Genehmigen & Ausführen',
+        planning: 'Planung',
+        running: 'Läuft',
+        stopLabel: 'Stopp',
+        planAction: 'Planen',
+        executeAction: 'Ausführen',
+        thinkingOn: 'Denken ein',
+        thinkingOff: 'Denken aus',
+        selectAction: 'Aktion auswählen',
+        noDescription: 'Keine Beschreibung vorhanden',
+        selectProject: 'Projekt auswählen',
+    },
+    audioChat: {
+        listening: 'Höre zu...',
+        listeningLabel: 'Höre zu',
+        listeningDesc: 'Ich höre Ihnen zu.',
+        speaking: 'Spreche...',
+        speakingDesc: 'Ich spreche zu Ihnen.',
+        thinking: 'Denke nach...',
+        thinkingDesc: 'Verarbeite Ihre Anfrage.',
+        stopSpeaking: 'Sprechen beenden',
+        pauseListening: 'Pause',
+        resumeListening: 'Fortsetzen',
+    },
+    canvas: {
+        selectArea: 'Bereich auswählen',
+    },
+    inspector: {
+        analyzing: 'Analysiere...',
+        selectFolder: 'Ordner zum Inspizieren auswählen',
+    },
+    providerLabels: {
+        anthropic: 'Anthropic',
+        antigravity: 'Antigravity',
+        githubCopilot: 'GitHub Copilot',
+        ollama: 'Ollama',
+        openai: 'OpenAI',
+    },
+    exportChat: {
+        confirm: 'Exportieren',
+        exporting: 'Exportiere...',
+        title: 'Chat exportieren',
+        formatMarkdown: 'Markdown (.md)',
+        formatPdf: 'PDF (.pdf)',
+    },
+    tasksPanel: {
+        createNew: 'Neue Aufgabe erstellen',
+    },
+    tasks: {
+        createNew: 'Neue Aufgabe erstellen',
+    },
 };
-

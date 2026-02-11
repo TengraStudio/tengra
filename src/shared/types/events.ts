@@ -1,6 +1,6 @@
 import { JsonValue } from '@shared/types/common';
 import { IdeaProgress, ResearchProgress } from '@shared/types/ideas';
-import { OrchestratorState, ProjectState } from '@shared/types/project-agent';
+import { OrchestratorState, PlanCostBreakdown, ProjectState } from '@shared/types/project-agent';
 
 export interface ModelUpdateEvent {
     provider: string
@@ -41,8 +41,11 @@ export interface SystemEvents {
     'file-changed': { path: string; type: 'create' | 'update' | 'delete' }
     // Project Agent
     'project:update': ProjectState
-    'project:step-update': { index: number; status: 'pending' | 'running' | 'completed' | 'failed'; message?: string }
-    'project:plan-proposed': { steps: string[] }
+    'project:step-update': { index: number; status: 'pending' | 'running' | 'completed' | 'failed'; message?: string; taskId?: string }
+    'project:plan-proposed': { steps: string[]; taskId?: string }
+    'project:cost-estimated': { taskId: string; estimate: PlanCostBreakdown }
+    'project:budget-exceeded': { taskId: string; budgetLimitUsd: number; currentCostUsd: number }
+    'project:plan-revised': { action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string; taskId?: string }
     'orchestrator:update': OrchestratorState
 }
 

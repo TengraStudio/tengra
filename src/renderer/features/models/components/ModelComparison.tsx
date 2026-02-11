@@ -4,8 +4,16 @@
  */
 
 import {
-    BarChart3, Check,
-    ChevronDown, Clock, Copy, Loader2, Play, Plus, X, Zap
+    BarChart3,
+    Check,
+    ChevronDown,
+    Clock,
+    Copy,
+    Loader2,
+    Play,
+    Plus,
+    X,
+    Zap,
 } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
@@ -13,40 +21,45 @@ import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 interface ModelResponse {
-    model: string
-    provider: string
-    content: string
-    tokens: number
-    responseTime: number
-    timestamp: number
-    error?: string
+    model: string;
+    provider: string;
+    content: string;
+    tokens: number;
+    responseTime: number;
+    timestamp: number;
+    error?: string;
 }
 
 interface ComparisonSlot {
-    id: string
-    provider: string
-    model: string
-    response?: ModelResponse | undefined
-    isLoading: boolean
+    id: string;
+    provider: string;
+    model: string;
+    response?: ModelResponse | undefined;
+    isLoading: boolean;
 }
 
 interface ModelComparisonProps {
-    availableModels: { provider: string; model: string; name: string }[]
-    onCompare: (prompt: string, models: { provider: string; model: string }[]) => Promise<ModelResponse[]>
-    language?: Language
+    availableModels: { provider: string; model: string; name: string }[];
+    onCompare: (
+        prompt: string,
+        models: { provider: string; model: string }[]
+    ) => Promise<ModelResponse[]>;
+    language?: Language;
 }
 
 const ModelSelector = ({
     slot,
     availableModels,
-    updateSlot
+    updateSlot,
 }: {
     slot: ComparisonSlot;
     availableModels: { provider: string; model: string; name: string }[];
     updateSlot: (id: string, provider: string, model: string) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const currentModel = availableModels.find(m => m.provider === slot.provider && m.model === slot.model);
+    const currentModel = availableModels.find(
+        m => m.provider === slot.provider && m.model === slot.model
+    );
 
     return (
         <div className="relative">
@@ -58,12 +71,19 @@ const ModelSelector = ({
                 aria-label={`Select model for slot ${slot.id}`}
             >
                 <span className="font-medium">{currentModel?.name ?? slot.model}</span>
-                <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
+                <ChevronDown
+                    className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')}
+                    aria-hidden="true"
+                />
             </button>
 
             {isOpen && (
                 <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
+                    <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsOpen(false)}
+                        aria-hidden="true"
+                    />
                     <div
                         className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border/50 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto"
                         role="listbox"
@@ -76,14 +96,20 @@ const ModelSelector = ({
                                     setIsOpen(false);
                                 }}
                                 role="option"
-                                aria-selected={slot.provider === model.provider && slot.model === model.model}
+                                aria-selected={
+                                    slot.provider === model.provider && slot.model === model.model
+                                }
                                 className={cn(
-                                    "w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between",
-                                    slot.provider === model.provider && slot.model === model.model && "bg-primary/10 text-primary"
+                                    'w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors flex items-center justify-between',
+                                    slot.provider === model.provider &&
+                                        slot.model === model.model &&
+                                        'bg-primary/10 text-primary'
                                 )}
                             >
                                 <span>{model.name}</span>
-                                <span className="text-xs text-muted-foreground">{model.provider}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {model.provider}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -101,7 +127,7 @@ const ResponseCardHeader = ({
     t,
     availableModels,
     updateSlot,
-    slotsCount
+    slotsCount,
 }: {
     slot: ComparisonSlot;
     copiedId: string | null;
@@ -133,7 +159,7 @@ const ResponseCardHeader = ({
                 <button
                     onClick={() => removeSlot(slot.id)}
                     className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors"
-                    aria-label="Remove model slot"
+                    aria-label={t('modelComparison.removeSlot')}
                 >
                     <X className="w-4 h-4" aria-hidden="true" />
                 </button>
@@ -145,11 +171,17 @@ const ResponseCardHeader = ({
 const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: string) => string }) => (
     <div className="flex-1 p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
         {slot.isLoading ? (
-            <div className="flex items-center justify-center h-full" role="status" aria-label="Loading response">
+            <div
+                className="flex items-center justify-center h-full"
+                role="status"
+                aria-label={t('modelComparison.loadingResponse')}
+            >
                 <Loader2 className="w-6 h-6 animate-spin text-primary" aria-hidden="true" />
             </div>
         ) : slot.response?.error ? (
-            <div className="text-destructive text-sm" role="alert">{slot.response.error}</div>
+            <div className="text-destructive text-sm" role="alert">
+                {slot.response.error}
+            </div>
         ) : slot.response ? (
             <p className="text-sm whitespace-pre-wrap">{slot.response.content}</p>
         ) : (
@@ -160,10 +192,16 @@ const ResponseCardContent = ({ slot, t }: { slot: ComparisonSlot; t: (key: strin
     </div>
 );
 
-const ResponseCardStats = ({ response }: { response: ModelResponse }) => (
+const ResponseCardStats = ({
+    response,
+    t,
+}: {
+    response: ModelResponse;
+    t: (key: string) => string;
+}) => (
     <div
         className="flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/10 text-xs text-muted-foreground"
-        aria-label="Comparison metrics"
+        aria-label={t('modelComparison.metrics')}
     >
         <span className="flex items-center gap-1" title="Response time">
             <Clock className="w-3 h-3" aria-hidden="true" />
@@ -198,15 +236,17 @@ const ResponseCard = (props: ResponseCardProps) => {
     return (
         <div
             className={cn(
-                "flex flex-col rounded-xl border bg-card/50 overflow-hidden transition-all",
-                slot.isLoading && "animate-pulse"
+                'flex flex-col rounded-xl border bg-card/50 overflow-hidden transition-all',
+                slot.isLoading && 'animate-pulse'
             )}
             role="region"
             aria-label={`Response from ${slot.model}`}
         >
             <ResponseCardHeader {...props} />
             <ResponseCardContent slot={slot} t={props.t} />
-            {response && !response.error ? <ResponseCardStats response={response} /> : null}
+            {response && !response.error ? (
+                <ResponseCardStats response={response} t={props.t} />
+            ) : null}
         </div>
     );
 };
@@ -223,7 +263,7 @@ const PromptInput = ({
     setPrompt,
     runComparison,
     isComparing,
-    t
+    t,
 }: {
     prompt: string;
     setPrompt: (v: string) => void;
@@ -235,7 +275,7 @@ const PromptInput = ({
         <div className="relative">
             <textarea
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={e => setPrompt(e.target.value)}
                 placeholder={t('modelComparison.promptPlaceholder')}
                 aria-label={t('modelComparison.promptPlaceholder')}
                 className="w-full h-24 bg-muted/30 border border-border/30 rounded-xl p-3 pr-24 text-sm resize-none outline-none focus:border-primary/50 transition-colors"
@@ -246,10 +286,10 @@ const PromptInput = ({
                     disabled={!prompt.trim() || isComparing}
                     aria-label={t('modelComparison.compare')}
                     className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors",
+                        'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors',
                         prompt.trim() && !isComparing
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                            : "bg-muted text-muted-foreground cursor-not-allowed"
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                            : 'bg-muted text-muted-foreground cursor-not-allowed'
                     )}
                 >
                     {isComparing ? (
@@ -267,44 +307,57 @@ const PromptInput = ({
 export const ModelComparison: React.FC<ModelComparisonProps> = ({
     availableModels,
     onCompare,
-    language = 'en'
+    language = 'en',
 }) => {
     const { t } = useTranslation(language);
     const [prompt, setPrompt] = useState('');
     const [slots, setSlots] = useState<ComparisonSlot[]>([
         { id: '1', provider: 'openai', model: 'gpt-4o', isLoading: false },
-        { id: '2', provider: 'anthropic', model: 'claude-3-sonnet', isLoading: false }
+        { id: '2', provider: 'anthropic', model: 'claude-3-sonnet', isLoading: false },
     ]);
     const [isComparing, setIsComparing] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const addSlot = useCallback(() => {
-        if (slots.length >= 4) { return; }
-        const unusedModel = availableModels.find(m =>
-            !slots.some(s => s.provider === m.provider && s.model === m.model)
-        ) ?? availableModels[0];
+        if (slots.length >= 4) {
+            return;
+        }
+        const unusedModel =
+            availableModels.find(
+                m => !slots.some(s => s.provider === m.provider && s.model === m.model)
+            ) ?? availableModels[0];
 
-        setSlots(prev => [...prev, {
-            id: crypto.randomUUID(),
-            provider: unusedModel.provider,
-            model: unusedModel.model,
-            isLoading: false
-        }]);
+        setSlots(prev => [
+            ...prev,
+            {
+                id: crypto.randomUUID(),
+                provider: unusedModel.provider,
+                model: unusedModel.model,
+                isLoading: false,
+            },
+        ]);
     }, [slots, availableModels]);
 
-    const removeSlot = useCallback((id: string) => {
-        if (slots.length <= 2) { return; }
-        setSlots(prev => prev.filter(s => s.id !== id));
-    }, [slots]);
+    const removeSlot = useCallback(
+        (id: string) => {
+            if (slots.length <= 2) {
+                return;
+            }
+            setSlots(prev => prev.filter(s => s.id !== id));
+        },
+        [slots]
+    );
 
     const updateSlot = useCallback((id: string, provider: string, model: string) => {
-        setSlots(prev => prev.map(s =>
-            s.id === id ? { ...s, provider, model, response: undefined } : s
-        ));
+        setSlots(prev =>
+            prev.map(s => (s.id === id ? { ...s, provider, model, response: undefined } : s))
+        );
     }, []);
 
     const runComparison = useCallback(async () => {
-        if (!prompt.trim() || isComparing) { return; }
+        if (!prompt.trim() || isComparing) {
+            return;
+        }
 
         setIsComparing(true);
         setSlots(prev => prev.map(s => ({ ...s, isLoading: true, response: undefined })));
@@ -313,25 +366,29 @@ export const ModelComparison: React.FC<ModelComparisonProps> = ({
             const models = slots.map(s => ({ provider: s.provider, model: s.model }));
             const responses = await onCompare(prompt, models);
 
-            setSlots(prev => prev.map((slot, i) => ({
-                ...slot,
-                isLoading: false,
-                response: responses[i] || undefined
-            })));
+            setSlots(prev =>
+                prev.map((slot, i) => ({
+                    ...slot,
+                    isLoading: false,
+                    response: responses[i] || undefined,
+                }))
+            );
         } catch (error) {
-            setSlots(prev => prev.map(s => ({
-                ...s,
-                isLoading: false,
-                response: {
-                    model: s.model,
-                    provider: s.provider,
-                    content: '',
-                    tokens: 0,
-                    responseTime: 0,
-                    timestamp: Date.now(),
-                    error: String(error)
-                }
-            })));
+            setSlots(prev =>
+                prev.map(s => ({
+                    ...s,
+                    isLoading: false,
+                    response: {
+                        model: s.model,
+                        provider: s.provider,
+                        content: '',
+                        tokens: 0,
+                        responseTime: 0,
+                        timestamp: Date.now(),
+                        error: String(error),
+                    },
+                }))
+            );
         } finally {
             setIsComparing(false);
         }

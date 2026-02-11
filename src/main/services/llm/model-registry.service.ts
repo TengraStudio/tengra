@@ -11,16 +11,21 @@ import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface ModelProviderInfo {
-    id: string
-    name: string
-    provider: string
-    description?: string
-    tags?: string[]
-    downloads?: number
-    likes?: number
-    contextWindow?: number
-    parameters?: string
-    [key: string]: JsonValue | undefined
+    id: string;
+    name: string;
+    provider: string;
+    description?: string;
+    tags?: string[];
+    downloads?: number;
+    likes?: number;
+    contextWindow?: number;
+    parameters?: string;
+    capabilities?: {
+        image_generation?: boolean;
+        text_generation?: boolean;
+        embedding?: boolean;
+    };
+    [key: string]: JsonValue | undefined;
 }
 
 export interface ModelRegistryDependencies {
@@ -63,7 +68,7 @@ export class ModelRegistryService extends BaseService {
         await this.deps.processManager.startService({
             name: 'model-service',
             executable: 'tandem-model-service',
-            persistent: true
+            persistent: true,
         });
 
         // Initial load if empty
@@ -95,7 +100,7 @@ export class ModelRegistryService extends BaseService {
         this.deps.eventBus.emit('model:updated', {
             provider: 'all',
             count: this.cachedModels.length,
-            timestamp: this.lastUpdate
+            timestamp: this.lastUpdate,
         });
     }
 
@@ -114,11 +119,11 @@ export class ModelRegistryService extends BaseService {
         const promises: Promise<ModelProviderInfo[]>[] = [
             // Always fetch these providers
             this.fetchModelProvider('ollama', proxyPort, proxyKey),
-            // Llama-cpp is not yet supported in Rust service (it involves local file scanning), 
+            // Llama-cpp is not yet supported in Rust service (it involves local file scanning),
             // but the user requested explicit cleanup. We will assume 'ollama' covers local for now
             // or we might need to implement 'llama' file scanning in Rust.
             // For now, we follow instructions: "rust service will do all model fetching".
-            // If Rust doesn't support 'llama-cpp' explicitly yet, we might miss it, 
+            // If Rust doesn't support 'llama-cpp' explicitly yet, we might miss it,
             // but 'ollama' covers the primary local use case.
             this.fetchModelProvider('opencode', proxyPort, proxyKey),
         ];
@@ -143,12 +148,14 @@ export class ModelRegistryService extends BaseService {
             try {
                 await this.deps.tokenService.ensureFreshToken(p);
             } catch (err) {
-                appLogger.warn('ModelRegistry', `Failed to ensure fresh token for ${p}: ${getErrorMessage(err)}`);
+                appLogger.warn(
+                    'ModelRegistry',
+                    `Failed to ensure fresh token for ${p}: ${getErrorMessage(err)}`
+                );
             }
 
             const token = await this.deps.authService.getActiveToken(p);
 
-            appLogger.debug('ModelRegistry', `Cloud provider ${p}: token ${token ? 'found' : 'NOT FOUND'}`);
             if (token) {
                 promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
             }
@@ -163,6 +170,12 @@ export class ModelRegistryService extends BaseService {
             all.push(...this.getNvidiaModels());
         }
 
+        // Add OpenAI Image Models
+        const openaiToken = await this.deps.authService.getActiveToken('openai');
+        if (openaiToken) {
+            all.push(...this.getOpenAIImageModels());
+        }
+
         // Use provider:id as key to preserve models with same ID from different providers
         const unique = new Map<string, ModelProviderInfo>();
         all.forEach(m => {
@@ -172,21 +185,38 @@ export class ModelRegistryService extends BaseService {
         return Array.from(unique.values());
     }
 
-    private async fetchModelProvider(provider: string, proxyPort?: number, proxyKey?: string, token?: string): Promise<ModelProviderInfo[]> {
+    private async fetchModelProvider(
+        provider: string,
+        proxyPort?: number,
+        proxyKey?: string,
+        token?: string
+    ): Promise<ModelProviderInfo[]> {
         return this.fetchFromRustService(provider, token, proxyPort, proxyKey);
     }
 
-    private async fetchFromRustService(provider: string, token?: string, proxyPort?: number, proxyKey?: string): Promise<ModelProviderInfo[]> {
+    private async fetchFromRustService(
+        provider: string,
+        token?: string,
+        proxyPort?: number,
+        proxyKey?: string
+    ): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.deps.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
+            const response = await this.deps.processManager.sendRequest<{
+                success: boolean;
+                models: ModelProviderInfo[];
+                error?: string;
+            }>('model-service', {
                 type: 'FetchModels',
                 provider,
                 token,
                 proxy_port: proxyPort,
-                proxy_key: proxyKey
+                proxy_key: proxyKey,
             });
 
-            appLogger.debug('ModelRegistry', `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`);
+            appLogger.debug(
+                'ModelRegistry',
+                `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`
+            );
 
             if (response.success && response.models.length > 0) {
                 return response.models.map(m => {
@@ -198,12 +228,15 @@ export class ModelRegistryService extends BaseService {
                     return {
                         ...m,
                         id,
-                        provider: mappedProvider
+                        provider: mappedProvider,
                     };
                 });
             }
         } catch (e) {
-            appLogger.debug('ModelRegistry', `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`);
+            appLogger.debug(
+                'ModelRegistry',
+                `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`
+            );
         }
         return [];
     }
@@ -226,16 +259,19 @@ export class ModelRegistryService extends BaseService {
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
         const models: ModelProviderInfo[] = [];
-        models.push(...await this.fetchHuggingFaceModels());
+        models.push(...(await this.fetchHuggingFaceModels()));
         return models.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
     }
 
-
     private async fetchHuggingFaceModels(): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.deps.processManager.sendRequest<{ success: boolean; models: ModelProviderInfo[], error?: string }>('model-service', {
+            const response = await this.deps.processManager.sendRequest<{
+                success: boolean;
+                models: ModelProviderInfo[];
+                error?: string;
+            }>('model-service', {
                 type: 'FetchModels',
-                provider: 'huggingface'
+                provider: 'huggingface',
             });
 
             if (response.success && response.models.length > 0) {
@@ -244,12 +280,13 @@ export class ModelRegistryService extends BaseService {
                 appLogger.error('ModelRegistry', `Native HF fetch failed: ${response.error}`);
             }
         } catch (e) {
-            appLogger.error('ModelRegistry', `Failed to fetch HuggingFace models: ${getErrorMessage(e as Error)}`);
+            appLogger.error(
+                'ModelRegistry',
+                `Failed to fetch HuggingFace models: ${getErrorMessage(e as Error)}`
+            );
         }
         return [];
     }
-
-
 
     /**
      * Get locally installed models
@@ -260,14 +297,74 @@ export class ModelRegistryService extends BaseService {
 
     private getNvidiaModels(): ModelProviderInfo[] {
         return [
-            { id: 'nvidia/meta/llama-3.1-405b-instruct', name: 'Llama 3.1 405B Instruct', provider: 'nvidia', contextWindow: 128000 },
-            { id: 'nvidia/meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B Instruct', provider: 'nvidia', contextWindow: 128000 },
-            { id: 'nvidia/meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', provider: 'nvidia', contextWindow: 128000 },
-            { id: 'nvidia/nvidia/llama-3.1-nemotron-70b-instruct', name: 'Llama 3.1 Nemotron 70B', provider: 'nvidia', contextWindow: 128000 },
-            { id: 'nvidia/nvidia/nemotron-4-340b-instruct', name: 'Nemotron-4 340B Instruct', provider: 'nvidia', contextWindow: 128000 },
-            { id: 'nvidia/mistralai/mixtral-8x22b-instruct-v0.1', name: 'Mixtral 8x22B Instruct v0.1', provider: 'nvidia', contextWindow: 65536 },
-            { id: 'nvidia/microsoft/phi-3-medium-4k-instruct', name: 'Phi-3 Medium 4K Instruct', provider: 'nvidia', contextWindow: 4096 }
+            {
+                id: 'nvidia/meta/llama-3.1-405b-instruct',
+                name: 'Llama 3.1 405B Instruct',
+                provider: 'nvidia',
+                contextWindow: 128000,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/meta/llama-3.1-70b-instruct',
+                name: 'Llama 3.1 70B Instruct',
+                provider: 'nvidia',
+                contextWindow: 128000,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/meta/llama-3.1-8b-instruct',
+                name: 'Llama 3.1 8B Instruct',
+                provider: 'nvidia',
+                contextWindow: 128000,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/nvidia/llama-3.1-nemotron-70b-instruct',
+                name: 'Llama 3.1 Nemotron 70B',
+                provider: 'nvidia',
+                contextWindow: 128000,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/nvidia/nemotron-4-340b-instruct',
+                name: 'Nemotron-4 340B Instruct',
+                provider: 'nvidia',
+                contextWindow: 128000,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/mistralai/mixtral-8x22b-instruct-v0.1',
+                name: 'Mixtral 8x22B Instruct v0.1',
+                provider: 'nvidia',
+                contextWindow: 65536,
+                capabilities: { text_generation: true },
+            },
+            {
+                id: 'nvidia/microsoft/phi-3-medium-4k-instruct',
+                name: 'Phi-3 Medium 4K Instruct',
+                provider: 'nvidia',
+                contextWindow: 4096,
+                capabilities: { text_generation: true },
+            },
+        ];
+    }
+
+    private getOpenAIImageModels(): ModelProviderInfo[] {
+        return [
+            {
+                id: 'openai/dall-e-3',
+                name: 'DALL-E 3',
+                provider: 'openai',
+                description: 'The latest DALL-E model from OpenAI.',
+                capabilities: { image_generation: true },
+            },
+            {
+                id: 'openai/dall-e-2',
+                name: 'DALL-E 2',
+                provider: 'openai',
+                description: 'Previous generation DALL-E model.',
+                capabilities: { image_generation: true },
+            },
         ];
     }
 }
-

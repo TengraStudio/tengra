@@ -9,15 +9,15 @@ import { SidebarItem } from './SidebarItem';
 import { SidebarSettingsMenu } from './SidebarSettingsMenu';
 
 interface SidebarFooterProps {
-    isCollapsed: boolean
-    selectedProject: Project | null
-    currentView: string
-    showSettingsMenu: boolean
-    toggleSettingsMenu: () => void
-    toggleSidebar: () => void
-    onOpenSettings: (category?: SettingsCategory) => void
-    t: (key: string) => string
-    language?: Language
+    isCollapsed: boolean;
+    selectedProject: Project | null;
+    currentView: string;
+    showSettingsMenu: boolean;
+    toggleSettingsMenu: () => void;
+    toggleSidebar: () => void;
+    onOpenSettings: (category?: SettingsCategory) => void;
+    t: (key: string) => string;
+    language?: Language;
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = ({
@@ -29,7 +29,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
     toggleSidebar,
     onOpenSettings,
     t,
-    language
+    language,
 }) => {
     const isRTL = language === 'ar';
 
@@ -37,7 +37,9 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
         <div className="p-2 border-t border-border/30 space-y-1">
             {selectedProject && !isCollapsed && (
                 <div className="px-2 py-1.5 bg-muted/30 rounded-md mb-1">
-                    <p className="text-xxs text-muted-foreground/50 uppercase">{t('sidebar.project')}</p>
+                    <p className="text-xxs text-muted-foreground/50 uppercase">
+                        {t('sidebar.project')}
+                    </p>
                     <p className="text-xs font-medium truncate">{selectedProject.title}</p>
                 </div>
             )}
@@ -50,7 +52,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                     active={currentView === 'settings' || showSettingsMenu}
                     onClick={toggleSettingsMenu}
                     isCollapsed={isCollapsed}
-                    iconClassName="transition-transform duration-700 ease-in-out group-hover/item:rotate-180"
+                    iconClassName={`transition-transform duration-700 ease-in-out ${showSettingsMenu ? 'rotate-180' : 'group-hover/item:rotate-180'}`}
                 />
 
                 {showSettingsMenu && (
@@ -67,11 +69,15 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = ({
                 className="w-full flex items-center justify-center p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted/30 rounded-md transition-colors"
             >
                 {/* Rotate 180 if RTL so Right becomes Left and vice versa */}
-                <div className={isRTL ? "rotate-180 transition-transform" : "transition-transform"}>
-                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                <div className={isRTL ? 'rotate-180 transition-transform' : 'transition-transform'}>
+                    {isCollapsed ? (
+                        <ChevronRight className="w-4 h-4" />
+                    ) : (
+                        <ChevronLeft className="w-4 h-4" />
+                    )}
                 </div>
             </button>
-        </div >
+        </div>
     );
 };
 

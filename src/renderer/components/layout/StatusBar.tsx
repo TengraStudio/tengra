@@ -3,51 +3,45 @@
  * VSCode-like status bar with left/right sections and interactive items.
  */
 
-import {
-    AlertCircle,
-    Bell,
-    GitBranch,
-    Loader2,
-    Wifi,
-    WifiOff,
-    Zap
-} from 'lucide-react';
+import { AlertCircle, Bell, GitBranch, Loader2, Wifi, WifiOff, Zap } from 'lucide-react';
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export interface StatusBarItem {
-    id: string
-    content: React.ReactNode
-    tooltip?: string
-    onClick?: () => void
-    priority?: number // Higher = more left (for left items) or more right (for right items)
-    backgroundColor?: string
-    visible?: boolean
+    id: string;
+    content: React.ReactNode;
+    tooltip?: string;
+    onClick?: () => void;
+    priority?: number; // Higher = more left (for left items) or more right (for right items)
+    backgroundColor?: string;
+    visible?: boolean;
 }
 
 interface StatusBarContextType {
-    leftItems: StatusBarItem[]
-    rightItems: StatusBarItem[]
-    addItem: (item: StatusBarItem, position: 'left' | 'right') => void
-    removeItem: (id: string) => void
-    updateItem: (id: string, updates: Partial<StatusBarItem>) => void
+    leftItems: StatusBarItem[];
+    rightItems: StatusBarItem[];
+    addItem: (item: StatusBarItem, position: 'left' | 'right') => void;
+    removeItem: (id: string) => void;
+    updateItem: (id: string, updates: Partial<StatusBarItem>) => void;
 }
 
 const StatusBarContext = createContext<StatusBarContextType | null>(null);
 
 export const useStatusBar = () => {
     const context = useContext(StatusBarContext);
-    if (!context) { throw new Error('useStatusBar must be used within StatusBarProvider'); }
+    if (!context) {
+        throw new Error('useStatusBar must be used within StatusBarProvider');
+    }
     return context;
 };
 
 // Status Bar Provider
 export const StatusBarProvider: React.FC<{
-    children: React.ReactNode
-    defaultLeftItems?: StatusBarItem[]
-    defaultRightItems?: StatusBarItem[]
+    children: React.ReactNode;
+    defaultLeftItems?: StatusBarItem[];
+    defaultRightItems?: StatusBarItem[];
 }> = ({ children, defaultLeftItems = [], defaultRightItems = [] }) => {
     const [leftItems, setLeftItems] = useState<StatusBarItem[]>(defaultLeftItems);
     const [rightItems, setRightItems] = useState<StatusBarItem[]>(defaultRightItems);
@@ -56,7 +50,9 @@ export const StatusBarProvider: React.FC<{
         const setter = position === 'left' ? setLeftItems : setRightItems;
         setter(prev => {
             const existing = prev.find(i => i.id === item.id);
-            if (existing) {return prev;}
+            if (existing) {
+                return prev;
+            }
             const newItems = [...prev, item];
             return newItems.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
         });
@@ -69,13 +65,15 @@ export const StatusBarProvider: React.FC<{
 
     const updateItem = useCallback((id: string, updates: Partial<StatusBarItem>) => {
         const updater = (items: StatusBarItem[]) =>
-            items.map(item => item.id === id ? { ...item, ...updates } : item);
+            items.map(item => (item.id === id ? { ...item, ...updates } : item));
         setLeftItems(updater);
         setRightItems(updater);
     }, []);
 
     return (
-        <StatusBarContext.Provider value={{ leftItems, rightItems, addItem, removeItem, updateItem }}>
+        <StatusBarContext.Provider
+            value={{ leftItems, rightItems, addItem, removeItem, updateItem }}
+        >
             {children}
         </StatusBarContext.Provider>
     );
@@ -83,17 +81,19 @@ export const StatusBarProvider: React.FC<{
 
 // Status Bar Item Component
 const StatusBarItemView: React.FC<{
-    item: StatusBarItem
+    item: StatusBarItem;
 }> = ({ item }) => {
-    if (item.visible === false) { return null; }
+    if (item.visible === false) {
+        return null;
+    }
 
     return (
         <div
             onClick={item.onClick}
             title={item.tooltip}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-xxs transition-colors",
-                item.onClick && "cursor-pointer hover:bg-white/10",
+                'flex items-center gap-1 px-2 py-0.5 text-xxs transition-colors',
+                item.onClick && 'cursor-pointer hover:bg-white/10',
                 item.backgroundColor
             )}
             style={item.backgroundColor ? { backgroundColor: item.backgroundColor } : undefined}
@@ -105,24 +105,26 @@ const StatusBarItemView: React.FC<{
 
 // Main Status Bar Component
 export const StatusBar: React.FC<{
-    className?: string
-    variant?: 'default' | 'primary' | 'warning' | 'error'
+    className?: string;
+    variant?: 'default' | 'primary' | 'warning' | 'error';
 }> = ({ className, variant = 'default' }) => {
     const { leftItems, rightItems } = useStatusBar();
 
     const variantClasses = {
         default: 'bg-primary/90',
         primary: 'bg-primary',
-        warning: 'bg-amber-600',
-        error: 'bg-red-600'
+        warning: 'bg-warning',
+        error: 'bg-destructive',
     };
 
     return (
-        <div className={cn(
-            "h-6 flex items-center justify-between text-foreground/90 select-none",
-            variantClasses[variant],
-            className
-        )}>
+        <div
+            className={cn(
+                'h-6 flex items-center justify-between text-foreground/90 select-none',
+                variantClasses[variant],
+                className
+            )}
+        >
             {/* Left section */}
             <div className="flex items-center">
                 {leftItems.map(item => (
@@ -142,15 +144,15 @@ export const StatusBar: React.FC<{
 
 // Pre-built Status Items
 export const GitBranchStatus: React.FC<{
-    branch?: string
-    modified?: number
-    onClick?: () => void
+    branch?: string;
+    modified?: number;
+    onClick?: () => void;
 }> = ({ branch = 'main', modified = 0, onClick }) => (
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-xxs",
-            onClick && "cursor-pointer hover:bg-white/10"
+            'flex items-center gap-1 px-2 py-0.5 text-xxs',
+            onClick && 'cursor-pointer hover:bg-white/10'
         )}
     >
         <GitBranch className="w-3.5 h-3.5" />
@@ -160,35 +162,35 @@ export const GitBranchStatus: React.FC<{
 );
 
 export const ConnectionStatus: React.FC<{
-    connected: boolean
-    label?: string
-    onClick?: () => void
+    connected: boolean;
+    label?: string;
+    onClick?: () => void;
 }> = ({ connected, label, onClick }) => (
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-xxs",
-            onClick && "cursor-pointer hover:bg-white/10"
+            'flex items-center gap-1 px-2 py-0.5 text-xxs',
+            onClick && 'cursor-pointer hover:bg-white/10'
         )}
     >
         {connected ? (
             <Wifi className="w-3.5 h-3.5" />
         ) : (
-            <WifiOff className="w-3.5 h-3.5 text-red-300" />
+            <WifiOff className="w-3.5 h-3.5 text-destructive" />
         )}
         {label && <span>{label}</span>}
     </div>
 );
 
 export const NotificationBell: React.FC<{
-    count?: number
-    onClick?: () => void
+    count?: number;
+    onClick?: () => void;
 }> = ({ count = 0, onClick }) => (
     <div
         onClick={onClick}
         className={cn(
-            "relative flex items-center px-2 py-0.5",
-            onClick && "cursor-pointer hover:bg-white/10"
+            'relative flex items-center px-2 py-0.5',
+            onClick && 'cursor-pointer hover:bg-white/10'
         )}
     >
         <Bell className="w-3.5 h-3.5" />
@@ -201,10 +203,12 @@ export const NotificationBell: React.FC<{
 );
 
 export const LoadingStatus: React.FC<{
-    loading: boolean
-    label?: string
+    loading: boolean;
+    label?: string;
 }> = ({ loading, label }) => {
-    if (!loading) { return null; }
+    if (!loading) {
+        return null;
+    }
 
     return (
         <div className="flex items-center gap-1 px-2 py-0.5 text-xxs">
@@ -215,58 +219,66 @@ export const LoadingStatus: React.FC<{
 };
 
 export const ErrorStatus: React.FC<{
-    count: number
-    onClick?: () => void
+    count: number;
+    onClick?: () => void;
 }> = ({ count, onClick }) => {
     const { t } = useTranslation();
-    if (count === 0) { return null; }
+    if (count === 0) {
+        return null;
+    }
     const label = count === 1 ? t('statusBar.error') : t('statusBar.errors');
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-xxs bg-red-600/50",
-                onClick && "cursor-pointer hover:bg-red-600/70"
+                'flex items-center gap-1 px-2 py-0.5 text-xxs bg-destructive/50',
+                onClick && 'cursor-pointer hover:bg-destructive/70'
             )}
         >
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>{count} {label}</span>
+            <span>
+                {count} {label}
+            </span>
         </div>
     );
 };
 
 export const WarningStatus: React.FC<{
-    count: number
-    onClick?: () => void
+    count: number;
+    onClick?: () => void;
 }> = ({ count, onClick }) => {
     const { t } = useTranslation();
-    if (count === 0) { return null; }
+    if (count === 0) {
+        return null;
+    }
     const label = count === 1 ? t('statusBar.warning') : t('statusBar.warnings');
 
     return (
         <div
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1 px-2 py-0.5 text-xxs bg-amber-600/50",
-                onClick && "cursor-pointer hover:bg-amber-600/70"
+                'flex items-center gap-1 px-2 py-0.5 text-xxs bg-warning/50',
+                onClick && 'cursor-pointer hover:bg-warning/70'
             )}
         >
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>{count} {label}</span>
+            <span>
+                {count} {label}
+            </span>
         </div>
     );
 };
 
 export const ModelStatus: React.FC<{
-    model?: string
-    onClick?: () => void
+    model?: string;
+    onClick?: () => void;
 }> = ({ model = 'GPT-4', onClick }) => (
     <div
         onClick={onClick}
         className={cn(
-            "flex items-center gap-1 px-2 py-0.5 text-xxs",
-            onClick && "cursor-pointer hover:bg-white/10"
+            'flex items-center gap-1 px-2 py-0.5 text-xxs',
+            onClick && 'cursor-pointer hover:bg-white/10'
         )}
     >
         <Zap className="w-3.5 h-3.5" />

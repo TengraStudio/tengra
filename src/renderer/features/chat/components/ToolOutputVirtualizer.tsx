@@ -14,18 +14,23 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
     content,
     maxHeight = '400px',
     className,
-    isDark = true
+    isDark = true,
 }) => {
     const lines = useMemo(() => content.split('\n'), [content]);
 
     // Only virtualize if content is long enough to justify it
     if (lines.length < 50) {
         return (
-            <pre className={cn(
-                "p-3 rounded-lg border font-mono text-xxs overflow-auto custom-scrollbar",
-                isDark ? "bg-black/40 border-white/5 text-amber-100/70" : "bg-muted/30 border-border/50 text-foreground/80",
-                className
-            )} style={{ maxHeight }}>
+            <pre
+                className={cn(
+                    'p-3 rounded-lg border font-mono text-xxs overflow-auto custom-scrollbar',
+                    isDark
+                        ? 'bg-black/40 border-white/5 text-warning-light/70'
+                        : 'bg-muted/30 border-border/50 text-foreground/80',
+                    className
+                )}
+                style={{ maxHeight }}
+            >
                 {content}
             </pre>
         );
@@ -34,8 +39,10 @@ export const ToolOutputVirtualizer: React.FC<ToolOutputVirtualizerProps> = ({
     return (
         <div
             className={cn(
-                "rounded-lg border font-mono text-xxs overflow-hidden flex flex-col",
-                isDark ? "bg-black/40 border-white/5 text-amber-100/70" : "bg-muted/30 border-border/50 text-foreground/80",
+                'rounded-lg border font-mono text-xxs overflow-hidden flex flex-col',
+                isDark
+                    ? 'bg-black/40 border-white/5 text-warning-light/70'
+                    : 'bg-muted/30 border-border/50 text-foreground/80',
                 className
             )}
             style={{ height: maxHeight }}
