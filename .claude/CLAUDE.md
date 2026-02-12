@@ -24,8 +24,9 @@ npm run test         # Run tests
 2. Make changes
 3. `npm run build && npm run lint`
 4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update docs/CHANGELOG.md
-6. Commit and push
+5. Update `docs/changelog/data/changelog.entries.json` (+ `docs/changelog/i18n/tr.overrides.json` if needed)
+6. Run `npm run changelog:sync`
+7. Commit and push
 
 ## Forbidden Actions
 
@@ -104,3 +105,4 @@ export class MyService extends BaseService {
     }
 }
 ```
+

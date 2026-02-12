@@ -1,4 +1,4 @@
-import { Bot, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
+import { Bot, Boxes, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
 import React from 'react';
 
 import { AppView } from '@/hooks/useAppState';
@@ -21,7 +21,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     t
 }) => {
     return (
-        <div className="px-3 space-y-1">
+        <nav className="px-3 space-y-1" aria-label="Sidebar navigation">
             <SidebarItem
                 icon={MessageSquare}
                 label={t('sidebar.chats')}
@@ -37,7 +37,13 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 onClick={() => onChangeView('projects')}
                 isCollapsed={isCollapsed}
             />
-
+            <SidebarItem
+                icon={Boxes}
+                label={t('sidebar.models')}
+                active={currentView === 'models'}
+                onClick={() => onChangeView('models')}
+                isCollapsed={isCollapsed}
+            />
             <SidebarItem
                 icon={Brain}
                 label={t('sidebar.memory')}
@@ -59,7 +65,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 onClick={() => onChangeView('project-agent')}
                 isCollapsed={isCollapsed}
             />
-        </div>
+        </nav>
     );
 };
 

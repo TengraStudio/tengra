@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Structured Changelog Source",
+  "type": "object",
+  "required": ["version", "entries"],
+  "properties": {
+    "version": { "type": "number" },
+    "generatedFrom": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "date", "translations"],
+        "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "channel": { "type": "string", "enum": ["stable", "beta", "nightly"] },
+          "type": {
+            "type": "string",
+            "enum": ["feature", "fix", "security", "perf", "refactor", "docs"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed", "in_progress", "planned", "unknown"]
+          },
+          "audience": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["end-user", "developer", "admin"] }
+          },
+          "components": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "breaking": { "type": "boolean" },
+          "security": { "type": "boolean" },
+          "translations": {
+            "type": "object",
+            "required": ["en"],
+            "properties": {
+              "en": { "$ref": "#/definitions/entryLocale" },
+              "tr": { "$ref": "#/definitions/entryLocale" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "entryLocale": {
+      "type": "object",
+      "required": ["title", "items"],
+      "properties": {
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

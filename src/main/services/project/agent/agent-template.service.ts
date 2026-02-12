@@ -16,7 +16,6 @@ import {
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
-    AgentTemplateVariable,
 } from '@shared/types/project-agent';
 
 // ===== AGT-TPL-01: Built-in Templates =====

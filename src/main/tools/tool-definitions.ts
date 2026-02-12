@@ -408,8 +408,33 @@ export const toolDefinitions: ToolDefinition[] = [
                 properties: {
                     steps: {
                         type: 'array',
-                        items: { type: 'string' },
-                        description: 'List of implementation steps (each step should be a clear, actionable task).'
+                        items: {
+                            oneOf: [
+                                { type: 'string' },
+                                {
+                                    type: 'object',
+                                    properties: {
+                                        text: { type: 'string' },
+                                        type: {
+                                            type: 'string',
+                                            enum: ['task', 'fork', 'join'],
+                                        },
+                                        depends_on: {
+                                            type: 'array',
+                                            items: { type: 'string' },
+                                        },
+                                        priority: {
+                                            type: 'string',
+                                            enum: ['low', 'normal', 'high', 'critical'],
+                                        },
+                                        branch_id: { type: 'string' },
+                                        lane: { type: 'number' },
+                                    },
+                                    required: ['text'],
+                                },
+                            ],
+                        },
+                        description: 'List of implementation steps. Supports plain strings or objects with type/dependency/priority metadata.'
                     }
                 },
                 required: ['steps']

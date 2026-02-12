@@ -21,13 +21,23 @@ export interface LoggerConfig {
     retentionDays: number;
 }
 
+/**
+ * Payload for a search log entry.
+ */
 type LogPayload = {
+    /** Log level */
     level: LogLevel;
+    /** Log message */
     message: string;
+    /** Context or service name */
     context: string;
+    /** Optional metadata or error */
     data?: JsonValue | Error | AppError;
+    /** Optional timestamp */
     timestamp?: string;
 };
+
+const MAX_FILES_UPPER_BOUND = 100;
 
 const DEFAULT_CONFIG: LoggerConfig = {
     maxBytes: 10 * 1024 * 1024, // 10 MB
@@ -54,6 +64,11 @@ class AppLogger {
     private config: LoggerConfig = { ...DEFAULT_CONFIG };
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
+    /**
+     * Initializes the logger with a directory and optional configuration.
+     * @param logDir - The directory to store log files.
+     * @param config - Optional configuration overrides.
+     */
     init(logDir?: string, config?: Partial<LoggerConfig>) {
         if (this.initialized && !logDir && !config) {
             return;
@@ -77,6 +92,10 @@ class AppLogger {
         this.info('Logger', `Logger initialized at ${this.logPath}`);
     }
 
+    /**
+     * Determines the log directory based on environment.
+     * @returns The path to the log directory.
+     */
     private determineLogDir(): string {
         try {
             return path.join(app.getPath('userData'), 'logs');
@@ -86,26 +105,49 @@ class AppLogger {
         return path.join(process.cwd(), 'logs');
     }
 
+    /**
+     * Reconfigures the logger with new settings.
+     * @param config - The configuration overrides.
+     */
     configure(config: Partial<LoggerConfig>) {
         this.config = { ...this.config, ...config };
     }
 
+    /**
+     * Returns the current logger configuration.
+     * @returns The active configuration.
+     */
     getConfig(): LoggerConfig {
         return { ...this.config };
     }
 
+    /**
+     * Sets the minimum log level for output.
+     * @param level - The log level to set.
+     */
     setLevel(level: LogLevel) {
         this.currentLevel = level;
     }
 
+    /**
+     * Returns the current minimum log level.
+     * @returns The active log level.
+     */
     getLevel(): LogLevel {
         return this.currentLevel;
     }
 
+    /**
+     * Returns the directory where log files are stored.
+     * @returns The log directory path.
+     */
     getLogDir(): string {
         return this.logDir;
     }
 
+    /**
+     * Redirects global console methods to the AppLogger.
+     */
     installConsoleRedirect() {
         if (this.originalConsole) {
             return;
@@ -146,24 +188,48 @@ class AppLogger {
         };
     }
 
+    /**
+     * Logs a debug message.
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
     debug(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.DEBUG) {
             this.write({ level: LogLevel.DEBUG, message, context, data });
         }
     }
 
+    /**
+     * Logs an info message.
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
     info(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.INFO) {
             this.write({ level: LogLevel.INFO, message, context, data });
         }
     }
 
+    /**
+     * Logs a warning message.
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
     warn(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.WARN) {
             this.write({ level: LogLevel.WARN, message, context, data });
         }
     }
 
+    /**
+     * Logs an error message.
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
     error(context: string, message: string, data?: JsonValue | Error | AppError) {
         if (this.currentLevel <= LogLevel.ERROR) {
             this.write({ level: LogLevel.ERROR, message, context, data });
@@ -211,8 +277,10 @@ class AppLogger {
         }
 
         // Handle compressed files (.gz)
+        const maxFiles = Math.min(this.config.maxFiles, MAX_FILES_UPPER_BOUND);
+
         if (this.config.compressRotated) {
-            for (let i = this.config.maxFiles - 1; i >= 1; i--) {
+            for (let i = maxFiles - 1; i >= 1; i--) {
                 const src = `${this.logPath}.${i}.gz`;
                 const dest = `${this.logPath}.${i + 1}.gz`;
                 if (fs.existsSync(src)) {
@@ -226,7 +294,7 @@ class AppLogger {
                 fs.unlinkSync(firstRotated);
             }
         } else {
-            for (let i = this.config.maxFiles - 1; i >= 1; i--) {
+            for (let i = maxFiles - 1; i >= 1; i--) {
                 const src = `${this.logPath}.${i}`;
                 const dest = `${this.logPath}.${i + 1}`;
                 if (fs.existsSync(src)) {
@@ -284,7 +352,11 @@ class AppLogger {
 
         try {
             const files = fs.readdirSync(this.logDir);
-            for (const file of files) {
+            const maxFilesToCleanup = 1000;
+            const processCount = Math.min(files.length, maxFilesToCleanup);
+
+            for (let i = 0; i < processCount; i++) {
+                const file = files[i];
                 if (!file.endsWith('.log') && !file.endsWith('.gz')) {
                     continue;
                 }
@@ -306,6 +378,7 @@ class AppLogger {
 
     /**
      * Get log statistics
+     * @returns Statistics about log files.
      */
     getStats(): {
         totalFiles: number;
@@ -324,7 +397,11 @@ class AppLogger {
 
         try {
             const files = fs.readdirSync(this.logDir);
-            for (const file of files) {
+            const maxFilesToProcess = 1000;
+            const processCount = Math.min(files.length, maxFilesToProcess);
+
+            for (let i = 0; i < processCount; i++) {
+                const file = files[i];
                 if (!this.isLogFile(file)) {
                     continue;
                 }
@@ -351,7 +428,7 @@ class AppLogger {
     }
 
     /**
-     * Dispose resources
+     * Cleans up resources used by the logger.
      */
     dispose() {
         if (this.cleanupTimer) {
@@ -386,23 +463,58 @@ function getLevelColor(level: LogLevel): string {
 
 export const appLogger = new AppLogger();
 
-// Legacy export for those who used static Logger
+/**
+ * Legacy Logger class for static access to appLogger.
+ * @deprecated Use appLogger directly where possible.
+ */
 export class Logger {
+    /**
+     * Initializes the static logger.
+     * @param logDir - The log directory.
+     */
     static init(logDir?: string) {
         appLogger.init(logDir);
     }
+    /**
+     * Sets the static logger level.
+     * @param level - The log level.
+     */
     static setLevel(level: LogLevel) {
         appLogger.setLevel(level);
     }
+    /**
+     * Logs a debug message statically.
+     * @param context - Context name.
+     * @param message - Log message.
+     * @param data - Optional data.
+     */
     static debug(context: string, message: string, data?: JsonValue | Error | AppError) {
         appLogger.debug(context, message, data);
     }
+    /**
+     * Logs an info message statically.
+     * @param context - Context name.
+     * @param message - Log message.
+     * @param data - Optional data.
+     */
     static info(context: string, message: string, data?: JsonValue | Error | AppError) {
         appLogger.info(context, message, data);
     }
+    /**
+     * Logs a warning message statically.
+     * @param context - Context name.
+     * @param message - Log message.
+     * @param data - Optional data.
+     */
     static warn(context: string, message: string, data?: JsonValue | Error | AppError) {
         appLogger.warn(context, message, data);
     }
+    /**
+     * Logs an error message statically.
+     * @param context - Context name.
+     * @param message - Log message.
+     * @param data - Optional data.
+     */
     static error(context: string, message: string, data?: JsonValue | Error | AppError) {
         appLogger.error(context, message, data);
     }

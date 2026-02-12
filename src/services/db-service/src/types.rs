@@ -398,6 +398,99 @@ pub struct Stats {
 }
 
 // ============================================================================
+// Marketplace Types
+// ============================================================================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketplaceModel {
+    pub id: String,
+    pub name: String,
+    pub provider: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pulls: Option<String>,
+    #[serde(default)]
+    pub tag_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_updated: Option<String>,
+    #[serde(default)]
+    pub categories: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub short_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub downloads: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub likes: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsertMarketplaceModelsRequest {
+    pub models: Vec<MarketplaceModelInput>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketplaceModelInput {
+    pub name: String,
+    pub provider: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pulls: Option<String>,
+    #[serde(default)]
+    pub tag_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_updated: Option<String>,
+    #[serde(default)]
+    pub categories: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub short_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub downloads: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub likes: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMarketplaceModelsRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchMarketplaceModelsRequest {
+    pub query: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketplaceModelsResponse {
+    pub models: Vec<MarketplaceModel>,
+    pub total: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsertResponse {
+    pub count: usize,
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

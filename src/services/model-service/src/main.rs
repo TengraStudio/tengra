@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use axum::{
-    routing::post,
+    routing::{get, post},
     Json, Router,
     extract::State,
 };
@@ -14,6 +14,9 @@ use std::sync::Arc;
 use reqwest::Client;
 use std::fs;
 use tokio::net::TcpListener;
+use tokio::sync::RwLock;
+use chrono::{Datelike, Local, Timelike, Weekday};
+use scraper::{Html, Selector};
 
 #[derive(Deserialize)]
 struct ModelRequest {
@@ -65,8 +68,49 @@ struct Response {
     error: Option<String>,
 }
 
+/// Scraped model from Ollama library
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+struct OllamaScrapedModel {
+    name: String,
+    pulls: String,
+    tag_count: i32,
+    last_updated: String,
+    categories: Vec<String>,
+}
+
+/// Model version details (kept for potential future use in Rust-side scraping)
+#[allow(dead_code)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+struct OllamaModelVersion {
+    name: String,
+    size: String,
+    context: String,
+    input_types: Vec<String>,
+}
+
+/// Full model details (kept for potential future use in Rust-side scraping)
+#[allow(dead_code)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+struct OllamaModelDetails {
+    name: String,
+    short_description: String,
+    long_description_html: String,
+    versions: Vec<OllamaModelVersion>,
+}
+
+/// Cache for scraped models
+#[derive(Default)]
+struct ScraperCache {
+    models: Vec<OllamaScrapedModel>,
+    last_updated: Option<chrono::DateTime<Local>>,
+}
+
 struct AppState {
     client: Client,
+    scraper_cache: RwLock<ScraperCache>,
 }
 
 #[tokio::main]
@@ -80,10 +124,28 @@ async fn main() {
 async fn run() -> Result<(), Box<dyn Error>> {
     let state = Arc::new(AppState {
         client: Client::new(),
+        scraper_cache: RwLock::new(ScraperCache::default()),
+    });
+
+    // Run initial scrape on startup
+    let state_clone = state.clone();
+    tokio::spawn(async move {
+        eprintln!("Running initial Ollama library scrape...");
+        if let Err(e) = run_ollama_scraper(&state_clone).await {
+            eprintln!("Initial scrape failed: {}", e);
+        }
+    });
+
+    // Start weekly scheduler (runs every Sunday at 03:00)
+    let state_for_scheduler = state.clone();
+    tokio::spawn(async move {
+        run_weekly_scheduler(state_for_scheduler).await;
     });
 
     let app = Router::new()
         .route("/fetch", post(fetch_models))
+        .route("/scrape/ollama", get(get_scraped_ollama))
+        .route("/scrape/ollama/refresh", post(refresh_ollama_scrape))
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);
 
@@ -875,34 +937,10 @@ async fn fetch_codex(_client: &Client, _port: Option<u16>, _key: Option<String>)
 async fn fetch_opencode(_client: &Client) -> Response {
     let models = vec![
         ModelInfo {
-            id: "gpt-5-nano".into(),
-            name: "GPT-5 Nano".into(),
+            id: "big-pickle".into(),
+            name: "Big Pickle Free".into(),
             provider: "opencode".into(),
-            description: Some("GPT-5 Nano model".into()),
-            downloads: None,
-            thinking_levels: None,
-            pricing: Some(Pricing { input: 0.05, cached_input: Some(0.005), cache_write_5m: None, cache_write_1h: None, output: 0.40 }),
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "grok-code".into(),
-            name: "Grok Code Fast 1".into(),
-            provider: "opencode".into(),
-            description: Some("Grok code fast model".into()),
-            downloads: None,
-            thinking_levels: None,
-            pricing: None,
-            percentage: None,
-            reset: None,
-            quota_info: None,
-        },
-        ModelInfo {
-            id: "glm-4.7-free".into(),
-            name: "GLM 4.7".into(),
-            provider: "opencode".into(),
-            description: Some("GLM 4.7 free model".into()),
+            description: Some("Big Pickle free model".into()),
             downloads: None,
             thinking_levels: None,
             pricing: None,
@@ -912,7 +950,7 @@ async fn fetch_opencode(_client: &Client) -> Response {
         },
         ModelInfo {
             id: "minimax-m2.1-free".into(),
-            name: "MiniMax M2.1".into(),
+            name: "MiniMax M2.1 Free".into(),
             provider: "opencode".into(),
             description: Some("MiniMax M2.1 free model".into()),
             downloads: None,
@@ -923,10 +961,34 @@ async fn fetch_opencode(_client: &Client) -> Response {
             quota_info: None,
         },
         ModelInfo {
-            id: "big-pickle".into(),
-            name: "Big Pickle".into(),
+            id: "glm-4.7-free".into(),
+            name: "GLM 4.7 Free".into(),
             provider: "opencode".into(),
-            description: Some("Big Pickle model".into()),
+            description: Some("GLM 4.7 free model".into()),
+            downloads: None,
+            thinking_levels: None,
+            pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
+        },
+        ModelInfo {
+            id: "kimi-k2.5-free".into(),
+            name: "Kimi K2.5 Free".into(),
+            provider: "opencode".into(),
+            description: Some("Kimi K2.5 free model".into()),
+            downloads: None,
+            thinking_levels: None,
+            pricing: None,
+            percentage: None,
+            reset: None,
+            quota_info: None,
+        },
+        ModelInfo {
+            id: "gpt-5-nano".into(),
+            name: "GPT 5 Nano Free".into(),
+            provider: "opencode".into(),
+            description: Some("GPT 5 Nano free model".into()),
             downloads: None,
             thinking_levels: None,
             pricing: None,
@@ -1437,6 +1499,219 @@ impl ModelInfo {
             quota_info: None,
         }
     }
+}
+
+// ============================================================================
+// OLLAMA LIBRARY SCRAPER
+// ============================================================================
+
+const OLLAMA_LIBRARY_URL: &str = "https://ollama.com/library";
+const SCRAPER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const REQUEST_TIMEOUT_SECS: u64 = 15;
+const MAX_PAGES: i32 = 50;
+
+/// Weekly scheduler - runs scraper every Sunday at 03:00
+async fn run_weekly_scheduler(state: Arc<AppState>) {
+    loop {
+        let now = Local::now();
+        let is_sunday = now.weekday() == Weekday::Sun;
+        let is_target_hour = now.hour() == 3 && now.minute() < 5;
+
+        if is_sunday && is_target_hour {
+            eprintln!("Weekly scraper job triggered (Sunday 03:00)");
+            if let Err(e) = run_ollama_scraper(&state).await {
+                eprintln!("Weekly scrape failed: {}", e);
+            }
+            // Sleep for 1 hour to avoid re-triggering
+            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+        } else {
+            // Check every 5 minutes
+            tokio::time::sleep(tokio::time::Duration::from_secs(300)).await;
+        }
+    }
+}
+
+/// Runs the Ollama library scraper
+async fn run_ollama_scraper(state: &Arc<AppState>) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let client = &state.client;
+    let mut all_models: Vec<OllamaScrapedModel> = Vec::new();
+    let mut page = 1;
+
+    loop {
+        let url = if page == 1 {
+            OLLAMA_LIBRARY_URL.to_string()
+        } else {
+            format!("{}?p={}", OLLAMA_LIBRARY_URL, page)
+        };
+
+        eprintln!("Scraping page {}: {}", page, url);
+
+        let response = client.get(&url)
+            .header("User-Agent", SCRAPER_USER_AGENT)
+            .header("Accept", "text/html,application/xhtml+xml")
+            .header("Accept-Language", "en-US,en;q=0.9")
+            .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            break;
+        }
+
+        let html = response.text().await?;
+        let page_models = parse_library_page(&html);
+
+        if page_models.is_empty() {
+            break;
+        }
+
+        all_models.extend(page_models);
+        page += 1;
+
+        if page > MAX_PAGES {
+            eprintln!("Reached page limit ({}), stopping", MAX_PAGES);
+            break;
+        }
+
+        // Small delay between pages
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+    }
+
+    eprintln!("Scraped {} models from Ollama library", all_models.len());
+
+    // Update cache
+    let mut cache = state.scraper_cache.write().await;
+    cache.models = all_models.clone();
+    cache.last_updated = Some(Local::now());
+
+    // Note: JSON file caching removed - scraped data is now stored in database
+    // via TypeScript MarketplaceService
+
+    Ok(())
+}
+
+/// Parse a single library page
+fn parse_library_page(html: &str) -> Vec<OllamaScrapedModel> {
+    let document = Html::parse_document(html);
+    let mut models = Vec::new();
+
+    // Selector for model items: #repo ul li a
+    let item_selector = Selector::parse("#repo ul li a").unwrap_or_else(|_| {
+        Selector::parse("a").unwrap()
+    });
+
+    // Alternative selectors based on page structure
+    let name_selector = Selector::parse("h2 div span").unwrap_or_else(|_| {
+        Selector::parse("h2 span").unwrap()
+    });
+    let pulls_selector = Selector::parse("[x-test-pull-count], p span span").unwrap_or_else(|_| {
+        Selector::parse("span").unwrap()
+    });
+    let capability_selector = Selector::parse("[x-test-capability]").unwrap_or_else(|_| {
+        Selector::parse("span").unwrap()
+    });
+
+    for item in document.select(&item_selector) {
+        // Model name
+        let name = item.select(&name_selector)
+            .next()
+            .map(|el| el.text().collect::<String>().trim().to_string())
+            .unwrap_or_default();
+
+        if name.is_empty() {
+            continue;
+        }
+
+        // Pull count
+        let pulls = item.select(&pulls_selector)
+            .next()
+            .map(|el| el.text().collect::<String>().trim().to_string())
+            .unwrap_or_default();
+
+        // Categories
+        let categories: Vec<String> = item.select(&capability_selector)
+            .map(|el| el.text().collect::<String>().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        // Tag count and last updated - from p span elements
+        let p_selector = Selector::parse("p span").unwrap();
+        let p_spans: Vec<_> = item.select(&p_selector).collect();
+
+        let tag_count = if p_spans.len() > 1 {
+            p_spans[1].text().collect::<String>()
+                .trim()
+                .parse::<i32>()
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
+        let last_updated = if p_spans.len() > 2 {
+            p_spans[2].text().collect::<String>().trim().to_string()
+        } else {
+            String::new()
+        };
+
+        models.push(OllamaScrapedModel {
+            name,
+            pulls,
+            tag_count,
+            last_updated,
+            categories,
+        });
+    }
+
+    models
+}
+
+// Note: JSON file caching functions removed
+// Scraped data is now stored in database via TypeScript MarketplaceService
+
+/// GET /scrape/ollama - Returns cached scraped models
+async fn get_scraped_ollama(
+    State(state): State<Arc<AppState>>,
+) -> Json<ScraperResponse> {
+    let cache = state.scraper_cache.read().await;
+
+    // Return in-memory cache only (no disk fallback - data is in database now)
+    Json(ScraperResponse {
+        success: true,
+        models: cache.models.clone(),
+        last_updated: cache.last_updated.map(|dt| dt.to_rfc3339()),
+        error: None,
+    })
+}
+
+/// POST /scrape/ollama/refresh - Force refresh the cache
+async fn refresh_ollama_scrape(
+    State(state): State<Arc<AppState>>,
+) -> Json<ScraperResponse> {
+    match run_ollama_scraper(&state).await {
+        Ok(_) => {
+            let cache = state.scraper_cache.read().await;
+            Json(ScraperResponse {
+                success: true,
+                models: cache.models.clone(),
+                last_updated: cache.last_updated.map(|dt| dt.to_rfc3339()),
+                error: None,
+            })
+        }
+        Err(e) => Json(ScraperResponse {
+            success: false,
+            models: vec![],
+            last_updated: None,
+            error: Some(e.to_string()),
+        })
+    }
+}
+
+#[derive(Serialize)]
+struct ScraperResponse {
+    success: bool,
+    models: Vec<OllamaScrapedModel>,
+    last_updated: Option<String>,
+    error: Option<String>,
 }
 
 

@@ -7,14 +7,26 @@ import { JobSchedulerService } from '@main/services/system/job-scheduler.service
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { dialog, ipcMain } from 'electron';
 
+/** Dependencies required by the project IPC handlers. */
 export interface ProjectIpcDeps {
+    /** Service for project analysis, watching, and environment management. */
     projectService: ProjectService;
+    /** Service for logo generation and project identity analysis. */
     logoService: LogoService;
+    /** Service for code indexing and symbol search. */
     codeIntelligenceService: CodeIntelligenceService;
+    /** Service for scheduling background jobs with debouncing. */
     jobSchedulerService: JobSchedulerService;
+    /** Service for database access and project lookups. */
     databaseService: DatabaseService;
 }
 
+/**
+ * Registers all project-related IPC handlers including analysis, file watching,
+ * logo generation, directory analysis, and environment variable management.
+ * @param getWindow - Factory function to retrieve the main BrowserWindow
+ * @param deps - The project IPC dependency container
+ */
 export const registerProjectIpc = (
     getWindow: () => Electron.BrowserWindow | null,
     deps: ProjectIpcDeps

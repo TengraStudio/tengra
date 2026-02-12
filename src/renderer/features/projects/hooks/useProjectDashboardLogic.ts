@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { AgentDefinition, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface UseProjectDashboardLogicProps {
     project: Project;
@@ -42,7 +43,9 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
     const [availableAgents, setAvailableAgents] = useState<AgentDefinition[]>([]);
 
     useEffect(() => {
-        window.electron.agent.getAll().then(a => setAvailableAgents(a as AgentDefinition[])).catch(e => console.error('Failed to fetch agents', e));
+        window.electron.agent.getAll()
+            .then(a => setAvailableAgents(a as AgentDefinition[]))
+            .catch(e => appLogger.error('ProjectDashboard', 'Failed to fetch agents', e as Error));
     }, []);
 
     useEffect(() => {
@@ -54,7 +57,11 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
         setIsSearching(true);
         try {
             setSearchResults(await window.electron.code.searchFiles(projectRoot, searchQuery, project.id));
-        } catch (error) { console.error('Search failed:', error); } finally { setIsSearching(false); }
+        } catch (error) {
+            appLogger.error('ProjectDashboard', 'Search failed', error as Error);
+        } finally {
+            setIsSearching(false);
+        }
     };
 
     const analyzeProject = useCallback(async () => {
@@ -66,7 +73,11 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
                 setAnalysis(data);
                 setStats(data.stats);
             }
-        } catch (error) { console.error('Project analysis failed:', error); } finally { setLoading(false); }
+        } catch (error) {
+            appLogger.error('ProjectDashboard', 'Project analysis failed', error as Error);
+        } finally {
+            setLoading(false);
+        }
     }, [project.path, project.id]);
 
     const handleSaveName = async () => {
@@ -95,7 +106,9 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
             setOpenFiles([...openFiles, { path, name, content, isDirty: false, initialLine: line }]);
             setActiveFile(path);
             setActiveTab('files');
-        } catch (error) { console.error('Failed to open file', error); }
+        } catch (error) {
+            appLogger.error('ProjectDashboard', 'Failed to open file', error as Error);
+        }
     };
 
     const closeFile = (e: React.MouseEvent, path: string) => {

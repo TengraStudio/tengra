@@ -13,6 +13,7 @@ import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
+/** Metadata embedded within a backup file describing its contents and origin. */
 export interface BackupMetadata {
     version: string
     createdAt: string
@@ -21,6 +22,7 @@ export interface BackupMetadata {
     includes: string[]
 }
 
+/** Result returned after creating a backup. */
 export interface BackupResult {
     success: boolean
     path?: string
@@ -28,12 +30,14 @@ export interface BackupResult {
     metadata?: BackupMetadata
 }
 
+/** Result returned after restoring from a backup. */
 export interface RestoreResult {
     success: boolean
     restored: string[]
     errors: string[]
 }
 
+/** The full serialized backup payload including data sections and metadata. */
 export interface BackupData {
     settings?: JsonObject
     chats?: JsonObject[]
@@ -60,6 +64,7 @@ interface RestoreChatData {
     [key: string]: JsonValue | ChatMessage[] | Date | undefined
 }
 
+/** Configuration for the automatic backup scheduler. */
 export interface AutoBackupConfig {
     enabled: boolean
     intervalHours: number
@@ -74,12 +79,20 @@ const DEFAULT_AUTO_BACKUP_CONFIG: AutoBackupConfig = {
     lastBackup: null
 };
 
+/**
+ * Service for creating, restoring, and managing application backups.
+ * Supports manual and automatic scheduled backups of settings, chats, prompts, and folders.
+ */
 export class BackupService {
     private backupDir: string;
     private autoBackupTimer: ReturnType<typeof setInterval> | null = null;
     private autoBackupConfig: AutoBackupConfig = { ...DEFAULT_AUTO_BACKUP_CONFIG };
     private configPath: string;
 
+    /**
+     * @param dataService - Provides filesystem paths for backup storage.
+     * @param databaseService - Database service for reading/writing application data.
+     */
     constructor(
         private dataService: DataService,
         private databaseService: DatabaseService
@@ -99,7 +112,9 @@ export class BackupService {
     }
 
     /**
-     * Create a backup of settings and data
+     * Create a backup of settings and data.
+     * @param options - Controls which data sections to include in the backup.
+     * @returns The backup result including the file path and metadata on success.
      */
     async createBackup(options?: {
         includeChats?: boolean
@@ -212,7 +227,10 @@ export class BackupService {
     }
 
     /**
-     * Restore from a backup file
+     * Restore from a backup file.
+     * @param backupPath - Absolute path to the backup JSON file.
+     * @param options - Controls which data sections to restore and merge behavior.
+     * @returns The restore result listing restored sections and any errors.
      */
     async restoreBackup(backupPath: string, options?: {
         restoreChats?: boolean
@@ -418,7 +436,8 @@ export class BackupService {
     }
 
     /**
-     * List available backups
+     * List available backups sorted by creation date (newest first).
+     * @returns Array of backup entries with name, path, and optional metadata.
      */
     async listBackups(): Promise<Array<{ name: string; path: string; metadata?: BackupMetadata }>> {
         const backups: Array<{ name: string; path: string; metadata?: BackupMetadata }> = [];
@@ -459,7 +478,9 @@ export class BackupService {
     }
 
     /**
-     * Delete a backup
+     * Delete a backup file.
+     * @param backupPath - Absolute path to the backup file to delete.
+     * @returns `true` if the file was successfully deleted.
      */
     async deleteBackup(backupPath: string): Promise<boolean> {
         try {
@@ -471,7 +492,8 @@ export class BackupService {
     }
 
     /**
-     * Get backup directory path
+     * Get the backup directory path.
+     * @returns Absolute path to the directory where backups are stored.
      */
     getBackupDir(): string {
         return this.backupDir;
@@ -515,14 +537,16 @@ export class BackupService {
     }
 
     /**
-     * Get auto-backup status
+     * Get the current auto-backup configuration.
+     * @returns A copy of the auto-backup configuration.
      */
     getAutoBackupStatus(): AutoBackupConfig {
         return { ...this.autoBackupConfig };
     }
 
     /**
-     * Configure auto-backup settings
+     * Configure auto-backup settings and start/stop the scheduler as needed.
+     * @param config - The auto-backup configuration to apply.
      */
     configureAutoBackup(config: {
         enabled: boolean
@@ -614,7 +638,8 @@ export class BackupService {
     }
 
     /**
-     * Clean up old backups, keeping only the configured number of most recent backups
+     * Remove old backups exceeding the configured maximum count.
+     * @returns The number of backups deleted.
      */
     async cleanupOldBackups(): Promise<number> {
         const backups = await this.listBackups();
@@ -638,9 +663,7 @@ export class BackupService {
         return deleted;
     }
 
-    /**
-     * Stop the service and clean up resources
-     */
+    /** Stop the service and clean up resources (timers). */
     dispose(): void {
         this.stopAutoBackup();
     }

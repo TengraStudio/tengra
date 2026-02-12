@@ -29,7 +29,12 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 // Mock Services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
 const mockCopilotService = { chat: vi.fn(), streamChat: vi.fn() };
-const mockLLMService = { chatOpenAI: vi.fn(), chatOpenAIStream: vi.fn() };
+const mockLLMService = { 
+    chat: vi.fn(),  // Used by handleOpenAIChat line 208
+    chatOpenAI: vi.fn(), 
+    chatOpenAIStream: vi.fn(),
+    chatOpenCode: vi.fn()
+};
 const mockProxyService = { getProxyKey: vi.fn().mockReturnValue('dummy-key') };
 const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedValue([]) };
 
@@ -64,7 +69,7 @@ describe('Chat IPC Integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('chat:openai');
 
-        mockLLMService.chatOpenAI.mockResolvedValue({
+        mockLLMService.chat.mockResolvedValue({
             content: 'Response',
             reasoning: 'Reason',
             images: [],
@@ -73,7 +78,7 @@ describe('Chat IPC Integration', () => {
 
         const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o', [], 'openai', 'proj-1');
 
-        expect(mockLLMService.chatOpenAI).toHaveBeenCalled();
+        expect(mockLLMService.chat).toHaveBeenCalled();
         expect(result).toMatchObject({
             success: true,
             data: {
@@ -107,7 +112,7 @@ describe('Chat IPC Integration', () => {
         initIPC();
         const handler = ipcMainHandlers.get('chat:openai');
 
-        mockLLMService.chatOpenAI.mockRejectedValue(new Error('Simulated Fail'));
+        mockLLMService.chat.mockRejectedValue(new Error('Simulated Fail'));
 
         const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o', [], 'openai', 'proj-1');
 

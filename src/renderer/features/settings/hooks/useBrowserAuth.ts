@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { AppSettings } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { AuthStatusState } from '../types';
 
@@ -38,8 +39,10 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 copilot: check(['copilot', 'copilot_token'])
             };
             setAuthStatus(p => (p.codex !== ns.codex || p.claude !== ns.claude || p.antigravity !== ns.antigravity || p.copilot !== ns.copilot) ? ns : p);
-        } catch (e) { console.error('Auth check failed:', e); }
-    }, []);
+        } catch (e) {
+            appLogger.error('BrowserAuth', 'Auth check failed', e as Error);
+        }
+    }, [setAuthStatus]);
 
     useEffect(() => { void refreshAuthStatus(); }, [refreshAuthStatus]);
 
@@ -47,7 +50,9 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         try {
             const accounts = await window.electron.getAccountsByProvider('claude');
             if (accounts.length > 0) { onShowManualSession?.(accounts[0].id, accounts[0].email); }
-        } catch (err) { console.error('Failed Claude accounts:', err); }
+        } catch (err) {
+            appLogger.error('BrowserAuth', 'Failed Claude accounts', err as Error);
+        }
     }, [onShowManualSession]);
 
     const pollConnection = useCallback((provider: string, identifiers: string[]) => {
@@ -69,7 +74,7 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
                 else { setAuthNotice(`${provider} timeout`); setAuthBusy(null); }
             } catch (err) {
-                console.error('pollConnection error:', err);
+                appLogger.error('BrowserAuth', 'pollConnection error', err as Error);
                 if (attempts < 30) { setTimeout(() => { void poll(); }, 3000); }
                 else { setAuthBusy(null); }
             }
@@ -86,7 +91,10 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
                 window.electron.openExternal(res.url); setAuthNotice('Login in browser.');
                 pollConnection(provider, provider === 'codex' ? ['codex', 'openai'] : provider === 'claude' ? ['claude', 'anthropic'] : ['antigravity']);
             } else { setAuthNotice(`Failed URL for ${provider}`); setAuthBusy(null); }
-        } catch (e) { console.error('Conn failure:', e); setAuthNotice('Connection failed.'); setAuthBusy(null); }
+        } catch (e) {
+            appLogger.error('BrowserAuth', 'Conn failure', e as Error);
+            setAuthNotice('Connection failed.'); setAuthBusy(null);
+        }
     }, [authBusy, setAuthBusy, setAuthNotice, pollConnection]);
 
     const handleSaveClaudeSession = useCallback(async (key: string, id?: string) => {
@@ -104,7 +112,9 @@ export function useBrowserAuth(options: BrowserAuthOptions) {
         const updated = { ...settings };
         try {
             await window.electron.unlinkProvider(prov);
-        } catch (e) { console.error('Deletion failed:', e); }
+        } catch (e) {
+            appLogger.error('BrowserAuth', 'Deletion failed', e as Error);
+        }
         PROVIDER_SETTINGS_UPDATERS[prov](updated, setAuthStatus);
         await updateSettings(updated, true);
         await new Promise(r => setTimeout(r, 500));

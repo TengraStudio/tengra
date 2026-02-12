@@ -10,6 +10,22 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
+export type ModelProviderId =
+    | 'ollama'
+    | 'opencode'
+    | 'antigravity'
+    | 'codex'
+    | 'claude'
+    | 'copilot'
+    | 'nvidia'
+    | 'openai'
+    | 'huggingface'
+    | 'anthropic'
+    | 'sd-cpp';
+
+/**
+ * UI-facing normalized model metadata used across model list, picker, and marketplace views.
+ */
 export interface ModelProviderInfo {
     id: string;
     name: string;
@@ -36,8 +52,13 @@ export interface ModelRegistryDependencies {
     eventBus: EventBusService;
     authService: AuthService;
     tokenService: TokenService;
+    localImageService: import('@main/services/llm/local-image.service').LocalImageService;
 }
 
+/**
+ * Aggregates models from native model-service, proxy providers, and local fallbacks.
+ * Also keeps token context-window limits in sync with TokenEstimationService.
+ */
 export class ModelRegistryService extends BaseService {
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
@@ -47,7 +68,7 @@ export class ModelRegistryService extends BaseService {
         this.initializeScheduler();
     }
 
-    private initializeScheduler() {
+    private initializeScheduler(): void {
         this.deps.jobScheduler.registerRecurringJob(
             'model-registry-update',
             async () => {
@@ -78,7 +99,7 @@ export class ModelRegistryService extends BaseService {
         }
     }
 
-    private async updateCache() {
+    private async updateCache(): Promise<void> {
         appLogger.info('ModelRegistry', 'Updating remote model cache...');
         this.cachedModels = await this.fetchRemoteModels();
         this.lastUpdate = Date.now();
@@ -142,7 +163,14 @@ export class ModelRegistryService extends BaseService {
         // Let's check AuthService later. For now, we'll try to get 'github' token if existing.
 
         // Dynamically add cloud providers if authenticated
-        const cloudProviders = ['antigravity', 'codex', 'claude', 'copilot', 'nvidia', 'openai'];
+        const cloudProviders: ModelProviderId[] = [
+            'antigravity',
+            'codex',
+            'claude',
+            'copilot',
+            'nvidia',
+            'openai',
+        ];
         for (const p of cloudProviders) {
             // Proactively refresh tokens for cloud providers before fetching models
             try {
@@ -176,17 +204,27 @@ export class ModelRegistryService extends BaseService {
             all.push(...this.getOpenAIImageModels());
         }
 
-        // Use provider:id as key to preserve models with same ID from different providers
         const unique = new Map<string, ModelProviderInfo>();
         all.forEach(m => {
             const key = `${m.provider}:${m.id}`;
             unique.set(key, m);
         });
+
+        // Add SD-CPP if provider is configured or it's a core component
+        unique.set('sd-cpp:stable-diffusion-v1-5', {
+            id: 'stable-diffusion-v1-5',
+            name: 'Stable Diffusion v1.5 (Local)',
+            provider: 'sd-cpp',
+            description: 'Local image generation via stable-diffusion.cpp',
+            capabilities: { image_generation: true, text_generation: false, embedding: false },
+            tags: ['local', 'image-gen', 'sd-cpp']
+        });
+
         return Array.from(unique.values());
     }
 
     private async fetchModelProvider(
-        provider: string,
+        provider: ModelProviderId,
         proxyPort?: number,
         proxyKey?: string,
         token?: string
@@ -195,7 +233,7 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async fetchFromRustService(
-        provider: string,
+        provider: ModelProviderId,
         token?: string,
         proxyPort?: number,
         proxyKey?: string
@@ -225,11 +263,12 @@ export class ModelRegistryService extends BaseService {
                     if (mappedProvider === 'nvidia' && !id.startsWith('nvidia/')) {
                         id = `nvidia/${id}`;
                     }
-                    return {
+                    const normalizedModel: ModelProviderInfo = {
                         ...m,
                         id,
                         provider: mappedProvider,
                     };
+                    return this.ensureModelCapabilities(normalizedModel);
                 });
             }
         } catch (e) {
@@ -239,6 +278,66 @@ export class ModelRegistryService extends BaseService {
             );
         }
         return [];
+    }
+
+    private ensureModelCapabilities(model: ModelProviderInfo): ModelProviderInfo {
+        const existing = model.capabilities ?? {};
+        if (
+            existing.image_generation !== undefined &&
+            existing.text_generation !== undefined &&
+            existing.embedding !== undefined
+        ) {
+            return model;
+        }
+
+        const searchable = `${model.id} ${model.name ?? ''} ${model.description ?? ''}`.toLowerCase();
+        const looksLikeImageModel = this.looksLikeImageGenerationModel(searchable);
+        const looksLikeEmbeddingModel = this.looksLikeEmbeddingModel(searchable);
+
+        // Keep explicit server values when present, infer only missing fields.
+        const capabilities = {
+            image_generation: existing.image_generation ?? looksLikeImageModel,
+            text_generation: existing.text_generation ?? (!looksLikeEmbeddingModel && !looksLikeImageModel),
+            embedding: existing.embedding ?? looksLikeEmbeddingModel,
+        };
+
+        return {
+            ...model,
+            capabilities,
+        };
+    }
+
+    private looksLikeImageGenerationModel(searchable: string): boolean {
+        const positiveSignals = [
+            /dall[-\s]?e/i,
+            /nano\s*banana/i,
+            /\bflux\b/i,
+            /stable[\s-]?diffusion|sdxl/i,
+            /gemini[\s-]*3[\s-]*pro[\s-]*image/i,
+            /\bimage\s*generation\b/i,
+        ];
+        const negativeSignals = [
+            /image[-\s]?detection|deepfake/i,
+            /content[-\s]?safety|guard/i,
+            /embedding/i,
+            /alphafold|protein|molecular/i,
+            /ui\s*checkpoint|computer\s*use|browser\s*subagent/i,
+        ];
+
+        return (
+            positiveSignals.some(regex => regex.test(searchable)) &&
+            !negativeSignals.some(regex => regex.test(searchable))
+        );
+    }
+
+    private looksLikeEmbeddingModel(searchable: string): boolean {
+        const embeddingSignals = [
+            /\bembed(ding)?\b/i,
+            /\bbge\b/i,
+            /\barctic-embed\b/i,
+            /text-embedding/i,
+        ];
+        return embeddingSignals.some(regex => regex.test(searchable));
     }
 
     // Removed fetchProxyModels and fetchLlamaModels
@@ -253,6 +352,9 @@ export class ModelRegistryService extends BaseService {
         return this.cachedModels;
     }
 
+    /**
+     * Unix epoch of last successful cache update.
+     */
     getLastUpdate(): number {
         return this.lastUpdate;
     }
@@ -295,6 +397,9 @@ export class ModelRegistryService extends BaseService {
         return this.fetchModelProvider('ollama');
     }
 
+    /**
+     * Curated NVIDIA catalog fallback used when token-based provider fetch is available.
+     */
     private getNvidiaModels(): ModelProviderInfo[] {
         return [
             {
@@ -349,6 +454,9 @@ export class ModelRegistryService extends BaseService {
         ];
     }
 
+    /**
+     * Static OpenAI image generation models added for image-capable picker workflows.
+     */
     private getOpenAIImageModels(): ModelProviderInfo[] {
         return [
             {
@@ -367,4 +475,69 @@ export class ModelRegistryService extends BaseService {
             },
         ];
     }
+
+    /**
+     * Get scraped Ollama library models for marketplace
+     */
+    async getOllamaLibraryModels(): Promise<OllamaMarketplaceModel[]> {
+        try {
+            const response = await this.deps.processManager.sendGetRequest<{
+                success: boolean;
+                models: OllamaMarketplaceModel[];
+                lastUpdated?: string;
+                error?: string;
+            }>('model-service', '/scrape/ollama');
+
+            if (response.success) {
+                appLogger.info('ModelRegistry', `Got ${response.models.length} scraped Ollama models`);
+                return response.models;
+            } else if (response.error) {
+                appLogger.error('ModelRegistry', `Ollama scrape failed: ${response.error}`);
+            }
+        } catch (e) {
+            appLogger.error(
+                'ModelRegistry',
+                `Failed to get scraped Ollama models: ${getErrorMessage(e as Error)}`
+            );
+        }
+        return [];
+    }
+
+    /**
+     * Force refresh the scraped Ollama library models
+     */
+    async refreshOllamaLibraryModels(): Promise<OllamaMarketplaceModel[]> {
+        try {
+            const response = await this.deps.processManager.sendRequest<{
+                success: boolean;
+                models: OllamaMarketplaceModel[];
+                lastUpdated?: string;
+                error?: string;
+            }>('model-service', {}, 30000, '/scrape/ollama/refresh');
+
+            if (response.success) {
+                appLogger.info('ModelRegistry', `Refreshed ${response.models.length} scraped Ollama models`);
+                return response.models;
+            } else if (response.error) {
+                appLogger.error('ModelRegistry', `Ollama scrape refresh failed: ${response.error}`);
+            }
+        } catch (e) {
+            appLogger.error(
+                'ModelRegistry',
+                `Failed to refresh scraped Ollama models: ${getErrorMessage(e as Error)}`
+            );
+        }
+        return [];
+    }
+}
+
+/**
+ * Scraped model from Ollama library marketplace
+ */
+export interface OllamaMarketplaceModel {
+    name: string;
+    pulls: string;
+    tagCount: number;
+    lastUpdated: string;
+    categories: string[];
 }

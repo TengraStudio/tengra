@@ -125,10 +125,12 @@ export interface SchemaField {
 export type Schema = Record<string, SchemaField>
 
 /**
- * Validate a config object against a schema
- */
-/**
- * Validate a config object against a schema
+ * Validates a configuration object against a provided schema.
+ * 
+ * @param config - The configuration object to validate
+ * @param schema - The schema to validate against
+ * @param basePath - Optional base path for error reporting (nested objects)
+ * @returns A ValidationResult indicating success/failure and any errors/warnings
  */
 export function validateConfig(config: JsonObject, schema: Schema, basePath = ''): ValidationResult {
     const errors: ValidationError[] = [];
@@ -148,6 +150,10 @@ export function validateConfig(config: JsonObject, schema: Schema, basePath = ''
     };
 }
 
+/**
+ * Validates all fields defined in the schema.
+ * @internal
+ */
 function validateSchemaFields(config: JsonObject, schema: Schema, basePath: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
@@ -164,6 +170,10 @@ function validateSchemaFields(config: JsonObject, schema: Schema, basePath: stri
     return { errors, warnings };
 }
 
+/**
+ * Validates a single field against its schema definition.
+ * @internal
+ */
 function validateField(value: JsonValue | undefined, field: SchemaField, path: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
     if (field.required && (value === undefined || value === null)) {
         return { errors: [{ path, message: 'This field is required' }], warnings: [] };
@@ -196,14 +206,22 @@ function validateField(value: JsonValue | undefined, field: SchemaField, path: s
     return { errors, warnings };
 }
 
+/**
+ * Validates nested configuration objects.
+ * @internal
+ */
 function validateNestedConfig(value: JsonValue, children: Record<string, SchemaField>, path: string): { errors: ValidationError[], warnings: ValidationWarning[] } {
-    if (typeof value === 'object' && !Array.isArray(value)) {
+    if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
         const nestedResult = validateConfig(value as JsonObject, children, path);
         return { errors: nestedResult.errors, warnings: nestedResult.warnings };
     }
     return { errors: [], warnings: [] };
 }
 
+/**
+ * Checks for keys in the config that are not defined in the schema.
+ * @internal
+ */
 function validateUnknownKeys(config: JsonObject, schema: Schema, basePath: string): ValidationWarning[] {
     const warnings: ValidationWarning[] = [];
     for (const key of Object.keys(config)) {
@@ -219,7 +237,11 @@ function validateUnknownKeys(config: JsonObject, schema: Schema, basePath: strin
     return warnings;
 }
 
-function validateType(value: JsonValue, type: string, path: string): ValidationError[] {
+/**
+ * Validates the type of a value against a schema type string.
+ * @internal
+ */
+function validateType(value: JsonValue, type: SchemaField['type'], path: string): ValidationError[] {
     switch (type) {
         case 'string':
             return validators.string(value, path);
@@ -228,7 +250,7 @@ function validateType(value: JsonValue, type: string, path: string): ValidationE
         case 'boolean':
             return validators.boolean(value, path);
         case 'object':
-            if (typeof value !== 'object' || Array.isArray(value)) {
+            if (typeof value !== 'object' || Array.isArray(value) || value === null) {
                 return [{ path, message: 'Must be an object', value }];
             }
             return [];

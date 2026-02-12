@@ -21,12 +21,20 @@ interface DetachedTerminalWindowOptions {
     cwd?: string;
 }
 
+/**
+ * Registers all window-related IPC handlers including window controls, shell operations, and cookies.
+ * @param getMainWindow - Factory function that returns the main BrowserWindow instance
+ */
 export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
     registerWindowControlHandlers(getMainWindow);
     registerShellHandlers();
     registerCookieHandlers();
 }
 
+/**
+ * Registers IPC handlers for window control operations (minimize, maximize, close, resize, fullscreen, detached terminal).
+ * @param getMainWindow - Factory function that returns the main BrowserWindow instance
+ */
 function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
     const validateSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
         const win = getMainWindow();
@@ -184,6 +192,11 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
     });
 }
 
+/**
+ * Parses and validates raw input into detached terminal window options.
+ * @param value - Raw options object to parse
+ * @returns Validated options or null if invalid
+ */
 function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOptions | null {
     if (!value || typeof value !== 'object') {
         return null;
@@ -214,6 +227,9 @@ function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOpt
     };
 }
 
+/**
+ * Registers IPC handlers for shell operations (open external URLs, open terminal, run commands).
+ */
 function registerShellHandlers() {
     ipcMain.handle('shell:openExternal', async (_event, url) => {
         appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${url}`);
@@ -315,6 +331,9 @@ function registerShellHandlers() {
     });
 }
 
+/**
+ * Registers IPC handlers for cookie capture operations via hidden browser windows.
+ */
 function registerCookieHandlers() {
     /**
      * Opens a hidden BrowserWindow to capture cookies from a URL.

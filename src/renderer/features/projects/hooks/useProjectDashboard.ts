@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { AgentDefinition, Project, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { useDashboardInlineEdit } from './useDashboardInlineEdit';
 
@@ -62,7 +63,7 @@ export const useProjectDashboard = ({
                 const agents = await window.electron.agent.getAll();
                 setAvailableAgents(agents as AgentDefinition[]);
             } catch (error) {
-                console.error('Failed to fetch agents', error);
+                appLogger.error('ProjectDashboard', 'Failed to fetch agents', error as Error);
             }
         };
         void fetchAgents();
@@ -87,7 +88,7 @@ export const useProjectDashboard = ({
             setAnalysis(result as ProjectAnalysis);
             if (result.stats) { setStats(result.stats); }
         } catch (error) {
-            console.error('Analysis failed', error);
+            appLogger.error('ProjectDashboard', 'Analysis failed', error as Error);
         } finally {
             setLoading(false);
         }
@@ -106,7 +107,7 @@ export const useProjectDashboard = ({
             const results = await window.electron.code.searchFiles(project.path, searchQuery, project.id);
             setSearchResults(results);
         } catch (error) {
-            console.error('Search failed', error);
+            appLogger.error('ProjectDashboard', 'Search failed', error as Error);
         } finally {
             setIsSearching(false);
         }
@@ -124,7 +125,7 @@ export const useProjectDashboard = ({
             setActiveTab('files');
             onOpenFile?.(path, line);
         } catch (error) {
-            console.error('Failed to read file', error);
+            appLogger.error('ProjectDashboard', 'Failed to read file', error as Error);
         }
     };
 

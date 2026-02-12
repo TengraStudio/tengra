@@ -43,7 +43,13 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:registry.modelcontextprotocol.io)",
-      "WebFetch(domain:glama.ai)"
+      "WebFetch(domain:glama.ai)",
+      "Bash(npm run changelog:sync)",
+      "Bash(git status --short src/tests/main/ipc/*.ts)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ntest\\(ipc\\): add integration tests for 15 IPC handlers\n\nCreated comprehensive integration tests for the following IPC handlers:\n- advanced-memory.ts\n- auth.ts\n- brain.ts\n- dialog.ts\n- extension.ts\n- file-diff.ts\n- files.ts\n- gallery.ts\n- git.ts\n- idea-generator.ts\n- mcp.ts\n- mcp-marketplace.ts\n- process.ts\n- proxy.ts\n- proxy-embed.ts\n\nUpdated TODO.md to mark completed items and added changelog entries.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ntest\\(ipc\\): add integration tests for 15 IPC handlers\n\nCreated test files for the following IPC handlers from docs/TODO.md:\n- advanced-memory.ts\n- auth.ts\n- brain.ts\n- dialog.ts\n- extension.ts\n- file-diff.ts\n- files.ts\n- gallery.ts\n- git.ts\n- idea-generator.ts\n- mcp.ts\n- mcp-marketplace.ts\n- process.ts\n- proxy.ts\n- proxy-embed.ts\n\nUpdated changelog with new entry and locale overrides.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"test\\(ipc\\): add integration tests for 15 IPC handlers\n\nCreated test files for IPC handlers from docs/TODO.md lines 84-102:\n- advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts\n- file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts\n- mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts\n\nUpdated changelog entries and locale overrides.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\")",
+      "Bash(git commit -m \"test\\(ipc\\): add integration tests for 15 IPC handlers\n\nCreated test files for IPC handlers from docs/TODO.md lines 84-102:\n- advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts\n- file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts\n- mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts\n\nUpdated changelog entries and locale overrides \\(tr, de, fr, es, ja, ar\\).\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\")"
     ]
   },
   "mcpServers": {

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { SSHConnection } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface SSHProfile {
     id: string
@@ -20,7 +21,7 @@ export function useSSHConnections(isOpen: boolean) {
 
     const updateConnectionStatus = useCallback((id: string, status: SSHConnection['status'], error?: string) => {
         setConnections(prev => prev.map(c => {
-            if (c.id !== id) {return c;}
+            if (c.id !== id) { return c; }
 
             const content = { ...c, status } as SSHConnection;
             if (error !== undefined) {
@@ -47,8 +48,8 @@ export function useSSHConnections(isOpen: boolean) {
                     status: 'disconnected' as const,
                     authType: p.privateKey ? 'key' : 'password'
                 };
-                if (p.password) {conn.password = p.password;}
-                if (p.privateKey) {conn.privateKey = p.privateKey;}
+                if (p.password) { conn.password = p.password; }
+                if (p.privateKey) { conn.privateKey = p.privateKey; }
                 return conn;
             });
 
@@ -74,7 +75,7 @@ export function useSSHConnections(isOpen: boolean) {
                         ...active,
                         status: 'connected' as const
                     } as SSHConnection;
-                    if (!active.error) {delete newConn.error;}
+                    if (!active.error) { delete newConn.error; }
 
                     merged.push(newConn);
                 }
@@ -90,17 +91,17 @@ export function useSSHConnections(isOpen: boolean) {
                 }
             }
         } catch (e) {
-            console.error('Failed to load connections:', e);
+            appLogger.error('SSH', 'Failed to load connections', e as Error);
         }
     }, [updateConnectionStatus]);
 
     useEffect(() => {
-        if (!isOpen) {return;}
+        if (!isOpen) { return; }
 
         const init = async () => {
             await loadConnections();
         };
-        void init().catch(e => console.error('SSH init error:', e));
+        void init().catch(e => appLogger.error('SSH', 'SSH init error', e as Error));
 
         const onConnected = (id: string) => {
             updateConnectionStatus(id, 'connected');

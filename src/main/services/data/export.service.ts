@@ -151,7 +151,7 @@ export class ExportService {
             this.addMarkdownMessage(lines, msg, options);
         }
 
-        lines.push('---', `*Exported from tandem on ${new Date().toLocaleString()}*`);
+        lines.push('---', `*Exported from Tandem on ${new Date().toLocaleString()}*`);
         return lines.join('\n');
     }
 

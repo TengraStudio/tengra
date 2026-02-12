@@ -3,21 +3,22 @@
  * Manages concurrent API requests with priority and throttling
  */
 
+import { appLogger } from '@main/logging/logger';
 import { CatchError } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
-export type Priority = 'high' | 'normal' | 'low'
+export type Priority = 'high' | 'normal' | 'low';
 
-type QueueResult = unknown
+type QueueResult = unknown;
 
 interface QueuedRequest<T> {
-    id: string
-    priority: Priority
-    fn: () => Promise<T>
-    resolve: (value: T) => void
-    reject: (error: CatchError) => void
-    createdAt: number
-    provider?: string
+    id: string;
+    priority: Priority;
+    fn: () => Promise<T>;
+    resolve: (value: T) => void;
+    reject: (error: CatchError) => void;
+    createdAt: number;
+    provider?: string;
 }
 
 export interface QueueOptions {
@@ -113,7 +114,7 @@ export class RequestQueue {
 
         while (this.running < this.options.maxConcurrent && this.queue.length > 0 && iterations < MAX_QUEUE_ITERATIONS) {
             const request = this.queue.shift();
-            if (!request) {break;}
+            if (!request) { break; }
 
             this.running++;
             iterations++;
@@ -127,7 +128,7 @@ export class RequestQueue {
                 })
                 .catch((error) => {
                     // Error is already handled in executeRequest via reject
-                    console.error('[RequestQueue] Request execution error:', error);
+                    appLogger.error('RequestQueue', 'Request execution error', error as Error);
                 })
                 .finally(() => {
                     this.running--;
@@ -139,7 +140,7 @@ export class RequestQueue {
         }
 
         if (iterations >= MAX_QUEUE_ITERATIONS) {
-            console.error('[RequestQueue] Queue processing exceeded maximum iterations');
+            appLogger.error('RequestQueue', 'Queue processing exceeded maximum iterations');
         }
     }
 
@@ -168,9 +169,9 @@ export class RequestQueue {
      * Get queue statistics
      */
     getStats(): {
-        queueLength: number
-        running: number
-        maxConcurrent: number
+        queueLength: number;
+        running: number;
+        maxConcurrent: number;
     } {
         return {
             queueLength: this.queue.length,

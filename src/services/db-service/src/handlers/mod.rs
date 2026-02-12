@@ -2,5 +2,6 @@
 
 pub mod chats;
 pub mod knowledge;
+pub mod marketplace;
 pub mod projects;
 pub mod system;

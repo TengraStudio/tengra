@@ -10,8 +10,11 @@ import type {
 import { getCostEstimationService } from '@main/services/llm/cost-estimation.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { createInitialAgentState } from '@main/services/project/agent/agent-state-machine';
+import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/project/agent/agent-test-runner.service';
+import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
@@ -22,7 +25,11 @@ import {
     PlanVersionItem,
     ProjectState,
     ProjectStep,
+    ProjectStepStatus,
     RollbackCheckpointResult,
+    StepComment,
+    TestRunConfig,
+    TestRunResult,
 } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -32,6 +39,17 @@ export interface AgentServices {
     eventBus: EventBusService;
     registry: AgentRegistryService;
     checkpoint: AgentCheckpointService;
+    git: GitService;
+    collaboration: AgentCollaborationService;
+    testRunner?: AgentTestRunnerService;
+}
+
+interface GitExecutionContext {
+    repoPath: string;
+    baseBranch: string;
+    featureBranch: string;
+    autoCreated: boolean;
+    enabled: boolean;
 }
 
 export class AgentTaskExecutor {
@@ -45,6 +63,12 @@ export class AgentTaskExecutor {
     private toolExecutor?: ToolExecutor;
     private currentStepTokens = { prompt: 0, completion: 0 };
     private shouldStop: boolean = false;
+    private gitContext: GitExecutionContext | null = null;
+
+    /** AGT-TST: Test runner service */
+    private testRunner: AgentTestRunnerService;
+    /** AGT-TST: Plan-level test configuration */
+    private testConfig: TestRunConfig | null = null;
 
     // Status flags
     private startRequestInFlight = false;
@@ -97,6 +121,9 @@ export class AgentTaskExecutor {
             },
         ]);
 
+        // AGT-TST: Initialize test runner
+        this.testRunner = services.testRunner ?? getAgentTestRunnerService();
+
         this.setupEventListeners();
     }
 
@@ -135,13 +162,7 @@ export class AgentTaskExecutor {
                     this.logInfo(`Received project:step-update: ${JSON.stringify(payload)}`);
                     const { index, status, message } = payload;
                     if (index >= 0 && index < this.state.plan.length) {
-                        if (status === 'running') {
-                            this.startStep(index);
-                        } else if (status === 'completed' || status === 'failed') {
-                            this.completeStep(index, status);
-                        } else {
-                            this.state.plan[index].status = status;
-                        }
+                        this.handleStepStatusUpdate(index, status);
 
                         await this.services.database.uac.updateStepStatus(
                             this.state.plan[index].id,
@@ -172,11 +193,31 @@ export class AgentTaskExecutor {
             void (async () => {
                 try {
                     const { steps } = payload;
-                    this.state.plan = steps.map(text => ({
-                        id: randomUUID(),
-                        text: String(text),
-                        status: 'pending',
-                    }));
+                    const normalizedSteps = steps.map(step => {
+                        if (typeof step === 'string') {
+                            return step;
+                        }
+                        if (step && typeof step === 'object') {
+                            const candidate = step as Partial<ProjectStep> & { text?: string };
+                            if (typeof candidate.text === 'string') {
+                                return {
+                                    id: candidate.id ?? randomUUID(),
+                                    text: candidate.text,
+                                    status: candidate.status ?? 'pending',
+                                    type: candidate.type,
+                                    dependsOn: candidate.dependsOn,
+                                    priority: candidate.priority,
+                                    parallelLane: candidate.parallelLane,
+                                    branchId: candidate.branchId,
+                                } as ProjectStep;
+                            }
+                        }
+                        return String(step);
+                    });
+                    this.state.plan = this.normalizePlan(
+                        normalizedSteps as Array<string> | Array<ProjectStep>
+                    );
+                    await this.enrichPlanWithCollaboration();
 
                     // AGT-TOK-02: Calculate cost estimation before plan approval
                     this.calculatePlanCostEstimate();
@@ -533,6 +574,7 @@ export class AgentTaskExecutor {
             const { task, projectId, attachments, agentProfileId } = config;
             const profile = this.services.registry.getProfile(agentProfileId ?? 'default');
             const systemPrompt = profile.systemPrompt;
+            await this.ensureFeatureBranchReady();
 
             await this.stateMachine.transitionTo('running');
             this.shouldStop = false;
@@ -647,6 +689,8 @@ export class AgentTaskExecutor {
         }
 
         this.state.plan = this.normalizePlan(plan);
+        await this.enrichPlanWithCollaboration();
+        await this.ensureFeatureBranchReady();
 
         await this.stateMachine.transitionTo('running');
         this.state.status = 'running';
@@ -700,7 +744,146 @@ export class AgentTaskExecutor {
         this.emitUpdate();
     }
 
-    // --- Private Execution Logic ---
+    // --- AGT-HIL: Human-in-the-Loop Step Methods ---
+
+    /**
+     * AGT-HIL-01: Approve a step that is awaiting user approval.
+     * Resets the step to 'pending' and resumes execution.
+     */
+    async approveStep(stepId: string): Promise<void> {
+        const step = this.state.plan.find(s => s.id === stepId);
+        if (!step) {
+            this.logWarn(`approveStep: step not found: ${stepId}`);
+            return;
+        }
+        if (step.status !== 'awaiting_step_approval') {
+            this.logWarn(`approveStep: step ${stepId} is not awaiting approval (status: ${step.status})`);
+            return;
+        }
+
+        step.status = 'pending';
+        step.requiresApproval = false;
+        step.isInterventionPoint = false;
+        this.logInfo(`Step approved by user: "${step.text}"`);
+
+        await this.saveState();
+        this.emitUpdate();
+
+        if (this.stateMachine.can('running')) {
+            await this.stateMachine.transitionTo('running');
+            this.state.status = 'running';
+            this.shouldStop = false;
+            void this.executionLoop();
+        }
+    }
+
+    /**
+     * AGT-HIL-03: Skip a step. Marks it as 'skipped' and continues.
+     */
+    async skipStep(stepId: string): Promise<void> {
+        const step = this.state.plan.find(s => s.id === stepId);
+        if (!step) {
+            this.logWarn(`skipStep: step not found: ${stepId}`);
+            return;
+        }
+        if (step.status !== 'pending' && step.status !== 'awaiting_step_approval') {
+            this.logWarn(`skipStep: step ${stepId} cannot be skipped (status: ${step.status})`);
+            return;
+        }
+
+        step.status = 'skipped';
+        this.logInfo(`Step skipped by user: "${step.text}"`);
+
+        await this.saveState();
+        this.emitUpdate();
+
+        // Resume execution if paused at this step
+        if (this.stateMachine.can('running')) {
+            await this.stateMachine.transitionTo('running');
+            this.state.status = 'running';
+            this.shouldStop = false;
+            void this.executionLoop();
+        }
+    }
+
+    /**
+     * AGT-HIL-02: Edit a pending step's text.
+     */
+    async editStep(stepId: string, newText: string): Promise<void> {
+        const step = this.state.plan.find(s => s.id === stepId);
+        if (!step) {
+            this.logWarn(`editStep: step not found: ${stepId}`);
+            return;
+        }
+        if (step.status !== 'pending' && step.status !== 'awaiting_step_approval') {
+            this.logWarn(`editStep: step ${stepId} cannot be edited (status: ${step.status})`);
+            return;
+        }
+
+        const oldText = step.text;
+        step.text = newText;
+        this.logInfo(`Step edited by user: "${oldText}" -> "${newText}"`);
+
+        void this.recordPlanVersion('manual');
+        void this.syncTaskSteps(this.taskId, this.state.plan);
+        await this.saveState();
+        this.emitUpdate();
+    }
+
+    /**
+     * AGT-HIL-05: Add a user comment to a step.
+     */
+    async addStepComment(stepId: string, commentText: string): Promise<void> {
+        const step = this.state.plan.find(s => s.id === stepId);
+        if (!step) {
+            this.logWarn(`addStepComment: step not found: ${stepId}`);
+            return;
+        }
+
+        const comment: StepComment = {
+            id: randomUUID(),
+            text: commentText,
+            createdAt: Date.now(),
+        };
+
+        if (!step.comments) {
+            step.comments = [];
+        }
+        step.comments.push(comment);
+        this.logInfo(`Comment added to step "${step.text}": ${commentText}`);
+
+        await this.saveState();
+        this.emitUpdate();
+    }
+
+    /**
+     * AGT-HIL-04: Insert a manual intervention point after a given step.
+     */
+    async insertInterventionPoint(afterStepId: string): Promise<void> {
+        const afterIndex = this.state.plan.findIndex(s => s.id === afterStepId);
+        if (afterIndex === -1) {
+            this.logWarn(`insertInterventionPoint: step not found: ${afterStepId}`);
+            return;
+        }
+
+        const interventionStep: ProjectStep = {
+            id: randomUUID(),
+            text: '[Manual Intervention Point]',
+            status: 'pending',
+            type: 'task',
+            isInterventionPoint: true,
+            requiresApproval: true,
+        };
+
+        this.state.plan.splice(afterIndex + 1, 0, interventionStep);
+        this.logInfo(`Intervention point inserted after step "${this.state.plan[afterIndex].text}"`);
+
+        void this.recordPlanVersion('manual');
+        void this.syncTaskSteps(this.taskId, this.state.plan);
+        await this.saveState();
+        this.emitUpdate();
+    }
+
 
     private getModelConfig() {
         const model = this.state.config?.model ?? null;
@@ -718,6 +901,272 @@ export class AgentTaskExecutor {
         };
     }
 
+    private async resolveProjectPath(): Promise<string | null> {
+        const projectId = this.state.config?.projectId;
+        if (!projectId) {
+            return null;
+        }
+        if (projectId.includes('/') || projectId.includes('\\')) {
+            return projectId;
+        }
+        const project = await this.services.database.getProject(projectId);
+        return project?.path ?? null;
+    }
+
+    private async getCurrentBranch(repoPath: string): Promise<string | null> {
+        const result = await this.services.git.executeRaw(repoPath, 'rev-parse --abbrev-ref HEAD');
+        if (!result.success) {
+            return null;
+        }
+        const branch = result.stdout?.trim();
+        return branch ? branch : null;
+    }
+
+    private async isGitRepository(repoPath: string): Promise<boolean> {
+        const result = await this.services.git.executeRaw(repoPath, 'rev-parse --is-inside-work-tree');
+        return result.success;
+    }
+
+    private async ensureFeatureBranchReady(): Promise<void> {
+        if (this.gitContext?.enabled) {
+            return;
+        }
+
+        const activeGithubAccount = await this.services.database.getActiveLinkedAccount('github');
+        if (!activeGithubAccount) {
+            this.logInfo('Skipping AGT-GIT automation: no active GitHub account');
+            return;
+        }
+
+        const repoPath = await this.resolveProjectPath();
+        if (!repoPath) {
+            this.logInfo('Skipping AGT-GIT automation: no project selected');
+            return;
+        }
+        if (!(await this.isGitRepository(repoPath))) {
+            this.logWarn(`Skipping AGT-GIT automation: selected project is not a git repository (${repoPath})`);
+            return;
+        }
+
+        const baseBranch = await this.getCurrentBranch(repoPath);
+        if (!baseBranch) {
+            this.logWarn('Skipping AGT-GIT automation: failed to resolve current branch');
+            return;
+        }
+
+        const taskSuffix = this.taskId.slice(0, 8);
+        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+        const featureBranch = `agent/${taskSuffix}-${ts}`;
+        const checkoutResult = await this.services.git.executeRaw(repoPath, `checkout -b ${featureBranch}`);
+        if (!checkoutResult.success) {
+            this.logWarn(`Failed to create feature branch: ${checkoutResult.error ?? 'unknown error'}`);
+            return;
+        }
+
+        this.gitContext = {
+            repoPath,
+            baseBranch,
+            featureBranch,
+            autoCreated: true,
+            enabled: true,
+        };
+
+        await this.addSystemLog(
+            `Created feature branch \`${featureBranch}\` from \`${baseBranch}\` for task execution.`
+        );
+    }
+
+    private getStepCommitMessage(stepIndex: number, stepText: string): string {
+        const trimmed = stepText.trim().replace(/\s+/g, ' ').slice(0, 80);
+        return `feat(agent): step ${stepIndex + 1} ${trimmed}`;
+    }
+
+    private sanitizeCommitMessage(message: string): string {
+        return message.replace(/"/g, "'");
+    }
+
+    private async addSystemLog(content: string): Promise<void> {
+        const msg = {
+            id: randomUUID(),
+            role: 'system',
+            content,
+            timestamp: new Date(),
+        } as Message;
+        this.pushToHistory(msg);
+        try {
+            await this.services.database.uac.addLog(this.taskId, msg.role, content);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logWarn(`Failed to persist system log: ${message}`);
+        }
+        this.emitUpdate();
+    }
+
+    private async getAvailableModelProviders(): Promise<string[]> {
+        try {
+            const linkedAccounts = await this.services.database.getLinkedAccounts();
+            const activeProviders = Array.from(
+                new Set(
+                    linkedAccounts
+                        .filter(account => account.isActive)
+                        .map(account => account.provider)
+                )
+            );
+            if (activeProviders.length > 0) {
+                return activeProviders;
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logWarn(`Failed to resolve linked providers for routing: ${message}`);
+        }
+
+        const configuredProvider = this.state.config?.model?.provider;
+        if (configuredProvider) {
+            return [configuredProvider];
+        }
+        return ['openai', 'anthropic'];
+    }
+
+    private async enrichPlanWithCollaboration(): Promise<void> {
+        if (this.state.plan.length === 0) {
+            return;
+        }
+
+        try {
+            const analyzed = this.services.collaboration.analyzeSteps(this.state.plan);
+            const providers = await this.getAvailableModelProviders();
+            this.state.plan = analyzed.map(step => {
+                if (step.modelConfig) {
+                    return step;
+                }
+                const modelConfig = this.services.collaboration.getModelForStep(step, providers);
+                return {
+                    ...step,
+                    modelConfig,
+                };
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logWarn(`Failed to apply collaborative routing: ${message}`);
+        }
+    }
+
+    private async autoCommitStep(stepIndex: number): Promise<void> {
+        if (!this.gitContext?.enabled) {
+            return;
+        }
+        const step = this.state.plan[stepIndex];
+        if (!step) {
+            return;
+        }
+        const { repoPath } = this.gitContext;
+        const statusResult = await this.services.git.executeRaw(repoPath, 'status --porcelain');
+        if (!statusResult.success) {
+            this.logWarn(`Failed to read git status for auto-commit: ${statusResult.error ?? 'unknown error'}`);
+            return;
+        }
+        const hasChanges = Boolean(statusResult.stdout?.trim());
+        if (!hasChanges) {
+            return;
+        }
+
+        const diffPreview = await this.services.git.executeRaw(repoPath, 'diff --stat');
+        const previewText = diffPreview.success
+            ? (diffPreview.stdout?.trim() || 'No diff summary available.')
+            : 'Unable to produce diff preview.';
+        await this.addSystemLog(`Diff preview before auto-commit (step ${stepIndex + 1}):\n${previewText}`);
+
+        const addResult = await this.services.git.add(repoPath, '.');
+        if (!addResult.success) {
+            this.logWarn(`Auto-commit skipped: git add failed (${addResult.error ?? 'unknown error'})`);
+            return;
+        }
+
+        const commitMessage = this.sanitizeCommitMessage(this.getStepCommitMessage(stepIndex, step.text));
+        const commitResult = await this.services.git.commit(repoPath, commitMessage);
+        if (!commitResult.success) {
+            this.logWarn(`Auto-commit failed: ${commitResult.error ?? 'unknown error'}`);
+            return;
+        }
+
+        const hashResult = await this.services.git.executeRaw(repoPath, 'rev-parse --short HEAD');
+        const shortHash = hashResult.success ? hashResult.stdout?.trim() : '';
+        await this.addSystemLog(
+            `Auto-committed step ${stepIndex + 1}${shortHash ? ` as ${shortHash}` : ''}: ${commitMessage}`
+        );
+    }
+
+    private async cleanupFeatureBranch(): Promise<void> {
+        if (!this.gitContext?.enabled || !this.gitContext.autoCreated) {
+            return;
+        }
+        const { repoPath, baseBranch, featureBranch } = this.gitContext;
+        const currentBranch = await this.getCurrentBranch(repoPath);
+        if (currentBranch === featureBranch) {
+            const checkoutBase = await this.services.git.checkout(repoPath, baseBranch);
+            if (!checkoutBase.success) {
+                this.logWarn(`Failed to checkout base branch during cleanup: ${checkoutBase.error ?? 'unknown error'}`);
+                return;
+            }
+        }
+
+        const deleteResult = await this.services.git.executeRaw(repoPath, `branch -d ${featureBranch}`);
+        if (!deleteResult.success) {
+            this.logWarn(
+                `Feature branch cleanup skipped for ${featureBranch}: ${deleteResult.error ?? 'branch is not fully merged'}`
+            );
+            return;
+        }
+
+        await this.addSystemLog(`Cleaned up feature branch \`${featureBranch}\` and returned to \`${baseBranch}\`.`);
+        this.gitContext = null;
+    }
+
+    private normalizeGithubRemote(remoteUrl: string): string | null {
+        const trimmed = remoteUrl.trim();
+        if (trimmed.startsWith('git@github.com:')) {
+            return `https://github.com/${trimmed.replace('git@github.com:', '').replace(/\.git$/, '')}`;
+        }
+        if (trimmed.startsWith('https://github.com/')) {
+            return trimmed.replace(/\.git$/, '');
+        }
+        return null;
+    }
+
+    async createPullRequest(): Promise<{ success: boolean; url?: string; error?: string }> {
+        const activeGithubAccount = await this.services.database.getActiveLinkedAccount('github');
+        if (!activeGithubAccount) {
+            return { success: false, error: 'No active GitHub account linked.' };
+        }
+
+        const repoPath = this.gitContext?.repoPath ?? (await this.resolveProjectPath());
+        if (!repoPath) {
+            return { success: false, error: 'No project selected.' };
+        }
+        if (!(await this.isGitRepository(repoPath))) {
+            return { success: false, error: 'Selected project is not a Git repository.' };
+        }
+
+        const baseBranch = this.gitContext?.baseBranch ?? (await this.getCurrentBranch(repoPath));
+        const featureBranch = this.gitContext?.featureBranch ?? (await this.getCurrentBranch(repoPath));
+        if (!baseBranch || !featureBranch) {
+            return { success: false, error: 'Unable to resolve branches for PR URL.' };
+        }
+
+        const remoteResult = await this.services.git.executeRaw(repoPath, 'remote get-url origin');
+        if (!remoteResult.success || !remoteResult.stdout?.trim()) {
+            return { success: false, error: 'Unable to resolve Git remote origin URL.' };
+        }
+        const githubRepoUrl = this.normalizeGithubRemote(remoteResult.stdout);
+        if (!githubRepoUrl) {
+            return { success: false, error: 'Origin remote is not a GitHub repository.' };
+        }
+
+        const compareUrl = `${githubRepoUrl}/compare/${encodeURIComponent(baseBranch)}...${encodeURIComponent(featureBranch)}?expand=1`;
+        await this.addSystemLog(`Create PR URL generated: ${compareUrl}`);
+        return { success: true, url: compareUrl };
+    }
+
     private async executionLoop() {
         this.logInfo('Starting execution loop');
 
@@ -725,10 +1174,35 @@ export class AgentTaskExecutor {
             try {
                 if (!this.toolExecutor) { throw new Error('ToolExecutor not initialized'); }
 
-                // Update step progress logic?
+                // AGT-HIL-01 / AGT-HIL-04: Pause before steps requiring approval or intervention
+                const nextPendingStep = this.state.plan.find(s => s.status === 'pending');
+                if (nextPendingStep && (nextPendingStep.requiresApproval || nextPendingStep.isInterventionPoint)) {
+                    nextPendingStep.status = 'awaiting_step_approval';
+                    this.logInfo(`Step "${nextPendingStep.text}" requires user approval before execution`);
+                    this.emitUpdate();
+                    await this.saveState();
+                    break;
+                }
+
 
                 const toolDefs = await this.toolExecutor.getToolDefinitions();
-                const planContext = `Current Plan Checklist:\n${this.state.plan.map((s, i) => `${i}. [${s.status === 'completed' ? 'x' : s.status === 'running' ? '/' : ' '}] ${s.text}`).join('\n')}\n\nUse \`update_plan_step\` to update your progress. Always verify your work before completing a step.`;
+                const planContext = `Current Plan Checklist:\n${this.state.plan
+                    .map((step, index) => {
+                        const statusMarker =
+                            step.status === 'completed'
+                                ? 'x'
+                                : step.status === 'running'
+                                    ? '/'
+                                    : ' ';
+                        const dependencies = step.dependsOn?.length
+                            ? ` deps=${step.dependsOn.join(',')}`
+                            : '';
+                        const lane = ` lane=${(step.parallelLane ?? 0) + 1}`;
+                        const priority = ` priority=${step.priority ?? 'normal'}`;
+                        const type = ` type=${step.type ?? 'task'}`;
+                        return `${index}. [${statusMarker}] ${step.text}${type}${priority}${lane}${dependencies}`;
+                    })
+                    .join('\n')}\n\nUse \`update_plan_step\` to update your progress. Always verify your work before completing a step.`;
 
                 const currentHistory = [
                     ...this.state.history,
@@ -1006,6 +1480,7 @@ export class AgentTaskExecutor {
         this.state.status = 'completed';
 
         await this.services.database.uac.updateTaskStatus(this.taskId, 'completed');
+        await this.cleanupFeatureBranch();
 
         // AGT-PLN-03: Record successful plan pattern for learning
         await this.recordPlanOutcome('success');
@@ -1200,20 +1675,166 @@ export class AgentTaskExecutor {
 
     // --- Node & Step Management ---
 
+    private handleStepStatusUpdate(
+        index: number,
+        status: ProjectStepStatus
+    ): void {
+        if (status === 'running') {
+            if (!this.canRunStep(index)) {
+                this.logWarn(
+                    `Step ${index} is blocked by unresolved dependencies: ${this.getPendingDependencyIds(index).join(', ')}`
+                );
+                return;
+            }
+            this.startStep(index);
+            return;
+        }
+        if (status === 'completed' || status === 'failed') {
+            this.completeStep(index, status);
+            if (status === 'completed') {
+                this.activateReadyDependentSteps();
+            }
+            return;
+        }
+        this.state.plan[index].status = status;
+    }
+
+    private getPendingDependencyIds(index: number): string[] {
+        const currentStep = this.state.plan[index];
+        if (!currentStep) {
+            return [];
+        }
+        const dependencyIds = currentStep.dependsOn ?? [];
+        if (dependencyIds.length === 0) {
+            return [];
+        }
+        const completedStepIds = new Set(
+            this.state.plan.filter(step => step.status === 'completed').map(step => step.id)
+        );
+        return dependencyIds.filter(stepId => !completedStepIds.has(stepId));
+    }
+
+    private canRunStep(index: number): boolean {
+        return this.getPendingDependencyIds(index).length === 0;
+    }
+
+    private activateReadyDependentSteps(): void {
+        const totalSteps = this.state.plan.length;
+        for (let i = 0; i < totalSteps; i += 1) {
+            const step = this.state.plan[i];
+            if (step.status !== 'pending') {
+                continue;
+            }
+            if (!this.canRunStep(i)) {
+                continue;
+            }
+            // Keep status as pending but mark timing baseline for queue readiness tracking.
+            if (!step.timing) {
+                step.timing = {};
+            }
+        }
+    }
+
+    private inferStepType(text: string): 'task' | 'fork' | 'join' {
+        const normalized = text.trim().toLowerCase();
+        if (normalized.startsWith('fork:') || normalized.startsWith('[fork]')) {
+            return 'fork';
+        }
+        if (normalized.startsWith('join:') || normalized.startsWith('[join]')) {
+            return 'join';
+        }
+        return 'task';
+    }
+
+    private getPriorityForStep(text: string): 'low' | 'normal' | 'high' | 'critical' {
+        const normalized = text.toLowerCase();
+        if (normalized.includes('[critical]')) {
+            return 'critical';
+        }
+        if (normalized.includes('[high]')) {
+            return 'high';
+        }
+        if (normalized.includes('[low]')) {
+            return 'low';
+        }
+        return 'normal';
+    }
+
     private normalizePlan(plan: ProjectStep[] | string[]): ProjectStep[] {
         if (plan.length === 0) { return []; }
         if (typeof plan[0] === 'string') {
-            return (plan as string[]).map(text => ({
-                id: randomUUID(),
-                text,
-                status: 'pending',
-            }));
+            const generated = (plan as string[]).map(text => {
+                const id = randomUUID();
+                const inferredType = this.inferStepType(text);
+
+                return {
+                    id,
+                    text,
+                    status: 'pending' as const,
+                    type: inferredType,
+                    dependsOn: [],
+                    priority: this.getPriorityForStep(text),
+                    parallelLane: 0,
+                };
+            });
+            return this.buildDependenciesAndLanes(generated);
         }
-        return (plan as ProjectStep[]).map(step => ({
-            id: step.id,
+        const normalized = (plan as ProjectStep[]).map(step => ({
+            id: step.id || randomUUID(),
             text: step.text,
             status: step.status,
+            type: step.type ?? this.inferStepType(step.text),
+            dependsOn: step.dependsOn ?? [],
+            priority: step.priority ?? this.getPriorityForStep(step.text),
+            parallelLane: step.parallelLane,
+            branchId: step.branchId,
         }));
+        return this.buildDependenciesAndLanes(normalized);
+    }
+
+    private buildDependenciesAndLanes(steps: ProjectStep[]): ProjectStep[] {
+        if (steps.length === 0) {
+            return [];
+        }
+
+        const normalizedSteps: ProjectStep[] = [];
+        const laneByBranch = new Map<string, number>();
+        let nextLane = 0;
+
+        for (let index = 0; index < steps.length; index += 1) {
+            const step = steps[index];
+            const previous = normalizedSteps[index - 1];
+            const branchId = step.branchId ?? `branch-${index}`;
+
+            if (!laneByBranch.has(branchId)) {
+                laneByBranch.set(branchId, nextLane);
+                nextLane += 1;
+            }
+
+            let dependsOn = step.dependsOn ?? [];
+            if (dependsOn.length === 0 && previous) {
+                if (step.type !== 'fork') {
+                    dependsOn = [previous.id];
+                }
+            }
+
+            if (step.type === 'join') {
+                const pendingJoinDependencies = normalizedSteps
+                    .filter(candidate => candidate.type !== 'join')
+                    .map(candidate => candidate.id);
+                if (pendingJoinDependencies.length > 0) {
+                    dependsOn = pendingJoinDependencies;
+                }
+            }
+
+            normalizedSteps.push({
+                ...step,
+                dependsOn,
+                parallelLane: step.parallelLane ?? laneByBranch.get(branchId) ?? 0,
+                branchId,
+            });
+        }
+        return normalizedSteps;
     }
 
     private async createExecutionNode(): Promise<string> {
@@ -1387,6 +2008,83 @@ export class AgentTaskExecutor {
                 this.logWarn(`Failed to auto-save checkpoint: ${message}`);
             }
         })();
+
+        if (status === 'completed') {
+            // AGT-TST-01: Run tests after step completion if configured
+            void this.runTestsAfterStep(stepIndex);
+            void this.autoCommitStep(stepIndex);
+        }
+    }
+
+    // ===== AGT-TST: Test Integration Methods =====
+
+    /**
+     * AGT-TST-01: Run tests after a step completes
+     */
+    private async runTestsAfterStep(stepIndex: number): Promise<void> {
+        const step = this.state.plan[stepIndex];
+        if (!step) {
+            return;
+        }
+
+        // Check if tests should run for this step
+        const stepTestConfig = step.testConfig;
+        if (!stepTestConfig?.enabled || !stepTestConfig.runAfterStep) {
+            return;
+        }
+
+        // Get project path from git context or working directory
+        const projectPath = this.gitContext?.repoPath ?? process.cwd();
+        if (!projectPath) {
+            this.logWarn('Cannot run tests: no project path available');
+            return;
+        }
+
+        this.logInfo(`Running tests after step ${stepIndex}...`);
+
+        try {
+            const result = await this.testRunner.runTestsForStep(
+                projectPath,
+                stepTestConfig,
+                this.testConfig ?? undefined
+            );
+
+            // AGT-TST-02: Store test result in step
+            step.testResult = result;
+            this.emitUpdate();
+
+            // AGT-TST-04: Track coverage
+            if (result.coverage && this.testConfig?.coverageEnabled) {
+                this.testRunner.trackPlanCoverage(this.taskId, result.coverage);
+            }
+
+            // AGT-TST-03: Fail step if tests fail
+            if (this.testRunner.shouldFailStep(stepTestConfig, result)) {
+                this.logWarn(`Tests failed for step ${stepIndex}: ${result.failed}/${result.totalTests} failed`);
+                step.status = 'failed';
+                this.emitUpdate();
+            } else {
+                this.logInfo(`Tests passed for step ${stepIndex}: ${result.passed}/${result.totalTests} passed`);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logError(`Test execution failed: ${message}`);
+        }
+    }
+
+    /**
+     * AGT-TST-01: Set plan-level test configuration
+     */
+    setTestConfig(config: TestRunConfig): void {
+        this.testConfig = config;
+        this.logInfo(`Test configuration set: ${config.framework} with coverage=${config.coverageEnabled}`);
+    }
+
+    /**
+     * AGT-TST-04: Get coverage summary for the plan
+     */
+    getPlanCoverage(): TestRunResult['coverage'] | null {
+        return this.testRunner.getPlanCoverage(this.taskId);
     }
 
     /**
@@ -1444,18 +2142,38 @@ export class AgentTaskExecutor {
                 steps: this.state.plan.map((s, i) => ({
                     index: i,
                     description: s.text,
-                    type: 'code_generation',
+                    type: this.mapTaskTypeToCheckpointStepType(s.taskType),
                     status: s.status === 'running' ? 'in_progress' : (s.status === 'pending' ? 'pending' : (s.status === 'completed' ? 'completed' : 'failed')),
                     toolsUsed: [],
                 })),
                 requiredTools: [],
-                dependencies: [],
+                dependencies: this.state.plan.flatMap(step => step.dependsOn ?? []),
             };
             baseState.totalSteps = this.state.plan.length;
         }
 
         baseState.messageHistory = this.state.history;
         return baseState;
+    }
+
+    private mapTaskTypeToCheckpointStepType(taskType?: ProjectStep['taskType']):
+        'analysis' | 'code_generation' | 'refactoring' | 'testing' | 'documentation' | 'deployment' {
+        switch (taskType) {
+            case 'research':
+            case 'planning':
+            case 'code_review':
+            case 'general':
+                return 'analysis';
+            case 'debugging':
+                return 'code_generation';
+            case 'code_generation':
+            case 'refactoring':
+            case 'testing':
+            case 'documentation':
+                return taskType;
+            default:
+                return 'code_generation';
+        }
     }
 
     private async saveState() {

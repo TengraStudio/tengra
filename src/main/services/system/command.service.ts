@@ -9,16 +9,16 @@ import { getErrorMessage } from '@shared/utils/error.util';
 const execAsync = promisify(exec);
 
 interface CommandResult {
-    success: boolean
-    stdout?: string
-    stderr?: string
-    exitCode?: number
-    error?: string
+    success: boolean;
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+    error?: string;
     [key: string]: JsonValue | undefined;
 }
 
 export class CommandService {
-    private maxTimeout: number = 60000; // 60 seconds default timeout
+    private maxTimeout = 60000; // 60 seconds default timeout
     private activeProcesses: Map<string, ChildProcess> = new Map();
     private static readonly MAX_ACTIVE_PROCESSES = 50;
 
@@ -47,7 +47,7 @@ export class CommandService {
                 this.activeProcesses.delete(id);
                 return true;
             } catch (err) {
-                console.error('Error killing process:', getErrorMessage(err as Error));
+                appLogger.error('CommandService', 'Error killing process', err as Error);
                 return false;
             }
         }

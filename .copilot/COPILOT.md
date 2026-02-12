@@ -25,9 +25,10 @@ npm run test         # Run tests
 3. Run: npm run build && npm run lint && npm run type-check
 4. If errors, fix and repeat step 3
 5. Update docs/TODO.md (mark [x] complete, NEVER delete items)
-6. Update docs/CHANGELOG.md
-7. Commit with conventional message format
-8. Push to repository
+6. Update `docs/changelog/data/changelog.entries.json` (+ TR locale overrides if needed)
+7. Run `npm run changelog:sync`
+8. Commit with conventional message format
+9. Push to repository
 
 ## Forbidden Actions
 
@@ -129,3 +130,4 @@ If you realize you have violated any of these rules:
 4. Log the violation to logs/agent-violations.log with a brief description.
 
 For complete details, see docs/AI_RULES.md.
+

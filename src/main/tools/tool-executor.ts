@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -24,6 +26,7 @@ import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { JsonObject, JsonValue } from '@shared/types/common';
+import { ProjectStep, ProjectStepStatus } from '@shared/types/project-agent';
 
 export interface InternalToolResult {
     success: boolean;
@@ -126,7 +129,7 @@ export class ToolExecutor {
         switch (name) {
             case 'update_plan_step': {
                 const index = Number(args['index']);
-                const status = String(args['status']) as 'pending' | 'running' | 'completed' | 'failed';
+                const status = String(args['status']) as ProjectStepStatus;
                 const message = args['message'] ? String(args['message']) : undefined;
 
                 this.options.eventBus.emit('project:step-update', { index, status, message, taskId });
@@ -138,7 +141,10 @@ export class ToolExecutor {
                     return { success: false, error: 'Plan must have at least one step' };
                 }
 
-                this.options.eventBus.emit('project:plan-proposed', { steps: steps.map(String), taskId });
+                this.options.eventBus.emit('project:plan-proposed', {
+                    steps: this.normalizeProposedSteps(steps),
+                    taskId,
+                });
                 return { success: true };
             }
             case 'revise_plan': {
@@ -168,6 +174,62 @@ export class ToolExecutor {
             default:
                 return { success: false, error: `Unknown project tool: ${name}` };
         }
+    }
+
+    private normalizeProposedSteps(steps: JsonValue[]): Array<string | ProjectStep> {
+        const normalized: Array<string | ProjectStep> = [];
+        for (const step of steps) {
+            if (typeof step === 'string') {
+                normalized.push(step);
+                continue;
+            }
+            if (step && typeof step === 'object' && !Array.isArray(step)) {
+                const stepObject = step as Record<string, JsonValue>;
+                const textValue = stepObject['text'];
+                if (typeof textValue !== 'string' || textValue.trim().length === 0) {
+                    continue;
+                }
+                const normalizedStep: ProjectStep = {
+                    id: randomUUID(),
+                    text: textValue,
+                    status: 'pending',
+                    type: 'task',
+                    dependsOn: [],
+                    priority: 'normal',
+                    parallelLane: 0,
+                };
+                const typeValue = stepObject['type'];
+                if (typeValue === 'task' || typeValue === 'fork' || typeValue === 'join') {
+                    normalizedStep.type = typeValue;
+                }
+                const priorityValue = stepObject['priority'];
+                if (
+                    priorityValue === 'low' ||
+                    priorityValue === 'normal' ||
+                    priorityValue === 'high' ||
+                    priorityValue === 'critical'
+                ) {
+                    normalizedStep.priority = priorityValue;
+                }
+                const dependsOnValue = stepObject['depends_on'];
+                if (Array.isArray(dependsOnValue)) {
+                    normalizedStep.dependsOn = dependsOnValue
+                        .filter((dep): dep is string => typeof dep === 'string')
+                        .map(dep => dep.trim())
+                        .filter(dep => dep.length > 0);
+                }
+                const branchId = stepObject['branch_id'];
+                if (typeof branchId === 'string' && branchId.trim().length > 0) {
+                    normalizedStep.branchId = branchId.trim();
+                }
+                const lane = stepObject['lane'];
+                if (typeof lane === 'number' && Number.isFinite(lane)) {
+                    normalizedStep.parallelLane = lane;
+                }
+                normalized.push(normalizedStep);
+            }
+        }
+        return normalized;
     }
 
     private async handleFileRead(args: JsonObject): Promise<InternalToolResult> {

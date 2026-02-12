@@ -68,6 +68,7 @@ app.whenReady().then(async () => {
     // Initialize DB & Proxy
     void services.databaseService.initialize().catch(e => appLogger.error('Main', `DB Init Failed: ${e}`));
     void services.proxyService.startEmbeddedProxy().catch(e => appLogger.error('Main', `Proxy Init Failed: ${e}`));
+    void services.localImageService.initialize().catch(e => appLogger.error('Main', `LocalImage Init Failed: ${e}`));
 
     // Hardened Tool Executor
     const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);

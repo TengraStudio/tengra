@@ -211,6 +211,7 @@ export class BrainService {
 Message: "${sanitizedMessage}"
 
 Return ONLY facts about the USER (not about projects, not about conversations).
+Preserve the original language of the user's message when writing "content".
 Format as JSON array:
 [
   { "category": "identity|preference|skill|goal|context", "content": "The user...", "confidence": 0.0-1.0 }
@@ -279,14 +280,42 @@ If NO user facts found, return: []`;
 
         // Must contain user-related indicators
         const userIndicators = [
-            'user', 'i am', 'my', 'i prefer', 'i like', 'i use',
-            'i know', 'i can', 'i want', 'i work', 'i need'
+            // English
+            'user', 'i am', 'my', 'i prefer', 'i like', 'i use', 'i know', 'i can', 'i want', 'i work', 'i need',
+            // Turkish
+            'kullanıcı', 'ben ', 'benim', 'tercih ederim', 'seviyorum', 'kullanıyorum', 'istiyorum',
+            // German
+            'benutzer', 'ich bin', 'mein', 'ich bevorzuge', 'ich mag', 'ich nutze', 'ich will', 'ich brauche',
+            // French
+            'utilisateur', 'je suis', 'mon ', 'ma ', 'mes ', 'je préfère', 'j’aime', 'j\'aime', 'j\'utilise', 'je veux',
+            // Spanish
+            'usuario', 'yo ', 'mi ', 'mis ', 'prefiero', 'me gusta', 'uso ', 'quiero', 'necesito',
+            // Portuguese (helpful fallback)
+            'usuário', 'eu sou', 'meu ', 'minha ', 'prefiro', 'gosto', 'uso ', 'quero', 'preciso',
+            // Italian (helpful fallback)
+            'utente', 'io sono', 'mio ', 'mia ', 'preferisco', 'mi piace', 'uso ', 'voglio',
+            // Dutch (helpful fallback)
+            'gebruiker', 'ik ben', 'mijn ', 'ik gebruik', 'ik wil',
+            // Arabic / Chinese / Japanese keywords
+            'المستخدم', 'أنا', 'أفضل', 'أستخدم', 'أريد',
+            '用户', '我', '喜欢', '使用', '想要',
+            'ユーザー', '私は', '好き', '使', 'したい'
         ];
 
         // Must NOT contain project/conversation indicators
         const excludeIndicators = [
-            'the project', 'this feature', 'we discussed', 'conversation about',
-            'in the chat', 'the file', 'the code', 'error in'
+            // English
+            'the project', 'this feature', 'we discussed', 'conversation about', 'in the chat', 'the file', 'the code', 'error in',
+            // Turkish
+            'proje', 'özellik', 'sohbette', 'dosya', 'kod', 'hata',
+            // German/French/Spanish
+            'projekt', 'feature', 'chat', 'datei', 'code', 'fehler',
+            'projet', 'fonctionnalité', 'discussion', 'fichier', 'code', 'erreur',
+            'proyecto', 'funcionalidad', 'conversación', 'archivo', 'código', 'error',
+            // Arabic / Chinese / Japanese
+            'مشروع', 'ميزة', 'محادثة', 'ملف', 'كود', 'خطأ',
+            '项目', '功能', '对话', '文件', '代码', '错误',
+            'プロジェクト', '機能', '会話', 'ファイル', 'コード', 'エラー'
         ];
 
         const hasUserIndicator = userIndicators.some(indicator => lowerContent.includes(indicator));

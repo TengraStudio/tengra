@@ -1,8 +1,11 @@
 ﻿import { ChatTemplate } from '@renderer/features/chat/types';
-import { Activity, Box, Code, PenTool, Search } from 'lucide-react';
-import React from 'react';
+import { Activity, Code, PenTool, Search } from 'lucide-react';
+import React, { useMemo } from 'react';
 
-import { cn } from '@/lib/utils';
+import logoBlack from '@/assets/tandem_black.png';
+import logoWhite from '@/assets/tandem_white.png';
+import { useThemeDetection } from '@/hooks/useTheme';
+import { cn } from '@/lib/utils'; 
 
 interface WelcomeScreenProps {
     t: (key: string) => string;
@@ -21,10 +24,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     templates,
     onSelectTemplate
 }) => {
+    const { isLight} = useThemeDetection();
+
+    const logo = useMemo(() => isLight ? logoBlack : logoWhite, [isLight]);
+
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center max-w-2xl mx-auto space-y-8">
             <div className="w-20 h-20 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary shadow-xl shadow-primary/5 animate-pulse">
-                <Box className="w-8 h-8" />
+                <img src={logo} alt="logo" />
             </div>
             <div className="space-y-3 shadow-sm">
                 <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">{t('welcome.title')}</h1>

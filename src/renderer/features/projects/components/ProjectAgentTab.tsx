@@ -88,6 +88,11 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
         resumeFromCheckpoint,
         approvePlan,
         rejectPlan,
+        approveStep,
+        skipStep,
+        editStep,
+        addStepComment,
+        insertIntervention,
     } = useAgentTask(project);
     const { loadTaskHistory, deleteTask, getCheckpoints, groupedTasks } = useAgentHistory(project);
     const {
@@ -144,10 +149,10 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
         () =>
             selectedProvider && parentSelectedModel
                 ? {
-                      provider: selectedProvider,
-                      model: parentSelectedModel,
-                      displayName: parentSelectedModel,
-                  }
+                    provider: selectedProvider,
+                    model: parentSelectedModel,
+                    displayName: parentSelectedModel,
+                }
                 : null,
         [selectedProvider, parentSelectedModel]
     );
@@ -233,6 +238,31 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
                                 onRejectPlan={() => {
                                     if (selectedTaskId) {
                                         void rejectPlan(selectedTaskId);
+                                    }
+                                }}
+                                onApproveStep={stepId => {
+                                    if (selectedTaskId) {
+                                        void approveStep(selectedTaskId, stepId);
+                                    }
+                                }}
+                                onSkipStep={stepId => {
+                                    if (selectedTaskId) {
+                                        void skipStep(selectedTaskId, stepId);
+                                    }
+                                }}
+                                onEditStep={(stepId, text) => {
+                                    if (selectedTaskId) {
+                                        void editStep(selectedTaskId, stepId, text);
+                                    }
+                                }}
+                                onAddComment={(stepId, comment) => {
+                                    if (selectedTaskId) {
+                                        void addStepComment(selectedTaskId, stepId, comment);
+                                    }
+                                }}
+                                onInsertIntervention={afterStepId => {
+                                    if (selectedTaskId) {
+                                        void insertIntervention(selectedTaskId, afterStepId);
                                     }
                                 }}
                                 t={t}

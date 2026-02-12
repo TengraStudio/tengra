@@ -3,10 +3,26 @@ import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { assertPathWithinRoot } from '@main/utils/path-security.util';
-import { ipcMain, shell } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, shell } from 'electron';
 
+/** Maximum file path length */
+const MAX_PATH_LENGTH = 4096;
+
+/**
+ * Validates a file path string
+ */
+function validateFilePath(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_PATH_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
 
 interface GalleryItem {
     name: string
@@ -27,6 +43,11 @@ interface GalleryItem {
     }
 }
 
+/**
+ * Registers IPC handlers for gallery media management
+ * @param galleryPath - Root directory for gallery media files
+ * @param databaseService - Optional database service for fetching gallery metadata
+ */
 export function registerGalleryIpc(galleryPath: string, databaseService?: DatabaseService) {
     const galleryRoot = path.resolve(galleryPath);
     const resolveGalleryPath = (inputPath: string) => assertPathWithinRoot(inputPath, galleryRoot, 'gallery');
@@ -40,7 +61,7 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
         }
     }
 
-    ipcMain.handle('gallery:list', createIpcHandler('gallery:list', async () => {
+    ipcMain.handle('gallery:list', createSafeIpcHandler('gallery:list', async () => {
         try {
             const results: GalleryItem[] = [];
             const subdirs = ['images', 'videos'];
@@ -97,20 +118,29 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             appLogger.error('Gallery', `Gallery List Error: ${error}`);
             return [];
         }
-    }));
+    }, []));
 
-    ipcMain.handle('gallery:delete', createIpcHandler('gallery:delete', async (_event, filePath: string) => {
+    ipcMain.handle('gallery:delete', createSafeIpcHandler('gallery:delete', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+        const filePath = validateFilePath(filePathRaw);
+        if (!filePath) {
+            throw new Error('Invalid file path');
+        }
         try {
             const safePath = resolveGalleryPath(filePath);
             await fs.promises.unlink(safePath);
+            appLogger.info('Gallery', `Deleted file: ${safePath}`);
             return true;
         } catch (error) {
             appLogger.error('Gallery', `Gallery Delete Error: ${error}`);
             return false;
         }
-    }));
+    }, false));
 
-    ipcMain.handle('gallery:open', createIpcHandler('gallery:open', async (_event, filePath: string) => {
+    ipcMain.handle('gallery:open', createSafeIpcHandler('gallery:open', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+        const filePath = validateFilePath(filePathRaw);
+        if (!filePath) {
+            throw new Error('Invalid file path');
+        }
         try {
             const safePath = resolveGalleryPath(filePath);
             await shell.openPath(safePath);
@@ -119,9 +149,13 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             appLogger.error('Gallery', `Gallery Open Error: ${error}`);
             return false;
         }
-    }));
+    }, false));
 
-    ipcMain.handle('gallery:reveal', createIpcHandler('gallery:reveal', async (_event, filePath: string) => {
+    ipcMain.handle('gallery:reveal', createSafeIpcHandler('gallery:reveal', async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+        const filePath = validateFilePath(filePathRaw);
+        if (!filePath) {
+            throw new Error('Invalid file path');
+        }
         try {
             const safePath = resolveGalleryPath(filePath);
             shell.showItemInFolder(safePath);
@@ -130,5 +164,5 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             appLogger.error('Gallery', `Gallery Reveal Error: ${error}`);
             return false;
         }
-    }));
+    }, false));
 }

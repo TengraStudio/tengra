@@ -5,6 +5,7 @@ import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 const mockDb = {
     getFolders: vi.fn(),
+    getFolder: vi.fn(),
     createFolder: vi.fn(),
     updateFolder: vi.fn(),
     deleteFolder: vi.fn()
@@ -42,6 +43,7 @@ describe('FolderRepository', () => {
     it('should update folder and return result', async () => {
         const folder: Folder = { id: '1', name: 'Updated', createdAt: 0, updatedAt: 0 };
         mockDb.updateFolder.mockResolvedValue(folder);
+        mockDb.getFolder.mockResolvedValue(folder);
 
         const result = await repo.update('1', { name: 'Updated' });
         expect(result).toBe(folder);
@@ -50,6 +52,7 @@ describe('FolderRepository', () => {
 
     it('should throw error if update returns null', async () => {
         mockDb.updateFolder.mockResolvedValue(null);
-        await expect(repo.update('1', {})).rejects.toThrow('Folder not found: 1');
+        mockDb.getFolder.mockResolvedValue(null);
+        await expect(repo.update('1', {})).rejects.toThrow('Folder not found after update: 1');
     });
 });

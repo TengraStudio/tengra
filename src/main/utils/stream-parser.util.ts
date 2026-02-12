@@ -4,30 +4,30 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 export interface StreamChunk {
-    index?: number
-    content?: string
-    reasoning?: string
-    images?: Array<string | { image_url: { url: string } }>
-    type?: string
-    tool_calls?: ToolCall[]
+    index?: number;
+    content?: string;
+    reasoning?: string;
+    images?: Array<string | { image_url: { url: string } }>;
+    type?: string;
+    tool_calls?: ToolCall[];
     usage?: {
-        prompt_tokens: number
-        completion_tokens: number
-        total_tokens: number
-    }
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
 }
 
 type OpenAIStreamDelta = {
-    content?: string
-    reasoning_content?: string
-    reasoning?: string
-    images?: Array<string | { image_url: { url: string } }>
-    tool_calls?: ToolCall[]
-}
+    content?: string;
+    reasoning_content?: string;
+    reasoning?: string;
+    images?: Array<string | { image_url: { url: string } }>;
+    tool_calls?: ToolCall[];
+};
 
 type OpenAIStreamPayload = {
-    choices?: Array<{ delta?: OpenAIStreamDelta; index?: number }>
-}
+    choices?: Array<{ delta?: OpenAIStreamDelta; index?: number }>;
+};
 
 export class StreamParser {
     /**
@@ -47,7 +47,7 @@ export class StreamParser {
                 yield* this.parseNodeStream(body, decoder, (b) => { buffer = b; }, () => buffer);
             }
         } catch (error) {
-            console.error('[StreamParser] Parse error:', getErrorMessage(error));
+            appLogger.error('StreamParser', 'Parse error', error as Error);
             throw error;
         }
     }

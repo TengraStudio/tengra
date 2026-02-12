@@ -17,6 +17,7 @@ You are in a high-stakes environment. Every decision you make must be justified 
 - [ ] Did I remove all `console.log`?
 - [ ] Is my function under 150 lines?
 - [ ] Did I run `npm run lint`?
-- [ ] Did I update `CHANGELOG.md`?
+- [ ] Did I update `docs/changelog/data/changelog.entries.json` and run `npm run changelog:sync`?
 
 **IF YOU IGNORE THESE RULES, YOU WILL BE DISCONNECTED.**
+

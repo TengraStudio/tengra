@@ -1,31 +1,85 @@
 
-
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
+import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
+import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
+import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
-import { AgentProfile, AgentStartOptions, AgentTaskHistoryItem, ProjectState, ProjectStep, RollbackCheckpointResult } from '@shared/types/project-agent';
+import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
+import {
+    AgentProfile,
+    AgentStartOptions,
+    AgentTaskHistoryItem,
+    AgentTemplate,
+    AgentTemplateCategory,
+    AgentTemplateExport,
+    ConsensusResult,
+    ModelRoutingRule,
+    ProjectState,
+    ProjectStep,
+    RollbackCheckpointResult,
+    VotingSession,
+} from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 import { AgentCheckpointService } from './agent/agent-checkpoint.service';
-import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import { AgentTaskExecutor } from './agent/agent-task-executor';
+
+type TaskPriority = NonNullable<AgentStartOptions['priority']>;
+
+interface QueuedExecutionTask {
+    taskId: string;
+    priority: TaskPriority;
+}
+
+interface ProjectAgentServiceDependencies {
+    databaseService: DatabaseService;
+    llmService: LLMService;
+    eventBus: EventBusService;
+    agentRegistryService: AgentRegistryService;
+    agentCheckpointService: AgentCheckpointService;
+    gitService: GitService;
+    agentCollaborationService: AgentCollaborationService;
+    agentTemplateService: AgentTemplateService;
+}
+
+const TASK_PRIORITY_SCORE: Record<TaskPriority, number> = {
+    low: 1,
+    normal: 2,
+    high: 3,
+    critical: 4,
+};
 
 export class ProjectAgentService extends BaseService {
     private executors = new Map<string, AgentTaskExecutor>();
     private currentTaskId: string | null = null;
     private toolExecutor?: ToolExecutor;
+    private readonly databaseService: DatabaseService;
+    private readonly llmService: LLMService;
+    public readonly eventBus: EventBusService;
+    private readonly agentRegistryService: AgentRegistryService;
+    private readonly agentCheckpointService: AgentCheckpointService;
+    private readonly gitService: GitService;
+    private readonly agentCollaborationService: AgentCollaborationService;
+    private readonly agentTemplateService: AgentTemplateService;
+    private readonly activeExecutionTaskIds = new Set<string>();
+    private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
+    private readonly maxConcurrentExecutionTasks = 3;
+    private unsubscribeExecutionObserver?: () => void;
 
-    constructor(
-        private readonly databaseService: DatabaseService,
-        private readonly llmService: LLMService,
-        public readonly eventBus: EventBusService,
-        private readonly agentRegistryService: AgentRegistryService,
-        private readonly agentCheckpointService: AgentCheckpointService
-    ) {
+    constructor(deps: ProjectAgentServiceDependencies) {
         super('ProjectAgentService');
+        this.databaseService = deps.databaseService;
+        this.llmService = deps.llmService;
+        this.eventBus = deps.eventBus;
+        this.agentRegistryService = deps.agentRegistryService;
+        this.agentCheckpointService = deps.agentCheckpointService;
+        this.gitService = deps.gitService;
+        this.agentCollaborationService = deps.agentCollaborationService;
+        this.agentTemplateService = deps.agentTemplateService;
     }
 
     setToolExecutor(toolExecutor: ToolExecutor) {
@@ -37,11 +91,14 @@ export class ProjectAgentService extends BaseService {
 
     override async initialize(): Promise<void> {
         this.logInfo('Initializing ProjectAgentService...');
+        this.observeExecutionState();
         await this.restoreActiveTasks();
         this.logInfo('ProjectAgentService initialized');
     }
 
     override async cleanup(): Promise<void> {
+        this.unsubscribeExecutionObserver?.();
+        this.unsubscribeExecutionObserver = undefined;
         for (const executor of this.executors.values()) {
             await executor.cleanup();
         }
@@ -115,6 +172,8 @@ export class ProjectAgentService extends BaseService {
                     eventBus: this.eventBus,
                     registry: this.agentRegistryService,
                     checkpoint: this.agentCheckpointService,
+                    git: this.gitService,
+                    collaboration: this.agentCollaborationService,
                 }
             );
             if (this.toolExecutor) {
@@ -123,6 +182,82 @@ export class ProjectAgentService extends BaseService {
             this.executors.set(taskId, executor);
         }
         return executor;
+    }
+
+    private observeExecutionState(): void {
+        this.unsubscribeExecutionObserver?.();
+        this.unsubscribeExecutionObserver = this.eventBus.on('project:update', payload => {
+            const taskId = payload.taskId;
+            if (!taskId) {
+                return;
+            }
+            if (payload.status === 'running') {
+                this.activeExecutionTaskIds.add(taskId);
+                return;
+            }
+            const isTerminalState = ['idle', 'failed', 'completed', 'error', 'paused'].includes(
+                payload.status
+            );
+            if (isTerminalState && this.activeExecutionTaskIds.delete(taskId)) {
+                void this.drainExecutionQueue();
+            }
+        });
+    }
+
+    private getPriority(priority?: AgentStartOptions['priority']): TaskPriority {
+        return priority ?? 'normal';
+    }
+
+    private enqueueExecutionTask(task: QueuedExecutionTask): void {
+        this.queuedExecutionTasks.push(task);
+        this.queuedExecutionTasks.sort((left, right) => {
+            const leftScore = TASK_PRIORITY_SCORE[left.priority];
+            const rightScore = TASK_PRIORITY_SCORE[right.priority];
+            if (leftScore === rightScore) {
+                return 0;
+            }
+            return rightScore - leftScore;
+        });
+    }
+
+    private async scheduleExecutionStart(taskId: string, priority?: AgentStartOptions['priority']): Promise<boolean> {
+        const normalizedPriority = this.getPriority(priority);
+        if (this.activeExecutionTaskIds.has(taskId)) {
+            return true;
+        }
+        if (this.activeExecutionTaskIds.size >= this.maxConcurrentExecutionTasks) {
+            const alreadyQueued = this.queuedExecutionTasks.some(t => t.taskId === taskId);
+            if (!alreadyQueued) {
+                this.enqueueExecutionTask({ taskId, priority: normalizedPriority });
+            }
+            this.logInfo(`Queued task ${taskId} with priority ${normalizedPriority}`);
+            return false;
+        }
+        this.activeExecutionTaskIds.add(taskId);
+        return true;
+    }
+
+    private async drainExecutionQueue(): Promise<void> {
+        while (
+            this.activeExecutionTaskIds.size < this.maxConcurrentExecutionTasks &&
+            this.queuedExecutionTasks.length > 0
+        ) {
+            const nextTask = this.queuedExecutionTasks.shift();
+            if (!nextTask) {
+                return;
+            }
+            const executor = this.executors.get(nextTask.taskId);
+            if (!executor) {
+                continue;
+            }
+            this.activeExecutionTaskIds.add(nextTask.taskId);
+            try {
+                await executor.start();
+            } catch (error) {
+                this.activeExecutionTaskIds.delete(nextTask.taskId);
+                this.logError(`Failed to start queued task ${nextTask.taskId}`, error as Error);
+            }
+        }
     }
 
     // --- Public API delegations ---
@@ -147,7 +282,15 @@ export class ProjectAgentService extends BaseService {
         this.currentTaskId = taskId;
 
         const executor = await this.getOrCreateExecutor(taskId, options);
-        await executor.start();
+        const canStartNow = await this.scheduleExecutionStart(taskId, options.priority);
+        if (canStartNow) {
+            try {
+                await executor.start();
+            } catch (error) {
+                this.activeExecutionTaskIds.delete(taskId);
+                throw error;
+            }
+        }
     }
 
     async generatePlan(options: AgentStartOptions): Promise<void> {
@@ -171,6 +314,12 @@ export class ProjectAgentService extends BaseService {
     async stop(taskId?: string): Promise<void> {
         const targetId = taskId || this.currentTaskId;
         if (!targetId) { return; }
+
+        this.activeExecutionTaskIds.delete(targetId);
+        const queueIndex = this.queuedExecutionTasks.findIndex(entry => entry.taskId === targetId);
+        if (queueIndex !== -1) {
+            this.queuedExecutionTasks.splice(queueIndex, 1);
+        }
 
         const executor = this.executors.get(targetId);
         if (executor) {
@@ -200,12 +349,13 @@ export class ProjectAgentService extends BaseService {
         return false;
     }
 
-    async approvePlan(plan: ProjectStep[], taskId?: string): Promise<void> {
+    async approvePlan(plan: ProjectStep[] | string[], taskId?: string): Promise<void> {
         const targetId = taskId || this.currentTaskId;
         if (!targetId) { return; }
 
         const executor = this.executors.get(targetId);
         if (executor) {
+            this.activeExecutionTaskIds.add(targetId);
             await executor.approvePlan(plan);
         }
     }
@@ -271,6 +421,48 @@ export class ProjectAgentService extends BaseService {
         const executor = this.executors.get(targetId);
         if (executor) {
             await executor.retryStep(index);
+        }
+    }
+
+    // --- AGT-HIL: Human-in-the-Loop Step Methods ---
+
+    /** AGT-HIL-01: Approve a step awaiting user approval */
+    async approveStep(taskId: string, stepId: string): Promise<void> {
+        const executor = this.executors.get(taskId);
+        if (executor) {
+            await executor.approveStep(stepId);
+        }
+    }
+
+    /** AGT-HIL-03: Skip a step */
+    async skipStep(taskId: string, stepId: string): Promise<void> {
+        const executor = this.executors.get(taskId);
+        if (executor) {
+            await executor.skipStep(stepId);
+        }
+    }
+
+    /** AGT-HIL-02: Edit a pending step's text */
+    async editStep(taskId: string, stepId: string, newText: string): Promise<void> {
+        const executor = this.executors.get(taskId);
+        if (executor) {
+            await executor.editStep(stepId, newText);
+        }
+    }
+
+    /** AGT-HIL-05: Add a comment to a step */
+    async addStepComment(taskId: string, stepId: string, comment: string): Promise<void> {
+        const executor = this.executors.get(taskId);
+        if (executor) {
+            await executor.addStepComment(stepId, comment);
+        }
+    }
+
+    /** AGT-HIL-04: Insert an intervention point after a step */
+    async insertInterventionPoint(taskId: string, afterStepId: string): Promise<void> {
+        const executor = this.executors.get(taskId);
+        if (executor) {
+            await executor.insertInterventionPoint(afterStepId);
         }
     }
 
@@ -446,4 +638,125 @@ export class ProjectAgentService extends BaseService {
     }
     async getTaskEvents(_taskId: string) { return { success: true, events: [] as AgentEventRecord[] }; } // Not impl
     async getTaskTelemetry(_taskId: string) { return { success: true, telemetry: [] as TaskMetrics[] }; } // Not impl
+
+    async createPullRequest(taskId?: string): Promise<{ success: boolean; url?: string; error?: string }> {
+        const targetId = taskId || this.currentTaskId;
+        if (!targetId) {
+            return { success: false, error: 'taskId is required' };
+        }
+
+        const executor = this.executors.get(targetId);
+        if (!executor) {
+            return { success: false, error: 'Task not found' };
+        }
+
+        return await executor.createPullRequest();
+    }
+
+    // ===== AGT-COL: Collaboration Methods =====
+    getRoutingRules(): ModelRoutingRule[] {
+        return this.agentCollaborationService.getRoutingRules();
+    }
+
+    setRoutingRules(rules: ModelRoutingRule[]): void {
+        this.agentCollaborationService.setRoutingRules(rules);
+    }
+
+    createVotingSession(
+        taskId: string,
+        stepIndex: number,
+        question: string,
+        options: string[]
+    ): VotingSession {
+        return this.agentCollaborationService.createVotingSession(taskId, stepIndex, question, options);
+    }
+
+    async submitVote(options: {
+        sessionId: string;
+        modelId: string;
+        provider: string;
+        decision: string;
+        confidence: number;
+        reasoning?: string;
+    }): Promise<VotingSession | null> {
+        return await this.agentCollaborationService.submitVote(options);
+    }
+
+    async requestVotes(
+        sessionId: string,
+        models: Array<{ provider: string; model: string }>
+    ): Promise<VotingSession | null> {
+        return await this.agentCollaborationService.requestVotes(sessionId, models);
+    }
+
+    resolveVoting(sessionId: string): VotingSession | null {
+        return this.agentCollaborationService.resolveVoting(sessionId);
+    }
+
+    getVotingSession(sessionId: string): VotingSession | null {
+        return this.agentCollaborationService.getVotingSession(sessionId);
+    }
+
+    async buildConsensus(
+        outputs: Array<{ modelId: string; provider: string; output: string }>
+    ): Promise<ConsensusResult> {
+        return await this.agentCollaborationService.buildConsensus(outputs);
+    }
+
+    // ===== AGT-TPL: Template Methods =====
+    getTemplates(): AgentTemplate[] {
+        return this.agentTemplateService.getAllTemplates();
+    }
+
+    getTemplatesByCategory(category: AgentTemplateCategory): AgentTemplate[] {
+        return this.agentTemplateService.getTemplatesByCategory(category);
+    }
+
+    async saveTemplate(template: AgentTemplate): Promise<{ success: boolean; template: AgentTemplate }> {
+        const existing = this.agentTemplateService.getTemplate(template.id);
+        const saved = existing
+            ? await this.agentTemplateService.updateTemplate(template.id, template) ?? template
+            : await this.agentTemplateService.createTemplate({
+                name: template.name,
+                description: template.description,
+                category: template.category,
+                systemPromptOverride: template.systemPromptOverride,
+                taskTemplate: template.taskTemplate,
+                predefinedSteps: template.predefinedSteps,
+                variables: template.variables,
+                modelRouting: template.modelRouting,
+                tags: template.tags,
+                isBuiltIn: false,
+                authorId: template.authorId,
+            });
+        return { success: true, template: saved };
+    }
+
+    async deleteTemplate(id: string): Promise<boolean> {
+        return await this.agentTemplateService.deleteTemplate(id);
+    }
+
+    exportTemplate(id: string): AgentTemplateExport | null {
+        return this.agentTemplateService.exportTemplate(id);
+    }
+
+    async importTemplate(exported: AgentTemplateExport): Promise<AgentTemplate> {
+        return await this.agentTemplateService.importTemplate(exported);
+    }
+
+    applyTemplate(
+        templateId: string,
+        values: Record<string, string | number | boolean>
+    ): { template: AgentTemplate; task: string; steps: string[] } {
+        const template = this.agentTemplateService.getTemplate(templateId);
+        if (!template) {
+            throw new Error('Template not found');
+        }
+        const validation = this.agentTemplateService.validateVariables(template, values);
+        if (!validation.valid) {
+            throw new Error(validation.errors.join('; '));
+        }
+        const applied = this.agentTemplateService.applyVariables(template, values);
+        return { template, ...applied };
+    }
 }

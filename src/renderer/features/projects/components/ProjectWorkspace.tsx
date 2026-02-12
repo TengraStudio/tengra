@@ -40,45 +40,6 @@ const AGENT_PANEL_VISIBLE_WIDTH_PX = 350;
 const EXPANDED_EXPLORER_LEFT_INSET_PX = 18 * 16 + 8;
 const COLLAPSED_EXPLORER_LEFT_INSET_PX = 8;
 
-const LANGUAGE_BY_EXTENSION: Record<string, string> = {
-    c: 'C',
-    cpp: 'C++',
-    cs: 'C#',
-    css: 'CSS',
-    go: 'Go',
-    html: 'HTML',
-    java: 'Java',
-    js: 'JavaScript',
-    json: 'JSON',
-    jsx: 'JavaScript React',
-    md: 'Markdown',
-    php: 'PHP',
-    py: 'Python',
-    rb: 'Ruby',
-    rs: 'Rust',
-    sh: 'Shell',
-    sql: 'SQL',
-    ts: 'TypeScript',
-    tsx: 'TypeScript React',
-    txt: 'Plain Text',
-    xml: 'XML',
-    yaml: 'YAML',
-    yml: 'YAML',
-};
-
-function getLanguageLabelFromPath(path?: string): string {
-    if (!path) {
-        return 'Plain Text';
-    }
-
-    const extension = path.split('.').pop()?.toLowerCase();
-    if (!extension) {
-        return 'Plain Text';
-    }
-
-    return LANGUAGE_BY_EXTENSION[extension] ?? extension.toUpperCase();
-}
-
 interface ProjectWorkspaceProps {
     project: Project;
     onBack: () => void;
@@ -139,10 +100,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const stripResizeCleanupRef = React.useRef<(() => void) | null>(null);
     const lastExpandedTerminalHeightRef = React.useRef(
         Math.max(ps.terminalHeight, MIN_TERMINAL_HEIGHT)
-    );
-    const activeLanguageName = React.useMemo(
-        () => getLanguageLabelFromPath(wm.activeTab?.path),
-        [wm.activeTab?.path]
     );
     const dockedTerminalRightInsetPx = React.useMemo(() => {
         const baseInset = 8;
@@ -589,8 +546,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 branchName="main"
                 notificationCount={ps.notifications.length}
                 status={isLoading ? 'busy' : 'ready'}
-                encoding="UTF-8"
-                languageName={activeLanguageName}
+                activeFilePath={wm.activeTab?.path}
+                activeFileContent={wm.activeTab?.content}
+                activeFileType={wm.activeTab?.type}
                 onCommandClick={() => ps.notify('info', 'Command Palette coming soon')}
                 onMouseDown={handleCommandStripResizeStart}
             />

@@ -22,8 +22,11 @@ import { AppSettings } from '@shared/types/settings';
  * @property {Function} [onEvict] - Callback invoked when an item is removed (expired or evicted)
  */
 export interface CacheOptions<T = JsonValue> {
-    maxSize?: number           // Maximum number of entries
-    defaultTTL?: number        // Default TTL in milliseconds
+    /** Maximum number of entries before eviction triggered */
+    maxSize?: number
+    /** Default time-to-live in milliseconds */
+    defaultTTL?: number
+    /** Callback invoked when an item is removed */
     onEvict?: (key: string, value: T) => void
 }
 
@@ -79,7 +82,7 @@ export class Cache<T = JsonValue> {
      */
     get(key: string): T | undefined {
         const entry = this.entries.get(key);
-        if (!entry) {return undefined;}
+        if (!entry) { return undefined; }
 
         // Check expiration
         if (Date.now() > entry.expiresAt) {
@@ -125,7 +128,7 @@ export class Cache<T = JsonValue> {
      */
     has(key: string): boolean {
         const entry = this.entries.get(key);
-        if (!entry) {return false;}
+        if (!entry) { return false; }
         if (Date.now() > entry.expiresAt) {
             this.delete(key);
             return false;
@@ -183,6 +186,7 @@ export class Cache<T = JsonValue> {
 
     /**
      * Evicts the least recently used item from the cache.
+     * Uses a single pass to find the oldest entry.
      * 
      * @private
      */
@@ -190,6 +194,7 @@ export class Cache<T = JsonValue> {
         let oldestKey: string | null = null;
         let oldestTime = Infinity;
 
+        // One-pass search for the LRU entry
         for (const [key, entry] of this.entries) {
             if (entry.lastAccessed < oldestTime) {
                 oldestTime = entry.lastAccessed;
@@ -197,7 +202,7 @@ export class Cache<T = JsonValue> {
             }
         }
 
-        if (oldestKey) {
+        if (oldestKey !== null) {
             this.delete(oldestKey);
         }
     }
@@ -236,20 +241,21 @@ export class Cache<T = JsonValue> {
 
 /**
  * Creates a memoized version of an async function.
- * 
+ *
  * Results are cached based on the arguments passed to the function.
- * 
- * @template T - The type of the async function to memoize
+ *
+ * @template Args - The types of the arguments passed to the function
+ * @template Result - The type of the result returned by the function
  * @param fn - The function to memoize
  * @param options - Configuration options for memoization
  * @returns A wrapped version of the function that caches results
- * 
+ *
  * @example
  * ```typescript
- * const fetchUser = memoize(async (id) => api.getUser(id), { ttl: 60000 });
+ * const fetchUser = memoize(async (id: number) => api.getUser(id), { ttl: 60000 });
  * ```
  */
-export function memoize<Args extends JsonValue[], Result extends JsonValue>(
+export function memoize<Args extends unknown[], Result>(
     fn: (...args: Args) => Promise<Result>,
     options?: {
         cache?: Cache<Result>
@@ -257,10 +263,11 @@ export function memoize<Args extends JsonValue[], Result extends JsonValue>(
         ttl?: number
     }
 ): (...args: Args) => Promise<Result> {
-    const cache = options?.cache ?? new Cache<Result>({ defaultTTL: options?.ttl ?? 60000 });
+    const defaultTTL = options?.ttl ?? 60000;
+    const cache = options?.cache ?? new Cache<Result>({ defaultTTL });
     const keyFn = options?.keyFn ?? ((...args) => JSON.stringify(args));
 
-    return async (...args: Args) => {
+    return async (...args: Args): Promise<Result> => {
         const key = keyFn(...args);
 
         const cached = cache.get(key);

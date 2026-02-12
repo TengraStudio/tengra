@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 export function useOllamaManager() {
     const [isOllamaRunning, setIsOllamaRunning] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
@@ -25,7 +27,7 @@ export function useOllamaManager() {
                 setTimeout(() => setStatusMessage(''), 2000);
             }
         } catch (error) {
-            console.error('Failed to start Ollama:', error);
+            appLogger.error('OllamaManager', 'Failed to start Ollama', error as Error);
         } finally {
             void checkOllama();
         }

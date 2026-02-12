@@ -10,10 +10,24 @@ export interface AgentProfile {
     skills: string[];
 }
 
+/** Status of a project step */
+export type ProjectStepStatus =
+    | 'pending'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'skipped'
+    | 'awaiting_step_approval';
+
 export interface ProjectStep {
     id: string;
     text: string;
-    status: 'pending' | 'running' | 'completed' | 'failed';
+    status: ProjectStepStatus;
+    type?: 'task' | 'fork' | 'join';
+    dependsOn?: string[];
+    priority?: 'low' | 'normal' | 'high' | 'critical';
+    parallelLane?: number;
+    branchId?: string;
     groupId?: string;
     groupName?: string;
     timing?: {
@@ -36,6 +50,25 @@ export interface ProjectStep {
     modelConfig?: StepModelConfig;
     /** AGT-COL-02: Detected task type for routing */
     taskType?: TaskType;
+    /** AGT-HIL-01: Step requires explicit user approval before execution */
+    requiresApproval?: boolean;
+    /** AGT-HIL-03: Step can be skipped by the user */
+    isSkippable?: boolean;
+    /** AGT-HIL-04: This step is a manual intervention point (agent pauses) */
+    isInterventionPoint?: boolean;
+    /** AGT-HIL-05: User-attached comments/notes */
+    comments?: StepComment[];
+    /** AGT-TST-01: Test configuration for this step */
+    testConfig?: StepTestConfig;
+    /** AGT-TST-02: Test results after step execution */
+    testResult?: TestRunResult;
+}
+
+/** AGT-HIL-05: A user comment attached to a step */
+export interface StepComment {
+    id: string;
+    text: string;
+    createdAt: number;
 }
 
 /** AGT-PLN-05: Confidence scoring for a step */
@@ -109,6 +142,7 @@ export interface ProjectState {
 export interface AgentStartOptions {
     task: string;
     nodeId?: string;
+    priority?: 'low' | 'normal' | 'high' | 'critical';
     model?: { provider: string; model: string };
     projectId?: string;
     agentProfileId?: string;
@@ -304,4 +338,70 @@ export interface AgentTemplateExport {
     template: AgentTemplate;
     exportedAt: number;
     exportedBy?: string;
+}
+
+// ===== AGT-TST: Testing Integration Types =====
+
+/** AGT-TST-01: Test run configuration */
+export interface TestRunConfig {
+    command: string;
+    framework: 'vitest' | 'jest' | 'mocha' | 'playwright' | 'custom';
+    timeout?: number;
+    coverageEnabled?: boolean;
+    coverageThreshold?: number;
+    watch?: boolean;
+    filter?: string;
+}
+
+/** AGT-TST-02: Individual test case result */
+export interface TestCaseResult {
+    name: string;
+    suite: string;
+    status: 'passed' | 'failed' | 'skipped' | 'pending';
+    duration: number;
+    error?: {
+        message: string;
+        stack?: string;
+        expected?: string;
+        actual?: string;
+    };
+}
+
+/** AGT-TST-02: Test run result */
+export interface TestRunResult {
+    success: boolean;
+    totalTests: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    duration: number;
+    startedAt: number;
+    completedAt: number;
+    tests: TestCaseResult[];
+    coverage?: TestCoverageResult;
+    output: string;
+}
+
+/** AGT-TST-04: Coverage result */
+export interface TestCoverageResult {
+    lines: { covered: number; total: number; percentage: number };
+    branches: { covered: number; total: number; percentage: number };
+    functions: { covered: number; total: number; percentage: number };
+    statements: { covered: number; total: number; percentage: number };
+    files: Array<{
+        path: string;
+        lines: number;
+        branches: number;
+        functions: number;
+        statements: number;
+    }>;
+}
+
+/** AGT-TST: Step test configuration */
+export interface StepTestConfig {
+    enabled: boolean;
+    runAfterStep: boolean;
+    failOnTestFailure: boolean;
+    command?: string;
+    filter?: string;
 }

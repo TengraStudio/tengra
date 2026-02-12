@@ -3,6 +3,8 @@ import { Language, useLanguage } from '@renderer/i18n';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
 import { useEffect, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 export function useAppInitialization() {
     const { language, setLanguage } = useLanguage();
     const { speak: handleSpeak } = useTextToSpeech();
@@ -23,7 +25,7 @@ export function useAppInitialization() {
             try {
                 await themeRegistry.loadThemes();
             } catch (error) {
-                console.error('[AppInit] Failed to load theme registry:', error);
+                appLogger.error('AppInit', 'Failed to load theme registry', error as Error);
             }
         };
         void loadThemes();
@@ -67,7 +69,7 @@ export function useAppInitialization() {
                     setShowExtensionWarning(shouldShow);
                 }
             } catch (error) {
-                console.error('[Extension] Failed to check warning status:', error);
+                appLogger.error('Extension', 'Failed to check warning status', error as Error);
             }
         };
         void checkExtensionWarning();

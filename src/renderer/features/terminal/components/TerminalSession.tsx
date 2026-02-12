@@ -8,6 +8,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { useTerminalSmartSuggestions } from '../hooks/useTerminalSmartSuggestions';
 
@@ -165,10 +166,10 @@ export const TerminalSession = memo(
                     return false;
                 }
                 term.onResize(s => {
-                    window.electron.terminal.resize(tab.id, s.cols, s.rows).catch(() => {});
+                    window.electron.terminal.resize(tab.id, s.cols, s.rows).catch(() => { });
                 });
                 term.onData(d => {
-                    window.electron.terminal.write(tab.id, d).catch(() => {});
+                    window.electron.terminal.write(tab.id, d).catch(() => { });
                 });
                 const buf = await window.electron.terminal.readBuffer(tab.id).catch(() => null);
                 if (buf) {
@@ -223,7 +224,7 @@ export const TerminalSession = memo(
                 });
                 term.loadAddon(webglAddon);
             } catch (e) {
-                console.warn('WebGL addon failed to load, falling back to DOM renderer', e);
+                appLogger.warn('TerminalSession', 'WebGL addon failed to load, falling back to DOM renderer', e as Error);
             }
 
             xtermRef.current = term;
@@ -236,7 +237,7 @@ export const TerminalSession = memo(
                 isInitializedRef.current = false;
                 if (isActiveRef.current && sessionIdRef.current) {
                     initializedTerminals.delete(tab.id);
-                    window.electron.terminal.kill(sessionIdRef.current).catch(() => {});
+                    window.electron.terminal.kill(sessionIdRef.current).catch(() => { });
                 }
                 initializingTerminals.delete(tab.id);
                 term.dispose();

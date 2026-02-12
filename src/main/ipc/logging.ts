@@ -1,4 +1,5 @@
 import { appLogger, LogLevel } from '@main/logging/logger';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain } from 'electron';
 
@@ -43,29 +44,48 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
     }
 }
 
+/**
+ * Registers IPC handlers for log streaming and buffer management
+ */
 export function registerLoggingIpc() {
+    appLogger.info('LoggingIPC', 'Registering logging IPC handlers');
+
     ipcMain.on('log:write', handleLogWrite);
 
-    ipcMain.handle('log:stream:start', () => {
-        streamingEnabled = true;
-        return { success: true };
-    });
+    ipcMain.handle('log:stream:start', createSafeIpcHandler('log:stream:start',
+        async () => {
+            streamingEnabled = true;
+            return { success: true };
+        }, { success: false }
+    ));
 
-    ipcMain.handle('log:stream:stop', () => {
-        streamingEnabled = false;
-        return { success: true };
-    });
+    ipcMain.handle('log:stream:stop', createSafeIpcHandler('log:stream:stop',
+        async () => {
+            streamingEnabled = false;
+            return { success: true };
+        }, { success: false }
+    ));
 
-    ipcMain.handle('log:buffer:get', () => {
-        return logBuffer.slice(-500);
-    });
+    ipcMain.handle('log:buffer:get', createSafeIpcHandler('log:buffer:get',
+        async () => {
+            return logBuffer.slice(-500);
+        }, []
+    ));
 
-    ipcMain.handle('log:buffer:clear', () => {
-        logBuffer.length = 0;
-        return { success: true };
-    });
+    ipcMain.handle('log:buffer:clear', createSafeIpcHandler('log:buffer:clear',
+        async () => {
+            logBuffer.length = 0;
+            return { success: true };
+        }, { success: false }
+    ));
 }
 
+/**
+ * Handles incoming log write events from renderer processes
+ * @param event - The IPC event from the renderer
+ * @param arg1 - Log level string or structured log object
+ * @param arg2 - Optional message string when arg1 is a level string
+ */
 function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: LogLevel, message?: string, context?: string, data?: JsonValue | Error }, arg2?: string) {
     // SEC-013-4: Verify sender is a valid window
     try {
@@ -100,6 +120,10 @@ function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: L
     pushLogEntry(levelStr, context, message);
 }
 
+/**
+ * Parses a log level string into a LogLevel enum value
+ * @param levelStr - The log level string to parse
+ */
 function parseLevel(levelStr: string): LogLevel {
     const upper = levelStr.toUpperCase();
     if (upper === 'DEBUG') { return LogLevel.DEBUG; }
@@ -108,6 +132,13 @@ function parseLevel(levelStr: string): LogLevel {
     return LogLevel.INFO;
 }
 
+/**
+ * Dispatches a log entry to the application logger at the appropriate level
+ * @param level - The log severity level
+ * @param context - The source context for the log entry
+ * @param message - The log message
+ * @param data - Optional additional data or error to attach
+ */
 function logToApp(level: LogLevel, context: string, message: string, data?: JsonValue | Error) {
     switch (level) {
         case LogLevel.DEBUG: appLogger.debug(context, message, data); break;

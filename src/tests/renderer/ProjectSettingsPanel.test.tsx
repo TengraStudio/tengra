@@ -1,0 +1,86 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
+import { ProjectSettingsPanel } from '@/features/projects/components/ProjectSettingsPanel';
+
+vi.mock('@/i18n', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+    }),
+}));
+
+vi.mock('@/features/projects/hooks/useProjectSettingsForm', () => ({
+    useProjectSettingsForm: () => ({
+        formData: {},
+        setFormData: vi.fn(),
+        isDirty: false,
+        handleSave: vi.fn(async () => {}),
+        handleReset: vi.fn(),
+        toggleMember: vi.fn(),
+    }),
+}));
+
+vi.mock('@/features/projects/components/settings/SettingsHeader', () => ({
+    SettingsHeader: () => <div data-testid="settings-header" />,
+}));
+
+vi.mock('@/features/projects/components/settings/SettingsSidebar', () => ({
+    SettingsSidebar: ({
+        setActiveSection,
+    }: {
+        setActiveSection: (section: 'general' | 'advanced') => void
+    }) => (
+        <button type="button" onClick={() => setActiveSection('advanced')}>
+            open advanced
+        </button>
+    ),
+}));
+
+vi.mock('@/features/projects/components/settings/GeneralSection', () => ({
+    GeneralSection: () => <div>general-section</div>,
+}));
+
+vi.mock('@/features/projects/components/settings/AdvancedSection', () => ({
+    AdvancedSection: () => <div>advanced-section</div>,
+}));
+
+vi.mock('@/features/projects/components/settings/CouncilSection', () => ({
+    CouncilSection: () => null,
+}));
+
+vi.mock('@/features/projects/components/settings/BuildSection', () => ({
+    BuildSection: () => null,
+}));
+
+vi.mock('@/features/projects/components/settings/DevServerSection', () => ({
+    DevServerSection: () => null,
+}));
+
+vi.mock('@/features/projects/components/settings/WorkspaceSection', () => ({
+    WorkspaceSection: () => null,
+}));
+
+describe('ProjectSettingsPanel', () => {
+    const project = { id: 'p1', title: 'Demo Project' } as unknown as Parameters<
+        typeof ProjectSettingsPanel
+    >[0]['project'];
+
+    it('renders landmark and switches sections', () => {
+        render(
+            <ProjectSettingsPanel
+                project={project}
+                onUpdate={vi.fn(async () => {})}
+                language={'en'}
+                availableAgents={[]}
+                onAddMount={vi.fn()}
+                onRemoveMount={vi.fn()}
+            />
+        );
+
+        expect(screen.getByLabelText('Project settings panel')).toBeInTheDocument();
+        expect(screen.getByText('general-section')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'open advanced' }));
+        expect(screen.getByText('advanced-section')).toBeInTheDocument();
+    });
+});

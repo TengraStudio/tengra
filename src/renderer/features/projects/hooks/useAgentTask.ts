@@ -8,13 +8,18 @@ import { AttachedFile, ModelOption } from '../components/agent/TaskInputForm';
 import { ToolExecution } from '../components/agent/ToolTracking';
 
 import {
+    addStepCommentHandler,
     approvePlanHandler,
+    approveStepHandler,
+    editStepHandler,
     fetchTaskDetailsHandler,
+    insertInterventionHandler,
     pauseTaskHandler,
     rejectPlanHandler,
     resumeCheckpointHandler,
     resumeTaskHandler,
     saveSnapshotHandler,
+    skipStepHandler,
     stopTaskHandler
 } from './converters/asyncHandlers';
 import { invokeStartTask, prepareTaskFiles, validateTaskInput } from './converters/startTaskHandler';
@@ -202,6 +207,27 @@ export const useAgentTask = (project: Project) => {
         return await rejectPlanHandler(taskId, reason);
     }, []);
 
+    const approveStep = useCallback(async (taskId: string, stepId: string) => {
+        await approveStepHandler(taskId, stepId);
+        // UI will update via events
+    }, []);
+
+    const skipStep = useCallback(async (taskId: string, stepId: string) => {
+        await skipStepHandler(taskId, stepId);
+    }, []);
+
+    const editStep = useCallback(async (taskId: string, stepId: string, text: string) => {
+        await editStepHandler(taskId, stepId, text);
+    }, []);
+
+    const addStepComment = useCallback(async (taskId: string, stepId: string, comment: string) => {
+        await addStepCommentHandler(taskId, stepId, comment);
+    }, []);
+
+    const insertIntervention = useCallback(async (taskId: string, afterStepId: string) => {
+        await insertInterventionHandler(taskId, afterStepId);
+    }, []);
+
     const resumeFromCheckpoint = useCallback(async (checkpointId: string) => {
         setIsLoading(true);
         setStatus(prev => ({ ...prev, state: 'initializing', error: null }));
@@ -243,6 +269,11 @@ export const useAgentTask = (project: Project) => {
         resumeTask,
         approvePlan,
         rejectPlan,
+        approveStep,
+        skipStep,
+        editStep,
+        addStepComment,
+        insertIntervention,
         resumeFromCheckpoint,
         loadTaskDetails
     };

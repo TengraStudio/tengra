@@ -64,7 +64,8 @@ import { appLogger } from '@/utils/renderer-logger';
 // Interface definitions from old file
 export type TaskNodeData = {
     label: string;
-    taskType?: 'planner' | 'action';
+    taskId?: string;
+    taskType?: 'planner' | 'action' | 'fork' | 'join' | 'create-pr';
     status?:
     | 'idle'
     | 'planning'
@@ -174,15 +175,15 @@ const useTaskNodeActions = ({
         }
         try {
             updateNodeData(id, { status: 'running' });
-            await window.electron.projectAgent.approvePlan(data.plan);
+            await window.electron.projectAgent.approvePlan(data.plan, data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to approve plan', error as Error);
             updateNodeData(id, { status: 'failed' });
         }
-    }, [data.plan, id, updateNodeData]);
+    }, [data.plan, data.taskId, id, updateNodeData]);
 
     const handleExecute = useCallback(async () => {
-        if (!data.title && !data.description) {
+        if (data.taskType !== 'create-pr' && !data.title && !data.description) {
             return;
         }
         if (executeInFlightRef.current) {
@@ -194,6 +195,20 @@ const useTaskNodeActions = ({
         }
         executeInFlightRef.current = true;
         try {
+            if (data.taskType === 'create-pr') {
+                updateNodeData(id, { status: 'running', activeTab: 'logs' });
+                const result = await window.electron.projectAgent.createPullRequest(data.taskId);
+                if (!result.success || !result.url) {
+                    throw new Error(result.error ?? 'Failed to generate PR URL');
+                }
+                window.electron.openExternal(result.url);
+                updateNodeData(id, {
+                    status: 'completed',
+                    description: `PR created: ${result.url}`,
+                    title: data.title || 'Create Pull Request',
+                });
+                return;
+            }
             updateNodeData(id, { status: 'running', activeTab: 'logs' });
             const options: AgentStartOptions = {
                 task: data.title ?? data.description ?? t('projectAgent.newTask'),
@@ -217,6 +232,8 @@ const useTaskNodeActions = ({
         data.attachments,
         data.systemMode,
         data.agentProfileId,
+        data.taskType,
+        data.taskId,
         currentProviderId,
         currentModelId,
         selectedProjectId,
@@ -229,23 +246,23 @@ const useTaskNodeActions = ({
     const handleStop = useCallback(async () => {
         try {
             updateNodeData(id, { status: 'waiting' });
-            await window.electron.projectAgent.stop();
+            await window.electron.projectAgent.stop(data.taskId);
         } catch (error) {
             appLogger.error('TaskNode', 'Failed to stop task', error as Error);
         }
-    }, [id, updateNodeData]);
+    }, [data.taskId, id, updateNodeData]);
 
     const handleRetryStep = useCallback(
         async (index: number) => {
             try {
                 updateNodeData(id, { status: 'running', activeTab: 'logs' });
-                await window.electron.projectAgent.retryStep(index);
+                await window.electron.projectAgent.retryStep(index, data.taskId);
             } catch (error) {
                 appLogger.error('TaskNode', 'Failed to retry step', error as Error);
                 updateNodeData(id, { status: 'failed' });
             }
         },
-        [id, updateNodeData]
+        [data.taskId, id, updateNodeData]
     );
 
     return { handlePlan, handleApprove, handleExecute, handleStop, handleRetryStep };
@@ -312,7 +329,7 @@ const useTaskNodeState = ({
     useTaskExpandedLogs(id, data.status, updateNodeData);
 
     const isPlanner = data.taskType === 'planner';
-    const isAction = data.taskType === 'action';
+    const isAction = data.taskType === 'action' || data.taskType === 'fork' || data.taskType === 'join' || data.taskType === 'create-pr';
     const selectedProjectId = getSelectedProjectId(data, globalSelectedProject, projects);
     const selectedProject = projects.find(p => p.id === selectedProjectId);
     const currentModelId = data.model?.model ?? globalModelId;
@@ -1434,7 +1451,9 @@ const TaskBody = ({
                 <TaskInput id={id} data={data} updateNodeData={updateNodeData} />
             ) : isAction ? (
                 <div className="bg-card/20 border border-border/20 rounded-md p-2 text-xs text-muted-foreground">
-                    {t('projectAgent.selectAction')}
+                    {data.taskType === 'create-pr'
+                        ? 'Create a GitHub pull request from the active agent branch'
+                        : t('projectAgent.selectAction')}
                 </div>
             ) : (
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -1643,7 +1662,7 @@ export const TaskNode = ({ id, data, selected }: NodeProps<Node<TaskNodeData>>) 
                 onStop={() => void handleStop()}
                 onPlan={() => void handlePlan()}
                 onExecute={() => void handleExecute()}
-                canRun={!!(data.title ?? data.description)}
+                canRun={data.taskType === 'create-pr' ? true : !!(data.title ?? data.description)}
                 systemMode={data.systemMode}
                 onToggleThinking={() =>
                     updateNodeData(id, {

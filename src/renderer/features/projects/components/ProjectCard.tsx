@@ -19,8 +19,11 @@ interface ProjectCardProps {
     t: (key: string) => string
 }
 
-const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void }> = ({ isSelected, onToggle }) => (
-    <div
+const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void; t: (key: string) => string }> = ({ isSelected, onToggle, t }) => (
+    <button
+        type="button"
+        aria-label={t('common.select')}
+        aria-pressed={Boolean(isSelected)}
         className={cn(
             "absolute top-3 left-3 z-10 transition-all duration-300",
             isSelected ? "opacity-100 scale-100" : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
@@ -40,7 +43,7 @@ const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () =
                 </svg>
             )}
         </div>
-    </div>
+    </button>
 );
 
 const ProjectCardMenu: React.FC<{
@@ -54,6 +57,8 @@ const ProjectCardMenu: React.FC<{
 }> = ({ project, showMenu, setShowMenu, onEdit, onDelete, onArchive, t }) => (
     <div className="relative">
         <button
+            type="button"
+            aria-label={t('common.more') || 'More options'}
             onClick={(e) => {
                 e.stopPropagation();
                 setShowMenu(showMenu ? null : project.id);
@@ -74,6 +79,7 @@ const ProjectCardMenu: React.FC<{
                     onClick={(e) => e.stopPropagation()}
                 >
                     <button
+                        type="button"
                         onClick={(e) => onEdit(project, e)}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
@@ -81,6 +87,7 @@ const ProjectCardMenu: React.FC<{
                         {t('common.edit')}
                     </button>
                     <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
@@ -88,6 +95,7 @@ const ProjectCardMenu: React.FC<{
                         {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
                     </button>
                     <button
+                        type="button"
                         onClick={(e) => onDelete(project, e)}
                         className="w-full flex items-center gap-2 px-3 py-2 text-destructive/10 text-destructive hover:bg-destructive/10 transition-colors text-left"
                     >
@@ -131,13 +139,22 @@ export const ProjectCard = memo<ProjectCardProps>(({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
+            role="button"
+            tabIndex={0}
+            aria-label={project.title}
             onClick={() => onSelect(project)}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(project);
+                }
+            }}
             className={cn(
                 "group bg-card border border-border/60 rounded-xl p-5 cursor-pointer transition-all hover:shadow-xl hover:shadow-black/5 flex flex-col gap-4 relative overflow-hidden",
                 isSelected ? "border-primary/50 bg-primary/5" : "hover:border-foreground/20"
             )}
         >
-            <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
+            <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} t={t} />
 
             <div className="flex items-start justify-between">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6">

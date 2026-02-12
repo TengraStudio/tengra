@@ -4,6 +4,7 @@ import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspace
 import { useCallback, useEffect, useState } from 'react';
 
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { ContextMenuAction, ContextMenuState, MountFileEntry } from '../components/workspace/types';
 
@@ -52,7 +53,7 @@ export function useWorkspaceExplorerLogic(
                     }
                 }
             } catch (error) {
-                console.error('Failed to load mount root', error);
+                appLogger.error('WorkspaceExplorer', 'Failed to load mount root', error as Error);
             } finally {
                 setLoadingMounts(prev => ({ ...prev, [mount.id]: false }));
             }

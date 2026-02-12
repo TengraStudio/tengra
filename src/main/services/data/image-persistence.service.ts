@@ -56,6 +56,16 @@ export class ImagePersistenceService {
     async saveImage(imageData: string, metadata?: ImageMetadata): Promise<string> {
         try {
             this.ensureGalleryExists();
+            const localSourcePath = this.toLocalPathIfFileUri(imageData);
+
+            // If the image is already a local gallery file, avoid duplicate copies.
+            if (localSourcePath && this.isInGallery(localSourcePath)) {
+                if (this.databaseService && metadata) {
+                    await this.saveMetadataToDB(path.basename(localSourcePath), metadata);
+                }
+                return `safe-file:///${localSourcePath.replace(/\\/g, '/')}`;
+            }
+
             const { buffer, extension } = await this.processImageData(imageData);
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -85,6 +95,13 @@ export class ImagePersistenceService {
         if (imageData.startsWith('http')) {
             return this.processHttpImage(imageData);
         }
+        const localPath = this.toLocalPathIfFileUri(imageData);
+        if (localPath) {
+            return this.processLocalImage(localPath);
+        }
+        if (path.isAbsolute(imageData) || fs.existsSync(imageData)) {
+            return this.processLocalImage(imageData);
+        }
         throw new Error('Unknown image data format');
     }
 
@@ -107,6 +124,41 @@ export class ImagePersistenceService {
         if (url.includes('.jpg') || url.includes('.jpeg')) { extension = 'jpg'; }
         else if (url.includes('.webp')) { extension = 'webp'; }
         return { buffer, extension };
+    }
+
+    private async processLocalImage(filePath: string): Promise<{ buffer: Buffer; extension: string }> {
+        const normalizedPath = filePath.replace(/^safe-file:/i, '').replace(/^file:/i, '');
+        const buffer = await fs.promises.readFile(normalizedPath);
+        const ext = path.extname(normalizedPath).toLowerCase();
+        const extension = ext === '.jpg' || ext === '.jpeg' ? 'jpg' : ext === '.webp' ? 'webp' : 'png';
+        return { buffer, extension };
+    }
+
+    private toLocalPathIfFileUri(input: string): string | null {
+        const normalized = input.trim();
+        const isFileUri = normalized.startsWith('safe-file://') || normalized.startsWith('file://');
+        if (!isFileUri) {
+            return null;
+        }
+
+        let localPath = normalized
+            .replace(/^safe-file:\/+/i, '')
+            .replace(/^file:\/+/i, '');
+
+        localPath = decodeURIComponent(localPath);
+
+        // Windows file URI may become /C:/... after stripping.
+        if (/^\/[A-Za-z]:\//.test(localPath)) {
+            localPath = localPath.slice(1);
+        }
+
+        return process.platform === 'win32' ? localPath.replace(/\//g, '\\') : `/${localPath}`;
+    }
+
+    private isInGallery(filePath: string): boolean {
+        const resolvedGallery = path.resolve(this.galleryPath);
+        const resolvedFile = path.resolve(filePath);
+        return resolvedFile.startsWith(resolvedGallery + path.sep) || resolvedFile === resolvedGallery;
     }
 
     private async saveMetadataToDB(filename: string, metadata: ImageMetadata): Promise<void> {

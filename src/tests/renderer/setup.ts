@@ -15,14 +15,16 @@ declare global {
     }
 }
 
-global.window = {} as any;
-global.window.electronAPI = {
-    // Mock common IPC methods
-    invoke: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-    once: vi.fn(),
-};
+Object.defineProperty(window, 'electronAPI', {
+    value: {
+        invoke: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        once: vi.fn(),
+    },
+    configurable: true,
+    writable: true,
+});
 
 // Mock i18n
 vi.mock('react-i18next', () => ({
@@ -47,4 +49,10 @@ afterEach(() => {
 // Reset mocks before each test  
 beforeEach(() => {
     vi.clearAllMocks();
+    window.electronAPI = {
+        invoke: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+        once: vi.fn(),
+    };
 });

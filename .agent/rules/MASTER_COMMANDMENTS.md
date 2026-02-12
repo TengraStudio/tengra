@@ -48,9 +48,10 @@ Use these for direct system and environment interaction:
 2.  **VALIDATE**: Ensure your plan obeys all NASA rules and fixed-loop bounds.
 3.  **IMPLEMENT**: Targeted edits. Full logic. Fix existing warnings in the file.
 4.  **PURIFY**: Run `npm run lint`, `npm run build`, and `npm run type-check`.
-5.  **RECORD**: Update `CHANGELOG.md` and `TODO.md`.
+5.  **RECORD**: Update `docs/changelog/data/changelog.entries.json`, locale overrides as needed, run `npm run changelog:sync`, and update `TODO.md`.
 6.  **DELIVER**: Only after purification is complete.
 
 ---
 "Leave no warning behind. Code for performance, type for safety."
+
 

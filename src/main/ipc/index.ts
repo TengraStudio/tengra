@@ -18,6 +18,7 @@ import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
+import { registerMarketplaceIpc } from '@main/ipc/marketplace';
 import { registerMcpIpc } from '@main/ipc/mcp';
 import { registerMemoryIpc } from '@main/ipc/memory';
 import { registerMetricsIpc } from '@main/ipc/metrics';
@@ -31,6 +32,7 @@ import { registerPromptTemplatesIpc } from '@main/ipc/prompt-templates';
 import { registerProxyIpc } from '@main/ipc/proxy';
 import { registerProxyEmbedIpc } from '@main/ipc/proxy-embed';
 import { registerScreenshotIpc } from '@main/ipc/screenshot';
+import { registerSdCppIpc } from '@main/ipc/sd-cpp';
 import { registerSettingsIpc } from '@main/ipc/settings';
 import { registerSshIpc } from '@main/ipc/ssh';
 import { registerTerminalIpc } from '@main/ipc/terminal';
@@ -136,6 +138,7 @@ export function registerAllIpc(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
+        ollamaScraperService: services.ollamaScraperService,
         proxyService: services.proxyService,
         rateLimitService: services.rateLimitService,
     });
@@ -145,6 +148,11 @@ export function registerAllIpc(
     registerKeyRotationIpc(services.keyRotationService);
     registerCollaborationIpc(services.modelCollaborationService);
     registerMultiModelIpc(services.multiModelComparisonService);
+    registerSdCppIpc(services.localImageService);
+    registerMarketplaceIpc({
+        marketplaceService: services.marketplaceService,
+        rateLimitService: services.rateLimitService,
+    });
 
     // Productivity & Tools
     registerSshIpc(getWin, services.sshService, services.rateLimitService);

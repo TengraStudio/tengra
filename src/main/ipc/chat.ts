@@ -40,9 +40,12 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
 
 const PROVIDER_INSTRUCTIONS: Record<string, string> = {
     'antigravity': "I am an advanced AI assistant provided by **Antigravity** on the **Tandem** platform. I am here to help you in the best way possible.",
-    'copilot': "I am an AI programming assistant provided by GitHub Copilot.",
-    'ollama': "I am an Ollama model running locally.",
-    'nvidia': "I am an AI assistant provided via NVIDIA NIM API."
+    'copilot': "I am an AI programming assistant provided by GitHub Copilot on the **Tandem** platform. I am here to help you in the best way possible.",
+    'ollama': "I am an Ollama model running locally on the **Tandem** platform. I am here to help you in the best way possible.",
+    'nvidia': "I am an AI assistant provided via NVIDIA NIM API on the **Tandem** platform. I am here to help you in the best way possible.",
+    'opencode': "I am an AI assistant provided via OpenCode API on the **Tandem** platform. I am here to help you in the best way possible.",
+    'codex': "I am an AI assistant provided via OpenAI Codex API on the **Tandem** platform. I am here to help you in the best way possible.",
+    'claude': "I am an AI assistant provided via Anthropic Claude API on the **Tandem** platform. I am here to help you in the best way possible.",
 };
 
 /**
@@ -491,9 +494,9 @@ export function registerChatIpc(options: ChatIpcOptions) {
     ));
 
 
-    ipcMain.handle('chat:stream', (event, ...args: unknown[]) =>
+    ipcMain.handle('chat:stream', createIpcHandler('chat:stream', (event, ...args: unknown[]) =>
         manager.handleChatStream(event, { messages: args[0] as Message[], model: args[1] as string, tools: args[2] as ToolDefinition[], provider: args[3] as string, optionsJson: args[4] as JsonObject, chatId: args[5] as string, projectId: args[6] as string, systemMode: args[7] as SystemMode })
-    );
+    ));
 
     ipcMain.handle('chat:copilot', createIpcHandler('chat:copilot', async (_event, messages: Message[], model: string) => {
         const res = await options.copilotService.chat(messages, model);

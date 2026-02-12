@@ -10,6 +10,13 @@ import { IpcValue, JsonObject } from '@shared/types/common';
 import { Project } from '@shared/types/project';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
+/**
+ * Registers all database-related IPC handlers including chat, message, project, folder, prompt, and stats operations.
+ * @param getWindow Getter for the main browser window
+ * @param databaseService Database service instance
+ * @param embeddingService Optional embedding service for vector generation
+ * @param auditLogService Optional audit log service for tracking data operations
+ */
 export function registerDbIpc(getWindow: () => Electron.BrowserWindow | null, databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
     const notifyUpdate = (id?: string) => {
         const win = getWindow();
@@ -68,6 +75,11 @@ export function registerDbIpc(getWindow: () => Electron.BrowserWindow | null, da
     });
 }
 
+/**
+ * Registers IPC handlers for chat CRUD operations including create, update, delete, duplicate, archive, and bulk actions.
+ * @param databaseService Database service instance
+ * @param auditLogService Optional audit log service for tracking destructive operations
+ */
 function registerChatHandlers(databaseService: DatabaseService, auditLogService?: AuditLogService) {
     ipcMain.handle('db:createChat', createSafeIpcHandler('db:createChat', async (_event: IpcMainInvokeEvent, chat: Partial<Chat> & { title: string; model: string }) => {
         // Convert Chat to database format (Date -> number, remove messages array)
@@ -207,6 +219,12 @@ function registerChatHandlers(databaseService: DatabaseService, auditLogService?
     }, { success: false }));
 }
 
+/**
+ * Registers IPC handlers for message operations including add, get, update, delete, and bookmarks.
+ * @param databaseService Database service instance
+ * @param embeddingService Optional embedding service for generating message vectors
+ * @param auditLogService Optional audit log service for tracking destructive operations
+ */
 function registerMessageHandlers(databaseService: DatabaseService, embeddingService?: EmbeddingService, auditLogService?: AuditLogService) {
     ipcMain.handle('db:addMessage', createSafeIpcHandler('db:addMessage', async (_event: IpcMainInvokeEvent, message: Message & { vector?: number[] }) => {
         if (embeddingService) {
@@ -315,6 +333,12 @@ async function attachEmbeddingToMessage(message: Message & { vector?: number[] }
     }
 }
 
+/**
+ * Registers IPC handlers for project CRUD operations including create, update, delete, archive, and bulk actions.
+ * @param databaseService Database service instance
+ * @param notifyUpdate Callback to notify the renderer of project updates
+ * @param auditLogService Optional audit log service for tracking destructive operations
+ */
 function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate: (id?: string) => void, auditLogService?: AuditLogService) {
     // Note: db:getProjects is registered as batch handler for optimization
 
@@ -424,6 +448,10 @@ function registerProjectHandlers(databaseService: DatabaseService, notifyUpdate:
     }));
 }
 
+/**
+ * Registers IPC handlers for folder operations including create, update, and delete.
+ * @param databaseService Database service instance
+ */
 function registerFolderHandlers(databaseService: DatabaseService) {
     ipcMain.handle('db:createFolder', createSafeIpcHandler('db:createFolder', async (_event: IpcMainInvokeEvent, name: string, color: string) => {
         return await withRateLimit('db', () => databaseService.createFolder(name, color));
@@ -450,6 +478,10 @@ function registerFolderHandlers(databaseService: DatabaseService) {
     // Note: db:getFolders is registered as batch handler for optimization
 }
 
+/**
+ * Registers IPC handlers for prompt template operations including create, update, delete, and list.
+ * @param databaseService Database service instance
+ */
 function registerPromptHandlers(databaseService: DatabaseService) {
     ipcMain.handle('db:createPrompt', createSafeIpcHandler('db:createPrompt', async (_event: IpcMainInvokeEvent, title: string, content: string, tags: string[]) => {
         return await withRateLimit('db', () => databaseService.createPrompt(title, content, tags));
@@ -469,6 +501,11 @@ function registerPromptHandlers(databaseService: DatabaseService) {
     }, []));
 }
 
+/**
+ * Registers IPC handlers for statistics and analytics including detailed stats, time tracking, search, and token usage.
+ * @param databaseService Database service instance
+ * @param _auditLogService Optional audit log service (reserved for future use)
+ */
 function registerStatsHandlers(databaseService: DatabaseService, _auditLogService?: AuditLogService) {
     // Note: db:getStats is registered as batch handler for optimization
 

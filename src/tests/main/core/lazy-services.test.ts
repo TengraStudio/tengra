@@ -124,7 +124,7 @@ describe('createLazyServiceProxy', () => {
         lazyServiceRegistry.register('math', vi.fn().mockResolvedValue(realService));
 
         const proxy = createLazyServiceProxy<TestService>('math');
-        const result = await (proxy.add as (a: number, b: number) => Promise<number>)(2, 3);
+        const result = await (proxy.add as unknown as (a: number, b: number) => Promise<number>)(2, 3);
         expect(result).toBe(5);
     });
 
@@ -133,7 +133,7 @@ describe('createLazyServiceProxy', () => {
         lazyServiceRegistry.register('awaitable', vi.fn().mockResolvedValue(realService));
 
         const proxy = createLazyServiceProxy<typeof realService>('awaitable');
-        const resolved = await proxy;
+        const resolved = await (proxy as unknown as Promise<typeof realService>);
         expect(resolved.name).toBe('awaited');
     });
 });

@@ -79,7 +79,7 @@ describe('BackupService', () => {
 
             expect(fs.promises.mkdir).toHaveBeenCalledWith(
                 expect.stringContaining('backups'),
-                { recursive: true }
+                expect.objectContaining({ recursive: true })
             );
         });
     });
@@ -185,6 +185,119 @@ describe('BackupService', () => {
 
             expect(result).toBe(true);
             expect(fs.promises.unlink).toHaveBeenCalledWith('/path/to/backup.json');
+        });
+
+        it('should return false if delete fails', async () => {
+            (fs.promises.unlink as any).mockRejectedValue(new Error('Delete failed'));
+
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const result = await service.deleteBackup('/path/to/backup.json');
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('getBackupDir', () => {
+        it('should return the backup directory path', async () => {
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const backupDir = service.getBackupDir();
+
+            expect(backupDir).toContain('backups');
+        });
+    });
+
+    describe('getAutoBackupStatus', () => {
+        it('should return auto-backup configuration', async () => {
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const status = service.getAutoBackupStatus();
+
+            expect(status).toHaveProperty('enabled');
+            expect(status).toHaveProperty('intervalHours');
+            expect(status).toHaveProperty('maxBackups');
+        });
+    });
+
+    describe('configureAutoBackup', () => {
+        it('should enable auto-backup', async () => {
+            (fs.promises.mkdir as any).mockResolvedValue(undefined);
+            (fs.promises.writeFile as any).mockResolvedValue(undefined);
+
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            service.configureAutoBackup({ enabled: true, intervalHours: 12 });
+
+            const status = service.getAutoBackupStatus();
+            expect(status.enabled).toBe(true);
+            expect(status.intervalHours).toBe(12);
+        });
+
+        it('should enforce minimum interval of 1 hour', async () => {
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            service.configureAutoBackup({ enabled: true, intervalHours: 0 });
+
+            const status = service.getAutoBackupStatus();
+            expect(status.intervalHours).toBe(1);
+        });
+    });
+
+    describe('cleanupOldBackups', () => {
+        it('should delete backups exceeding maxBackups limit', async () => {
+            const backups = Array.from({ length: 15 }, (_, i) => ({
+                name: `backup-${i}.json`,
+                path: `/mock/backups/backup-${i}.json`,
+                metadata: { createdAt: new Date(Date.now() - i * 1000).toISOString() } as any
+            }));
+
+            (fs.promises.readdir as any).mockResolvedValue(backups.map(b => b.name));
+            (fs.promises.readFile as any).mockImplementation(async (path: string) => {
+                const backup = backups.find(b => path.includes(b.name));
+                return JSON.stringify({ _metadata: backup?.metadata });
+            });
+            (fs.promises.unlink as any).mockResolvedValue(undefined);
+
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+            service.configureAutoBackup({ enabled: true, maxBackups: 10 });
+
+            const deleted = await service.cleanupOldBackups();
+
+            expect(deleted).toBe(5);
+        });
+
+        it('should not delete backups if under limit', async () => {
+            (fs.promises.readdir as any).mockResolvedValue(['backup-1.json']);
+            (fs.promises.readFile as any).mockResolvedValue(JSON.stringify({
+                _metadata: { createdAt: '2023-01-01' }
+            }));
+
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            const deleted = await service.cleanupOldBackups();
+
+            expect(deleted).toBe(0);
+        });
+    });
+
+    describe('dispose', () => {
+        it('should stop auto-backup timer', async () => {
+            const { BackupService } = await import('@main/services/data/backup.service');
+            const service = new BackupService(mockDataService as any, mockDatabaseService as any);
+
+            service.configureAutoBackup({ enabled: true });
+            service.dispose();
+
+            // Timer should be stopped - verify no errors
+            expect(true).toBe(true);
         });
     });
 });

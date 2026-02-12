@@ -1,14 +1,18 @@
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue, JsonObject } from '@shared/types/common';
 import {
     AgentProfile,
     AgentStartOptions,
     AgentTemplate,
+    AgentTemplateCategory,
     AgentTemplateExport,
+    ModelRoutingRule,
     ProjectState,
     ProjectStep,
+    VotingSession,
 } from '@shared/types/project-agent';
 import { BrowserWindow, ipcMain } from 'electron';
 
@@ -34,6 +38,20 @@ interface LegacyStartTaskPayload {
     provider?: string;
     model?: string;
     nodeId?: string;
+}
+
+function validateString(value: unknown, name: string): string {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new Error(`${name} must be a non-empty string`);
+    }
+    return value;
+}
+
+function validateNumber(value: unknown, name: string): number {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+        throw new Error(`${name} must be a valid number`);
+    }
+    return value;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -76,6 +94,14 @@ function toJsonValue(value: unknown): IpcValue {
     return String(value);
 }
 
+/**
+ * Registers all project agent IPC handlers including core operations,
+ * human-in-the-loop workflows, voting sessions, legacy compatibility,
+ * and canvas persistence.
+ * @param projectAgentService - The project agent service instance
+ * @param getMainWindow - Factory function to retrieve the main BrowserWindow
+ * @param databaseService - Optional database service for canvas persistence
+ */
 export function registerProjectAgentIpc(
     projectAgentService: ProjectAgentService,
     getMainWindow: () => BrowserWindow | null,
@@ -111,74 +137,219 @@ export function registerProjectAgentIpc(
             lastStatus = state.status;
         }
     });
-    ipcMain.handle('project:start', async (_, options: AgentStartOptions) => {
+    ipcMain.handle('project:start', createSafeIpcHandler('project:start', async (_, options: AgentStartOptions) => {
         await projectAgentService.start(options);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:stop', async () => {
-        await projectAgentService.stop();
-    });
+    ipcMain.handle('project:stop', createSafeIpcHandler('project:stop', async (_, payload?: { taskId?: string }) => {
+        await projectAgentService.stop(payload?.taskId);
+    }, undefined));
 
-    ipcMain.handle('project:reset-state', async () => {
+    ipcMain.handle('project:reset-state', createSafeIpcHandler('project:reset-state', async () => {
         await projectAgentService.resetState();
-    });
+    }, undefined));
 
-    ipcMain.handle('project:plan', async (_, options: AgentStartOptions) => {
+    ipcMain.handle('project:plan', createSafeIpcHandler('project:plan', async (_, options: AgentStartOptions) => {
         await projectAgentService.generatePlan(options);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:approve', async (_, plan: ProjectStep[]) => {
-        await projectAgentService.approvePlan(plan);
-    });
+    ipcMain.handle(
+        'project:approve',
+        createSafeIpcHandler('project:approve', async (
+            _,
+            payload: (ProjectStep[] | string[]) | { plan: ProjectStep[] | string[]; taskId?: string }
+        ) => {
+            if (Array.isArray(payload)) {
+                await projectAgentService.approvePlan(payload);
+                return;
+            }
+            await projectAgentService.approvePlan(payload.plan, payload.taskId);
+        }, undefined)
+    );
 
-    ipcMain.handle('project:get-status', async () => {
-        return await projectAgentService.getStatus();
-    });
+    ipcMain.handle('project:get-status', createSafeIpcHandler('project:get-status', async (_, payload?: { taskId?: string }) => {
+        return await projectAgentService.getStatus(payload?.taskId);
+    }, null));
 
-    ipcMain.handle('project:retry-step', async (_, index: number) => {
-        await projectAgentService.retryStep(index);
-    });
+    ipcMain.handle('project:retry-step', createSafeIpcHandler('project:retry-step', async (_, payload: number | { index: number; taskId?: string }) => {
+        if (typeof payload === 'number') {
+            await projectAgentService.retryStep(payload);
+            return;
+        }
+        await projectAgentService.retryStep(payload.index, payload.taskId);
+    }, undefined));
 
-    ipcMain.handle('project:resume-checkpoint', async (_, checkpointId: string) => {
+    // --- AGT-HIL: Human-in-the-Loop IPC handlers ---
+
+    ipcMain.handle('project:approve-step', createSafeIpcHandler('project:approve-step', async (_, payload: { taskId: string; stepId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stepId, 'stepId');
+        await projectAgentService.approveStep(payload.taskId, payload.stepId);
+    }, undefined));
+
+    ipcMain.handle('project:skip-step', createSafeIpcHandler('project:skip-step', async (_, payload: { taskId: string; stepId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stepId, 'stepId');
+        await projectAgentService.skipStep(payload.taskId, payload.stepId);
+    }, undefined));
+
+    ipcMain.handle('project:edit-step', createSafeIpcHandler('project:edit-step', async (_, payload: { taskId: string; stepId: string; text: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stepId, 'stepId');
+        validateString(payload.text, 'text');
+        await projectAgentService.editStep(payload.taskId, payload.stepId, payload.text);
+    }, undefined));
+
+    ipcMain.handle('project:add-step-comment', createSafeIpcHandler('project:add-step-comment', async (_, payload: { taskId: string; stepId: string; comment: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stepId, 'stepId');
+        validateString(payload.comment, 'comment');
+        await projectAgentService.addStepComment(payload.taskId, payload.stepId, payload.comment);
+    }, undefined));
+
+    ipcMain.handle('project:insert-intervention', createSafeIpcHandler('project:insert-intervention', async (_, payload: { taskId: string; afterStepId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.afterStepId, 'afterStepId');
+        await projectAgentService.insertInterventionPoint(payload.taskId, payload.afterStepId);
+    }, undefined));
+
+    ipcMain.handle('project:resume-checkpoint', createSafeIpcHandler('project:resume-checkpoint', async (_, checkpointId: string) => {
+        validateString(checkpointId, 'checkpointId');
         await projectAgentService.resumeFromCheckpoint(checkpointId);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:get-task-history', async (_, projectId: string) => {
+    ipcMain.handle('project:get-task-history', createSafeIpcHandler('project:get-task-history', async (_, projectId: string) => {
+        validateString(projectId, 'projectId');
         return await projectAgentService.getTaskHistory(projectId);
-    });
+    }, []));
 
-    ipcMain.handle('project:get-checkpoints', async (_, taskId: string) => {
+    ipcMain.handle('project:get-checkpoints', createSafeIpcHandler('project:get-checkpoints', async (_, taskId: string) => {
+        validateString(taskId, 'taskId');
         return await projectAgentService.getCheckpoints(taskId);
-    });
+    }, []));
 
-    ipcMain.handle('project:rollback-checkpoint', async (_, checkpointId: string) => {
+    ipcMain.handle('project:rollback-checkpoint', createSafeIpcHandler('project:rollback-checkpoint', async (_, checkpointId: string) => {
+        validateString(checkpointId, 'checkpointId');
         return await projectAgentService.rollbackCheckpoint(checkpointId);
-    });
+    }, null));
 
-    ipcMain.handle('project:get-plan-versions', async (_, taskId: string) => {
+    ipcMain.handle('project:get-plan-versions', createSafeIpcHandler('project:get-plan-versions', async (_, taskId: string) => {
+        validateString(taskId, 'taskId');
         return await projectAgentService.getPlanVersions(taskId);
-    });
+    }, []));
 
-    ipcMain.handle('project:delete-task-by-node', async (_, nodeId: string) => {
+    ipcMain.handle('project:delete-task-by-node', createSafeIpcHandler('project:delete-task-by-node', async (_, nodeId: string) => {
+        validateString(nodeId, 'nodeId');
         return await projectAgentService.deleteTaskByNodeId(nodeId);
-    });
+    }, null));
 
-    ipcMain.handle('project:get-profiles', async () => {
+    ipcMain.handle('project:create-pr', createSafeIpcHandler('project:create-pr', async (_, payload?: { taskId?: string }) => {
+        return await projectAgentService.createPullRequest(payload?.taskId);
+    }, null));
+
+    ipcMain.handle('project:get-profiles', createSafeIpcHandler('project:get-profiles', async () => {
         return await projectAgentService.getProfiles();
-    });
+    }, []));
 
-    ipcMain.handle('project:register-profile', async (_, profile: AgentProfile) => {
+    ipcMain.handle('project:register-profile', createSafeIpcHandler('project:register-profile', async (_, profile: AgentProfile) => {
         return await projectAgentService.registerProfile(profile);
-    });
+    }, null));
 
-    ipcMain.handle('project:delete-profile', async (_, id: string) => {
+    ipcMain.handle('project:delete-profile', createSafeIpcHandler('project:delete-profile', async (_, id: string) => {
+        validateString(id, 'id');
         return await projectAgentService.deleteProfile(id);
-    });
+    }, null));
+
+    ipcMain.handle('project:get-routing-rules', createSafeIpcHandler('project:get-routing-rules', async () => {
+        return projectAgentService.getRoutingRules();
+    }, []));
+
+    ipcMain.handle('project:set-routing-rules', createSafeIpcHandler('project:set-routing-rules', async (_, rules: ModelRoutingRule[]) => {
+        projectAgentService.setRoutingRules(rules);
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle(
+        'project:create-voting-session',
+        createSafeIpcHandler('project:create-voting-session', async (
+            _,
+            payload: { taskId: string; stepIndex: number; question: string; options: string[] }
+        ): Promise<VotingSession> => {
+            validateString(payload.taskId, 'taskId');
+            validateNumber(payload.stepIndex, 'stepIndex');
+            validateString(payload.question, 'question');
+            return projectAgentService.createVotingSession(
+                payload.taskId,
+                payload.stepIndex,
+                payload.question,
+                payload.options
+            );
+        }, null as unknown as VotingSession)
+    );
+
+    ipcMain.handle(
+        'project:submit-vote',
+        createSafeIpcHandler('project:submit-vote', async (
+            _,
+            payload: {
+                sessionId: string;
+                modelId: string;
+                provider: string;
+                decision: string;
+                confidence: number;
+                reasoning?: string;
+            }
+        ) => {
+            validateString(payload.sessionId, 'sessionId');
+            validateString(payload.modelId, 'modelId');
+            validateString(payload.provider, 'provider');
+            validateString(payload.decision, 'decision');
+            validateNumber(payload.confidence, 'confidence');
+            return await projectAgentService.submitVote({
+                sessionId: payload.sessionId,
+                modelId: payload.modelId,
+                provider: payload.provider,
+                decision: payload.decision,
+                confidence: payload.confidence,
+                reasoning: payload.reasoning
+            });
+        }, null)
+    );
+
+    ipcMain.handle(
+        'project:request-votes',
+        createSafeIpcHandler('project:request-votes', async (_, payload: { sessionId: string; models: Array<{ provider: string; model: string }> }) => {
+            validateString(payload.sessionId, 'sessionId');
+            return await projectAgentService.requestVotes(payload.sessionId, payload.models);
+        }, null)
+    );
+
+    ipcMain.handle('project:resolve-voting', createSafeIpcHandler('project:resolve-voting', async (_, sessionId: string) => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.resolveVoting(sessionId);
+    }, null));
+
+    ipcMain.handle('project:get-voting-session', createSafeIpcHandler('project:get-voting-session', async (_, sessionId: string) => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.getVotingSession(sessionId);
+    }, null));
+
+    ipcMain.handle(
+        'project:build-consensus',
+        createSafeIpcHandler('project:build-consensus', async (_, outputs: Array<{ modelId: string; provider: string; output: string }>) => {
+            return await projectAgentService.buildConsensus(outputs);
+        }, null)
+    );
 
     registerLegacyProjectAgentCompatibilityHandlers(projectAgentService);
-    registerCanvasPersistenceHandlers(databaseService);
+    registerCanvasPersistenceHandlers(databaseService, projectAgentService);
 }
 
+/**
+ * Registers legacy project agent compatibility handlers that bridge
+ * old-style `project-agent:*` channels to the current service API.
+ * @param projectAgentService - The project agent service instance
+ */
 function registerLegacyProjectAgentCompatibilityHandlers(
     projectAgentService: ProjectAgentService
 ): void {
@@ -186,6 +357,11 @@ function registerLegacyProjectAgentCompatibilityHandlers(
     registerLegacyProjectAgentQueryHandlers(projectAgentService);
 }
 
+/**
+ * Registers legacy mutation handlers for project agent task lifecycle
+ * operations (start, pause, stop, resume, approve, reject, delete).
+ * @param projectAgentService - The project agent service instance
+ */
 function registerLegacyProjectAgentMutationHandlers(
     projectAgentService: ProjectAgentService
 ): void {
@@ -199,9 +375,9 @@ function registerLegacyProjectAgentMutationHandlers(
             model:
                 payload.provider && payload.model
                     ? {
-                          provider: payload.provider,
-                          model: payload.model,
-                      }
+                        provider: payload.provider,
+                        model: payload.model,
+                    }
                     : undefined,
             attachments: (payload.files ?? []).map(file => ({
                 name: file.name ?? '',
@@ -312,6 +488,11 @@ function registerLegacyProjectAgentMutationHandlers(
     });
 }
 
+/**
+ * Registers legacy query handlers for retrieving project agent status,
+ * messages, events, telemetry, task history, and available models.
+ * @param projectAgentService - The project agent service instance
+ */
 function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAgentService): void {
     registerBatchableHandler('project-agent:get-status', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
@@ -385,15 +566,24 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
     });
 }
 
-function registerCanvasPersistenceHandlers(databaseService?: DatabaseService): void {
-    ipcMain.handle('project:save-canvas-nodes', async (_, nodes: CanvasNode[]) => {
+/**
+ * Registers canvas persistence handlers for saving/loading nodes and edges,
+ * and agent template CRUD operations.
+ * @param databaseService - Optional database service for canvas data
+ * @param projectAgentService - Optional project agent service for templates
+ */
+function registerCanvasPersistenceHandlers(
+    databaseService?: DatabaseService,
+    projectAgentService?: ProjectAgentService
+): void {
+    ipcMain.handle('project:save-canvas-nodes', createSafeIpcHandler('project:save-canvas-nodes', async (_, nodes: CanvasNode[]) => {
         if (!databaseService) {
             return;
         }
         await databaseService.uac.saveCanvasNodes(nodes);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:get-canvas-nodes', async () => {
+    ipcMain.handle('project:get-canvas-nodes', createSafeIpcHandler('project:get-canvas-nodes', async () => {
         if (!databaseService) {
             return [];
         }
@@ -404,23 +594,24 @@ function registerCanvasPersistenceHandlers(databaseService?: DatabaseService): v
             position: { x: r.position_x, y: r.position_y },
             data: JSON.parse(r.data),
         }));
-    });
+    }, []));
 
-    ipcMain.handle('project:delete-canvas-node', async (_, id: string) => {
+    ipcMain.handle('project:delete-canvas-node', createSafeIpcHandler('project:delete-canvas-node', async (_, id: string) => {
+        validateString(id, 'id');
         if (!databaseService) {
             return;
         }
         await databaseService.uac.deleteCanvasNode(id);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:save-canvas-edges', async (_, edges: CanvasEdge[]) => {
+    ipcMain.handle('project:save-canvas-edges', createSafeIpcHandler('project:save-canvas-edges', async (_, edges: CanvasEdge[]) => {
         if (!databaseService) {
             return;
         }
         await databaseService.uac.saveCanvasEdges(edges);
-    });
+    }, undefined));
 
-    ipcMain.handle('project:get-canvas-edges', async () => {
+    ipcMain.handle('project:get-canvas-edges', createSafeIpcHandler('project:get-canvas-edges', async () => {
         if (!databaseService) {
             return [];
         }
@@ -432,73 +623,90 @@ function registerCanvasPersistenceHandlers(databaseService?: DatabaseService): v
             sourceHandle: r.source_handle ?? undefined,
             targetHandle: r.target_handle ?? undefined,
         }));
-    });
+    }, []));
 
-    ipcMain.handle('project:delete-canvas-edge', async (_, id: string) => {
+    ipcMain.handle('project:delete-canvas-edge', createSafeIpcHandler('project:delete-canvas-edge', async (_, id: string) => {
+        validateString(id, 'id');
         if (!databaseService) {
             return;
         }
         await databaseService.uac.deleteCanvasEdge(id);
-    });
+    }, undefined));
 
     // ===== AGT-TPL: Agent Template Handlers =====
 
-    ipcMain.handle('project:get-templates', async () => {
-        if (!databaseService) {
+    ipcMain.handle('project:get-templates', createSafeIpcHandler('project:get-templates', async (_, category?: AgentTemplateCategory) => {
+        if (!projectAgentService) {
             return [];
         }
-        return await databaseService.getAgentTemplates();
-    });
+        if (category) {
+            return projectAgentService.getTemplatesByCategory(category);
+        }
+        return projectAgentService.getTemplates();
+    }, []));
 
-    ipcMain.handle('project:save-template', async (_, template: AgentTemplate) => {
-        if (!databaseService) {
+    ipcMain.handle('project:save-template', createSafeIpcHandler('project:save-template', async (_, template: AgentTemplate) => {
+        if (!projectAgentService) {
             return { success: false, error: 'Database not available' };
         }
-        await databaseService.saveAgentTemplate(template);
-        return { success: true };
-    });
+        return await projectAgentService.saveTemplate(template);
+    }, { success: false, error: 'Database not available' }));
 
-    ipcMain.handle('project:delete-template', async (_, id: string) => {
-        if (!databaseService) {
+    ipcMain.handle('project:delete-template', createSafeIpcHandler('project:delete-template', async (_, id: string) => {
+        validateString(id, 'id');
+        if (!projectAgentService) {
             return { success: false, error: 'Database not available' };
         }
-        await databaseService.deleteAgentTemplate(id);
-        return { success: true };
-    });
+        const success = await projectAgentService.deleteTemplate(id);
+        return { success };
+    }, { success: false }));
 
-    ipcMain.handle('project:export-template', async (_, id: string) => {
-        if (!databaseService) {
+    ipcMain.handle('project:export-template', createSafeIpcHandler('project:export-template', async (_, id: string) => {
+        validateString(id, 'id');
+        if (!projectAgentService) {
             return null;
         }
-        const templates = await databaseService.getAgentTemplates();
-        const template = templates.find(t => t.id === id);
-        if (!template) {
-            return null;
-        }
-        const exported: AgentTemplateExport = {
-            version: 1,
-            template: { ...template, isBuiltIn: false },
-            exportedAt: Date.now(),
-        };
-        return exported;
-    });
+        return projectAgentService.exportTemplate(id);
+    }, null));
 
-    ipcMain.handle('project:import-template', async (_, exported: AgentTemplateExport) => {
-        if (!databaseService) {
+    ipcMain.handle('project:import-template', createSafeIpcHandler('project:import-template', async (_, exported: AgentTemplateExport) => {
+        if (!projectAgentService) {
             return { success: false, error: 'Database not available' };
         }
-        if (exported.version !== 1) {
-            return { success: false, error: 'Unsupported export version' };
+        try {
+            const template = await projectAgentService.importTemplate(exported);
+            return { success: true, template };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            return { success: false, error: message };
         }
-        const now = Date.now();
-        const importedTemplate: AgentTemplate = {
-            ...exported.template,
-            id: `template-imported-${Date.now()}`,
-            isBuiltIn: false,
-            createdAt: now,
-            updatedAt: now,
-        };
-        await databaseService.saveAgentTemplate(importedTemplate);
-        return { success: true, template: importedTemplate };
-    });
+    }, { success: false, error: 'Database not available' }));
+
+    ipcMain.handle(
+        'project:apply-template',
+        createSafeIpcHandler('project:apply-template', async (
+            _,
+            payload: { templateId: string; values: Record<string, string | number | boolean> }
+        ) => {
+            validateString(payload.templateId, 'templateId');
+            if (!projectAgentService) {
+                return { success: false, error: 'Project agent service not available' };
+            }
+            try {
+                const result = projectAgentService.applyTemplate(payload.templateId, payload.values);
+                return { success: true, ...result };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                return { success: false, error: message };
+            }
+        }, { success: false, error: 'Project agent service not available' })
+    );
+
+    ipcMain.handle('project:get-template', createSafeIpcHandler('project:get-template', async (_, id: string) => {
+        validateString(id, 'id');
+        if (!projectAgentService) {
+            return null;
+        }
+        return projectAgentService.getTemplates().find(template => template.id === id) ?? null;
+    }, null));
 }

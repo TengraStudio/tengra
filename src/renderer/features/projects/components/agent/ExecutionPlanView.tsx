@@ -1,6 +1,18 @@
-import type { PlanCostBreakdown, StepConfidence } from '@shared/types/project-agent';
-import { CheckCircle2, Coins, GitBranch, Loader2, Target, XCircle } from 'lucide-react';
-import React from 'react';
+import type { PlanCostBreakdown, StepComment, StepConfidence } from '@shared/types/project-agent';
+import {
+    CheckCircle2,
+    Coins,
+    Edit3,
+    Flag,
+    GitBranch,
+    Loader2,
+    MessageSquare,
+    ShieldCheck,
+    SkipForward,
+    Target,
+    XCircle,
+} from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -12,10 +24,18 @@ export interface ExecutionPlan {
     steps: {
         id: string;
         description: string;
-        status: 'pending' | 'executing' | 'completed' | 'failed';
+        status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped' | 'awaiting_step_approval';
         toolCalls?: string[];
         /** AGT-PLN-05: Confidence score for this step */
         confidence?: StepConfidence;
+        /** AGT-HIL-01: Step requires explicit user approval */
+        requiresApproval?: boolean;
+        /** AGT-HIL-03: Step can be skipped */
+        isSkippable?: boolean;
+        /** AGT-HIL-04: Manual intervention point */
+        isInterventionPoint?: boolean;
+        /** AGT-HIL-05: User comments on this step */
+        comments?: StepComment[];
     }[];
     currentStep: number;
     createdAt: Date;
@@ -29,6 +49,12 @@ interface ExecutionPlanViewProps {
     onReject?: () => void;
     awaitingApproval?: boolean;
     t: (key: string, options?: Record<string, string | number>) => string;
+    /** AGT-HIL: Callbacks for step-level human-in-the-loop actions */
+    onApproveStep?: (stepId: string) => void;
+    onSkipStep?: (stepId: string) => void;
+    onEditStep?: (stepId: string, newText: string) => void;
+    onAddComment?: (stepId: string, comment: string) => void;
+    onInsertIntervention?: (afterStepId: string) => void;
 }
 
 const StepIndicator: React.FC<{ status: string; index: number; isLast: boolean }> = ({
@@ -36,7 +62,7 @@ const StepIndicator: React.FC<{ status: string; index: number; isLast: boolean }
     index,
     isLast,
 }) => {
-    const getIcon = () => {
+    const getIcon = useCallback(() => {
         switch (status) {
             case 'completed':
                 return <CheckCircle2 className="w-3.5 h-3.5 text-success" />;
@@ -44,6 +70,10 @@ const StepIndicator: React.FC<{ status: string; index: number; isLast: boolean }
                 return <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />;
             case 'failed':
                 return <XCircle className="w-3.5 h-3.5 text-destructive" />;
+            case 'skipped':
+                return <SkipForward className="w-3.5 h-3.5 text-muted-foreground" />;
+            case 'awaiting_step_approval':
+                return <ShieldCheck className="w-3.5 h-3.5 text-warning animate-pulse" />;
             default:
                 return (
                     <div className="w-3.5 h-3.5 rounded-full border border-border flex items-center justify-center">
@@ -53,7 +83,7 @@ const StepIndicator: React.FC<{ status: string; index: number; isLast: boolean }
                     </div>
                 );
         }
-    };
+    }, [status, index]);
 
     return (
         <div className="flex flex-col items-center">
@@ -62,8 +92,11 @@ const StepIndicator: React.FC<{ status: string; index: number; isLast: boolean }
                     'w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300',
                     status === 'completed' && 'bg-success/10 border border-success/30',
                     status === 'executing' &&
-                        'bg-primary/10 border border-primary/30 shadow-[0_0_10px_hsl(var(--primary)/0.2)]',
+                    'bg-primary/10 border border-primary/30 shadow-[0_0_10px_hsl(var(--primary)/0.2)]',
                     status === 'failed' && 'bg-destructive/10 border border-destructive/30',
+                    status === 'skipped' && 'bg-muted/20 border border-border/50',
+                    status === 'awaiting_step_approval' &&
+                    'bg-warning/10 border border-warning/30 shadow-[0_0_10px_hsl(var(--warning)/0.2)]',
                     status === 'pending' && 'bg-muted/30 border border-border'
                 )}
             >
@@ -103,9 +136,46 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({
     onReject,
     awaitingApproval,
     t,
+    onApproveStep,
+    onSkipStep,
+    onEditStep,
+    onAddComment,
+    onInsertIntervention,
 }) => {
-    const completedCount = plan.steps.filter(s => s.status === 'completed').length;
-    const progress = (completedCount / plan.steps.length) * 100;
+    const [editingStepId, setEditingStepId] = useState<string | null>(null);
+    const [editText, setEditText] = useState('');
+    const [commentingStepId, setCommentingStepId] = useState<string | null>(null);
+    const [commentText, setCommentText] = useState('');
+
+    const completedCount = useMemo(
+        () => plan.steps.filter(s => s.status === 'completed').length,
+        [plan.steps]
+    );
+    const progress = useMemo(
+        () => (completedCount / plan.steps.length) * 100,
+        [completedCount, plan.steps.length]
+    );
+
+    const handleStartEdit = useCallback((stepId: string, currentText: string) => {
+        setEditingStepId(stepId);
+        setEditText(currentText);
+    }, []);
+
+    const handleSubmitEdit = useCallback(() => {
+        if (editingStepId && editText.trim() && onEditStep) {
+            onEditStep(editingStepId, editText.trim());
+        }
+        setEditingStepId(null);
+        setEditText('');
+    }, [editingStepId, editText, onEditStep]);
+
+    const handleSubmitComment = useCallback(() => {
+        if (commentingStepId && commentText.trim() && onAddComment) {
+            onAddComment(commentingStepId, commentText.trim());
+        }
+        setCommentingStepId(null);
+        setCommentText('');
+    }, [commentingStepId, commentText, onAddComment]);
 
     return (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl border border-border bg-card/40 backdrop-blur-xl">
@@ -198,23 +268,53 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({
                             <div
                                 className={cn(
                                     'flex-1 pb-4 transition-all duration-300',
-                                    step.status === 'pending' && 'opacity-40'
+                                    step.status === 'pending' && 'opacity-40',
+                                    step.status === 'skipped' && 'opacity-30'
                                 )}
                             >
                                 <div className="flex items-start justify-between gap-2">
-                                    <p
-                                        className={cn(
-                                            'text-xs font-mono leading-relaxed flex-1',
-                                            step.status === 'completed' &&
+                                    {editingStepId === step.id ? (
+                                        <div className="flex-1 flex gap-1.5">
+                                            <input
+                                                type="text"
+                                                value={editText}
+                                                onChange={e => setEditText(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') { handleSubmitEdit(); }
+                                                    if (e.key === 'Escape') { setEditingStepId(null); }
+                                                }}
+                                                className="flex-1 text-xs font-mono bg-background/50 border border-border rounded px-2 py-1 focus:outline-none focus:border-primary"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={handleSubmitEdit}
+                                                className="px-2 py-1 text-[9px] font-mono bg-success/10 text-success rounded border border-success/20 hover:bg-success/20"
+                                            >
+                                                {t('agent.hilSave')}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p
+                                            className={cn(
+                                                'text-xs font-mono leading-relaxed flex-1',
+                                                step.status === 'completed' &&
                                                 'text-muted-foreground line-through decoration-success/30',
-                                            step.status === 'executing' &&
+                                                step.status === 'executing' &&
                                                 'text-foreground font-medium',
-                                            step.status === 'failed' && 'text-destructive',
-                                            step.status === 'pending' && 'text-foreground/60'
-                                        )}
-                                    >
-                                        {step.description}
-                                    </p>
+                                                step.status === 'failed' && 'text-destructive',
+                                                step.status === 'skipped' &&
+                                                'text-muted-foreground line-through decoration-border',
+                                                step.status === 'awaiting_step_approval' &&
+                                                'text-warning font-medium',
+                                                step.status === 'pending' && 'text-foreground/60'
+                                            )}
+                                        >
+                                            {step.isInterventionPoint && (
+                                                <Flag className="w-3 h-3 inline mr-1 text-warning" />
+                                            )}
+                                            {step.description}
+                                        </p>
+                                    )}
                                     <div className="flex items-center gap-2">
                                         {/* AGT-PLN-05: Confidence score display */}
                                         {step.confidence && (
@@ -238,6 +338,107 @@ export const ExecutionPlanView: React.FC<ExecutionPlanViewProps> = ({
                                         )}
                                     </div>
                                 </div>
+
+                                {/* AGT-HIL: Step-level action buttons */}
+                                {step.status === 'awaiting_step_approval' && (
+                                    <div className="mt-1.5 flex items-center gap-1.5">
+                                        {onApproveStep && (
+                                            <button
+                                                onClick={() => onApproveStep(step.id)}
+                                                className="px-2 py-1 text-[9px] font-mono font-bold uppercase tracking-wider bg-success/10 text-success rounded border border-success/20 hover:bg-success/20 transition-all flex items-center gap-1"
+                                            >
+                                                <ShieldCheck className="w-3 h-3" />
+                                                {t('agent.hilApproveStep')}
+                                            </button>
+                                        )}
+                                        {onSkipStep && (
+                                            <button
+                                                onClick={() => onSkipStep(step.id)}
+                                                className="px-2 py-1 text-[9px] font-mono font-bold uppercase tracking-wider bg-muted/50 text-muted-foreground rounded border border-border hover:bg-muted transition-all flex items-center gap-1"
+                                            >
+                                                <SkipForward className="w-3 h-3" />
+                                                {t('agent.hilSkipStep')}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* AGT-HIL-02: Edit + Comment + Intervention buttons for pending steps */}
+                                {(step.status === 'pending' || step.status === 'awaiting_step_approval') && (
+                                    <div className="mt-1 flex items-center gap-1">
+                                        {onEditStep && editingStepId !== step.id && (
+                                            <button
+                                                onClick={() => handleStartEdit(step.id, step.description)}
+                                                className="p-0.5 text-muted-foreground/40 hover:text-foreground/70 transition-colors"
+                                                title={t('agent.hilEditStep')}
+                                            >
+                                                <Edit3 className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                        {onAddComment && (
+                                            <button
+                                                onClick={() => setCommentingStepId(
+                                                    commentingStepId === step.id ? null : step.id
+                                                )}
+                                                className={cn(
+                                                    'p-0.5 transition-colors',
+                                                    commentingStepId === step.id
+                                                        ? 'text-primary'
+                                                        : 'text-muted-foreground/40 hover:text-foreground/70'
+                                                )}
+                                                title={t('agent.hilAddComment')}
+                                            >
+                                                <MessageSquare className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                        {onInsertIntervention && (
+                                            <button
+                                                onClick={() => onInsertIntervention(step.id)}
+                                                className="p-0.5 text-muted-foreground/40 hover:text-warning/70 transition-colors"
+                                                title={t('agent.hilInsertIntervention')}
+                                            >
+                                                <Flag className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* AGT-HIL-05: Comment input */}
+                                {commentingStepId === step.id && (
+                                    <div className="mt-1.5 flex gap-1.5">
+                                        <input
+                                            type="text"
+                                            value={commentText}
+                                            onChange={e => setCommentText(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') { handleSubmitComment(); }
+                                                if (e.key === 'Escape') { setCommentingStepId(null); }
+                                            }}
+                                            placeholder={t('agent.hilCommentPlaceholder')}
+                                            className="flex-1 text-[10px] font-mono bg-background/50 border border-border rounded px-2 py-1 focus:outline-none focus:border-primary"
+                                            autoFocus
+                                        />
+                                        <button
+                                            onClick={handleSubmitComment}
+                                            className="px-2 py-1 text-[9px] font-mono bg-primary/10 text-primary rounded border border-primary/20 hover:bg-primary/20"
+                                        >
+                                            {t('agent.hilAdd')}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* AGT-HIL-05: Existing comments display */}
+                                {step.comments && step.comments.length > 0 && (
+                                    <div className="mt-1.5 space-y-1">
+                                        {step.comments.map(c => (
+                                            <div key={c.id} className="flex items-start gap-1.5 text-[9px] font-mono text-muted-foreground/70">
+                                                <MessageSquare className="w-2.5 h-2.5 mt-0.5 shrink-0" />
+                                                <span>{c.text}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 {step.toolCalls && step.toolCalls.length > 0 && (
                                     <div className="mt-1 flex flex-wrap gap-1">
                                         {step.toolCalls.map((tool, i) => (

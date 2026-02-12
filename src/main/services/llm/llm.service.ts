@@ -964,14 +964,31 @@ export class LLMService {
 
     private async saveImagesFromOpenAIMessage(message: OpenAIMessage): Promise<string[]> {
         const contentParts = Array.isArray(message.content) ? message.content : [];
-        const rawImages = contentParts.filter((part): part is OpenAIContentPartImage =>
-            part.type === 'image_url'
-        );
+        const rawImages: Array<string | OpenAIContentPartImage> = [];
+
+        for (const part of contentParts) {
+            if (part.type === 'image_url') {
+                rawImages.push(part);
+            }
+        }
+
+        if (Array.isArray(message.images)) {
+            for (const image of message.images) {
+                if (typeof image === 'string') {
+                    rawImages.push(image);
+                    continue;
+                }
+                if (image?.type === 'image_url' && image.image_url?.url) {
+                    rawImages.push(image);
+                }
+            }
+        }
+
         const savedImages: string[] = [];
 
         if (rawImages.length > 0) {
             await Promise.all(rawImages.map(async (img) => {
-                const url = img.image_url.url;
+                const url = typeof img === 'string' ? img : img.image_url.url;
                 if (url) {
                     try {
                         const localPath = await this.imagePersistence.saveImage(url);

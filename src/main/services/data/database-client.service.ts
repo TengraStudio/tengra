@@ -24,12 +24,15 @@ import {
     DbCreateProjectRequest,
     DbCreatePromptRequest,
     DbFolder,
+    DbGetMarketplaceModelsRequest,
     DbHealthResponse,
+    DbMarketplaceModel,
     DbMessage,
     DbProject,
     DbPrompt,
     DbQueryRequest,
     DbQueryResponse,
+    DbSearchMarketplaceModelsRequest,
     DbSemanticFragment,
     DbStats,
     DbStoreCodeSymbolRequest,
@@ -39,6 +42,7 @@ import {
     DbUpdateMessageRequest,
     DbUpdateProjectRequest,
     DbUpdatePromptRequest,
+    DbUpsertMarketplaceModelsRequest,
     DbVectorSearchRequest,
 } from '@shared/types/db-api';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -515,6 +519,59 @@ export class DatabaseClientService extends BaseService {
     async executeQuery(req: DbQueryRequest): Promise<DbQueryResponse> {
         const response = await this.apiCall<DbQueryResponse>('POST', '/api/v1/query', req);
         return response.data ?? { rows: [], affected_rows: 0 };
+    }
+
+    // ========================================================================
+    // Marketplace Model Operations
+    // ========================================================================
+
+    async getMarketplaceModels(
+        req?: DbGetMarketplaceModelsRequest
+    ): Promise<DbMarketplaceModel[]> {
+        const params = new URLSearchParams();
+        if (req?.provider) {params.append('provider', req.provider);}
+        if (req?.limit) {params.append('limit', String(req.limit));}
+        if (req?.offset) {params.append('offset', String(req.offset));}
+
+        const queryString = params.toString();
+        const path = `/api/v1/marketplace/models${queryString ? `?${queryString}` : ''}`;
+        const response = await this.apiCall<DbMarketplaceModel[]>('GET', path);
+        return response.data ?? [];
+    }
+
+    async upsertMarketplaceModels(
+        req: DbUpsertMarketplaceModelsRequest
+    ): Promise<{ success: boolean; count: number; error?: string }> {
+        const response = await this.apiCall<{ count: number }>(
+            'POST',
+            '/api/v1/marketplace/models',
+            req
+        );
+        return {
+            success: response.success,
+            count: response.data?.count ?? 0,
+            error: response.error,
+        };
+    }
+
+    async searchMarketplaceModels(
+        req: DbSearchMarketplaceModelsRequest
+    ): Promise<DbMarketplaceModel[]> {
+        const response = await this.apiCall<DbMarketplaceModel[]>(
+            'POST',
+            '/api/v1/marketplace/models/search',
+            req
+        );
+        return response.data ?? [];
+    }
+
+    async clearMarketplaceModels(provider?: 'ollama' | 'huggingface'): Promise<boolean> {
+        const params = provider ? `?provider=${provider}` : '';
+        const response = await this.apiCall<boolean>(
+            'DELETE',
+            `/api/v1/marketplace/models${params}`
+        );
+        return response.data ?? false;
     }
 
     // ========================================================================

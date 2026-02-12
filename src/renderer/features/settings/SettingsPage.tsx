@@ -60,6 +60,7 @@ export function SettingsPage({
         { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: 'Tools' },
         { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: 'Security' },
         { id: 'mcp-servers', label: t('settings.tabs.mcpServers'), icon: Server, category: 'Infrastructure' },
+        { id: 'images', label: t('settings.tabs.images'), icon: Palette, category: 'Visuals' },
         { id: 'about', label: t('settings.tabs.about'), icon: Rocket, category: 'App' }
     ], [t]);
 
@@ -111,7 +112,7 @@ export function SettingsPage({
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, handleFactoryReset
-    ]); 
+    ]);
 
     return (
         <div className="settings-container">

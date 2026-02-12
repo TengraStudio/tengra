@@ -8,6 +8,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
+/** Represents a single entry in the audit log. */
 export interface AuditLogEntry {
     timestamp: number
     action: string
@@ -20,9 +21,14 @@ export interface AuditLogEntry {
     error?: string | undefined
 }
 
+/**
+ * Service for recording and querying audit log entries.
+ * Handles migration of legacy file-based logs to the database on initialization.
+ */
 export class AuditLogService extends BaseService {
     private legacyLogPath: string;
 
+    /** @param databaseService - Database service used to persist audit log entries. */
     constructor(
         private databaseService: DatabaseService
     ) {
@@ -31,6 +37,7 @@ export class AuditLogService extends BaseService {
         this.legacyLogPath = path.join(userDataPath, 'audit.log');
     }
 
+    /** Initializes the service by migrating any legacy file-based audit logs to the database. */
     public async initialize(): Promise<void> {
         await this.migrateLegacyData();
     }
@@ -70,7 +77,8 @@ export class AuditLogService extends BaseService {
     }
 
     /**
-     * Logs a sensitive operation to the audit log
+     * Logs a sensitive operation to the audit log.
+     * @param entry - The audit log entry (timestamp is added automatically).
      */
     async log(entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> {
         try {
@@ -91,7 +99,9 @@ export class AuditLogService extends BaseService {
     }
 
     /**
-     * Retrieves audit log entries with optional filtering
+     * Retrieves audit log entries with optional filtering.
+     * @param options - Optional filters for category, date range, and result limit.
+     * @returns Array of matching audit log entries.
      */
     async getLogs(options?: {
         category?: AuditLogEntry['category']

@@ -33,6 +33,14 @@ This guide provides solutions for common issues encountered during development a
 - Run `npm run clean` to remove build artifacts and re-run the build.
 - Review recent changes in `src/renderer/` as UI components are frequent sources of polymorphic type errors.
 
+### SD-CPP Generation Failures
+**Problem**: Local image generation via SD-CPP is slow or fails.
+**Solution**:
+1. **Check Hardware**: Local image generation is GPU-intensive. Ensure you have adequate VRAM (minimum 4GB recommended for base models).
+2. **Fallback Behavior**: If SD-CPP fails, Tandem automatically switches to Pollinations (online). Check your internet connection if the fallback also fails.
+3. **Model Assets**: Verify that the SD-CPP model file has been correctly downloaded to the internal assets folder. You can trigger a re-download in the Stable Diffusion settings.
+4. **Logs**: Review `logs/main.log` for specific `sd-cpp` error codes or process exit statuses.
+
 ## Log Locations
 
 Tandem maintains Several log files for different processes:

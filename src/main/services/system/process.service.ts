@@ -16,14 +16,14 @@ const execAsync = promisify(exec);
 
 // Interface for a running task
 export interface TaskProcess {
-    id: string
-    pid: number
-    command: string
-    args: string[]
-    startTime: number
-    status: 'running' | 'stopped' | 'failed'
-    cwd: string
-    ptyProcess: pty.IPty
+    id: string;
+    pid: number;
+    command: string;
+    args: string[];
+    startTime: number;
+    status: 'running' | 'stopped' | 'failed';
+    cwd: string;
+    ptyProcess: pty.IPty;
 }
 
 export class ProcessService extends EventEmitter {
@@ -133,7 +133,7 @@ export class ProcessService extends EventEmitter {
             // Python (basic check for manage.py or similar)
             // Makefile?
         } catch (error) {
-            console.error('[ProcessService] Failed to scan scripts:', getErrorMessage(error as Error));
+            appLogger.error('ProcessService', 'Failed to scan scripts', error as Error);
         }
 
         return scripts;
@@ -159,7 +159,7 @@ export class ProcessService extends EventEmitter {
             task.ptyProcess.resize(cols, rows);
             return true;
         } catch (e) {
-            console.error(`[ProcessService] Resize failed for task ${id}: `, e);
+            appLogger.error('ProcessService', `Resize failed for task ${id}`, e as Error);
             return false;
         }
     }
@@ -174,7 +174,7 @@ export class ProcessService extends EventEmitter {
             // Broken pipe errors are common when process has exited
             const errorMsg = getErrorMessage(e as Error);
             if (!errorMsg.includes('EPIPE') && !errorMsg.includes('broken pipe')) {
-                console.error(`[ProcessService] Write failed for task ${id}: `, e);
+                appLogger.error('ProcessService', `Write failed for task ${id}`, e as Error);
             }
             return false;
         }

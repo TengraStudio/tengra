@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { IDecoration, Terminal as XTerm } from 'xterm';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 interface UseTerminalSmartSuggestionsOptions {
     xtermRef: React.RefObject<XTerm | null>;
     tabId: string;
@@ -88,7 +90,7 @@ export function useTerminalSmartSuggestions({
                             setSuggestion('');
                         }
                     } catch (error) {
-                        console.error('Failed to fetch terminal suggestions:', error);
+                        appLogger.error('TerminalSuggestions', 'Failed to fetch terminal suggestions', error as Error);
                         setSuggestion('');
                     }
                 })();

@@ -38,8 +38,10 @@ This workflow ensures consistent and traceable commits.
    If a task was completed, mark it with `[x]` in `docs/TODO.md`.
    NEVER delete completed items.
 
-5. **Update CHANGELOG.md**
-   Add entry under `## [Unreleased]` section in `CHANGELOG.md`.
+5. **Update structured changelog**
+   - Update `docs/changelog/data/changelog.entries.json`
+   - Update `docs/changelog/i18n/tr.overrides.json` if needed
+   - Run `npm run changelog:sync`
 
 6. **Push changes**
    ```bash
@@ -53,3 +55,4 @@ This workflow ensures consistent and traceable commits.
 - `docs(readme): update installation instructions`
 - `refactor(services): move auth to security domain`
 - `test(database): add migration tests`
+

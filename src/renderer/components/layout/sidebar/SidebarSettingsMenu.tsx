@@ -54,11 +54,11 @@ export const SidebarSettingsMenu: React.FC<SidebarSettingsMenuProps> = ({
     t
 }) => (
     <>
-        <div className="fixed inset-0 z-40" onClick={onClose} />
+        <div className="fixed inset-0 z-[125]" onClick={onClose} />
         <div className={cn(
             "absolute bottom-full left-0 w-48 mb-2 p-1",
             "bg-popover/80 backdrop-blur-xl border border-border/50",
-            "rounded-lg shadow-xl z-50 overflow-hidden",
+            "rounded-lg shadow-xl z-[130] overflow-hidden",
             "flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200"
         )}>
             {SETTINGS_ITEMS.map((item) => (

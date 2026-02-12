@@ -6,6 +6,7 @@
 
 import type { ThemeManifest, ThemeRegistry, ThemeType } from '@shared/types/theme';
 
+import { appLogger } from '@/utils/renderer-logger';
 import { themeIpc } from '@/utils/theme-ipc.util';
 
 /**
@@ -23,16 +24,16 @@ export class ThemeRegistryService {
         try {
             const manifests = await themeIpc.getAllThemes();
             this.themes = {};
-            
+
             for (const manifest of manifests) {
                 if (this.validateManifest(manifest)) {
                     this.themes[manifest.id] = manifest;
                 }
             }
-            
+
             this.isLoaded = true;
         } catch (error) {
-            console.error('[ThemeRegistry] Failed to load themes:', error);
+            appLogger.error('ThemeRegistry', 'Failed to load themes', error as Error);
             // Fallback to empty registry
             this.themes = {};
             this.isLoaded = true;
@@ -115,7 +116,7 @@ export class ThemeRegistryService {
         }
 
         const m = manifest as Record<string, unknown>;
-        
+
         return (
             typeof m.id === 'string' &&
             typeof m.name === 'string' &&

@@ -7,23 +7,42 @@ import { CatchError } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
 
+/**
+ * Represents the result of an initiated authentication flow.
+ */
 export interface AuthResult {
-    url: string
-    state: string
+    /** The URL to open in the browser for authentication */
+    url: string;
+    /** The state string used for OAuth security */
+    state: string;
 }
 
+/**
+ * Represents the core token data returned from an OAuth provider.
+ */
 export interface AuthTokenData {
-    access_token: string
-    refresh_token?: string
-    expires_in: number
-    token_type?: string
-    scope?: string
+    /** The primary access token */
+    access_token: string;
+    /** Optional refresh token for obtaining new access tokens */
+    refresh_token?: string;
+    /** Number of seconds until the access token expires */
+    expires_in: number;
+    /** The type of token (usually 'Bearer') */
+    token_type?: string;
+    /** The scopes granted by the user */
+    scope?: string;
 }
 
+/**
+ * Represents the full callback data including user and project context.
+ */
 export interface AuthCallbackData extends AuthTokenData {
-    email?: string
-    type?: string
-    project_id?: string
+    /** User's email address if available from id_token or profile */
+    email?: string;
+    /** Provider-specific account type */
+    type?: string;
+    /** Associated project ID */
+    project_id?: string;
 }
 
 interface ClaudeCallbackParams {
@@ -37,16 +56,30 @@ interface ClaudeCallbackParams {
     res: http.ServerResponse
 }
 
+/**
+ * Utility class to handle local OAuth callbacks and token exchange.
+ * Supports Antigravity (Google) and Claude (Anthropic) authentication flows.
+ */
 export class LocalAuthServer {
+    /** Client ID for Antigravity (Google) OAuth */
     private static readonly CLIENT_ID = process.env['GOOGLE_CLIENT_ID'] ?? '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
+    /** Antigravity (Google) Authorization endpoint */
     private static readonly AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
+    /** Antigravity (Google) Token exchange endpoint */
     private static readonly TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
     // Claude Constants
+    /** Client ID for Claude (Anthropic) OAuth */
     private static readonly CLAUDE_CLIENT_ID = process.env['ANTIGRAVITY_CLAUDE_CLIENT_ID'] ?? '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
+    /** Claude Authorization endpoint */
     private static readonly CLAUDE_AUTH_ENDPOINT = 'https://claude.ai/oauth/authorize';
+    /** Claude Token exchange endpoint */
     private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://api.anthropic.com/v1/oauth/token';
 
+    /**
+     * Handles the callback from Antigravity (Google) OAuth.
+     * Exchanges the authorization code for tokens.
+     */
     private static async handleAntigravityCallback(
         code: string,
         verifier: string,
@@ -63,6 +96,10 @@ export class LocalAuthServer {
         }
     }
 
+    /**
+     * Handles the callback from Claude (Anthropic) OAuth.
+     * Exchanges the authorization code for tokens and sends response to browser.
+     */
     private static async handleClaudeCallback(params: ClaudeCallbackParams): Promise<void> {
         const { code, verifier, redirectUri, callbackState, oauthState, onSuccess, onError, res } = params;
         try {
@@ -79,13 +116,61 @@ export class LocalAuthServer {
             res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tandem.</p>');
         } catch (e) {
             const err = e as Error;
-            console.error('[LocalAuthServer] Claude Auth Failed:', err);
+            appLogger.error('LocalAuthServer', `Claude Auth Failed: ${err.message}`, err);
             res.writeHead(500, { 'Content-Type': 'text/html' });
             res.end(`<h1>Auth Failed</h1><p>Error exchanging token:</p><pre>${err.message}</pre>`);
             onError(err);
         }
     }
 
+
+    /**
+     * Internal request handler for Antigravity OAuth callback server.
+     */
+    private static createAntigravityRequestHandler(
+        server: http.Server,
+        verifier: string,
+        onSuccess: (data: AuthCallbackData) => void,
+        onError: (err: CatchError) => void
+    ) {
+        return (req: http.IncomingMessage, res: http.ServerResponse) => {
+            void (async () => {
+                try {
+                    const address = server.address() as AddressInfo | null;
+                    if (!address) { return; }
+
+                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
+
+                    if (url.pathname === '/callback') {
+                        const code = url.searchParams.get('code');
+                        const error = url.searchParams.get('error');
+
+                        if (error) {
+                            appLogger.error('LocalAuthServer', `Callback error: ${error}`);
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
+                            onError(new Error(error));
+                            server.close();
+                            return;
+                        }
+
+                        if (code) {
+                            res.writeHead(200, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tandem.</p><script>setTimeout(() => window.close(), 1000)</script>');
+
+                            await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
+                            server.close();
+                        }
+                    } else {
+                        res.writeHead(404);
+                        res.end();
+                    }
+                } catch (err) {
+                    appLogger.error('LocalAuthServer', 'Server handler error', err as Error);
+                }
+            })();
+        };
+    }
 
     /**
      * Starts the Antigravity OAuth flow using PKCE.
@@ -95,49 +180,15 @@ export class LocalAuthServer {
         onError: (err: CatchError) => void
     ): Promise<AuthResult> {
         return new Promise((resolve, reject) => {
-            const server = http.createServer((req, res) => {
-                void (async () => {
-                    try {
-                        const address = server.address() as AddressInfo | null;
-                        if (!address) {
-                            // Server is closed or closing
-                            return;
-                        }
-
-                        const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
-
-                        if (url.pathname === '/callback') {
-                            const code = url.searchParams.get('code');
-                            const error = url.searchParams.get('error');
-
-                            if (error) {
-                                console.error('[LocalAuthServer] Callback error:', error);
-                                res.writeHead(400, { 'Content-Type': 'text/html' });
-                                res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
-                                onError(new Error(error));
-                                server.close();
-                                return;
-                            }
-
-                            if (code) {
-                                res.writeHead(200, { 'Content-Type': 'text/html' });
-                                res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tandem.</p><script>setTimeout(() => window.close(), 1000)</script>');
-
-                                await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
-                                server.close();
-                            }
-                        } else {
-                            res.writeHead(404);
-                            res.end();
-                        }
-                    } catch (err) {
-                        console.error('[LocalAuthServer] Server handler error:', err);
-                    }
-                })();
-            });
-
             // PKCE Variables (captured by closure)
             let verifier: string;
+
+            const server = http.createServer();
+
+            server.on('request', (req, res) => {
+                const handler = LocalAuthServer.createAntigravityRequestHandler(server, verifier, onSuccess, onError);
+                handler(req, res);
+            });
 
             server.listen(0, '127.0.0.1', () => {
                 try {
@@ -171,6 +222,62 @@ export class LocalAuthServer {
     }
 
     /**
+     * Internal request handler for Claude OAuth callback server.
+     */
+    private static createClaudeRequestHandler(
+        server: http.Server,
+        verifier: string,
+        oauthState: string,
+        onSuccess: (data: AuthCallbackData) => Promise<void> | void,
+        onError: (err: CatchError) => void
+    ) {
+        return (req: http.IncomingMessage, res: http.ServerResponse) => {
+            void (async () => {
+                try {
+                    const address = server.address() as AddressInfo | null;
+                    if (!address) { return; }
+
+                    const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
+
+                    if (url.pathname === '/callback') {
+                        const code = url.searchParams.get('code');
+                        const callbackState = url.searchParams.get('state');
+                        const error = url.searchParams.get('error');
+
+                        if (error) {
+                            appLogger.error('LocalAuthServer', `Claude Callback error: ${error}`);
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
+                            onError(new Error(error));
+                            server.close();
+                            return;
+                        }
+
+                        if (code) {
+                            await LocalAuthServer.handleClaudeCallback({
+                                code,
+                                verifier,
+                                redirectUri: `http://localhost:${address.port}/callback`,
+                                callbackState,
+                                oauthState,
+                                onSuccess,
+                                onError,
+                                res
+                            });
+                            server.close();
+                        }
+                    } else {
+                        res.writeHead(404);
+                        res.end();
+                    }
+                } catch (err) {
+                    appLogger.error('LocalAuthServer', 'Server handler error', err as Error);
+                }
+            })();
+        };
+    }
+
+    /**
      * Starts the Claude OAuth flow using PKCE.
      */
     static async startClaudeAuth(
@@ -181,49 +288,11 @@ export class LocalAuthServer {
             let verifier: string;
             let oauthState: string;
 
-            const server = http.createServer((req, res) => {
-                void (async () => {
-                    try {
-                        const address = server.address() as AddressInfo | null;
-                        if (!address) { return; }
+            const server = http.createServer();
 
-                        const url = new URL(req.url ?? '/', `http://127.0.0.1:${address.port}`);
-
-                        if (url.pathname === '/callback') {
-                            const code = url.searchParams.get('code');
-                            const callbackState = url.searchParams.get('state');
-                            const error = url.searchParams.get('error');
-
-                            if (error) {
-                                console.error('[LocalAuthServer] Claude Callback error:', error);
-                                res.writeHead(400, { 'Content-Type': 'text/html' });
-                                res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
-                                onError(new Error(error));
-                                server.close();
-                                return;
-                            }
-
-                            if (code) {
-                                await LocalAuthServer.handleClaudeCallback({
-                                    code,
-                                    verifier,
-                                    redirectUri: `http://localhost:${address.port}/callback`,
-                                    callbackState,
-                                    oauthState,
-                                    onSuccess,
-                                    onError,
-                                    res
-                                });
-                                server.close();
-                            }
-                        } else {
-                            res.writeHead(404);
-                            res.end();
-                        }
-                    } catch (err) {
-                        console.error('[LocalAuthServer] Server handler error:', err);
-                    }
-                })();
+            server.on('request', (req, res) => {
+                const handler = LocalAuthServer.createClaudeRequestHandler(server, verifier, oauthState, onSuccess, onError);
+                handler(req, res);
             });
 
             server.listen(0, '127.0.0.1', () => {
@@ -255,14 +324,23 @@ export class LocalAuthServer {
         });
     }
 
+    /**
+     * Generates a random PKCE code verifier.
+     */
     private static generateCodeVerifier(): string {
         return LocalAuthServer.base64URLEncode(crypto.randomBytes(32));
     }
 
+    /**
+     * Generates a PKCE code challenge from a verifier.
+     */
     private static generateCodeChallenge(verifier: string): string {
         return LocalAuthServer.base64URLEncode(crypto.createHash('sha256').update(verifier).digest());
     }
 
+    /**
+     * Encodes a buffer or string as a Base64-URL string (safe for URLs).
+     */
     private static base64URLEncode(buffer: Buffer | string): string {
         return (Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer))
             .toString('base64')
@@ -271,6 +349,9 @@ export class LocalAuthServer {
             .replace(/=/g, '');
     }
 
+    /**
+     * Exchanges an authorization code for tokens (Standard/Antigravity flow).
+     */
     private static async exchangeCodeForToken(code: string, verifier: string, redirectUri: string): Promise<AuthCallbackData> {
         const body = new URLSearchParams({
             client_id: LocalAuthServer.CLIENT_ID,
@@ -299,7 +380,7 @@ export class LocalAuthServer {
                 response.on('end', () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Token exchange failed: ${response.statusCode} - ${data}`);
-                        console.error('[LocalAuthServer]', err.message);
+                        appLogger.error('LocalAuthServer', err.message);
                         reject(err);
                         return;
                     }
@@ -349,6 +430,9 @@ export class LocalAuthServer {
         }
     }
 
+    /**
+     * Exchanges an authorization code for tokens (Claude flow).
+     */
     private static async exchangeCodeForClaudeToken(code: string, verifier: string, redirectUri: string, state: string): Promise<AuthCallbackData> {
         // Match the Go proxy's token exchange format exactly
         const payload = {
@@ -383,7 +467,7 @@ export class LocalAuthServer {
                 response.on('end', () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Claude token exchange failed: ${response.statusCode} - ${data}`);
-                        console.error('[LocalAuthServer]', err.message);
+                        appLogger.error('LocalAuthServer', err.message);
                         reject(err);
                         return;
                     }
@@ -408,6 +492,9 @@ export class LocalAuthServer {
         });
     }
 
+    /**
+     * Extract user email from token response data (multiple provider support).
+     */
     private static extractEmailFromTokenData(json: AuthCallbackData & { account?: { email_address?: string }; id_token?: string }): string | undefined {
         // Handle Claude's nested email field
         if (json.account?.email_address) {

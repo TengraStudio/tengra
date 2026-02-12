@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 
 interface ModalProps {
     isOpen: boolean
@@ -9,6 +9,8 @@ interface ModalProps {
     preventClose?: boolean
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
     className?: string
+    width?: 'auto' | number | string
+    height?: 'auto' | number | string
 }
 
 /**
@@ -30,7 +32,7 @@ const getFocusableElements = (container: HTMLElement): HTMLElement[] => {
 /**
  * Modal component with focus management and accessibility support.
  */
-export const Modal: React.FC<ModalProps> = ({
+const ModalBase: React.FC<ModalProps> = ({
     isOpen,
     onClose,
     title,
@@ -38,10 +40,14 @@ export const Modal: React.FC<ModalProps> = ({
     footer,
     preventClose = false,
     size = 'md',
-    className = ''
+    className = '',
+    width,
+    height,
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const previousActiveElementRef = useRef<HTMLElement | null>(null);
+    const titleId = useId();
+    const descriptionId = useId();
 
     useEffect(() => {
         if (!isOpen) {
@@ -133,25 +139,53 @@ export const Modal: React.FC<ModalProps> = ({
         full: 'sm:max-w-[95vw]'
     };
 
+    const normalizeDimension = (
+        value: 'auto' | number | string | undefined,
+        axis: 'width' | 'height'
+    ): string | undefined => {
+        if (value === undefined) {
+            return undefined;
+        }
+        if (typeof value === 'number') {
+            return `${value}px`;
+        }
+        if (value === 'auto') {
+            // Responsive auto-sizing based on viewport dimensions
+            return axis === 'width' ? 'min(92vw, 1040px)' : 'min(86vh, 820px)';
+        }
+        return value;
+    };
+
+    const computedWidth = normalizeDimension(width, 'width');
+    const computedHeight = normalizeDimension(height, 'height');
+    const useCustomWidth = width !== undefined;
+    const sizeClassName = useCustomWidth ? 'sm:max-w-none' : sizeClasses[size];
+
     if (!isOpen) { return null; }
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="modal-title"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
         >
             <div
                 ref={modalRef}
                 tabIndex={-1}
-                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]} ${className}`}
+                role="document"
+                style={{
+                    width: computedWidth,
+                    height: computedHeight,
+                }}
+                className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-[90vh] ${sizeClassName} ${className}`}
             >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
-                    <h3 id="modal-title" className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>
+                    <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
+                <div id={descriptionId} className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
                     {children}
                 </div>
                 {footer && (
@@ -163,3 +197,6 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
     );
 };
+
+export const Modal = React.memo(ModalBase);
+Modal.displayName = 'Modal';

@@ -12,6 +12,7 @@ export type SettingsCategory =
     | 'about'
     | 'mcp-servers'
     | 'mcp-marketplace'
+    | 'images'
     | 'usage-limits';
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>

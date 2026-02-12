@@ -40,7 +40,7 @@ export interface InputProps
  * <Input variant="success" size="lg" />
  * ```
  */
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
+const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
     ({ className, variant, size, type = 'text', ...props }, ref) => {
         return (
             <input
@@ -57,6 +57,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         );
     }
 );
+InputBase.displayName = 'Input';
+const Input = React.memo(InputBase);
 Input.displayName = 'Input';
 
 export { Input, inputVariants };

@@ -3,12 +3,17 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
+import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+
+/** Maximum model name length */
+const MAX_MODEL_LENGTH = 256;
 
 interface ModelDefinition {
     id: string;
@@ -30,51 +35,101 @@ interface ModelDefinition {
 
 
 
+/**
+ * Validates a model name
+ */
+function validateModel(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_MODEL_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
+
+type MessageRole = 'system' | 'user' | 'assistant';
+
+/**
+ * Validates a messages array
+ */
+function validateMessages(value: unknown): Array<{ role: MessageRole; content: string }> {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const validRoles: MessageRole[] = ['system', 'user', 'assistant'];
+    return value.filter((msg): msg is { role: MessageRole; content: string } =>
+        msg && typeof msg === 'object' &&
+        typeof msg.role === 'string' &&
+        validRoles.includes(msg.role as MessageRole) &&
+        typeof msg.content === 'string'
+    );
+}
+
+/**
+ * Registers IPC handlers for Ollama operations
+ */
 export function registerOllamaIpc(options: {
     localAIService: LocalAIService
     settingsService: SettingsService
     llmService: LLMService
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
+    ollamaScraperService?: OllamaScraperService
     proxyService?: ProxyService
     rateLimitService?: RateLimitService
 }) {
-    const { localAIService, ollamaService, ollamaHealthService, rateLimitService } = options;
+    appLogger.info('OllamaIPC', 'Registering Ollama IPC handlers');
+    const { localAIService, ollamaService, ollamaHealthService, ollamaScraperService, rateLimitService } = options;
 
-    ipcMain.handle('ollama:tags', async () => []); // Moved to ModelRegistryService via Rust
+    ipcMain.handle('ollama:tags', createSafeIpcHandler('ollama:tags',
+        async () => [], []
+    )); // Moved to ModelRegistryService via Rust
 
     // deleted unused functions
-    ipcMain.handle('ollama:getModels', async (): Promise<ModelDefinition[]> => {
-        return []; // Moved to ModelRegistryService via Rust
-    });
+    ipcMain.handle('ollama:getModels', createSafeIpcHandler('ollama:getModels',
+        async (): Promise<ModelDefinition[]> => {
+            return []; // Moved to ModelRegistryService via Rust
+        }, []
+    ));
 
     // Use health service for isRunning check
-    ipcMain.handle('ollama:isRunning', async () => {
-        if (ollamaHealthService) {
-            const status = ollamaHealthService.getStatus();
-            return status.online;
-        }
-        return true; // Fallback
-    });
+    ipcMain.handle('ollama:isRunning', createSafeIpcHandler('ollama:isRunning',
+        async () => {
+            if (ollamaHealthService) {
+                const status = ollamaHealthService.getStatus();
+                return status.online;
+            }
+            return true; // Fallback
+        }, false
+    ));
 
     // Get detailed health status
-    ipcMain.handle('ollama:healthStatus', async () => {
-        if (ollamaHealthService) {
-            return ollamaHealthService.getStatus();
-        }
-        return { online: true, lastCheck: new Date() };
-    });
+    ipcMain.handle('ollama:healthStatus', createSafeIpcHandler('ollama:healthStatus',
+        async () => {
+            if (ollamaHealthService) {
+                return ollamaHealthService.getStatus();
+            }
+            return { online: true, lastCheck: new Date() };
+        }, { online: false, lastCheck: new Date() }
+    ));
 
     // Force health check
-    ipcMain.handle('ollama:forceHealthCheck', async () => {
-        if (ollamaHealthService) {
-            return await ollamaHealthService.forceCheck();
-        }
-        return { online: true, lastCheck: new Date() };
-    });
+    ipcMain.handle('ollama:forceHealthCheck', createSafeIpcHandler('ollama:forceHealthCheck',
+        async () => {
+            if (ollamaHealthService) {
+                return await ollamaHealthService.forceCheck();
+            }
+            return { online: true, lastCheck: new Date() };
+        }, { online: false, lastCheck: new Date() }
+    ));
 
     // GPU Check
-    ipcMain.handle('ollama:checkCuda', async () => localAIService.checkCudaSupport());
+    ipcMain.handle('ollama:checkCuda', createSafeIpcHandler('ollama:checkCuda',
+        async () => localAIService.checkCudaSupport(),
+        { hasCuda: false }
+    ));
 
     // Forward health events to renderer
     if (ollamaHealthService) {
@@ -86,53 +141,143 @@ export function registerOllamaIpc(options: {
         });
     }
 
-    ipcMain.handle('ollama:chat', async (_event, messages, model) => {
-        // SEC-011: Rate limit LLM chat calls
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('ollama:chat');
-        }
-        return await localAIService.ollamaChat(model, messages);
-    });
-
-    ipcMain.handle('ollama:chatStream', async (event, messages, model) => {
-        // SEC-011: Rate limit LLM chat stream calls
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('ollama:chat');
-        }
-        try {
-            const res = await localAIService.ollamaChat(model, messages);
-            if (res.message.content) {
-                event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
+    ipcMain.handle('ollama:chat', createSafeIpcHandler('ollama:chat',
+        async (_event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+            const messages = validateMessages(messagesRaw);
+            const model = validateModel(modelRaw);
+            if (!model || messages.length === 0) {
+                throw new Error('Invalid model or messages');
             }
-            return { content: res.message.content, role: 'assistant' };
-        } catch (err) {
-            const message = getErrorMessage(err as Error);
-            appLogger.error('OllamaIPC', 'Chat Error', err as Error);
-            return { error: message };
-        }
-    });
+            // SEC-011: Rate limit LLM chat calls
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:chat');
+            }
+            return await localAIService.ollamaChat(model, messages);
+        }, { message: { content: '', role: 'assistant' } }
+    ));
 
-    ipcMain.handle('ollama:getLibraryModels', async () => {
-        // SEC-011: Rate limit model listing operations
-        if (rateLimitService) {
-            await rateLimitService.waitForToken('ollama:operation');
-        }
-        try {
+    ipcMain.handle('ollama:chatStream', createSafeIpcHandler('ollama:chatStream',
+        async (event: IpcMainInvokeEvent, messagesRaw: unknown, modelRaw: unknown) => {
+            const messages = validateMessages(messagesRaw);
+            const model = validateModel(modelRaw);
+            if (!model || messages.length === 0) {
+                throw new Error('Invalid model or messages');
+            }
+            // SEC-011: Rate limit LLM chat stream calls
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:chat');
+            }
+            try {
+                const res = await localAIService.ollamaChat(model, messages);
+                if (res.message.content) {
+                    event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
+                }
+                return { content: res.message.content, role: 'assistant' };
+            } catch (err) {
+                const message = getErrorMessage(err as Error);
+                appLogger.error('OllamaIPC', 'Chat Error', err as Error);
+                return { error: message };
+            }
+        }, { error: 'Service unavailable' }
+    ));
+
+    ipcMain.handle('ollama:pull', createSafeIpcHandler('ollama:pull',
+        async (_event: IpcMainInvokeEvent, modelNameRaw: unknown) => {
+            const modelName = validateModel(modelNameRaw);
+            if (!modelName) {
+                throw new Error('Invalid model name');
+            }
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:operation');
+            }
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+
+            const result = await ollamaService.pullModel(modelName, (progress: { status: string; completed?: number; total?: number }) => {
+                const windows = BrowserWindow.getAllWindows();
+                windows.forEach(win => {
+                    win.webContents.send('ollama:pullProgress', {
+                        ...progress,
+                        modelName
+                    });
+                });
+            });
+
+            return result;
+        }, { success: false, error: 'Service unavailable' }
+    ));
+
+    ipcMain.handle('ollama:abortPull', createSafeIpcHandler('ollama:abortPull',
+        async () => {
+            if (ollamaService) {
+                ollamaService.abort();
+                return { success: true };
+            }
+            return { success: false };
+        }, { success: false }
+    ));
+
+    ipcMain.handle('ollama:getLibraryModels', createSafeIpcHandler('ollama:getLibraryModels',
+        async () => {
+            // SEC-011: Rate limit model listing operations
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:operation');
+            }
             if (ollamaService) {
                 return await ollamaService.getLibraryModels();
             }
             return [];
-        } catch (err) {
-            appLogger.error('OllamaIPC', 'getLibraryModels Error', err as Error);
-            return [];
-        }
-    });
+        }, []
+    ));
 
-    ipcMain.handle('ollama:start', async () => {
-        const { startOllama } = await import('@main/startup/ollama');
-        // Get primary window
-        const win = BrowserWindow.getAllWindows()[0];
-        const getWin = () => win as (BrowserWindow | null);
-        return await startOllama(getWin, true);
-    });
+    ipcMain.handle('ollama:start', createSafeIpcHandler('ollama:start',
+        async () => {
+            const { startOllama } = await import('@main/startup/ollama');
+            // Get primary window
+            const win = BrowserWindow.getAllWindows()[0];
+            const getWin = () => win as (BrowserWindow | null);
+            return await startOllama(getWin, true);
+        }, { success: false, message: 'Service unavailable' }
+    ));
+
+    // Scraper endpoints for marketplace
+    ipcMain.handle('ollama:scrapeLibrary', createSafeIpcHandler('ollama:scrapeLibrary',
+        async (_event: IpcMainInvokeEvent, bypassCacheRaw: unknown) => {
+            if (!ollamaScraperService) {
+                return [];
+            }
+            const bypassCache = bypassCacheRaw === true;
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:operation');
+            }
+            return await ollamaScraperService.getLibraryModels(bypassCache);
+        }, []
+    ));
+
+    ipcMain.handle('ollama:scrapeModelDetails', createSafeIpcHandler('ollama:scrapeModelDetails',
+        async (_event: IpcMainInvokeEvent, modelNameRaw: unknown, bypassCacheRaw: unknown) => {
+            if (!ollamaScraperService) {
+                return null;
+            }
+            const modelName = validateModel(modelNameRaw);
+            if (!modelName) {
+                throw new Error('Invalid model name');
+            }
+            const bypassCache = bypassCacheRaw === true;
+            if (rateLimitService) {
+                await rateLimitService.waitForToken('ollama:operation');
+            }
+            return await ollamaScraperService.getModelDetails(modelName, bypassCache);
+        }, null
+    ));
+
+    ipcMain.handle('ollama:clearScraperCache', createSafeIpcHandler('ollama:clearScraperCache',
+        async () => {
+            if (ollamaScraperService) {
+                ollamaScraperService.clearCache();
+            }
+            return { success: true };
+        }, { success: false }
+    ));
 }
