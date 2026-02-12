@@ -39,7 +39,10 @@ export interface ButtonProps
     asChild?: boolean
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+/**
+ * Reusable button primitive with variant and size support.
+ */
+const ButtonBase = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ({ className, variant, size, asChild = false, ...props }, ref) => {
         const Comp = asChild ? Slot : "button";
         return (
@@ -52,6 +55,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         );
     }
 );
+ButtonBase.displayName = "Button";
+const Button = React.memo(ButtonBase);
 Button.displayName = "Button";
 
 export { Button, buttonVariants };

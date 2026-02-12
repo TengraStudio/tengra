@@ -17,10 +17,19 @@ export type AppSettings = {
         notifyOnly: boolean;
     };
     images?: {
-        provider: 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations';
+        provider:
+            | 'antigravity'
+            | 'ollama'
+            | 'sd-webui'
+            | 'comfyui'
+            | 'pollinations'
+            | 'sd-cpp';
         ollamaModel?: string;
         sdWebUIUrl?: string;
         comfyUIUrl?: string;
+        sdCppBinaryPath?: string;
+        sdCppModelPath?: string;
+        sdCppExtraArgs?: string;
     };
     activeAccountId?: string;
     crashReporting?: {

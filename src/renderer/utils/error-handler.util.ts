@@ -1,5 +1,7 @@
 import { getErrorMessage } from '@shared/utils/error.util';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 interface CustomWindow extends Window {
     showToast?: (options: { type: string; message: string }) => void
 }
@@ -92,7 +94,7 @@ function resolveErrorMessage(error: unknown, customMessage?: string): string {
  * Logs error to console with context
  */
 function logError(context: string, error: unknown): void {
-    console.error(`[${context}] Error:`, error);
+    appLogger.error(context, getErrorMessage(error), error as Error);
 }
 
 export function handleError(
@@ -103,7 +105,7 @@ export function handleError(
     const { showToast = false, logToConsole = true, customMessage, userFacing = true } = options;
 
     const message = resolveErrorMessage(error, customMessage);
-    
+
     if (logToConsole) {
         logError(context, error);
     }

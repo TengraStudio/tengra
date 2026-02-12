@@ -25,6 +25,7 @@ import { JsonValue } from '@shared/types/common';
 export class ConfigService extends BaseService {
     private cache: Map<string, JsonValue> = new Map();
 
+    /** @param settingsService - Settings service for resolving persisted user preferences. */
     constructor(private settingsService: SettingsService) {
         super('ConfigService');
     }
@@ -72,6 +73,10 @@ export class ConfigService extends BaseService {
      * 2. Environment Variable (process.env)
      * 3. Settings File (settings.json via SettingsService)
      * 4. Default Value
+     *
+     * @param key - The configuration key to look up.
+     * @param defaultValue - Fallback value if the key is not found.
+     * @returns The resolved configuration value.
      */
     get<T = string>(key: string, defaultValue?: T): T {
         // 1. Check runtime cache (overrides)
@@ -106,6 +111,9 @@ export class ConfigService extends BaseService {
 
     /**
      * Gets a config value or throws if missing.
+     * @param key - The configuration key to look up.
+     * @returns The resolved configuration value.
+     * @throws {Error} If the key is not found or resolves to an empty value.
      */
     getOrThrow<T>(key: string): T {
         const val = this.get<T>(key);

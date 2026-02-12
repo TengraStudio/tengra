@@ -6,6 +6,9 @@ import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service
 import {
     AgentDefinition,
     AgentStartOptions,
+    AgentTemplate,
+    AgentTemplateCategory,
+    AgentTemplateExport,
     AppSettings,
     Chat,
     ChatRequest,
@@ -47,6 +50,7 @@ import {
     PendingMemory,
     RecallContext,
 } from '@shared/types/advanced-memory';
+import { ConsensusResult, ModelRoutingRule, VotingSession } from '@shared/types/project-agent';
 import { isProjectState } from '@shared/utils/type-guards.util';
 
 interface ModelDefinition {
@@ -62,6 +66,46 @@ interface ModelDefinition {
     percentage?: number;
     reset?: string;
     [key: string]: IpcValue | undefined;
+}
+
+// Ollama scraper types
+interface OllamaScrapedModel {
+    name: string;
+    pulls: string;
+    tagCount: number;
+    lastUpdated: string;
+    categories: string[];
+}
+
+interface OllamaModelVersion {
+    name: string;
+    size: string;
+    context: string;
+    inputTypes: string[];
+}
+
+interface OllamaModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionHtml: string;
+    versions: OllamaModelVersion[];
+}
+
+// Marketplace model from database
+interface DbMarketplaceModel {
+    id: string;
+    name: string;
+    provider: 'ollama' | 'huggingface';
+    pulls?: string;
+    tagCount: number;
+    lastUpdated?: string;
+    categories: string[];
+    shortDescription?: string;
+    downloads?: number;
+    likes?: number;
+    author?: string;
+    createdAt: number;
+    updatedAt: number;
 }
 
 interface ProxyModelResponse {
@@ -284,8 +328,9 @@ export interface ElectronAPI {
             digest?: string;
             total?: number;
             completed?: number;
+            modelName?: string;
         }) => void
-    ) => void;
+    ) => () => void;
     removePullProgressListener: () => void;
 
     // New health and GPU checks
@@ -293,6 +338,20 @@ export interface ElectronAPI {
     forceOllamaHealthCheck: () => Promise<void>;
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: 'ok' | 'error' | 'stopped') => void) => void;
+
+    // Ollama scraper for marketplace (deprecated - use marketplace API instead)
+    scrapeOllamaLibrary: (bypassCache?: boolean) => Promise<OllamaScrapedModel[]>;
+    scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) => Promise<OllamaModelDetails | null>;
+    clearOllamaScraperCache: () => Promise<{ success: boolean }>;
+
+    // Marketplace API (models from database)
+    marketplace: {
+        getModels: (provider?: 'ollama' | 'huggingface', limit?: number, offset?: number) => Promise<DbMarketplaceModel[]>;
+        searchModels: (query: string, provider?: 'ollama' | 'huggingface', limit?: number) => Promise<DbMarketplaceModel[]>;
+        refresh: () => Promise<{ success: boolean; count: number; error?: string }>;
+        getModelDetails: (modelName: string) => Promise<OllamaModelDetails | null>;
+        getStatus: () => Promise<{ lastScrapeTime: number; isScraping: boolean }>;
+    };
 
     // llama.cpp
     llama: {
@@ -322,6 +381,10 @@ export interface ElectronAPI {
             callback: (progress: { downloaded: number; total: number }) => void
         ) => void;
         removeDownloadProgressListener: () => void;
+    };
+    sdCpp: {
+        getStatus: () => Promise<string>;
+        reinstall: () => Promise<void>;
     };
 
     // Database
@@ -523,22 +586,22 @@ export interface ElectronAPI {
         }>;
         getProviderStats: (provider?: string) => Promise<
             | Record<
-                  string,
-                  {
-                      activeTasks: number;
-                      queuedTasks: number;
-                      totalCompleted: number;
-                      totalErrors: number;
-                      averageLatency: number;
-                  }
-              >
+                string,
+                {
+                    activeTasks: number;
+                    queuedTasks: number;
+                    totalCompleted: number;
+                    totalErrors: number;
+                    averageLatency: number;
+                }
+            >
             | {
-                  activeTasks: number;
-                  queuedTasks: number;
-                  totalCompleted: number;
-                  totalErrors: number;
-                  averageLatency: number;
-              }
+                activeTasks: number;
+                queuedTasks: number;
+                totalCompleted: number;
+                totalErrors: number;
+                averageLatency: number;
+            }
             | null
         >;
         getActiveTaskCount: (provider: string) => Promise<number>;
@@ -1165,11 +1228,20 @@ export interface ElectronAPI {
     projectAgent: {
         start: (options: AgentStartOptions) => Promise<void>;
         generatePlan: (options: AgentStartOptions) => Promise<void>;
-        approvePlan: (plan: string[] | ProjectStep[]) => Promise<void>;
-        stop: () => Promise<void>;
+        approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
+        stop: (taskId?: string) => Promise<void>;
+        createPullRequest: (
+            taskId?: string
+        ) => Promise<{ success: boolean; url?: string; error?: string }>;
         resetState: () => Promise<void>;
-        getStatus: () => Promise<ProjectState>;
-        retryStep: (index: number) => Promise<void>;
+        getStatus: (taskId?: string) => Promise<ProjectState>;
+        retryStep: (index: number, taskId?: string) => Promise<void>;
+        // AGT-HIL: Human-in-the-Loop step actions
+        approveStep: (taskId: string, stepId: string) => Promise<void>;
+        skipStep: (taskId: string, stepId: string) => Promise<void>;
+        editStep: (taskId: string, stepId: string, text: string) => Promise<void>;
+        addStepComment: (taskId: string, stepId: string, comment: string) => Promise<void>;
+        insertInterventionPoint: (taskId: string, afterStepId: string) => Promise<void>;
         getCheckpoints: (
             taskId: string
         ) => Promise<Array<{ id: string; stepIndex: number; trigger: string; createdAt: number }>>;
@@ -1192,6 +1264,45 @@ export interface ElectronAPI {
         >;
         deleteTaskByNodeId: (nodeId: string) => Promise<boolean>;
         getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>;
+        getRoutingRules: () => Promise<ModelRoutingRule[]>;
+        setRoutingRules: (rules: ModelRoutingRule[]) => Promise<{ success: boolean }>;
+        createVotingSession: (payload: {
+            taskId: string;
+            stepIndex: number;
+            question: string;
+            options: string[];
+        }) => Promise<VotingSession>;
+        submitVote: (payload: {
+            sessionId: string;
+            modelId: string;
+            provider: string;
+            decision: string;
+            confidence: number;
+            reasoning?: string;
+        }) => Promise<VotingSession | null>;
+        requestVotes: (payload: {
+            sessionId: string;
+            models: Array<{ provider: string; model: string }>;
+        }) => Promise<VotingSession | null>;
+        resolveVoting: (sessionId: string) => Promise<VotingSession | null>;
+        getVotingSession: (sessionId: string) => Promise<VotingSession | null>;
+        buildConsensus: (outputs: Array<{ modelId: string; provider: string; output: string }>) => Promise<ConsensusResult>;
+        getTemplates: (category?: AgentTemplateCategory) => Promise<AgentTemplate[]>;
+        getTemplate: (id: string) => Promise<AgentTemplate | null>;
+        saveTemplate: (template: AgentTemplate) => Promise<{ success: boolean; template: AgentTemplate }>;
+        deleteTemplate: (id: string) => Promise<{ success: boolean }>;
+        exportTemplate: (id: string) => Promise<AgentTemplateExport | null>;
+        importTemplate: (exported: AgentTemplateExport) => Promise<{ success: boolean; template?: AgentTemplate; error?: string }>;
+        applyTemplate: (payload: {
+            templateId: string;
+            values: Record<string, string | number | boolean>;
+        }) => Promise<{
+            success: boolean;
+            template?: AgentTemplate;
+            task?: string;
+            steps?: string[];
+            error?: string;
+        }>;
         onUpdate: (callback: (state: ProjectState) => void) => () => void;
         // Canvas persistence
         saveCanvasNodes: (
@@ -1356,7 +1467,18 @@ const api: ElectronAPI = {
     deleteOllamaModel: modelName => ipcRenderer.invoke('ollama:deleteModel', modelName),
     getLibraryModels: () => ipcRenderer.invoke('ollama:getLibraryModels'),
     onPullProgress: callback => {
-        ipcRenderer.on('ollama:pullProgress', (_event, progress) => callback(progress));
+        const listener = (
+            _event: IpcRendererEvent,
+            progress: {
+                status: string;
+                digest?: string;
+                total?: number;
+                completed?: number;
+                modelName?: string;
+            }
+        ) => callback(progress);
+        ipcRenderer.on('ollama:pullProgress', listener);
+        return () => ipcRenderer.removeListener('ollama:pullProgress', listener);
     },
     removePullProgressListener: () => ipcRenderer.removeAllListeners('ollama:pullProgress'),
 
@@ -1367,6 +1489,24 @@ const api: ElectronAPI = {
         ipcRenderer.on('ollama:statusChange', (_event, value) =>
             callback(value as 'ok' | 'error' | 'stopped')
         ),
+
+    // Ollama scraper endpoints (deprecated - use marketplace API instead)
+    scrapeOllamaLibrary: (bypassCache?: boolean) => ipcRenderer.invoke('ollama:scrapeLibrary', bypassCache),
+    scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) =>
+        ipcRenderer.invoke('ollama:scrapeModelDetails', modelName, bypassCache),
+    clearOllamaScraperCache: () => ipcRenderer.invoke('ollama:clearScraperCache'),
+
+    // Marketplace API (models from database)
+    marketplace: {
+        getModels: (provider?: 'ollama' | 'huggingface', limit?: number, offset?: number) =>
+            ipcRenderer.invoke('marketplace:getModels', provider, limit, offset),
+        searchModels: (query: string, provider?: 'ollama' | 'huggingface', limit?: number) =>
+            ipcRenderer.invoke('marketplace:searchModels', query, provider, limit),
+        getModelDetails: (modelName: string) =>
+            ipcRenderer.invoke('marketplace:getModelDetails', modelName),
+        refresh: () => ipcRenderer.invoke('marketplace:refresh'),
+        getStatus: () => ipcRenderer.invoke('marketplace:getStatus'),
+    },
 
     llama: {
         loadModel: (modelPath, config) => ipcRenderer.invoke('llama:loadModel', modelPath, config),
@@ -2055,11 +2195,23 @@ const api: ElectronAPI = {
     projectAgent: {
         start: options => ipcRenderer.invoke('project:start', options),
         generatePlan: options => ipcRenderer.invoke('project:plan', options),
-        approvePlan: plan => ipcRenderer.invoke('project:approve', plan),
-        stop: () => ipcRenderer.invoke('project:stop'),
+        approvePlan: (plan, taskId) => ipcRenderer.invoke('project:approve', { plan, taskId }),
+        stop: taskId => ipcRenderer.invoke('project:stop', { taskId }),
+        createPullRequest: taskId => ipcRenderer.invoke('project:create-pr', { taskId }),
         resetState: () => ipcRenderer.invoke('project:reset-state'),
-        getStatus: () => ipcRenderer.invoke('project:get-status'),
-        retryStep: index => ipcRenderer.invoke('project:retry-step', index),
+        getStatus: taskId => ipcRenderer.invoke('project:get-status', { taskId }),
+        retryStep: (index, taskId) => ipcRenderer.invoke('project:retry-step', { index, taskId }),
+        // AGT-HIL: Human-in-the-Loop step actions
+        approveStep: (taskId: string, stepId: string) =>
+            ipcRenderer.invoke('project:approve-step', { taskId, stepId }),
+        skipStep: (taskId: string, stepId: string) =>
+            ipcRenderer.invoke('project:skip-step', { taskId, stepId }),
+        editStep: (taskId: string, stepId: string, text: string) =>
+            ipcRenderer.invoke('project:edit-step', { taskId, stepId, text }),
+        addStepComment: (taskId: string, stepId: string, comment: string) =>
+            ipcRenderer.invoke('project:add-step-comment', { taskId, stepId, comment }),
+        insertInterventionPoint: (taskId: string, afterStepId: string) =>
+            ipcRenderer.invoke('project:insert-intervention', { taskId, afterStepId }),
         getCheckpoints: (taskId: string) => ipcRenderer.invoke('project:get-checkpoints', taskId),
         rollbackCheckpoint: (checkpointId: string) =>
             ipcRenderer.invoke('project:rollback-checkpoint', checkpointId),
@@ -2068,6 +2220,21 @@ const api: ElectronAPI = {
         deleteTaskByNodeId: (nodeId: string) =>
             ipcRenderer.invoke('project:delete-task-by-node', nodeId),
         getProfiles: () => ipcRenderer.invoke('project:get-profiles'),
+        getRoutingRules: () => ipcRenderer.invoke('project:get-routing-rules'),
+        setRoutingRules: rules => ipcRenderer.invoke('project:set-routing-rules', rules),
+        createVotingSession: payload => ipcRenderer.invoke('project:create-voting-session', payload),
+        submitVote: payload => ipcRenderer.invoke('project:submit-vote', payload),
+        requestVotes: payload => ipcRenderer.invoke('project:request-votes', payload),
+        resolveVoting: sessionId => ipcRenderer.invoke('project:resolve-voting', sessionId),
+        getVotingSession: sessionId => ipcRenderer.invoke('project:get-voting-session', sessionId),
+        buildConsensus: outputs => ipcRenderer.invoke('project:build-consensus', outputs),
+        getTemplates: category => ipcRenderer.invoke('project:get-templates', category),
+        getTemplate: id => ipcRenderer.invoke('project:get-template', id),
+        saveTemplate: template => ipcRenderer.invoke('project:save-template', template),
+        deleteTemplate: id => ipcRenderer.invoke('project:delete-template', id),
+        exportTemplate: id => ipcRenderer.invoke('project:export-template', id),
+        importTemplate: exported => ipcRenderer.invoke('project:import-template', exported),
+        applyTemplate: payload => ipcRenderer.invoke('project:apply-template', payload),
         onUpdate: callback => {
             const listener = (_event: IpcRendererEvent, state: IpcValue) => {
                 if (isProjectState(state)) {
@@ -2092,6 +2259,10 @@ const api: ElectronAPI = {
         getStatus: () => ipcRenderer.invoke('extension:getStatus'),
         setInstalled: (installed: boolean) =>
             ipcRenderer.invoke('extension:setInstalled', installed),
+    },
+    sdCpp: {
+        getStatus: () => ipcRenderer.invoke('sd-cpp:getStatus'),
+        reinstall: () => ipcRenderer.invoke('sd-cpp:reinstall'),
     },
 };
 

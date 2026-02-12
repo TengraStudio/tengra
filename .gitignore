@@ -161,8 +161,14 @@ dist/
 node_modules/
 
 docs/components_checklist.md
+docs/changelog/i18n/.tr.translation.cache.json
 
 # Binaries
 *.exe
 resources/bin/
 vendor/**/*.exe
+cursor_network_analysis.md
+ 
+ 0 
+
+.claude/settings.local.json

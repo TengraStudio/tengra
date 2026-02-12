@@ -298,6 +298,21 @@ export class McpMarketplaceService extends BaseService {
                             };
                             return server;
                         } catch (error) {
+                            // Some directories in the MCP servers repo do not contain package.json at this path.
+                            // For these expected 404s, fallback to known metadata (if available) or skip silently.
+                            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                                const fallback = this.FALLBACK_SERVERS.find(
+                                    server => server.id === dir.name
+                                );
+                                if (fallback) {
+                                    return fallback;
+                                }
+                                this.logDebug(
+                                    `Skipping ${dir.name}: package.json not found at expected path`
+                                );
+                                return null;
+                            }
+
                             this.logError(`Failed to load package.json for ${dir.name}`, error);
                             return null;
                         }

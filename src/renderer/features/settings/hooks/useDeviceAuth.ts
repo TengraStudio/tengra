@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { AppSettings } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { DeviceCodeModalState } from '../components/DeviceCodeModal';
 
@@ -71,7 +72,7 @@ export function useDeviceAuth(
                 }));
             }
         } catch (error) {
-            console.error('GitHub auth failed:', error);
+            appLogger.error('DeviceAuth', 'GitHub auth failed', error as Error);
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',
@@ -130,7 +131,7 @@ export function useDeviceAuth(
                 }));
             }
         } catch (error) {
-            console.error('Copilot auth failed:', error);
+            appLogger.error('DeviceAuth', 'Copilot auth failed', error as Error);
             setDeviceCodeModal(prev => ({
                 ...prev,
                 status: 'error',

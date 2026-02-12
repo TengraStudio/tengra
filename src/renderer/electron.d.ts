@@ -1,5 +1,45 @@
 import type { IpcRendererEvent } from 'electron';
 
+// Ollama scraper types
+export interface OllamaScrapedModel {
+    name: string;
+    pulls: string;
+    tagCount: number;
+    lastUpdated: string;
+    categories: string[];
+}
+
+export interface OllamaModelVersion {
+    name: string;
+    size: string;
+    context: string;
+    inputTypes: string[];
+}
+
+export interface OllamaModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionHtml: string;
+    versions: OllamaModelVersion[];
+}
+
+// Marketplace model from database
+export interface DbMarketplaceModel {
+    id: string;
+    name: string;
+    provider: 'ollama' | 'huggingface';
+    pulls?: string;
+    tagCount: number;
+    lastUpdated?: string;
+    categories: string[];
+    shortDescription?: string;
+    downloads?: number;
+    likes?: number;
+    author?: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
 import {
     AgentDefinition,
     AgentStartOptions,
@@ -459,8 +499,9 @@ export interface ElectronAPI {
             digest?: string;
             total?: number;
             completed?: number;
+            modelName?: string;
         }) => void
-    ) => void;
+    ) => () => void;
     removePullProgressListener: () => void;
 
     // Health and GPU checks
@@ -468,6 +509,31 @@ export interface ElectronAPI {
     forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: { status: string }) => void) => void;
+
+    // Ollama scraper for marketplace (deprecated - use marketplace API instead)
+    scrapeOllamaLibrary: (bypassCache?: boolean) => Promise<OllamaScrapedModel[]>;
+    scrapeOllamaModelDetails: (
+        modelName: string,
+        bypassCache?: boolean
+    ) => Promise<OllamaModelDetails | null>;
+    clearOllamaScraperCache: () => Promise<{ success: boolean }>;
+
+    // Marketplace API (models from database)
+    marketplace: {
+        getModels: (
+            provider?: 'ollama' | 'huggingface',
+            limit?: number,
+            offset?: number
+        ) => Promise<DbMarketplaceModel[]>;
+        searchModels: (
+            query: string,
+            provider?: 'ollama' | 'huggingface',
+            limit?: number
+        ) => Promise<DbMarketplaceModel[]>;
+        refresh: () => Promise<{ success: boolean; count: number; error?: string }>;
+        getModelDetails: (modelName: string) => Promise<OllamaModelDetails | null>;
+        getStatus: () => Promise<{ lastScrapeTime: number; isScraping: boolean }>;
+    };
 
     // llama.cpp
     llama: {
@@ -498,7 +564,10 @@ export interface ElectronAPI {
         ) => void;
         removeDownloadProgressListener: () => void;
     };
-
+    sdCpp: {
+        getStatus: () => Promise<string>;
+        reinstall: () => Promise<void>;
+    };
     // Database
     db: {
         createChat: (chat: Chat) => Promise<{ success: boolean }>;
@@ -1187,11 +1256,20 @@ export interface ElectronAPI {
     projectAgent: {
         start: (options: AgentStartOptions) => Promise<void>;
         generatePlan: (options: AgentStartOptions) => Promise<void>;
-        approvePlan: (plan: string[] | ProjectStep[]) => Promise<void>;
-        stop: () => Promise<void>;
+        approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
+        stop: (taskId?: string) => Promise<void>;
+        createPullRequest: (
+            taskId?: string
+        ) => Promise<{ success: boolean; url?: string; error?: string }>;
         resetState: () => Promise<void>;
-        getStatus: () => Promise<ProjectState>;
-        retryStep: (index: number) => Promise<void>;
+        getStatus: (taskId?: string) => Promise<ProjectState>;
+        retryStep: (index: number, taskId?: string) => Promise<void>;
+        // AGT-HIL: Human-in-the-Loop step actions
+        approveStep: (taskId: string, stepId: string) => Promise<void>;
+        skipStep: (taskId: string, stepId: string) => Promise<void>;
+        editStep: (taskId: string, stepId: string, text: string) => Promise<void>;
+        addStepComment: (taskId: string, stepId: string, comment: string) => Promise<void>;
+        insertInterventionPoint: (taskId: string, afterStepId: string) => Promise<void>;
         getCheckpoints: (
             taskId: string
         ) => Promise<Array<{ id: string; stepIndex: number; trigger: string; createdAt: number }>>;
@@ -1214,6 +1292,70 @@ export interface ElectronAPI {
         >;
         deleteTaskByNodeId: (nodeId: string) => Promise<boolean>;
         getProfiles: () => Promise<import('@shared/types/project-agent').AgentProfile[]>;
+        getRoutingRules: () => Promise<import('@shared/types/project-agent').ModelRoutingRule[]>;
+        setRoutingRules: (
+            rules: import('@shared/types/project-agent').ModelRoutingRule[]
+        ) => Promise<{ success: boolean }>;
+        createVotingSession: (payload: {
+            taskId: string;
+            stepIndex: number;
+            question: string;
+            options: string[];
+        }) => Promise<import('@shared/types/project-agent').VotingSession>;
+        submitVote: (payload: {
+            sessionId: string;
+            modelId: string;
+            provider: string;
+            decision: string;
+            confidence: number;
+            reasoning?: string;
+        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        requestVotes: (payload: {
+            sessionId: string;
+            models: Array<{ provider: string; model: string }>;
+        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        resolveVoting: (
+            sessionId: string
+        ) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        getVotingSession: (
+            sessionId: string
+        ) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        buildConsensus: (
+            outputs: Array<{ modelId: string; provider: string; output: string }>
+        ) => Promise<import('@shared/types/project-agent').ConsensusResult>;
+        getTemplates: (
+            category?: import('@shared/types/project-agent').AgentTemplateCategory
+        ) => Promise<import('@shared/types/project-agent').AgentTemplate[]>;
+        getTemplate: (
+            id: string
+        ) => Promise<import('@shared/types/project-agent').AgentTemplate | null>;
+        saveTemplate: (
+            template: import('@shared/types/project-agent').AgentTemplate
+        ) => Promise<{
+            success: boolean;
+            template: import('@shared/types/project-agent').AgentTemplate;
+        }>;
+        deleteTemplate: (id: string) => Promise<{ success: boolean }>;
+        exportTemplate: (
+            id: string
+        ) => Promise<import('@shared/types/project-agent').AgentTemplateExport | null>;
+        importTemplate: (
+            exported: import('@shared/types/project-agent').AgentTemplateExport
+        ) => Promise<{
+            success: boolean;
+            template?: import('@shared/types/project-agent').AgentTemplate;
+            error?: string;
+        }>;
+        applyTemplate: (payload: {
+            templateId: string;
+            values: Record<string, string | number | boolean>;
+        }) => Promise<{
+            success: boolean;
+            template?: import('@shared/types/project-agent').AgentTemplate;
+            task?: string;
+            steps?: string[];
+            error?: string;
+        }>;
         onUpdate: (callback: (state: ProjectState) => void) => () => void;
         // Canvas persistence
         saveCanvasNodes: (

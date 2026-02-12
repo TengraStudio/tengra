@@ -83,11 +83,12 @@ describe('AuthService (New Multi-Account System)', () => {
         });
 
         it('should normalize provider names', async () => {
-            await authService.getAccountsByProvider('openai');
-            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('codex');
-
             await authService.getAccountsByProvider('anthropic');
             expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('claude');
+
+            // Note: openai and codex are separate providers, not normalized to each other
+            await authService.getAccountsByProvider('openai');
+            expect(mockDatabaseService.getLinkedAccounts).toHaveBeenCalledWith('openai');
         });
 
         it('should link new account', async () => {

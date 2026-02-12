@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Project } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export function useLogoGenerator(
     project: Project,
@@ -25,7 +26,7 @@ export function useLogoGenerator(
                 setPrompt(result.suggestedPrompts[0]);
             }
         } catch (error) {
-            console.error('Analysis failed', error);
+            appLogger.error('LogoGenerator', 'Analysis failed', error as Error);
         } finally {
             setIsAnalyzing(false);
         }
@@ -52,7 +53,7 @@ export function useLogoGenerator(
             });
             setGeneratedLogos(prev => [...prev, ...logoPaths]);
         } catch (error) {
-            console.error('Generation failed', error);
+            appLogger.error('LogoGenerator', 'Generation failed', error as Error);
         } finally {
             setIsGenerating(false);
         }
@@ -67,7 +68,7 @@ export function useLogoGenerator(
             const improved = await window.electron.project.improveLogoPrompt(prompt);
             setPrompt(improved);
         } catch (error) {
-            console.error('Improvement failed', error);
+            appLogger.error('LogoGenerator', 'Improvement failed', error as Error);
         } finally {
             setIsAnalyzing(false);
         }
@@ -80,7 +81,7 @@ export function useLogoGenerator(
             onApply(finalPath);
             onClose();
         } catch (error) {
-            console.error('Apply failed', error);
+            appLogger.error('LogoGenerator', 'Apply failed', error as Error);
         } finally {
             setIsGenerating(false);
         }
@@ -93,7 +94,7 @@ export function useLogoGenerator(
                 await handleApply(uploadedPath);
             }
         } catch (error) {
-            console.error('Manual upload failed', error);
+            appLogger.error('LogoGenerator', 'Manual upload failed', error as Error);
         }
     };
 

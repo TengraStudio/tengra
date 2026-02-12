@@ -4,6 +4,7 @@ import {
 } from '@shared/types/advanced-memory';
 import { formatDistanceToNow } from 'date-fns';
 import { Archive, CheckSquare, Edit3, LucideIcon, RefreshCw, Square, Trash2 } from 'lucide-react';
+import { memo } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 import { CATEGORY_CONFIG } from './constants';
 
-export const StatCard = ({
+export const StatCard = memo(({
     label,
     value,
     icon: Icon,
@@ -36,9 +37,10 @@ export const StatCard = ({
             <Icon className={cn("w-4 h-4 mb-1", color)} />
         </div>
     </Card>
-);
+));
+StatCard.displayName = 'StatCard';
 
-export const EmptyState = ({
+export const EmptyState = memo(({
     icon: Icon,
     title,
     description
@@ -56,9 +58,10 @@ export const EmptyState = ({
             <p className="text-sm text-muted-foreground max-w-[250px]">{description}</p>
         </div>
     </div>
-);
+));
+EmptyState.displayName = 'EmptyState';
 
-export const PendingMemoryCard = ({
+export const PendingMemoryCard = memo(({
     memory,
     onConfirm,
     onReject
@@ -97,15 +100,30 @@ export const PendingMemoryCard = ({
                 </div>
                 <p className="text-sm leading-relaxed">{memory.content}</p>
                 <div className="flex items-center justify-between mt-2">
-                    <button className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md text-xs font-bold" onClick={onConfirm}>{t('memory.confirm')}</button>
-                    <button className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-bold" onClick={onReject}>{t('memory.reject')}</button>
+                    <button
+                        type="button"
+                        aria-label={t('memory.confirm')}
+                        className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-md text-xs font-bold"
+                        onClick={onConfirm}
+                    >
+                        {t('memory.confirm')}
+                    </button>
+                    <button
+                        type="button"
+                        aria-label={t('memory.reject')}
+                        className="flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-bold"
+                        onClick={onReject}
+                    >
+                        {t('memory.reject')}
+                    </button>
                 </div>
             </div>
         </Card>
     );
-};
+});
+PendingMemoryCard.displayName = 'PendingMemoryCard';
 
-export const ConfirmedMemoryCard = ({
+export const ConfirmedMemoryCard = memo(({
     memory,
     isSelected,
     onToggleSelect,
@@ -135,7 +153,7 @@ export const ConfirmedMemoryCard = ({
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button onClick={onToggleSelect}>
+                        <button type="button" aria-label={t('memory.select')} onClick={onToggleSelect}>
                             {isSelected ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4 text-muted-foreground/30" />}
                         </button>
                         <Badge className={cn("border-none text-xxs uppercase font-bold", config.color)}>
@@ -148,12 +166,13 @@ export const ConfirmedMemoryCard = ({
                 <div className="flex items-center justify-between mt-4">
                     <div className="text-xxs text-muted-foreground">{t('memory.storedAgo', { time: formatDistanceToNow(new Date(memory.createdAt)) })}</div>
                     <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={onEdit}><Edit3 className="w-4 h-4" /></Button>
-                        {!isArchived ? <Button variant="ghost" size="sm" onClick={onArchive}><Archive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" onClick={onRestore}><RefreshCw className="w-4 h-4" /></Button>}
-                        <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" aria-label={t('common.edit')} onClick={onEdit}><Edit3 className="w-4 h-4" /></Button>
+                        {!isArchived ? <Button variant="ghost" size="sm" aria-label={t('memory.archive')} onClick={onArchive}><Archive className="w-4 h-4" /></Button> : <Button variant="ghost" size="sm" aria-label={t('memory.restore')} onClick={onRestore}><RefreshCw className="w-4 h-4" /></Button>}
+                        <Button variant="ghost" size="sm" aria-label={t('common.delete')} onClick={onDelete} className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                 </div>
             </div>
         </Card>
     );
-};
+});
+ConfirmedMemoryCard.displayName = 'ConfirmedMemoryCard';

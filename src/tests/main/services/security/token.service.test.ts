@@ -61,7 +61,11 @@ beforeEach(() => {
         sendRequest: vi.fn().mockResolvedValue({ success: true, token: { id: 'test', accessToken: 'new-token' } })
     } as unknown as ProcessManagerService;
 
-    mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as unknown as EventBusService;
+    mockEventBus = { 
+        emit: vi.fn(), 
+        on: vi.fn().mockReturnValue(() => {}), // Return unsubscribe function
+        off: vi.fn() 
+    } as unknown as EventBusService;
 
     tokenService = new TokenService(
         mockSettingsService, mockCopilotService, mockAuthService, mockEventBus,
@@ -80,7 +84,8 @@ describe('TokenService - Lifecycle', () => {
         const legacyService = new TokenService(mockSettingsService, mockCopilotService, mockAuthService, mockEventBus, { processManager: mockProcessManager });
         const setIntervalSpy = vi.spyOn(global, 'setInterval');
         await legacyService.initialize();
-        expect(setIntervalSpy).toHaveBeenCalledTimes(2);
+        // 3 intervals: oauth refresh, copilot refresh, and sync from service
+        expect(setIntervalSpy).toHaveBeenCalledTimes(3);
         void legacyService.cleanup();
     });
 });

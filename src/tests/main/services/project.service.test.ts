@@ -5,6 +5,8 @@ import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 // Mocking fs and path
 vi.mock('fs', () => ({
+    existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
     promises: {
         readdir: vi.fn(),
         readFile: vi.fn(),

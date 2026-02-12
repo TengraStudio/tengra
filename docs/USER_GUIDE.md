@@ -10,7 +10,8 @@ To get started with Tandem, download the appropriate installer for your operatin
 ### Connecting AI Providers
 Tandem supports a wide range of AI models. You can manage these connections in the Settings menu.
 
-- **Local Models**: If you have Ollama installed, Tandem will automatically detect your downloaded models. You can refresh the model list in the Settings dashboard to ensure the latest versions are available.
+- **Local Models**: If you have Ollama installed, Tandem will automatically detect your downloaded models. You can refresh the model list in the Settings dashboard.
+- **Local Image Generation (SD-CPP)**: Tandem includes a high-performance Stable Diffusion C++ implementation for local image generation. This runs entirely on your machine and is detected/configured automatically if enabled in settings. If SD-CPP is unavailable or fails, Tandem will automatically fallback to **Pollinations** (cloud-based) to ensure your workflow is not interrupted.
 - **Cloud Accounts**: To use models from providers like Anthropic or Google, navigate to the Accounts section in Settings. Tandem uses secure OAuth flows for account linking. For providers requiring API keys, your credentials will be encrypted and stored securely in the system keychain.
 
 ## Navigating the Workspace

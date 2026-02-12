@@ -1,6 +1,8 @@
 import { LinkedAccountInfo } from '@renderer/electron.d';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 export interface UseLinkedAccountsResult {
     accounts: LinkedAccountInfo[]
     loading: boolean
@@ -27,7 +29,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
             const linkedAccounts = await window.electron.getLinkedAccounts();
             setAccounts(linkedAccounts);
         } catch (error) {
-            console.error('Failed to fetch linked accounts:', error);
+            appLogger.error('LinkedAccounts', 'Failed to fetch linked accounts', error as Error);
             setAccounts([]);
         } finally {
             setLoading(false);
@@ -69,7 +71,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
             await window.electron.unlinkAccount(accountId);
             await refreshAccounts();
         } catch (error) {
-            console.error('Failed to unlink account:', error);
+            appLogger.error('LinkedAccounts', 'Failed to unlink account', error as Error);
         }
     }, [refreshAccounts]);
 
@@ -78,7 +80,7 @@ export function useLinkedAccounts(): UseLinkedAccountsResult {
             await window.electron.setActiveLinkedAccount(provider, accountId);
             await refreshAccounts();
         } catch (error) {
-            console.error('Failed to set active account:', error);
+            appLogger.error('LinkedAccounts', 'Failed to set active account', error as Error);
         }
     }, [refreshAccounts]);
 

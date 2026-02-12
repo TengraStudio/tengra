@@ -32,16 +32,10 @@ docs(readme): update installation steps
    - Mark completed items as `[x]`
    - NEVER delete items
 
-2. Update `docs/CHANGELOG.md`:
-   ```markdown
-   ## [Unreleased]
-   
-   ### Added
-   - New feature description
-   
-   ### Fixed
-   - Bug fix description
-   ```
+2. Update structured changelog:
+   - Update `docs/changelog/data/changelog.entries.json`
+   - Update `docs/changelog/i18n/tr.overrides.json` if needed
+   - Run `npm run changelog:sync`
 
 3. Commit and push:
    ```bash
@@ -49,3 +43,4 @@ docs(readme): update installation steps
    git commit -m "type(scope): description"
    git push
    ```
+

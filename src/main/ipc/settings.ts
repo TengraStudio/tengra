@@ -9,6 +9,10 @@ import { IpcValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
 import { app, ipcMain, IpcMainInvokeEvent } from 'electron';
 
+/**
+ * Synchronizes the OS login item settings based on application startup preferences.
+ * @param settings - The application settings containing startup behavior configuration
+ */
 function syncStartupBehavior(settings: AppSettings): void {
     if (!app.isPackaged || settings.window?.startOnStartup === undefined) {
         return;
@@ -23,6 +27,10 @@ function syncStartupBehavior(settings: AppSettings): void {
     });
 }
 
+/**
+ * Registers IPC handlers for application settings management including get, save, and credential updates.
+ * @param options - Configuration object containing service dependencies and connection update callbacks
+ */
 export function registerSettingsIpc(options: {
     settingsService: SettingsService
     llmService: LLMService
@@ -49,6 +57,12 @@ export function registerSettingsIpc(options: {
         return settings;
     }));
 
+    /**
+     * Logs audit entries when sensitive settings fields (API keys) are modified.
+     * @param newSettings - The updated application settings
+     * @param oldSettings - The previous application settings
+     * @param auditService - Optional audit log service for recording changes
+     */
     async function auditSensitiveChanges(newSettings: AppSettings, oldSettings: AppSettings, auditService: AuditLogService | undefined) {
         if (!auditService) { return; }
         const sensitiveChanges: string[] = [];
@@ -73,6 +87,13 @@ export function registerSettingsIpc(options: {
         }
     }
 
+    /**
+     * Checks if a sensitive settings field has changed and records it.
+     * @param field - The field descriptor with key and label
+     * @param newSettings - The updated application settings
+     * @param oldSettings - The previous application settings
+     * @param changes - Array to push change descriptions into
+     */
     function checkSensitiveField(field: { key: 'openai' | 'anthropic' | 'groq' | 'proxy'; label: string }, newSettings: AppSettings, oldSettings: AppSettings, changes: string[]) {
         const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key;
         const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key;
@@ -82,17 +103,31 @@ export function registerSettingsIpc(options: {
         }
     }
 
+    /**
+     * Updates LLM and Copilot service credentials from the saved settings.
+     * @param finalSettings - The final merged application settings
+     * @param newSettings - The raw new settings from the renderer
+     */
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
         updateLlmCredentials(finalSettings, newSettings);
         updateCopilotCredentials(finalSettings);
     }
 
+    /**
+     * Sets API keys on the LLM service from the provided settings.
+     * @param finalSettings - The final merged settings containing API keys
+     * @param newSettings - The raw new settings for Groq key updates
+     */
     function updateLlmCredentials(finalSettings: AppSettings, newSettings: AppSettings) {
         if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey); }
         if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey); }
         if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
     }
 
+    /**
+     * Sets Copilot and GitHub tokens on the Copilot service.
+     * @param finalSettings - The final merged settings containing tokens
+     */
     function updateCopilotCredentials(finalSettings: AppSettings) {
         if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token); }
         if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }

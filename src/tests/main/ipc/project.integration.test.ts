@@ -112,9 +112,10 @@ describe('Project IPC Integration', () => {
 
         generateLogoMock.mockResolvedValue('/path/to/logo.png');
 
-        const result = await handler?.({} as IpcMainInvokeEvent, '/root', 'prompt', 'style');
+        const result = await handler?.({} as IpcMainInvokeEvent, '/root', { prompt: 'prompt', style: 'style', model: 'dall-e-3', count: 1 });
 
-        expect(generateLogoMock).toHaveBeenCalledWith('/root', 'prompt', 'style');
+        // Handler destructures the options object before calling logoService
+        expect(generateLogoMock).toHaveBeenCalledWith('/root', 'prompt', 'style', 'dall-e-3', 1);
         expect(result).toMatchObject({
             success: true,
             data: '/path/to/logo.png'

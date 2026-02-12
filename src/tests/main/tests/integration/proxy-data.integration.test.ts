@@ -50,7 +50,7 @@ describe('Proxy-Data Integration', () => {
 
     it('should resolve auth work directory via DataService', () => {
         // This confirms ProxyService is correctly wired to DataService
-        const authDir = (proxyService as any).getAuthWorkDir();
+        const authDir = proxyService.dataService.getPath('auth');
         const expected = dataService.getPath('auth');
         expect(authDir).toBe(expected);
         expect(authDir).toContain(tempDir);

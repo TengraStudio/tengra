@@ -59,7 +59,7 @@ export const webElectronMock: ElectronAPI = {
             _projectId?: string,
             _isRegex?: boolean
         ) => [],
-        indexProject: async (_rootPath: string, _projectId: string) => {},
+        indexProject: async (_rootPath: string, _projectId: string) => { },
         queryIndexedSymbols: async (_query: string) => [],
     },
 
@@ -96,7 +96,7 @@ export const webElectronMock: ElectronAPI = {
         watch: async (_rootPath: string) => true,
         unwatch: async (_rootPath: string) => true,
         onFileChange:
-            (_callback: (event: string, path: string, rootPath: string) => void) => () => {},
+            (_callback: (event: string, path: string, rootPath: string) => void) => () => { },
     },
 
     process: {
@@ -104,18 +104,18 @@ export const webElectronMock: ElectronAPI = {
         kill: async (_id: string) => true,
         list: async () => [],
         scanScripts: async (_rootPath: string) => ({}),
-        resize: async (_id: string, _cols: number, _rows: number) => {},
-        write: async (_id: string, _data: string) => {},
-        onData: (_callback: (data: { id: string; data: string }) => void) => () => {},
-        onExit: (_callback: (data: { id: string; code: number }) => void) => () => {},
-        removeListeners: () => {},
+        resize: async (_id: string, _cols: number, _rows: number) => { },
+        write: async (_id: string, _data: string) => { },
+        onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
+        onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
+        removeListeners: () => { },
     },
 
     files: {
         listDirectory: async (_path: string) => [],
         readFile: async (_path: string) => '',
         readImage: async (_path: string) => ({ success: true }),
-        writeFile: async (_path: string, _content: string) => {},
+        writeFile: async (_path: string, _content: string) => { },
         exists: async (_path: string) => true,
     },
 
@@ -181,8 +181,8 @@ export const webElectronMock: ElectronAPI = {
     getModels: async () => [],
     chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
     chatOpenAI: async (_request: unknown) => ({ content: 'Mock response' }),
-    chatStream: async (_request: unknown) => {},
-    abortChat: () => {},
+    chatStream: async (_request: unknown) => { },
+    abortChat: () => { },
     onStreamChunk:
         (
             _callback: (chunk: {
@@ -191,14 +191,14 @@ export const webElectronMock: ElectronAPI = {
                 reasoning?: string;
             }) => void
         ) =>
-        () => {},
+            () => { },
     removeStreamChunkListener: (
         _callback?: (chunk: {
             content?: string;
             toolCalls?: ToolCall[];
             reasoning?: string;
         }) => void
-    ) => {},
+    ) => { },
 
     isOllamaRunning: async () => true,
     startOllama: async () => ({ success: true, message: 'Ollama is starting' }),
@@ -211,14 +211,41 @@ export const webElectronMock: ElectronAPI = {
             digest?: string;
             total?: number;
             completed?: number;
+            modelName?: string;
         }) => void
-    ) => {},
-    removePullProgressListener: () => {},
+    ) => () => { },
+    removePullProgressListener: () => { },
+    sdCpp: {
+        getStatus: async () => 'ready',
+        reinstall: async () => { },
+    },
 
     getOllamaHealthStatus: async () => ({ status: 'ok' as const }),
     forceOllamaHealthCheck: async () => ({ status: 'ok' as const }),
     checkCuda: async () => ({ hasCuda: true }),
-    onOllamaStatusChange: (_callback: (status: { status: string }) => void) => {},
+    onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
+
+    // Ollama scraper stubs (deprecated - use marketplace API)
+    scrapeOllamaLibrary: async (_bypassCache?: boolean) => [],
+    scrapeOllamaModelDetails: async (_modelName: string, _bypassCache?: boolean) => null,
+    clearOllamaScraperCache: async () => ({ success: true }),
+
+    // Marketplace API stubs
+    marketplace: {
+        getModels: async (
+            _provider?: 'ollama' | 'huggingface',
+            _limit?: number,
+            _offset?: number
+        ) => [],
+        searchModels: async (
+            _query: string,
+            _provider?: 'ollama' | 'huggingface',
+            _limit?: number
+        ) => [],
+        getModelDetails: async (_modelName: string) => null,
+        refresh: async () => ({ success: false, count: 0, error: 'Not available in web mode' }),
+        getStatus: async () => ({ lastScrapeTime: 0, isScraping: false }),
+    },
 
     llama: {
         loadModel: async (_modelPath: string, _config?: Record<string, IpcValue>) => ({
@@ -237,12 +264,12 @@ export const webElectronMock: ElectronAPI = {
         setConfig: async (_config: Record<string, IpcValue>) => ({ success: true }),
         getGpuInfo: async () => ({ available: true }),
         getModelsDir: async () => '/mock/dir',
-        onToken: (_callback: (token: string) => void) => {},
-        removeTokenListener: () => {},
+        onToken: (_callback: (token: string) => void) => { },
+        removeTokenListener: () => { },
         onDownloadProgress: (
             _callback: (progress: { downloaded: number; total: number }) => void
-        ) => {},
-        removeDownloadProgressListener: () => {},
+        ) => { },
+        removeDownloadProgressListener: () => { },
     },
 
     db: {
@@ -315,11 +342,11 @@ export const webElectronMock: ElectronAPI = {
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
             }) as Project,
-        updateProject: async (_id: string, _updates: Partial<Project>) => {},
-        deleteProject: async (_id: string, _deleteFiles?: boolean) => {},
-        archiveProject: async (_id: string, _isArchived: boolean) => {},
-        bulkDeleteProjects: async (_ids: string[], _deleteFiles?: boolean) => {},
-        bulkArchiveProjects: async (_ids: string[], _isArchived: boolean) => {},
+        updateProject: async (_id: string, _updates: Partial<Project>) => { },
+        deleteProject: async (_id: string, _deleteFiles?: boolean) => { },
+        archiveProject: async (_id: string, _isArchived: boolean) => { },
+        bulkDeleteProjects: async (_ids: string[], _deleteFiles?: boolean) => { },
+        bulkArchiveProjects: async (_ids: string[], _isArchived: boolean) => { },
         createFolder: async (_name: string, _color?: string) =>
             ({
                 id: '1',
@@ -328,12 +355,12 @@ export const webElectronMock: ElectronAPI = {
                 createdAt: new Date(),
                 updatedAt: new Date(),
             }) as Folder,
-        deleteFolder: async (_id: string) => {},
-        updateFolder: async (_id: string, _updates: Partial<Folder>) => {},
+        deleteFolder: async (_id: string) => { },
+        updateFolder: async (_id: string, _updates: Partial<Folder>) => { },
 
         createPrompt: async (_title: string, _content: string, _tags?: string[]) => ({ id: '1' }),
-        deletePrompt: async (_id: string) => {},
-        updatePrompt: async (_id: string, _updates: Record<string, IpcValue>) => {},
+        deletePrompt: async (_id: string) => { },
+        updatePrompt: async (_id: string, _updates: Record<string, IpcValue>) => { },
         getPrompts: async () => [],
     },
 
@@ -407,9 +434,9 @@ export const webElectronMock: ElectronAPI = {
         write: async (_sessionId: string, _data: string) => true,
         resize: async (_sessionId: string, _cols: number, _rows: number) => true,
         kill: async (_sessionId: string) => true,
-        onData: (_callback: (data: { id: string; data: string }) => void) => () => {},
-        onExit: (_callback: (data: { id: string; code: number }) => void) => () => {},
-        removeAllListeners: () => {},
+        onData: (_callback: (data: { id: string; data: string }) => void) => () => { },
+        onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
+        removeAllListeners: () => { },
         getSessions: async () => [],
         readBuffer: async (_sessionId: string) => '',
     },
@@ -447,18 +474,18 @@ export const webElectronMock: ElectronAPI = {
         }),
         getConnections: async () => [],
         isConnected: async (_connectionId: string) => true,
-        onStdout: (_callback: (data: string | Uint8Array) => void) => {},
-        onStderr: (_callback: (data: string | Uint8Array) => void) => {},
-        onConnected: (_callback: (connectionId: string) => void) => {},
-        onDisconnected: (_callback: (connectionId: string) => void) => {},
+        onStdout: (_callback: (data: string | Uint8Array) => void) => { },
+        onStderr: (_callback: (data: string | Uint8Array) => void) => { },
+        onConnected: (_callback: (connectionId: string) => void) => { },
+        onDisconnected: (_callback: (connectionId: string) => void) => { },
         onUploadProgress: (
             _callback: (progress: { transferred: number; total: number }) => void
-        ) => {},
+        ) => { },
         onDownloadProgress: (
             _callback: (progress: { transferred: number; total: number }) => void
-        ) => {},
-        removeAllListeners: () => {},
-        onShellData: (_callback: (data: { data: string }) => void) => {},
+        ) => { },
+        removeAllListeners: () => { },
+        onShellData: (_callback: (data: { data: string }) => void) => { },
         shellStart: async (_connectionId: string) => ({ success: true }),
         shellWrite: async (_connectionId: string, _data: string) => ({ success: true }),
         getSystemStats: async (_connectionId: string) =>
@@ -564,8 +591,8 @@ export const webElectronMock: ElectronAPI = {
         toggle: async (_service: string, _enabled: boolean) => ({ success: true, isEnabled: true }),
         install: async (_config: Record<string, IpcValue>) => ({ success: true }),
         uninstall: async (_name: string) => ({ success: true }),
-        onResult: (_callback: (result: IpcValue) => void) => {},
-        removeResultListener: () => {},
+        onResult: (_callback: (result: IpcValue) => void) => { },
+        removeResultListener: () => { },
     },
 
     mcpMarketplace: {
@@ -588,7 +615,7 @@ export const webElectronMock: ElectronAPI = {
 
     captureScreenshot: async () => ({ success: true }),
     captureCookies: async (_url: string, _timeoutMs?: number) => ({ success: true }),
-    openExternal: (_url: string) => {},
+    openExternal: (_url: string) => { },
     openTerminal: async (_command: string) => true,
     runCommand: async (_command: string, _args: string[], _cwd?: string) => ({
         stdout: '',
@@ -614,7 +641,7 @@ export const webElectronMock: ElectronAPI = {
     exportPDF: async (_htmlContent: string, _filePath: string) => ({ success: true }),
 
     getSettings: async () => ({}) as AppSettings,
-    saveSettings: async (_settings: AppSettings) => {},
+    saveSettings: async (_settings: AppSettings) => { },
 
     huggingface: {
         searchModels: async (_query: string, _limit: number, _page: number, _sort: string) => ({
@@ -630,8 +657,8 @@ export const webElectronMock: ElectronAPI = {
         ) => ({ success: true }),
         onDownloadProgress: (
             _callback: (progress: { filename: string; received: number; total: number }) => void
-        ) => {},
-        cancelDownload: () => {},
+        ) => { },
+        cancelDownload: () => { },
     },
 
     log: {
@@ -639,11 +666,11 @@ export const webElectronMock: ElectronAPI = {
             _level: 'debug' | 'info' | 'warn' | 'error',
             _message: string,
             _data?: IpcValue
-        ) => {},
-        debug: (_message: string, _data?: IpcValue) => {},
-        info: (_message: string, _data?: IpcValue) => {},
-        warn: (_message: string, _data?: IpcValue) => {},
-        error: (_message: string, _data?: IpcValue) => {},
+        ) => { },
+        debug: (_message: string, _data?: IpcValue) => { },
+        info: (_message: string, _data?: IpcValue) => { },
+        warn: (_message: string, _data?: IpcValue) => { },
+        error: (_message: string, _data?: IpcValue) => { },
     },
 
     gallery: {
@@ -655,9 +682,9 @@ export const webElectronMock: ElectronAPI = {
 
     getUserDataPath: async () => '',
     update: {
-        checkForUpdates: async () => {},
-        downloadUpdate: async () => {},
-        installUpdate: async () => {},
+        checkForUpdates: async () => { },
+        downloadUpdate: async () => { },
+        installUpdate: async () => { },
     },
 
     collaboration: {
@@ -675,7 +702,7 @@ export const webElectronMock: ElectronAPI = {
         setProviderConfig: async (
             _provider: string,
             _config: { concurrencyLimit?: number; rateLimit?: number }
-        ) => {},
+        ) => { },
     },
 
     audit: {
@@ -780,9 +807,9 @@ export const webElectronMock: ElectronAPI = {
         restoreIdea: async (_ideaId: string) => ({ success: true }),
         getArchivedIdeas: async (_sessionId?: string) => [],
         // Progress events
-        onResearchProgress: () => () => {},
-        onIdeaProgress: () => () => {},
-        onDeepResearchProgress: () => () => {},
+        onResearchProgress: () => () => { },
+        onIdeaProgress: () => () => { },
+        onDeepResearchProgress: () => () => { },
     },
 
     batch: {
@@ -803,26 +830,33 @@ export const webElectronMock: ElectronAPI = {
                 _channel: string,
                 _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void
             ) =>
-            () => {},
+                () => { },
         off: (
             _channel: string,
             _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void
-        ) => {},
-        send: (_channel: string, ..._args: IpcValue[]) => {},
+        ) => { },
+        send: (_channel: string, ..._args: IpcValue[]) => { },
         invoke: async (_channel: string, ..._args: IpcValue[]) => ({}),
-        removeAllListeners: (_channel: string) => {},
+        removeAllListeners: (_channel: string) => { },
     },
     on:
         (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) =>
-        () => {},
+            () => { },
     projectAgent: {
-        start: async (_options: unknown) => {},
-        generatePlan: async (_options: unknown) => {},
-        approvePlan: async (_plan: string[] | unknown[]) => {},
-        stop: async () => {},
-        resetState: async () => {},
-        getStatus: async () => null,
-        retryStep: async (_index: number) => {},
+        start: async (_options: unknown) => { },
+        generatePlan: async (_options: unknown) => { },
+        approvePlan: async (_plan: string[] | unknown[], _taskId?: string) => { },
+        stop: async (_taskId?: string) => { },
+        createPullRequest: async (_taskId?: string) => ({ success: false, error: 'Not available in web mode' }),
+        resetState: async () => { },
+        getStatus: async (_taskId?: string) => null,
+        retryStep: async (_index: number, _taskId?: string) => { },
+        // AGT-HIL: Human-in-the-Loop step actions
+        approveStep: async (_taskId: string, _stepId: string) => { },
+        skipStep: async (_taskId: string, _stepId: string) => { },
+        editStep: async (_taskId: string, _stepId: string, _text: string) => { },
+        addStepComment: async (_taskId: string, _stepId: string, _comment: string) => { },
+        insertInterventionPoint: async (_taskId: string, _afterStepId: string) => { },
         getCheckpoints: async (_taskId: string) => [],
         rollbackCheckpoint: async (_checkpointId: string) => ({
             success: true,
@@ -833,14 +867,59 @@ export const webElectronMock: ElectronAPI = {
         getPlanVersions: async (_taskId: string) => [],
         deleteTaskByNodeId: async (_nodeId: string) => true,
         getProfiles: async () => [],
-        onUpdate: (_callback: (state: unknown) => void) => () => {},
+        getRoutingRules: async () => [],
+        setRoutingRules: async (_rules: unknown[]) => ({ success: true }),
+        createVotingSession: async (_payload: {
+            taskId: string;
+            stepIndex: number;
+            question: string;
+            options: string[];
+        }) => ({
+            id: 'mock-voting-session',
+            taskId: _payload.taskId,
+            stepIndex: _payload.stepIndex,
+            question: _payload.question,
+            options: _payload.options,
+            votes: [],
+            status: 'pending' as const,
+            createdAt: Date.now(),
+        }),
+        submitVote: async (_payload: {
+            sessionId: string;
+            modelId: string;
+            provider: string;
+            decision: string;
+            confidence: number;
+            reasoning?: string;
+        }) => null,
+        requestVotes: async (_payload: {
+            sessionId: string;
+            models: Array<{ provider: string; model: string }>;
+        }) => null,
+        resolveVoting: async (_sessionId: string) => null,
+        getVotingSession: async (_sessionId: string) => null,
+        buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => ({
+            agreed: false,
+            resolutionMethod: 'manual' as const,
+        }),
+        getTemplates: async (_category?: unknown) => [],
+        getTemplate: async (_id: string) => null,
+        saveTemplate: async _template => ({ success: true, template: _template }),
+        deleteTemplate: async (_id: string) => ({ success: true }),
+        exportTemplate: async (_id: string) => null,
+        importTemplate: async (_exported: unknown) => ({ success: false, error: 'Not available in web mode' }),
+        applyTemplate: async (_payload: {
+            templateId: string;
+            values: Record<string, string | number | boolean>;
+        }) => ({ success: false, error: 'Not available in web mode' }),
+        onUpdate: (_callback: (state: unknown) => void) => () => { },
         // Canvas persistence stubs
-        saveCanvasNodes: async (_nodes: unknown[]) => {},
+        saveCanvasNodes: async (_nodes: unknown[]) => { },
         getCanvasNodes: async () => [],
-        deleteCanvasNode: async (_id: string) => {},
-        saveCanvasEdges: async (_edges: unknown[]) => {},
+        deleteCanvasNode: async (_id: string) => { },
+        saveCanvasEdges: async (_edges: unknown[]) => { },
         getCanvasEdges: async () => [],
-        deleteCanvasEdge: async (_id: string) => {},
+        deleteCanvasEdge: async (_id: string) => { },
     },
     extension: {
         shouldShowWarning: async () => false,

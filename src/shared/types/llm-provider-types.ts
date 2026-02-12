@@ -35,6 +35,7 @@ export interface OpenAIMessage {
     tool_call_id?: string;
     reasoning_content?: string; // DeepSeek/Reasoning models
     reasoning?: string; // Alternate reasoning field
+    images?: Array<string | OpenAIContentPartImage>; // Some providers return images here
 }
 
 export interface OpenAIUsage {

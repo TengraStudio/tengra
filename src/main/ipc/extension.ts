@@ -1,36 +1,62 @@
 import { appLogger } from '@main/logging/logger';
 import { ExtensionDetectorService } from '@main/services/system/extension-detector.service';
-import { ipcMain } from 'electron';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /**
- * Register IPC handlers for browser extension management
+ * Registers IPC handlers for browser extension management
  */
-export function registerExtensionIpc(extensionDetectorService: ExtensionDetectorService) {
-    // Check if extension should show warning
-    ipcMain.handle('extension:shouldShowWarning', () => {
-        return extensionDetectorService.shouldShowWarning();
-    });
+export function registerExtensionIpc(extensionDetectorService: ExtensionDetectorService): void {
+    appLogger.info('ExtensionIPC', 'Registering extension IPC handlers');
 
-    // Dismiss extension warning
-    ipcMain.handle('extension:dismissWarning', () => {
-        extensionDetectorService.dismissWarning();
-        appLogger.info('ExtensionIPC', 'Extension warning dismissed by user');
-        return { success: true };
-    });
+    ipcMain.handle(
+        'extension:shouldShowWarning',
+        createSafeIpcHandler(
+            'extension:shouldShowWarning',
+            async () => {
+                return extensionDetectorService.shouldShowWarning();
+            },
+            false
+        )
+    );
 
-    // Get extension installation status
-    ipcMain.handle('extension:getStatus', () => {
-        return {
-            installed: extensionDetectorService.isExtensionInstalled(),
-            shouldShowWarning: extensionDetectorService.shouldShowWarning()
-        };
-    });
+    ipcMain.handle(
+        'extension:dismissWarning',
+        createSafeIpcHandler(
+            'extension:dismissWarning',
+            async () => {
+                extensionDetectorService.dismissWarning();
+                appLogger.info('ExtensionIPC', 'Extension warning dismissed by user');
+                return { success: true };
+            },
+            { success: false }
+        )
+    );
 
-    // Mark extension as installed (can be called when extension pings API)
-    ipcMain.handle('extension:setInstalled', (_event, installed: boolean) => {
-        extensionDetectorService.setExtensionInstalled(installed);
-        return { success: true };
-    });
+    ipcMain.handle(
+        'extension:getStatus',
+        createSafeIpcHandler(
+            'extension:getStatus',
+            async () => {
+                return {
+                    installed: extensionDetectorService.isExtensionInstalled(),
+                    shouldShowWarning: extensionDetectorService.shouldShowWarning()
+                };
+            },
+            { installed: false, shouldShowWarning: false }
+        )
+    );
 
-    appLogger.info('ExtensionIPC', 'Extension IPC handlers registered');
+    ipcMain.handle(
+        'extension:setInstalled',
+        createSafeIpcHandler(
+            'extension:setInstalled',
+            async (_event: IpcMainInvokeEvent, installedRaw: unknown) => {
+                const installed = installedRaw === true;
+                extensionDetectorService.setExtensionInstalled(installed);
+                return { success: true };
+            },
+            { success: false }
+        )
+    );
 }

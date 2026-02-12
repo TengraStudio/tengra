@@ -62,6 +62,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
             <button
                 {...props}
                 onClick={onClick}
+                aria-label={props['aria-label'] ?? label}
                 className={getButtonClassName(active, variant, isCollapsed, className)}
             >
                 <div className="relative flex items-center justify-center">

@@ -4,6 +4,7 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService, TokenData } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -29,11 +30,11 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     const { proxyService, copilotService, authService, getMainWindow, eventBus } = deps;
     // --- GitHub/Copilot Device Code Flow ---
 
-    ipcMain.handle('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
+    ipcMain.handle('auth:github-login', createIpcHandler('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
         return await proxyService.initiateGitHubAuth(appId);
-    });
+    }));
 
-    ipcMain.handle('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
+    ipcMain.handle('auth:poll-token', createIpcHandler('auth:poll-token', async (_event, deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'copilot') => {
         try {
             const response = await proxyService.waitForGitHubToken(deviceCode, interval, appId);
             const token = response.access_token;
@@ -62,14 +63,14 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         } catch (error) {
             return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    }));
 
     // Note: The following handlers are registered in batch handlers below for optimization
     // - auth:get-linked-accounts
     // - auth:get-active-linked-account
     // - auth:has-linked-account
 
-    ipcMain.handle('auth:set-active-linked-account', async (_event, provider: string, accountId: string) => {
+    ipcMain.handle('auth:set-active-linked-account', createIpcHandler('auth:set-active-linked-account', async (_event, provider: string, accountId: string) => {
         try {
             await authService.setActiveAccount(provider, accountId);
             return { success: true };
@@ -77,9 +78,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             appLogger.error('AuthIPC', 'Failed to set active linked account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    }));
 
-    ipcMain.handle('auth:link-account', async (_event, provider: string, tokenData: TokenData) => {
+    ipcMain.handle('auth:link-account', createIpcHandler('auth:link-account', async (_event, provider: string, tokenData: TokenData) => {
         try {
             const account = await authService.linkAccount(provider, tokenData);
             return { success: true, account };
@@ -87,9 +88,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             appLogger.error('AuthIPC', 'Failed to link account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    }));
 
-    ipcMain.handle('auth:unlink-account', async (_event, accountId: string) => {
+    ipcMain.handle('auth:unlink-account', createIpcHandler('auth:unlink-account', async (_event, accountId: string) => {
         try {
             await authService.unlinkAccount(accountId);
             return { success: true };
@@ -97,9 +98,9 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             appLogger.error('AuthIPC', 'Failed to unlink account', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    }));
 
-    ipcMain.handle('auth:unlink-provider', async (_event, provider: string) => {
+    ipcMain.handle('auth:unlink-provider', createIpcHandler('auth:unlink-provider', async (_event, provider: string) => {
         try {
             await authService.unlinkAllForProvider(provider);
             return { success: true };
@@ -107,7 +108,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
             appLogger.error('AuthIPC', 'Failed to unlink provider', error as Error);
             return { success: false, error: getErrorMessage(error as Error) };
         }
-    });
+    }));
 
     // Note: auth:has-linked-account is registered in batch handlers below
 

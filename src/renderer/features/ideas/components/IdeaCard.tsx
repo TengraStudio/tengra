@@ -88,6 +88,8 @@ export const IdeaCard = memo<IdeaCardProps>(({ idea, onClick }) => {
 
                             <button
                                 onClick={handleFlip}
+                                type="button"
+                                aria-label={t('ideas.idea.viewDetails')}
                                 className="text-sm text-muted-foreground/60 flex items-center gap-1 hover:text-primary transition-colors z-20"
                             >
                                 {t('ideas.idea.viewDetails')}
@@ -112,6 +114,8 @@ export const IdeaCard = memo<IdeaCardProps>(({ idea, onClick }) => {
                     </h3>
                     <button
                         onClick={handleFlip}
+                        type="button"
+                        aria-label={t('common.close')}
                         className="text-xs text-muted-foreground hover:text-foreground"
                     >
                         {t('common.close')}
@@ -135,6 +139,8 @@ export const IdeaCard = memo<IdeaCardProps>(({ idea, onClick }) => {
                     <div className="pt-2">
                         <button
                             onClick={onClick}
+                            type="button"
+                            aria-label={t('ideas.idea.openFullProject')}
                             className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-xs font-medium transition-colors"
                         >
                             {t('ideas.idea.openFullProject')}
@@ -147,6 +153,8 @@ export const IdeaCard = memo<IdeaCardProps>(({ idea, onClick }) => {
 
     return (
         <div
+            role="article"
+            aria-label={idea.title}
             className={cn(
                 'relative group perspective-1000 w-full h-[220px]', // Fixed height for flip
                 isHighPotential &&

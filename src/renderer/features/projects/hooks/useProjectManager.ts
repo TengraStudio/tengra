@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Folder, Project, TerminalTab } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 // PERF-002-1: Consolidate related state to reduce re-renders
 interface ProjectManagerState {
@@ -43,7 +44,7 @@ export function useProjectManager() {
             const data = await window.electron.db.getFolders();
             setState(prev => ({ ...prev, folders: data }));
         } catch (e) {
-            console.error('Failed to load folders:', e);
+            appLogger.error('ProjectManager', 'Failed to load folders', e as Error);
         }
     }, []);
 
@@ -78,7 +79,7 @@ export function useProjectManager() {
                 };
             });
         } catch (e) {
-            console.error('Failed to load projects:', e);
+            appLogger.error('ProjectManager', 'Failed to load projects', e as Error);
         }
     }, []);
 
@@ -87,18 +88,18 @@ export function useProjectManager() {
             await window.electron.db.createFolder(name);
             await loadFolders();
         } catch (e) {
-            console.error('Failed to create folder:', e);
+            appLogger.error('ProjectManager', 'Failed to create folder', e as Error);
         }
     }, [loadFolders]);
 
     const handleDeleteFolder = useCallback(async (id: string, onFolderDeleted?: () => void) => {
-        console.warn('Are you sure you want to delete this folder?');
+        appLogger.warn('ProjectManager', 'Are you sure you want to delete this folder?');
         try {
             await window.electron.db.deleteFolder(id);
             await loadFolders();
             if (onFolderDeleted) { onFolderDeleted(); }
         } catch (e) {
-            console.error('Failed to delete folder:', e);
+            appLogger.error('ProjectManager', 'Failed to delete folder', e as Error);
         }
     }, [loadFolders]);
 

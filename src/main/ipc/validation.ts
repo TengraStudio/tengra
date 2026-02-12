@@ -43,6 +43,15 @@ export const sshProfileSchema = sshConnectionSchema.extend({
     tags: z.array(z.string()).optional()
 });
 
+// --- Audit Schemas ---
+
+export const auditGetLogsOptionsSchema = z.object({
+    category: z.enum(['security', 'settings', 'authentication', 'data', 'system']).optional(),
+    startDate: z.number().int().nonnegative().optional(),
+    endDate: z.number().int().nonnegative().optional(),
+    limit: z.number().int().positive().optional()
+}).optional();
+
 export const fileOpSchema = z.object({
     connectionId: z.string(),
     path: z.string().min(1),

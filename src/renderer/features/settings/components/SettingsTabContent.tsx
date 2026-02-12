@@ -9,6 +9,7 @@ import {
     AppearanceTab,
     DeveloperTab,
     GeneralTab,
+    ImageSettingsTab,
     MCPSettingsTab,
     ModelsTab,
     ModelUsageLimitsTab,
@@ -69,6 +70,7 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
             />
         ),
         'mcp-servers': <MCPSettingsTab />,
+        images: <ImageSettingsTab {...sharedProps} />,
         gallery: (
             <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">
                 <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />

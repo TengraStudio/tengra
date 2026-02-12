@@ -13,6 +13,12 @@ interface TaskExecutionViewProps {
     onApprovePlan?: () => void;
     onRejectPlan?: () => void;
     t: (key: string, options?: Record<string, string | number>) => string;
+    /** AGT-HIL: Callbacks for step-level human-in-the-loop actions */
+    onApproveStep?: (stepId: string) => void;
+    onSkipStep?: (stepId: string) => void;
+    onEditStep?: (stepId: string, newText: string) => void;
+    onAddComment?: (stepId: string, comment: string) => void;
+    onInsertIntervention?: (afterStepId: string) => void;
 }
 
 export const TaskExecutionView: React.FC<TaskExecutionViewProps> = ({
@@ -23,7 +29,12 @@ export const TaskExecutionView: React.FC<TaskExecutionViewProps> = ({
     awaitingApproval,
     onApprovePlan,
     onRejectPlan,
-    t
+    t,
+    onApproveStep,
+    onSkipStep,
+    onEditStep,
+    onAddComment,
+    onInsertIntervention,
 }) => {
     return (
         <div className="h-full flex gap-4">
@@ -43,6 +54,11 @@ export const TaskExecutionView: React.FC<TaskExecutionViewProps> = ({
                         onApprove={onApprovePlan}
                         onReject={onRejectPlan}
                         t={t}
+                        onApproveStep={onApproveStep}
+                        onSkipStep={onSkipStep}
+                        onEditStep={onEditStep}
+                        onAddComment={onAddComment}
+                        onInsertIntervention={onInsertIntervention}
                     />
                 )}
 

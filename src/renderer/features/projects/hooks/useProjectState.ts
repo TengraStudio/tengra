@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { WorkspaceEntry } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export function useProjectState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
@@ -31,7 +32,7 @@ export function useProjectState() {
     }, []);
 
     const logActivity = useCallback((title: string, detail?: string) => {
-        console.warn(`[Activity] ${title}: ${detail}`);
+        appLogger.warn('Activity', `${title}: ${detail}`);
     }, []);
 
     return {

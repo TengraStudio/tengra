@@ -193,7 +193,7 @@ export class CodeIntelligenceService {
                 await this.chunkAndIndexFile(projectId, rootPath, filePath, content);
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to update index for ${filePath}:`, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to update index for ${filePath}`, error as Error);
         }
     }
 
@@ -211,7 +211,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan dir ${dir}:`, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to scan dir ${dir}`, error as Error);
         }
     }
 
@@ -245,7 +245,7 @@ export class CodeIntelligenceService {
 
                 await this.db.storeSemanticFragment(fragment);
             } catch (e) {
-                console.error(`[CodeIntelligence] Failed to chunk/embed ${path.basename(filePath)}`, e);
+                appLogger.error('CodeIntelligenceService', `Failed to chunk/embed ${path.basename(filePath)}`, e as Error);
             }
 
             start += (CHUNK_SIZE - OVERLAP);
@@ -272,7 +272,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to parse file ${filePath}:`, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to parse file ${filePath}`, error as Error);
         }
         return results;
     }
@@ -344,7 +344,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (e) {
-            console.warn('[CodeIntelligence] Index lookup failed, falling back to regex:', e);
+            appLogger.warn('CodeIntelligenceService', `Index lookup failed for ${query}, falling back to regex`, e as Error);
         }
 
         // 2. Fallback to Regex Scan
@@ -453,7 +453,7 @@ export class CodeIntelligenceService {
                 text: r.signature
             }));
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to get file dimensions for ${filePath}: `, error);
+            appLogger.error('CodeIntelligenceService', `Failed to get file dimensions for ${filePath}`, error as Error);
             return [];
         }
     }
@@ -496,7 +496,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan todos in ${dir}: `, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to scan todos in ${dir}`, error as Error);
         }
     }
 
@@ -529,7 +529,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan symbols in ${dir}: `, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to scan symbols in ${dir}`, error as Error);
         }
     }
 
@@ -569,7 +569,7 @@ export class CodeIntelligenceService {
                 }
             }
         } catch (error) {
-            console.error(`[CodeIntelligence] Failed to scan text in ${dir}: `, getErrorMessage(error as Error));
+            appLogger.error('CodeIntelligenceService', `Failed to scan text in ${dir}`, error as Error);
         }
     }
 }

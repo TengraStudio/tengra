@@ -1,73 +1,198 @@
 import { appLogger } from '@main/logging/logger';
 import { MemoryService } from '@main/services/llm/memory.service';
-import { ipcMain } from 'electron';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
+/** Maximum ID length */
+const MAX_ID_LENGTH = 128;
+/** Maximum content length (10KB) */
+const MAX_CONTENT_LENGTH = 10 * 1024;
+/** Maximum query length */
+const MAX_QUERY_LENGTH = 1024;
+/** Maximum tags count */
+const MAX_TAGS_COUNT = 20;
+/** Maximum tag length */
+const MAX_TAG_LENGTH = 64;
+/** Maximum field name length */
+const MAX_FIELD_LENGTH = 256;
 
-export function registerMemoryIpc(memoryService: MemoryService) {
+/**
+ * Validates a string ID
+ */
+function validateId(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_ID_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
 
-    // Get all memories for UI display
-    ipcMain.handle('memory:getAll', async () => {
-        try {
-            return await memoryService.getAllMemories();
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error getting memories:', e as Error);
-            return { facts: [], episodes: [], entities: [] };
-        }
-    });
+/**
+ * Validates content string
+ */
+function validateContent(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_CONTENT_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
 
-    // Delete a semantic fragment
-    ipcMain.handle('memory:deleteFact', async (_event, factId: string) => {
-        try {
-            const success = await memoryService.forgetFact(factId);
-            return { success };
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error deleting fact:', e as Error);
-            return { success: false, error: e instanceof Error ? e.message : String(e) };
-        }
-    });
+/**
+ * Validates a query string
+ */
+function validateQuery(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_QUERY_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
 
-    // Delete an entity fact
-    ipcMain.handle('memory:deleteEntity', async (_event, entityId: string) => {
-        try {
-            const success = await memoryService.removeEntityFact(entityId);
-            return { success };
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error deleting entity:', e as Error);
-            return { success: false, error: e instanceof Error ? e.message : String(e) };
-        }
-    });
+/**
+ * Validates a field name
+ */
+function validateField(value: unknown): string | null {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_FIELD_LENGTH) {
+        return null;
+    }
+    return trimmed;
+}
 
-    // Add a manual fact
-    ipcMain.handle('memory:addFact', async (_event, content: string, tags: string[] = []) => {
-        try {
-            const fragment = await memoryService.rememberFact(content, 'manual', 'user-added', tags);
-            return { success: true, id: fragment.id };
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error adding fact:', e as Error);
-            return { success: false, error: e instanceof Error ? e.message : String(e) };
-        }
-    });
+/**
+ * Validates and sanitizes tags array
+ */
+function validateTags(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .filter((tag): tag is string => typeof tag === 'string')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0 && tag.length <= MAX_TAG_LENGTH)
+        .slice(0, MAX_TAGS_COUNT);
+}
 
-    // Set entity fact
-    ipcMain.handle('memory:setEntityFact', async (_event, entityType: string, entityName: string, key: string, value: string) => {
-        try {
-            const knowledge = await memoryService.setEntityFact(entityType, entityName, key, value);
-            return { success: true, id: knowledge.id };
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error setting entity fact:', e as Error);
-            return { success: false, error: e instanceof Error ? e.message : String(e) };
-        }
-    });
+/**
+ * Registers IPC handlers for memory operations
+ */
+export function registerMemoryIpc(memoryService: MemoryService): void {
+    appLogger.info('MemoryIPC', 'Registering memory IPC handlers');
 
-    // Search memories
-    ipcMain.handle('memory:search', async (_event, query: string) => {
-        try {
-            const facts = await memoryService.recallRelevantFacts(query, 10);
-            const episodes = await memoryService.recallEpisodes(query, 5);
-            return { facts, episodes };
-        } catch (e) {
-            appLogger.error('[Memory IPC]', 'Error searching memories:', e as Error);
-            return { facts: [], episodes: [] };
-        }
-    });
+    ipcMain.handle(
+        'memory:getAll',
+        createSafeIpcHandler(
+            'memory:getAll',
+            async () => {
+                return await memoryService.getAllMemories();
+            },
+            { facts: [], episodes: [], entities: [] }
+        )
+    );
+
+    ipcMain.handle(
+        'memory:deleteFact',
+        createSafeIpcHandler(
+            'memory:deleteFact',
+            async (_event: IpcMainInvokeEvent, factIdRaw: unknown) => {
+                const factId = validateId(factIdRaw);
+                if (!factId) {
+                    throw new Error('Invalid fact ID');
+                }
+                const success = await memoryService.forgetFact(factId);
+                return { success };
+            },
+            { success: false }
+        )
+    );
+
+    ipcMain.handle(
+        'memory:deleteEntity',
+        createSafeIpcHandler(
+            'memory:deleteEntity',
+            async (_event: IpcMainInvokeEvent, entityIdRaw: unknown) => {
+                const entityId = validateId(entityIdRaw);
+                if (!entityId) {
+                    throw new Error('Invalid entity ID');
+                }
+                const success = await memoryService.removeEntityFact(entityId);
+                return { success };
+            },
+            { success: false }
+        )
+    );
+
+    ipcMain.handle(
+        'memory:addFact',
+        createSafeIpcHandler(
+            'memory:addFact',
+            async (_event: IpcMainInvokeEvent, contentRaw: unknown, tagsRaw: unknown) => {
+                const content = validateContent(contentRaw);
+                if (!content) {
+                    throw new Error('Invalid content');
+                }
+                const tags = validateTags(tagsRaw);
+                const fragment = await memoryService.rememberFact(content, 'manual', 'user-added', tags);
+                return { success: true, id: fragment.id };
+            },
+            { success: false, id: '' }
+        )
+    );
+
+    ipcMain.handle(
+        'memory:setEntityFact',
+        createSafeIpcHandler(
+            'memory:setEntityFact',
+            async (
+                _event: IpcMainInvokeEvent,
+                entityTypeRaw: unknown,
+                entityNameRaw: unknown,
+                keyRaw: unknown,
+                valueRaw: unknown
+            ) => {
+                const entityType = validateField(entityTypeRaw);
+                const entityName = validateField(entityNameRaw);
+                const key = validateField(keyRaw);
+                const value = validateContent(valueRaw);
+
+                if (!entityType || !entityName || !key || !value) {
+                    throw new Error('Invalid parameters');
+                }
+
+                const knowledge = await memoryService.setEntityFact(entityType, entityName, key, value);
+                return { success: true, id: knowledge.id };
+            },
+            { success: false, id: '' }
+        )
+    );
+
+    ipcMain.handle(
+        'memory:search',
+        createSafeIpcHandler(
+            'memory:search',
+            async (_event: IpcMainInvokeEvent, queryRaw: unknown) => {
+                const query = validateQuery(queryRaw);
+                if (!query) {
+                    throw new Error('Invalid query');
+                }
+                const facts = await memoryService.recallRelevantFacts(query, 10);
+                const episodes = await memoryService.recallEpisodes(query, 5);
+                return { facts, episodes };
+            },
+            { facts: [], episodes: [] }
+        )
+    );
 }

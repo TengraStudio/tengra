@@ -267,6 +267,45 @@ export interface DbStoreSemanticFragmentRequest {
 }
 
 // ============================================================================
+// Marketplace Model Types
+// ============================================================================
+
+/**
+ * Marketplace model from Ollama/HuggingFace
+ */
+export interface DbMarketplaceModel {
+    id: string
+    name: string
+    provider: 'ollama' | 'huggingface'
+    pulls?: string
+    tagCount: number
+    lastUpdated?: string
+    categories: string[]
+    shortDescription?: string
+    downloads?: number
+    likes?: number
+    author?: string
+    createdAt: number
+    updatedAt: number
+}
+
+export interface DbUpsertMarketplaceModelsRequest {
+    models: Omit<DbMarketplaceModel, 'createdAt' | 'updatedAt'>[]
+}
+
+export interface DbSearchMarketplaceModelsRequest {
+    query: string
+    provider?: 'ollama' | 'huggingface'
+    limit?: number
+}
+
+export interface DbGetMarketplaceModelsRequest {
+    provider?: 'ollama' | 'huggingface'
+    limit?: number
+    offset?: number
+}
+
+// ============================================================================
 // Stats Types
 // ============================================================================
 

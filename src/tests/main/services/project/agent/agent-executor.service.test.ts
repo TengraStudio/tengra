@@ -1,4 +1,3 @@
-
 import { AgentExecutorService } from '@main/services/project/agent/agent-executor.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentTaskState } from '@shared/types/agent-state';
@@ -79,22 +78,6 @@ describe('AgentExecutorService', () => {
     });
 
     it('should save checkpoint when state changes significantly', async () => {
-        // Transitions from 'executing' to 'waiting_llm'
-        // 'waiting_llm' is NOT in the auto-save list I defined in AgentExecutorService?
-        // Let's check the list: ['planning', 'executing', 'waiting_user']
-        // So 'waiting_llm' should NOT save checkpoint unless I update the list.
-
-        // Let's try a transition that DOES save.
-        // executing -> TASK_COMPLETE -> completed
-        // 'completed' is not in the list.
-
-        // executing -> PAUSE -> paused
-        // 'paused' is not in the list.
-
-        // Let's retry: executing -> TOOL_START -> waiting_tool
-
-        // Actually, let's test a case that SHOULD trigger it.
-        // If I am in 'initializing' and move to 'planning'.
         const initializingState = { ...mockState, state: 'initializing' as const };
         const planEvent = {
             type: 'TASK_VALIDATED',
@@ -120,17 +103,16 @@ describe('AgentExecutorService', () => {
         expect(mockPersistenceService.saveCheckpoint).not.toHaveBeenCalled();
     });
 
-    // TODO: Fix test expectation mismatch
-    // it('should resume from checkpoint', async () => {
-    //     const checkpointState = { ...mockState, currentStep: 3 };
-    //     mockPersistenceService.loadCheckpoint.mockResolvedValue(checkpointState);
+    it('should resume from checkpoint', async () => {
+        const checkpointState = { ...mockState, currentStep: 3 };
+        mockPersistenceService.loadCheckpoint = vi.fn().mockResolvedValue(checkpointState);
 
-    //     const resumedState = await executor.resumeFromCheckpoint('cp-123');
+        const resumedState = await executor.resumeFromCheckpoint('cp-123');
 
-    //     expect(resumedState.currentStep).toBe(3);
-    //     expect(mockPersistenceService.updateTaskState).toHaveBeenCalledWith(
-    //         'task-123',
-    //         checkpointState
-    //     );
-    // });
+        expect(resumedState.currentStep).toBe(3);
+        expect(mockPersistenceService.updateTaskState).toHaveBeenCalledWith(
+            'task-123',
+            checkpointState
+        );
+    });
 });

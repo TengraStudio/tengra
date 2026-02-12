@@ -75,7 +75,7 @@ export class UpdateService extends BaseService {
         });
 
         autoUpdater.on('error', (err) => {
-            console.error('Update error:', err);
+            this.logError('Update error', err);
             this.sendToWindow('update:status', { state: 'error', error: err.message });
         });
 

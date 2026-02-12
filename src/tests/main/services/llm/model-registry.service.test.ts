@@ -1,3 +1,4 @@
+import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -26,6 +27,7 @@ describe('ModelRegistryService', () => {
     let mockEventBus: Partial<EventBusService>;
     let mockAuthService: Partial<AuthService>;
     let mockTokenService: Partial<TokenService>;
+    let mockLocalImageService: Partial<LocalImageService>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -53,6 +55,7 @@ describe('ModelRegistryService', () => {
         mockEventBus = { emit: vi.fn() };
         mockAuthService = { getActiveToken: vi.fn().mockResolvedValue('test-token') };
         mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
+        mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
 
         service = new ModelRegistryService({
             processManager: mockProcessManager as ProcessManagerService,
@@ -61,7 +64,8 @@ describe('ModelRegistryService', () => {
             proxyService: mockProxyService as ProxyService,
             eventBus: mockEventBus as EventBusService,
             authService: mockAuthService as AuthService,
-            tokenService: mockTokenService as TokenService
+            tokenService: mockTokenService as TokenService,
+            localImageService: mockLocalImageService as LocalImageService
         });
     });
 

@@ -20,6 +20,7 @@ import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
+import { registerMarketplaceIpc } from '@main/ipc/marketplace';
 import { registerMcpIpc } from '@main/ipc/mcp';
 import { registerMcpMarketplaceHandlers } from '@main/ipc/mcp-marketplace';
 import { registerMemoryIpc } from '@main/ipc/memory';
@@ -103,6 +104,7 @@ export function registerIpcHandlers(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
+        ollamaScraperService: services.ollamaScraperService,
         proxyService: services.proxyService,
         rateLimitService: services.rateLimitService,
     });
@@ -210,6 +212,12 @@ export function registerIpcHandlers(
 
     // Theme Management
     registerThemeIpc(services.themeService);
+
+    // Marketplace
+    registerMarketplaceIpc({
+        marketplaceService: services.marketplaceService,
+        rateLimitService: services.rateLimitService,
+    });
 
     // Register Batch IPC
     registerBatchIpc();

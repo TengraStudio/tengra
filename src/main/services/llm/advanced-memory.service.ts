@@ -1028,11 +1028,24 @@ Return only the merged fact, no explanation.`;
 
         // Contains potential fact indicators
         const factIndicators = [
+            // English
             'i am', 'i\'m', 'my name', 'i prefer', 'i like', 'i use', 'i work',
             'i want', 'i need', 'always', 'never', 'usually', 'remember',
             'note that', 'keep in mind', 'don\'t forget', 'important:',
-            // Turkish indicators (for localized fact detection)
-            'benim', 'ben', 'adım', 'tercih', 'severim', 'kullanıyorum', 'çalışıyorum'
+            // Turkish
+            'benim', 'ben', 'adım', 'tercih', 'severim', 'kullanıyorum', 'çalışıyorum', 'istiyorum',
+            // German
+            'ich bin', 'mein name', 'ich bevorzuge', 'ich mag', 'ich nutze', 'ich arbeite', 'ich will', 'ich brauche',
+            // French
+            'je suis', 'je m\'appelle', 'je préfère', 'j’aime', 'j\'aime', 'j\'utilise', 'je travaille', 'je veux', 'j\'ai besoin',
+            // Spanish
+            'soy ', 'me llamo', 'prefiero', 'me gusta', 'uso ', 'trabajo', 'quiero', 'necesito',
+            // Arabic
+            'أنا', 'اسمي', 'أفضل', 'أحب', 'أستخدم', 'أعمل', 'أريد', 'أحتاج',
+            // Chinese
+            '我是', '我叫', '我更喜欢', '我喜欢', '我使用', '我在', '我想', '我需要',
+            // Japanese
+            '私は', '僕は', '俺は', '名前は', '好き', '使って', '働いて', 'したい', '必要'
         ];
 
         const lowerContent = content.toLowerCase();

@@ -23,6 +23,15 @@ const DEFAULT_SETTINGS: AppSettings = {
         downloadAutomatically: true,
         notifyOnly: false,
     },
+    images: {
+        provider: 'antigravity',
+        ollamaModel: 'stable-diffusion-v1-5',
+        sdWebUIUrl: 'http://127.0.0.1:7860',
+        comfyUIUrl: 'http://127.0.0.1:8188',
+        sdCppBinaryPath: '',
+        sdCppModelPath: '',
+        sdCppExtraArgs: '',
+    },
     activeAccountId: 'default',
     general: {
         language: 'en',
@@ -245,6 +254,11 @@ export class SettingsService extends BaseService {
             ...DEFAULT_SETTINGS,
             ...loaded,
             ollama: { ...DEFAULT_SETTINGS.ollama, ...(loaded.ollama ?? {}) },
+            images: {
+                ...DEFAULT_SETTINGS.images,
+                ...(loaded.images ?? {}),
+                provider: loaded.images?.provider ?? DEFAULT_SETTINGS.images?.provider ?? 'antigravity',
+            },
             autoUpdate: this.mergeAutoUpdate(loaded.autoUpdate),
             general: { ...DEFAULT_SETTINGS.general, ...(loaded.general ?? {}) },
             github: this.mergeProvider(authAccounts, 'github', loaded.github),

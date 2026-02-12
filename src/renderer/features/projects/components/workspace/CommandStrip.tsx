@@ -10,10 +10,67 @@ interface CommandStripProps {
     branchName?: string;
     notificationCount?: number;
     status?: 'ready' | 'busy' | 'error';
-    encoding?: string;
-    languageName?: string;
+    activeFilePath?: string;
+    activeFileContent?: string;
+    activeFileType?: 'code' | 'image';
     onCommandClick?: () => void;
     onMouseDown?: (e: React.MouseEvent) => void;
+}
+
+const LANGUAGE_BY_EXTENSION: Record<string, string> = {
+    c: 'C',
+    cpp: 'C++',
+    cs: 'C#',
+    css: 'CSS',
+    go: 'Go',
+    html: 'HTML',
+    java: 'Java',
+    js: 'JavaScript',
+    json: 'JSON',
+    jsx: 'JavaScript React',
+    md: 'Markdown',
+    php: 'PHP',
+    py: 'Python',
+    rb: 'Ruby',
+    rs: 'Rust',
+    sh: 'Shell',
+    sql: 'SQL',
+    ts: 'TypeScript',
+    tsx: 'TypeScript React',
+    txt: 'Plain Text',
+    xml: 'XML',
+    yaml: 'YAML',
+    yml: 'YAML',
+};
+
+function detectLanguageName(path?: string): string {
+    if (!path) {
+        return 'Plain Text';
+    }
+
+    const extension = path.split('.').pop()?.toLowerCase();
+    if (!extension) {
+        return 'Plain Text';
+    }
+
+    return LANGUAGE_BY_EXTENSION[extension] ?? extension.toUpperCase();
+}
+
+function detectEncoding(content?: string): string {
+    if (!content || content.length === 0) {
+        return 'UTF-8';
+    }
+
+    if (content.charCodeAt(0) === 0xfeff) {
+        return 'UTF-8 BOM';
+    }
+
+    if (content.includes('\u0000')) {
+        return 'UTF-16/32';
+    }
+
+    const isAscii = [...content].every(char => char.charCodeAt(0) <= 0x7f);
+    return isAscii ? 'ASCII' : 'UTF-8';
 }
 
 export const CommandStrip: React.FC<CommandStripProps> = ({
@@ -22,12 +79,22 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     branchName = 'main',
     notificationCount = 0,
     status = 'ready',
-    encoding = 'UTF-8',
-    languageName = 'Plain Text',
+    activeFilePath,
+    activeFileContent,
+    activeFileType = 'code',
     onCommandClick: _onCommandClick,
     onMouseDown,
 }) => {
     const { t } = useTranslation(language);
+    const shouldShowFileMeta = Boolean(activeFilePath) && activeFileType === 'code';
+    const detectedEncoding = React.useMemo(
+        () => detectEncoding(activeFileContent),
+        [activeFileContent]
+    );
+    const detectedLanguageName = React.useMemo(
+        () => detectLanguageName(activeFilePath),
+        [activeFilePath]
+    );
 
     return (
         <div
@@ -68,17 +135,21 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
 
             {/* Right: System Stats */}
             <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
-                    <span>
-                        {t('workspace.encoding')}: {encoding}
-                    </span>
-                </div>
-                <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
-                    <span>
-                        {t('workspace.language')}: {languageName}
-                    </span>
-                </div>
-                <div className="w-px h-3 bg-white/10" />
+                {shouldShowFileMeta && (
+                    <>
+                        <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
+                            <span>
+                                {t('workspace.encoding')}: {detectedEncoding}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 hover:text-foreground cursor-pointer transition-colors">
+                            <span>
+                                {t('workspace.language')}: {detectedLanguageName}
+                            </span>
+                        </div>
+                        <div className="w-px h-3 bg-white/10" />
+                    </>
+                )}
                 <button className="flex items-center gap-1.5 hover:text-foreground transition-colors relative">
                     <Bell className="w-3 h-3" />
                     {notificationCount > 0 && (

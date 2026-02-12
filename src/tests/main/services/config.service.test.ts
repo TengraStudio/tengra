@@ -58,4 +58,75 @@ describe('ConfigService', () => {
 
         expect(configService.get('NON_EXISTENT', 'default_val')).toBe('default_val');
     });
+
+    describe('setConfig', () => {
+        it('should store value in runtime cache', () => {
+            configService.setConfig('NEW_KEY', 'new_value');
+            expect(configService.get('NEW_KEY')).toBe('new_value');
+        });
+
+        it('should override environment variables', () => {
+            process.env.OVERRIDE_TEST = 'env_value';
+            configService.setConfig('OVERRIDE_TEST', 'runtime_value');
+            expect(configService.get('OVERRIDE_TEST')).toBe('runtime_value');
+        });
+    });
+
+    describe('getOrThrow', () => {
+        it('should return value when key exists', () => {
+            configService.setConfig('REQUIRED_KEY', 'required_value');
+            expect(configService.getOrThrow('REQUIRED_KEY')).toBe('required_value');
+        });
+
+        it('should throw when key is missing', () => {
+            expect(() => configService.getOrThrow('MISSING_KEY')).toThrow('Missing configuration for key: MISSING_KEY');
+        });
+
+        it('should throw when value is empty string', () => {
+            configService.setConfig('EMPTY_KEY', '');
+            expect(() => configService.getOrThrow('EMPTY_KEY')).toThrow('Missing configuration for key: EMPTY_KEY');
+        });
+
+        it('should throw when value is null', () => {
+            configService.setConfig('NULL_KEY', null);
+            expect(() => configService.getOrThrow('NULL_KEY')).toThrow('Missing configuration for key: NULL_KEY');
+        });
+    });
+
+    describe('getDatabasePath', () => {
+        it('should return DATABASE_PATH from env', () => {
+            process.env.DATABASE_PATH = '/custom/path/db.sqlite';
+            expect(configService.getDatabasePath()).toBe('/custom/path/db.sqlite');
+        });
+
+        it('should return default when DATABASE_PATH not set', () => {
+            delete process.env.DATABASE_PATH;
+            expect(configService.getDatabasePath()).toBe('default-Tandem.db');
+        });
+    });
+
+    describe('initialize', () => {
+        it('should cache common environment variables', async () => {
+            process.env.NODE_ENV = 'test';
+            process.env.LOG_LEVEL = 'debug';
+            process.env.API_TIMEOUT = '5000';
+
+            const newService = new ConfigService(mockSettingsService as SettingsService);
+            await newService.initialize();
+
+            expect(newService.get('NODE_ENV')).toBe('test');
+            expect(newService.get('LOG_LEVEL')).toBe('debug');
+            expect(newService.get('API_TIMEOUT')).toBe('5000');
+        });
+    });
+
+    describe('cleanup', () => {
+        it('should clear the cache', async () => {
+            configService.setConfig('TEMP_KEY', 'temp_value');
+            await configService.cleanup();
+
+            // After cleanup, should fall back to default
+            expect(configService.get('TEMP_KEY', 'default')).toBe('default');
+        });
+    });
 });

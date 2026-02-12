@@ -1,4 +1,5 @@
 import { Project } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export interface ProjectActionsProps {
     project: Project;
@@ -23,7 +24,7 @@ export function useProjectActions({
                 await window.electron.db.updateProject(project.id, updates);
             }
         } catch (error) {
-            console.error('[ProjectActions] Update failed:', error);
+            appLogger.error('ProjectActions', 'Update failed', error as Error);
             notify('error', t('projectDashboard.updateFailed'));
         }
     };

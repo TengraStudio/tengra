@@ -6,6 +6,12 @@ import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { IpcValue } from '@shared/types/common';
 import { ipcMain } from 'electron';
 
+/**
+ * Registers IPC handlers for proxy operations including quota retrieval, authentication, and model listing.
+ * @param proxyService - The proxy service instance for handling proxy operations
+ * @param _processManager - Optional proxy process manager (reserved for future use)
+ * @param _authService - Optional auth service (reserved for future use)
+ */
 export function registerProxyIpc(proxyService: ProxyService, _processManager?: ProxyProcessManager, _authService?: AuthService) {
     // Register batchable quota handlers for efficient batch loading
     registerBatchableHandler('getQuota', async (): Promise<IpcValue> => {

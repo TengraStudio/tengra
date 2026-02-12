@@ -1,63 +1,159 @@
 import { appLogger } from '@main/logging/logger';
 import { ProcessService } from '@main/services/system/process.service';
-import { getErrorMessage } from '@shared/utils/error.util';
-import { ipcMain } from 'electron';
+import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
+const MAX_COMMAND_LENGTH = 1024;
+const MAX_PATH_LENGTH = 4096;
+const MAX_ID_LENGTH = 64;
+const MAX_DATA_LENGTH = 65536;
+const MAX_ARGS = 100;
+const MAX_COLS = 1000;
+const MAX_ROWS = 500;
+
+/**
+ * Validates and sanitizes a command string, blocking shell control characters.
+ * @param value - Raw command input to validate
+ * @returns Trimmed command string or null if invalid
+ */
+function validateCommand(value: unknown): string | null {
+    if (typeof value !== 'string') {return null;}
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_COMMAND_LENGTH) {return null;}
+    // Security: Block shell control characters (SEC-001-3)
+    if (/[;&|`$(){}<>]/.test(trimmed)) {return null;}
+    return trimmed;
+}
+
+/**
+ * Validates a file system path string.
+ * @param value - Raw path input to validate
+ * @returns Trimmed path string or null if invalid
+ */
+function validatePath(value: unknown): string | null {
+    if (typeof value !== 'string') {return null;}
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_PATH_LENGTH) {return null;}
+    return trimmed;
+}
+
+/**
+ * Validates a process identifier string.
+ * @param value - Raw ID input to validate
+ * @returns Trimmed ID string or null if invalid
+ */
+function validateId(value: unknown): string | null {
+    if (typeof value !== 'string') {return null;}
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > MAX_ID_LENGTH) {return null;}
+    return trimmed;
+}
+
+/**
+ * Validates and sanitizes an array of command arguments.
+ * @param value - Raw arguments array to validate
+ * @returns Sanitized array of string arguments
+ */
+function validateArgs(value: unknown): string[] {
+    if (!Array.isArray(value)) {return [];}
+    return value
+        .slice(0, MAX_ARGS)
+        .filter((arg): arg is string => typeof arg === 'string')
+        .map(arg => arg.slice(0, MAX_COMMAND_LENGTH));
+}
+
+/**
+ * Validates a numeric value within a given range.
+ * @param value - Raw numeric input to validate
+ * @param min - Minimum allowed value (inclusive)
+ * @param max - Maximum allowed value (inclusive)
+ * @returns Floored integer or null if invalid
+ */
+function validateNumber(value: unknown, min: number, max: number): number | null {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {return null;}
+    if (value < min || value > max) {return null;}
+    return Math.floor(value);
+}
+
+/**
+ * Registers IPC handlers for process management
+ */
 export const registerProcessIpc = (processService: ProcessService) => {
-    ipcMain.handle('process:spawn', async (_, command: string, args: string[], cwd: string) => {
-        try {
-            // Security: Validate command (SEC-001-3)
-            if (/[;&|`$(){}<>]/.test(command)) {
-                throw new Error('Invalid command: Shell control characters are not allowed');
+    appLogger.info('ProcessIPC', 'Registering process IPC handlers');
+
+    ipcMain.handle('process:spawn', createSafeIpcHandler('process:spawn',
+        async (_event: IpcMainInvokeEvent, commandRaw: unknown, argsRaw: unknown, cwdRaw: unknown) => {
+            const command = validateCommand(commandRaw);
+            if (!command) {
+                throw new Error('Invalid command: must be a non-empty string without shell control characters');
             }
 
-            // Note: processService.spawn handles argument quoting internally.
-
-            // However, we should validate that 'command' is just a command and not a shell string.
-            // If command contains spaces, it might be interpreted wrongly if not handled carefully.
-            // But usually 'command' here is the executable path/name.
+            const args = validateArgs(argsRaw);
+            const cwd = validatePath(cwdRaw) ?? process.cwd();
 
             return processService.spawn(command, args, cwd);
-        } catch (error) {
-            appLogger.error('process', '[IPC] process:spawn failed:', getErrorMessage(error as Error));
-            return null;
-        }
-    });
+        }, null
+    ));
 
-    ipcMain.handle('process:kill', async (_, id: string) => {
-        try {
+    ipcMain.handle('process:kill', createSafeIpcHandler('process:kill',
+        async (_event: IpcMainInvokeEvent, idRaw: unknown) => {
+            const id = validateId(idRaw);
+            if (!id) {
+                throw new Error('Invalid process ID');
+            }
             return processService.kill(id);
-        } catch (error) {
-            appLogger.error('process', '[IPC] process:kill failed:', getErrorMessage(error as Error));
-            return false;
-        }
-    });
+        }, false
+    ));
 
-    ipcMain.handle('process:list', async () => {
-        try {
+    ipcMain.handle('process:list', createSafeIpcHandler('process:list',
+        async () => {
             return processService.getRunningTasks();
-        } catch (error) {
-            appLogger.error('process', '[IPC] process:list failed:', getErrorMessage(error as Error));
-            return [];
-        }
-    });
+        }, []
+    ));
 
-    ipcMain.handle('process:scan-scripts', async (_, rootPath: string) => {
-        try {
+    ipcMain.handle('process:scan-scripts', createSafeIpcHandler('process:scan-scripts',
+        async (_event: IpcMainInvokeEvent, rootPathRaw: unknown) => {
+            const rootPath = validatePath(rootPathRaw);
+            if (!rootPath) {
+                throw new Error('Invalid root path');
+            }
             return await processService.scanScripts(rootPath);
-        } catch (error) {
-            appLogger.error('process', '[IPC] process:scan-scripts failed:', getErrorMessage(error as Error));
-            return {};
-        }
-    });
+        }, {}
+    ));
 
-    ipcMain.handle('process:resize', (_, id: string, cols: number, rows: number) => {
-        processService.resize(id, cols, rows);
-    });
+    ipcMain.handle('process:resize', createSafeIpcHandler('process:resize',
+        async (_event: IpcMainInvokeEvent, idRaw: unknown, colsRaw: unknown, rowsRaw: unknown) => {
+            const id = validateId(idRaw);
+            if (!id) {
+                throw new Error('Invalid process ID');
+            }
 
-    ipcMain.handle('process:write', (_, id: string, data: string) => {
-        processService.write(id, data);
-    });
+            const cols = validateNumber(colsRaw, 1, MAX_COLS);
+            const rows = validateNumber(rowsRaw, 1, MAX_ROWS);
+            if (cols === null || rows === null) {
+                throw new Error('Invalid dimensions');
+            }
+
+            processService.resize(id, cols, rows);
+            return true;
+        }, false
+    ));
+
+    ipcMain.handle('process:write', createSafeIpcHandler('process:write',
+        async (_event: IpcMainInvokeEvent, idRaw: unknown, dataRaw: unknown) => {
+            const id = validateId(idRaw);
+            if (!id) {
+                throw new Error('Invalid process ID');
+            }
+
+            if (typeof dataRaw !== 'string' || dataRaw.length > MAX_DATA_LENGTH) {
+                throw new Error('Invalid data');
+            }
+
+            processService.write(id, dataRaw);
+            return true;
+        }, false
+    ));
 
     // Bridge events
     // We need a way to send 'data' and 'exit' events to the renderer.
@@ -81,6 +177,10 @@ export const registerProcessIpc = (processService: ProcessService) => {
 
 import { BrowserWindow } from 'electron';
 
+/**
+ * Sets up process data and exit event forwarding to all renderer windows with buffered output.
+ * @param processService - The process service instance to listen for events on
+ */
 export const setupProcessEvents = (processService: ProcessService) => {
     const buffers = new Map<string, string>();
     let timer: NodeJS.Timeout | null = null;

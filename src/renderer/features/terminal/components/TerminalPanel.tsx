@@ -10,6 +10,7 @@ import { Plus, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { appLogger } from '@/utils/renderer-logger';
 
 import { TerminalConnectionSelector } from './TerminalConnectionSelector';
 
@@ -80,7 +81,7 @@ export const TerminalPanel: React.FC = () => {
                     sessions: [...prev.sessions, newSession],
                 }));
             } catch (error) {
-                console.error('Failed to create terminal:', error);
+                appLogger.error('TerminalPanel', 'Failed to create terminal', error as Error);
             }
         },
         [t, panelState.sessions.length]
@@ -136,7 +137,7 @@ export const TerminalPanel: React.FC = () => {
                 terminalRefs.current.delete(sessionId);
             }
         } catch (error) {
-            console.error('Failed to close terminal:', error);
+            appLogger.error('TerminalPanel', 'Failed to close terminal', error as Error);
         }
     };
 

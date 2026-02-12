@@ -48,17 +48,44 @@ describe('Repository-DB Integration', () => {
         dataService = new DataService();
         const mockEventBus = { emit: vi.fn(), on: vi.fn(), off: vi.fn() } as any;
 
+        // Create an in-memory folder store for the mock
+        const folderStore = new Map<string, any>();
+
         const mockDatabaseClient = {
             initialize: vi.fn().mockResolvedValue(undefined),
             isConnected: vi.fn().mockReturnValue(true),
             executeQuery: vi.fn().mockImplementation(async (req) => {
-                if (req.sql.includes('SELECT') && req.sql.includes('folders')) {
-                    if (req.sql.includes('id =')) {
-                        return { rows: [{ id: 'mock-id', name: 'Test Folder', color: '#ff0000', created_at: Date.now(), updated_at: Date.now() }], affected_rows: 1 };
+                const sql = req.sql.toLowerCase();
+                
+                // Handle SELECT queries for folders
+                if (sql.includes('select') && sql.includes('folders')) {
+                    if (sql.includes('where') && sql.includes('id')) {
+                        // findById query
+                        const id = req.params?.[0];
+                        const folder = folderStore.get(id);
+                        return folder ? { rows: [folder], affected_rows: 1 } : { rows: [], affected_rows: 0 };
                     }
-                    return { rows: [], affected_rows: 0 };
+                    // findAll query
+                    return { rows: Array.from(folderStore.values()), affected_rows: folderStore.size };
                 }
-                return { rows: [], affected_rows: 1 };
+                
+                // Handle INSERT queries for folders
+                if (sql.includes('insert') && sql.includes('folders')) {
+                    const id = req.params?.[0] || 'mock-id-' + Date.now();
+                    const name = req.params?.[1] || 'Unknown';
+                    const color = req.params?.[2];
+                    const now = Date.now();
+                    const folder = { id, name, color, created_at: now, updated_at: now };
+                    folderStore.set(id, folder);
+                    return { rows: [folder], affected_rows: 1 };
+                }
+                
+                // Handle UPDATE queries for folders
+                if (sql.includes('update') && sql.includes('folders')) {
+                    return { rows: [], affected_rows: 1 };
+                }
+                
+                return { rows: [], affected_rows: 0 };
             })
         } as any;
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { ServiceResponse, SSHFile } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface SFTPBrowserProps {
     connectionId: string
@@ -49,7 +50,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
     };
 
     const handleDelete = async (item: SSHFile) => {
-        console.warn(t('ssh.confirmDeleteFile', { name: item.name }));
+        appLogger.warn('SFTPBrowser', t('ssh.confirmDeleteFile', { name: item.name }));
 
         const path = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
         const result = item.isDirectory
@@ -65,20 +66,20 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
 
     const handleMkdir = async () => {
         const name = 'new-folder'; // Replaced prompt with default name
-        console.warn(t('ssh.newFolderName'));
+        appLogger.warn('SFTPBrowser', t('ssh.newFolderName'));
 
         const path = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
         const result = await window.electron.ssh.mkdir(connectionId, path);
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 
     const handleRename = async (item: SSHFile) => {
         const newName = item.name; // Replaced prompt with original name
-        console.warn(t('ssh.newName'));
+        appLogger.warn('SFTPBrowser', t('ssh.newName'));
 
         const oldPath = currentPath === '/' ? `/${item.name}` : `${currentPath}/${item.name}`;
         const newPath = currentPath === '/' ? `/${newName}` : `${currentPath}/${newName}`;
@@ -87,13 +88,13 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            appLogger.warn('SFTPBrowser', t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 
     const handleDownload = async (item: SSHFile) => {
         // Simple download trigger
-        console.warn(t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)');
+        appLogger.warn('SFTPBrowser', t('ssh.downloadTriggered', { name: item.name }) + ' (Implementation pending file picker)');
     };
 
     return (

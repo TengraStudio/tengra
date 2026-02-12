@@ -8,6 +8,8 @@
 
 import type { Monaco } from '@monaco-editor/react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 // Initialization state
 let isInitialized = false;
 let initPromise: Promise<boolean> | null = null;
@@ -34,7 +36,7 @@ const TEXTMATE_LANGUAGES = new Set([
  * For full TextMate grammar support, additional WASM loading would be needed
  */
 export async function initTextMateSupport(monaco: Monaco): Promise<boolean> {
-    if (isInitialized) {return true;}
+    if (isInitialized) { return true; }
 
     if (initPromise) {
         return initPromise;
@@ -188,10 +190,10 @@ export async function initTextMateSupport(monaco: Monaco): Promise<boolean> {
             }
 
             isInitialized = true;
-            console.warn('[TextMate] Additional language support initialized');
+            appLogger.info('TextMate', 'Additional language support initialized');
             return true;
         } catch (error) {
-            console.error('[TextMate] Failed to initialize:', error);
+            appLogger.error('TextMate', 'Failed to initialize', error as Error);
             return false;
         }
     })();

@@ -6,6 +6,7 @@ export * from '@renderer/features/settings/components/BrowserClosureModal';
 export * from '@renderer/features/settings/components/DeveloperTab';
 export * from '@renderer/features/settings/components/DeviceCodeModal';
 export * from '@renderer/features/settings/components/GeneralTab';
+export * from '@renderer/features/settings/components/ImageSettingsTab';
 export * from '@renderer/features/settings/components/ManualSessionModal';
 export * from '@renderer/features/settings/components/MCPSettingsTab';
 export * from '@renderer/features/settings/components/ModelsTab';

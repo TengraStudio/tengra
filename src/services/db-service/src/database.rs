@@ -378,6 +378,27 @@ impl Database {
                     updated_at INTEGER NOT NULL
                 );
             "#),
+            (9, "add_marketplace_models_table", r#"
+                -- Marketplace models table for Ollama/HuggingFace model catalog
+                CREATE TABLE IF NOT EXISTS marketplace_models (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    provider TEXT NOT NULL,
+                    pulls TEXT,
+                    tag_count INTEGER DEFAULT 0,
+                    last_updated TEXT,
+                    categories TEXT DEFAULT '[]',
+                    short_description TEXT,
+                    downloads INTEGER,
+                    likes INTEGER,
+                    author TEXT,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_marketplace_models_provider ON marketplace_models(provider);
+                CREATE INDEX IF NOT EXISTS idx_marketplace_models_name ON marketplace_models(name);
+                CREATE INDEX IF NOT EXISTS idx_marketplace_models_updated_at ON marketplace_models(updated_at DESC);
+            "#),
         ]
     }
 
@@ -1227,6 +1248,197 @@ impl Database {
                 affected_rows: affected,
             })
         }
+    }
+
+    // ========================================================================
+    // Marketplace Model Operations
+    // ========================================================================
+
+    pub async fn upsert_marketplace_models(&self, models: Vec<MarketplaceModel>) -> Result<usize> {
+        let conn = self.conn.lock().await;
+        let now = chrono::Utc::now().timestamp_millis();
+        let mut count = 0;
+
+        for model in models {
+            conn.execute(
+                "INSERT INTO marketplace_models (id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON CONFLICT(id) DO UPDATE SET
+                    pulls = excluded.pulls,
+                    tag_count = excluded.tag_count,
+                    last_updated = excluded.last_updated,
+                    categories = excluded.categories,
+                    short_description = excluded.short_description,
+                    downloads = excluded.downloads,
+                    likes = excluded.likes,
+                    updated_at = excluded.updated_at",
+                params![
+                    model.id,
+                    model.name,
+                    model.provider,
+                    model.pulls,
+                    model.tag_count,
+                    model.last_updated,
+                    serde_json::to_string(&model.categories).unwrap_or_else(|_| "[]".to_string()),
+                    model.short_description,
+                    model.downloads,
+                    model.likes,
+                    model.author,
+                    now,
+                    now,
+                ],
+            )?;
+            count += 1;
+        }
+
+        Ok(count)
+    }
+
+    pub async fn get_marketplace_models(&self, provider: Option<&str>, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<MarketplaceModel>> {
+        let conn = self.conn.lock().await;
+
+        let sql = if let Some(p) = provider {
+            format!(
+                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
+                 FROM marketplace_models WHERE provider = '{}' ORDER BY updated_at DESC LIMIT {} OFFSET {}",
+                p, limit.unwrap_or(100), offset.unwrap_or(0)
+            )
+        } else {
+            format!(
+                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
+                 FROM marketplace_models ORDER BY updated_at DESC LIMIT {} OFFSET {}",
+                limit.unwrap_or(100), offset.unwrap_or(0)
+            )
+        };
+
+        let mut stmt = conn.prepare(&sql)?;
+        let rows = stmt.query_map([], |row| {
+            Ok(MarketplaceModel {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                provider: row.get(2)?,
+                pulls: row.get(3)?,
+                tag_count: row.get(4)?,
+                last_updated: row.get(5)?,
+                categories: row.get::<_, Option<String>>(6)?
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default(),
+                short_description: row.get(7)?,
+                downloads: row.get(8)?,
+                likes: row.get(9)?,
+                author: row.get(10)?,
+                created_at: row.get(11)?,
+                updated_at: row.get(12)?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().context("Failed to fetch marketplace models")
+    }
+
+    pub async fn search_marketplace_models(&self, query: &str, provider: Option<&str>, limit: Option<i64>) -> Result<Vec<MarketplaceModel>> {
+        let conn = self.conn.lock().await;
+        let search_pattern = format!("%{}%", query.to_lowercase());
+        let limit_val = limit.unwrap_or(50);
+
+        let mut models = Vec::new();
+
+        if let Some(p) = provider {
+            let sql = format!(
+                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
+                 FROM marketplace_models
+                 WHERE provider = ?1 AND (LOWER(name) LIKE ?2 OR LOWER(short_description) LIKE ?2 OR categories LIKE ?2)
+                 ORDER BY updated_at DESC LIMIT {}",
+                limit_val
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let rows = stmt.query_map(params![p, &search_pattern], |row| {
+                Ok(MarketplaceModel {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    provider: row.get(2)?,
+                    pulls: row.get(3)?,
+                    tag_count: row.get(4)?,
+                    last_updated: row.get(5)?,
+                    categories: row.get::<_, Option<String>>(6)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default(),
+                    short_description: row.get(7)?,
+                    downloads: row.get(8)?,
+                    likes: row.get(9)?,
+                    author: row.get(10)?,
+                    created_at: row.get(11)?,
+                    updated_at: row.get(12)?,
+                })
+            })?;
+            for row in rows {
+                models.push(row?);
+            }
+        } else {
+            let sql = format!(
+                "SELECT id, name, provider, pulls, tag_count, last_updated, categories, short_description, downloads, likes, author, created_at, updated_at
+                 FROM marketplace_models
+                 WHERE LOWER(name) LIKE ?1 OR LOWER(short_description) LIKE ?1 OR categories LIKE ?1
+                 ORDER BY updated_at DESC LIMIT {}",
+                limit_val
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let rows = stmt.query_map(params![&search_pattern], |row| {
+                Ok(MarketplaceModel {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    provider: row.get(2)?,
+                    pulls: row.get(3)?,
+                    tag_count: row.get(4)?,
+                    last_updated: row.get(5)?,
+                    categories: row.get::<_, Option<String>>(6)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default(),
+                    short_description: row.get(7)?,
+                    downloads: row.get(8)?,
+                    likes: row.get(9)?,
+                    author: row.get(10)?,
+                    created_at: row.get(11)?,
+                    updated_at: row.get(12)?,
+                })
+            })?;
+            for row in rows {
+                models.push(row?);
+            }
+        }
+
+        Ok(models)
+    }
+
+    pub async fn get_marketplace_model_count(&self, provider: Option<&str>) -> Result<i64> {
+        let conn = self.conn.lock().await;
+
+        let count: i64 = if let Some(p) = provider {
+            conn.query_row(
+                "SELECT COUNT(*) FROM marketplace_models WHERE provider = ?",
+                [p],
+                |row| row.get(0),
+            )?
+        } else {
+            conn.query_row(
+                "SELECT COUNT(*) FROM marketplace_models",
+                [],
+                |row| row.get(0),
+            )?
+        };
+
+        Ok(count)
+    }
+
+    pub async fn clear_marketplace_models(&self, provider: Option<&str>) -> Result<usize> {
+        let conn = self.conn.lock().await;
+
+        let affected = if let Some(p) = provider {
+            conn.execute("DELETE FROM marketplace_models WHERE provider = ?", [p])?
+        } else {
+            conn.execute("DELETE FROM marketplace_models", [])?
+        };
+
+        Ok(affected)
     }
 }
 

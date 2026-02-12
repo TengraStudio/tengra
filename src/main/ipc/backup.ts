@@ -42,6 +42,9 @@ export function registerBackupIpc(backupService: BackupService) {
             mergeChats?: boolean
         }
     ): Promise<RestoreResult> => {
+        if (!backupPath || typeof backupPath !== 'string' || backupPath.trim().length === 0) {
+            throw new Error('backupPath must be a non-empty string');
+        }
         return backupService.restoreBackup(backupPath, options);
     }));
 
@@ -55,6 +58,9 @@ export function registerBackupIpc(backupService: BackupService) {
         _event: IpcMainInvokeEvent,
         backupPath: string
     ): Promise<boolean> => {
+        if (!backupPath || typeof backupPath !== 'string' || backupPath.trim().length === 0) {
+            throw new Error('backupPath must be a non-empty string');
+        }
         return backupService.deleteBackup(backupPath);
     }));
 

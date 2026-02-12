@@ -24,7 +24,10 @@ interface ProjectSettingsPanelProps {
     onRemoveMount: (id: string) => void
 }
 
-export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
+/**
+ * Project settings surface with section-based navigation.
+ */
+const ProjectSettingsPanelBase: React.FC<ProjectSettingsPanelProps> = ({
     project, onUpdate, language, availableAgents, onAddMount, onRemoveMount
 }) => {
     const { t } = useTranslation(language);
@@ -40,7 +43,10 @@ export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
     } = useProjectSettingsForm(project, onUpdate);
 
     return (
-        <div className="h-full flex flex-col bg-background/50 backdrop-blur-md overflow-hidden">
+        <section
+            aria-label="Project settings panel"
+            className="h-full flex flex-col bg-background/50 backdrop-blur-md overflow-hidden"
+        >
             <SettingsHeader
                 t={t}
                 projectTitle={project.title}
@@ -56,7 +62,7 @@ export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
                     t={t}
                 />
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-8" aria-label="Project settings content">
                     <div className="max-w-3xl mx-auto space-y-10">
                         {activeSection === 'general' && (
                             <GeneralSection formData={formData} setFormData={setFormData} t={t} />
@@ -93,8 +99,11 @@ export const ProjectSettingsPanel: React.FC<ProjectSettingsPanelProps> = ({
                             <AdvancedSection formData={formData} setFormData={setFormData} t={t} />
                         )}
                     </div>
-                </div>
+                </main>
             </div>
-        </div>
+        </section>
     );
 };
+
+export const ProjectSettingsPanel = React.memo(ProjectSettingsPanelBase);
+ProjectSettingsPanel.displayName = 'ProjectSettingsPanel';

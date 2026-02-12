@@ -171,4 +171,45 @@ describe('AuditLogService', () => {
             expect(mockDbService.clearAuditLogs).toHaveBeenCalled();
         });
     });
+
+    describe('initialize', () => {
+        it('should migrate legacy logs when file exists', async () => {
+            const legacyLogs = [
+                { timestamp: 1000, action: 'test', category: 'security', success: true }
+            ];
+            vi.mocked(fs.existsSync).mockReturnValue(true);
+            vi.mocked(fs.promises.readFile).mockResolvedValue(JSON.stringify(legacyLogs));
+            vi.mocked(fs.promises.rename).mockResolvedValue(undefined);
+
+            const testService = new AuditLogService(mockDbService);
+            await testService.initialize();
+
+            expect(mockDbService.addAuditLog).toHaveBeenCalledWith(legacyLogs[0]);
+            expect(fs.promises.rename).toHaveBeenCalled();
+        });
+
+        it('should skip migration when legacy file does not exist', async () => {
+            vi.mocked(fs.existsSync).mockReturnValue(false);
+
+            const testService = new AuditLogService(mockDbService);
+            await testService.initialize();
+
+            expect(mockDbService.addAuditLog).not.toHaveBeenCalled();
+            expect(fs.promises.rename).not.toHaveBeenCalled();
+        });
+
+        it('should handle migration errors gracefully', async () => {
+            vi.mocked(fs.existsSync).mockReturnValue(true);
+            vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('Read error'));
+            vi.mocked(fs.promises.rename).mockResolvedValue(undefined);
+
+            const testService = new AuditLogService(mockDbService);
+            await testService.initialize();
+
+            expect(fs.promises.rename).toHaveBeenCalledWith(
+                expect.stringContaining('audit.log'),
+                expect.stringContaining('.migrated_failed')
+            );
+        });
+    });
 });

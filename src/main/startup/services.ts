@@ -43,6 +43,7 @@ import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
+import { MarketplaceService } from '@main/services/llm/marketplace.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import {
@@ -56,12 +57,15 @@ import {
     getOllamaHealthService,
     OllamaHealthService,
 } from '@main/services/llm/ollama-health.service';
+import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
+import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
+import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { DockerService } from '@main/services/project/docker.service';
 import { GitService } from '@main/services/project/git.service';
@@ -103,7 +107,6 @@ import { ThemeService } from '@main/services/theme/theme.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
-import { Logger } from '@main/utils/logger';
 import { JsonObject } from '@shared/types/common';
 
 // Export the container instance so it can be accessed if needed
@@ -197,6 +200,8 @@ export interface Services {
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
     terminalSmartService: TerminalSmartService;
+    ollamaScraperService: OllamaScraperService;
+    marketplaceService: MarketplaceService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -209,7 +214,7 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
         appLogger.error('Startup', `Failed to migrate data service: ${error}`);
     }
 
-    Logger.init(dataService.getPath('logs'));
+    appLogger.init(dataService.getPath('logs'));
 
     // 2. Register Service Groups
     registerSystemServices(allowedFileRoots);
@@ -431,7 +436,11 @@ function registerLLMServices() {
     container.register('localAIService', ss => new LocalAIService(ss as SettingsService), [
         'settingsService',
     ]);
-    container.register('llamaService', ds => new LlamaService(ds as DataService), ['dataService']);
+    container.register(
+        'llamaService',
+        (ds, lis) => new LlamaService(ds as DataService, lis as LocalImageService),
+        ['dataService', 'localImageService']
+    );
     container.register('ollamaService', ss => new OllamaService(ss as SettingsService), [
         'settingsService',
     ]);
@@ -521,33 +530,31 @@ function registerLLMServices() {
     );
     container.register(
         'localImageService',
-        (ss, as, ls, qs) =>
-            new LocalImageService(
-                ss as SettingsService,
-                as as AuthService,
-                ls as LLMService,
-                qs as QuotaService
-            ),
-        ['settingsService', 'authService', 'llmService', 'quotaService']
+        (...args: unknown[]) => {
+            const [ss, ebs, as, ls, qs, ts] = args;
+            return new LocalImageService({
+                settingsService: ss as SettingsService,
+                eventBusService: ebs as EventBusService,
+                authService: as as AuthService,
+                llmService: ls as LLMService,
+                quotaService: qs as QuotaService,
+                telemetryService: ts as TelemetryService,
+            });
+        },
+        ['settingsService', 'eventBusService', 'authService', 'llmService', 'quotaService', 'telemetryService']
     );
 
     // Model Registry Bundle
     container.register(
         'modelRegistryDeps',
-        (pm, js, ss, ps, ebs) => ({
-            processManager: pm as ProcessManagerService,
-            jobScheduler: js as JobSchedulerService,
-            settingsService: ss as SettingsService,
-            proxyService: ps as ProxyService,
-            eventBus: ebs as EventBusService,
-        }),
-        [
-            'processManagerService',
-            'jobSchedulerService',
-            'settingsService',
-            'proxyService',
-            'eventBusService',
-        ]
+        () => ({
+            processManager: container.resolve<ProcessManagerService>('processManagerService'),
+            jobScheduler: container.resolve<JobSchedulerService>('jobSchedulerService'),
+            settingsService: container.resolve<SettingsService>('settingsService'),
+            proxyService: container.resolve<ProxyService>('proxyService'),
+            eventBus: container.resolve<EventBusService>('eventBusService'),
+            localImageService: container.resolve<LocalImageService>('localImageService')
+        })
     );
     container.register(
         'modelRegistryService',
@@ -585,13 +592,19 @@ function registerLazyServices() {
         const localImageService = container.resolve<LocalImageService>('localImageService');
         const imagePersistenceService =
             container.resolve<ImagePersistenceService>('imagePersistenceService');
+        const authService = container.resolve<AuthService>('authService');
+        const quotaService = container.resolve<QuotaService>('quotaService');
+        const modelRegistryService = container.resolve<ModelRegistryService>('modelRegistryService');
         const { LogoService } = await import('@main/services/external/logo.service');
-        return new LogoService(
+        return new LogoService({
             llmService,
             projectService,
             localImageService,
-            imagePersistenceService
-        );
+            imagePersistenceService,
+            authService,
+            quotaService,
+            modelRegistryService
+        });
     });
 
     lazyServiceRegistry.register('scannerService', async () => {
@@ -602,6 +615,23 @@ function registerLazyServices() {
     lazyServiceRegistry.register('pageSpeedService', async () => {
         const { PageSpeedService } = await import('@main/services/analysis/pagespeed.service');
         return new PageSpeedService();
+    });
+
+    lazyServiceRegistry.register('ollamaScraperService', async () => {
+        const { OllamaScraperService } = await import('@main/services/llm/ollama-scraper.service');
+        return new OllamaScraperService();
+    });
+
+    lazyServiceRegistry.register('marketplaceService', async () => {
+        const databaseClient = container.resolve<DatabaseClientService>('databaseClientService');
+        const ollamaScraper = await lazyServiceRegistry.get<OllamaScraperService>('ollamaScraperService');
+        const jobScheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
+        const { MarketplaceService } = await import('@main/services/llm/marketplace.service');
+        return new MarketplaceService({
+            databaseClient,
+            ollamaScraper,
+            jobScheduler,
+        });
     });
 }
 
@@ -616,6 +646,12 @@ function registerLazyProxies() {
     );
     container.register('pageSpeedService', () =>
         createLazyServiceProxy<PageSpeedService>('pageSpeedService')
+    );
+    container.register('ollamaScraperService', () =>
+        createLazyServiceProxy<OllamaScraperService>('ollamaScraperService')
+    );
+    container.register('marketplaceService', () =>
+        createLazyServiceProxy<MarketplaceService>('marketplaceService')
     );
 }
 
@@ -645,9 +681,6 @@ function registerProjectServices() {
         (dbs, es) => new CodeIntelligenceService(dbs as DatabaseService, es as EmbeddingService),
         ['databaseService', 'embeddingService']
     );
-    container.register('localImageService', ss => new LocalImageService(ss as SettingsService), [
-        'settingsService',
-    ]);
     // Logo and Market Research services are now lazy-loaded
     container.register('projectScaffoldService', () => new ProjectScaffoldService());
     container.register('marketResearchService', ws => new MarketResearchService(ws as WebService), [
@@ -697,21 +730,39 @@ function registerProjectServices() {
         ['databaseService']
     );
     container.register(
+        'agentCollaborationService',
+        ls => new AgentCollaborationService({ llm: ls as LLMService }),
+        ['llmService']
+    );
+    container.register(
+        'agentTemplateService',
+        dbs => new AgentTemplateService({ database: dbs as DatabaseService }),
+        ['databaseService']
+    );
+    container.register(
         'projectAgentService',
-        (dbs, ls, ebs, ars, acs) =>
-            new ProjectAgentService(
-                dbs as DatabaseService,
-                ls as LLMService,
-                ebs as EventBusService,
-                ars as AgentRegistryService,
-                acs as AgentCheckpointService
-            ),
+        (...deps) => {
+            const [dbs, ls, ebs, ars, acs, gs, col, tpl] = deps;
+            return new ProjectAgentService({
+                databaseService: dbs as DatabaseService,
+                llmService: ls as LLMService,
+                eventBus: ebs as EventBusService,
+                agentRegistryService: ars as AgentRegistryService,
+                agentCheckpointService: acs as AgentCheckpointService,
+                gitService: gs as GitService,
+                agentCollaborationService: col as AgentCollaborationService,
+                agentTemplateService: tpl as AgentTemplateService,
+            });
+        },
         [
             'databaseService',
             'llmService',
             'eventBusService',
             'agentRegistryService',
             'agentCheckpointService',
+            'gitService',
+            'agentCollaborationService',
+            'agentTemplateService',
         ]
     );
     container.register(
@@ -985,6 +1036,8 @@ function buildServicesMap(
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
+        ollamaScraperService: createLazyServiceProxy<OllamaScraperService>('ollamaScraperService'),
+        marketplaceService: createLazyServiceProxy<MarketplaceService>('marketplaceService'),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

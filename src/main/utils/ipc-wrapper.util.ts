@@ -4,16 +4,28 @@ import { JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
 
+/**
+ * Standard IPC response format used by wrapped handlers.
+ */
 export interface IpcResponse<T = JsonValue> {
+    /** Whether the operation was successful */
     success: boolean;
+    /** The result data on success */
     data?: T;
+    /** Error details on failure */
     error?: {
+        /** Human-readable error message */
         message: string;
+        /** Application-specific error code */
         code: string;
+        /** Additional error context */
         context?: Record<string, JsonValue | Error>;
     };
 }
 
+/**
+ * Configuration options for the IPC handler wrapper.
+ */
 export interface IpcHandlerOptions {
     /**
      * If true, wraps the response in { success: true, data: result } format.
@@ -28,10 +40,22 @@ export interface IpcHandlerOptions {
 
 let ipcEventBus: EventBusService | null = null;
 
+/**
+ * Sets the Event Bus service used for IPC lifecycle events.
+ * @param eventBus - The EventBusService instance or null to disable
+ */
 export function setIpcEventBus(eventBus: EventBusService | null): void {
     ipcEventBus = eventBus;
 }
 
+/**
+ * Emits an IPC lifecycle event to the event bus.
+ *
+ * @param phase - The lifecycle phase (started, succeeded, failed)
+ * @param handlerName - The name of the IPC handler
+ * @param durationMs - Time elapsed during execution
+ * @param errorMessage - Error message if phase is 'failed'
+ */
 function emitIpcLifecycleEvent(
     phase: 'started' | 'succeeded' | 'failed',
     handlerName: string,

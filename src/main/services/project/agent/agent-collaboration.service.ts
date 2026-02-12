@@ -15,7 +15,6 @@ import { LLMService } from '@main/services/llm/llm.service';
 import {
     ConsensusResult,
     ModelRoutingRule,
-    ModelVote,
     ProjectStep,
     StepModelConfig,
     TaskType,
@@ -266,14 +265,15 @@ export class AgentCollaborationService extends BaseService {
     /**
      * Submit a vote from a model
      */
-    async submitVote(
-        sessionId: string,
-        modelId: string,
-        provider: string,
-        decision: string,
-        confidence: number,
-        reasoning?: string
-    ): Promise<VotingSession | null> {
+    async submitVote(options: {
+        sessionId: string;
+        modelId: string;
+        provider: string;
+        decision: string;
+        confidence: number;
+        reasoning?: string;
+    }): Promise<VotingSession | null> {
+        const { sessionId, modelId, provider, decision, confidence, reasoning } = options;
         const session = this.votingSessions.get(sessionId);
         if (!session) {
             appLogger.warn('AgentCollaboration', `Voting session not found: ${sessionId}`);
@@ -355,14 +355,14 @@ Respond with a JSON object:
                         confidence: number;
                         reasoning?: string;
                     };
-                    await this.submitVote(
+                    await this.submitVote({
                         sessionId,
-                        model,
+                        modelId: model,
                         provider,
-                        parsed.decision,
-                        parsed.confidence,
-                        parsed.reasoning
-                    );
+                        decision: parsed.decision,
+                        confidence: parsed.confidence,
+                        reasoning: parsed.reasoning
+                    });
                 }
             } catch (error) {
                 appLogger.warn(
@@ -536,7 +536,7 @@ Respond with a JSON object:
 
         for (let i = 0; i < outputs.length; i++) {
             let foundGroup = false;
-            for (const [groupId, members] of groups) {
+            for (const [, members] of groups) {
                 const similarity = this.calculateStringSimilarity(
                     outputs[i].output,
                     members[0]

@@ -35,7 +35,7 @@ export class GitService {
     }
 
     async commit(cwd: string, message: string) {
-        return await this.execute(`commit - m "${message}"`, cwd);
+        return await this.execute(`commit -m "${message}"`, cwd);
     }
 
     async push(cwd: string, remote: string = 'origin', branch: string = 'main') {
@@ -165,7 +165,7 @@ export class GitService {
     }
 
     async unstageFile(cwd: string, filePath: string) {
-        return await this.execute(`reset HEAD-- "${filePath}"`, cwd);
+        return await this.execute(`reset HEAD -- "${filePath}"`, cwd);
     }
 
     async getCommitDiff(cwd: string, hash: string): Promise<{ diff: string; success: boolean; error?: string }> {

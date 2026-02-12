@@ -60,7 +60,8 @@ import '@xyflow/react/dist/style.css';
 
 const PLAN_NODE_X_OFFSET_PX = 80;
 const PLAN_NODE_Y_OFFSET_PX = 420;
-const PLAN_NODE_X_STEP_DRIFT_PX = 36;
+const PLAN_NODE_LANE_SPACING_PX = 260;
+const PLAN_NODE_X_STEP_DRIFT_PX = 18;
 const PLAN_NODE_Y_STEP_SPACING_PX = 170;
 
 const getPlanNodeId = (taskNodeId: string, stepId: string) => `plan-node-${taskNodeId}-${stepId}`;
@@ -78,7 +79,7 @@ const isAutoPlanEdgeForTask = (edge: Edge, taskNodeId: string): boolean =>
  * CommandCenter - A floating dock for centralizing canvas controls
  */
 interface CommandCenterProps {
-    onAddNode: (type: 'planner' | 'action') => void;
+    onAddNode: (type: 'planner' | 'action' | 'fork' | 'join' | 'create-pr') => void;
 }
 
 const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
@@ -156,6 +157,27 @@ const CommandCenter: React.FC<CommandCenterProps> = ({ onAddNode }) => {
                             <Zap className="w-4 h-4 text-warning" />
                             <span>{t('agents.addAction')}</span>
                         </button>
+                        <button
+                            onClick={() => onAddNode('fork')}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                        >
+                            <Zap className="w-4 h-4 text-info" />
+                            <span>Fork Node</span>
+                        </button>
+                        <button
+                            onClick={() => onAddNode('join')}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                        >
+                            <Zap className="w-4 h-4 text-warning" />
+                            <span>Join Node</span>
+                        </button>
+                        <button
+                            onClick={() => onAddNode('create-pr')}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                        >
+                            <Zap className="w-4 h-4 text-success" />
+                            <span>Create PR</span>
+                        </button>
                     </PopoverContent>
                 </Popover>
             </div>
@@ -167,7 +189,7 @@ interface ContextMenuProps {
     x: number;
     y: number;
     onClose: () => void;
-    onAddNode: (type: 'planner' | 'action') => void;
+    onAddNode: (type: 'planner' | 'action' | 'fork' | 'join' | 'create-pr') => void;
 }
 
 /**
@@ -177,7 +199,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
     const { t } = useTranslation();
     const [showSubMenu, setShowSubMenu] = useState(false);
 
-    const handleAddNode = (type: 'planner' | 'action') => {
+    const handleAddNode = (type: 'planner' | 'action' | 'fork' | 'join' | 'create-pr') => {
         onAddNode(type);
         onClose();
     };
@@ -231,6 +253,27 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onAddNode }) =
                                 >
                                     <Zap className="w-4 h-4 text-warning-400" />
                                     <span>{t('agents.addAction')}</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAddNode('fork')}
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                                >
+                                    <Zap className="w-4 h-4 text-info" />
+                                    <span>Fork Node</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAddNode('join')}
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                                >
+                                    <Zap className="w-4 h-4 text-warning" />
+                                    <span>Join Node</span>
+                                </button>
+                                <button
+                                    onClick={() => handleAddNode('create-pr')}
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/10 rounded-lg text-sm transition-colors text-left"
+                                >
+                                    <Zap className="w-4 h-4 text-success" />
+                                    <span>Create PR</span>
                                 </button>
                             </motion.div>
                         )}
@@ -306,6 +349,7 @@ const useProjectAgentState = (
                                             plan: projectState.plan,
                                             history: projectState.history,
                                             currentTask: projectState.currentTask,
+                                            taskId: projectState.taskId,
                                             totalTokens: projectState.totalTokens,
                                             timing: projectState.timing,
                                             // Restore model config if node doesn't have it
@@ -349,6 +393,7 @@ const useProjectAgentState = (
                                             plan: projectState.plan,
                                             history: projectState.history,
                                             currentTask: projectState.currentTask,
+                                            taskId: projectState.taskId,
                                             totalTokens: projectState.totalTokens,
                                             timing: projectState.timing,
                                             // Restore model config
@@ -453,6 +498,7 @@ const useProjectAgentState = (
                 plan: projectState.plan,
                 history: projectState.history,
                 currentTask: projectState.currentTask,
+                taskId: projectState.taskId,
                 totalTokens: projectState.totalTokens,
                 timing: projectState.timing,
                 isExpanded: true,
@@ -509,6 +555,7 @@ const InternalProjectAgentView: React.FC = () => {
                 const generatedPlanNodes: Node[] = steps.map((step, index) => {
                     const nodeId = getPlanNodeId(taskNodeId, step.id);
                     const existing = existingById.get(nodeId);
+                    const lane = step.parallelLane ?? 0;
 
                     return {
                         id: nodeId,
@@ -517,6 +564,7 @@ const InternalProjectAgentView: React.FC = () => {
                             x:
                                 taskNode.position.x +
                                 PLAN_NODE_X_OFFSET_PX +
+                                lane * PLAN_NODE_LANE_SPACING_PX +
                                 index * PLAN_NODE_X_STEP_DRIFT_PX,
                             y:
                                 taskNode.position.y +
@@ -530,6 +578,9 @@ const InternalProjectAgentView: React.FC = () => {
                             status: step.status,
                             stepIndex: index + 1,
                             stepId: step.id,
+                            stepType: step.type ?? 'task',
+                            lane,
+                            dependsOn: step.dependsOn ?? [],
                             planParentId: taskNodeId,
                             autoPlanNode: true,
                         },
@@ -548,28 +599,43 @@ const InternalProjectAgentView: React.FC = () => {
                 }
 
                 const generatedEdges: Edge[] = [];
+                const stepIdSet = new Set(steps.map(step => step.id));
 
-                const firstPlanNodeId = getPlanNodeId(taskNodeId, steps[0].id);
-                generatedEdges.push({
-                    id: getPlanEdgeId(taskNodeId, firstPlanNodeId),
-                    source: taskNodeId,
-                    target: firstPlanNodeId,
-                    type: 'animated',
-                    animated: true,
-                    data: { isActive: true, autoPlanEdge: true, planParentId: taskNodeId },
-                });
-
-                for (let i = 0; i < steps.length - 1; i += 1) {
-                    const source = getPlanNodeId(taskNodeId, steps[i].id);
-                    const target = getPlanNodeId(taskNodeId, steps[i + 1].id);
-                    generatedEdges.push({
-                        id: getPlanEdgeId(source, target),
-                        source,
-                        target,
-                        type: 'animated',
-                        animated: true,
-                        data: { isActive: true, autoPlanEdge: true, planParentId: taskNodeId },
-                    });
+                for (const step of steps) {
+                    const target = getPlanNodeId(taskNodeId, step.id);
+                    const dependencies = (step.dependsOn ?? []).filter(depId => stepIdSet.has(depId));
+                    if (dependencies.length === 0) {
+                        generatedEdges.push({
+                            id: getPlanEdgeId(taskNodeId, target),
+                            source: taskNodeId,
+                            target,
+                            type: 'animated',
+                            animated: true,
+                            data: {
+                                isActive: true,
+                                autoPlanEdge: true,
+                                planParentId: taskNodeId,
+                                dependencyType: 'root',
+                            },
+                        });
+                        continue;
+                    }
+                    for (const dependencyId of dependencies) {
+                        const source = getPlanNodeId(taskNodeId, dependencyId);
+                        generatedEdges.push({
+                            id: getPlanEdgeId(source, target),
+                            source,
+                            target,
+                            type: 'animated',
+                            animated: true,
+                            data: {
+                                isActive: true,
+                                autoPlanEdge: true,
+                                planParentId: taskNodeId,
+                                dependencyType: 'step',
+                            },
+                        });
+                    }
                 }
 
                 return [...withoutTaskPlanEdges, ...generatedEdges];
@@ -623,6 +689,7 @@ const InternalProjectAgentView: React.FC = () => {
                                 history: projectState.history,
                                 totalTokens: projectState.totalTokens,
                                 timing: projectState.timing,
+                                taskId: projectState.taskId,
                                 isExpanded: projectState.status === 'waiting_for_approval',
                                 activeTab: 'plan',
                                 // Restore model config from task state
@@ -745,15 +812,33 @@ const InternalProjectAgentView: React.FC = () => {
         [setEdges]
     );
     const onAddNode = useCallback(
-        (type: 'planner' | 'action', position?: { x: number; y: number }) => {
+        (type: 'planner' | 'action' | 'fork' | 'join' | 'create-pr', position?: { x: number; y: number }) => {
             const id = `node-${Date.now()}`;
+            const label =
+                type === 'planner'
+                    ? 'New Plan'
+                    : type === 'action'
+                        ? 'New Action'
+                        : type === 'fork'
+                            ? 'Fork'
+                            : type === 'join'
+                                ? 'Join'
+                                : 'Create PR';
             const newNode: Node = {
                 id,
                 position: position ?? { x: Math.random() * 400, y: Math.random() * 400 },
                 data: {
-                    label: type === 'planner' ? 'New Plan' : 'New Action',
+                    label,
                     taskType: type,
                     status: 'idle',
+                    description:
+                        type === 'fork'
+                            ? 'Split execution into parallel branches'
+                            : type === 'join'
+                                ? 'Wait for all parallel branches before continuing'
+                                : type === 'create-pr'
+                                    ? 'Generate and open GitHub pull request URL for the active task'
+                                : undefined,
                 },
                 type: 'task',
             };
@@ -773,7 +858,7 @@ const InternalProjectAgentView: React.FC = () => {
     }, []);
 
     const handleContextAddNode = useCallback(
-        (type: 'planner' | 'action') => {
+        (type: 'planner' | 'action' | 'fork' | 'join' | 'create-pr') => {
             if (menu) {
                 // Convert screen coordinates to flow coordinates
                 const flowPos = screenToFlowPosition({ x: menu.x, y: menu.y });

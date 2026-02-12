@@ -100,6 +100,8 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
 
         return (
             <div
+                role="group"
+                aria-label="Chat input"
                 className={cn(
                     'p-4 border-t border-border/50 bg-background/50 backdrop-blur-sm relative z-30',
                     ctrl.isDragging && 'ring-2 ring-primary/50 border-primary/50'
@@ -141,6 +143,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                         <div className="relative">
                             <button
+                                type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
                                 title={ctrl.t('input.attachFile')}
@@ -158,6 +161,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         </div>
 
                         <button
+                            type="button"
                             onClick={ctrl.isListening ? ctrl.stopListening : ctrl.startListening}
                             className={cn(
                                 'p-2 rounded-lg transition-all',
@@ -370,6 +374,7 @@ const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     );
     return (
         <button
+            type="button"
             onClick={() => {
                 void ctrl.handleEnhancePrompt();
             }}
@@ -396,6 +401,7 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     );
     return (
         <button
+            type="button"
             onClick={
                 isLoading
                     ? ctrl.stopGeneration

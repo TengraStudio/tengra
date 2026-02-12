@@ -8,6 +8,7 @@ import * as path from 'path';
 
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
+import { LocalImageService } from '@main/services/llm/local-image.service';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
@@ -16,6 +17,16 @@ interface LlamaConfig {
     gpuLayers?: number          // -1 = auto, 0 = CPU only
     contextSize?: number        // Default 8192
     batchSize?: number          // Default 512
+    ubatchSize?: number         // Physical micro-batch size
+    parallel?: number           // Concurrent decoding slots
+    threads?: number            // Decode threads
+    threadsBatch?: number       // Prompt processing threads
+    flashAttn?: boolean         // Enable flash attention
+    continuousBatching?: boolean // Enable continuous batching
+    mlock?: boolean             // Lock model in RAM
+    mmap?: boolean              // Enable mmap (true by default)
+    defragThold?: number        // KV defrag threshold
+    metrics?: boolean           // Expose runtime metrics
     port?: number               // Server port, default 8080
     host?: string               // Server host, default 127.0.0.1
     backend?: 'auto' | 'cpu' | 'cuda' | 'vulkan' | 'metal'
@@ -39,12 +50,16 @@ export class LlamaService extends BaseService {
         gpuLayers: -1,
         contextSize: 8192,
         batchSize: 512,
+        flashAttn: true,
+        continuousBatching: true,
+        mlock: true,
+        mmap: true,
         port: 8080,
         host: '127.0.0.1',
         backend: 'auto'
     };
 
-    constructor(dataService?: DataService) {
+    constructor(dataService?: DataService, private localImageService?: LocalImageService) {
         super('LlamaService');
         // Get paths
         try {
@@ -65,6 +80,19 @@ export class LlamaService extends BaseService {
             this.binDir = path.join(process.cwd(), 'resources', 'bin');
         } else {
             this.binDir = path.join(process.resourcesPath, 'bin');
+        }
+    }
+
+    override async initialize(): Promise<void> {
+        // sd-cpp is now a core runtime component. Kick off startup installation/check
+        // in background so app boot is not blocked by model downloads.
+        if (this.localImageService) {
+            void this.localImageService
+                .ensureSDCppReady()
+                .then(() => this.logInfo('sd-cpp runtime is ready'))
+                .catch(error =>
+                    this.logWarn(`sd-cpp startup check failed: ${getErrorMessage(error as Error)}`)
+                );
         }
     }
 
@@ -99,6 +127,11 @@ export class LlamaService extends BaseService {
 
     async loadModel(modelPath: string, config?: LlamaConfig): Promise<{ success: boolean; error?: string }> {
         try {
+            if (this.localImageService) {
+                // Keep llama-cpp and sd-cpp lifecycle aligned.
+                await this.localImageService.ensureSDCppReady();
+            }
+
             // Check if llama-server exists
             const serverPath = this.getServerPath();
             if (!fs.existsSync(serverPath)) {
@@ -158,20 +191,50 @@ export class LlamaService extends BaseService {
             '--port', this.serverPort.toString(),
             '--host', this.serverHost,
             '--ctx-size', (this.config.contextSize ?? 4096).toString(),
-            '--n-gpu-layers', (this.config.gpuLayers ?? -1).toString(),
-            '--flash-attn',
-            '--cont-batching',
-            '--mlock',
+            '--batch-size', (this.config.batchSize ?? 512).toString(),
         ];
 
-        if (this.config.gpuLayers !== undefined && this.config.gpuLayers >= 0) {
-            args.push('--gpu-layers', this.config.gpuLayers.toString());
-        } else {
-            args.push('--gpu-layers', '999');
+        const gpuLayers = this.config.backend === 'cpu' ? 0 : (this.config.gpuLayers ?? -1);
+        args.push('--n-gpu-layers', gpuLayers.toString());
+
+        if (this.config.ubatchSize !== undefined) {
+            args.push('--ubatch-size', this.config.ubatchSize.toString());
         }
 
-        if (this.config.backend === 'cpu') {
-            args.push('--gpu-layers', '0');
+        if (this.config.parallel !== undefined) {
+            args.push('--parallel', this.config.parallel.toString());
+        }
+
+        if (this.config.threads !== undefined) {
+            args.push('--threads', this.config.threads.toString());
+        }
+
+        if (this.config.threadsBatch !== undefined) {
+            args.push('--threads-batch', this.config.threadsBatch.toString());
+        }
+
+        if (this.config.defragThold !== undefined) {
+            args.push('--defrag-thold', this.config.defragThold.toString());
+        }
+
+        if (this.config.flashAttn ?? true) {
+            args.push('--flash-attn');
+        }
+
+        if (this.config.continuousBatching ?? true) {
+            args.push('--cont-batching');
+        }
+
+        if (this.config.mlock ?? true) {
+            args.push('--mlock');
+        }
+
+        if ((this.config.mmap ?? true) === false) {
+            args.push('--no-mmap');
+        }
+
+        if (this.config.metrics) {
+            args.push('--metrics');
         }
 
         return args;

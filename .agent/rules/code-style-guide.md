@@ -23,7 +23,7 @@ You are an expert software engineer working on **Tandem**. You MUST follow these
 - **ALWAYS** use `useMemo` and `useCallback` for any computation or function in React components.
 - **ALWAYS** implement `dispose()` or cleanup for resources and effects.
 - **ALWAYS** batch IPC calls. Never call IPC in a loop.
-- **ALWAYS** update `docs/TODO.md` (mark `[x]`, DO NOT DELETE) and `docs/CHANGELOG.md`.
+- **ALWAYS** update `docs/TODO.md` (mark `[x]`, DO NOT DELETE) and structured changelog source (`docs/changelog/data/changelog.entries.json`), then run `npm run changelog:sync`.
 
 ## 🛠 REQUIRED WORKFLOW
 1.  **Understand**: Read the task and relevant code.
@@ -43,3 +43,4 @@ You are an expert software engineer working on **Tandem**. You MUST follow these
 - **Naming**: `kebab-case.service.ts`, `kebab-case.component.tsx`.
 
 > "Failure to follow these rules is a failure of the mission." - Tandem Command
+

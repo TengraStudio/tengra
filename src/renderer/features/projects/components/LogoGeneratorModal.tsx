@@ -73,7 +73,34 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                     if (!mounted) {
                         return;
                     }
-                    const imageModels = allModels.filter(m => m.capabilities?.image_generation);
+                    const hasAntigravity = await window.electron.hasLinkedAccount('antigravity');
+                    const hasOpenAI =
+                        (await window.electron.hasLinkedAccount('openai')) ||
+                        (await window.electron.hasLinkedAccount('codex'));
+                    const hasNvidia = await window.electron.hasLinkedAccount('nvidia');
+
+                    const providerAllowed = (providerRaw: string) => {
+                        const provider = providerRaw.toLowerCase();
+                        if (provider === 'ollama') {
+                            return true;
+                        }
+                        if (provider === 'antigravity' || provider === 'google') {
+                            return hasAntigravity;
+                        }
+                        if (provider === 'openai' || provider === 'codex') {
+                            return hasOpenAI;
+                        }
+                        if (provider === 'nvidia') {
+                            return hasNvidia;
+                        }
+                        return false;
+                    };
+
+                    const imageModels = allModels.filter(
+                        m =>
+                            m.capabilities?.image_generation &&
+                            providerAllowed(m.provider ?? '')
+                    );
                     setModels(imageModels);
                     if (imageModels.length > 0 && !model) {
                         setModel(imageModels[0].id);
@@ -121,22 +148,24 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={t('projects.aiLogoGenerator') || 'Logo Generator'}
-            className="max-w-4xl h-[80vh] flex flex-col"
+            title={t('projects.logoUpload')}
+            width="auto"
+            height="auto"
+            className="flex flex-col"
         >
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-6 p-6">
+            <div className="h-full grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6 overflow-hidden">
                 {/* Left Panel: Controls */}
-                <div className="w-full md:w-1/3 flex flex-col gap-6 overflow-y-auto pr-2">
-                    <div className="w-full">
-                        <div className="flex items-center p-1 bg-muted rounded-lg mb-4">
+                <div className="min-h-0 rounded-2xl border border-border/60 bg-muted/20 p-4 overflow-y-auto">
+                    <div className="w-full space-y-5">
+                        <div className="flex items-center p-1 bg-background/80 border border-border/60 rounded-xl">
                             <button
-                                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${activeTab === 'generate' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'generate' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                                 onClick={() => setActiveTab('generate')}
                             >
                                 {t('common.generate') || 'Generate'}
                             </button>
                             <button
-                                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${activeTab === 'upload' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-1 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'upload' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                                 onClick={() => setActiveTab('upload')}
                             >
                                 {t('common.upload') || 'Upload'}
@@ -146,38 +175,42 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                         {activeTab === 'generate' && (
                             <div className="space-y-6 mt-4">
                                 {/* Mode Selection */}
-                                <div className="space-y-4">
-                                    <Label>Generation Mode</Label>
+                                <div className="space-y-3">
+                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                        {t('projects.generationMode')}
+                                    </Label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <Button
                                             variant={mode === 'auto' ? 'default' : 'outline'}
                                             onClick={() => setMode('auto')}
-                                            className="justify-start"
+                                            className="justify-start h-10"
                                         >
                                             <Sparkles className="w-4 h-4 mr-2" />
-                                            Auto
+                                            {t('common.auto')}
                                         </Button>
                                         <Button
                                             variant={mode === 'manual' ? 'default' : 'outline'}
                                             onClick={() => setMode('manual')}
-                                            className="justify-start"
+                                            className="justify-start h-10"
                                         >
                                             <Wand2 className="w-4 h-4 mr-2" />
-                                            Manual
+                                            {t('common.manual')}
                                         </Button>
                                     </div>
                                 </div>
 
                                 {/* Model Selection */}
-                                <div className="space-y-2">
-                                    <Label>AI Model</Label>
+                                <div className="space-y-2.5">
+                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                        {t('projects.aiModel')}
+                                    </Label>
                                     <Select
                                         value={model}
                                         onValueChange={setModel}
                                         disabled={loadingModels}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a model" />
+                                            <SelectValue placeholder={t('projects.selectModel')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {models.map(m => (
@@ -187,24 +220,89 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {!loadingModels && models.length === 0 && (
+                                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-3">
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('projects.noImageModelsFound')}
+                                            </p>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-semibold text-foreground">
+                                                    {t('projects.recommendedImageModels')}
+                                                </p>
+                                                <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                                                    <li>FLUX.1-dev</li>
+                                                    <li>Stable Diffusion XL</li>
+                                                    <li>Stable Diffusion 3.5</li>
+                                                </ul>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.electron.openExternal(
+                                                            'https://huggingface.co/models?pipeline_tag=text-to-image'
+                                                        )
+                                                    }
+                                                >
+                                                    {t('projects.openImageMarketplace')}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.electron.openExternal(
+                                                            'https://civitai.com/models'
+                                                        )
+                                                    }
+                                                >
+                                                    {t('projects.openCivitai')}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.electron.openExternal(
+                                                            'https://github.com/leejet/stable-diffusion.cpp'
+                                                        )
+                                                    }
+                                                >
+                                                    {t('projects.openStableDiffusionCpp')}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.electron.openExternal(
+                                                            'https://ollama.com/search?c=vision'
+                                                        )
+                                                    }
+                                                >
+                                                    {t('projects.openOllamaLibrary')}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Count Selection */}
-                                <div className="space-y-2">
+                                <div className="space-y-2.5">
                                     <div className="flex justify-between">
-                                        <Label>Number of Logos</Label>
+                                        <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                            {t('projects.numberOfLogos')}
+                                        </Label>
                                         <span className="text-sm text-muted-foreground">
                                             {count}
                                         </span>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="grid grid-cols-4 gap-2">
                                         {[1, 2, 3, 4].map(num => (
                                             <Button
                                                 key={num}
                                                 variant={count === num ? 'default' : 'outline'}
-                                                size="sm"
+                                                size="default"
                                                 onClick={() => setCount(num)}
-                                                className="flex-1"
+                                                className="h-10"
                                             >
                                                 {num}
                                             </Button>
@@ -214,12 +312,14 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
                                 {/* Prompt Input */}
                                 <div className="space-y-2">
-                                    <Label>Prompt</Label>
+                                    <Label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                        {t('projects.prompt')}
+                                    </Label>
                                     {mode === 'auto' ? (
                                         <div className="space-y-2">
                                             <Button
                                                 variant="secondary"
-                                                className="w-full"
+                                                className="w-full h-10"
                                                 onClick={() => void handleAnalyze()}
                                                 disabled={isAnalyzing}
                                             >
@@ -229,23 +329,25 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                                     <Sparkles className="w-4 h-4 mr-2" />
                                                 )}
                                                 {suggestions.length > 0
-                                                    ? 'Re-analyze Project'
-                                                    : 'Analyze Project Identity'}
+                                                    ? t('projects.reAnalyzeProject')
+                                                    : t('projects.analyzeProjectIdentity')}
                                             </Button>
                                             {suggestions.length > 0 && (
                                                 <div className="space-y-2 mt-2">
                                                     <Label className="text-xs text-muted-foreground">
-                                                        Suggested Prompts
+                                                        {t('projects.suggestedPrompts')}
                                                     </Label>
-                                                    {suggestions.map((s, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className={`p-2 rounded-md border text-sm cursor-pointer hover:bg-muted ${prompt === s ? 'border-primary bg-primary/5' : 'border-border'}`}
-                                                            onClick={() => setPrompt(s)}
-                                                        >
-                                                            {s}
-                                                        </div>
-                                                    ))}
+                                                    <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+                                                        {suggestions.map((s, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className={`p-2 rounded-md border text-sm cursor-pointer hover:bg-muted ${prompt === s ? 'border-primary bg-primary/5' : 'border-border'}`}
+                                                                onClick={() => setPrompt(s)}
+                                                            >
+                                                                {s}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -253,14 +355,14 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     <Textarea
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        placeholder="Describe your logo..."
-                                        className="h-32 resize-none"
+                                        placeholder={t('projects.logoPromptPlaceholder')}
+                                        className="h-32 resize-none bg-background/80"
                                     />
                                 </div>
 
                                 {/* Generate Button */}
                                 <Button
-                                    className="w-full"
+                                    className="w-full h-11"
                                     size="lg"
                                     onClick={() => void handleGenerate()}
                                     disabled={isGenerating || !prompt || !model}
@@ -268,12 +370,12 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                     {isGenerating ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                            Generating...
+                                            {t('common.generating')}
                                         </>
                                     ) : (
                                         <>
                                             <Wand2 className="w-4 h-4 mr-2" />
-                                            Generate Logos
+                                            {t('common.generateLogos')}
                                         </>
                                     )}
                                 </Button>
@@ -299,9 +401,11 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                                             <Upload className="w-8 h-8 text-muted-foreground" />
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-sm font-medium">Click to Upload</p>
+                                            <p className="text-sm font-medium">
+                                                {t('projects.clickToUpload')}
+                                            </p>
                                             <p className="text-xs text-muted-foreground">
-                                                Current implementation opens a file dialog
+                                                {t('projects.currentImplementationOpensFileDialog')}
                                             </p>
                                         </div>
                                     </div>
@@ -312,29 +416,34 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
                 </div>
 
                 {/* Right Panel: Gallery */}
-                <div className="w-full md:w-2/3 flex flex-col gap-4 border-l pl-6 overflow-hidden">
-                    <div className="flex items-center justify-between">
-                        <Label className="text-lg font-semibold">Generated Results</Label>
-                        <span className="text-sm text-muted-foreground">
+                <div className="min-h-0 rounded-2xl border border-border/60 bg-background/80 p-4 flex flex-col gap-4 overflow-hidden">
+                    <div className="flex items-end justify-between border-b border-border/50 pb-3">
+                        <div>
+                            <Label className="text-xl font-bold text-foreground">Generated Results</Label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Pick a logo to apply it instantly.
+                            </p>
+                        </div>
+                        <span className="text-sm text-muted-foreground font-medium">
                             {generatedLogos.length} result{generatedLogos.length !== 1 ? 's' : ''}
                         </span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto">
                         {generatedLogos.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-muted">
-                                <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
-                                <p>No logos generated yet</p>
-                                <p className="text-sm opacity-60">
+                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl border-muted/70 bg-muted/10">
+                                <ImageIcon className="w-12 h-12 mb-4 opacity-25" />
+                                <p className="font-medium">No logos generated yet</p>
+                                <p className="text-sm opacity-70">
                                     Configure settings and click Generate
                                 </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {generatedLogos.map((logoPath, index) => (
                                     <Card
                                         key={index}
-                                        className="group relative aspect-square overflow-hidden border-2 hover:border-primary transition-all"
+                                        className="group relative aspect-square overflow-hidden border-2 border-border/60 hover:border-primary transition-all"
                                     >
                                         <img
                                             src={

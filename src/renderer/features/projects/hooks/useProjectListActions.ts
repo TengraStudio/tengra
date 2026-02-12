@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Project, WorkspaceMount } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 export interface ProjectListActionsOptions {
     filteredProjects: Project[]
@@ -32,7 +33,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             await window.electron.db.updateProject(editingProject.id, editForm);
             setEditingProject(null);
         } catch (error) {
-            console.error('Failed to update project:', error);
+            appLogger.error('ProjectListActions', 'Failed to update project', error as Error);
         }
     };
 
@@ -42,7 +43,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             await window.electron.db.deleteProject(deletingProject.id, deleteFiles);
             setDeletingProject(null);
         } catch (error) {
-            console.error('Failed to delete project:', error);
+            appLogger.error('ProjectListActions', 'Failed to delete project', error as Error);
         }
     };
 
@@ -53,7 +54,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             await window.electron.db.archiveProject(isArchiving.id, newStatus === 'archived');
             setIsArchiving(null);
         } catch (error) {
-            console.error('Failed to archive project:', error);
+            appLogger.error('ProjectListActions', 'Failed to archive project', error as Error);
         }
     };
 
@@ -64,7 +65,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             setSelectedProjectIds(new Set());
             setIsBulkDeleting(false);
         } catch (error) {
-            console.error('Failed to bulk delete projects:', error);
+            appLogger.error('ProjectListActions', 'Failed to bulk delete projects', error as Error);
         }
     };
 
@@ -75,7 +76,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             setSelectedProjectIds(new Set());
             setIsBulkArchiving(false);
         } catch (error) {
-            console.error('Failed to bulk archive projects:', error);
+            appLogger.error('ProjectListActions', 'Failed to bulk archive projects', error as Error);
         }
     };
 
@@ -108,7 +109,7 @@ export const useProjectListActions = ({ filteredProjects }: ProjectListActionsOp
             await window.electron.db.createProject(name, path, description, JSON.stringify(mounts));
             return true;
         } catch (error) {
-            console.error('Failed to register project:', error);
+            appLogger.error('ProjectListActions', 'Failed to register project', error as Error);
             return false;
         }
     };

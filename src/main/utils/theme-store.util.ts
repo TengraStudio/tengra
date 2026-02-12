@@ -1,17 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { appLogger } from '@main/logging/logger';
 import { BUILTIN_THEMES, getThemeById } from '@main/utils/theme-constants';
 import { CustomTheme, DEFAULT_THEME_PRESETS, ThemePreset } from '@shared/types/theme';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { app } from 'electron';
 
 interface ThemeStoreData {
-    currentTheme: string
-    customThemes: CustomTheme[]
-    favorites: string[]
-    history: string[]
-    preset: ThemePreset | null
+    currentTheme: string;
+    customThemes: CustomTheme[];
+    favorites: string[];
+    history: string[];
+    preset: ThemePreset | null;
 }
 
 const DEFAULT_THEME_STORE: ThemeStoreData = {
@@ -50,7 +51,7 @@ class ThemeStore {
             const loaded = safeJsonParse<ThemeStoreData>(data, DEFAULT_THEME_STORE);
             return { ...DEFAULT_THEME_STORE, ...loaded };
         } catch {
-            console.warn('[ThemeStore] Failed to load, using defaults');
+            appLogger.warn('ThemeStore', 'Failed to load, using defaults');
         }
         return { ...DEFAULT_THEME_STORE };
     }
@@ -61,7 +62,7 @@ class ThemeStore {
             await fs.promises.writeFile(tempPath, JSON.stringify(this.store, null, 2), 'utf8');
             await fs.promises.rename(tempPath, this.storePath);
         } catch (error) {
-            console.error('[ThemeStore] Failed to save:', error);
+            appLogger.error('ThemeStore', 'Failed to save', error as Error);
         }
     }
 
@@ -72,7 +73,7 @@ class ThemeStore {
     async setTheme(themeId: string): Promise<boolean> {
         const theme = getThemeById(themeId) ?? this.store.customThemes.find(t => t.id === themeId);
         if (!theme) {
-            console.warn(`[ThemeStore] Theme not found: ${themeId}`);
+            appLogger.warn('ThemeStore', `Theme not found: ${themeId}`);
             return false;
         }
 
@@ -91,7 +92,7 @@ class ThemeStore {
         }
 
         await this.saveStore();
-        // appLogger.info('[ThemeStore] Theme changed to:', themeId)
+        appLogger.info('ThemeStore', `Theme changed to: ${themeId}`);
         return true;
     }
 
@@ -135,14 +136,14 @@ class ThemeStore {
         };
         this.store.customThemes.push(customTheme);
         await this.saveStore();
-        // appLogger.info('[ThemeStore] Custom theme added:', customTheme.id)
+        appLogger.info('ThemeStore', `Custom theme added: ${customTheme.id}`);
         return customTheme;
     }
 
     async updateCustomTheme(id: string, updates: Partial<CustomTheme>): Promise<boolean> {
         const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
-            console.warn(`[ThemeStore] Custom theme not found: ${id}`);
+            appLogger.warn('ThemeStore', `Custom theme not found: ${id}`);
             return false;
         }
 
@@ -153,14 +154,14 @@ class ThemeStore {
             modifiedAt: Date.now()
         };
         await this.saveStore();
-        // appLogger.info('[ThemeStore] Custom theme updated:', id)
+        appLogger.info('ThemeStore', `Custom theme updated: ${id}`);
         return true;
     }
 
     async deleteCustomTheme(id: string): Promise<boolean> {
         const index = this.store.customThemes.findIndex(t => t.id === id);
         if (index === -1) {
-            console.warn(`[ThemeStore] Custom theme not found: ${id}`);
+            appLogger.warn('ThemeStore', `Custom theme not found: ${id}`);
             return false;
         }
 
@@ -171,7 +172,7 @@ class ThemeStore {
         }
 
         await this.saveStore();
-        // appLogger.info('[ThemeStore] Custom theme deleted:', id)
+        appLogger.info('ThemeStore', `Custom theme deleted: ${id}`);
         return true;
     }
 
@@ -179,10 +180,10 @@ class ThemeStore {
         const index = this.store.favorites.indexOf(themeId);
         if (index === -1) {
             this.store.favorites.push(themeId);
-            // appLogger.info('[ThemeStore] Theme favorited:', themeId)
+            appLogger.info('ThemeStore', `Theme favorited: ${themeId}`);
         } else {
             this.store.favorites.splice(index, 1);
-            // appLogger.info('[ThemeStore] Theme unfavorited:', themeId)
+            appLogger.info('ThemeStore', `Theme unfavorited: ${themeId}`);
         }
         await this.saveStore();
         return this.store.favorites.includes(themeId);
@@ -216,13 +217,13 @@ class ThemeStore {
     async applyPreset(presetId: string): Promise<boolean> {
         const preset = this.getPreset(presetId);
         if (!preset) {
-            console.warn(`[ThemeStore] Preset not found: ${presetId}`);
+            appLogger.warn('ThemeStore', `Preset not found: ${presetId}`);
             return false;
         }
 
         this.store.preset = preset;
         await this.setTheme(preset.themeId);
-        // appLogger.info('[ThemeStore] Preset applied:', presetId)
+        appLogger.info('ThemeStore', `Preset applied: ${presetId}`);
         return true;
     }
 
@@ -272,7 +273,7 @@ class ThemeStore {
                 source: 'imported'
             });
         } catch (error) {
-            console.error('[ThemeStore] Failed to import theme:', error);
+            appLogger.error('ThemeStore', 'Failed to import theme', error as Error);
             return null;
         }
     }

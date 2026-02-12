@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { SSHConfig } from '@/types/ssh';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface ConnectionOption {
     id: string;
@@ -48,7 +49,7 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 const dockerData = await window.electron.terminal.getDockerContainers();
                 setContainers(dockerData);
             } catch (error) {
-                console.error('Failed to fetch connection options:', error);
+                appLogger.error('TerminalSelector', 'Failed to fetch connection options', error as Error);
             } finally {
                 setLoading(false);
             }

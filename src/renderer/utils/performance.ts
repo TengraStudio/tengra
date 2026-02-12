@@ -1,11 +1,13 @@
+import { appLogger } from '@/utils/renderer-logger';
+
 /**
  * Performance monitoring utility for tracking app startup and render times
  */
 
 interface PerformanceMark {
-    name: string
-    timestamp: number
-    duration?: number
+    name: string;
+    timestamp: number;
+    duration?: number;
 }
 
 class PerformanceMonitor {
@@ -21,7 +23,7 @@ class PerformanceMonitor {
         this.marks.set(name, { name, timestamp });
 
         if (process.env.NODE_ENV === 'development') {
-            console.warn(`[Perf] ${name}: ${timestamp}ms`);
+            appLogger.warn('Performance', `Mark: ${name}`, { timestamp });
         }
     }
 
@@ -33,7 +35,7 @@ class PerformanceMonitor {
         const end = this.marks.get(endMark);
 
         if (!start || !end) {
-            console.warn(`[Perf] Missing marks for measure: ${startMark} -> ${endMark}`);
+            appLogger.warn('Performance', `Missing marks for measure: ${startMark} -> ${endMark}`);
             return null;
         }
 
@@ -41,7 +43,7 @@ class PerformanceMonitor {
         this.measures.push({ name, timestamp: start.timestamp, duration });
 
         if (process.env.NODE_ENV === 'development') {
-            console.warn(`[Perf] ${name}: ${duration}ms`);
+            appLogger.warn('Performance', `Measure: ${name}`, { duration });
         }
 
         return duration;
@@ -63,12 +65,7 @@ class PerformanceMonitor {
      */
     logSummary(): void {
         const report = this.getReport();
-        console.warn('[Performance Summary]');
-        console.warn(`Total time: ${report.totalTime}ms`);
-        console.warn('Marks:', report.marks);
-        if (report.measures.length > 0) {
-            console.warn('Measures:', report.measures);
-        }
+        appLogger.warn('Performance', 'Summary', report);
     }
 
     /**
@@ -111,7 +108,7 @@ export function useRenderTiming(componentName: string): void {
         setTimeout(() => {
             const renderTime = Date.now() - startTime;
             if (process.env.NODE_ENV === 'development' && renderTime > 100) {
-                console.warn(`[Perf] Slow render: ${componentName} took ${renderTime}ms`);
+                appLogger.warn('Performance', `Slow render: ${componentName} took ${renderTime}ms`);
             }
         }, 0);
     }

@@ -126,6 +126,41 @@ export const rejectPlanHandler = async (taskId: string, reason?: string): Promis
 };
 
 /**
+ * Approve a specific step (AGT-HIL-01)
+ */
+export const approveStepHandler = async (taskId: string, stepId: string): Promise<void> => {
+    await window.electron.ipcRenderer.invoke('project:approve-step', { taskId, stepId });
+};
+
+/**
+ * Skip a specific step (AGT-HIL-03)
+ */
+export const skipStepHandler = async (taskId: string, stepId: string): Promise<void> => {
+    await window.electron.ipcRenderer.invoke('project:skip-step', { taskId, stepId });
+};
+
+/**
+ * Edit a specific step text (AGT-HIL-02)
+ */
+export const editStepHandler = async (taskId: string, stepId: string, text: string): Promise<void> => {
+    await window.electron.ipcRenderer.invoke('project:edit-step', { taskId, stepId, text });
+};
+
+/**
+ * Add a comment to a step (AGT-HIL-05)
+ */
+export const addStepCommentHandler = async (taskId: string, stepId: string, comment: string): Promise<void> => {
+    await window.electron.ipcRenderer.invoke('project:add-step-comment', { taskId, stepId, comment });
+};
+
+/**
+ * Insert a manual intervention point (AGT-HIL-04)
+ */
+export const insertInterventionHandler = async (taskId: string, afterStepId: string): Promise<void> => {
+    await window.electron.ipcRenderer.invoke('project:insert-intervention', { taskId, afterStepId });
+};
+
+/**
  * Fetch all task details in parallel
  */
 export const fetchTaskDetailsHandler = async (

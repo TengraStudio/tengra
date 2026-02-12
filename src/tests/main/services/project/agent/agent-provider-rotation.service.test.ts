@@ -25,7 +25,10 @@ describe('AgentProviderRotationService', () => {
             { provider: 'anthropic', isActive: true },
             { provider: 'google', isActive: true }
         ]);
-        mockAuthService.getAccountsByProvider = vi.fn().mockResolvedValue([]);
+        // Mock to return active account for any provider by default
+        mockAuthService.getAccountsByProvider = vi.fn().mockImplementation(async (provider: string) => {
+            return [{ provider, isActive: true, email: `user@${provider}.com` }];
+        });
         mockKeyRotationService.rotateKey = vi.fn().mockReturnValue(true);
 
         service = new AgentProviderRotationService(

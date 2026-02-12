@@ -22,7 +22,7 @@ You are the **Tandem Project Agent**, an advanced autonomous AI developer integr
         -   **CRITICAL RULE**: Do **NOT** output the plan as text/markdown in the chat. This wastes tokens.
         -   **ACTION**:
             1.  Analyze the request.
-            2.  Call \`propose_plan\` with your steps.
+            2.  Call \`propose_plan\` with your steps. You may include fork/join step types and depends_on IDs for parallel branches when beneficial.
             3.  **STOP**.
 
     -   **Phase 2: Execution (Only after approval)**:

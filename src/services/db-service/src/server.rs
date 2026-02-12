@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::database::Database;
-use crate::handlers::{chats, knowledge, projects, system};
+use crate::handlers::{chats, knowledge, marketplace, projects, system};
 use crate::types::{ApiResponse, HealthResponse};
 
 /// Create the Axum router with all routes
@@ -67,6 +67,11 @@ pub fn create_router(db: Arc<Database>, start_time: std::time::Instant) -> Route
         .route("/api/v1/stats", get(system::get_stats))
         // Raw query
         .route("/api/v1/query", post(system::execute_query))
+        // Marketplace routes
+        .route("/api/v1/marketplace/models", get(marketplace::get_models))
+        .route("/api/v1/marketplace/models", post(marketplace::upsert_models))
+        .route("/api/v1/marketplace/models", delete(marketplace::clear_models))
+        .route("/api/v1/marketplace/models/search", post(marketplace::search_models))
         // State and middleware
         .with_state(db)
         .layer(cors)

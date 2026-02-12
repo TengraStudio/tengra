@@ -39,7 +39,12 @@
 Tandem is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
 
 - **Multi-LLM Support**: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama)
-- **Local-First Architecture**: Runs AI models locally via Ollama/Llama.cpp
+- **Local AI**:
+  - Ollama: Core local LLM provider.
+  - Llama.cpp: High-performance C++ inference.
+  - SD-CPP (Stable Diffusion C++): Local image generation.
+    - **Fallback**: Automatic fallback to Pollinations if SD-CPP fails.
+    - **Readiness**: Non-blocking readiness check on startup if enabled.
 - **Project Management**: Analyzes and manages code projects
 - **Agent System**: Multi-agent collaboration for complex tasks
 - **Secure Token Management**: Encrypted storage with automatic refresh
@@ -974,33 +979,28 @@ After:
 - [x] Add token caching  ← Mark done, DO NOT DELETE
 ```
 
-### 13.3 CHANGELOG.md Updates
+### 13.3 Structured Changelog Updates
 
-Every code change MUST be logged in `docs/CHANGELOG.md`:
-ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW ONE.
+Every code change MUST be recorded in the structured changelog system.
 
-```markdown
-## [Unreleased]
+**Canonical source (single source of truth):**
+- `docs/changelog/data/changelog.entries.json`
 
-### Added
-- New feature description
+**Locale overrides:**
+- `docs/changelog/i18n/tr.overrides.json`
 
-### Changed
-- Modified feature description
-
-### Fixed
-- Bug fix description
-
-### Removed
-- Removed feature description
+**Generate + validate (mandatory):**
+```bash
+npm run changelog:sync
 ```
 
-**Required for:**
-- New features
-- Bug fixes
-- Breaking changes
-- Dependency updates
-- Performance improvements
+**Do not manually edit generated files:**
+- `docs/changelog/generated/CHANGELOG.en.md`
+- `docs/changelog/generated/CHANGELOG.tr.md`
+- `src/renderer/data/changelog.index.json`
+
+**Legacy note:**
+- `docs/CHANGELOG.md` is archive-only and must not be used for new updates.
 
 ### 13.4 Complete Workflow Example
 
@@ -1015,7 +1015,7 @@ ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW O
 │ 5. Run: npm run lint                                         │
 │ 6. If errors → fix and repeat step 4-5                       │
 │ 7. Update docs/TODO.md (mark [x], DON'T delete)              │
-│ 8. Update docs/CHANGELOG.md                                  │
+│ 8. Update structured changelog + run `npm run changelog:sync` │
 │ 9. Commit with conventional message                          │
 │ 10. Push to repository                                       │
 └──────────────────────────────────────────────────────────────┘
@@ -1040,7 +1040,7 @@ ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW O
 ├─────────────────────────────────────────────────────────────┤
 │ WORKFLOW: build → lint → type-check → commit → push        │
 │ TODO:     Mark [x] done, NEVER delete                       │
-│ CHANGELOG: Always update for any change                     │
+│ CHANGELOG: Update `entries.json` + locale overrides, then run `changelog:sync` │
 ├─────────────────────────────────────────────────────────────┤
 │ NEVER:    any | console.log | files without ext | @ts-ignore│
 └─────────────────────────────────────────────────────────────┘
@@ -1050,3 +1050,4 @@ ATTENTION: WE ALREADY HAVE AN CHANGELOG FILE IN docs FOLDER. DO NOT CREATE NEW O
 
 *Last updated: 2026-01-14*
 *Version: 1.1.0*
+

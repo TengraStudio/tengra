@@ -25,6 +25,18 @@
         "test:e2e": "playwright test",
         "lint": "eslint .",
         "type-check": "tsc --noEmit",
+        "changelog:migrate": "node scripts/changelog/migrate-from-markdown.cjs",
+        "changelog:new": "node scripts/changelog/new-entry.cjs",
+        "changelog:seed:de": "node scripts/changelog/seed-overrides.cjs --locale=de",
+        "changelog:seed:all": "node scripts/changelog/seed-all-overrides.cjs",
+        "changelog:i18n:report": "node scripts/changelog/report-untranslated.cjs",
+        "changelog:i18n:gate": "node scripts/changelog/report-untranslated.cjs --fail-on-threshold --threshold-file=docs/changelog/i18n/gate.thresholds.json",
+        "changelog:translate:tr": "node scripts/changelog/translate-overrides.tr.cjs",
+        "changelog:translate:locales": "node scripts/changelog/translate-overrides.locales.cjs",
+        "changelog:polish:tr": "node scripts/changelog/manual-polish-tr.cjs",
+        "changelog:build": "node scripts/changelog/build.cjs",
+        "changelog:validate": "node scripts/changelog/validate-quality.cjs",
+        "changelog:sync": "npm run changelog:build && npm run changelog:validate",
         "lint:fix": "eslint . --fix",
         "lint:boundaries": "node src/scripts/check-boundaries.js",
         "secrets:scan": "secretlint \"**/*\"",
@@ -134,6 +146,7 @@
         "@xterm/xterm": "^6.0.0",
         "@xyflow/react": "^12.10.0",
         "axios": "^1.13.4",
+        "cheerio": "^1.2.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
@@ -242,3 +255,4 @@
         "utf-8-validate": "*"
     }
 }
+
