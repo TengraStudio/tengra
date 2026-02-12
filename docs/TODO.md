@@ -71,11 +71,12 @@ Last updated: 2026-02-12
 
 ### Test Improvements
 
-- [ ] TEST-01: Fix test expectation mismatch in agent-executor.service.test.ts:123
+- [x] TEST-01: Fix `agent-executor.service.test.ts` expectation mismatch (checkpoint resume)
+- [x] TEST-02: Fix `code-intelligence.integration.test.ts` parameter type mismatches
  
 ## Code Quality Initiatives
 
-### Remaining IPC Handler Test Coverage (21 handlers without tests)
+### IPC Handler Coverage: 100% (Added missing tests for DB, Project Agent, and fixed Code Intelligence)
 
 ## File-by-File Audit (Open)
 
@@ -99,8 +100,8 @@ Last updated: 2026-02-12
 - [x] a33: `advanced-memory.ts` test
 - [x] a45: `auth.ts` test
 - [x] a53: `brain.ts` test
-- [ ] a61: `code-intelligence.ts` test
-- [ ] a69: `db.ts` test
+- [x] a61: ipc/code-intelligence.ts
+- [x] a69: ipc/db.ts
 - [x] a73: `dialog.ts` test
 - [x] a81: `extension.ts` test
 - [x] a85: `file-diff.ts` test
