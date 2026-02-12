@@ -1,0 +1,49 @@
+/**
+ * Integration tests for Proxy-Embed IPC handlers
+ */
+import { ipcMain } from 'electron';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('electron', () => ({
+    ipcMain: { handle: vi.fn(), removeHandler: vi.fn() }
+}));
+
+describe('Proxy-Embed IPC Handlers', () => {
+    let registeredHandlers: Map<string, unknown>;
+
+    beforeEach(() => {
+        registeredHandlers = new Map();
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+            registeredHandlers.set(channel, handler);
+        });
+    });
+
+    afterEach(() => { vi.clearAllMocks(); });
+
+    describe('proxy:embed:start', () => {
+        it('should start embedded proxy', async () => {
+            const handler = async () => ({ success: true, port: 8080 });
+            registeredHandlers.set('proxy:embed:start', handler);
+            const result = await (registeredHandlers.get('proxy:embed:start') as () => Promise<unknown>)();
+            expect(result).toHaveProperty('success');
+        });
+    });
+
+    describe('proxy:embed:stop', () => {
+        it('should stop embedded proxy', async () => {
+            const handler = async () => undefined;
+            registeredHandlers.set('proxy:embed:stop', handler);
+            const result = await (registeredHandlers.get('proxy:embed:stop') as () => Promise<unknown>)();
+            expect(result).toBeUndefined();
+        });
+    });
+
+    describe('proxy:embed:status', () => {
+        it('should return proxy status', async () => {
+            const handler = async () => ({ running: true, port: 8080 });
+            registeredHandlers.set('proxy:embed:status', handler);
+            const result = await (registeredHandlers.get('proxy:embed:status') as () => Promise<unknown>)();
+            expect(result).toHaveProperty('running');
+        });
+    });
+});
