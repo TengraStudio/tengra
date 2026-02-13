@@ -1,7 +1,8 @@
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 
-import { AppSettings, JsonValue } from '@/types';
+import { loadSettings, updateSettings as updateSettingsInStore, useSettingsStore } from '@/store/settings.store';
+import { AppSettings } from '@/types';
 
 interface SettingsContextType {
     settings: AppSettings | null
@@ -12,23 +13,12 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
-const deepEqual = (obj1: JsonValue, obj2: JsonValue) => JSON.stringify(obj1) === JSON.stringify(obj2);
-
 export function SettingsProvider({ children }: { children: ReactNode }) {
-    const [settings, setSettings] = useState<AppSettings | null>(null);
-    const [originalSettings, setOriginalSettings] = useState<AppSettings | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const settings = useSettingsStore(snapshot => snapshot.settings);
+    const isLoading = useSettingsStore(snapshot => snapshot.isLoading);
 
     const reloadSettings = useCallback(async () => {
-        try {
-            const data = await window.electron.getSettings();
-            setSettings(data);
-            setOriginalSettings(structuredClone(data));
-        } catch (error) {
-            window.electron.log.error('Failed to load settings', error as Error);
-        } finally {
-            setIsLoading(false);
-        }
+        await loadSettings();
     }, []);
 
     useEffect(() => {
@@ -36,35 +26,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }, [reloadSettings]);
 
     const updateSettings = useCallback(async (newSettings: AppSettings, saveImmediately = true) => {
-        setSettings(newSettings);
-        if (saveImmediately) {
-            try {
-                await window.electron.saveSettings(newSettings);
-                setOriginalSettings(structuredClone(newSettings));
-            } catch (error) {
-                window.electron.log.error('Failed to save settings', error as Error);
-            }
-        }
+        await updateSettingsInStore(newSettings, saveImmediately);
     }, []);
-
-    // Auto-save logic
-    useEffect(() => {
-        if (!settings || !originalSettings) { return; }
-        if (deepEqual(settings, originalSettings)) { return; }
-
-        const timeout = setTimeout(() => {
-            void (async () => {
-                try {
-                    await window.electron.saveSettings(settings);
-                    setOriginalSettings(structuredClone(settings));
-                } catch (error) {
-                    window.electron.log.error('Auto-save failed', error as Error);
-                }
-            })();
-        }, 2000);
-
-        return () => clearTimeout(timeout);
-    }, [settings, originalSettings]);
 
     // Apply global appearances settings
     useEffect(() => {

@@ -2,6 +2,10 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { RefreshCw, Terminal } from 'lucide-react';
 import React from 'react';
 
+import { getPersistedPanelLayoutSnapshot } from '@/components/layout/panel-layout-persistence';
+import { setAnimationDebugEnabled, useAnimationAnalyticsStore } from '@/store/animation-analytics.store';
+import { useResponsiveAnalyticsStore } from '@/store/responsive-analytics.store';
+import { exportUiLayoutState } from '@/store/ui-layout.store';
 import { AppSettings } from '@/types/settings';
 
 interface DeveloperTabProps {
@@ -14,6 +18,9 @@ interface DeveloperTabProps {
 }
 
 export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusMessage, onRefreshModels, loadSettings, setIsLoading, t }) => {
+    const animationStats = useAnimationAnalyticsStore(snapshot => snapshot);
+    const responsiveStats = useResponsiveAnalyticsStore(snapshot => snapshot);
+
     return (
         <div className="space-y-6">
             <div className="bg-card p-6 rounded-xl border border-border">
@@ -35,12 +42,82 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                         <button onClick={() => { if (!settings) { return; } const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Tandem-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">{t('developer.exportSettings')}</button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+                        <div>
+                            <div className="text-sm font-bold text-foreground">Export UI State</div>
+                            <div className="text-xs text-muted-foreground">Export window/layout/sidebar state snapshot</div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const payload = {
+                                    exportedAt: Date.now(),
+                                    window: settings?.window ?? null,
+                                    uiLayout: exportUiLayoutState(),
+                                    panelLayout: getPersistedPanelLayoutSnapshot(),
+                                };
+                                const blob = new Blob([JSON.stringify(payload, null, 2)], {
+                                    type: 'application/json',
+                                });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `Tandem-ui-state-${new Date().toISOString().split('T')[0]}.json`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                setStatusMessage('UI state exported');
+                                setTimeout(() => setStatusMessage(''), 3000);
+                            }}
+                            className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20"
+                        >
+                            Export UI State
+                        </button>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.importSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.importSettingsDesc')}</div></div>
-                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<Record<string, unknown> | null>(await file.text(), null); if (!imported) { throw new Error('Invalid JSON'); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { console.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
+                        <label className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50 cursor-pointer">{t('developer.import')}<input type="file" accept=".json" className="hidden" onChange={(e) => { void (async () => { const file = e.target.files?.[0]; if (!file) { return; } try { const imported = safeJsonParse<Record<string, unknown> | null>(await file.text(), null); if (!imported) { throw new Error('Invalid JSON'); } await window.electron.saveSettings(imported); await loadSettings(); setStatusMessage(t('developer.settingsImported')); setTimeout(() => setStatusMessage(''), 3000); } catch { window.electron.log.warn(t('developer.invalidSettingsFile')); } })(); }} /></label>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
+                        <div className="text-sm font-bold text-foreground">Animation Diagnostics</div>
+                        <div className="text-xs text-muted-foreground">
+                            Plays: {animationStats.totals.played} | Reduced motion plays: {animationStats.totals.reducedMotionPlays}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    const next = !animationStats.debugEnabled;
+                                    setAnimationDebugEnabled(next);
+                                    setStatusMessage(next ? 'Animation debug enabled' : 'Animation debug disabled');
+                                    setTimeout(() => setStatusMessage(''), 3000);
+                                }}
+                                className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20"
+                            >
+                                {animationStats.debugEnabled ? 'Disable Animation Debug' : 'Enable Animation Debug'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const current = localStorage.getItem('tandem.motion.force-reduced') === 'true';
+                                    localStorage.setItem('tandem.motion.force-reduced', String(!current));
+                                    setStatusMessage(!current ? 'Forced reduced motion enabled' : 'Forced reduced motion disabled');
+                                    setTimeout(() => setStatusMessage(''), 3000);
+                                }}
+                                className="px-3 py-2 rounded-lg text-xs font-bold bg-muted/30 text-muted-foreground border border-border/50"
+                            >
+                                Toggle Forced Reduced Motion
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-1">
+                        <div className="text-sm font-bold text-foreground">Responsive Analytics</div>
+                        <div className="text-xs text-muted-foreground">
+                            Current: {responsiveStats.current} ({responsiveStats.viewport.width}x{responsiveStats.viewport.height})
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Mobile: {responsiveStats.counters.mobile} | Tablet: {responsiveStats.counters.tablet} | Desktop: {responsiveStats.counters.desktop} | Wide: {responsiveStats.counters.wide}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
+
 

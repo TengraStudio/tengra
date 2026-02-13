@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { LlamaService } from '@main/services/llm/llama.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
@@ -59,7 +60,7 @@ export class EmbeddingService {
                     break;
             }
         } catch (error) {
-            console.error(`[EmbeddingService] Failed to generate embedding with ${this.currentProvider}:`, error);
+            appLogger.error('EmbeddingService', `Failed to generate embedding with ${this.currentProvider}`, error as Error);
         }
 
         // Final check: Guarantee non-empty vector with correct dimensions for the database
@@ -71,7 +72,7 @@ export class EmbeddingService {
         }
 
         if (vector.length !== REQUIRED_DIMENSION) {
-            console.warn(`[EmbeddingService] Dimension mismatch: Got ${vector.length}, expected ${REQUIRED_DIMENSION}. Returning zero vector fallback to maintain stability.`);
+            appLogger.warn('EmbeddingService', `Dimension mismatch: Got ${vector.length}, expected ${REQUIRED_DIMENSION}. Returning zero vector fallback.`);
             // Note: Padding/Truncating is possible but risky for semantic quality.
             // For now, we return zero vector to ensure DB consistency.
             return new Array(REQUIRED_DIMENSION).fill(0);

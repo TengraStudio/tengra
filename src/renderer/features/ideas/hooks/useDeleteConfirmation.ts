@@ -60,7 +60,7 @@ export function useDeleteConfirmation(
                 }
                 void onLoadIdeas(currentSessionId);
             } catch (err) {
-                console.error('Failed to delete:', err);
+                window.electron.log.error('Failed to delete:', err);
             } finally {
                 closeDeleteConfirm();
                 onAfter();
@@ -77,3 +77,4 @@ export function useDeleteConfirmation(
         confirmDelete
     };
 }
+

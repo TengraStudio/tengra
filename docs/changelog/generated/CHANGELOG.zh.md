@@ -1,374 +1,443 @@
 # 更新日志
 
+## [2026-02-13]
+
+### 添加了拖放验证
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 通过文件类型验证、大小限制和危险扩展名阻止增强了拖放文件附件的安全性。
+
+- 添加了文件类型白名单：文本、JSON、PDF、图像和常见文档格式。
+- 实施了10MB最大文件大小限制，以防止大文件DoS攻击。
+- 为安全起见添加了危险扩展名阻止（.exe、.bat、.sh、.ps1等）。
+- 放下无效文件时显示烤面包错误通知。
+
+### 添加了拖放验证
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 通过文件类型验证、大小限制和危险扩展名阻止增强了拖放文件附件的安全性。
+
+- 添加了文件类型白名单：文本、JSON、PDF、图像和常见文档格式。
+- 实施了10MB最大文件大小限制，以防止大文件DoS攻击。
+- 为安全起见添加了危险扩展名阻止（.exe、.bat、.sh、.ps1等）。
+- 放下无效文件时显示烤面包错误通知。
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### IPC Handler Tests expansion & TEST-01 Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.
+
+- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.
+- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.
+- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
+- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### 提高令牌计数准确性
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 集成了 js-tiktoken，以便对 GPT、Claude 和 Llama 模型进行精确的令牌估计。
+
+集成了 `js-tiktoken`，用于精确映射到 cl100k_base 和 o200k_base 编码的令牌化。
+通过针对主要 LLM 提供商的精确模型限制，改进了上下文窗口管理。
+保留了针对不支持模型的基于启发式的回退，以确保估计的连续性。
+增加了全面的单元测试，以验证各种模型的令牌计数准确性。
+
 ## [2026-02-12]
 
-### IPC Handler 测试扩展 - 第 4 批
+### IPC Handler Tests Expansion - Batch 4
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 为 15 个附加 IPC handlers （高级内存、身份验证、大脑、对话框、扩展、文件差异、文件、图库、git、创意生成器、mcp、mcp-marketplace、进程、代理、代理嵌入）创建了集成测试。
+- **Summary**: Created integration tests for 15 additional IPC handlers (advanced-memory, auth, brain, dialog, extension, file-diff, files, gallery, git, idea-generator, mcp, mcp-marketplace, process, proxy, proxy-embed).
 
-- **测试**：添加了 Advanced-memory.ts、auth.ts、brain.ts、dialog.ts、extension.ts、file-diff.ts、files.ts、gallery.ts、git.ts、idea-generator.ts、mcp.ts、mcp-marketplace.ts、process.ts、proxy.ts、proxy-embed.ts 的测试
+- **Tests**: Added tests for advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts, file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts, mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts
 
-### IPC Handler 测试扩展 - Batch 2 + 既有测试修复
+### IPC Handler Tests Expansion - Batches 2 & 3 + Pre-existing Test Fixes
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 为 7 个新增 IPC Handler 补齐了完整集成测试，并通过重写 `theme.integration.test.ts` 修复了既有 20 个 theme 测试失败。结果：789/789 测试通过（100%）。
+- **Summary**: Created comprehensive integration tests for 12 additional IPC handlers (HuggingFace, Llama, Ollama, Multi-Model, Key Rotation, Migration, Prompt Templates, SD-CPP, Tools, Usage, Health, Agent) + Fixed all 20 pre-existing theme test failures by completely rewriting theme.integration.test.ts. Total: 852 tests passing (100%).
 
-- **新增覆盖（143 项测试）**：覆盖 HuggingFace、Llama、Ollama、Multi-Model、Key Rotation、Migration、Prompt Templates，包含参数校验、错误路径与进度事件。
-- **theme 测试全量重构**：21 项测试与真实 `theme.ts` API 对齐，修复 handler 命名、mock 依赖与校验规则不一致问题。
-- **安全项验证**：URL 白名单、provider 名称清洗、状态输出中的密钥脱敏。
-- **运行时稳健性**：统一接入 rate limiting，并在错误场景下提供安全 fallback。
-- **统计结果**：改造前 721/748（96.4%），改造后 789/789（100%）。
-- **项目同步**：更新 `docs/TODO.md`，并统一测试实现模式。
-- [x] **migration.integration.test.ts**（4 个测试）：迁移状态、挂起的迁移、全新数据库、错误处理
-- [x] **prompt-templates.integration.test.ts**（22 个测试）：获取全部/按类别/按标签、搜索、CRUD 操作、使用变量的模板渲染
+**Batch 2 Test Files Created (143 tests):**
+- [x] **huggingface.integration.test.ts** (20 tests): Model search, file listing, download with progress, URL validation, SHA256 verification
+- [x] **llama.integration.test.ts** (32 tests): Model loading, chat with streaming, session management, GPU detection, model downloads, config management
+- [x] **ollama.integration.test.ts** (32 tests): Health status, model pulling with progress, chat/streaming, library scraping, rate limiting, service dependencies
+- [x] **multi-model.integration.test.ts** (14 tests): Model comparison requests, validation (chatId, messages, models array), filtering invalid entries, rate limiting
+- [x] **key-rotation.integration.test.ts** (19 tests): Get current key, rotate keys, initialize provider keys, status with masking, provider name validation
+- [x] **migration.integration.test.ts** (4 tests): Migration status, pending migrations, fresh database, error handling
+- [x] **prompt-templates.integration.test.ts** (22 tests): Get all/by category/by tag, search, CRUD operations, template rendering with variables
 
-**创建第 3 批测试文件（68 个测试）：**
-- [x] **sd-cpp.integration.test.ts**（12 个测试）：状态检索、重新安装/修复、错误处理、多种状态类型
-- [x] **tools.integration.test.ts**（18 个测试）：具有速率限制的工具执行、kill 命令、通过序列化获取定义
-- [x] **usage.integration.test.ts**（17 个测试）：检查 Copilot 配额的限制、按周期/提供商/型号划分的使用计数、记录使用情况
-- [x] **health.integration.test.ts**（14个测试）：整体健康状况、检查特定服务、获取服务状态、列出服务
-- [x] **agent.integration.test.ts**（7 个​​测试）：获取所有代理、通过 ID 获取代理、JSON 序列化
+**Batch 3 Test Files Created (68 tests):**
+- [x] **sd-cpp.integration.test.ts** (12 tests): Status retrieval, reinstall/repair, error handling, multiple status types
+- [x] **tools.integration.test.ts** (18 tests): Tool execution with rate limiting, kill commands, get definitions with serialization
+- [x] **usage.integration.test.ts** (17 tests): Check limits with Copilot quota, usage counts by period/provider/model, record usage
+- [x] **health.integration.test.ts** (14 tests): Overall health status, check specific services, get service status, list services
+- [x] **agent.integration.test.ts** (7 tests): Get all agents, get agent by ID, JSON serialization
 
-**预先存在的测试修复（20 次失败 → 0）：**
-- [x] **theme.integration.test.ts - 完全重写**：重写所有 21 个测试以匹配实际的 theme.ts API
-- 修复了 handler 名称不匹配（主题：getActive → 主题：getCurrent、主题：activate → 主题：set 等）
-- 将模拟从 ThemeService 更改为 themeStore （正确的依赖关系）
-- 更新了自定义主题验证以匹配实际的 validateCustomThemeInput 要求
-- 为 addCustom 测试添加了正确的类别/源/isCustom 字段
-- 使用正确的服务实例模拟修复了 runtime handler 模拟（安装/卸载）
-- 所有 21 个主题测试现已通过
+**Pre-existing Test Fixes (20 failures → 0):**
+- [x] **theme.integration.test.ts - COMPLETE REWRITE**: Rewrote all 21 tests to match actual theme.ts API
+  - Fixed handler name mismatches (theme:getActive → theme:getCurrent, theme:activate → theme:set, etc.)
+  - Changed mocks from ThemeService to themeStore (correct dependency)
+  - Updated custom theme validation to match actual validateCustomThemeInput requirements
+  - Added proper category/source/isCustom fields for addCustom tests
+  - Fixed runtime handler mocks (install/uninstall) with proper service instance mocking
+  - All 21 theme tests now passing
 
-**报道亮点：**
-- 所有参数（ID、路径、URL、模型名称、密钥）的输入验证
-- 安全性：URL 白名单（HuggingFace 域）、提供商名称清理、状态中的密钥屏蔽
-- 错误处理：默认值、安全wrappers、无效输入拒绝
-- 所有 LLM 相关 handlers 的速率限制集成
-- 进度事件转发（下载、拉取、流式传输）
-- 复杂的服务依赖关系（Ollama 运行状况、抓取工具、比较）
+**Coverage Highlights:**
+- Input validation for all parameters (IDs, paths, URLs, model names, keys)
+- Security: URL whitelisting (HuggingFace domain), provider name sanitization, key masking in status
+- Error handling: Default values, safe wrappers, invalid input rejection
+- Rate limiting integration across all LLM-related handlers
+- Progress event forwarding (downloads, pulls, streams)
+- Complex service dependencies (Ollama health, scraper, comparison)
 
-**测试统计：**
-- **之前：** 721/748 通过 (96.4%)
-- **第 2 批 + 修复后：** 789/789 通过 (100%)
-- **第 3 批后：** 852/852 通过 (100%) 🎉
-- **新测试：** +211 项测试（143 批次 2 + 68 批次 3）
-- **固定测试：** +20 测试（主题）
-- **新测试文件：** +12 个文件
-- **重写测试文件：** 1 个文件（theme.integration.test.ts）
+**Test Statistics:**
+- **Before:** 721/748 passing (96.4%)
+- **After Batch 2 + Fixes:** 789/789 passing (100%)
+- **After Batch 3:** 852/852 passing (100%) 🎉
+- **New tests:** +211 tests (143 Batch 2 + 68 Batch 3)
+- **Fixed tests:** +20 tests (theme)
+- **New test files:** +12 files
+- **Rewritten test files:** 1 file (theme.integration.test.ts)
 
-**TODO.md 更新：**
-- 已测试标记huggingface.ts、llama.ts、ollama.ts、multi-model.ts、key-rotation.ts、migration.ts、prompt-templates.ts
+**TODO.md Updates:**
+- Marked huggingface.ts, llama.ts, ollama.ts, multi-model.ts, key-rotation.ts, migration.ts, prompt-templates.ts as tested
 
-**应用的测试模式：**
-- 顶部静态导入（无动态要求 - VI 提升）
-- vi.mock() 块内的模拟工厂
-- 全面的参数验证测试
-- 使用安全 handler 默认值覆盖错误路径
-- 服务可用性fallback 测试
+**Test Patterns Applied:**
+- Static imports at top (no dynamic require - VI hoisting)
+- Mock factories inside vi.mock() blocks
+- Comprehensive parameter validation tests
+- Error path coverage with safe handler defaults
+- Service availability fallback testing
 
-### IPC 工具库审计与重构
+### IPC Utilities Audit and Refactor
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 重构了 IPC 批处理与包装器工具，以提升类型安全、文档质量，并满足 NASA Power of Ten 规则。
+- **Summary**: Refactored IPC batch and wrapper utilities to improve type safety, documentation, and compliance with NASA Power of Ten rules.
 
-- [x] **ipc-batch.util.ts**: 用 `IpcValue` 替换 `any`，并实现 `MAX_BATCH_SIZE=50`，强制固定循环边界（NASA 规则 2）。
-- [x] **ipc-wrapper.util.ts**: 为全部接口和生命周期函数补充了完整 JSDoc 文档。
-- [x] **local-auth-server.util.ts**: 将 OAuth 处理器重构为私有 helper，以符合 NASA 规则 3（短函数），并将 console 日志替换为 `appLogger`。
-- [x] **Type Safety**: 解决了通用批处理 handler 与特定 IPC 实现之间的类型兼容问题。
-- [x] **Audit**: 完成了逐文件审计清单中的 109、110、111 项。
+- [x] **ipc-batch.util.ts**: Replaced `any` with `IpcValue` and implemented `MAX_BATCH_SIZE=50` to enforce fixed loop bounds (NASA Rule 2).
+- [x] **ipc-wrapper.util.ts**: Added comprehensive JSDoc for all interfaces and lifecycle functions.
+- [x] **local-auth-server.util.ts**: Refactored OAuth handlers into private helpers to comply with NASA Rule 3 (Short functions) and replaced console logs with `appLogger`.
+- [x] **Type Safety**: Resolved type compatibility issues between generic batch handlers and specific IPC implementations.
+- [x] **Audit**: Completed items 109, 110, and 111 of the full file-by-file audit list.
 
-### 消息规范化器加固
+### Message Normalizer Hardening
 
 - **Type**: security
 - **Status**: planned
-- **Summary**: 重构消息规范化工具，强制执行严格类型安全与 NASA Power of Ten 规则（固定循环边界）。
+- **Summary**: Refactored message normalization utility to enforce strict type safety and NASA Power of Ten rules (fixed loop bounds).
 
-- **工具层（Utils）**：在 `MessageNormalizer` 中落实 NASA 规则 2（固定循环边界）。
-- **类型安全**：移除 `any` 类型，并在规范化逻辑中补充严格类型守卫。
-- **文档**：为 `message-normalizer.util.ts` 的所有方法补充完整 JSDoc。
+- **Utils**: Enforced NASA Rule 2 (fixed loop bounds) in `MessageNormalizer`.
+- **Type Safety**: Removed `any` types and added strict type guards in message normalization logic.
+- **Documentation**: Added comprehensive JSDoc for all methods in `message-normalizer.util.ts`.
 
-### 模型页面与 Ollama 市场爬取器
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: 新增独立“模型”页面，支持多账号、配额展示，并为市场功能接入 Ollama 库爬取服务。
-
-### 模型页面（新的独立视图）
-- [x] **Standalone Page**: 在 `src/renderer/features/models/pages/ModelsPage.tsx` 新建 `ModelsPage` 组件。
-- [x] **Sidebar Navigation**: 在侧边栏 Projects 与 Memory 之间新增“Models”入口。
-- [x] **ViewManager Integration**: 在 `AppView` 类型中新增 `models`，并对 `ModelsPage` 启用懒加载。
-- [x] **Tab System**: 实现“Installed Models”与“Marketplace”标签页。
-- [x] **Multi-Account Support**: 按 provider 提供账号标签（copilot、claude、codex、anthropic、antigravity、nvidia、openai）。
-- [x] **Quota Display**: 展示每个 provider 账号的配额信息。
-- [x] **Action Buttons**: 支持隐藏/显示模型、设为默认、加入收藏。
-- [x] **Provider Grouping**: 按 provider 分组，在可折叠网格区块中展示模型。
-### Ollama 库爬取器
-- [x] **Scraper Service**: 在 `src/main/services/llm/ollama-scraper.service.ts` 新建 `OllamaScraperService`。
-- [x] **Library Scraping**: 从 ollama.com/library 抓取模型列表（name、pulls、tags、categories、lastUpdated）。
-- [x] **Model Details**: 从 ollama.com/library/:modelName 抓取模型详情（短描述、长描述 HTML、版本）。
-- [x] **Version Info**: 解析 `/tags` 页面，提取版本名、大小、上下文窗口、输入类型。
-- [x] **Caching**: 为模型列表与模型详情都加入 5 分钟缓存。
-- [x] **Lazy Loading**: 仅在访问 marketplace 时加载该服务。
-- [x] **IPC Handlers**: 新增 `ollama:scrapeLibrary`、`ollama:scrapeModelDetails`、`ollama:clearScraperCache`。
-- [x] **Type Definitions**: 新增 `OllamaScrapedModel`、`OllamaModelDetails`、`OllamaModelVersion` 类型。
-### 依赖
-- [x] 新增 `cheerio` 包用于 HTML 解析。
-
-### Project Agent HIL 集成收官
+### Models Page & Ollama Marketplace Scraper
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 完成了 Human-in-the-Loop（HIL）功能的端到端集成，将渲染层 UI 与后端执行服务打通。
+- **Summary**: Created standalone Models page with multi-account support, quota display, and Ollama library scraper for marketplace.
 
-- [x] **HIL Handlers**: 在渲染层实现 `approveStep`、`skipStep`、`editStep`、`addComment`、`insertIntervention` 异步处理器。
-- [x] **Hook Integration**: 通过 `useAgentTask` 暴露 HIL 动作，便于 UI 无缝调用。
-- [x] **UI Wiring**: 将 `ExecutionPlanView` 的操作按钮经由 `TaskExecutionView` 与 `ProjectAgentTab` 连接到后端。
-- [x] **Verification**: 验证了所有 IPC 通道及步骤级控制操作的类型安全性。
+### Models Page (New Standalone View)
+- [x] **Standalone Page**: Created new `ModelsPage` component at `src/renderer/features/models/pages/ModelsPage.tsx`
+- [x] **Sidebar Navigation**: Added "Models" link to sidebar between Projects and Memory
+- [x] **ViewManager Integration**: Added 'models' to AppView type and lazy-loaded ModelsPage
+- [x] **Tab System**: Implemented "Installed Models" and "Marketplace" tabs
+- [x] **Multi-Account Support**: Account tabs per provider (copilot, claude, codex, anthropic, antigravity, nvidia, openai)
+- [x] **Quota Display**: Shows quota information per provider account
+- [x] **Action Buttons**: Hide/show model, set as default, add to favorites
+- [x] **Provider Grouping**: Models displayed in collapsible grid sections by provider
+### Ollama Library Scraper
+- [x] **Scraper Service**: Created `OllamaScraperService` at `src/main/services/llm/ollama-scraper.service.ts`
+- [x] **Library Scraping**: Scrapes ollama.com/library for model list (name, pulls, tags, categories, lastUpdated)
+- [x] **Model Details**: Scrapes ollama.com/library/:modelName for short description, long description HTML, versions
+- [x] **Version Info**: Parses /tags page for version name, size, context window, input types
+- [x] **Caching**: 5-minute cache for both library list and model details
+- [x] **Lazy Loading**: Service only loaded when marketplace is accessed
+- [x] **IPC Handlers**: Added `ollama:scrapeLibrary`, `ollama:scrapeModelDetails`, `ollama:clearScraperCache`
+- [x] **Type Definitions**: Added `OllamaScrapedModel`, `OllamaModelDetails`, `OllamaModelVersion` types
+### Dependencies
+- [x] Added `cheerio` package for HTML parsing
 
-### 渲染器日志重构
+### Project Agent HIL Integration Finalization
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Completed the end-to-end integration of Human-in-the-Loop (HIL) features, wiring the renderer UI to backend execution services.
+
+- [x] **HIL Handlers**: Implemented `approveStep`, `skipStep`, `editStep`, `addComment`, and `insertIntervention` async handlers in the renderer.
+- [x] **Hook Integration**: Exposed HIL actions through the `useAgentTask` hook for seamless UI consumption.
+- [x] **UI Wiring**: Connected `ExecutionPlanView` action buttons to the backend via `TaskExecutionView` and `ProjectAgentTab`.
+- [x] **Verification**: Validated all IPC channels and type safety for step-level steering operations.
+
+### Renderer Logging Refactor
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 将渲染器进程中的所有 console.* 调用替换为 appLogger，以获得更好的持久性和可观察性。
+- **Summary**: Replaced remaining `console.*` calls in the renderer process with `appLogger` for better persistence and observability.
 
-- **日志**: 将所有渲染器功能（终端、SSH、项目、设置）和实用程序迁移到使用 appLogger。
-- **代码质量**: 应用童子军规则，修复重构文件中的导入排序和类型问题。
-- **可观察性**: 使用上下文标签标准化日志格式，以便于在生产中进行调试。
+- **Logging**: Migrated all renderer features (Terminal, SSH, Projects, Settings) and utilities to use `appLogger`.
+- **Code Quality**: Applied Boy Scout Rule to fix import sorting and type issues in refactored files.
+- **Observability**: Standardized log format with context tags for easier debugging in production.
 
-### SD-CPP 核心优化
+### SD-CPP Core Refinement
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 对 SD-CPP（Stable Diffusion C++）集成进行了优化，覆盖离线优先回退、遥测追踪与完整集成测试。
+- **Summary**: Refined SD-CPP (Stable Diffusion C++) integration with offline-first fallback, telemetry tracking, and comprehensive integration testing.
 
-- [x] **Offline-First Fallback**: 增强 `LocalImageService`，当本地 SD-CPP 生成失败或资源缺失时自动回退到 Pollinations（云端）。
-- [x] **Telemetry Integration**: 新增 `sd-cpp-generation-success`、`sd-cpp-generation-failure`、`sd-cpp-fallback-triggered` 指标。
-- [x] **Integration Testing**: 新建 `local-image.service.test.ts`，覆盖就绪检查、成功路径与回退逻辑。
-- [x] **Documentation**: 更新 `AI_RULES.md`、`USER_GUIDE.md`、`TROUBLESHOOTING.md`，补充 SD-CPP 专项技术与用户说明。
-- [x] **NASA Rule Compliance**: 将 `LocalImageService` 重构为依赖接口方式，降低构造函数复杂度（规则 4）。
+- [x] **Offline-First Fallback**: Augmented `LocalImageService` to automatically fallback to Pollinations (cloud) if local SD-CPP generation fails or assets are missing.
+- [x] **Telemetry Integration**: Added metrics for `sd-cpp-generation-success`, `sd-cpp-generation-failure`, and `sd-cpp-fallback-triggered`.
+- [x] **Integration Testing**: Created `local-image.service.test.ts` covering readiness checks, success paths, and fallback logic.
+- [x] **Documentation**: Updated `AI_RULES.md`, `USER_GUIDE.md`, and `TROUBLESHOOTING.md` with SD-CPP specific technical and user-facing guidance.
+- [x] **NASA Rule Compliance**: Refactored `LocalImageService` to use a dependency interface, reducing constructor complexity (Rule 4).
 
 ## [2026-02-11]
 
-### API 与 Core 逐文件审计
+### API & Core File-by-File Audit
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 对 `src/main/api` 与 `src/main/core` 下 8 个文件完成审计、重构与文档化。
+- **Summary**: Full audit, refactor, and documentation pass on 8 files across `src/main/api` and `src/main/core`.
 
-- [x] **死代码清理**：删除了 `api-auth.middleware.ts` 和 `api-router.ts` （100% 注释掉，无实时导入）。
-- [x] **JSDoc**：向 `circuit-breaker.ts`、`container.ts`、`lazy-services.ts`、`service-registry.ts`、`repository.interface.ts` 和 `api-server.service.ts` 添加了全面的 JSDoc (`@param`/`@returns`/`@throws`)。
-- [x] **类型安全**：向 `circuit-breaker.ts`、`service-registry.ts` 和 `lazy-services.ts` 中的私有方法添加了显式返回类型。记录有意的 `unknown` 地图使用情况。
-- [x] **分页类型**：向 `repository.interface.ts` 添加了 `PaginationOptions` 和 `PaginatedResult<T>` 接口。
-- [x] **可观察性**：`lazy-services.ts` 中未注释的加载时日志记录，以实现服务启动可见性。
-- [x] **新测试**：创建了 `lazy-services.test.ts` （7 个测试）和 `service-registry.test.ts` （9 个测试） - 所有 30 个核心测试均通过。
+- [x] **Dead Code Cleanup**: Deleted `api-auth.middleware.ts` and `api-router.ts` (100% commented-out, no live imports).
+- [x] **JSDoc**: Added comprehensive JSDoc (`@param`/`@returns`/`@throws`) to `circuit-breaker.ts`, `container.ts`, `lazy-services.ts`, `service-registry.ts`, `repository.interface.ts`, and `api-server.service.ts`.
+- [x] **Type Safety**: Added explicit return types to private methods in `circuit-breaker.ts`, `service-registry.ts`, and `lazy-services.ts`. Documented intentional `unknown` map usage.
+- [x] **Pagination Types**: Added `PaginationOptions` and `PaginatedResult<T>` interfaces to `repository.interface.ts`.
+- [x] **Observability**: Uncommented load-time logging in `lazy-services.ts` for service startup visibility.
+- [x] **New Tests**: Created `lazy-services.test.ts` (7 tests) and `service-registry.test.ts` (9 tests) — all 30 core tests pass.
 
-### Go 代理构建修复
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: 修复了嵌入式代理中由 "declared and not used" 变量导致的 Go 构建失败。
-
-- [x] **观察者修复**：在 `internal/watcher/clients.go` 中添加了 `totalNewClients` 的调试日志记录。
-- [x] **服务器修复**：在 `internal/api/server.go` 中添加了 `total` 的调试日志记录。
-- [x] **构建验证**：确认使用 `node scripts/build-native.js` 成功构建 `cliproxy-embed.exe`。
-
-### IPC 审计第 1 部分（前 10 个文件）
+### Go Proxy Build Fix
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 已完成对 `src/main/ipc` 前 10 个 handler 文件的审计、文档和重构。
+- **Summary**: Resolved Go build failures in the embedded proxy caused by "declared and not used" variables.
 
-- [x] **重构**：将 `agent.ts`、`brain.ts`、`code-intelligence.ts` 和 `advanced-memory.ts` 转换为使用 `createSafeIpcHandler` / `createIpcHandler` 进行稳健的错误处理和日志记录。
-- [x] **类型安全**：修复了严格的类型问题，向 IPC wrappers 添加显式泛型（例如 `createSafeIpcHandler<void>`），并确保在修改的文件中不使用 `any`。
-- [x] **文档**：向 `auth.ts`、`chat.ts`、`db.ts`、`audit.ts`、`backup.ts` 和 `collaboration.ts` 中的所有导出 `register...` 函数和关键类添加了 JSDoc。
-- [x] **标准化**：尽可能统一错误响应形状，同时保留复杂 handlers （例如 `advancedMemory:deleteMany`）的遗留错误行为。
+- [x] **Watcher Fix**: Added debug logging for `totalNewClients` in `internal/watcher/clients.go`.
+- [x] **Server Fix**: Added debug logging for `total` in `internal/api/server.go`.
+- [x] **Build Verification**: Confirmed successful build of `cliproxy-embed.exe` using `node scripts/build-native.js`.
 
-### IPC 安全加固第 2 部分
+### IPC Audit Part 1 (First 10 Files)
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Audited, documented, and refactored the first 10 IPC handler files (`src/main/ipc`).
+
+- [x] **Refactoring**: Converted `agent.ts`, `brain.ts`, `code-intelligence.ts`, and `advanced-memory.ts` to use `createSafeIpcHandler` / `createIpcHandler` for robust error handling and logging.
+- [x] **Type Safety**: Fixed strict type issues, added explicit generics to IPC wrappers (e.g., `createSafeIpcHandler<void>`), and ensured no `any` usage in modified files.
+- [x] **Documentation**: Added JSDoc to all exported `register...` functions and key classes in `auth.ts`, `chat.ts`, `db.ts`, `audit.ts`, `backup.ts`, and `collaboration.ts`.
+- [x] **Standardization**: Unified error response shapes where possible, while preserving legacy error behaviors for complex handlers (e.g., `advancedMemory:deleteMany`).
+
+### IPC Security Hardening Part 2
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: 将输入校验、IPC 包装器和限流机制扩展到其余 handler 文件。
+- **Summary**: Extended IPC security improvements to remaining handler files with input validation, IPC wrappers, and rate limiting.
 
-- [x] **process.ts**：添加了全面的输入验证（命令、参数、路径、id）、shell 控制字符阻止、维度边界检查和 `createSafeIpcHandler` wrappers。
-- [x] **theme.ts**：添加了带有字母数字模式强制执行的主题 ID/名称验证、JSON 大小限制 (1MB)、自定义主题验证以及所有 22 个 handlers 的 `createIpcHandler`/`createSafeIpcHandler` wrappers。
-- [x] **prompt-templates.ts**：已通过 IPC wrappers 和字符串验证确保安全。
-- [x] **settings.ts**：已使用 `createIpcHandler` wrappers 保证安全，并审核敏感更改的日志记录。
-- [x] **token-estimation.ts**：已经通过 `createSafeIpcHandler` wrappers 和数组/字符串验证确保安全。
-- [x] **window.ts**：已通过发件人验证、协议白名单和命令清理确保安全。
+- [x] **process.ts**: Added comprehensive input validation (command, args, path, id), shell control character blocking, dimension bounds checking, and `createSafeIpcHandler` wrappers.
+- [x] **theme.ts**: Added theme ID/name validation with alphanumeric pattern enforcement, JSON size limits (1MB), custom theme validation, and `createIpcHandler`/`createSafeIpcHandler` wrappers for all 22 handlers.
+- [x] **prompt-templates.ts**: Already secure with IPC wrappers and string validation.
+- [x] **settings.ts**: Already secure with `createIpcHandler` wrappers and audit logging for sensitive changes.
+- [x] **token-estimation.ts**: Already secure with `createSafeIpcHandler` wrappers and array/string validation.
+- [x] **window.ts**: Already secure with sender validation, protocol allowlisting, and command sanitization.
 
-### Lint 警告清理
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: 已清除全代码库 ESLint 警告与错误（114 -> 0）。
-
-- [x] **无效合并**：在 `mcp-marketplace.ts` (5)、`mcp-marketplace.service.ts` (7)、`MCPStore.tsx` (1) 中将 `||` 替换为 `??`。
-- [x] **不必要的条件**：删除了 `mcp-marketplace.service.ts` 中所需属性上的冗余可选链。
-- [x] **类型安全**：用 `agent-task-executor.ts` 中正确键入的 `Error` 参数替换 `any[]` 其余参数。
-- [x] **非空断言**：用 `agent-task-executor.ts` 中的保护子句替换 `config!`。
-- [x] **可选链**：在 `getModelConfig` 中重构条件以正确使用可选链。
-- [x] **导入排序**：自动修复 `cost-estimation.service.ts` 和 `ExecutionPlanView.tsx` 中的导入。
-- [x] **未使用的变量**：删除了 `agent-task-executor.ts` 中未使用的 catch 变量。
-
-### LLM 基础设施与本地化
+### Lint Warning Cleanup
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 整合 LLM 二进制，并将系统消息/工具从土耳其语统一为英语。
+- **Summary**: Eliminated all ESLint warnings and errors across the codebase (114 → 0).
 
-- [x] **二进制合并**：将 `llama-server.exe` 移至 `resources/bin/` 并更新 `LlamaService` 以使用标准化路径。
-- [x] **国际化**：将 `Ollama` 启动对话框、`Chat` 系统提示和 `Tool` 定义从土耳其语翻译成英语，涵盖 6 个核心服务。
-- [x] **服务可靠性**：修复了 `PerformanceMonitorService` 中缺失的资源逻辑和资源处置。
-- [x] **标准化**：Go (`cliproxy-embed`) 和 C++ (`llama-server`) 二进制文件现在都驻留在 `resources/bin/` 中。
+- [x] **Nullish Coalescing**: Replaced `||` with `??` across `mcp-marketplace.ts` (5), `mcp-marketplace.service.ts` (7), `MCPStore.tsx` (1).
+- [x] **Unnecessary Conditions**: Removed redundant optional chains on required properties in `mcp-marketplace.service.ts`.
+- [x] **Type Safety**: Replaced `any[]` rest params with properly typed `Error` param in `agent-task-executor.ts`.
+- [x] **Non-null Assertions**: Replaced `config!` with guard clauses in `agent-task-executor.ts`.
+- [x] **Optional Chains**: Restructured condition in `getModelConfig` to use optional chaining properly.
+- [x] **Import Sorting**: Auto-fixed imports in `cost-estimation.service.ts` and `ExecutionPlanView.tsx`.
+- [x] **Unused Variables**: Removed unused catch variable in `agent-task-executor.ts`.
 
-### Logo 生成系统优化
+### LLM Infrastructure & Localization
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Consolidated LLM binaries and localized system messages/tools from Turkish to English.
+
+- [x] **Binary Consolidation**: Moved `llama-server.exe` to `resources/bin/` and updated `LlamaService` to use the standardized path.
+- [x] **Internationalization**: Translated `Ollama` startup dialogs, `Chat` system prompts, and `Tool` definitions from Turkish to English across 6 core services.
+- [x] **Service Reliability**: Fixed missing resource logic and resource disposal in `PerformanceMonitorService`.
+- [x] **Standardization**: Both Go (`cliproxy-embed`) and C++ (`llama-server`) binaries now reside in `resources/bin/`.
+
+### Logo Generation System Refinement
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 升级 Projects 与 Ideas 的 Logo 生成：多模型/风格、最多 4 个批量生成，以及更好的交互体验。
+- **Summary**: Modernized the logo generation system for both Projects and Ideas. Added support for multiple models, styles, and batch generation (up to 4 logos at once). Improved UX with drag-and-drop file uploads and a refined selection UI.
 
-- [x] **项目徽标生成器**：通过模型/样式选择完全重新设计 `LogoGeneratorModal.tsx`。
-- [x] **批量生成**：添加了对在单个请求中生成多个徽标的支持。
-- [x] **拖放**：为手动徽标应用程序实现了文件放置处理。
-- [x] **Idea Logo Generation**：重构 `IdeaGeneratorService` 以支持强制模型/样式参数并返回多个徽标路径。
-- [x] **UI 组件**：创建了自定义 `Label` 组件并在 `@/components/ui` 中合并了 UI 导出。
-- [x] **类型安全**：在新徽标生成 IPC handlers 和服务中实现了 100% 类型安全。
+- [x] **Project Logo Generator**: Complete redesign of `LogoGeneratorModal.tsx` with Model/Style selection.
+- [x] **Batch Generation**: Added support for generating multiple logos in a single request.
+- [x] **Drag-and-Drop**: Implemented file drop handling for manual logo application.
+- [x] **Idea Logo Generation**: Refactored `IdeaGeneratorService` to support mandatory model/style arguments and return multiple logo paths.
+- [x] **UI Components**: Created custom `Label` component and consolidated UI exports in `@/components/ui`.
+- [x] **Type Safety**: Achieved 100% type safety across the new logo generation IPC handlers and services.
 
-### Project Agent Git 自动化（AGT-GIT-01..05）
+### Project Agent Git Automation (AGT-GIT-01..05)
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 当已关联 GitHub 账号并选择项目时，为 Project Agent 执行增加任务级 Git 自动化。
+- **Summary**: Added task-scoped Git automation for Project Agent execution when a GitHub account is linked and a project is selected.
 
-- [x] **Branch Bootstrap**：仅当活动 GitHub 帐户 + 选定的 git 项目可用时，在执行开始时自动创建 `agent/*` 功能 branch （直接运行和批准计划运行）。
-- [x] **步骤自动提交**：成功完成步骤后自动暂存并提交。
-- [x] **差异预览**：在每次自动提交之前将差异统计预览发送到任务日志中。
-- [x] **创建 PR 节点**：添加了 `create-pr` 任务节点类型和渲染器/主桥方法来生成/打开 GitHub 比较 URL。
-- [x] **Branch 清理**：任务完成后，检查基本 branch 并安全删除自动创建的功能 branch (`git branch -d`)。
-- [x] **Git 命令修复**：更正了 `GitService` commit/unstage 命令语法问题。
+- [x] **Branch Bootstrap**: Auto-creates an `agent/*` feature branch at execution start (direct run and approved-plan run), only when active GitHub account + selected git project are available.
+- [x] **Step Auto-Commit**: Auto-stages and commits after successful step completion.
+- [x] **Diff Preview**: Emits a diff stat preview into task logs before every auto-commit.
+- [x] **Create PR Node**: Added `create-pr` task node type and renderer/main bridge method to generate/open GitHub compare URL.
+- [x] **Branch Cleanup**: On task completion, checks out base branch and safely deletes auto-created feature branch (`git branch -d`).
+- [x] **Git Command Fixes**: Corrected `GitService` commit/unstage command syntax issues.
 
-### Project Agent 人机协同控制（AGT-HIL-01..05）
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: 为 Project Agent 实现了完整的人在回路（HIL）控制，支持计划执行期间的细粒度人工干预。
-
-- [x] **步骤批准**：添加了 `requiresApproval` 标志和 UI 控件以暂停执行并在继续之前需要明确的用户批准。
-- [x] **步骤跳过**：实施“跳过”功能以绕过特定步骤，而无需停止整个计划。
-- [x] **内联编辑**：启用待处理步骤描述的点击编辑功能，允许动态计划细化。
-- [x] **干预**：添加了“插入干预”功能，可在步骤之间插入手动暂停点。
-- [x] **评论**：实现了用于用户注释和协作的每步骤评论系统。
-- [x] **视觉指示器**：更新了 `StepIndicator` 以使用不同的图标严格可视化 `skipped` 和 `awaiting_approval` 状态。
-- [x] **国际化**：所有 HIL UI 元素的完整英语和土耳其语 (fallback) 本地化。
-
-### Project Agent 多模型协作与模板（AGT-COL-01..04, AGT-TPL-01..04）
+### Project Agent Human-in-the-Loop (AGT-HIL-01..05)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 完成了 Phase 7/8 在启动流程、服务层、IPC、preload bridge 与 web mock bridge 的端到端打通。
+- **Summary**: Implemented comprehensive Human-in-the-Loop (HIL) controls for the Project Agent, allowing granular user intervention during plan execution.
 
-- [x] **步骤模型分配和路由**：启用每步骤模型分配和具有可配置路由规则的任务类型路由。
-- [x] **投票 + 共识**：为冲突的模型输出添加了投票会话（创建/提交/请求/解决/获取）和共识构建器 API。
-- [x] **模板系统**：启用内置和用户模板、类别过滤、保存/删除、导出/导入以及带验证的变量应用程序。
-- [x] **Runtime 集成**：计划步骤现在在执行/批准之前通过协作元数据得到丰富。
-- [x] **Bridge/IPC 覆盖**：为所有新协作/模板操作添加了类型化 IPC/preload/renderer 桥接方法。
-- [x] **验证**：`npm run type-check` 和 `npm run build` 通过。
+- [x] **Step Approvals**: Added `requiresApproval` flag and UI controls to pause execution and require explicit user approval before proceeding.
+- [x] **Step Skipping**: Implemented "Skip" functionality to bypass specific steps without halting the entire plan.
+- [x] **Inline Editing**: Enabled click-to-edit for pending step descriptions, allowing dynamic plan refinement.
+- [x] **Interventions**: Added "Insert Intervention" capability to inject manual pause points between steps.
+- [x] **Comments**: Implemented per-step commenting system for user notes and collaboration.
+- [x] **Visual Indicators**: Updated `StepIndicator` to strictly visualize `skipped` and `awaiting_approval` states with distinct icons.
+- [x] **Internationalization**: Full English and Turkish (fallback) localization for all HIL UI elements.
 
-### 代理韧性与进程管理
+### Project Agent Multi-Model Collaboration & Templates (AGT-COL-01..04, AGT-TPL-01..04)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 解决了嵌入式 Go 代理的启动崩溃与进程终止问题。
+- **Summary**: Implemented Phase 7/8 end-to-end wiring across startup, service layer, IPC, preload bridge, and web mock bridge.
 
-- [x] **身份验证同步弹性**：如果初始身份验证同步失败，则将 Go 代理修改为警告日志而不是致命退出，即使 Electron 服务器略有延迟，也允许它启动。
-- [x] **进程生命周期**：删除了开发中的 `detached` 模式，以确保代理进程被主进程正确清理。
-- [x] **强化终止**：使用强制 (`/F`) 和树终止 (`/T`) 标志改进了 Windows 上的 `taskkill` 逻辑，并具有更好的错误处理能力。
-- [x] **端口验证**：添加了启动前端口检查，以确保代理不会尝试在占用的端口上启动。
+- [x] **Step Model Assignment & Routing**: Enabled per-step model assignment and task-type routing with configurable routing rules.
+- [x] **Voting + Consensus**: Added voting sessions (create/submit/request/resolve/get) and consensus builder API for conflicting model outputs.
+- [x] **Template System**: Enabled built-in and user templates, category filtering, save/delete, export/import, and variable application with validation.
+- [x] **Runtime Integration**: Plan steps are now enriched with collaboration metadata before execution/approval.
+- [x] **Bridge/IPC Coverage**: Added typed IPC/preload/renderer bridge methods for all new collaboration/template operations.
+- [x] **Validation**: `npm run type-check` and `npm run build` pass.
 
-### 脚本整合与清理
+### Proxy Resilience & Process Management
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Resolved startup crashes and process termination issues for the embedded Go proxy.
+
+- [x] **Auth Sync Resilience**: Modified the Go proxy to warning-log instead of fatal-exit if the initial auth sync fails, allowing it to start even if the Electron server is slightly delayed.
+- [x] **Process Lifecycle**: Removed `detached` mode in development to ensure the proxy process is correctly cleaned up by the main process.
+- [x] **Hardened Termination**: Improved `taskkill` logic on Windows using force (`/F`) and tree-kill (`/T`) flags with better error handling.
+- [x] **Port Verification**: Added pre-start port checking to ensure the proxy doesn't attempt to start on an occupied port.
+
+### Script Consolidation & Cleanup
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 整合构建环境脚本并统一代理二进制管理方式。
+- **Summary**: Consolidated build environment setup scripts and standardized proxy binary management.
 
-- [x] **代理合并**：将 `cliproxy-embed.exe` 标准化为 `resources/bin/`，并在 `ProxyProcessManager` 中自动重建集成。
-- [x] **脚本合并**：将 `src/scripts/setup-build-env.js` 和 `scripts/setup-build-env.js` 合并到单个根 `scripts/setup-build-env.js` 文件中。
-- [x] **VS 检测集成**：将 Visual Studio 版本检测和 `.npmrc` 配置集成到主安装脚本中。
-- [x] **清理**：删除了多余的 `src/scripts/` 目录，孤立的 `vendor/cmd`、`vendor/native`、`vendor/package` 和绝对 `proxy.exe` 以及未使用的 llama 二进制文件。
+- [x] **Proxy Consolidation**: Standardized `cliproxy-embed.exe` to `resources/bin/` with auto-rebuild integration in `ProxyProcessManager`.
+- [x] **Script Consolidation**: Merged `src/scripts/setup-build-env.js` and `scripts/setup-build-env.js` into a single root `scripts/setup-build-env.js` file.
+- [x] **VS Detection Integration**: Integrated Visual Studio version detection and `.npmrc` configuration into the main setup script.
+- [x] **Cleanup**: Removed redundant `src/scripts/` directory, orphaned `vendor/cmd`, `vendor/native`, `vendor/package`, and absolute `proxy.exe` and unused llama binaries.
 
-### Workspace Explorer 打磨与 UX 优化
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: 显著提升了 workspace explorer 的性能与生产力体验。
-
-- [x] **性能**：在 `listDirectory` 中并行化 `fs.stat`，并通过组合二进制检测优化 `readFile`。
-- [x] **UX 稳定性**：通过优化 React 挂钩依赖项并添加状态防护，修复了无限加载旋转器/图标。
-- [x] **多重选择**：实现了标准 Ctrl/Cmd 和 Shift 选择支持。
-- [x] **键盘导航**：添加了完整的键盘控制（箭头、F2 用于重命名、删除/删除、Enter 用于打开/切换）。
-- [x] **批量操作**：添加了对同时删除多个选定项目并确认的支持。
-- [x] **DND 强化**：添加了距离（8 像素）和延迟（250 毫秒）阈值，以防止意外的拖放操作。
-
-### Workspace 文件操作（删除与拖拽）
+### Workspace Explorer Polish & UX
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 在 workspace explorer 中实现了安全删除与 VS Code 风格的拖拽移动文件/文件夹。
+- **Summary**: Significant performance and productivity overhaul for the workspace explorer.
 
-- [x] **文件删除**：通过确认模式向工作区上下文菜单添加了“删除”操作。
-- [x] **拖放移动**：集成 `@dnd-kit` 可以通过将文件和文件夹拖到同一安装中的目标目录来移动文件和文件夹。
-- [x] **虚拟化支持**：确保拖放与大型项目的虚拟化树视图无缝配合。
-- [x] **类型安全**：实现了移动/删除操作的完全类型安全，并解决了多个现有的 lint/类型错误。
-- [x] **NASA 规则**：确保修改后的钩子 100% 符合 NASA 的十次幂规则（固定支架、功能长度等）。
-- [x] **错误修复**：解决了主进程中 `registerFilesIpc` 的错误 IPC handler 签名。
+- [x] **Performance**: Parallelized `fs.stat` in `listDirectory` and optimized `readFile` with combined binary detection.
+- [x] **UX Stability**: Fixed infinite loading spinners/icons by optimizing React hook dependencies and adding state guards.
+- [x] **Multi-selection**: Implemented standard Ctrl/Cmd and Shift selection support.
+- [x] **Keyboard Navigation**: Added full keyboard control (Arrows, F2 for Rename, Delete/Del, Enter to Open/Toggle).
+- [x] **Batch Actions**: Added support for deleting multiple selected items simultaneously with confirmation.
+- [x] **DND Hardening**: Added distance (8px) and delay (250ms) thresholds to prevent accidental drag-and-drop operations.
 
-### Workspace 文件操作（DND 优化与 Windows 支持）
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: 通过 DND 激活约束提升稳定性，并修复 Windows 路径问题。
-
-- [x] **DND 强化**：为 `PointerSensor` 实现了 `distance` (8px) 和 `delay` (250ms) 阈值，以区分单击和拖动。
-- [x] **计划步骤 DND**：对 AI 计划步骤重新排序应用类似的约束，以防止意外移位。
-- [x] **Windows 路径支持**：修复了 `FileSystemService` 中 `isPathAllowed` 的区分大小写问题，以防止 Windows 上出现“拒绝访问”错误。
-
-### Workspace 文件操作（Windows 支持与本地化）
+### Workspace File Operations (Delete & Drag-and-Drop)
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 修复 Windows 文件操作关键问题并完成界面本地化。
+- **Summary**: Implemented file system manipulation features in the workspace explorer, including secure deletion and VS Code-style drag-and-drop for moving files and folders.
 
-- [x] **Windows 路径支持**：修复了 `FileSystemService` 中 `isPathAllowed` 的区分大小写问题，以防止 Windows 上出现“拒绝访问”错误。
-- [x] **路径规范化**：更新了 `createEntry`、`renameEntry` 和 `moveEntry` 以正确处理 Windows 反斜杠 (`\`) 和正斜杠 (`/`)。
-- [x] **UI 本地化**：为工作区模态标题添加了土耳其语和英语翻译（删除、重命名、创建）。
-- [x] **类型安全**：确保 100% 类型安全并解决了 linting 警告。
+- [x] **File Deletion**: Added "Delete" action to workspace context menu with confirmation modal.
+- [x] **Drag-and-Drop Move**: Integrated `@dnd-kit` to enable moving files and folders by dragging them onto target directories within the same mount.
+- [x] **Virtualization Support**: Ensured drag-and-drop works seamlessly with the virtualized tree view for large projects.
+- [x] **Type Safety**: achieved full type safety for Move/Delete operations and resolved multiple existing lint/type errors.
+- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules (fixed braces, function length, etc.) in modified hooks.
+- [x] **Bug Fix**: Resolved an incorrect IPC handler signature for `registerFilesIpc` in the main process.
+
+### Workspace File Operations (DND Polish & Windows Support)
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Improved workspace explorer stability with DND activation constraints and fixed Windows path issues.
+
+- [x] **DND Hardening**: Implemented `distance` (8px) and `delay` (250ms) thresholds for `PointerSensor` to distinguish between clicks and drags.
+- [x] **Plan Step DND**: Applied similar constraints to AI plan step reordering to prevent accidental displacement.
+- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
+
+### Workspace File Operations (Windows Support & Localization)
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed critical bugs in workspace file operations on Windows and localized the UI.
+
+- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
+- [x] **Path Normalization**: Updated `createEntry`, `renameEntry`, and `moveEntry` to correctly handle Windows backslashes (`\`) and forward slashes (`/`).
+- [x] **UI Localization**: Added Turkish and English translations for workspace modal titles (Delete, Rename, Create).
+- [x] **Type Safety**: Ensured 100% type safety and resolved linting warnings.
 
 ## [2026-02-10]
 
-### 调试 Codex 令牌刷新
+### Debugging Codex Token Refresh
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: 解决了 `tandem-token-service` (Node/Rust) 和嵌入式 Go 代理之间导致 Codex (OpenAI) 令牌重用错误的竞争条件。
+- **Summary**: Resolved a race condition between the `tandem-token-service` (Node/Rust) and embedded Go Proxy that caused Codex (OpenAI) token reuse errors.
 
-- [x] **竞争条件修复**：修改了 `AuthAPIService` 以从 `codex` 提供程序的 Go 代理中隐藏 `refresh_token`，确保只有 `TokenService` 管理刷新 (BUG-002)。
-- [x] **验证**：通过 lint 检查验证修复。
+- [x] **Race Condition Fix**: Modified `AuthAPIService` to hide `refresh_token` from the Go Proxy for `codex` provider, ensuring only `TokenService` manages refreshes (BUG-002).
+- [x] **Verification**: Validated fix with lint checks.
 
-### 项目代理视觉增强
+### Project Agent Visual Enhancements
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 为项目代理画布实施了全面的视觉增强，提高了计划执行期间的可用性和反馈。
+- **Summary**: Implemented comprehensive visual enhancements for the Project Agent canvas, improving usability and feedback during plan execution.
 
-- [x] **动画数据流**：添加了 `AnimatedEdge` 组件以可视化节点之间的活动数据流 (AGT-VIS-01)。
-- [x] **画布迷你地图**：集成 `MiniMap` 以便更轻松地导航大型平面图 (AGT-VIS-02)。
-- [x] **实时日志流**：增强型 `LogConsole` 具有自动滚动和虚拟化列表支持 (AGT-VIS-03)。
-- [x] **拖放重新排序**：使用 `@dnd-kit` (AGT-VIS-04) 实现计划步骤的拖放功能。
-- [x] **可折叠步骤组**：增加了对计划步骤进行分组和折叠的功能，以实现更好的组织 (AGT-VIS-05)。
-- [x] **零 Lint/类型错误**：确保所有新组件都通过严格的 lint 和类型检查。
+- [x] **Animated Data Flow**: Added `AnimatedEdge` component to visualize active data flow between nodes (AGT-VIS-01).
+- [x] **Canvas Mini-Map**: Integrated `MiniMap` for easier navigation of large plan graphs (AGT-VIS-02).
+- [x] **Real-time Log Streaming**: Enhanced `LogConsole` with auto-scrolling and virtualized list support (AGT-VIS-03).
+- [x] **Drag & Drop Reordering**: Implemented drag-and-drop functionality for plan steps using `@dnd-kit` (AGT-VIS-04).
+- [x] **Collapsible Step Groups**: Added ability to group and collapse plan steps for better organization (AGT-VIS-05).
+- [x] **Zero Lint/Type Errors**: Ensured all new components pass strict linting and type checking.
 
 ## [2026-02-09]
 
@@ -384,32 +453,32 @@
 - [x] **Workspace Isolation**: Added `workspaceId` support to terminal sessions for per-project terminal isolation.
 - [x] **IPC Layer**: Updated IPC handlers to support profiles, backends, and reliable asynchronous session creation.
 
-### 高级终端系统 - 第 2 阶段 (Alacritty)
+### Advanced Terminal System - Phase 2 (Alacritty)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 为跨平台 GPU 加速终端会话实现了 Alacritty 后端。
+- **Summary**: Implemented the Alacritty backend for cross-platform GPU-accelerated terminal sessions.
 
-- [x] **Alacritty 后端**：添加了具有自动发现和外部窗口生成功能的 `AlacrittyBackend` 实现。
-- [x] **后端注册**：在 `TerminalService` 中注册 `AlacrittyBackend`。
+- [x] **Alacritty Backend**: Added `AlacrittyBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `AlacrittyBackend` in `TerminalService`.
 
-### 高级终端系统 - 第 2 阶段（Ghostty）
+### Advanced Terminal System - Phase 2 (Ghostty)
 
 - **Type**: feature
 - **Status**: in_progress
-- **Summary**: 为 GPU 加速终端会话实现了 Ghostty 后端。
+- **Summary**: Implemented the Ghostty backend for GPU-accelerated terminal sessions.
 
-- [x] **幽灵后端**：添加了具有自动发现和外部窗口生成功能的 `GhosttyBackend` 实现。
-- [x] **后端注册**：在 `TerminalService` 中注册 `GhosttyBackend` 以进行会话管理。
+- [x] **Ghostty Backend**: Added `GhosttyBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `GhosttyBackend` in `TerminalService` for session management.
 
-### 高级终端系统 - 第 2 阶段（曲速）
+### Advanced Terminal System - Phase 2 (Warp)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 为现代人工智能驱动的终端会话实现了 Warp 后端。
+- **Summary**: Implemented the Warp backend for modern AI-powered terminal sessions.
 
-- [x] **Warp 后端**：添加了具有自动发现和外部窗口生成功能的 `WarpBackend` 实现。
-- [x] **后端注册**：在 `TerminalService` 中注册 `WarpBackend`。
+- [x] **Warp Backend**: Added `WarpBackend` implementation with auto-discovery and external window spawning.
+- [x] **Backend Registration**: Registered `WarpBackend` in `TerminalService`.
 
 ### Database Stability & Stale Port Handling
 
@@ -1993,27 +2062,27 @@ Implemented comprehensive enterprise-grade quality standards including full test
 **Result**: Tandem now meets enterprise standards for testing, security, and code quality! 🚀
 ## Recent Updates
 
-### 终端后端选择和 UI 改进
+### Terminal Backend Selection & UI Refinements
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: 通过持久的用户首选项和完全本地化完善了终端后端选择 UI。
+- **Summary**: Refined the terminal backend selection UI with persistent user preferences and full localization.
 
-- [x] **后端选择 UI**：在“新终端”菜单中实现了后端选择下拉列表。
-- [x] **持久性**：为首选终端后端添加了双重持久性（localStorage + AppSettings）。
-- [x] **本地化**：完成所有终端后端相关字符串的土耳其语和英语本地化。
-- [x] **可靠性**：重构了 `TerminalPanel.tsx` 以符合 NASA 规则，并改进了 `TerminalService.ts` 中的 fallback 逻辑。
+- [x] **Backend Selection UI**: Implemented backend selection dropdown in the "New Terminal" menu.
+- [x] **Persistence**: Added dual-persistence for preferred terminal backend (localStorage + AppSettings).
+- [x] **Localization**: Completed Turkish and English localization for all terminal backend related strings.
+- [x] **Reliability**: Refactored `TerminalPanel.tsx` for NASA rule compliance and improved fallback logic in `TerminalService.ts`.
 
-### 终端智能建议（AI驱动）
+### Terminal Smart Suggestions (AI-powered)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 在集成终端中实现了人工智能驱动的命令完成（ghost-text）。
+- **Summary**: Implemented AI-powered command completion (ghost-text) in the integrated terminal.
 
-- [x] **智能服务**：使用 LLM 创建 `TerminalSmartService` 用于命令预测。
-- [x] **IPC Handlers**：添加了 `terminal:getSuggestions` IPC 端点。
-- [x] **Ghost Text UI**：使用 xterm.js 装饰实现 `useTerminalSmartSuggestions` 挂钩。
-- [x] **NASA 规则**：确保 100% 遵守 NASA 的十次方规则和严格的 React linting。
+- [x] **Smart Service**: Created `TerminalSmartService` for command prediction using LLMs.
+- [x] **IPC Handlers**: Added `terminal:getSuggestions` IPC endpoint.
+- [x] **Ghost Text UI**: Implemented `useTerminalSmartSuggestions` hook using xterm.js decorations.
+- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules and strict React linting.
 
 ### UI Optimization
 

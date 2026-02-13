@@ -25,6 +25,50 @@ export class TandemError extends Error {
     }
 }
 
+export class ValidationTandemError extends TandemError {
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, AppErrorCode.VALIDATION_ERROR, context);
+    }
+}
+
+export class NetworkTandemError extends TandemError {
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, AppErrorCode.NETWORK_ERROR, context);
+    }
+}
+
+export class NotFoundTandemError extends TandemError {
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, AppErrorCode.NOT_FOUND, context);
+    }
+}
+
+export class UnauthorizedTandemError extends TandemError {
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, AppErrorCode.UNAUTHORIZED, context);
+    }
+}
+
+export interface ErrorRecoveryStrategy {
+    code: string;
+    retryable: boolean;
+    userAction: 'retry' | 'reauthenticate' | 'check-input' | 'contact-support';
+}
+
+const RECOVERY_BY_CODE: Record<string, ErrorRecoveryStrategy> = {
+    [AppErrorCode.NETWORK_ERROR]: { code: AppErrorCode.NETWORK_ERROR, retryable: true, userAction: 'retry' },
+    [AppErrorCode.VALIDATION_ERROR]: { code: AppErrorCode.VALIDATION_ERROR, retryable: false, userAction: 'check-input' },
+    [AppErrorCode.UNAUTHORIZED]: { code: AppErrorCode.UNAUTHORIZED, retryable: false, userAction: 'reauthenticate' },
+    [AppErrorCode.NOT_FOUND]: { code: AppErrorCode.NOT_FOUND, retryable: false, userAction: 'contact-support' },
+    [AppErrorCode.INTERNAL_ERROR]: { code: AppErrorCode.INTERNAL_ERROR, retryable: true, userAction: 'retry' },
+    [AppErrorCode.UNKNOWN]: { code: AppErrorCode.UNKNOWN, retryable: false, userAction: 'contact-support' }
+};
+
+export function getErrorRecoveryStrategy(error: unknown): ErrorRecoveryStrategy {
+    const code = getErrorCode(error) ?? AppErrorCode.UNKNOWN;
+    return RECOVERY_BY_CODE[code] ?? RECOVERY_BY_CODE[AppErrorCode.UNKNOWN];
+}
+
 /**
  * Extracts error message from an object if present
  */

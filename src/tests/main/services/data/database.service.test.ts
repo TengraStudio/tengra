@@ -58,7 +58,11 @@ describe('DatabaseService', () => {
                     rows: res.rows,
                     affected_rows: res.affectedRows ?? 0
                 };
-            })
+            }),
+            searchCodeSymbols: vi.fn().mockResolvedValue([]),
+            storeCodeSymbol: vi.fn().mockResolvedValue(undefined),
+            storeSemanticFragment: vi.fn().mockResolvedValue(undefined),
+            searchSemanticFragments: vi.fn().mockResolvedValue([])
         } as unknown as DatabaseClientService;
 
         const mockTimeTracking = {
@@ -135,6 +139,77 @@ describe('DatabaseService', () => {
 
             await service.duplicateChat('old-id');
             expect(mockQuery).toHaveBeenCalled();
+        });
+    });
+
+    describe('DBSVC query optimization', () => {
+        it('should collect query analysis and recommendations', async () => {
+            await service.query('SELECT * FROM chats');
+            const analysis = service.getQueryAnalysis();
+            const recommendations = service.getQueryRecommendations();
+
+            expect(analysis.length).toBeGreaterThan(0);
+            expect(analysis[0].calls).toBe(1);
+            expect(recommendations.some(r => r.code === 'select-star')).toBe(true);
+        });
+    });
+
+    describe('DBSVC vector search', () => {
+        it('should cache semantic vector search results and track analytics', async () => {
+            const dbClient = (service as any).dbClient;
+            dbClient.searchSemanticFragments.mockResolvedValue([
+                {
+                    id: 'frag-1',
+                    content: 'test',
+                    embedding: [1, 0],
+                    source: 'unit',
+                    source_id: 'src-1',
+                    tags: [],
+                    importance: 0.5,
+                    project_path: '/project',
+                    created_at: Date.now(),
+                    updated_at: Date.now()
+                }
+            ]);
+
+            const vector = [1, 0];
+            await service.searchSemanticFragments(vector, 1, '/project');
+            await service.searchSemanticFragments(vector, 1, '/project');
+
+            expect(dbClient.searchSemanticFragments).toHaveBeenCalledTimes(1);
+            const analytics = service.getVectorSearchAnalytics();
+            expect(analytics.semanticFragments.queries).toBe(2);
+            expect(analytics.semanticFragments.cacheHits).toBe(1);
+        });
+    });
+
+    describe('DBSVC data archiving', () => {
+        it('should archive old chats by cutoff', async () => {
+            const now = Date.now();
+            vi.spyOn(service, 'getAllChats').mockResolvedValue([
+                {
+                    id: 'old-chat',
+                    title: 'Old',
+                    messages: [],
+                    createdAt: new Date(now - 20_000),
+                    updatedAt: new Date(now - 10_000),
+                    metadata: {}
+                } as any,
+                {
+                    id: 'new-chat',
+                    title: 'New',
+                    messages: [],
+                    createdAt: new Date(now),
+                    updatedAt: new Date(now),
+                    metadata: {}
+                } as any
+            ]);
+            const archiveSpy = vi.spyOn(service, 'archiveChat').mockResolvedValue({ success: true } as any);
+
+            const result = await service.archiveOldChats(now - 5_000);
+
+            expect(result.archived).toBe(1);
+            expect(archiveSpy).toHaveBeenCalledWith('old-chat', true);
         });
     });
 });

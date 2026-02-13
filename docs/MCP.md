@@ -16,7 +16,10 @@ src/main/mcp/servers/
 ├── web.server.ts          # HTTP requests
 ├── search.server.ts       # Web search
 ├── data.server.ts         # Data processing
+├── database-admin.server.ts # DB diagnostics and schema health
 ├── dev.server.ts          # Development tools
+├── cloud-storage.server.ts # Cloud storage metadata helpers
+├── cicd.server.ts         # CI/CD and pipeline insights
 ├── intelligence.server.ts # AI analysis
 ├── internet.server.ts     # Network utilities
 ├── network.server.ts      # SSH/networking
@@ -24,6 +27,13 @@ src/main/mcp/servers/
 ├── security.server.ts     # Security scanning
 └── utility.server.ts      # Miscellaneous utilities
 ```
+
+### Templates and Docs
+
+- MCP server template: `src/main/mcp/templates/server.template.ts`
+- Generator CLI: `node scripts/mcp/generate-server.cjs --name=my-server`
+- Generated reference: `docs/MCP_SERVERS.generated.md`
+- Generate docs: `node scripts/docs/generate-mcp-docs.cjs`
 
 ---
 

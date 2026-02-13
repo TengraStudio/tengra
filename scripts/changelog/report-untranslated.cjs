@@ -40,6 +40,12 @@ function shouldIgnoreItemForTranslationCheck(item) {
     if (/^##\s*\[\d{4}-\d{2}-\d{2}\]/.test(text)) {
         return true;
     }
+    if (/^###\s+/.test(text)) {
+        return true;
+    }
+    if (/^\*\*[^*]+:\*\*$/.test(text) || /^\*\*[^*]+\*\*:$/.test(text)) {
+        return true;
+    }
 
     // Keep file paths, env vars and pure code tokens out of translation quality metrics.
     if (/^[-*]?\s*`[^`]+`(?:,\s*`[^`]+`)*$/.test(text)) {
@@ -67,6 +73,30 @@ function shouldIgnoreItemForTranslationCheck(item) {
         return true;
     }
     if (/^[-*]?\s*[A-Za-z0-9_.-]+(?:,\s*[A-Za-z0-9_.-]+){2,}$/.test(text)) {
+        return true;
+    }
+    if (/^[-*]?\s*`[^`]+`:\s*[A-Za-z0-9_.-]+(?:,\s*[A-Za-z0-9_.-]+){1,}$/.test(text)) {
+        return true;
+    }
+    if (/^[-*]?\s*\*\*[^*]+\*\*:\s*$/.test(text)) {
+        return true;
+    }
+    if (/^\d+\.\s*\*\*[^*]+\*\*:\s*$/.test(text)) {
+        return true;
+    }
+    if (/^[-*]?\s*[A-Za-z]+:\s*`[^`]+`(?:,\s*`[^`]+`)+\.?$/.test(text)) {
+        return true;
+    }
+    if (/^[-*]?\s*`[a-z0-9_.-]+`\s*\(EN\/TR\)\s*$/i.test(text)) {
+        return true;
+    }
+    if (/^(const|let|var)\s+[A-Za-z_$][\w$]*\s*=/.test(text)) {
+        return true;
+    }
+    if (/^[-*]?\s*[^`]*\.(tsx|ts|js|md|css|json|ps1)\b/i.test(text)) {
+        return true;
+    }
+    if (/^###\s+v\d+\.\d+\.\d+/.test(text)) {
         return true;
     }
 

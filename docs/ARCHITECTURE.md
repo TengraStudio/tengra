@@ -57,5 +57,13 @@ For long-term agent memory, we utilize vector embeddings stored within our datab
 3. **Execution and Verification**: For each step, the Executor agent modifies code or performs system actions, followed by a verification step where the results are reviewed against the original plan.
 4. **Audit and Refinement**: A Critic agent reviews the final output to ensure it meets quality standards and doesn't introduce regressions.
 
+## Architecture Decisions
+
+Formal decisions are tracked in `docs/adr/`:
+
+- `0001-electron-multi-process-architecture.md`
+- `0002-structured-changelog-source-of-truth.md`
+- `0003-service-oriented-main-process.md`
+
 
 

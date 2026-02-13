@@ -9,6 +9,13 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
+import {
+    PANEL_LAYOUT_STORAGE_KEY,
+    parsePersistedPanelLayout,
+    serializePersistedPanelLayout,
+    type PersistedPanelLayout,
+} from './panel-layout-persistence';
+
 // Types
 export type PanelPosition = 'left' | 'right' | 'bottom' | 'center'
 export type PanelSize = 'small' | 'medium' | 'large' | number
@@ -250,8 +257,48 @@ export const PanelLayoutProvider: React.FC<{
             group.activePanel = group.activePanel ?? panel.id;
         }
 
+        let persisted: PersistedPanelLayout | null = null;
+        try {
+            persisted = parsePersistedPanelLayout(localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY));
+        } catch {
+            persisted = null;
+        }
+
+        if (persisted?.groups) {
+            for (const [id, saved] of Object.entries(persisted.groups)) {
+                const group = groups[id];
+                if (!group) {
+                    continue;
+                }
+                if (saved.size !== undefined) {
+                    group.size = saved.size;
+                }
+                if (saved.collapsed !== undefined) {
+                    group.collapsed = saved.collapsed;
+                }
+                if (saved.activePanel !== undefined) {
+                    group.activePanel = saved.activePanel;
+                }
+            }
+        }
+
         return { groups, activePanel: null };
     });
+
+    useEffect(() => {
+        const groups: PersistedPanelLayout['groups'] = {};
+        for (const [id, group] of Object.entries(state.groups)) {
+            groups[id] = {
+                size: group.size,
+                collapsed: group.collapsed,
+                activePanel: group.activePanel
+            };
+        }
+        localStorage.setItem(
+            PANEL_LAYOUT_STORAGE_KEY,
+            serializePersistedPanelLayout({ version: 1, groups })
+        );
+    }, [state.groups]);
 
     const addPanel = useCallback((panel: Panel) => {
         setState(prev => {

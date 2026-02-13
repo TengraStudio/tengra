@@ -228,6 +228,10 @@ export class ChatRepository extends BaseRepository {
             conditions.push('c.is_favorite = ?');
             params.push(options.isFavorite ? 1 : 0);
         }
+        if (options.isArchived !== undefined) {
+            conditions.push('COALESCE(json_extract(c.metadata, \'$.isArchived\'), 0) = ?');
+            params.push(options.isArchived ? 1 : 0);
+        }
 
         if (options.startDate) {
             conditions.push('c.created_at >= ?');

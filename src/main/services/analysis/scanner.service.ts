@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import * as fs from 'node:fs/promises';
@@ -55,7 +56,7 @@ export class ScannerService {
                     results.push({ path: fullPath, content, chunks: this.chunkText(content) });
                 }
             } catch (e) {
-                console.error(`Error reading file ${fullPath}:`, getErrorMessage(e as Error));
+                appLogger.error('ScannerService', `Error reading file ${fullPath}: ${getErrorMessage(e as Error)}`);
             }
         }
     }

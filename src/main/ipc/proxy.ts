@@ -2,9 +2,10 @@ import { appLogger } from '@main/logging/logger';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
+import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { IpcValue } from '@shared/types/common';
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 
 /**
  * Registers IPC handlers for proxy operations including quota retrieval, authentication, and model listing.
@@ -12,7 +13,13 @@ import { ipcMain } from 'electron';
  * @param _processManager - Optional proxy process manager (reserved for future use)
  * @param _authService - Optional auth service (reserved for future use)
  */
-export function registerProxyIpc(proxyService: ProxyService, _processManager?: ProxyProcessManager, _authService?: AuthService) {
+export function registerProxyIpc(
+    proxyService: ProxyService,
+    _processManager?: ProxyProcessManager,
+    _authService?: AuthService,
+    getMainWindow?: () => BrowserWindow | null,
+    eventBus?: EventBusService
+) {
     // Register batchable quota handlers for efficient batch loading
     registerBatchableHandler('getQuota', async (): Promise<IpcValue> => {
         return (await proxyService.getQuota()) as unknown as IpcValue;
@@ -82,6 +89,24 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         return await proxyService.getClaudeQuota();
     });
 
+    ipcMain.handle('proxy:get-rate-limit-metrics', async () => {
+        return proxyService.getProviderRateLimitMetrics();
+    });
+
+    ipcMain.handle('proxy:get-rate-limit-config', async () => {
+        return proxyService.getProviderRateLimitConfig();
+    });
+
+    ipcMain.handle('proxy:set-rate-limit-config', async (_event, provider: string, config: {
+        windowMs?: number;
+        maxRequests?: number;
+        warningThreshold?: number;
+        maxQueueSize?: number;
+        allowPremiumBypass?: boolean;
+    }) => {
+        return proxyService.setProviderRateLimitConfig(provider, config);
+    });
+
     ipcMain.handle('proxy:deleteAuthFile', async () => {
         // Legacy file-based auth is now handled via HTTP API
         return { success: true };
@@ -97,4 +122,13 @@ export function registerProxyIpc(proxyService: ProxyService, _processManager?: P
         // Legacy file-based auth is now handled via HTTP API
         return { success: false, error: 'Not supported' };
     });
+
+    if (eventBus && getMainWindow) {
+        eventBus.onCustom('proxy:rate-limit-warning', (payload) => {
+            const win = getMainWindow();
+            if (win && !win.isDestroyed()) {
+                win.webContents.send('proxy:rate-limit-warning', payload);
+            }
+        });
+    }
 }

@@ -65,6 +65,7 @@ export const exportIdeas = (currentSession: IdeaSession, ideas: ProjectIdea[], f
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (err) {
-        console.error('Failed to export ideas:', err);
+        window.electron.log.error('Failed to export ideas:', err);
     }
 };
+

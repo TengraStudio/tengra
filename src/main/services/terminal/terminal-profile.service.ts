@@ -16,6 +16,25 @@ export interface TerminalProfile {
     isDefault?: boolean;
 }
 
+export interface TerminalProfileValidationResult {
+    valid: boolean;
+    errors: string[];
+}
+
+export interface TerminalProfileImportResult {
+    success: boolean;
+    imported: number;
+    skipped: number;
+    errors: string[];
+}
+
+interface ExportedTerminalProfilePayload {
+    version: 1;
+    kind: 'terminal-profile';
+    exportedAt: number;
+    profile: TerminalProfile;
+}
+
 export class TerminalProfileService extends BaseService {
     private profiles: Map<string, TerminalProfile> = new Map();
     private persistencePath: string;
@@ -52,6 +71,10 @@ export class TerminalProfileService extends BaseService {
      * Create or update a profile
      */
     async saveProfile(profile: TerminalProfile): Promise<void> {
+        const validation = this.validateProfile(profile);
+        if (!validation.valid) {
+            throw new Error(`Invalid terminal profile: ${validation.errors.join('; ')}`);
+        }
         this.profiles.set(profile.id, profile);
         await this.saveProfilesToDisk();
     }
@@ -62,6 +85,206 @@ export class TerminalProfileService extends BaseService {
     async deleteProfile(id: string): Promise<void> {
         this.profiles.delete(id);
         await this.saveProfilesToDisk();
+    }
+
+    validateProfile(profile: TerminalProfile): TerminalProfileValidationResult {
+        const errors: string[] = [];
+
+        if (!profile || typeof profile !== 'object') {
+            return { valid: false, errors: ['Profile payload is required'] };
+        }
+
+        const id = profile.id?.trim();
+        const name = profile.name?.trim();
+        const shell = profile.shell?.trim();
+
+        if (!id) {
+            errors.push('Profile id is required');
+        }
+        if (!name) {
+            errors.push('Profile name is required');
+        }
+        if (!shell) {
+            errors.push('Shell path/command is required');
+        }
+        if (id && id.length > 128) {
+            errors.push('Profile id is too long');
+        }
+        if (name && name.length > 128) {
+            errors.push('Profile name is too long');
+        }
+        if (profile.args && !Array.isArray(profile.args)) {
+            errors.push('Args must be an array');
+        }
+        if (profile.args && profile.args.some(arg => typeof arg !== 'string')) {
+            errors.push('All args must be strings');
+        }
+        if (profile.env && typeof profile.env !== 'object') {
+            errors.push('Env must be an object');
+        }
+
+        return { valid: errors.length === 0, errors };
+    }
+
+    getProfileTemplates(): TerminalProfile[] {
+        const isWin = process.platform === 'win32';
+        if (isWin) {
+            return [
+                {
+                    id: 'tpl-powershell',
+                    name: 'PowerShell (Admin-friendly)',
+                    shell: 'powershell.exe',
+                    args: ['-NoLogo', '-ExecutionPolicy', 'Bypass'],
+                    icon: 'terminal',
+                },
+                {
+                    id: 'tpl-cmd',
+                    name: 'Command Prompt',
+                    shell: 'cmd.exe',
+                    icon: 'terminal',
+                },
+                {
+                    id: 'tpl-dev-env',
+                    name: 'Dev Shell (with env preset)',
+                    shell: 'powershell.exe',
+                    args: ['-NoLogo', '-ExecutionPolicy', 'Bypass'],
+                    env: {
+                        NODE_ENV: 'development',
+                        FORCE_COLOR: '1',
+                    },
+                    icon: 'terminal',
+                },
+            ];
+        }
+
+        return [
+            {
+                id: 'tpl-bash-login',
+                name: 'Bash (login shell)',
+                shell: '/bin/bash',
+                args: ['-l'],
+                icon: 'terminal',
+            },
+            {
+                id: 'tpl-zsh-login',
+                name: 'Zsh (login shell)',
+                shell: '/bin/zsh',
+                args: ['-l'],
+                icon: 'terminal',
+            },
+            {
+                id: 'tpl-dev-env',
+                name: 'Dev Shell (with env preset)',
+                shell: '/bin/bash',
+                args: ['-l'],
+                env: {
+                    NODE_ENV: 'development',
+                    FORCE_COLOR: '1',
+                },
+                icon: 'terminal',
+            },
+        ];
+    }
+
+    exportProfiles(): string {
+        return JSON.stringify({
+            version: 1,
+            exportedAt: Date.now(),
+            profiles: this.getProfiles(),
+        }, null, 2);
+    }
+
+    async importProfiles(payload: string, options?: { overwrite?: boolean }): Promise<TerminalProfileImportResult> {
+        const errors: string[] = [];
+        let imported = 0;
+        let skipped = 0;
+        const overwrite = options?.overwrite === true;
+
+        const parsed = safeJsonParse<{
+            profiles?: TerminalProfile[];
+        }>(payload, {});
+
+        const profiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+        for (const profile of profiles) {
+            const validation = this.validateProfile(profile);
+            if (!validation.valid) {
+                errors.push(`${profile?.id ?? 'unknown'}: ${validation.errors.join(', ')}`);
+                skipped += 1;
+                continue;
+            }
+
+            if (!overwrite && this.profiles.has(profile.id)) {
+                skipped += 1;
+                continue;
+            }
+
+            this.profiles.set(profile.id, profile);
+            imported += 1;
+        }
+
+        await this.saveProfilesToDisk();
+        return {
+            success: errors.length === 0,
+            imported,
+            skipped,
+            errors,
+        };
+    }
+
+    exportProfileShareCode(profileId: string): string | null {
+        const profile = this.profiles.get(profileId);
+        if (!profile) {
+            return null;
+        }
+
+        const payload: ExportedTerminalProfilePayload = {
+            version: 1,
+            kind: 'terminal-profile',
+            exportedAt: Date.now(),
+            profile,
+        };
+        return `termprofile:${Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64url')}`;
+    }
+
+    async importProfileShareCode(
+        shareCode: string,
+        options?: { overwrite?: boolean }
+    ): Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }> {
+        if (typeof shareCode !== 'string' || !shareCode.startsWith('termprofile:')) {
+            return { success: false, imported: false, error: 'Invalid profile share code' };
+        }
+        const encoded = shareCode.slice('termprofile:'.length).trim();
+        if (!encoded) {
+            return { success: false, imported: false, error: 'Invalid profile share code' };
+        }
+        try {
+            const decoded = Buffer.from(encoded, 'base64url').toString('utf-8');
+            const parsed = safeJsonParse<ExportedTerminalProfilePayload | null>(decoded, null);
+            if (!parsed || parsed.kind !== 'terminal-profile' || parsed.version !== 1 || !parsed.profile) {
+                return { success: false, imported: false, error: 'Invalid profile payload' };
+            }
+            const validation = this.validateProfile(parsed.profile);
+            if (!validation.valid) {
+                return {
+                    success: false,
+                    imported: false,
+                    error: `Invalid profile: ${validation.errors.join(', ')}`,
+                };
+            }
+            if (!options?.overwrite && this.profiles.has(parsed.profile.id)) {
+                return {
+                    success: false,
+                    imported: false,
+                    profileId: parsed.profile.id,
+                    error: `Profile ${parsed.profile.id} already exists`,
+                };
+            }
+            this.profiles.set(parsed.profile.id, parsed.profile);
+            await this.saveProfilesToDisk();
+            return { success: true, imported: true, profileId: parsed.profile.id };
+        } catch {
+            return { success: false, imported: false, error: 'Invalid profile share code encoding' };
+        }
     }
 
     /**

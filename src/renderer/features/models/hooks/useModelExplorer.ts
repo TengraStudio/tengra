@@ -8,6 +8,12 @@ interface UseModelExplorerProps {
     installedModels: ModelInfo[];
 }
 
+interface HFInstallOptions {
+    scheduleAtMs?: number;
+    testAfterInstall?: boolean;
+    profile?: 'balanced' | 'quality' | 'speed';
+}
+
 const getFilteredOllama = (ollamaLibrary: OllamaLibraryModel[], query: string, activeSource: string, page: number) => {
     if (activeSource === 'huggingface' || page > 0) { return []; }
 
@@ -51,6 +57,14 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
     const [hfResults, setHfResults] = useState<HFModel[]>([]);
     const [loading, setLoading] = useState(false);
     const [totalHf, setTotalHf] = useState(0);
+    const [recommendedIds, setRecommendedIds] = useState<Set<string>>(new Set());
+    const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+    const [modelPreview, setModelPreview] = useState<unknown>(null);
+    const [comparisonIds, setComparisonIds] = useState<string[]>([]);
+    const [comparisonResult, setComparisonResult] = useState<unknown>(null);
+    const [comparisonLoading, setComparisonLoading] = useState(false);
+    const [lastInstallConfig, setLastInstallConfig] = useState<Record<string, HFInstallOptions>>({});
+    const [installTests, setInstallTests] = useState<Record<string, { success: boolean; message: string }>>({});
 
     const isInstalled = useMemo(() => {
         const ids = new Set(installedModels.map(m => m.id));
@@ -74,6 +88,7 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         window.electron.huggingface.onDownloadProgress((p) => {
             setDownloading(prev => ({ ...prev, [p.filename]: { received: p.received, total: p.total } }));
         });
+        void window.electron.huggingface.getWatchlist().then((ids) => setWatchlist(new Set(ids)));
 
         window.electron.onPullProgress((progress) => {
             if (progress.status === 'success') {
@@ -95,13 +110,21 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
                 const result = await window.electron.huggingface.searchModels(query, 40, page, hfSort);
                 setHfResults(result.models.map((r) => ({ ...r, provider: 'huggingface' as const })));
                 setTotalHf(result.total);
+                if (!query.trim() && page === 0) {
+                    const rec = await window.electron.huggingface.getRecommendations(12, '');
+                    setRecommendedIds(new Set(rec.map(m => m.id)));
+                } else {
+                    setRecommendedIds(new Set());
+                }
             } else {
                 setHfResults([]);
                 setTotalHf(0);
+                setRecommendedIds(new Set());
             }
         } catch (e) {
-            console.error(e);
+            window.electron.log.error('Failed to fetch HuggingFace models', e as Error);
             setHfResults([]);
+            setRecommendedIds(new Set());
         } finally {
             setLoading(false);
         }
@@ -121,12 +144,26 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
 
     const handleModelSelect = async (model: UnifiedModel) => {
         setSelectedModel(model);
+        setModelPreview(null);
+        setFiles([]);
         if (model.provider === 'huggingface') {
             setLoadingFiles(true);
             try {
                 const fileList = await window.electron.huggingface.getFiles(model.id);
-                setFiles(fileList.sort((a, b) => a.size - b.size));
-            } catch (e) { console.error(e); } finally { setLoadingFiles(false); }
+                const filesWithCompatibility = await Promise.all(
+                    fileList.map(async (file) => {
+                        try {
+                            const compatibility = await window.electron.huggingface.validateCompatibility(file);
+                            return { ...file, compatibility };
+                        } catch {
+                            return file;
+                        }
+                    })
+                );
+                setFiles(filesWithCompatibility.sort((a, b) => a.size - b.size));
+                const preview = await window.electron.huggingface.getModelPreview(model.id);
+                setModelPreview(preview);
+            } catch (e) { window.electron.log.error('Failed to load HuggingFace model files', e as Error); } finally { setLoadingFiles(false); }
         }
     };
 
@@ -136,10 +173,10 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         try {
             await window.electron.pullModel(fullModelName);
             onRefreshModels?.(true);
-        } catch (e) { console.error(e); } finally { setPullingOllama(null); }
+        } catch (e) { window.electron.log.error(`Failed to pull Ollama model: ${fullModelName}`, e as Error); } finally { setPullingOllama(null); }
     };
 
-    const handleDownloadHF = async (file: HFFile) => {
+    const handleDownloadHF = async (file: HFFile, options: HFInstallOptions = {}) => {
         if (!modelsDir || selectedModel?.provider !== 'huggingface') { return; }
         const safeName = `${selectedModel.author}-${selectedModel.name}-${file.quantization}.gguf`.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
         const universalPath = `${modelsDir}/${safeName}`.replace(/\\/g, '/');
@@ -147,15 +184,80 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         try {
             setDownloading(prev => ({ ...prev, [universalPath]: { received: 0, total: file.size } }));
             const downloadUrl = `https://huggingface.co/${selectedModel.id}/resolve/main/${file.path}`;
-            const res = await window.electron.huggingface.downloadFile(downloadUrl, universalPath, file.size, file.oid);
+            const res = await window.electron.huggingface.downloadFile(downloadUrl, universalPath, file.size, file.oid, options.scheduleAtMs);
 
             setDownloading(prev => {
                 const next = { ...prev };
                 delete next[universalPath];
                 return next;
             });
-            if (res.success) { onRefreshModels?.(true); }
-        } catch (e) { console.error(e); }
+            if (res.success) {
+                setLastInstallConfig(prev => ({ ...prev, [selectedModel.id]: options }));
+                if (options.testAfterInstall) {
+                    const test = await window.electron.huggingface.testDownloadedModel(universalPath);
+                    setInstallTests(prev => ({
+                        ...prev,
+                        [universalPath]: {
+                            success: !!test.success,
+                            message: test.success ? 'Model file validation succeeded' : (test.error || 'Model validation failed')
+                        }
+                    }));
+                }
+                onRefreshModels?.(true);
+            }
+        } catch (e) { window.electron.log.error(`Failed to download HuggingFace file: ${file.path}`, e as Error); }
+    };
+
+    const toggleComparison = (modelId: string) => {
+        setComparisonResult(null);
+        setComparisonIds(prev => {
+            if (prev.includes(modelId)) {
+                return prev.filter(id => id !== modelId);
+            }
+            if (prev.length >= 4) {
+                return [...prev.slice(1), modelId];
+            }
+            return [...prev, modelId];
+        });
+    };
+
+    const runComparison = async () => {
+        if (comparisonIds.length < 2) {
+            return;
+        }
+        setComparisonLoading(true);
+        try {
+            const result = await window.electron.huggingface.compareModels(comparisonIds);
+            setComparisonResult(result);
+        } catch (error) {
+            window.electron.log.error('Failed to compare HuggingFace models', error as Error);
+            setComparisonResult(null);
+        } finally {
+            setComparisonLoading(false);
+        }
+    };
+
+    const clearComparison = () => {
+        setComparisonIds([]);
+        setComparisonResult(null);
+    };
+
+    const toggleWatchlist = async (modelId: string) => {
+        if (watchlist.has(modelId)) {
+            const res = await window.electron.huggingface.removeFromWatchlist(modelId);
+            if (res.success) {
+                setWatchlist(prev => {
+                    const next = new Set(prev);
+                    next.delete(modelId);
+                    return next;
+                });
+            }
+            return;
+        }
+        const res = await window.electron.huggingface.addToWatchlist(modelId);
+        if (res.success) {
+            setWatchlist(prev => new Set(prev).add(modelId));
+        }
     };
 
     return {
@@ -168,7 +270,21 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         files, loadingFiles,
         downloading, modelsDir,
         pullingOllama,
+        recommendedIds,
+        watchlist,
+        modelPreview,
+        comparisonIds,
+        comparisonResult,
+        comparisonLoading,
+        lastInstallConfig,
+        installTests,
         isInstalled,
-        handleModelSelect, handlePullOllama, handleDownloadHF
+        handleModelSelect,
+        handlePullOllama,
+        handleDownloadHF,
+        toggleWatchlist,
+        toggleComparison,
+        runComparison,
+        clearComparison
     };
 }

@@ -1,16 +1,24 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import {
+    pushNotification,
+    useNotificationCenterStore,
+} from '@/store/notification-center.store';
+import { setProjectShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { WorkspaceEntry } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useProjectState() {
     const [selectedEntries, setSelectedEntries] = useState<WorkspaceEntry[]>([]);
     const [lastSelectedEntry, setLastSelectedEntry] = useState<WorkspaceEntry | null>(null);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const persistedProjectShell = useUiLayoutStore(snapshot => snapshot.projectShell);
+    const [sidebarCollapsed, setSidebarCollapsedState] = useState(
+        persistedProjectShell.sidebarCollapsed
+    );
     const [showAgentPanel, setShowAgentPanel] = useState(false);
-    const [agentPanelWidth, setAgentPanelWidth] = useState(380);
+    const [agentPanelWidth, setAgentPanelWidthState] = useState(persistedProjectShell.agentPanelWidth);
     const [showTerminal, setShowTerminal] = useState(false);
-    const [terminalHeight, setTerminalHeight] = useState(250);
+    const [terminalHeight, setTerminalHeightState] = useState(persistedProjectShell.terminalHeight);
     const [showLogoModal, setShowLogoModal] = useState(false);
     const [agentChatMessage, setAgentChatMessage] = useState('');
 
@@ -21,14 +29,43 @@ export function useProjectState() {
     } | null>(null);
     const [entryName, setEntryName] = useState('');
 
-    const [notifications, setNotifications] = useState<
-        { id: string; type: 'success' | 'error' | 'info'; message: string }[]
-    >([]);
+    const notifications = useNotificationCenterStore(snapshot =>
+        snapshot.active.map(notification => ({
+            id: notification.id,
+            type: notification.type === 'warning' ? 'info' : notification.type,
+            message: notification.message,
+        }))
+    );
+
+    useEffect(() => {
+        setSidebarCollapsedState(persistedProjectShell.sidebarCollapsed);
+        setAgentPanelWidthState(persistedProjectShell.agentPanelWidth);
+        setTerminalHeightState(persistedProjectShell.terminalHeight);
+    }, [persistedProjectShell]);
+
+    const setSidebarCollapsed = useCallback((collapsed: boolean) => {
+        setSidebarCollapsedState(collapsed);
+        setProjectShellState({ sidebarCollapsed: collapsed });
+    }, []);
+
+    const setAgentPanelWidth = useCallback((width: number) => {
+        const nextWidth = Math.max(260, Math.min(640, Math.floor(width)));
+        setAgentPanelWidthState(nextWidth);
+        setProjectShellState({ agentPanelWidth: nextWidth });
+    }, []);
+
+    const setTerminalHeight = useCallback((height: number) => {
+        const nextHeight = Math.max(150, Math.min(900, Math.floor(height)));
+        setTerminalHeightState(nextHeight);
+        setProjectShellState({ terminalHeight: nextHeight });
+    }, []);
 
     const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
-        const id = Math.random().toString(36).substr(2, 9);
-        setNotifications(prev => [...prev, { id, type, message }]);
-        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 5000);
+        pushNotification({
+            type,
+            message,
+            source: 'workspace',
+        });
     }, []);
 
     const logActivity = useCallback((title: string, detail?: string) => {

@@ -61,7 +61,7 @@ export async function fetchModels(bypassCache = false): Promise<ModelInfo[]> {
 
         return processedModels;
     } catch (error) {
-        console.error('Failed to fetch models:', error);
+        window.electron.log.error('Failed to fetch models', error as Error);
         return [];
     }
 }

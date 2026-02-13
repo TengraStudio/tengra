@@ -1,0 +1,55 @@
+import { collectTerminalSearchMatches } from '@renderer/features/terminal/utils/terminal-search';
+import { describe, expect, it } from 'vitest';
+
+describe('terminal search utils', () => {
+    it('collects plain-text matches across rows', () => {
+        const result = collectTerminalSearchMatches(
+            ['npm run build', 'build failed', 'rebuild all'],
+            'build',
+            { useRegex: false }
+        );
+
+        expect(result.invalidRegex).toBe(false);
+        expect(result.matches).toEqual([
+            { row: 0, col: 8, length: 5 },
+            { row: 1, col: 0, length: 5 },
+            { row: 2, col: 2, length: 5 },
+        ]);
+    });
+
+    it('respects case sensitivity in plain-text mode', () => {
+        const insensitive = collectTerminalSearchMatches(['Build build'], 'build', {
+            useRegex: false,
+            caseSensitive: false,
+        });
+        const sensitive = collectTerminalSearchMatches(['Build build'], 'build', {
+            useRegex: false,
+            caseSensitive: true,
+        });
+
+        expect(insensitive.matches).toHaveLength(2);
+        expect(sensitive.matches).toHaveLength(1);
+        expect(sensitive.matches[0]).toEqual({ row: 0, col: 6, length: 5 });
+    });
+
+    it('collects regex matches and reports invalid regex payloads', () => {
+        const result = collectTerminalSearchMatches(['ERR_1 ERR_2 ok'], 'ERR_\\d', {
+            useRegex: true,
+        });
+        expect(result.invalidRegex).toBe(false);
+        expect(result.matches).toHaveLength(2);
+
+        const invalid = collectTerminalSearchMatches(['ERR_1'], '[ERR', { useRegex: true });
+        expect(invalid.invalidRegex).toBe(true);
+        expect(invalid.matches).toHaveLength(0);
+    });
+
+    it('caps total matches with maxMatches', () => {
+        const result = collectTerminalSearchMatches(['a a a a a'], 'a', {
+            useRegex: false,
+            maxMatches: 3,
+        });
+        expect(result.matches).toHaveLength(3);
+    });
+});
+

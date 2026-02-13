@@ -13,6 +13,7 @@ import { JsonObject } from '@shared/types/common';
  */
 export class McpPluginService extends BaseService {
     private plugins = new Map<string, IMcpPlugin>();
+    private dispatchMetrics = new Map<string, { count: number; errors: number; totalDurationMs: number; lastDurationMs: number; lastError?: string }>();
 
     constructor(
         private settingsService: SettingsService,
@@ -72,6 +73,95 @@ export class McpPluginService extends BaseService {
         return result;
     }
 
+    getDispatchMetrics() {
+        return Array.from(this.dispatchMetrics.entries()).map(([key, value]) => ({
+            key,
+            count: value.count,
+            errors: value.errors,
+            avgDurationMs: value.count > 0 ? value.totalDurationMs / value.count : 0,
+            lastDurationMs: value.lastDurationMs,
+            lastError: value.lastError
+        }));
+    }
+
+    private updateDispatchMetrics(
+        pluginName: string,
+        actionName: string,
+        durationMs: number,
+        error?: string
+    ): void {
+        const key = `${pluginName}:${actionName}`;
+        const current = this.dispatchMetrics.get(key) ?? {
+            count: 0,
+            errors: 0,
+            totalDurationMs: 0,
+            lastDurationMs: 0,
+            lastError: undefined
+        };
+
+        current.count += 1;
+        current.totalDurationMs += durationMs;
+        current.lastDurationMs = durationMs;
+        if (error) {
+            current.errors += 1;
+            current.lastError = error;
+        }
+        this.dispatchMetrics.set(key, current);
+    }
+
+    private permissionKey(pluginName: string, actionName: string): string {
+        return `${pluginName}:${actionName}`;
+    }
+
+    private isSensitiveAction(actionName: string): boolean {
+        const normalized = actionName.toLowerCase();
+        return (
+            normalized.includes('delete') ||
+            normalized.includes('remove') ||
+            normalized.includes('write') ||
+            normalized.includes('install') ||
+            normalized.includes('uninstall') ||
+            normalized.includes('exec')
+        );
+    }
+
+    async listPermissionRequests() {
+        const settings = this.settingsService.getSettings();
+        return settings.mcpPermissionRequests ?? [];
+    }
+
+    async setActionPermission(service: string, action: string, policy: 'allow' | 'deny' | 'ask') {
+        const settings = this.settingsService.getSettings();
+        const current = settings.mcpActionPermissions ?? {};
+        const updated = { ...current, [this.permissionKey(service, action)]: policy };
+        await this.settingsService.saveSettings({ mcpActionPermissions: updated });
+        return { success: true };
+    }
+
+    async resolvePermissionRequest(
+        requestId: string,
+        decision: 'approved' | 'denied'
+    ) {
+        const settings = this.settingsService.getSettings();
+        const requests = settings.mcpPermissionRequests ?? [];
+        const req = requests.find(r => r.id === requestId);
+        if (!req) {
+            return { success: false, error: 'Permission request not found' };
+        }
+
+        const nextRequests = requests.map(r => r.id === requestId ? { ...r, status: decision } : r);
+        const permission = decision === 'approved' ? 'allow' : 'deny';
+        const currentPermissions = settings.mcpActionPermissions ?? {};
+        currentPermissions[this.permissionKey(req.service, req.action)] = permission;
+
+        await this.settingsService.saveSettings({
+            mcpPermissionRequests: nextRequests,
+            mcpActionPermissions: currentPermissions
+        });
+
+        return { success: true };
+    }
+
     /**
      * Dispatch an action to a specific plugin
      */
@@ -91,11 +181,49 @@ export class McpPluginService extends BaseService {
             return { success: false, error: `Plugin '${pluginName}' is disabled. Enable it in Settings > MCP.` };
         }
 
+        const permissionKey = this.permissionKey(pluginName, actionName);
+        const permissionPolicy = settings.mcpActionPermissions?.[permissionKey] ?? 'ask';
+        const requiresReview = settings.mcpReviewPolicy === 'elevated' && this.isSensitiveAction(actionName);
+
+        if (requiresReview && permissionPolicy === 'deny') {
+            return { success: false, error: `Permission denied for action '${actionName}'` };
+        }
+
+        if (requiresReview && permissionPolicy === 'ask') {
+            const requests = settings.mcpPermissionRequests ?? [];
+            const existingPending = requests.find(
+                r => r.service === pluginName && r.action === actionName && r.status === 'pending'
+            );
+            if (!existingPending) {
+                const request = {
+                    id: `mcp-perm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    service: pluginName,
+                    action: actionName,
+                    createdAt: Date.now(),
+                    argsPreview: JSON.stringify(args).slice(0, 240),
+                    status: 'pending' as const
+                };
+                await this.settingsService.saveSettings({ mcpPermissionRequests: [...requests, request] });
+            }
+            return {
+                success: false,
+                error: `Permission required for '${pluginName}:${actionName}'. Approve it in MCP settings.`
+            };
+        }
+
+        const startedAt = Date.now();
         try {
-            return await plugin.dispatch(actionName, args);
+            const result = await plugin.dispatch(actionName, args);
+            const duration = Date.now() - startedAt;
+            this.updateDispatchMetrics(pluginName, actionName, duration);
+            this.logDebug(`MCP dispatch success ${pluginName}:${actionName} (${duration}ms)`);
+            return result;
         } catch (error) {
+            const duration = Date.now() - startedAt;
+            const message = error instanceof Error ? error.message : String(error);
+            this.updateDispatchMetrics(pluginName, actionName, duration, message);
             this.logError(`Failed to dispatch action ${actionName} to ${pluginName}`, error);
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
+            return { success: false, error: message };
         }
     }
 

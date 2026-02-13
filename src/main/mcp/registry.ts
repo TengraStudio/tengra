@@ -1,7 +1,10 @@
 import { McpService } from '@main/mcp/types';
 
+import { buildCicdServer } from './servers/cicd.server';
+import { buildCloudStorageServer } from './servers/cloud-storage.server';
 import { buildCoreServers } from './servers/core.server';
 import { buildDataServers } from './servers/data.server';
+import { buildDatabaseAdminServer } from './servers/database-admin.server';
 import { buildDevServers } from './servers/dev.server';
 import { buildGitServer } from './servers/git.server';
 import { buildInternetServers } from './servers/internet.server';
@@ -19,6 +22,9 @@ export function buildMcpServices(deps: McpDeps): McpService[] {
         ...buildUtilityServers(deps),
         ...buildProjectServers(deps),
         ...buildDataServers(deps),
+        buildDatabaseAdminServer(deps),
+        buildCloudStorageServer(deps),
+        buildCicdServer(deps),
         ...buildSecurityServers(deps),
         buildGitServer(deps),
         buildWebServer(deps),

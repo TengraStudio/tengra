@@ -297,7 +297,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
                 const loadedThemes = await themeIpc.getAllThemes();
                 setThemes(loadedThemes);
             } catch (error) {
-                console.error('[AppearanceTab] Failed to load themes:', error);
+                window.electron.log.error('[AppearanceTab] Failed to load themes:', error);
             }
         };
         void loadThemes();
@@ -354,3 +354,4 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({ settings, updateGe
         </div>
     );
 };
+

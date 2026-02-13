@@ -1,6 +1,7 @@
 import { useCallback,useState } from 'react';
 
 import { Folder } from '@/types';
+import { handleError } from '@/utils/error-handler.util';
 
 
 export const useFolderManager = () => {
@@ -11,7 +12,7 @@ export const useFolderManager = () => {
             const data = await window.electron.db.getFolders();
             setFolders(data as Folder[]);
         } catch (error) {
-            console.error('Failed to load folders:', error);
+            handleError(error, 'FolderManager.loadFolders');
         }
     }, []);
 
@@ -21,7 +22,7 @@ export const useFolderManager = () => {
             setFolders(prev => [...prev, newFolder as Folder]);
             return newFolder as Folder;
         } catch (error) {
-            console.error('Failed to create folder:', error);
+            handleError(error, 'FolderManager.createFolder');
             return null;
         }
     }, []);
@@ -31,7 +32,7 @@ export const useFolderManager = () => {
             await window.electron.db.updateFolder(id, updates);
             setFolders(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
         } catch (error) {
-            console.error('Failed to update folder:', error);
+            handleError(error, 'FolderManager.updateFolder');
         }
     }, []);
 
@@ -41,7 +42,7 @@ export const useFolderManager = () => {
             setFolders(prev => prev.filter(f => f.id !== id));
             if (onFolderDeleted) { onFolderDeleted(id); }
         } catch (error) {
-            console.error('Failed to delete folder:', error);
+            handleError(error, 'FolderManager.deleteFolder');
         }
     }, []);
 
@@ -54,3 +55,4 @@ export const useFolderManager = () => {
         deleteFolder
     };
 };
+

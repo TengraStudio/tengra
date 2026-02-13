@@ -46,6 +46,13 @@ export type ProxyRequestResponse = JsonObject | {
   error?: string;
   raw?: JsonValue;
   sessionKey?: string;
+  rateLimit?: {
+    provider: string;
+    limit: number;
+    remaining: number;
+    resetAt: number;
+    queued: number;
+  };
 }
 
 export interface DeviceCodeResponse {
@@ -85,8 +92,46 @@ export interface ProxyServiceOptions {
   eventBus: EventBusService;
 }
 
+interface ProviderRateLimitConfig {
+  windowMs: number;
+  maxRequests: number;
+  warningThreshold: number; // 0..1
+  maxQueueSize: number;
+  allowPremiumBypass: boolean;
+}
+
+interface ProviderRateLimitSnapshot {
+  provider: string;
+  limit: number;
+  remaining: number;
+  resetAt: number;
+  queued: number;
+  blocked: number;
+  allowed: number;
+  bypassed: number;
+  warnings: number;
+}
+
+interface QueuedRateLimitRequest {
+  id: string;
+  priority: number;
+  enqueuedAt: number;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
+interface RateLimitAcquireOptions {
+  priority?: number;
+  isPremiumBypass?: boolean;
+}
+
 export class ProxyService extends BaseService {
   private currentPort: number = 8317;
+  private providerRateConfigs = new Map<string, ProviderRateLimitConfig>();
+  private providerWindows = new Map<string, number[]>();
+  private providerQueues = new Map<string, QueuedRateLimitRequest[]>();
+  private providerQueueTimers = new Map<string, NodeJS.Timeout>();
+  private providerStats = new Map<string, { blocked: number; allowed: number; bypassed: number; warnings: number }>();
 
   constructor(private options: ProxyServiceOptions) {
     super('ProxyService');
@@ -110,11 +155,13 @@ export class ProxyService extends BaseService {
 
     await this.ensureAuthStoreKey();
     await this.ensureProxyKey();
+    this.initializeProviderRateLimits();
 
   }
 
   override async cleanup(): Promise<void> {
     try {
+      this.clearProviderQueueTimers();
       // Force stop proxy on app exit - kill all proxy processes including orphaned ones
       await this.processManager.stop(true);
       this.logInfo('Proxy service stopped (force killed all proxy processes)');
@@ -123,10 +170,244 @@ export class ProxyService extends BaseService {
     }
   }
 
+  private initializeProviderRateLimits(): void {
+    const defaults: Record<string, ProviderRateLimitConfig> = {
+      github: { windowMs: 60_000, maxRequests: 60, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: false },
+      codex: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
+      claude: { windowMs: 60_000, maxRequests: 70, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: true },
+      antigravity: { windowMs: 60_000, maxRequests: 80, warningThreshold: 0.85, maxQueueSize: 120, allowPremiumBypass: true },
+      proxy: { windowMs: 60_000, maxRequests: 120, warningThreshold: 0.9, maxQueueSize: 200, allowPremiumBypass: true },
+      default: { windowMs: 60_000, maxRequests: 60, warningThreshold: 0.85, maxQueueSize: 100, allowPremiumBypass: false }
+    };
+
+    for (const [provider, cfg] of Object.entries(defaults)) {
+      this.providerRateConfigs.set(provider, cfg);
+    }
+  }
+
+  private clearProviderQueueTimers(): void {
+    for (const timer of this.providerQueueTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.providerQueueTimers.clear();
+  }
+
+  private getProviderConfig(provider: string): ProviderRateLimitConfig {
+    return this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default')!;
+  }
+
+  private getProviderWindow(provider: string): number[] {
+    if (!this.providerWindows.has(provider)) {
+      this.providerWindows.set(provider, []);
+    }
+    return this.providerWindows.get(provider)!;
+  }
+
+  private getProviderQueue(provider: string): QueuedRateLimitRequest[] {
+    if (!this.providerQueues.has(provider)) {
+      this.providerQueues.set(provider, []);
+    }
+    return this.providerQueues.get(provider)!;
+  }
+
+  private getProviderStats(provider: string) {
+    const existing = this.providerStats.get(provider);
+    if (existing) { return existing; }
+    const init = { blocked: 0, allowed: 0, bypassed: 0, warnings: 0 };
+    this.providerStats.set(provider, init);
+    return init;
+  }
+
+  private normalizeProviderForRateLimit(provider: string): string {
+    const p = provider.trim().toLowerCase();
+    if (!p) { return 'default'; }
+    if (p.includes('github') || p.includes('copilot')) { return 'github'; }
+    if (p.includes('anthropic') || p.includes('claude')) { return 'claude'; }
+    if (p.includes('antigravity') || p.includes('google') || p.includes('gemini')) { return 'antigravity'; }
+    if (p.includes('codex') || p.includes('openai')) { return 'codex'; }
+    if (p.includes('proxy')) { return 'proxy'; }
+    return p;
+  }
+
+  private compactWindow(provider: string, now = Date.now()): number[] {
+    const cfg = this.getProviderConfig(provider);
+    const windowStart = now - cfg.windowMs;
+    const timestamps = this.getProviderWindow(provider);
+    while (timestamps.length > 0 && timestamps[0] < windowStart) {
+      timestamps.shift();
+    }
+    return timestamps;
+  }
+
+  private calculateResetAt(provider: string, now = Date.now()): number {
+    const cfg = this.getProviderConfig(provider);
+    const timestamps = this.compactWindow(provider, now);
+    if (timestamps.length < cfg.maxRequests) {
+      return now;
+    }
+    const oldest = timestamps[0] ?? now;
+    return oldest + cfg.windowMs;
+  }
+
+  private buildSnapshot(provider: string): ProviderRateLimitSnapshot {
+    const normalized = this.normalizeProviderForRateLimit(provider);
+    const cfg = this.getProviderConfig(normalized);
+    const now = Date.now();
+    const timestamps = this.compactWindow(normalized, now);
+    const remaining = Math.max(0, cfg.maxRequests - timestamps.length);
+    const stats = this.getProviderStats(normalized);
+    const queued = this.getProviderQueue(normalized).length;
+    return {
+      provider: normalized,
+      limit: cfg.maxRequests,
+      remaining,
+      resetAt: this.calculateResetAt(normalized, now),
+      queued,
+      blocked: stats.blocked,
+      allowed: stats.allowed,
+      bypassed: stats.bypassed,
+      warnings: stats.warnings
+    };
+  }
+
+  private emitRateLimitWarning(provider: string, snapshot: ProviderRateLimitSnapshot): void {
+    this.getProviderStats(provider).warnings += 1;
+    this.eventBus.emitCustom('proxy:rate-limit-warning', {
+      provider,
+      limit: snapshot.limit,
+      remaining: snapshot.remaining,
+      queued: snapshot.queued,
+      resetAt: snapshot.resetAt,
+      timestamp: Date.now()
+    });
+  }
+
+  private scheduleQueueDrain(provider: string): void {
+    const existing = this.providerQueueTimers.get(provider);
+    if (existing) {
+      clearTimeout(existing);
+    }
+
+    const now = Date.now();
+    const delay = Math.max(10, this.calculateResetAt(provider, now) - now);
+    const timer = setTimeout(() => {
+      this.providerQueueTimers.delete(provider);
+      this.drainProviderQueue(provider);
+    }, delay);
+
+    this.providerQueueTimers.set(provider, timer);
+  }
+
+  private drainProviderQueue(provider: string): void {
+    const normalized = this.normalizeProviderForRateLimit(provider);
+    const cfg = this.getProviderConfig(normalized);
+    const queue = this.getProviderQueue(normalized);
+    const timestamps = this.compactWindow(normalized);
+
+    queue.sort((a, b) => {
+      if (a.priority === b.priority) {
+        return a.enqueuedAt - b.enqueuedAt;
+      }
+      return b.priority - a.priority;
+    });
+
+    while (queue.length > 0 && timestamps.length < cfg.maxRequests) {
+      const next = queue.shift();
+      if (!next) { break; }
+      timestamps.push(Date.now());
+      this.getProviderStats(normalized).allowed += 1;
+      next.resolve();
+    }
+
+    if (queue.length > 0) {
+      this.scheduleQueueDrain(normalized);
+    }
+  }
+
+  private async waitForRateLimit(providerRaw: string, options: RateLimitAcquireOptions = {}): Promise<ProviderRateLimitSnapshot> {
+    const provider = this.normalizeProviderForRateLimit(providerRaw);
+    const cfg = this.getProviderConfig(provider);
+    const isPremiumBypass = options.isPremiumBypass === true;
+
+    if (isPremiumBypass && cfg.allowPremiumBypass) {
+      this.getProviderStats(provider).bypassed += 1;
+      return this.buildSnapshot(provider);
+    }
+
+    const timestamps = this.compactWindow(provider);
+    if (timestamps.length < cfg.maxRequests) {
+      timestamps.push(Date.now());
+      this.getProviderStats(provider).allowed += 1;
+      const snapshot = this.buildSnapshot(provider);
+      const usedRatio = snapshot.limit > 0 ? (snapshot.limit - snapshot.remaining) / snapshot.limit : 0;
+      if (usedRatio >= cfg.warningThreshold) {
+        this.emitRateLimitWarning(provider, snapshot);
+      }
+      return snapshot;
+    }
+
+    this.getProviderStats(provider).blocked += 1;
+    const queue = this.getProviderQueue(provider);
+    if (queue.length >= cfg.maxQueueSize) {
+      throw new Error(`Rate limit queue full for provider ${provider}`);
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const request: QueuedRateLimitRequest = {
+        id: `${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        priority: options.priority ?? 0,
+        enqueuedAt: Date.now(),
+        resolve,
+        reject
+      };
+      queue.push(request);
+      this.scheduleQueueDrain(provider);
+    });
+
+    return this.buildSnapshot(provider);
+  }
+
+  getProviderRateLimitMetrics(): {
+    generatedAt: number;
+    providers: ProviderRateLimitSnapshot[];
+  } {
+    const providers = Array.from(this.providerRateConfigs.keys())
+      .map((provider) => this.buildSnapshot(provider))
+      .sort((a, b) => a.provider.localeCompare(b.provider));
+
+    return {
+      generatedAt: Date.now(),
+      providers
+    };
+  }
+
+  getProviderRateLimitConfig(): Record<string, ProviderRateLimitConfig> {
+    const output: Record<string, ProviderRateLimitConfig> = {};
+    for (const [provider, config] of this.providerRateConfigs.entries()) {
+      output[provider] = { ...config };
+    }
+    return output;
+  }
+
+  setProviderRateLimitConfig(providerRaw: string, config: Partial<ProviderRateLimitConfig>): ProviderRateLimitConfig {
+    const provider = this.normalizeProviderForRateLimit(providerRaw);
+    const current = this.getProviderConfig(provider);
+    const merged: ProviderRateLimitConfig = {
+      windowMs: Math.max(1_000, config.windowMs ?? current.windowMs),
+      maxRequests: Math.max(1, config.maxRequests ?? current.maxRequests),
+      warningThreshold: Math.min(0.99, Math.max(0.1, config.warningThreshold ?? current.warningThreshold)),
+      maxQueueSize: Math.max(1, config.maxQueueSize ?? current.maxQueueSize),
+      allowPremiumBypass: config.allowPremiumBypass ?? current.allowPremiumBypass
+    };
+    this.providerRateConfigs.set(provider, merged);
+    return merged;
+  }
+
 
 
 
   async initiateGitHubAuth(appId: 'profile' | 'copilot' = 'profile'): Promise<DeviceCodeResponse> {
+    await this.waitForRateLimit('github', { priority: 2 });
     return new Promise((resolve, reject) => {
       const client = GITHUB_CLIENTS[appId];
       const request = net.request({ method: 'POST', url: GITHUB_DEVICE_CODE_URL });
@@ -154,6 +435,7 @@ export class ProxyService extends BaseService {
   }
 
   async waitForGitHubToken(deviceCode: string, interval: number, appId: 'profile' | 'copilot' = 'profile'): Promise<TokenResponse> {
+    await this.waitForRateLimit('github', { priority: 3 });
     return new Promise((resolve, reject) => {
       const client = GITHUB_CLIENTS[appId];
       const checkToken = () => {
@@ -261,7 +543,13 @@ export class ProxyService extends BaseService {
   }
 
   async getCodexAuthUrl(): Promise<ProxyRequestResponse> {
-    const response = await this.makeRequest('/v0/management/codex-auth-url?is_webui=true', await this.getProxyKey());
+    const response = await this.makeRequest(
+      '/v0/management/codex-auth-url?is_webui=true',
+      await this.getProxyKey(),
+      'GET',
+      undefined,
+      { provider: 'codex', priority: 5 }
+    );
     this.logDebug('getCodexAuthUrl response:', response);
     return response;
   }
@@ -349,7 +637,7 @@ export class ProxyService extends BaseService {
   private async getProxyModels(apiKey: string): Promise<ModelItem[]> {
     try {
       this.logInfo(`getProxyModels: Fetching from http://127.0.0.1:${this.currentPort}/v1/models`);
-      const res = await this.makeRequest('/v1/models', apiKey);
+      const res = await this.makeRequest('/v1/models', apiKey, 'GET', undefined, { provider: 'proxy', priority: 1 });
       if ('data' in res && Array.isArray(res.data)) {
         return res.data as ModelItem[];
       }
@@ -510,47 +798,83 @@ export class ProxyService extends BaseService {
 
 
 
-  private makeRequest(path: string, apiKey?: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<ProxyRequestResponse> {
+  private makeRequest(
+    path: string,
+    apiKey?: string,
+    method: 'GET' | 'POST' = 'GET',
+    body?: unknown,
+    rateLimit?: { provider: string; priority?: number; isPremiumBypass?: boolean }
+  ): Promise<ProxyRequestResponse> {
     return new Promise((resolve, reject) => {
-      const options = {
-        method,
-        protocol: 'http:' as const,
-        hostname: '127.0.0.1',
-        port: this.currentPort,
-        path
+      const run = async () => {
+        const snapshot = rateLimit
+          ? await this.waitForRateLimit(rateLimit.provider, {
+            priority: rateLimit.priority,
+            isPremiumBypass: rateLimit.isPremiumBypass
+          })
+          : undefined;
+
+        const options = {
+          method,
+          protocol: 'http:' as const,
+          hostname: '127.0.0.1',
+          port: this.currentPort,
+          path
+        };
+
+        const request = net.request(options);
+        const token = apiKey ?? this.settingsService.getSettings().proxy?.key;
+        if (token) {
+          request.setHeader('Authorization', `Bearer ${token}`);
+        }
+        if (body) {
+          request.setHeader('Content-Type', 'application/json');
+        }
+
+        if (snapshot) {
+          request.setHeader('X-Proxy-RateLimit-Limit', String(snapshot.limit));
+          request.setHeader('X-Proxy-RateLimit-Remaining', String(snapshot.remaining));
+          request.setHeader('X-Proxy-RateLimit-Reset', String(snapshot.resetAt));
+          request.setHeader('X-Proxy-RateLimit-Provider', snapshot.provider);
+        }
+
+        request.on('response', (res) => {
+          let d = '';
+          res.on('data', chunk => d += chunk);
+          res.on('end', () => {
+            const rateLimitInfo = snapshot ? {
+              provider: snapshot.provider,
+              limit: snapshot.limit,
+              remaining: snapshot.remaining,
+              resetAt: snapshot.resetAt,
+              queued: snapshot.queued
+            } : undefined;
+
+            if (res.statusCode && res.statusCode >= 400) {
+              resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d, rateLimit: rateLimitInfo });
+              return;
+            }
+            const parsed = safeJsonParse<JsonValue>(d, null);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              const obj = parsed as JsonObject;
+              if (rateLimitInfo) {
+                obj.rateLimit = rateLimitInfo;
+              }
+              resolve(obj);
+            } else {
+              resolve({ success: false, error: 'Invalid JSON', raw: d, rateLimit: rateLimitInfo });
+            }
+          });
+        });
+
+        request.on('error', err => reject(err));
+        if (body) {
+          request.write(JSON.stringify(body));
+        }
+        request.end();
       };
 
-      const request = net.request(options);
-      const token = apiKey ?? this.settingsService.getSettings().proxy?.key;
-      if (token) {
-        request.setHeader('Authorization', `Bearer ${token}`);
-      }
-      if (body) {
-        request.setHeader('Content-Type', 'application/json');
-      }
-
-      request.on('response', (res) => {
-        let d = '';
-        res.on('data', chunk => d += chunk);
-        res.on('end', () => {
-          if (res.statusCode && res.statusCode >= 400) {
-            resolve({ success: false, error: `HTTP ${res.statusCode}`, raw: d });
-            return;
-          }
-          const parsed = safeJsonParse<JsonValue>(d, null);
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            resolve(parsed as JsonObject);
-          } else {
-            resolve({ success: false, error: 'Invalid JSON', raw: d });
-          }
-        });
-      });
-
-      request.on('error', err => reject(err));
-      if (body) {
-        request.write(JSON.stringify(body));
-      }
-      request.end();
+      void run().catch(reject);
     });
   }
 
@@ -581,6 +905,7 @@ export class ProxyService extends BaseService {
 
 
   private async fetchAntigravityProjectID(accessToken: string): Promise<string | undefined> {
+    await this.waitForRateLimit('antigravity', { priority: 2, isPremiumBypass: true });
     return new Promise((resolve) => {
       const body = JSON.stringify({
         metadata: {
@@ -623,6 +948,7 @@ export class ProxyService extends BaseService {
   }
 
   async fetchGitHubProfile(accessToken: string): Promise<{ email?: string; displayName?: string; avatarUrl?: string; login?: string }> {
+    await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user profile...');
     return new Promise((resolve) => {
       const request = net.request({
@@ -665,6 +991,7 @@ export class ProxyService extends BaseService {
   }
 
   async fetchGitHubEmails(accessToken: string): Promise<string | undefined> {
+    await this.waitForRateLimit('github', { priority: 2 });
     appLogger.info('ProxyService', 'Fetching GitHub user emails...');
     return new Promise((resolve) => {
       const request = net.request({

@@ -92,6 +92,16 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpSecurityAllowedHosts: [],
     mcpReviewPolicy: 'elevated',
     mcpAutoExecuteSafe: true,
+    mcpActionPermissions: {},
+    mcpPermissionRequests: [],
+    mcpServerVersionHistory: {},
+    security: {
+        session: {
+            enabled: false,
+            timeoutMinutes: 30,
+            requireBiometricOnUnlock: false,
+        },
+    },
     window: {
         width: 1280,
         height: 800,
@@ -99,6 +109,15 @@ const DEFAULT_SETTINGS: AppSettings = {
         y: 0,
         startOnStartup: true,
         workAtBackground: true,
+    },
+    terminal: {
+        fontSize: 13,
+        fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+        lineHeight: 1.4,
+        letterSpacing: 0.2,
+        cursorStyle: 'block',
+        cursorBlink: true,
+        scrollback: 10000,
     },
 };
 
@@ -269,7 +288,15 @@ export class SettingsService extends BaseService {
             groq: this.mergeProvider(authAccounts, 'groq', loaded.groq, 'apiKey'),
             nvidia: this.mergeProvider(authAccounts, 'nvidia', loaded.nvidia, 'apiKey'),
             proxy: this.mergeProxy(authAccounts, loaded.proxy),
-            window: loaded.window ?? DEFAULT_SETTINGS.window,
+            security: {
+                ...DEFAULT_SETTINGS.security,
+                ...(loaded.security ?? {}),
+                session: {
+                    ...DEFAULT_SETTINGS.security?.session,
+                    ...((loaded.security as AppSettings['security'])?.session ?? {}),
+                },
+            },
+            window: this.sanitizeWindowSettings(loaded.window),
         };
 
         this.migrateDeprecatedSettings(res);
@@ -442,6 +469,7 @@ export class SettingsService extends BaseService {
         }
 
         this.settings = this.deepMergeSettings(this.settings, newSettings) as AppSettings;
+        this.settings.window = this.sanitizeWindowSettings(this.settings.window);
 
         if (this.authService) {
             await this.syncTokensToAuth(newSettings, currentSettings);
@@ -734,6 +762,72 @@ export class SettingsService extends BaseService {
             }
         }
         return res;
+    }
+
+    private sanitizeWindowSettings(raw: unknown): AppSettings['window'] {
+        const fallback = {
+            width: DEFAULT_SETTINGS.window?.width ?? 1280,
+            height: DEFAULT_SETTINGS.window?.height ?? 800,
+            x: DEFAULT_SETTINGS.window?.x ?? 0,
+            y: DEFAULT_SETTINGS.window?.y ?? 0,
+            fullscreen: DEFAULT_SETTINGS.window?.fullscreen ?? false,
+            startOnStartup: DEFAULT_SETTINGS.window?.startOnStartup ?? true,
+            workAtBackground: DEFAULT_SETTINGS.window?.workAtBackground ?? true,
+        };
+        const record = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+        const legacyBounds =
+            record.bounds && typeof record.bounds === 'object'
+                ? (record.bounds as Record<string, unknown>)
+                : null;
+
+        const resolveNumber = (
+            value: unknown,
+            defaultValue: number,
+            min: number,
+            max: number
+        ): number => {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+                return defaultValue;
+            }
+            return Math.max(min, Math.min(max, Math.floor(value)));
+        };
+
+        const width = resolveNumber(
+            record.width ?? legacyBounds?.width,
+            fallback.width,
+            640,
+            7680
+        );
+        const height = resolveNumber(
+            record.height ?? legacyBounds?.height,
+            fallback.height,
+            480,
+            4320
+        );
+
+        const resolvePosition = (value: unknown, fallbackValue: number): number => {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+                return fallbackValue;
+            }
+            return Math.floor(value);
+        };
+
+        return {
+            width,
+            height,
+            x: resolvePosition(record.x ?? legacyBounds?.x, fallback.x),
+            y: resolvePosition(record.y ?? legacyBounds?.y, fallback.y),
+            fullscreen:
+                typeof record.fullscreen === 'boolean' ? record.fullscreen : fallback.fullscreen,
+            startOnStartup:
+                typeof record.startOnStartup === 'boolean'
+                    ? record.startOnStartup
+                    : fallback.startOnStartup,
+            workAtBackground:
+                typeof record.workAtBackground === 'boolean'
+                    ? record.workAtBackground
+                    : fallback.workAtBackground,
+        };
     }
 
     private preserveSensitiveTokens(newSettings: Partial<AppSettings>): void {

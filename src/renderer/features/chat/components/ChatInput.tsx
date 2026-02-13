@@ -42,21 +42,39 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 return;
             }
 
+            // Calculate max height based on viewport (30vh with a minimum of 100px and max of 200px)
+            const calculateMaxHeight = () => {
+                const viewportHeight = window.innerHeight;
+                const calculatedMax = Math.min(200, Math.max(100, viewportHeight * 0.3));
+                return calculatedMax;
+            };
+
             // Auto-resize textarea
-            area.style.height = 'auto';
-            area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
+            const resize = () => {
+                const maxHeight = calculateMaxHeight();
+                area.style.height = 'auto';
+                area.style.height = `${Math.min(area.scrollHeight, maxHeight)}px`;
+            };
+
+            resize();
 
             // ResizeObserver for more robust resizing
             const resizeObserver = new ResizeObserver(() => {
-                area.style.height = 'auto';
-                area.style.height = `${Math.min(area.scrollHeight, 200)}px`;
+                resize();
             });
 
             resizeObserver.observe(area);
 
+            // Handle viewport resize
+            const handleViewportResize = () => {
+                resize();
+            };
+            window.addEventListener('resize', handleViewportResize);
+
             // Cleanup
             return () => {
                 resizeObserver.disconnect();
+                window.removeEventListener('resize', handleViewportResize);
             };
         }, [ctrl.input, textareaRef]);
 
@@ -201,7 +219,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
                         placeholder={ctrl.t('input.placeholder.default')}
-                        className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-[200px]"
+                        className="flex-1 bg-transparent border-none focus:border-none focus:ring-offset-0 ring-offset-0 ring-0 focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none py-2.5 max-h-[30vh] overflow-y-auto"
                         rows={1}
                         aria-label={ctrl.t('input.placeholder.default')}
                         aria-describedby="chat-input-hint"
@@ -369,8 +387,8 @@ const EnhanceButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
         isEnhancing
             ? 'bg-warning/20 text-warning animate-pulse'
             : isEnhancable
-              ? 'bg-warning/10 text-warning hover:bg-warning/20 hover:text-warning-light'
-              : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
+                ? 'bg-warning/10 text-warning hover:bg-warning/20 hover:text-warning-light'
+                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
     );
     return (
         <button
@@ -396,8 +414,8 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
         isLoading
             ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
             : hasContent
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity'
-              : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity'
+                : 'bg-muted/30 text-muted-foreground/50 cursor-not-allowed'
     );
     return (
         <button
@@ -406,8 +424,8 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
                 isLoading
                     ? ctrl.stopGeneration
                     : () => {
-                          void ctrl.sendMessage();
-                      }
+                        void ctrl.sendMessage();
+                    }
             }
             disabled={!isLoading && !hasContent}
             className={btnClass}

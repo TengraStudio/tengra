@@ -1,0 +1,291 @@
+openapi: 3.1.0
+info:
+  title: Tandem Local API
+  version: 1.0.0
+  description: Local REST API used by browser extension and external automation clients.
+servers:
+  - url: http://localhost:37240
+security:
+  - bearerAuth: []
+tags:
+  - name: Tools
+  - name: Models
+  - name: Chat
+  - name: Vision
+paths:
+  /api/tools/list:
+    get:
+      tags: [Tools]
+      summary: List available tools
+      responses:
+        '200':
+          description: Tool list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolsListResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/models:
+    get:
+      tags: [Models]
+      summary: List available models
+      responses:
+        '200':
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/tools/execute:
+    post:
+      tags: [Tools]
+      summary: Execute a tool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolExecuteRequest'
+      responses:
+        '200':
+          description: Tool execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolExecuteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/chat/message:
+    post:
+      tags: [Chat]
+      summary: Send a single chat message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Complete chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api/chat/stream:
+    post:
+      tags: [Chat]
+      summary: Stream chat response as Server-Sent Events (SSE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: SSE stream started
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/vision/analyze:
+    post:
+      tags: [Vision]
+      summary: Analyze an image with a vision model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisionRequest'
+      responses:
+        '200':
+          description: Vision analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: string
+    Tool:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+    ToolsListResponse:
+      type: object
+      required: [success, tools]
+      properties:
+        success:
+          type: boolean
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+    Model:
+      type: object
+      required: [id, name, provider]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        contextWindow:
+          type: integer
+    ModelsResponse:
+      type: object
+      required: [success, models]
+      properties:
+        success:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+    ToolExecuteRequest:
+      type: object
+      required: [toolName, parameters]
+      properties:
+        toolName:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+    ToolExecuteResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+          additionalProperties: true
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant, tool]
+        content:
+          type: string
+    ChatRequest:
+      type: object
+      required: [messages, model, provider]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        model:
+          type: string
+        provider:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tool'
+    ChatResponse:
+      type: object
+      required: [success, response]
+      properties:
+        success:
+          type: boolean
+        response:
+          $ref: '#/components/schemas/ChatMessage'
+        usage:
+          type: object
+          additionalProperties: true
+    VisionRequest:
+      type: object
+      required: [image, prompt, model]
+      properties:
+        image:
+          type: string
+        prompt:
+          type: string
+        model:
+          type: string
+    VisionResponse:
+      type: object
+      required: [success, description]
+      properties:
+        success:
+          type: boolean
+        description:
+          type: string

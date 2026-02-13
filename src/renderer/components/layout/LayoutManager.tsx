@@ -1,4 +1,5 @@
 import { useLanguage } from '@renderer/i18n';
+import { useBreakpoint } from '@renderer/lib/responsive';
 import React, { useRef } from 'react';
 
 import { useTheme } from '@/context/ThemeContext';
@@ -23,8 +24,15 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
 }) => {
     const { theme } = useTheme();
     const { isRTL } = useLanguage();
+    const breakpoint = useBreakpoint();
     const containerRef = useRef<HTMLDivElement>(null);
-    const effectiveSidebarWidth = isSidebarCollapsed ? 60 : 280;
+    const effectiveSidebarWidth = isSidebarCollapsed
+        ? breakpoint === 'mobile'
+            ? 0
+            : 60
+        : breakpoint === 'mobile'
+            ? 220
+            : 280;
 
     return (
         <div

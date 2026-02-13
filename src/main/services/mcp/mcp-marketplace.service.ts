@@ -1,4 +1,5 @@
 import { BaseService } from '@main/services/base.service';
+import { MultiLevelCache } from '@main/utils/cache.util';
 import axios from 'axios';
 
 /**
@@ -26,9 +27,13 @@ export interface McpMarketplaceServer {
  * GitHub repository (modelcontextprotocol/servers).
  */
 export class McpMarketplaceService extends BaseService {
-    private cache: McpMarketplaceServer[] = [];
-    private cacheTimestamp = 0;
+    private readonly cache = new MultiLevelCache<McpMarketplaceServer[]>({
+        name: 'mcp-marketplace',
+        hot: { maxSize: 4, defaultTTL: 15 * 60 * 1000 },
+        warm: { maxSize: 8, defaultTTL: 60 * 60 * 1000 }
+    });
     private readonly CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
+    private readonly CACHE_KEY_ALL = 'servers:all';
     private readonly GITHUB_API = 'https://api.github.com/repos/modelcontextprotocol/servers/contents/src';
     private readonly FALLBACK_SERVERS: McpMarketplaceServer[] = [
         // Reference Servers (Official)
@@ -236,6 +241,13 @@ export class McpMarketplaceService extends BaseService {
 
     constructor() {
         super('McpMarketplaceService');
+        // Cache warming: keep known fallback servers available immediately.
+        this.cache.warm([{
+            key: this.CACHE_KEY_ALL,
+            value: this.FALLBACK_SERVERS,
+            hotTtl: 30 * 1000,
+            warmTtl: this.CACHE_TTL_MS
+        }]);
     }
 
     override async initialize(): Promise<void> {
@@ -248,11 +260,9 @@ export class McpMarketplaceService extends BaseService {
      * List all available MCP servers from GitHub repository
      */
     async listServers(): Promise<McpMarketplaceServer[]> {
-        const now = Date.now();
-
-        // Return cached data if still valid
-        if (this.cache.length > 0 && (now - this.cacheTimestamp) < this.CACHE_TTL_MS) {
-            return this.cache;
+        const cached = this.cache.get(this.CACHE_KEY_ALL);
+        if (cached !== undefined && cached.length > 0) {
+            return cached;
         }
 
         try {
@@ -328,20 +338,18 @@ export class McpMarketplaceService extends BaseService {
                     }
                 }
 
-                this.cache = servers;
-                this.cacheTimestamp = now;
-                this.logInfo(`Loaded ${this.cache.length} servers from GitHub`);
-                return this.cache;
+                this.cache.set(this.CACHE_KEY_ALL, servers, { warm: this.CACHE_TTL_MS });
+                this.logInfo(`Loaded ${servers.length} servers from GitHub (cache hitRate=${(this.cache.stats().hitRate * 100).toFixed(1)}%)`);
+                return servers;
             }
         } catch (error) {
             this.logError('Failed to fetch from GitHub, using fallback', error);
         }
 
         // Fallback to hardcoded list
-        this.cache = this.FALLBACK_SERVERS;
-        this.cacheTimestamp = now;
-        this.logInfo(`Using fallback servers: ${this.cache.length}`);
-        return this.cache;
+        this.cache.set(this.CACHE_KEY_ALL, this.FALLBACK_SERVERS, { warm: this.CACHE_TTL_MS });
+        this.logInfo(`Using fallback servers: ${this.FALLBACK_SERVERS.length}`);
+        return this.FALLBACK_SERVERS;
     }
 
     /**
@@ -428,13 +436,11 @@ export class McpMarketplaceService extends BaseService {
      * Clear cache to force refresh
      */
     async refreshCache(): Promise<void> {
-        this.cache = [];
-        this.cacheTimestamp = 0;
+        this.cache.clear();
         await this.listServers();
     }
 
     override async cleanup(): Promise<void> {
-        this.cache = [];
-        this.cacheTimestamp = 0;
+        this.cache.clear();
     }
 }

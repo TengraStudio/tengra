@@ -1,5 +1,74 @@
 # Journal des modifications
 
+## [2026-02-13]
+
+### Validation de dépôt pour les pièces jointes ajoutée
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Sécurité améliorée pour les pièces jointes par glisser-déposer avec validation du type de fichier, limites de taille et blocage des extensions dangereuses.
+
+- Liste blanche des types de fichiers ajoutée : texte, JSON, PDF, images et formats de documents courants.
+- Limite de taille maximale de 10 Mo implémentée pour prévenir les attaques DoS par gros fichiers.
+- Blocage des extensions dangereuses (.exe, .bat, .sh, .ps1, etc.) ajouté pour la sécurité.
+- Notification d'erreur toast affichée lorsque des fichiers invalides sont déposés.
+
+### Validation de dépôt pour les pièces jointes ajoutée
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Sécurité améliorée pour les pièces jointes par glisser-déposer avec validation du type de fichier, limites de taille et blocage des extensions dangereuses.
+
+- Liste blanche des types de fichiers ajoutée : texte, JSON, PDF, images et formats de documents courants.
+- Limite de taille maximale de 10 Mo implémentée pour prévenir les attaques DoS par gros fichiers.
+- Blocage des extensions dangereuses (.exe, .bat, .sh, .ps1, etc.) ajouté pour la sécurité.
+- Notification d'erreur toast affichée lorsque des fichiers invalides sont déposés.
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### Extension des tests du gestionnaire IPC et correctif TEST-01
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: TEST-01 résolu (test de reprise du point de contrôle) et couverture des tests IPC terminée pour les gestionnaires de base de données et d'agent de projet.
+
+- **Tests** : correction de l'inadéquation des attentes « agent-executor.service.test.ts » dans le test de reprise du point de contrôle.
+- **Couverture IPC** : création de « db.integration.test.ts » couvrant les gestionnaires de discussion, de projet et de dossier.
+- **Couverture IPC** : création de « project-agent.integration.test.ts » couvrant les gestionnaires de démarrage, d'arrêt, d'état et HIL.
+- **Code Intelligence** : correction des incohérences de type de paramètre TypeScript dans `code-intelligence.integration.test.ts`.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### Précision accrue du comptage des jetons
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Intégration de js-tiktoken pour une estimation précise des jetons sur les modèles GPT, Claude et Llama.
+
+Intégration de `js-tiktoken` pour un mappage précis de la tokenisation aux encodages cl100k_base et o200k_base.
+Amélioration de la gestion de la fenêtre de contexte avec des limites de modèles précises pour les principaux fournisseurs de LLM.
+Maintien des solutions de secours basées sur l'heuristique pour les modèles non pris en charge afin d'assurer la continuité de l'estimation.
+Ajout de tests unitaires complets pour vérifier la précision du comptage des jetons pour divers modèles.
+
 ## [2026-02-12]
 
 ### Extension des tests de gestionnaires IPC - Lot 4
@@ -1087,18 +1156,18 @@ Suivez l’évolution de Tandem.
 - `IdeaDetailsContent.tsx`: onglet Présentation, onglet Marché, onglet Stratégie, onglet Technologie, onglet Feuille de route, onglet Utilisateurs, onglet Business, CoreConceptHeader, LogoGeneratorSection
 - `SelectDropdown.tsx`: bouton déclencheur, menu flottant
 - `MemoryInspector.tsx`: Contenu de l'onglet
-- `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
+- `ToolDisplay.tsx` : ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
 - `process-stream.ts`: assistant buildNewStreamingState
 - `StatisticsTab.tsx`: composant PeriodSelector
 - `SpeechTab.tsx`: composants VoiceSection, DeviceSection
-- `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
-- `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
+- `ManualSessionModal.tsx` : HeaderSection, InstructionsSection, InputSection, SaveButtonContent
+- `WorkspaceModals.tsx` : MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
 - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry avec tables de recherche
 - `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
-- `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
+- `AppearanceTab.tsx` : ThemeSection, TypographySection, ToggleSwitch
 4. **Refactoring du réducteur/assistant**:
 - `useProjectListStateMachine.ts`: extrait de 12 fonctions handler d'un réducteur de 33 complexités
-- `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
+- `git-utils.ts` : extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
 ### Fichiers modifiés (25+)
 - **Composants de discussion**: ToolDisplay.tsx, process-stream.ts
 - **Composants d'idées**: IdeaDetailsContent.tsx, SessionHistory.tsx
@@ -1136,12 +1205,12 @@ Suivez l’évolution de Tandem.
 - `useHistorySync()` pour la gestion de l'historique des discussions
 3. **Extraction de sous-composants**: divisez les gros composants en morceaux ciblés
 - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-- `TerminalView.tsx`: TerminalHeader, OutputContent
+- `TerminalView.tsx` : TerminalHeader, OutputContent
 - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Contrôles
 - `MessageBubble.tsx`: composant MessageFooter
 - `GlassModal.tsx`: composant ModalHeader
 - `SidebarSection.tsx`: en-tête de section, contenu de section
-- `UpdateNotification.tsx`: UpdateContent, UpdateActions
+- `UpdateNotification.tsx` : UpdateContent, UpdateActions
 4. **Extraction de fonctions d'assistance**: logique déplacée vers des fonctions pures
     - `getStatusText()`, `getAudioState()`, `getStateConfig()`
     - `handleTextSelection()`, `handleSelectionClear()`
@@ -1226,7 +1295,7 @@ Suivez l’évolution de Tandem.
 ### Fichiers concernés
 - **Services d'agent**: `src/main/services/project/project-agent.service.ts`, `src/main/tools/tool-executor.ts`, `src/main/tools/tool-definitions.ts`.
 - **UI Composants**: `src/renderer/features/project-agent/nodes/TaskNode.tsx`.
-- **Infrastructure**: `src/shared/types/events.ts`, `src/main/ipc/project-agent.ts`, `src/renderer/electron.d.ts`, `src/renderer/web-bridge.ts`.
+- **Infrastructure** : `src/shared/types/events.ts`, `src/main/ipc/project-agent.ts`, `src/renderer/electron.d.ts`, `src/renderer/web-bridge.ts`.
 - **Documents**: `docs/TODO.md`, `docs/CHANGELOG.md`.
 ## 2026-01-30: 🧹 SUPPRESSION DE FONCTIONNALITÉS DÉCONSEILLÉES ET STABILISATION DE CONSTRUCTION (Lot 14)
 **Statut**: ✅ TERMINÉ
@@ -1270,7 +1339,7 @@ Suivez l’évolution de Tandem.
 - Résolution des avertissements `setState` en vigueur en implémentant des mises à jour asynchrones sécurisées.
 - Extrait de `TerminalErrorOverlay` pour simplifier le bloc de rendu principal.
 - Satisfait aux exigences strictes de complexité (<10) pour les méthodes de gestion de terminal de base.
-4. **Lint & Type Pass**:
+4. **Lint & Type Pass** :
 - Exécution réussie de `eslint --fix` dans tous les répertoires modifiés.
 - Tri d'importation standardisé et logique conditionnelle simplifiée (`||` → `??`).
 - Compatibilité de construction vérifiée à 100 % avec l'architecture refactorisée.
@@ -1371,7 +1440,7 @@ Suivez l’évolution de Tandem.
 - Démarrage automatique avec Windows, redémarrage automatique en cas d'échec
 - Découverte du service via le fichier de port (`%APPDATA%/Tandem/services/db-service.port`)
 - Installer/désinstaller via `scripts/install-db-service.ps1`
-3. **HTTP API**:
+3. **API HTTP** :
 - RESTful API sur le port dynamique
 - Point de terminaison du contrôle de santé à `/health`
 - Points de terminaison CRUD sous `/api/v1/*`
@@ -1595,7 +1664,7 @@ Suivez l’évolution de Tandem.
 4. `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Bouton Régénérer
 5. `src/renderer/features/ideas/components/SessionSetup.tsx` - Saisie d'invite personnalisée + bouton d'aperçu
 6. `src/renderer/features/ideas/components/MarketPreviewModal.tsx` - NOUVEAU modal d'aperçu
-7. `src/renderer/features/ideas/components/index.ts` - Export MarketPreviewModal
+7. `src/renderer/features/ideas/components/index.ts` - Exporter MarketPreviewModal
 8. `src/main/services/llm/idea-generator.service.ts` - Logique de nouvelle tentative, régénération, invites personnalisées, aperçu du marché
 9. `src/main/ipc/idea-generator.ts` - Régénérer + aperçu IPC handlers
 10. `src/main/services/data/migrations.ts` - Migration #21
@@ -2281,7 +2350,7 @@ const id = eventBus.on(
 'auth: modifié',
 charge utile => {
 console.log('Auth modifié:', charge utile);
-    },
+},
 { une fois: vrai, priorité: 10 }
 );
 // Événements personnalisés
@@ -2542,7 +2611,7 @@ const data = JSON.parse(untrustedInput);
 // Après: sécurisé avec les valeurs par défaut
 const data = safeJsonParse (untrustedInput, {
 sensibleDefaults: 'ici',
-    });
+});
     ```
 **Avantages**:
 - **Prévention des crashs**: JSON malformé ne fait plus planter l'application
@@ -2685,7 +2754,7 @@ sensibleDefaults: 'ici',
 **Statut**: Terminé (00:55:00)
 **Corrections**:
 - **Rust token-service**: Correction d'une panique critique lors de l'impression sur `stdout` dans un état détaché (fermeture du canal Windows). Remplacement de `println!` par `writeln!` sans panique.
-- **ProcessManagerService**:
+- **ProcessManagerService** :
 - Implémentation d'une **logique de redémarrage automatique** pour les services persistants (service de jeton, service de modèle, etc.) s'ils plantent avec un code de sortie différent de zéro.
 - Correction de `sendRequest` et `sendGetRequest` pour utiliser correctement le **paramètre timeout** avec axios pour éviter le blocage lors de pannes de service.
 - **Nettoyage des jetons d'authentification Zombie**:
@@ -2803,13 +2872,13 @@ sensibleDefaults: 'ici',
 - Paramètres inutilisés préfixés avec un trait de soulignement (`_processManager`, `_event`)
 - Suppression des importations inutilisées (`os` de proxy-process.service.ts)
 **Avertissements restants (931)**:
-- `no-unnecessary-condition`: 402
+- `aucune condition-inutile` : 402
 - `complexity`: 238 (nécessite une refactorisation de la fonction)
 - `prefer-nullish-coalescing`: 218 (modèles complexes)
-- `no-misused-promises`: 88
-- `max-lines-per-function`: 42
-- `max-depth`: 18
-- `max-params`: 9
+- « pas de promesses mal utilisées » : 88
+- `max-lignes-par-fonction` : 42
+- `profondeur maximale` : 18
+- `max-params` : 9
 
 ### Correction de l'actualisation des jetons pour les comptes non liés
 
@@ -2920,423 +2989,423 @@ sensibleDefaults: 'ici',
 
 ## [2026-01-18]
 
-### Claude Authentication & Service Reliability
+### Claude Authentification et fiabilité du service
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Claude Authentication & Service Reliability improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: Claude Authentication & Service Reliability a amélioré les performances d'exécution, la stabilité et la cohérence opérationnelle entre les flux de travail clés.
 
-- **Claude Authentication**:
-    - Implemented **headless session capture** for Claude (claude.ai) using Electron cookies, moving away from internal browser windows.
-    - Added **manual sessionKey fallback** in the UI for cases where automatic capture fails.
-    - Updated `ProxyService` and `QuotaService` to handle `sessionToken` throughout the authentication lifecycle.
-- **Service Reliability**:
-    - Fixed `QuotaService` and `ProxyService` unit tests by ensuring all dependencies (`DataService`, `ProcessManagerService`, etc.) are correctly mocked and injected.
-    - Resolved TypeScript and ESLint errors in `ProxyService` and `LocalAuthServer` related to `any` types and redundant conditionals.
-    - Standardized `getCopilotQuota` and `getClaudeQuota` return types to handle multi-account structures.
-- **Type Safety**:
-    - Achieved cleaner type-check results by adding missing types to `@shared/types/quota`.
+- **Authentification Claude** :
+- Implémentation de la **capture de session sans tête** pour Claude (claude.ai) à l'aide de cookies Electron, en s'éloignant des fenêtres internes du navigateur.
+- Ajout d'un **repli manuel de sessionKey** dans l'interface utilisateur pour les cas où la capture automatique échoue.
+- Mise à jour de `ProxyService` et `QuotaService` pour gérer `sessionToken` tout au long du cycle de vie de l'authentification.
+- **Fiabilité du service** :
+- Correction des tests unitaires `QuotaService` et `ProxyService` en garantissant que toutes les dépendances (`DataService`, `ProcessManagerService`, etc.) sont correctement simulées et injectées.
+- Résolution des erreurs TypeScript et ESLint dans `ProxyService` et `LocalAuthServer` liées aux types `any` et aux conditions redondantes.
+- Types de retour standardisés « getCopilotQuota » et « getClaudeQuota » pour gérer les structures multi-comptes.
+- **Type de sécurité** :
+- Obtention de résultats de vérification de type plus propres en ajoutant les types manquants à `@shared/types/quota`.
 
 ## [2026-01-17]
 
-### Antigravity Model Fetching Refinement
+### Affinement de la récupération du modèle antigravité
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Antigravity Model Fetching Refinement introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: Antigravity Model Fetching Refinement a introduit une maintenance coordonnée et des améliorations de la qualité dans les modules associés.
 
-- **Antigravity Executor**:
-    - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.
-    - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.
-    - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application.
+- **Exécuteur antigravité** :
+- Affinement de `FetchAntigravityModels` pour extraire les métadonnées détaillées (`displayName`, `description`) de la réponse de l'API de découverte.
+- Logique d'alias de modèle mise à jour pour garantir un mappage cohérent entre les identifiants bruts en amont et les configurations statiques pour la prise en charge de la réflexion et les limites des jetons.
+- Alignement de « gemini-3-pro-high » et « gemini-3-flash » avec leurs alias d'aperçu respectifs pour permettre une application de configuration correcte.
 
 ## [2026-01-16]
 
-### Phase 17 - Stability & Reliability
+### Phase 17 - Stabilité et fiabilité
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 17 - Stability & Reliability delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: La phase 17 – Stabilité et fiabilité a permis de réaliser les refactorisations planifiées, le nettoyage structurel et la vérification sur l'ensemble de la portée ciblée.
 
-- **Critical Fixes**:
-    - Fixed production crash ("Blank Page") by correcting `preload` and `index.html` path resolution in `src/main/main.ts`.
-    - Resolved React crash (circular dependency) by removing problematic `react-vendor` chunk in `vite.config.ts`.
-    - Fixed `SidebarItem` not registering clicks by propagating `data-testid` and other props correctly.
-- **Testing**:
-    - Achieved 100% E2E Test Pass Rate (11/11 tests).
-    - Refactored `chat.spec.ts` to use robust `toBeVisible` assertions.
-    - Added `data-testid` to Window Actions and critical UI flows.
+- **Corrections critiques** :
+- Correction d'un crash de production ("Page blanche") en corrigeant la résolution du chemin `preload` et `index.html` dans `src/main/main.ts`.
+- Résolution du crash de React (dépendance circulaire) en supprimant le morceau problématique `react-vendor` dans `vite.config.ts`.
+- Correction de `SidebarItem` n'enregistrant pas les clics en propageant correctement `data-testid` et d'autres accessoires.
+- **Tests** :
+- Atteint un taux de réussite aux tests E2E de 100 % (tests 11/11).
+- Refactorisation de « chat.spec.ts » pour utiliser des assertions robustes « toBeVisible ».
+- Ajout de « data-testid » aux actions de fenêtre et aux flux critiques de l'interface utilisateur.
 
-### Phase 18 - Internationalization (Prioritized)
+### Phase 18 - Internationalisation (priorisée)
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 18 - Internationalization (Prioritized) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 18 – Internationalisation (priorisée) a fourni les refactors planifiés, le nettoyage structurel et la vérification sur l’ensemble de la portée ciblée.
 
-- **Hardcoded String Fixes**:
-    - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).
-    - Replaced hardcoded placeholders in `SSHManager.tsx` and `NginxWizard.tsx`.
-    - Replaced hardcoded preset names and labels in `ParameterPresets.tsx` & `AdvancedTab.tsx`.
-    - Replaced hardcoded prompt management text in `PromptManagerModal.tsx`.
-    - Replaced hardcoded loader text in `CodeEditor.tsx`.
-- **Translations**:
-    - Added `ssh.nginx`, `ssh.presets`, `ssh.promptManager`, and `ssh.editor` keys to `en.ts` and `tr.ts`.
-    - Fixed hardcoded Turkish text in `AdvancedTab.tsx` presets.
+- **Corrections de chaînes codées en dur** :
+- Remplacement des chaînes codées en dur dans `ThemeStore.tsx` (Thèmes, Filtres).
+- Remplacement des espaces réservés codés en dur dans `SSHManager.tsx` et `NginxWizard.tsx`.
+- Remplacement des noms et étiquettes de préréglages codés en dur dans `ParameterPresets.tsx` et `AdvancedTab.tsx`.
+- Remplacement du texte de gestion des invites codé en dur dans `PromptManagerModal.tsx`.
+- Remplacement du texte du chargeur codé en dur dans `CodeEditor.tsx`.
+- **Traductions** :
+- Ajout des clés `ssh.nginx`, `ssh.presets`, `ssh.promptManager` et `ssh.editor` à `en.ts` et `tr.ts`.
+- Correction du texte turc codé en dur dans les préréglages `AdvancedTab.tsx`.
 
-### Phase 19 - Technical Debt & Security (Current)
+### Phase 19 - Dette technique et sécurité (actuelle)
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 19 - Technical Debt & Security (Current) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 19 – Dette technique et sécurité (actuelle) a fourni les refactorisations planifiées, le nettoyage structurel et la vérification sur la portée ciblée.
 
-- **Security**:
-    - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.
-    - Implemented robust command argument handling for Windows platforms.
-- **Refactoring**:
-    - **SSHManager**: Reduced complexity by extracting `SSHConnectionList`, `SSHTerminal`, and `AddConnectionModal` components and `useSSHConnections` hook.
-    - **WorkspaceToolbar**: Extracted `DashboardTabs`.
-    - **Settings**: Implemented `SettingsContext` and refactored `useSettingsLogic` into sub-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).
-- **Internationalization**:
-    - Completed hardcoded string replacements in `SSHManager`, `WorkspaceToolbar`, `ModelComparison`, and others.
-    - Fixed Turkish translation quality issues.
-    - Added Turkish translations for `modelExplorer`, `docker`, `onboarding`, and missing `workspace` keys.
-- **Type Safety**:
-    - Resolved `exactOptionalPropertyTypes` violations and `any` usage.
-    - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`.
+- **Sécurité**:
+- Correction d'une vulnérabilité critique d'injection de shell dans `dispatcher.ts` et `window.ts` en appliquant `shell: false`.
+- Implémentation d'une gestion robuste des arguments de commande pour les plates-formes Windows.
+- **Refactorisation** :
+- **SSHManager** : complexité réduite en extrayant les composants `SSHConnectionList`, `SSHTerminal` et `AddConnectionModal` et le hook `useSSHConnections`.
+- **WorkspaceToolbar** : extrait de `DashboardTabs`.
+- **Paramètres** : implémentation de `SettingsContext` et refactorisation de `useSettingsLogic` en sous-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).
+- **Internationalisation** :
+- Remplacements de chaînes codées en dur dans `SSHManager`, `WorkspaceToolbar`, `ModelComparison` et autres.
+- Correction de problèmes de qualité de traduction en turc.
+- Ajout de traductions turques pour `modelExplorer`, `docker`, `onboarding` et les clés `workspace` manquantes.
+- **Type de sécurité** :
+- Résolution des violations de « exactOptionalPropertyTypes » et de « toute » utilisation.
+- Correction des promesses inattendues dans `dispatcher.ts` et `SSHManager.tsx`.
 
-### Phase 20 - Independent Microservices Architecture
+### Phase 20 - Architecture de microservices indépendante
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 20 - Independent Microservices Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 20 : L'architecture de microservices indépendante a fourni des refactorisations planifiées, un nettoyage structurel et une vérification sur l'ensemble de la portée ciblée.
 
-- **Microservices Refactoring**:
-    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.
-    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\Tandem\services\{service}.port` for discovery.
-    - Services can run **completely independently** of the main Electron application.
-- **ProcessManagerService**:
-    - Updated to use **HTTP requests** via axios instead of stdin pipes.
-    - Implemented **port discovery** mechanism - checks for already-running services before spawning new ones.
-    - Services are now started with `detached: true` to allow independent lifecycle.
-- **Windows Startup Integration**:
-    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.
-    - Services start automatically at Windows login, even before Tandem app is launched.
-    - Supports `-Status`, `-Uninstall` flags for management.
-- **Default Settings**:
-    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.
-    - Tandem now minimizes to **System Tray** by default instead of closing.
+- **Refactorisation de microservices** :
+- Refactorisation de tous les services Rust (`token-service`, `model-service`, `quota-service`, `memory-service`) des canaux stdin/stdout vers des **serveurs HTTP indépendants**.
+- Chaque service se lie désormais à un **port éphémère** et écrit son port dans `%APPDATA%\Tandem\services\{service}.port` pour la découverte.
+- Les services peuvent fonctionner **complètement indépendamment** de l'application Electron principale.
+- **ProcessManagerService** :
+- Mise à jour pour utiliser les **requêtes HTTP** via axios au lieu des canaux stdin.
+- Implémentation d'un mécanisme de **découverte de port** - vérifie les services déjà en cours d'exécution avant d'en générer de nouveaux.
+- Les services sont désormais démarrés avec « détaché : vrai » pour permettre un cycle de vie indépendant.
+- **Intégration du démarrage Windows** :
+- Création de `scripts/register-services.ps1` pour enregistrer les services en tant que **tâches planifiées Windows**.
+- Les services démarrent automatiquement lors de la connexion Windows, avant même le lancement de l'application Tandem.
+- Prend en charge les indicateurs `-Status`, `-Uninstall` pour la gestion.
+- **Paramètres par défaut** :
+- Valeurs par défaut modifiées : `startOnStartup : true`, `workAtBackground : true`.
+- Tandem se réduit désormais à la **barre d'état système** par défaut au lieu de se fermer.
 
 ## [2026-01-15]
 
-### Build Fixes & Type Safety
+### Correctifs de construction et sécurité des types
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Build Fixes & Type Safety strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: Build Fixes & Type Safety a renforcé la fiabilité et la sécurité en résolvant les problèmes connus et en renforçant les chemins critiques.
 
-- **SettingsService**: Converted all synchronous file operations (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) to async equivalents (`fs.promises`). Added `initialize()` lifecycle method for proper async loading.
-- **BackupService**: Already using async file operations - verified and confirmed no changes needed.
-- **Tests**: Updated `settings.service.test.ts` to use async patterns and mock `fs.promises` API.
-- **LlamaService**: Fixed missing `path.join` references causing build failures.
-- **HistoryImportService**: Fixed Date type errors - now correctly creates Date objects for `createdAt`/`updatedAt` fields.
-- **AgentCouncilService**: Fixed CouncilSession type mismatch by aligning imports with DatabaseService types.
-- **AgentService**: Added proper type annotations for database query results.
-- **DatabaseService**: Fixed multiple type errors including unused generics, `projectId` property, and query result typing.
-- **IPC/db.ts**: Fixed Chat type mismatch between shared types and database service.
-- **Cleanup**: Removed unused imports in `registry.ts` and `ipc.ts`.
-- **Types**: Aligned `CouncilSession` status types across shared and database definitions (added `planning`, `reviewing` states).
+- **SettingsService** : conversion de toutes les opérations de fichiers synchrones (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) en équivalents asynchrones (`fs.promises`). Ajout de la méthode de cycle de vie `initialize()` pour un chargement asynchrone correct.
+- **BackupService** : utilise déjà des opérations sur les fichiers asynchrones - vérifié et confirmé qu'aucune modification n'est nécessaire.
+- **Tests** : mise à jour de « settings.service.test.ts » pour utiliser des modèles asynchrones et simuler l'API « fs.promises ».
+- **LlamaService** : Correction des références `path.join` manquantes provoquant des échecs de construction.
+- **HistoryImportService** : Correction d'erreurs de type Date - crée désormais correctement des objets Date pour les champs `createdAt`/`updatedAt`.
+- **AgentCouncilService** : correction de l'incompatibilité des types CouncilSession en alignant les importations avec les types DatabaseService.
+- **AgentService** : ajout d'annotations de type appropriées pour les résultats des requêtes de base de données.
+- **DatabaseService** : Correction de plusieurs erreurs de type, notamment les génériques inutilisés, la propriété `projectId` et la saisie des résultats de la requête.
+- **IPC/db.ts** : correction de l'inadéquation des types de discussion entre les types partagés et le service de base de données.
+- **Nettoyage** : suppression des importations inutilisées dans `registry.ts` et `ipc.ts`.
+- **Types** : types d'état `CouncilSession` alignés dans les définitions partagées et de base de données (ajout des états `planification` et `révision`).
 
-### Critical TODO Items Resolved
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Critical TODO Items Resolved introduced coordinated maintenance and quality improvements across the related modules.
-
-- **TypeScript**: Fixed 13 compilation errors across `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts`, and `audit-log.service.test.ts`.
-- **Logging**: Replaced ~25 `console.log`/`console.error` statements with `appLogger` in `main.ts`, `dispatcher.ts`, and `window.ts`.
-- **Types**: Added `idToken` and `email` fields to `AuthToken` interface.
-- **Async**: Fixed missing `await` on `getAllTokens()` calls in `main.ts` and `settings.service.ts`.
-- **Memory Leaks**: Verified all 8 services with `setInterval` have proper `cleanup()` methods.
-- **Shell Injection**: Strengthened command sanitization in `window.ts` (blocks: backticks, $(), braces, brackets, newlines).
-- **Security**: Removed hardcoded client secret fallbacks in `token.service.ts` and `quota.service.ts`. Added validation before usage.
-- **Logging**: Replaced all console.log/error/warn with appLogger in `token.service.ts` (20 instances) and `ssh.service.ts` (7 instances).
-- **Code Quality**: Fixed 22+ `||` to `??` nullish coalescing conversions in `token.service.ts` and `ssh.service.ts`. Fixed unused variables.
-
-### Database Migrations (Legacy JSON to PostgreSQL)
+### Éléments TODO critiques résolus
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Database Migrations (Legacy JSON to PostgreSQL) improved data model consistency and migration reliability across affected services.
+- **Summary**: Les éléments critiques TODO résolus ont introduit une maintenance coordonnée et des améliorations de la qualité dans les modules associés.
 
-- **AuthService**: Migrated from file-based JSON storage to `auth_tokens` table. Implemented secure token encryption/decryption in the database layer.
-- **TokenService**: Complete rewrite to remove synchronous file I/O dependencies. Now uses `AuthService` for token management and `JobSchedulerService` for refresh tasks.
-- **CopilotService**: Updated to support asynchronous token retrieval from `AuthService`, resolving startup race conditions.
-- **UsageTrackingService**: Migrated user activity tracking to `usage_events` table.
-- **PromptTemplatesService**: Migrated custom prompt templates to `prompt_templates` table.
-- **AuditLogService**: Migrated security audit logs to `audit_logs` table.
-- **JobSchedulerService**: Migrated job state persistence to `scheduler_state` table.
-- **Cleanup**: Removed legacy JSON file handling (reading/writing/encryption) from migrated services.
-- **Schema**: Added new tables: `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`.
+- **TypeScript** : correction de 13 erreurs de compilation dans `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts` et `audit-log.service.test.ts`.
+- **Logging** : remplacement d'environ 25 instructions `console.log`/`console.error` par `appLogger` dans `main.ts`, `dispatcher.ts` et `window.ts`.
+- **Types** : Ajout des champs `idToken` et `email` à l'interface `AuthToken`.
+- **Async** : Correction de `await` manquant sur les appels `getAllTokens()` dans `main.ts` et `settings.service.ts`.
+- **Fuites de mémoire** : Vérification que les 8 services avec `setInterval` ont des méthodes `cleanup()` appropriées.
+- **Shell Injection** : Nettoyage renforcé des commandes dans `window.ts` (blocs : backticks, $(), accolades, crochets, nouvelles lignes).
+- **Sécurité** : suppression des solutions de repli du secret client codées en dur dans `token.service.ts` et `quota.service.ts`. Ajout de la validation avant utilisation.
+- **Logging** : remplacement de tous les console.log/error/warn par appLogger dans `token.service.ts` (20 instances) et `ssh.service.ts` (7 instances).
+- **Qualité du code** : correction de plus de 22 conversions de fusion `||` à `??` dans `token.service.ts` et `ssh.service.ts`. Correction des variables inutilisées.
 
-### Phase 10 - Full Database Migration
+### Migrations de bases de données (héritage JSON vers PostgreSQL)
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: Les migrations de bases de données (Legacy JSON vers PostgreSQL) ont amélioré la cohérence des modèles de données et la fiabilité de la migration entre les services concernés.
+
+- **AuthService** : migré du stockage JSON basé sur des fichiers vers la table `auth_tokens`. Implémentation du cryptage/déchiffrement sécurisé des jetons dans la couche de base de données.
+- **TokenService** : réécriture complète pour supprimer les dépendances d'E/S des fichiers synchrones. Utilise désormais `AuthService` pour la gestion des jetons et `JobSchedulerService` pour les tâches d'actualisation.
+- **CopilotService** : mis à jour pour prendre en charge la récupération asynchrone de jetons à partir de `AuthService`, résolvant ainsi les conditions de concurrence au démarrage.
+- **UsageTrackingService** : migration du suivi de l'activité des utilisateurs vers la table `usage_events`.
+- **PromptTemplatesService** : migration des modèles d'invite personnalisés vers la table `prompt_templates`.
+- **AuditLogService** : migration des journaux d'audit de sécurité vers la table `audit_logs`.
+- **JobSchedulerService** : migration de la persistance de l'état du travail vers la table `scheduler_state`.
+- **Nettoyage** : suppression de la gestion des fichiers JSON hérités (lecture/écriture/chiffrement) des services migrés.
+- **Schéma** : Ajout de nouvelles tables : `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`.
+
+### Phase 10 - Migration complète de la base de données
 
 - **Type**: docs
 - **Status**: unknown
-- **Summary**: Phase 10 - Full Database Migration delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 10 – La migration complète de la base de données a fourni les refactors planifiés, le nettoyage structurel et la vérification sur l’ensemble de la portée ciblée.
 
-- **Legacy Data Migration**:
-    - Implemented `handleChatMigration` and `handleMessageMigration` in `DatabaseService` to import legacy SQLite data into PGlite.
-    - Added `chatsPath` and `messagesPath` to `DatabaseService` constructor for migration path management.
-    - Verified end-to-end migration for `UsageTrackingService`, `PromptTemplatesService`, `AuditLogService`, and `JobSchedulerService`.
-- **Data Export**:
-    - Exported `chats` and `messages` tables from legacy `chats.db` SQLite to JSON using CLI tools.
-    - Moved exported files to `runtime/data/db/` for automatic pickup by migration logic.
-- **Documentation**:
-    - Updated `task.md` to reflect Phase 10 progress.
-    - Created `walkthrough.md` documenting the migration implementation.
+- **Migration de données héritées** :
+- Implémentation de `handleChatMigration` et `handleMessageMigration` dans `DatabaseService` pour importer des données SQLite héritées dans PGlite.
+- Ajout de `chatsPath` et `messagesPath` au constructeur `DatabaseService` pour la gestion du chemin de migration.
+- Migration vérifiée de bout en bout pour `UsageTrackingService`, `PromptTemplatesService`, `AuditLogService` et `JobSchedulerService`.
+- **Exportation de données** :
+- Exportation des tables « chats » et « messages » de l'ancien SQLite « chats.db » vers JSON à l'aide des outils CLI.
+- Déplacement des fichiers exportés vers `runtime/data/db/` pour une récupération automatique par logique de migration.
+- **Documentations** :
+- Mise à jour de « task.md » pour refléter la progression de la phase 10.
+- Création de `walkthrough.md` documentant la mise en œuvre de la migration.
 
-### Phase 11 - Test Coverage & Database Optimization
+### Phase 11 - Couverture des tests et optimisation de la base de données
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 11 - Test Coverage & Database Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 11 – Couverture des tests et optimisation de la base de données a fourni des refactors planifiés, un nettoyage structurel et une vérification sur la portée ciblée.
 
-- **Test Coverage**:
-    - Added `JobSchedulerService` unit tests (7 tests) covering scheduling, recurring jobs, and cleanup.
-    - Enhanced `ModelRegistryService` unit tests (8 tests) with proper types and error handling coverage.
-- **Database Optimization**:
-    - Verified comprehensive indexes already in migration ID 7 for performance optimization.
-- **Type Safety**:
-    - Verified `stream-parser.util.ts` and `agent.service.ts` have no `any` types.
+- **Couverture des tests** :
+- Ajout de tests unitaires `JobSchedulerService` (7 tests) couvrant la planification, les tâches récurrentes et le nettoyage.
+- Tests unitaires `ModelRegistryService` améliorés (8 tests) avec des types appropriés et une couverture de gestion des erreurs.
+- **Optimisation de la base de données** :
+- Index complets vérifiés déjà dans l'ID de migration 7 pour l'optimisation des performances.
+- **Type de sécurité** :
+- Vérifiés `stream-parser.util.ts` et `agent.service.ts` n'ont aucun type `any`.
 
-### Phase 12 - Code Quality & E2E Testing
+### Phase 12 - Qualité du code et tests E2E
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 12 - Code Quality & E2E Testing delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 12 – Qualité du code et tests E2E ont fourni des refactorisations planifiées, un nettoyage structurel et une vérification sur la portée ciblée.
 
-- **Code Quality**:
-    - Verified ESLint configuration runs successfully on individual files.
-    - Audited `TerminalPanel.tsx` (9 useEffect hooks) - all have proper cleanup.
-    - Audited `ChatView.tsx` - pure presentation component, no useEffect hooks needed.
-- **E2E Testing**:
-    - Verified existing E2E tests in `chat.spec.ts` cover chat creation, input display, and keyboard shortcuts.
-    - Verified `app.spec.ts` covers app launch.
+- **Qualité du code** :
+- La configuration ESLint vérifiée s'exécute avec succès sur des fichiers individuels.
+- `TerminalPanel.tsx` audité (9 hooks useEffect) - tous ont un nettoyage approprié.
+- `ChatView.tsx` audité - composant de présentation pur, aucun hook useEffect nécessaire.
+- **Tests E2E** :
+- Vérification des tests E2E existants dans `chat.spec.ts` couvrant la création de chat, l'affichage des entrées et les raccourcis clavier.
+- App.spec.ts vérifié couvre le lancement de l'application.
 
-### Phase 13 - Type Safety & Service Architecture
+### Phase 13 - Sécurité de type et architecture de service
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Phase 13 - Type Safety & Service Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 13 – Type Safety & Service Architecture a fourni les refactorisations planifiées, le nettoyage structurel et la vérification sur l’ensemble de la portée ciblée.
 
-- **Type Safety**:
-    - Verified `quota.service.ts`, `preload.ts`, and `ipc/ollama.ts` have no `any` types.
-- **Async Operations**:
-    - Verified `quota.service.ts` has no synchronous file operations.
-- **Service Architecture**:
-    - Audited 30+ services extending `BaseService` for consistent lifecycle management.
+- **Type de sécurité** :
+- Vérifiés `quota.service.ts`, `preload.ts` et `ipc/ollama.ts` n'ont aucun type `any`.
+- **Opérations asynchrones** :
+- Vérifié `quota.service.ts` n'a aucune opération de fichier synchrone.
+- **Architecture de services** :
+- Audit de plus de 30 services étendant « BaseService » pour une gestion cohérente du cycle de vie.
 
-### Phase 14 - Deployment Readiness
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 14 - Deployment Readiness delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Build Fixes**:
-    - Fixed unused `init` method error in `ProxyService` by implementing `initialize`.
-    - Removed unused `fs` import in `proxy.service.test.ts` to fix `tsc` error.
-    - Updated `tsconfig.node.json` and `eslint.config.mjs` to resolve lint paths.
-    - Temporarily removed `lint` step from build script to unblock urgent deployment (pending comprehensive lint fix in tests).
-    - **Build Verified**: `npm run build` passes successfully. Code is ready for deployment.
-
-### Phase 15 - Linting Recovery & Cleanup
+### Phase 14 - Préparation au déploiement
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 15 - Linting Recovery & Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 14 - Préparation au déploiement : refactorisations planifiées, nettoyage structurel et vérification sur l'ensemble de la portée ciblée.
 
-- **Project Structure**:
-    - Deleted redundant `job-scheduler.service.test.ts` (consolidated into `services/system/`).
-- **Development Health**:
-    - Restored `lint` step to build pipeline.
-    - Configured ESLint to allow `any` types in test files (`src/tests/`), fixing 355+ blocking errors in CI while maintaining strictness for production code.
-- **Documentation**:
-    - Updated `TODO.md` to mark Service Architecture, Database Migration, and Testing gaps as resolved.
+- **Corrections de build** :
+- Correction d'une erreur de méthode `init` inutilisée dans `ProxyService` en implémentant `initialize`.
+- Suppression de l'importation `fs` inutilisée dans `proxy.service.test.ts` pour corriger l'erreur `tsc`.
+- Mise à jour de « tsconfig.node.json » et « eslint.config.mjs » pour résoudre les chemins de charpie.
+- Étape « lint » temporairement supprimée du script de construction pour débloquer le déploiement urgent (en attendant un correctif complet de lint dans les tests).
+- **Build Verified** : `npm run build` s'exécute avec succès. Le code est prêt pour le déploiement.
 
-### Phase 16 - Bundle Optimization
+### Phase 15 - Récupération et nettoyage des peluches
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: Phase 15 - Linting Recovery & Cleanup a fourni les refactors planifiés, le nettoyage structurel et la vérification sur l'ensemble de la portée ciblée.
+
+- **Structure du projet** :
+- Suppression de `job-scheduler.service.test.ts` redondant (consolidé dans `services/system/`).
+- **Développement Santé** :
+- Étape `lint` restaurée pour créer un pipeline.
+- Configuration d'ESLint pour autoriser "n'importe quel" type dans les fichiers de test (`src/tests/`), corrigeant plus de 355 erreurs de blocage dans CI tout en maintenant la rigueur du code de production.
+- **Documentations** :
+- Mise à jour de « TODO.md » pour marquer les lacunes de l'architecture des services, de la migration de la base de données et des tests comme résolues.
+
+### Phase 16 - Optimisation du bundle
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 16 - Bundle Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 16 : L'optimisation du bundle a permis de réaliser les refactorisations planifiées, le nettoyage structurel et la vérification sur l'ensemble de la portée ciblée.
 
 - **Performance**:
-    - Implemented granular code splitting in `vite.config.ts`.
-    - Created separate chunks for heavy dependencies: `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.
-    - Lazy loaded `SSHManager` and `AudioChatOverlay` to improve initial application startup.
-    - Reduced initial bundle load by deferring unused features.
+- Implémentation du fractionnement granulaire du code dans `vite.config.ts`.
+- Création de morceaux séparés pour les dépendances lourdes : `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.
+- Chargement paresseux de `SSHManager` et `AudioChatOverlay` pour améliorer le démarrage initial de l'application.
+- Réduction de la charge initiale du bundle en différant les fonctionnalités inutilisées.
 
-### Phase 4 - Silent Error Handling Cleanup
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Phase 4 - Silent Error Handling Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Error Handling**: Systematically eliminated silent error swallowing in `UtilityService`, `SecurityService`, `SystemService`, and `QuotaService`. All catch blocks now log errors via `appLogger`.
-- **Standardization**: Refactored `BaseService` to inherit from `appLogger`, providing `this.logError`, `this.logDebug`, etc., to all derived services.
-- **Refactoring**: Significantly reduced cyclomatic complexity in `logger.ts` (`init`, `getStats`, `formatValue`) and replaced forbidden `require('electron')` with safe ESM imports.
-- **QuotaService**: Fixed unawaited promises, replaced debug `console.log` with `appLogger.debug`, and resolved numerous logical operator and type lints.
-
-### Phase 5 - Critical Async Conversions & Type Safety
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 5 - Critical Async Conversions & Type Safety delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Database Service**:
-    - Successfully removed ALL explicit `any` types from `DatabaseService.ts` (2,200+ lines).
-    - Modularized high-complexity methods (`searchChats`, `getDetailedStats`, `performChatDuplication`) into granular helpers, satisfying strict cyclomatic complexity limits.
-    - Restored and standardized legacy migration paths for `Folders` and `Prompts`, ensuring reliable data transition to PostgreSQL.
-    - Implemented a generic `DatabaseAdapter` pattern for type-safe transactions and query execution. Fixed `affectedRows` vs `rowsAffected` API mismatches.
-- **Backup Service**: Synchronized with the updated `DatabaseService` API and implemented the `RestoreChatData` interface to ensure strict type safety during JSON restoration.
-- **Async I/O Transitions**: Converted blocking synchronous `fs` operations to `fs.promises` across `UsageTrackingService`, `ProxyService`, and `SettingsService`, eliminating main-process blocking bottlenecks.
-- **Code Quality**:
-    - Resolved `no-case-declarations` and lexical scoping issues in `ChatEventService`.
-    - Harmonized nullish coalescing (`??`) across 50+ locations in core services.
-    - Reduced cyclomatic complexity and nesting depth in critical service paths (NASA Power of Ten compliance).
-    - Standardized all error reporting to use `appLogger` and centralized error utilities.
-    - Modularized `TokenService` logic into explicit provider checks (`isGoogleProvider`, `isCodexProvider`, etc.) and helper methods.
-- **Types**: Rigorous typing for `AuthToken`, `ChatMessage`, `Prompt`, and `Folder` structures ensuring full type safety from the DB layer to the service API.
-- **Verification**: Zero build errors, zero type-check failures, and zero critical lints remaining in the service layer.
-
-### Phase 6 - Test Infrastructure Repair & Verification
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 6 - Test Infrastructure Repair & Verification delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Test Configuration**:
-    - Resolved `vitest` vs `playwright` conflict by explicitly excluding E2E tests from the unit test runner in `vitest.config.ts`.
-- **Test Fixes**:
-    - **LLM Settings**: Fixed `ReferenceError` in integration tests by correcting `vi.mock` hoisting logic.
-    - **Audit Log**: Updated `fs` mocks to include missing `mkdirSync`, enabling proper `AppLogger` initialization during tests.
-    - **Backup Service**: Aligned test expectations with actual error handling for missing files.
-- **Verification Status**:
-    - **Pass Rate**: 100% (298/298 tests passed).
-    - **Coverage**: All 36 test suites executed successfully.
-
-### Phase 7 - Service Architecture Refactoring & SSH Modernization
+### Phase 4 : Nettoyage silencieux de la gestion des erreurs
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 7 - Service Architecture Refactoring & SSH Modernization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 4 : Le nettoyage silencieux de la gestion des erreurs a fourni les refactorisations planifiées, le nettoyage structurel et la vérification sur l'ensemble de la portée ciblée.
 
-- **Service Architecture**:
-    - Systematically relocated 30+ services into domain-specific folders (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).
-    - Standardized directory structure for better modularity and maintainability.
-- **Import Migration**:
-    - Updated imports across the entire codebase to use the new domain-based structure.
-    - Enforced use of path aliases (`@main/services/`) for all service imports.
-- **SSH Service Modernization**:
-    - Converted all remaining synchronous `fs` operations to `fs.promises`.
-    - Achieved 100% type safety by removing all `any` types.
-    - Implemented a comprehensive unit test suite (9 tests) covering profile management, security, connection lifecycle, SFTP, and diagnostics.
-- **Dependency Injection**:
-    - Fixed a critical type mismatch in the `QuotaService` registration within `startup/services.ts`.
-- **IPC Layer**:
-    - Verified and updated all IPC handlers to work with the refactored service structure.
+- **Gestion des erreurs** : élimination systématique de la déglutition silencieuse des erreurs dans `UtilityService`, `SecurityService`, `SystemService` et `QuotaService`. Tous les blocs catch enregistrent désormais les erreurs via `appLogger`.
+- **Standardisation** : `BaseService` refactorisé pour hériter de `appLogger`, fournissant `this.logError`, `this.logDebug`, etc., à tous les services dérivés.
+- **Refactoring** : complexité cyclomatique considérablement réduite dans `logger.ts` (`init`, `getStats`, `formatValue`) et remplacement de `require('electron')` interdit par des importations ESM sécurisées.
+- **QuotaService** : correction de promesses inattendues, remplacement du débogage `console.log` par `appLogger.debug` et résolution de nombreux opérateurs logiques et types de lints.
 
-### Phase 8 - Global Async & Type Safety Pass
+### Phase 5 – Conversions asynchrones critiques et sécurité des types
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 8 - Global Async & Type Safety Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 5 – Conversions asynchrones critiques et sécurité des types ont fourni des refactorisations planifiées, un nettoyage structurel et une vérification sur l'ensemble de la portée ciblée.
 
-- **Async Modernization**:
-    - Converted `TerminalService`, `GitService`, `MigrationService`, and `ExportService` to use `fs.promises` for all file I/O.
-    - Optimized the main process responsiveness by eliminating blocking synchronous calls in core data services.
-- **IPC Handler Hardening**:
-    - Modernized `dialog:saveFile` and `theme:export` handlers to be fully asynchronous.
-    - Implemented improved error catching and temporary file handling in the IPC layer.
-- **Type Safety Excellence**:
-    - Eliminated all `any` types from `message-normalizer.util.ts` and `ipc-wrapper.util.ts`.
-    - Modularized high-complexity logic in `MessageNormalizer` to comply with strict cyclomatic complexity standards (NASA Power of Ten).
-- **Service Refinement**:
-    - Polished `QuotaService` by fixing dependency injection and resolving lingering lint and type safety warnings.
-    - Verified and improved the `QuotaService` unit test suite.
+- **Service de base de données** :
+- Suppression avec succès de TOUS les types explicites « any » de « DatabaseService.ts » (plus de 2 200 lignes).
+- Méthodes modularisées de haute complexité (`searchChats`, `getDetailedStats`, `performChatDuplication`) en assistants granulaires, satisfaisant des limites strictes de complexité cyclomatique.
+- Chemins de migration hérités restaurés et standardisés pour les « Dossiers » et les « Invites », garantissant une transition fiable des données vers PostgreSQL.
+- Implémentation d'un modèle générique `DatabaseAdapter` pour les transactions de type sécurisé et l'exécution de requêtes. Correction des incompatibilités d'API « affectedRows » et « rowsAffected ».
+- **Service de sauvegarde** : synchronisé avec l'API `DatabaseService` mise à jour et implémenté l'interface `RestoreChatData` pour garantir une sécurité de type stricte lors de la restauration JSON.
+- **Transitions d'E/S asynchrones** : conversion des opérations de blocage synchrones « fs » en « fs.promises » sur « UsageTrackingService », « ProxyService » et « SettingsService », éliminant les goulots d'étranglement bloquant le processus principal.
+- **Qualité du code** :
+- Résolution des problèmes de « no-case-declarations » et de portée lexicale dans « ChatEventService ».
+- Fusion nulle et harmonisée (`??`) sur plus de 50 emplacements dans les services de base.
+- Réduction de la complexité cyclomatique et de la profondeur d'imbrication dans les chemins de service critiques (conformité NASA Power of Ten).
+- Standardisation de tous les rapports d'erreurs pour utiliser « appLogger » et des utilitaires d'erreurs centralisés.
+- Logique `TokenService` modularisée en contrôles de fournisseur explicites (`isGoogleProvider`, `isCodexProvider`, etc.) et méthodes d'assistance.
+- **Types** : typage rigoureux pour les structures `AuthToken`, `ChatMessage`, `Prompt` et `Folder` garantissant une sécurité de type totale de la couche DB à l'API de service.
+- **Vérification** : zéro erreur de construction, zéro échec de vérification de type et zéro charpie critique restant dans la couche de service.
 
-### Phase 9 - Comprehensive Error Handling & Testing Pass
+### Phase 6 - Réparation et vérification de l'infrastructure de test
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: Phase 6 : La réparation et la vérification de l'infrastructure de test ont permis de réaliser les refactorisations, le nettoyage structurel et la vérification planifiés sur l'ensemble de la portée ciblée.
+
+- **Configuration des tests** :
+- Résolution du conflit `vitest` contre `playwright` en excluant explicitement les tests E2E du lanceur de tests unitaires dans `vitest.config.ts`.
+- **Corrections de test** :
+- **Paramètres LLM** : Correction de `ReferenceError` dans les tests d'intégration en corrigeant la logique de levage `vi.mock`.
+- **Journal d'audit** : mise à jour des simulations `fs` pour inclure `mkdirSync` manquant, permettant une initialisation correcte de `AppLogger` pendant les tests.
+- **Service de sauvegarde** : alignement des attentes des tests sur la gestion réelle des erreurs pour les fichiers manquants.
+- **Statut de vérification** :
+- **Taux de réussite** : 100 % (298/298 tests réussis).
+- **Couverture** : les 36 suites de tests ont été exécutées avec succès.
+
+### Phase 7 - Refactorisation de l'architecture des services et modernisation de SSH
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: Phase 7 : Refactorisation de l'architecture des services et modernisation de SSH : les refactorisations planifiées, le nettoyage structurel et la vérification ont été réalisés sur l'ensemble de la portée ciblée.
+
+- **Architecture de services** :
+- Déplacement systématique de plus de 30 services dans des dossiers spécifiques au domaine (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).
+- Structure de répertoires standardisée pour une meilleure modularité et maintenabilité.
+- **Importer la migration** :
+- Mise à jour des importations dans l'ensemble de la base de code pour utiliser la nouvelle structure basée sur le domaine.
+- Utilisation forcée des alias de chemin ($`@main/services/`) pour toutes les importations de services.
+- **Modernisation du service SSH** :
+- Conversion de toutes les opérations `fs` synchrones restantes en `fs.promises`.
+- Atteint une sécurité de type à 100 % en supprimant tous les types "tous".
+- Implémentation d'une suite complète de tests unitaires (9 tests) couvrant la gestion des profils, la sécurité, le cycle de vie des connexions, SFTP et les diagnostics.
+- **Injection de dépendance** :
+- Correction d'une incompatibilité de type critique dans l'enregistrement `QuotaService` dans `startup/services.ts`.
+- **Couche IPC** :
+- Vérification et mise à jour de tous les gestionnaires IPC pour fonctionner avec la structure de service refactorisée.
+
+### Phase 8 – Passe de sécurité globale asynchrone et de type
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: Phase 8 – Global Async & Type Safety Pass a fourni des refactorisations planifiées, un nettoyage structurel et une vérification sur la portée ciblée.
+
+- **Modernisation asynchrone** :
+- Conversion de `TerminalService`, `GitService`, `MigrationService` et `ExportService` pour utiliser `fs.promises` pour toutes les E/S de fichiers.
+- Optimisation de la réactivité du processus principal en éliminant le blocage des appels synchrones dans les services de données de base.
+- **Durcissement du gestionnaire IPC** :
+- Modernisation des gestionnaires `dialog:saveFile` et `theme:export` pour qu'ils soient entièrement asynchrones.
+- Implémentation d'une détection améliorée des erreurs et d'une gestion des fichiers temporaires dans la couche IPC.
+- **Type Excellence en matière de sécurité** :
+- Suppression de tous les types « any » de « message-normalizer.util.ts » et « ipc-wrapper.util.ts ».
+- Logique modulaire de haute complexité dans `MessageNormalizer` pour se conformer aux normes strictes de complexité cyclomatique (NASA Power of Ten).
+- **Raffinement du service** :
+- Amélioration de « QuotaService » en corrigeant l'injection de dépendances et en résolvant les avertissements de sécurité de charpie et de type persistants.
+- Vérification et amélioration de la suite de tests unitaires `QuotaService`.
+
+### Phase 9 - Gestion complète des erreurs et réussite des tests
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 9 - Comprehensive Error Handling & Testing Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: Phase 9 : Gestion complète des erreurs et réussite des tests ont permis de réaliser les refactorisations planifiées, le nettoyage structurel et la vérification sur l'ensemble de la portée ciblée.
 
-- **ProxyService Modernization**:
-    - Complete reconstruction of `ProxyService` to eliminate all `any` types and modularize high-complexity logic.
-    - Standardized error handling with robust logging via `appLogger`.
-    - Added support for GitHub device code flow and improved proxy process lifecycle management.
-- **Database Service Enhancements**:
-    - Expanded unit tests for `searchChats`, `getDetailedStats`, and `duplicateChat`.
-    - Improved transaction reliability and verified data integrity across complex operations.
-- **Error Handling Standardization**:
-    - Conducted a comprehensive audit of `SettingsService` and `ProxyService`, replacing minimal catch blocks with proper recovery and logging.
-    - Verified `npm run type-check` success across the entire codebase, including all test suites.
-- **Test Infrastructure**:
-    - Refactored `TokenService` tests to cover advanced OAuth flows, refresh logic, and error states.
-    - Optimized `PGlite` and `electron.net` mocks for better stability in the development environment.
+- **Modernisation du service proxy** :
+- Reconstruction complète de `ProxyService` pour éliminer tous les types `any` et modulariser la logique de haute complexité.
+- Gestion des erreurs standardisée avec journalisation robuste via `appLogger`.
+- Ajout de la prise en charge du flux de code des appareils GitHub et amélioration de la gestion du cycle de vie des processus proxy.
+- **Améliorations du service de base de données** :
+- Tests unitaires étendus pour `searchChats`, `getDetailedStats` et `duplicateChat`.
+- Fiabilité des transactions améliorée et intégrité des données vérifiée dans les opérations complexes.
+- **Standardisation de la gestion des erreurs** :
+- Réalisation d'un audit complet de `SettingsService` et `ProxyService`, en remplaçant les blocs catch minimaux par une récupération et une journalisation appropriées.
+- Vérification du succès de la vérification de type d'exécution npm sur l'ensemble de la base de code, y compris toutes les suites de tests.
+- **Infrastructure de tests** :
+- Refactorisation des tests `TokenService` pour couvrir les flux OAuth avancés, la logique d'actualisation et les états d'erreur.
+- Mocks `PGlite` et `electron.net` optimisés pour une meilleure stabilité dans l'environnement de développement.
 
-### Security & Fixes
+### Sécurité et correctifs
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Security & Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: Security & Fixes a renforcé la fiabilité et la sécurité en résolvant les problèmes connus et en renforçant les chemins critiques.
 
-- **Security Check**: Fixed critical path traversal and shell injection vulnerabilities in `SSHService`.
-- **Memory Leak**: Fixed memory leak in `TokenService` by implementing proper interval cleanup.
-- **Secrets Management**: Removed hardcoded credentials and migrated vendor secrets (iFlow, Qwen, Codex, Claude, Gemini) to environment variables.
-- **XSS Protection**: Enforced `DOMPurify` sanitization for Mermaid diagrams in `MarkdownRenderer` and `MessageBubble`.
-- **Injection Prevention**: Hardened `LocalAIService` by removing unnecessary `shell: true`.
+- **Contrôle de sécurité** : correction des vulnérabilités de traversée du chemin critique et d'injection de shell dans `SSHService`.
+- **Fuite de mémoire** : Correction d'une fuite de mémoire dans `TokenService` en implémentant un nettoyage à intervalles approprié.
+- **Gestion des secrets** : suppression des informations d'identification codées en dur et migration des secrets des fournisseurs (iFlow, Qwen, Codex, Claude, Gemini) vers des variables d'environnement.
+- **Protection XSS** : désinfection `DOMPurify` forcée pour les diagrammes Mermaid dans `MarkdownRenderer` et `MessageBubble`.
+- **Prévention des injections** : renforcement de `LocalAIService` en supprimant `shell : true` inutile.
 
 ## [2026-01-14]
 
-### Build Improvements
+### Construire des améliorations
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Build Improvements improved UI consistency, maintainability, and end-user experience across related surfaces.
+- **Summary**: Les améliorations apportées à la construction ont amélioré la cohérence, la maintenabilité et l'expérience de l'utilisateur final de l'interface utilisateur sur les surfaces associées.
 
-- **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.
-- **IPC**: Standardized `onStreamChunk` return types.
-## Version History
+- **Build** : Correction d'erreurs TypeScript liées aux variables inutilisées et aux types de retour incorrects.
+- **IPC** : types de retour standardisés `onStreamChunk`.
+## Historique des versions
 ### v1.2.0: Unified Microservice Sync
-- Transitioned to HTTP-based bidirectional token synchronization.
-- Eliminated persistent file-based credentials for improved security.
-- Standardized cross-process communication between Electron and Go/Rust services.
+- Transition vers la synchronisation bidirectionnelle des jetons basée sur HTTP.
+- Suppression des informations d'identification persistantes basées sur des fichiers pour une sécurité améliorée.
+- Communication inter-processus standardisée entre les services Electron et Go/Rust.
 ### v1.1.0: Multi-LLM Support
 ### v1.0.0: Initial Release
-- Basic chat functionality with OpenAI and Anthropic.
-- Local Ollama support.
-- Project management view.
-- Theme support (Dark/Light).
+- Fonctionnalité de chat de base avec OpenAI et Anthropic.
+- Soutien Ollama local.
+- Vue de gestion de projet.
+- Prise en charge du thème (Sombre/Clair).
 
-### Stats & Performance
+### Statistiques et performances
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Stats & Performance improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: Stats & Performance a amélioré les performances d'exécution, la stabilité et la cohérence opérationnelle dans les flux de travail clés.
 
-- **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats`- [x] Development of the Statistics dashboard (Charts and Token Usage)
-  rectly.
-- **DatabaseService**: Replaced `console` calls with `appLogger` and cleaned up relative imports.
-- **SettingsService**: Integrated `appLogger`, cleaned up relative imports, and enhanced `JSON.parse` with recovery/error handling.
-- **SecurityService**: Integrated `appLogger` and improved error handling for encryption/decryption.
-- **IPC**: Hardened `window.ts` by removing dangerous shell execution fallbacks and sanitizing terminal commands.
-- **Imports**: Completed mass conversion of relative imports to path aliases (`@main`, `@renderer`, `@shared`) across the entire codebase (37+ files).
-- **Renderer**: Fixed UI regressions and corrupted imports in `AgentDashboard.tsx` and `AgentChatRoom.tsx`.
-- **Main**: Resolved parsing errors in `command.service.ts` and `git.service.ts`.
-- **Cleanup**: Removed several unused imports and unused variables identified during the cleanup process.
-- **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).
-- **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.
-- **Chat**: Resolved "placeholder ghosting" when API generation fails.
--   - Replaced silent error catches and console calls with `appLogger` across core services.
-- **Docs**: Consolidated 19 markdown files into 6 themed documents.
-- **Audit**: Completed initial small cleanup tasks from `TODO.md`.
+- **DatabaseService** : Implémentation de `getDetailedStats` et correction de `getTimeStats`- [x] Développement du tableau de bord Statistiques (Graphiques et utilisation des jetons)
+correctement.
+- **DatabaseService** : remplacement des appels `console` par `appLogger` et nettoyage des importations relatives.
+- **SettingsService** : `appLogger` intégré, importations relatives nettoyées et `JSON.parse` amélioré avec récupération/gestion des erreurs.
+- **SecurityService** : `appLogger` intégré et gestion améliorée des erreurs pour le cryptage/déchiffrement.
+- **IPC** : Renforcement de `window.ts` en supprimant les replis dangereux d'exécution du shell et en nettoyant les commandes du terminal.
+- **Imports** : conversion en masse terminée des importations relatives en alias de chemin (`@main`, `@renderer`, `@shared`) sur l'ensemble de la base de code (plus de 37 fichiers).
+- **Renderer** : Correction des régressions de l'interface utilisateur et des importations corrompues dans `AgentDashboard.tsx` et `AgentChatRoom.tsx`.
+- **Principal** : Résolution des erreurs d'analyse dans `command.service.ts` et `git.service.ts`.
+- **Nettoyage** : Suppression de plusieurs importations inutilisées et variables inutilisées identifiées lors du processus de nettoyage.
+- **Sécurité** : gestionnaires IPC de « fenêtre » renforcés (commandes shell nettoyées et suppression du repli d'exécution non sécurisé).
+- **Async** : conversion des opérations de fichiers synchrones en asynchrones dans `QuotaService` et `TokenService`.
+- **Chat** : résolution du "fantôme d'espace réservé" lorsque la génération d'API échoue.
+- - Remplacement des captures d'erreurs silencieuses et des appels de console par « appLogger » dans les services principaux.
+- **Docs** : consolidation de 19 fichiers de démarques en 6 documents thématiques.
+- **Audit** : réalisation des petites tâches de nettoyage initiales à partir de `TODO.md`.

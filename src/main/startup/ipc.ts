@@ -18,6 +18,7 @@ import { registerHealthIpc } from '@main/ipc/health';
 import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerIdeaGeneratorIpc } from '@main/ipc/idea-generator';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
+import { registerLazyServicesIpc } from '@main/ipc/lazy-services';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMarketplaceIpc } from '@main/ipc/marketplace';
@@ -65,6 +66,7 @@ export function registerIpcHandlers(
 
     // Registers
     registerWindowIpc(getMainWindow);
+    registerLazyServicesIpc();
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
@@ -76,10 +78,17 @@ export function registerIpcHandlers(
         proxyService: services.proxyService,
         copilotService: services.copilotService,
         authService: services.authService,
+        auditLogService: services.auditLogService,
         getMainWindow,
         eventBus: services.eventBusService,
     });
-    registerProxyIpc(services.proxyService, undefined, services.authService);
+    registerProxyIpc(
+        services.proxyService,
+        undefined,
+        services.authService,
+        getMainWindow,
+        services.eventBusService
+    );
     registerUsageIpc(
         services.usageTrackingService,
         services.settingsService,

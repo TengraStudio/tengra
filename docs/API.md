@@ -480,3 +480,8 @@ For issues or questions:
 - Check logs: `~/.tandem/logs/main.log`
 - Report bugs: GitHub Issues
 - Documentation: [CONFIG.md](CONFIG.md)
+
+## Additional References
+
+- OpenAPI spec: `docs/openapi/tandem-api.openapi.yaml`
+- IPC channels index: `docs/IPC_CHANNELS.md`

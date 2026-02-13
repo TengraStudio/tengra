@@ -1,35 +1,26 @@
-/**
- * Token Usage Estimation Service
- * Estimates token counts for messages and tracks actual usage
- */
-
 import { Message, TextContent } from '@shared/types/chat';
+import { getEncoding, getEncodingNameForModel, Tiktoken, TiktokenEncoding } from 'js-tiktoken';
 
 export interface TokenUsage {
-    inputTokens: number
-    outputTokens: number
-    totalTokens: number
-    cachedTokens?: number
-    reasoningTokens?: number
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedTokens?: number;
+    reasoningTokens?: number;
 }
 
 export interface TokenEstimate {
-    estimatedInputTokens: number
-    estimatedOutputTokens: number
-    estimatedTotalTokens: number
+    estimatedInputTokens: number;
+    estimatedOutputTokens: number;
+    estimatedTotalTokens: number;
 }
-
-/**
- * Rough token estimation (approximate)
- * Uses a simple heuristic: ~4 characters per token for English text
- * This is a conservative estimate
- */
 
 /**
  * Token Estimation Service
  */
 export class TokenEstimationService {
     private dynamicLimits = new Map<string, number>();
+    private tokenizers = new Map<string, Tiktoken>();
 
     /**
      * Register a dynamic context window limit for a specific model ID
@@ -41,21 +32,55 @@ export class TokenEstimationService {
     }
 
     /**
+     * Get a tokenizer for a specific model
+     */
+    private getTokenizer(model: string): Tiktoken | null {
+        const modelLower = model.toLowerCase();
+
+        // Try to get existing tokenizer
+        const existing = this.tokenizers.get(modelLower);
+        if (existing) {
+            return existing;
+        }
+
+        try {
+            // js-tiktoken's getEncodingNameForModel handles mapping
+            // Safely check if the model is one of the supported types
+            const encodingName = getEncodingNameForModel(modelLower as Parameters<typeof getEncodingNameForModel>[0]);
+            const tokenizer = getEncoding(encodingName);
+            this.tokenizers.set(modelLower, tokenizer);
+            return tokenizer;
+        } catch {
+            // Fallback for models not explicitly supported by js-tiktoken mapping
+            // Many models use cl100k_base style tokenization (Claude, Llama 3 etc. are similar enough for estimates)
+            if (modelLower.includes('claude') || modelLower.includes('llama-3')) {
+                const encodingName: TiktokenEncoding = 'cl100k_base';
+                const cached = this.tokenizers.get(encodingName);
+                if (cached) {
+                    return cached;
+                }
+                const tokenizer = getEncoding(encodingName);
+                this.tokenizers.set(encodingName, tokenizer);
+                return tokenizer;
+            }
+            return null;
+        }
+    }
+
+    /**
      * Estimate tokens for a single message
      */
-    estimateMessageTokens(message: Message): number {
+    estimateMessageTokens(message: Message, model: string = 'gpt-3.5-turbo'): number {
         let content = '';
 
         if (typeof message.content === 'string') {
             content = message.content;
         } else if (Array.isArray(message.content)) {
-            // Sum up text content from all parts
             content = message.content
                 .filter((part): part is TextContent => part.type === 'text')
                 .map(part => part.text)
                 .join(' ');
         } else {
-            // Fallback for any other unexpected types
             try {
                 content = String(message.content);
             } catch {
@@ -63,17 +88,23 @@ export class TokenEstimationService {
             }
         }
 
-        if (!content) { return 0; }
+        if (!content) {
+            return 0;
+        }
 
-        // Better heuristic:
-        // 1. Count words (approximate by whitespace)
-        // 2. Count characters for non-space sequences
-        // Averaging both gives a more stable estimate across different languages/styles
+        const tokenizer = this.getTokenizer(model);
+        if (tokenizer) {
+            try {
+                // Approximate: tokens + small overhead per message (OpenAI style)
+                return tokenizer.encode(content).length + 4;
+            } catch {
+                // Fallback to heuristic if tokenizer fails
+            }
+        }
+
+        // Heuristic fallback
         const words = content.trim().split(/\s+/).length;
         const chars = content.length;
-
-        // Roughly: 1 word = 1.3 tokens, OR length / 4. 
-        // We use a blend: max(words * 1.35, chars / 3.8) to be slightly conservative (overestimate)
         const tokensByWords = Math.ceil(words * 1.35);
         const tokensByChars = Math.ceil(chars / 3.8);
 
@@ -83,12 +114,12 @@ export class TokenEstimationService {
     /**
      * Estimate tokens for an array of messages
      */
-    estimateMessagesTokens(messages: Message[]): TokenEstimate {
+    estimateMessagesTokens(messages: Message[], model: string = 'gpt-3.5-turbo'): TokenEstimate {
         let totalInput = 0;
         let totalOutput = 0;
 
         for (const message of messages) {
-            const tokens = this.estimateMessageTokens(message);
+            const tokens = this.estimateMessageTokens(message, model);
             if (message.role === 'user' || message.role === 'system') {
                 totalInput += tokens;
             } else if (message.role === 'assistant') {
@@ -104,17 +135,24 @@ export class TokenEstimationService {
     }
 
     /**
-     * Estimate tokens for a string (useful for input validation)
+     * Estimate tokens for a string
      */
-    estimateStringTokens(text: string): number {
-        if (!text) { return 0; }
+    estimateStringTokens(text: string, model: string = 'gpt-3.5-turbo'): number {
+        if (!text) {
+            return 0;
+        }
 
-        // Consistent heuristic with estimateMessageTokens
+        const tokenizer = this.getTokenizer(model);
+        if (tokenizer) {
+            try {
+                return tokenizer.encode(text).length;
+            } catch {
+                // Fallback
+            }
+        }
+
         const words = text.trim().split(/\s+/).length;
         const chars = text.length;
-
-        // Roughly: 1 word = 1.35 tokens, OR length / 3.8. 
-        // We use a blend: max(words * 1.35, chars / 3.8) to be slightly conservative
         const tokensByWords = Math.ceil(words * 1.35);
         const tokensByChars = Math.ceil(chars / 3.8);
 
@@ -123,12 +161,10 @@ export class TokenEstimationService {
 
     /**
      * Get context window size for a model
-     * Returns common context window sizes for known models
      */
     getContextWindowSize(model: string): number {
         const modelLower = model.toLowerCase();
 
-        // Check dynamic limits first (e.g., from ModelRegistry)
         const dynamicLimit = this.dynamicLimits.get(modelLower);
         if (dynamicLimit !== undefined) {
             return dynamicLimit;
@@ -138,7 +174,7 @@ export class TokenEstimationService {
             { pattern: ['gemini-1.5-pro', 'gemini-1.5-flash'], limit: 2000000 },
             { pattern: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3'], limit: 200000 },
             { pattern: ['gpt-4o', 'gpt-4-turbo', 'o1-'], limit: 128000 },
-            { pattern: ['llama-3.1-70b', 'llama-3.1-405b'], limit: 131072 },
+            { pattern: ['llama-3.1-70b', 'llama-3.1-405b', 'llama-3.3'], limit: 131072 },
             { pattern: ['gpt-4o-mini'], limit: 128000 },
             { pattern: ['claude-2'], limit: 100000 },
             { pattern: ['gemini-pro'], limit: 32768 },
@@ -152,25 +188,19 @@ export class TokenEstimationService {
             }
         }
 
-        if (this.isStandardModel(modelLower)) { return 8192; }
-
         return 8192;
-    }
-
-    private isStandardModel(model: string): boolean {
-        return model.includes('gpt-4') || model.includes('llama-3');
     }
 
     /**
      * Check if messages fit within context window
      */
     fitsInContextWindow(messages: Message[], model: string, reservedTokens: number = 0): {
-        fits: boolean
-        estimatedTokens: number
-        contextWindow: number
-        remainingTokens: number
+        fits: boolean;
+        estimatedTokens: number;
+        contextWindow: number;
+        remainingTokens: number;
     } {
-        const estimate = this.estimateMessagesTokens(messages);
+        const estimate = this.estimateMessagesTokens(messages, model);
         const contextWindow = this.getContextWindowSize(model);
         const totalTokens = estimate.estimatedTotalTokens + reservedTokens;
         const remainingTokens = contextWindow - totalTokens;
@@ -185,7 +215,6 @@ export class TokenEstimationService {
 
     /**
      * Truncate messages to fit within context window
-     * Keeps system messages and recent messages
      */
     truncateToFitContextWindow(
         messages: Message[],
@@ -200,13 +229,12 @@ export class TokenEstimationService {
             const systemMessages = messages.filter(m => m.role === 'system');
             const nonSystemMessages = messages.filter(m => m.role !== 'system');
 
-            let currentTokens = systemMessages.reduce((sum, m) => sum + this.estimateMessageTokens(m), 0);
+            let currentTokens = systemMessages.reduce((sum, m) => sum + this.estimateMessageTokens(m, model), 0);
             const truncated: Message[] = [...systemMessages];
 
-            // Add messages from the end until we hit the limit
             for (let i = nonSystemMessages.length - 1; i >= 0; i--) {
                 const message = nonSystemMessages[i];
-                const messageTokens = this.estimateMessageTokens(message);
+                const messageTokens = this.estimateMessageTokens(message, model);
 
                 if (currentTokens + messageTokens <= maxTokens) {
                     truncated.push(message);
@@ -216,17 +244,15 @@ export class TokenEstimationService {
                 }
             }
 
-            // Reverse to maintain chronological order
             return [...systemMessages, ...truncated.slice(systemMessages.length).reverse()];
         }
 
-        // No system messages to preserve
         let currentTokens = 0;
         const truncated: Message[] = [];
 
         for (let i = messages.length - 1; i >= 0; i--) {
             const message = messages[i];
-            const messageTokens = this.estimateMessageTokens(message);
+            const messageTokens = this.estimateMessageTokens(message, model);
 
             if (currentTokens + messageTokens <= maxTokens) {
                 truncated.unshift(message);
@@ -240,7 +266,6 @@ export class TokenEstimationService {
     }
 }
 
-// Singleton instance
 let instance: TokenEstimationService | null = null;
 
 export function getTokenEstimationService(): TokenEstimationService {

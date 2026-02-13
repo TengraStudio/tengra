@@ -532,6 +532,33 @@ export class SystemRepository extends BaseRepository {
         await this.adapter.prepare('DELETE FROM audit_logs').run();
     }
 
+    async countAuditLogs(): Promise<number> {
+        const row = await this.adapter.prepare('SELECT count(*) as count FROM audit_logs').get<{ count: number }>();
+        return row?.count ?? 0;
+    }
+
+    async pruneAuditLogsOlderThan(timestamp: number): Promise<number> {
+        const result = await this.adapter.prepare('DELETE FROM audit_logs WHERE timestamp < ?').run(timestamp);
+        return Number((result as { changes?: number }).changes ?? 0);
+    }
+
+    async pruneAuditLogsToMaxEntries(maxEntries: number): Promise<number> {
+        const bounded = Math.max(0, Math.floor(maxEntries));
+        if (bounded === 0) {
+            await this.clearAuditLogs();
+            return 0;
+        }
+        const result = await this.adapter.prepare(`
+            DELETE FROM audit_logs
+            WHERE id IN (
+                SELECT id FROM audit_logs
+                ORDER BY timestamp DESC
+                LIMIT -1 OFFSET ?
+            )
+        `).run(bounded);
+        return Number((result as { changes?: number }).changes ?? 0);
+    }
+
     // --- Job States ---
     async getJobState(id: string) {
         const row = await this.adapter.prepare('SELECT last_run FROM scheduler_state WHERE id = ?').get<JsonObject>(id);

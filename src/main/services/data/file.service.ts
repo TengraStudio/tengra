@@ -9,13 +9,55 @@ import { promisify } from 'util';
 import { appLogger } from '@main/logging/logger';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { app } from 'electron';
 
 const execAsync = promisify(exec);
 
 export class FileManagementService {
+    private readonly maxReadBytes = 10 * 1024 * 1024;
+    private readonly maxWriteBytes = 10 * 1024 * 1024;
+    private readonly maxDownloadBytes = 100 * 1024 * 1024;
+    private readonly allowedTextExtensions = new Set(['.md', '.txt', '.json', '.ts', '.tsx', '.js', '.jsx', '.yaml', '.yml', '.xml', '.html', '.css', '.scss']);
+
+    private sanitizePath(input: string): string {
+        if (!input || input.includes('\0')) {
+            throw new Error('Invalid path input');
+        }
+        return path.resolve(input);
+    }
+
+    private ensureAllowedFileType(filePath: string): void {
+        const ext = path.extname(filePath).toLowerCase();
+        if (ext && !this.allowedTextExtensions.has(ext)) {
+            throw new Error(`File type not allowed for this operation: ${ext}`);
+        }
+    }
+
+    private async ensureSizeWithinLimit(filePath: string, maxBytes: number): Promise<void> {
+        const stat = await fs.stat(filePath);
+        if (stat.size > maxBytes) {
+            throw new Error(`File exceeds size limit (${stat.size} > ${maxBytes})`);
+        }
+    }
+
+    private async quarantineFile(filePath: string, reason: string): Promise<void> {
+        try {
+            const quarantineRoot = path.join(app.getPath('userData'), 'quarantine');
+            await fs.mkdir(quarantineRoot, { recursive: true });
+            const fileName = `${Date.now()}-${path.basename(filePath)}`;
+            const destination = path.join(quarantineRoot, fileName);
+            await fs.rename(filePath, destination);
+            appLogger.warn('file.service', `File quarantined: ${destination} (${reason})`);
+        } catch (error) {
+            appLogger.warn('file.service', `Failed to quarantine file ${filePath}: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
     async extractStrings(filePath: string, minLength: number = 4): Promise<ServiceResponse<{ strings: string[] }>> {
         try {
-            const buffer = await fs.readFile(filePath);
+            const safePath = this.sanitizePath(filePath);
+            await this.ensureSizeWithinLimit(safePath, this.maxReadBytes);
+            const buffer = await fs.readFile(safePath);
             const strings: string[] = [];
             let current = "";
             for (let i = 0; i < buffer.length; i++) {
@@ -38,7 +80,12 @@ export class FileManagementService {
     async syncNote(title: string, content: string, dir: string): Promise<ServiceResponse<{ path: string }>> {
         try {
             const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-            const fullPath = path.join(dir, fileName);
+            const safeDir = this.sanitizePath(dir);
+            const fullPath = path.join(safeDir, fileName);
+            const payloadSize = Buffer.byteLength(content, 'utf8');
+            if (payloadSize > this.maxWriteBytes) {
+                throw new Error(`Content exceeds size limit (${payloadSize} > ${this.maxWriteBytes})`);
+            }
             await fs.writeFile(fullPath, content);
             return { success: true, result: { path: fullPath } };
         } catch (e) {
@@ -48,12 +95,14 @@ export class FileManagementService {
 
     async unzip(zipPath: string, destPath: string): Promise<ServiceResponse> {
         try {
+            const safeZipPath = this.sanitizePath(zipPath);
+            const safeDestPath = this.sanitizePath(destPath);
             if (process.platform === 'win32') {
-                await execAsync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${destPath}' -Force"`);
+                await execAsync(`powershell -Command "Expand-Archive -Path '${safeZipPath}' -DestinationPath '${safeDestPath}' -Force"`);
             } else {
-                await execAsync(`unzip -o "${zipPath}" -d "${destPath}"`);
+                await execAsync(`unzip -o "${safeZipPath}" -d "${safeDestPath}"`);
             }
-            return { success: true, message: `Extracted to ${destPath}` };
+            return { success: true, message: `Extracted to ${safeDestPath}` };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
@@ -61,12 +110,13 @@ export class FileManagementService {
 
     async batchRename(dir: string, pattern: string, replacement: string): Promise<ServiceResponse> {
         try {
-            const files = await fs.readdir(dir);
+            const safeDir = this.sanitizePath(dir);
+            const files = await fs.readdir(safeDir);
             let count = 0;
             for (const file of files) {
                 if (file.includes(pattern)) {
                     const newName = file.replace(pattern, replacement);
-                    await fs.rename(path.join(dir, file), path.join(dir, newName));
+                    await fs.rename(path.join(safeDir, file), path.join(safeDir, newName));
                     count++;
                 }
             }
@@ -78,10 +128,11 @@ export class FileManagementService {
 
     watchFolder(dir: string): ServiceResponse {
         try {
-            watch(dir, (eventType, filename) => {
+            const safeDir = this.sanitizePath(dir);
+            watch(safeDir, (eventType, filename) => {
                 appLogger.info('file.service', `Folder changed: ${eventType} on ${filename}`);
             });
-            return { success: true, message: `Watching ${dir} for changes...` };
+            return { success: true, message: `Watching ${safeDir} for changes...` };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
@@ -89,15 +140,37 @@ export class FileManagementService {
 
     async downloadFile(url: string, destPath: string): Promise<ServiceResponse<{ path: string }>> {
         return new Promise((resolve) => {
-            const file = createWriteStream(destPath);
+            let safeDestPath: string;
+            try {
+                safeDestPath = this.sanitizePath(destPath);
+            } catch (error) {
+                resolve({ success: false, error: getErrorMessage(error as Error) });
+                return;
+            }
+
+            const file = createWriteStream(safeDestPath);
+            let receivedBytes = 0;
             https.get(url, (response) => {
+                const contentLength = Number(response.headers['content-length'] ?? 0);
+                if (contentLength > this.maxDownloadBytes) {
+                    response.destroy();
+                    void this.quarantineFile(safeDestPath, 'download-size-limit');
+                    resolve({ success: false, error: 'Remote file exceeds download size limit' });
+                    return;
+                }
+                response.on('data', chunk => {
+                    receivedBytes += chunk.length;
+                    if (receivedBytes > this.maxDownloadBytes) {
+                        response.destroy(new Error('Download exceeded size limit'));
+                    }
+                });
                 response.pipe(file);
                 file.on('finish', () => {
                     file.close();
-                    resolve({ success: true, result: { path: destPath } });
+                    resolve({ success: true, result: { path: safeDestPath } });
                 });
             }).on('error', (err) => {
-                fs.unlink(destPath).catch(() => { /* ignore */ });
+                fs.unlink(safeDestPath).catch(() => { /* ignore */ });
                 resolve({ success: false, error: err.message });
             });
         });
@@ -105,7 +178,10 @@ export class FileManagementService {
 
     async applyEdits(filePath: string, edits: { startLine: number, endLine: number, replacement: string }[]): Promise<ServiceResponse> {
         try {
-            const content = await fs.readFile(filePath, 'utf8');
+            const safeFilePath = this.sanitizePath(filePath);
+            this.ensureAllowedFileType(safeFilePath);
+            await this.ensureSizeWithinLimit(safeFilePath, this.maxReadBytes);
+            const content = await fs.readFile(safeFilePath, 'utf8');
             const lines = content.split('\n');
             const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine); // Apply from bottom to top to preserve indices
 
@@ -127,8 +203,12 @@ export class FileManagementService {
             }
 
             const newContent = lines.join('\n');
-            await fs.writeFile(filePath, newContent, 'utf8');
-            return { success: true, message: `Applied ${edits.length} edits to ${filePath}` };
+            const newSize = Buffer.byteLength(newContent, 'utf8');
+            if (newSize > this.maxWriteBytes) {
+                throw new Error(`Edited content exceeds size limit (${newSize} > ${this.maxWriteBytes})`);
+            }
+            await fs.writeFile(safeFilePath, newContent, 'utf8');
+            return { success: true, message: `Applied ${edits.length} edits to ${safeFilePath}` };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }

@@ -14,7 +14,7 @@ export const loadHistory = (projectId?: string): string[] => {
             return safeJsonParse<string[]>(stored, []);
         }
     } catch (error) {
-        console.warn('Failed to load terminal history:', error);
+        window.electron.log.warn('Failed to load terminal history:', error);
     }
     return [];
 };
@@ -24,6 +24,7 @@ export const saveHistory = (history: string[], projectId?: string) => {
         const trimmed = history.slice(-MAX_HISTORY_SIZE);
         localStorage.setItem(getHistoryKey(projectId), JSON.stringify(trimmed));
     } catch (error) {
-        console.warn('Failed to save terminal history:', error);
+        window.electron.log.warn('Failed to save terminal history:', error);
     }
 };
+

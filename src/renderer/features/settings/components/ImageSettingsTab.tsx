@@ -19,7 +19,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
             const status = await window.electron.sdCpp.getStatus();
             setSdCppStatus(status);
         } catch (error) {
-            console.error('Failed to get SD-CPP status:', error);
+            window.electron.log.error('Failed to get SD-CPP status:', error);
             setSdCppStatus('failed');
         }
     }, []);
@@ -55,7 +55,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
             await window.electron.sdCpp.reinstall();
             await checkStatus();
         } catch (error) {
-            console.error('Failed to reinstall SD-CPP:', error);
+            window.electron.log.error('Failed to reinstall SD-CPP:', error);
         } finally {
             setIsReinstalling(false);
         }
@@ -242,3 +242,4 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
         </div>
     );
 };
+

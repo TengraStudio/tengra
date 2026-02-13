@@ -39,6 +39,47 @@ export interface LinkedAccountInfo {
     createdAt: number
 }
 
+export interface ProviderHealthCheck {
+    provider: string
+    checkedAt: number
+    totalAccounts: number
+    activeAccountId?: string
+    hasActiveToken: boolean
+    hasRefreshToken: boolean
+    expiringSoonCount: number
+    expiredCount: number
+    healthy: boolean
+}
+
+export interface ProviderAnalytics {
+    provider: string
+    totalAccounts: number
+    activeAccounts: number
+    lastUpdatedAt?: number
+    oldestAccountAt?: number
+    withRefreshToken: number
+    withSessionToken: number
+}
+
+export interface TokenAnalytics {
+    totalAccounts: number
+    withAccessToken: number
+    withRefreshToken: number
+    withSessionToken: number
+    expiringWithin30m: number
+    expired: number
+    revoked: number
+}
+
+interface AuthSession {
+    id: string
+    provider: string
+    accountId?: string
+    createdAt: number
+    lastSeenAt: number
+    source?: string
+}
+
 /**
  * AuthService - Simplified multi-account authentication service.
  * 
@@ -48,6 +89,11 @@ export interface LinkedAccountInfo {
  * - Active account per provider: user selects which account to use
  */
 export class AuthService extends BaseService {
+    private sessions = new Map<string, AuthSession>();
+    private _providerSessionLimits = new Map<string, number>();
+    private readonly _defaultSessionLimit = 5;
+    private _sessionIdleTtlMs = 24 * 60 * 60 * 1000;
+
     constructor(
         private databaseService: DatabaseService,
         private securityService: SecurityService,
@@ -73,6 +119,7 @@ export class AuthService extends BaseService {
 
         // Clear any cached sensitive data
         // Note: Encrypted tokens in database are preserved
+        this.sessions.clear();
 
         appLogger.info('AuthService', 'Authentication service cleanup complete');
     }
@@ -225,9 +272,13 @@ export class AuthService extends BaseService {
             return undefined;
         }
 
-        return this.decrypt(account.accessToken) ??
+        const token = this.decrypt(account.accessToken) ??
             this.decrypt(account.sessionToken) ??
             this.decrypt(account.refreshToken);
+        if (token) {
+            this.startSession(normalized, account.id, 'active-token');
+        }
+        return token;
     }
 
     /**
@@ -292,7 +343,8 @@ export class AuthService extends BaseService {
      * Link a new account for a provider.
      */
     async linkAccount(provider: string, tokenData: TokenData): Promise<LinkedAccountInfo> {
-        const normalized = this.normalizeProvider(provider);
+        const detected = this.detectProvider(provider, tokenData);
+        const normalized = this.normalizeProvider(detected);
         const now = Date.now();
         const email = tokenData.email ?? (tokenData.metadata?.email as string | undefined);
 
@@ -525,6 +577,266 @@ export class AuthService extends BaseService {
             void this.checkAndUpgradeEncryption(a);
         }
         return fullAccounts;
+    }
+
+    detectProvider(providerHint: string | undefined, tokenData?: Partial<TokenData>): string {
+        const normalizedHint = (providerHint ?? '').trim().toLowerCase();
+        if (normalizedHint && normalizedHint !== 'auto' && normalizedHint !== 'unknown') {
+            return normalizedHint;
+        }
+
+        const metadataProvider = typeof tokenData?.metadata?.provider === 'string'
+            ? tokenData.metadata.provider.toLowerCase()
+            : undefined;
+        if (metadataProvider) { return metadataProvider; }
+
+        const scope = (tokenData?.scope ?? '').toLowerCase();
+        const email = (tokenData?.email ?? '').toLowerCase();
+        const accessToken = tokenData?.accessToken ?? '';
+
+        if (scope.includes('repo') || scope.includes('read:user') || email.endsWith('@github.com')) {
+            return 'github';
+        }
+        if (scope.includes('anthropic') || email.includes('anthropic')) {
+            return 'claude';
+        }
+        if (scope.includes('google') || scope.includes('cloud-platform') || email.endsWith('@gmail.com')) {
+            return 'antigravity';
+        }
+        if (accessToken.startsWith('sk-') || accessToken.startsWith('sess-')) {
+            return 'codex';
+        }
+        return 'unknown';
+    }
+
+    async getProviderHealth(provider?: string): Promise<ProviderHealthCheck[]> {
+        const accounts = provider
+            ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
+            : await this.databaseService.getLinkedAccounts();
+        const byProvider = new Map<string, LinkedAccount[]>();
+        for (const account of accounts) {
+            const p = this.normalizeProvider(account.provider);
+            if (!byProvider.has(p)) { byProvider.set(p, []); }
+            byProvider.get(p)?.push(account);
+        }
+
+        const now = Date.now();
+        return Array.from(byProvider.entries()).map(([p, list]) => {
+            const active = list.find(a => a.isActive);
+            const expiredCount = list.filter(a => this.isExpired(a)).length;
+            const expiringSoonCount = list.filter(a => !this.isExpired(a) && !!a.expiresAt && (a.expiresAt - now) < 30 * 60 * 1000).length;
+            const hasActiveToken = !!(active && (active.accessToken || active.sessionToken));
+            const hasRefreshToken = list.some(a => !!a.refreshToken);
+
+            return {
+                provider: p,
+                checkedAt: now,
+                totalAccounts: list.length,
+                activeAccountId: active?.id,
+                hasActiveToken,
+                hasRefreshToken,
+                expiringSoonCount,
+                expiredCount,
+                healthy: list.length > 0 && hasActiveToken && expiredCount < list.length
+            };
+        }).sort((a, b) => a.provider.localeCompare(b.provider));
+    }
+
+    async getProviderAnalytics(): Promise<ProviderAnalytics[]> {
+        const accounts = await this.databaseService.getLinkedAccounts();
+        const byProvider = new Map<string, LinkedAccount[]>();
+        for (const account of accounts) {
+            const p = this.normalizeProvider(account.provider);
+            if (!byProvider.has(p)) { byProvider.set(p, []); }
+            byProvider.get(p)?.push(account);
+        }
+
+        return Array.from(byProvider.entries()).map(([provider, list]) => ({
+            provider,
+            totalAccounts: list.length,
+            activeAccounts: list.filter(a => a.isActive).length,
+            lastUpdatedAt: list.reduce((max, a) => Math.max(max, a.updatedAt), 0) || undefined,
+            oldestAccountAt: list.reduce((min, a) => Math.min(min, a.createdAt), Number.MAX_SAFE_INTEGER) || undefined,
+            withRefreshToken: list.filter(a => !!a.refreshToken).length,
+            withSessionToken: list.filter(a => !!a.sessionToken).length
+        })).sort((a, b) => a.provider.localeCompare(b.provider));
+    }
+
+    async rotateTokenEncryption(provider?: string): Promise<{ rotated: number; failed: number }> {
+        const targetProvider = provider ? this.normalizeProvider(provider) : undefined;
+        const accounts = targetProvider
+            ? await this.databaseService.getLinkedAccounts(targetProvider)
+            : await this.databaseService.getLinkedAccounts();
+
+        let rotated = 0;
+        let failed = 0;
+
+        for (const account of accounts) {
+            try {
+                const updated = { ...account };
+                let changed = false;
+
+                if (account.accessToken) {
+                    const plain = this.decrypt(account.accessToken);
+                    if (plain) { updated.accessToken = this.encrypt(plain); changed = true; }
+                }
+                if (account.refreshToken) {
+                    const plain = this.decrypt(account.refreshToken);
+                    if (plain) { updated.refreshToken = this.encrypt(plain); changed = true; }
+                }
+                if (account.sessionToken) {
+                    const plain = this.decrypt(account.sessionToken);
+                    if (plain) { updated.sessionToken = this.encrypt(plain); changed = true; }
+                }
+
+                if (changed) {
+                    updated.updatedAt = Date.now();
+                    await this.databaseService.saveLinkedAccount(updated);
+                    rotated += 1;
+                }
+            } catch {
+                failed += 1;
+            }
+        }
+
+        return { rotated, failed };
+    }
+
+    async revokeAccountTokens(
+        accountId: string,
+        options: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean } = {}
+    ): Promise<void> {
+        const accounts = await this.databaseService.getLinkedAccounts();
+        const account = accounts.find(a => a.id === accountId);
+        if (!account) { return; }
+
+        const revokeAccess = options.revokeAccess ?? true;
+        const revokeRefresh = options.revokeRefresh ?? true;
+        const revokeSession = options.revokeSession ?? true;
+
+        const updated: LinkedAccount = {
+            ...account,
+            accessToken: revokeAccess ? undefined : account.accessToken,
+            refreshToken: revokeRefresh ? undefined : account.refreshToken,
+            sessionToken: revokeSession ? undefined : account.sessionToken,
+            expiresAt: revokeAccess ? undefined : account.expiresAt,
+            updatedAt: Date.now(),
+            metadata: {
+                ...(account.metadata ?? {}),
+                revokedAt: Date.now(),
+                revokedBy: 'auth-service'
+            }
+        };
+
+        await this.databaseService.saveLinkedAccount(updated);
+        this.eventBus.emit('account:updated', { accountId: account.id, provider: account.provider });
+    }
+
+    async getTokenAnalytics(provider?: string): Promise<TokenAnalytics> {
+        const accounts = provider
+            ? await this.databaseService.getLinkedAccounts(this.normalizeProvider(provider))
+            : await this.databaseService.getLinkedAccounts();
+        const now = Date.now();
+
+        return {
+            totalAccounts: accounts.length,
+            withAccessToken: accounts.filter(a => !!a.accessToken).length,
+            withRefreshToken: accounts.filter(a => !!a.refreshToken).length,
+            withSessionToken: accounts.filter(a => !!a.sessionToken).length,
+            expiringWithin30m: accounts.filter(a => !!a.expiresAt && a.expiresAt > now && (a.expiresAt - now) < 30 * 60 * 1000).length,
+            expired: accounts.filter(a => this.isExpired(a)).length,
+            revoked: accounts.filter(a => Boolean((a.metadata ?? {}).revokedAt)).length
+        };
+    }
+
+    startSession(provider: string, accountId?: string, source?: string): string {
+        const normalized = this.normalizeProvider(provider);
+        const id = uuidv4();
+        const now = Date.now();
+        this.sessions.set(id, {
+            id,
+            provider: normalized,
+            accountId,
+            createdAt: now,
+            lastSeenAt: now,
+            source
+        });
+        this.enforceSessionLimit(normalized);
+        return id;
+    }
+
+    touchSession(sessionId: string): boolean {
+        const session = this.sessions.get(sessionId);
+        if (!session) { return false; }
+        session.lastSeenAt = Date.now();
+        this.sessions.set(sessionId, session);
+        return true;
+    }
+
+    endSession(sessionId: string): boolean {
+        return this.sessions.delete(sessionId);
+    }
+
+    setSessionLimit(provider: string, limit: number): number {
+        const normalized = this.normalizeProvider(provider);
+        const bounded = Math.max(1, Math.floor(limit));
+        this._providerSessionLimits.set(normalized, bounded);
+        this.enforceSessionLimit(normalized);
+        return bounded;
+    }
+
+    setSessionIdleTimeout(timeoutMs: number): number {
+        const bounded = Math.max(60_000, Math.min(timeoutMs, 7 * 24 * 60 * 60 * 1000));
+        this._sessionIdleTtlMs = bounded;
+        return this._sessionIdleTtlMs;
+    }
+
+    getSessionIdleTimeout(): number {
+        return this._sessionIdleTtlMs;
+    }
+
+    getSessionAnalytics(provider?: string): {
+        totalActiveSessions: number;
+        byProvider: Record<string, number>;
+        oldestSessionAt?: number;
+    } {
+        const now = Date.now();
+        for (const [id, session] of this.sessions.entries()) {
+            if ((now - session.lastSeenAt) > this._sessionIdleTtlMs) {
+                this.sessions.delete(id);
+            }
+        }
+
+        const providerFilter = provider ? this.normalizeProvider(provider) : undefined;
+        const sessions = Array.from(this.sessions.values())
+            .filter(s => !providerFilter || s.provider === providerFilter);
+        const byProvider: Record<string, number> = {};
+        for (const session of sessions) {
+            byProvider[session.provider] = (byProvider[session.provider] ?? 0) + 1;
+        }
+
+        const oldestSessionAt = sessions.length > 0
+            ? sessions.reduce((min, s) => Math.min(min, s.createdAt), Number.MAX_SAFE_INTEGER)
+            : undefined;
+
+        return {
+            totalActiveSessions: sessions.length,
+            byProvider,
+            oldestSessionAt
+        };
+    }
+
+    private enforceSessionLimit(provider: string): void {
+        const limit = this._providerSessionLimits.get(provider) ?? this._defaultSessionLimit;
+        const sessions = Array.from(this.sessions.values())
+            .filter(s => s.provider === provider)
+            .sort((a, b) => a.lastSeenAt - b.lastSeenAt);
+
+        while (sessions.length > limit) {
+            const oldest = sessions.shift();
+            if (!oldest) { break; }
+            this.sessions.delete(oldest.id);
+        }
     }
 
     private async checkAndUpgradeEncryption(account: LinkedAccount): Promise<void> {

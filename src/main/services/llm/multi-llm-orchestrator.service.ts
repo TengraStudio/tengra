@@ -5,6 +5,7 @@
 
 import { EventEmitter } from 'events';
 
+import { appLogger } from '@main/logging/logger';
 import { BrowserWindow } from 'electron';
 
 export interface ProviderConfig {
@@ -185,7 +186,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
     private async processProviderQueue(provider: string, queue: LLMTask[]) {
         const config = this.providerConfigs.get(provider);
         if (!config) {
-            console.warn(`[MultiLLMOrchestrator] No config for provider: ${provider}`);
+            appLogger.warn('MultiLLMOrchestrator', `No config for provider: ${provider}`);
             return;
         }
 
@@ -239,7 +240,7 @@ export class MultiLLMOrchestrator extends EventEmitter {
                     : (stats.averageLatency * 0.9 + latency * 0.1);
             }
         } catch (error) {
-            console.error(`[MultiLLMOrchestrator] Error in task ${task.taskId}:`, error);
+            appLogger.error('MultiLLMOrchestrator', `Error in task ${task.taskId}`, error as Error);
 
             const provider = this.normalizeProvider(task.provider);
             const stats = this.providerStats.get(provider);

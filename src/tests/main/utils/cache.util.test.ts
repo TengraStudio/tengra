@@ -1,4 +1,4 @@
-import { Cache, memoize } from '@main/utils/cache.util';
+import { Cache, getCacheAnalyticsSnapshot, memoize, MultiLevelCache } from '@main/utils/cache.util';
 import { beforeEach,describe, expect, it, vi } from 'vitest';
 
 describe('Cache', () => {
@@ -102,6 +102,19 @@ describe('Cache', () => {
             expect(onEvict).toHaveBeenCalledWith('key1', 'value1');
         });
     });
+
+    describe('analytics', () => {
+        it('tracks hit/miss metrics', () => {
+            cache.set('k1', 'v1');
+            expect(cache.get('k1')).toBe('v1');
+            expect(cache.get('missing')).toBeUndefined();
+
+            const stats = cache.stats();
+            expect(stats.hits).toBe(1);
+            expect(stats.misses).toBe(1);
+            expect(stats.hitRate).toBe(0.5);
+        });
+    });
 });
 
 describe('memoize', () => {
@@ -130,5 +143,24 @@ describe('memoize', () => {
         expect(result2).toBe('result-1');
         expect(result3).toBe('result-0');
         expect(fn).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('MultiLevelCache', () => {
+    it('promotes warm cache hit into hot cache', async () => {
+        const multi = new MultiLevelCache<string>({
+            name: 'test-multi-cache',
+            hot: { maxSize: 2, defaultTTL: 10 },
+            warm: { maxSize: 2, defaultTTL: 5000 }
+        });
+
+        multi.set('alpha', 'A', { hot: 1, warm: 5000 });
+        await new Promise(resolve => setTimeout(resolve, 5));
+        const firstRead = multi.get('alpha');
+        expect(firstRead).toBe('A');
+
+        const analytics = getCacheAnalyticsSnapshot();
+        expect(analytics['test-multi-cache:hot']).toBeDefined();
+        expect(analytics['test-multi-cache:warm']).toBeDefined();
     });
 });

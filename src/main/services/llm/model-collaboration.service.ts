@@ -3,6 +3,7 @@
  * Enables multiple LLMs to work together on the same task
  */
 
+import { appLogger } from '@main/logging/logger';
 import { LLMService } from '@main/services/llm/llm.service';
 import { Message } from '@shared/types/chat';
 // Note: multiLLMOrchestrator could be used for task management in the future
@@ -117,7 +118,7 @@ export class ModelCollaborationService {
                 tokens: response.completionTokens
             };
         } catch (error) {
-            console.error(`[ModelCollaboration] Error with ${provider}/${model}:`, error);
+            appLogger.error('ModelCollaboration', `Error with ${provider}/${model}`, error as Error);
             throw error;
         }
     }

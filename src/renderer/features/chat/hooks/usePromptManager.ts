@@ -1,6 +1,7 @@
 import { useEffect,useState } from 'react';
 
 import { Prompt } from '@/types';
+import { handleError } from '@/utils/error-handler.util';
 
 export const usePromptManager = () => {
     const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -11,7 +12,7 @@ export const usePromptManager = () => {
                 const allPrompts = await window.electron.db.getPrompts();
                 setPrompts(allPrompts as Prompt[]);
             } catch (error) {
-                console.error('Failed to load prompts:', error);
+                handleError(error, 'PromptManager.loadPrompts');
             }
         };
         void loadPrompts();
@@ -22,7 +23,7 @@ export const usePromptManager = () => {
             const newPrompt = await window.electron.db.createPrompt(title, content, tags);
             setPrompts(prev => [...prev, newPrompt as Prompt]);
         } catch (error) {
-            console.error('Failed to create prompt:', error);
+            handleError(error, 'PromptManager.createPrompt');
         }
     };
 
@@ -31,7 +32,7 @@ export const usePromptManager = () => {
             await window.electron.db.deletePrompt(id);
             setPrompts(prev => prev.filter(p => p.id !== id));
         } catch (error) {
-            console.error('Failed to delete prompt:', error);
+            handleError(error, 'PromptManager.deletePrompt');
         }
     };
 
@@ -40,7 +41,7 @@ export const usePromptManager = () => {
             await window.electron.db.updatePrompt(id, updates);
             setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
         } catch (error) {
-            console.error('Failed to update prompt:', error);
+            handleError(error, 'PromptManager.updatePrompt');
         }
     };
 
@@ -51,3 +52,4 @@ export const usePromptManager = () => {
         updatePrompt
     };
 };
+

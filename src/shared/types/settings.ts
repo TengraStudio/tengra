@@ -18,12 +18,12 @@ export type AppSettings = {
     };
     images?: {
         provider:
-            | 'antigravity'
-            | 'ollama'
-            | 'sd-webui'
-            | 'comfyui'
-            | 'pollinations'
-            | 'sd-cpp';
+        | 'antigravity'
+        | 'ollama'
+        | 'sd-webui'
+        | 'comfyui'
+        | 'pollinations'
+        | 'sd-cpp';
         ollamaModel?: string;
         sdWebUIUrl?: string;
         comfyUIUrl?: string;
@@ -117,6 +117,13 @@ export type AppSettings = {
         audioInputDeviceId?: string;
         audioOutputDeviceId?: string;
     };
+    security?: {
+        session?: {
+            enabled?: boolean;
+            timeoutMinutes?: number;
+            requireBiometricOnUnlock?: boolean;
+        };
+    };
     personas?: {
         id: string;
         name: string;
@@ -154,6 +161,16 @@ export type AppSettings = {
     mcpSecurityAllowedHosts?: string[];
     mcpReviewPolicy?: 'elevated' | 'trusted';
     mcpAutoExecuteSafe?: boolean;
+    mcpActionPermissions?: Record<string, 'allow' | 'deny' | 'ask'>;
+    mcpPermissionRequests?: Array<{
+        id: string;
+        service: string;
+        action: string;
+        createdAt: number;
+        argsPreview?: string;
+        status: 'pending' | 'approved' | 'denied';
+    }>;
+    mcpServerVersionHistory?: Record<string, string[]>;
     modelUsageLimits?: {
         copilot?: {
             hourly?: {
@@ -196,6 +213,15 @@ export type AppSettings = {
         tokenRefreshInterval?: number; // ms, default 5 minutes
         copilotRefreshInterval?: number; // ms, default 15 minutes
     };
+    terminal?: {
+        fontSize?: number;
+        fontFamily?: string;
+        lineHeight?: number;
+        letterSpacing?: number;
+        cursorStyle?: 'bar' | 'block' | 'underline';
+        cursorBlink?: boolean;
+        scrollback?: number;
+    };
     extensionWarningDismissed?: boolean; // Browser extension warning dismissed
     [key: string]: JsonValue | undefined;
 };
@@ -213,6 +239,9 @@ export type MCPServerConfig = {
     publisher?: string;
     version?: string;
     isOfficial?: boolean;
+    installedAt?: number;
+    updatedAt?: number;
+    previousVersion?: string;
 };
 
 export type AccountQuotaInfo = {

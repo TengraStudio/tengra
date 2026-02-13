@@ -28,7 +28,16 @@ export function useAppInitialization() {
                 appLogger.error('AppInit', 'Failed to load theme registry', error as Error);
             }
         };
-        void loadThemes();
+        const idleCallback = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
+        if (idleCallback) {
+            idleCallback(() => {
+                void loadThemes();
+            });
+        } else {
+            window.setTimeout(() => {
+                void loadThemes();
+            }, 200);
+        }
     }, []);
 
     useEffect(() => {
@@ -72,7 +81,16 @@ export function useAppInitialization() {
                 appLogger.error('Extension', 'Failed to check warning status', error as Error);
             }
         };
-        void checkExtensionWarning();
+        const idleCallback = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
+        if (idleCallback) {
+            idleCallback(() => {
+                void checkExtensionWarning();
+            });
+        } else {
+            window.setTimeout(() => {
+                void checkExtensionWarning();
+            }, 250);
+        }
 
         return () => {
             abortController.abort();

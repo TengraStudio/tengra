@@ -1,4 +1,5 @@
 
+import { appLogger } from '@main/logging/logger';
 import { ChatMessage, ToolCall } from '@main/types/llm.types';
 import { CatchError, JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
@@ -50,7 +51,7 @@ export abstract class BaseLLMService {
      * Common error handling wrapper
      */
     protected handleError(error: CatchError, context: string): never {
-        console.error(`[${this.constructor.name}] ${context} Error:`, getErrorMessage(error));
+        appLogger.error(this.constructor.name, `${context} Error: ${getErrorMessage(error)}`);
         throw error; // Re-throw for caller to handle
     }
 }

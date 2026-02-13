@@ -115,7 +115,7 @@ function validateSort(value: unknown): string {
     if (typeof value !== 'string') {
         return 'downloads';
     }
-    const validSorts = ['downloads', 'likes', 'trending', 'lastModified'];
+    const validSorts = ['downloads', 'likes', 'trending', 'lastModified', 'updated', 'name'];
     return validSorts.includes(value) ? value : 'downloads';
 }
 
@@ -128,6 +128,16 @@ function validateFileSize(value: unknown): number {
         return 0;
     }
     return num;
+}
+
+function validateModelIdList(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .map(v => validateModelId(v))
+        .filter((v): v is string => typeof v === 'string')
+        .slice(0, 4);
 }
 
 /**
@@ -143,6 +153,18 @@ function validateSha256(value: unknown): string {
         return '';
     }
     return trimmed;
+}
+
+function validateConversionQuantization(value: unknown): 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M' {
+    if (typeof value !== 'string') {
+        return 'Q4_K_M';
+    }
+    const allowed = new Set(['F16', 'Q8_0', 'Q6_K', 'Q5_K_M', 'Q4_K_M']);
+    const normalized = value.toUpperCase();
+    if (!allowed.has(normalized)) {
+        return 'Q4_K_M';
+    }
+    return normalized as 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M';
 }
 
 /**
@@ -176,7 +198,7 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
     ));
 
     ipcMain.handle('hf:download-file', createIpcHandler('hf:download-file',
-        async (event: IpcMainInvokeEvent, urlRaw: unknown, outputPathRaw: unknown, expectedSizeRaw: unknown, expectedSha256Raw: unknown) => {
+        async (event: IpcMainInvokeEvent, urlRaw: unknown, outputPathRaw: unknown, expectedSizeRaw: unknown, expectedSha256Raw: unknown, scheduleAtRaw: unknown) => {
             const url = validateUrl(urlRaw);
             const outputPath = validatePath(outputPathRaw);
             if (!url || !outputPath) {
@@ -184,18 +206,370 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
             }
             const expectedSize = validateFileSize(expectedSizeRaw);
             const expectedSha256 = validateSha256(expectedSha256Raw);
+            const scheduleAtMs = typeof scheduleAtRaw === 'number' && Number.isFinite(scheduleAtRaw)
+                ? scheduleAtRaw
+                : undefined;
             appLogger.info('HuggingFaceIPC', `Downloading file to ${outputPath}`);
-            return await hfService.downloadFile(url, outputPath, expectedSize, expectedSha256, (received: number, total: number) => {
-                event.sender.send('hf:download-progress', { filename: outputPath, received, total });
+            return await hfService.downloadFile(url, outputPath, {
+                expectedSize,
+                expectedSha256,
+                scheduleAtMs,
+                onProgress: (received: number, total: number) => {
+                    event.sender.send('hf:download-progress', { filename: outputPath, received, total });
+                }
             });
         }
     ));
 
     ipcMain.handle('hf:cancel-download', createSafeIpcHandler('hf:cancel-download',
         async () => {
-            // Implement cancellation logic if we store the controller/stream
-            // For now, placeholder
-            return { cancelled: true };
-        }, { cancelled: false }
+            const cancelled = await hfService.cancelPendingDownloads();
+            return { cancelled: true, pendingCancelled: cancelled };
+        }, { cancelled: false, pendingCancelled: 0 }
+    ));
+
+    ipcMain.handle('hf:get-recommendations', createSafeIpcHandler(
+        'hf:get-recommendations',
+        async (_event: IpcMainInvokeEvent, limitRaw: unknown, queryRaw: unknown) => {
+            const limit = validateLimit(limitRaw);
+            const query = validateQuery(queryRaw);
+            return await withRateLimit('huggingface', async () => hfService.getRecommendations(limit, query));
+        },
+        []
+    ));
+
+    ipcMain.handle('hf:get-model-preview', createSafeIpcHandler(
+        'hf:get-model-preview',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return await withRateLimit('huggingface', async () => hfService.getModelPreview(modelId));
+        },
+        null
+    ));
+
+    ipcMain.handle('hf:compare-models', createSafeIpcHandler(
+        'hf:compare-models',
+        async (_event: IpcMainInvokeEvent, modelIdsRaw: unknown) => {
+            const modelIds = validateModelIdList(modelIdsRaw);
+            return await withRateLimit('huggingface', async () => hfService.compareModels(modelIds));
+        },
+        { previews: [], recommendation: {} }
+    ));
+
+    ipcMain.handle('hf:validate-compatibility', createSafeIpcHandler(
+        'hf:validate-compatibility',
+        async (_event: IpcMainInvokeEvent, fileRaw: unknown, ramRaw: unknown, vramRaw: unknown) => {
+            const file = fileRaw as { path: string; size: number; oid?: string; quantization: string };
+            if (!file || typeof file.path !== 'string' || typeof file.size !== 'number' || typeof file.quantization !== 'string') {
+                throw new Error('Invalid file payload');
+            }
+            const ram = typeof ramRaw === 'number' && Number.isFinite(ramRaw) ? ramRaw : 16;
+            const vram = typeof vramRaw === 'number' && Number.isFinite(vramRaw) ? vramRaw : 8;
+            return await hfService.validateModelCompatibility({ ...file, oid: file.oid }, ram, vram);
+        },
+        { compatible: true, reasons: [], estimatedRamGB: 0, estimatedVramGB: 0 }
+    ));
+
+    ipcMain.handle('hf:watchlist:get', createSafeIpcHandler(
+        'hf:watchlist:get',
+        async () => hfService.getWatchlist(),
+        []
+    ));
+
+    ipcMain.handle('hf:watchlist:add', createSafeIpcHandler(
+        'hf:watchlist:add',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return { success: await hfService.addToWatchlist(modelId) };
+        },
+        { success: false }
+    ));
+
+    ipcMain.handle('hf:watchlist:remove', createSafeIpcHandler(
+        'hf:watchlist:remove',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return { success: await hfService.removeFromWatchlist(modelId) };
+        },
+        { success: false }
+    ));
+
+    ipcMain.handle('hf:cache-stats', createSafeIpcHandler(
+        'hf:cache-stats',
+        async () => hfService.getCacheStats(),
+        { size: 0, maxSize: 0, ttlMs: 0, oldestAgeMs: 0, watchlistSize: 0 }
+    ));
+
+    ipcMain.handle('hf:cache-clear', createSafeIpcHandler(
+        'hf:cache-clear',
+        async () => hfService.clearCache(),
+        { success: false, removed: 0 }
+    ));
+
+    ipcMain.handle('hf:test-downloaded-model', createSafeIpcHandler(
+        'hf:test-downloaded-model',
+        async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+            const filePath = validatePath(filePathRaw);
+            if (!filePath) {
+                throw new Error('Invalid file path');
+            }
+            return await hfService.testDownloadedModel(filePath);
+        },
+        { success: false, error: 'Test failed' }
+    ));
+
+    ipcMain.handle('hf:get-conversion-presets', createSafeIpcHandler(
+        'hf:get-conversion-presets',
+        async () => hfService.getConversionPresets(),
+        []
+    ));
+
+    ipcMain.handle('hf:get-optimization-suggestions', createSafeIpcHandler(
+        'hf:get-optimization-suggestions',
+        async (_event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+            const options = optionsRaw as {
+                sourcePath: string;
+                outputPath: string;
+                quantization: string;
+                preset?: string;
+                modelId?: string;
+            };
+            return hfService.getOptimizationSuggestions({
+                sourcePath: validatePath(options?.sourcePath) ?? '',
+                outputPath: validatePath(options?.outputPath) ?? '',
+                quantization: validateConversionQuantization(options?.quantization),
+                preset: typeof options?.preset === 'string' ? options.preset as 'balanced' | 'quality' | 'speed' | 'tiny' : undefined,
+                modelId: validateModelId(options?.modelId ?? '') ?? undefined
+            });
+        },
+        []
+    ));
+
+    ipcMain.handle('hf:validate-conversion', createSafeIpcHandler(
+        'hf:validate-conversion',
+        async (_event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+            const options = optionsRaw as {
+                sourcePath: string;
+                outputPath: string;
+                quantization: string;
+                preset?: string;
+                modelId?: string;
+            };
+            return hfService.validateConversionOptions({
+                sourcePath: validatePath(options?.sourcePath) ?? '',
+                outputPath: validatePath(options?.outputPath) ?? '',
+                quantization: validateConversionQuantization(options?.quantization),
+                preset: typeof options?.preset === 'string' ? options.preset as 'balanced' | 'quality' | 'speed' | 'tiny' : undefined,
+                modelId: validateModelId(options?.modelId ?? '') ?? undefined
+            });
+        },
+        { valid: false, errors: ['validation failed'] }
+    ));
+
+    ipcMain.handle('hf:convert-model', createSafeIpcHandler(
+        'hf:convert-model',
+        async (event: IpcMainInvokeEvent, optionsRaw: unknown) => {
+            const options = optionsRaw as {
+                sourcePath: string;
+                outputPath: string;
+                quantization: string;
+                preset?: string;
+                modelId?: string;
+            };
+            return await hfService.convertModelToGGUF(
+                {
+                    sourcePath: validatePath(options?.sourcePath) ?? '',
+                    outputPath: validatePath(options?.outputPath) ?? '',
+                    quantization: validateConversionQuantization(options?.quantization),
+                    preset: typeof options?.preset === 'string' ? options.preset as 'balanced' | 'quality' | 'speed' | 'tiny' : undefined,
+                    modelId: validateModelId(options?.modelId ?? '') ?? undefined
+                },
+                (progress) => {
+                    event.sender.send('hf:conversion-progress', progress);
+                }
+            );
+        },
+        { success: false, error: 'conversion failed' }
+    ));
+
+    ipcMain.handle('hf:versions:list', createSafeIpcHandler(
+        'hf:versions:list',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return await hfService.getModelVersions(modelId);
+        },
+        []
+    ));
+
+    ipcMain.handle('hf:versions:register', createSafeIpcHandler(
+        'hf:versions:register',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, filePathRaw: unknown, notesRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            const filePath = validatePath(filePathRaw);
+            if (!modelId || !filePath) {
+                throw new Error('Invalid model ID or file path');
+            }
+            const notes = typeof notesRaw === 'string' ? notesRaw.slice(0, 500) : undefined;
+            return await hfService.registerModelVersion(modelId, filePath, notes);
+        },
+        null
+    ));
+
+    ipcMain.handle('hf:versions:compare', createSafeIpcHandler(
+        'hf:versions:compare',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, leftRaw: unknown, rightRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            const left = validateModelId(leftRaw);
+            const right = validateModelId(rightRaw);
+            if (!modelId || !left || !right) {
+                throw new Error('Invalid comparison arguments');
+            }
+            return await hfService.compareModelVersions(modelId, left, right);
+        },
+        { summary: 'comparison failed', deltas: { createdAtMs: 0, architectureChanged: false, contextLengthDelta: 0 } }
+    ));
+
+    ipcMain.handle('hf:versions:rollback', createSafeIpcHandler(
+        'hf:versions:rollback',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, versionIdRaw: unknown, targetPathRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            const versionId = validateModelId(versionIdRaw);
+            const targetPath = validatePath(targetPathRaw);
+            if (!modelId || !versionId || !targetPath) {
+                throw new Error('Invalid rollback arguments');
+            }
+            return await hfService.rollbackModelVersion(modelId, versionId, targetPath);
+        },
+        { success: false, error: 'rollback failed' }
+    ));
+
+    ipcMain.handle('hf:versions:pin', createSafeIpcHandler(
+        'hf:versions:pin',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown, versionIdRaw: unknown, pinnedRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            const versionId = validateModelId(versionIdRaw);
+            if (!modelId || !versionId) {
+                throw new Error('Invalid pin arguments');
+            }
+            const pinned = Boolean(pinnedRaw);
+            return await hfService.pinModelVersion(modelId, versionId, pinned);
+        },
+        { success: false }
+    ));
+
+    ipcMain.handle('hf:versions:notifications', createSafeIpcHandler(
+        'hf:versions:notifications',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            if (!modelId) {
+                throw new Error('Invalid model ID');
+            }
+            return await hfService.getVersionNotifications(modelId);
+        },
+        []
+    ));
+
+    ipcMain.handle('hf:finetune:prepare-dataset', createSafeIpcHandler(
+        'hf:finetune:prepare-dataset',
+        async (_event: IpcMainInvokeEvent, inputRaw: unknown, outputRaw: unknown) => {
+            const inputPath = validatePath(inputRaw);
+            const outputPath = validatePath(outputRaw);
+            if (!inputPath || !outputPath) {
+                throw new Error('Invalid dataset paths');
+            }
+            return await hfService.prepareFineTuneDataset(inputPath, outputPath);
+        },
+        { success: false, outputPath: '', records: 0, error: 'dataset preparation failed' }
+    ));
+
+    ipcMain.handle('hf:finetune:start', createSafeIpcHandler(
+        'hf:finetune:start',
+        async (event: IpcMainInvokeEvent, modelIdRaw: unknown, datasetRaw: unknown, outputRaw: unknown, optionsRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw);
+            const datasetPath = validatePath(datasetRaw);
+            const outputPath = validatePath(outputRaw);
+            if (!modelId || !datasetPath || !outputPath) {
+                throw new Error('Invalid fine-tune args');
+            }
+            const options = optionsRaw as { epochs?: number; learningRate?: number } | undefined;
+            return await hfService.startFineTune(modelId, datasetPath, outputPath, {
+                epochs: typeof options?.epochs === 'number' ? options.epochs : undefined,
+                learningRate: typeof options?.learningRate === 'number' ? options.learningRate : undefined,
+                onProgress: (job) => {
+                    event.sender.send('hf:finetune-progress', job);
+                }
+            });
+        },
+        null
+    ));
+
+    ipcMain.handle('hf:finetune:list', createSafeIpcHandler(
+        'hf:finetune:list',
+        async (_event: IpcMainInvokeEvent, modelIdRaw: unknown) => {
+            const modelId = validateModelId(modelIdRaw ?? '');
+            return await hfService.listFineTuneJobs(modelId ?? undefined);
+        },
+        []
+    ));
+
+    ipcMain.handle('hf:finetune:get', createSafeIpcHandler(
+        'hf:finetune:get',
+        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+            const jobId = validateModelId(jobIdRaw);
+            if (!jobId) {
+                throw new Error('Invalid job ID');
+            }
+            return await hfService.getFineTuneJob(jobId);
+        },
+        null
+    ));
+
+    ipcMain.handle('hf:finetune:cancel', createSafeIpcHandler(
+        'hf:finetune:cancel',
+        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+            const jobId = validateModelId(jobIdRaw);
+            if (!jobId) {
+                throw new Error('Invalid job ID');
+            }
+            return await hfService.cancelFineTuneJob(jobId);
+        },
+        { success: false }
+    ));
+
+    ipcMain.handle('hf:finetune:evaluate', createSafeIpcHandler(
+        'hf:finetune:evaluate',
+        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown) => {
+            const jobId = validateModelId(jobIdRaw);
+            if (!jobId) {
+                throw new Error('Invalid job ID');
+            }
+            return await hfService.evaluateFineTuneJob(jobId);
+        },
+        { success: false, error: 'evaluation failed' }
+    ));
+
+    ipcMain.handle('hf:finetune:export', createSafeIpcHandler(
+        'hf:finetune:export',
+        async (_event: IpcMainInvokeEvent, jobIdRaw: unknown, exportPathRaw: unknown) => {
+            const jobId = validateModelId(jobIdRaw);
+            const exportPath = validatePath(exportPathRaw);
+            if (!jobId || !exportPath) {
+                throw new Error('Invalid export arguments');
+            }
+            return await hfService.exportFineTunedModel(jobId, exportPath);
+        },
+        { success: false, error: 'export failed' }
     ));
 }

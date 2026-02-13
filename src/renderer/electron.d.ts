@@ -283,6 +283,50 @@ export interface ElectronAPI {
      * Get all linked accounts for a provider (alias for getLinkedAccounts).
      */
     getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>;
+    getAuthProviderHealth: (provider?: string) => Promise<Array<{
+        provider: string;
+        checkedAt: number;
+        totalAccounts: number;
+        activeAccountId?: string;
+        hasActiveToken: boolean;
+        hasRefreshToken: boolean;
+        expiringSoonCount: number;
+        expiredCount: number;
+        healthy: boolean;
+    }>>;
+    getAuthProviderAnalytics: () => Promise<Array<{
+        provider: string;
+        totalAccounts: number;
+        activeAccounts: number;
+        lastUpdatedAt?: number;
+        oldestAccountAt?: number;
+        withRefreshToken: number;
+        withSessionToken: number;
+    }>>;
+    getTokenAnalytics: (provider?: string) => Promise<{
+        totalAccounts: number;
+        withAccessToken: number;
+        withRefreshToken: number;
+        withSessionToken: number;
+        expiringWithin30m: number;
+        expired: number;
+        revoked: number;
+    }>;
+    startAuthSession: (
+        provider: string,
+        accountId?: string,
+        source?: string
+    ) => Promise<{ sessionId: string }>;
+    touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+    endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+    setAuthSessionLimit: (provider: string, limit: number) => Promise<{ limit: number }>;
+    getAuthSessionAnalytics: (provider?: string) => Promise<{
+        totalActiveSessions: number;
+        byProvider: Record<string, number>;
+        oldestSessionAt?: number;
+    }>;
+    setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
+    getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
 
     code: {
         scanTodos: (rootPath: string) => Promise<TodoFile[]>;
@@ -369,6 +413,12 @@ export interface ElectronAPI {
         provider?: string,
         model?: string
     ) => Promise<number>;
+    performance: {
+        getMemoryStats: () => Promise<IpcValue>;
+        detectLeak: () => Promise<IpcValue>;
+        triggerGC: () => Promise<IpcValue>;
+        getDashboard: () => Promise<IpcValue>;
+    };
     runCommand: (
         command: string,
         args: string[],
@@ -644,6 +694,53 @@ export interface ElectronAPI {
 
     terminal: {
         isAvailable: () => Promise<boolean>;
+        getProfiles: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }>>;
+        saveProfile: (profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => Promise<void>;
+        deleteProfile: (id: string) => Promise<void>;
+        validateProfile: (profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        getProfileTemplates: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }>>;
+        exportProfiles: () => Promise<string>;
+        exportProfileShareCode: (profileId: string) => Promise<string | null>;
+        importProfiles: (
+            payload: string,
+            options?: { overwrite?: boolean }
+        ) => Promise<{ success: boolean; imported: number; skipped: number; errors: string[] }>;
+        importProfileShareCode: (
+            shareCode: string,
+            options?: { overwrite?: boolean }
+        ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
         getShells: () => Promise<{ id: string; name: string; path: string }[]>;
         getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
         create: (options: {
@@ -653,6 +750,7 @@ export interface ElectronAPI {
             cols?: number;
             rows?: number;
             backendId?: string;
+            title?: string;
             metadata?: Record<string, unknown>;
         }) => Promise<string>;
         getDockerContainers: () => Promise<Array<{ id: string; name: string; status: string }>>;
@@ -714,6 +812,119 @@ export interface ElectronAPI {
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>;
         kill: (sessionId: string) => Promise<boolean>;
         getSessions: () => Promise<string[]>;
+        restoreAllSnapshots: () => Promise<{ restored: number; failed: number; sessionIds: string[] }>;
+        exportSession: (
+            sessionId: string,
+            options?: { includeScrollback?: boolean }
+        ) => Promise<string | null>;
+        importSession: (
+            payload: string,
+            options?: { overwrite?: boolean; sessionId?: string }
+        ) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+        createSessionShareCode: (
+            sessionId: string,
+            options?: { includeScrollback?: boolean }
+        ) => Promise<string | null>;
+        importSessionShareCode: (
+            shareCode: string,
+            options?: { overwrite?: boolean; sessionId?: string }
+        ) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+        getSnapshotSessions: () => Promise<Array<{
+            id: string;
+            shell: string;
+            cwd: string;
+            title?: string;
+            cols: number;
+            rows: number;
+            timestamp: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+        }>>;
+        getSessionTemplates: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            cwd: string;
+            cols: number;
+            rows: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        saveSessionTemplate: (payload: {
+            sessionId: string;
+            templateId?: string;
+            name?: string;
+        }) => Promise<{
+            id: string;
+            name: string;
+            shell: string;
+            cwd: string;
+            cols: number;
+            rows: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+            createdAt: number;
+            updatedAt: number;
+        } | null>;
+        deleteSessionTemplate: (templateId: string) => Promise<boolean>;
+        createFromSessionTemplate: (
+            templateId: string,
+            options?: { sessionId?: string; title?: string }
+        ) => Promise<string | null>;
+        restoreSnapshotSession: (snapshotId: string) => Promise<boolean>;
+        searchScrollback: (
+            sessionId: string,
+            query: string,
+            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number }
+        ) => Promise<Array<{ lineNumber: number; line: string }>>;
+        exportScrollback: (
+            sessionId: string,
+            exportPath?: string
+        ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
+        getSessionAnalytics: (sessionId: string) => Promise<{
+            sessionId: string;
+            bytes: number;
+            lineCount: number;
+            commandCount: number;
+            updatedAt: number;
+        }>;
+        getSearchAnalytics: () => Promise<{
+            totalSearches: number;
+            regexSearches: number;
+            plainSearches: number;
+            lastSearchAt: number;
+        }>;
+        getSearchSuggestions: (query?: string, limit?: number) => Promise<string[]>;
+        exportSearchResults: (
+            sessionId: string,
+            query: string,
+            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
+            exportPath?: string,
+            format?: 'json' | 'txt'
+        ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
+        addScrollbackMarker: (
+            sessionId: string,
+            label: string,
+            lineNumber?: number
+        ) => Promise<{ id: string; sessionId: string; label: string; lineNumber: number; createdAt: number } | null>;
+        listScrollbackMarkers: (sessionId?: string) => Promise<Array<{
+            id: string;
+            sessionId: string;
+            label: string;
+            lineNumber: number;
+            createdAt: number;
+        }>>;
+        deleteScrollbackMarker: (markerId: string) => Promise<boolean>;
+        filterScrollback: (
+            sessionId: string,
+            options?: { query?: string; fromLine?: number; toLine?: number; caseSensitive?: boolean }
+        ) => Promise<string[]>;
+        setSessionTitle: (sessionId: string, title: string) => Promise<boolean>;
         onData: (callback: (data: { id: string; data: string }) => void) => () => void;
         onExit: (callback: (data: { id: string; code: number }) => void) => () => void;
         readBuffer: (sessionId: string) => Promise<string>;
@@ -723,6 +934,44 @@ export interface ElectronAPI {
     agent: {
         getAll: () => Promise<AgentDefinition[]>;
         get: (id: string) => Promise<AgentDefinition | null>;
+        create: (payload: {
+            agent: {
+                id?: string;
+                name: string;
+                description?: string;
+                systemPrompt: string;
+                tools?: string[];
+                parentModel?: string;
+                color?: string;
+            };
+            options?: { cloneFromId?: string; createWorkspace?: boolean };
+        }) => Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }>;
+        delete: (
+            id: string,
+            options?: { confirm?: boolean; softDelete?: boolean; backupBeforeDelete?: boolean }
+        ) => Promise<{ success: boolean; archivedId?: string; recoveryToken?: string; error?: string }>;
+        clone: (id: string, newName?: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+        exportAgent: (id: string) => Promise<string | null>;
+        importAgent: (payload: string) => Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }>;
+        getTemplatesLibrary: () => Promise<Array<{
+            id?: string;
+            name: string;
+            description: string;
+            systemPrompt: string;
+            tools: string[];
+            parentModel?: string;
+            color?: string;
+            category?: string;
+        }>>;
+        validateTemplate: (template: {
+            name?: string;
+            description?: string;
+            systemPrompt?: string;
+            tools?: string[];
+            parentModel?: string;
+            color?: string;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        recover: (archiveId: string) => Promise<{ success: boolean; id?: string; error?: string }>;
     };
 
     modelRegistry: {
@@ -838,6 +1087,17 @@ export interface ElectronAPI {
             config: Record<string, IpcValue>
         ) => Promise<{ success: boolean; error?: string }>;
         uninstall: (name: string) => Promise<{ success: boolean }>;
+        getDebugMetrics: () => Promise<IpcValue[]>;
+        listPermissionRequests: () => Promise<IpcValue[]>;
+        setActionPermission: (
+            service: string,
+            action: string,
+            policy: 'allow' | 'deny' | 'ask'
+        ) => Promise<{ success: boolean; error?: string }>;
+        resolvePermissionRequest: (
+            requestId: string,
+            decision: 'approved' | 'denied'
+        ) => Promise<{ success: boolean; error?: string }>;
         onResult: (callback: (result: IpcValue) => void) => void;
         removeResultListener: () => void;
     };
@@ -859,6 +1119,18 @@ export interface ElectronAPI {
             serverId: string,
             enabled: boolean
         ) => Promise<{ success: boolean; error?: string }>;
+        updateConfig: (
+            serverId: string,
+            patch: Record<string, IpcValue>
+        ) => Promise<{ success: boolean; error?: string }>;
+        versionHistory: (
+            serverId: string
+        ) => Promise<{ success: boolean; history?: string[]; error?: string }>;
+        rollbackVersion: (
+            serverId: string,
+            targetVersion: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        debug: () => Promise<{ success: boolean; metrics?: IpcValue; error?: string }>;
         refresh: () => Promise<{ success: boolean; error?: string }>;
     };
 
@@ -943,14 +1215,119 @@ export interface ElectronAPI {
             }[];
             total: number;
         }>;
+        getRecommendations: (
+            limit?: number,
+            query?: string
+        ) => Promise<Array<{
+            id: string;
+            name: string;
+            author: string;
+            description: string;
+            downloads: number;
+            likes: number;
+            tags: string[];
+            lastModified: string;
+            category: string;
+            recommendationScore: number;
+        }>>;
         getFiles: (
             modelId: string
         ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
+        getModelPreview: (modelId: string) => Promise<unknown>;
+        compareModels: (modelIds: string[]) => Promise<unknown>;
+        validateCompatibility: (
+            file: { path: string; size: number; oid?: string; quantization: string },
+            availableRamGB?: number,
+            availableVramGB?: number
+        ) => Promise<{
+            compatible: boolean;
+            reasons: string[];
+            estimatedRamGB: number;
+            estimatedVramGB: number;
+        }>;
+        getWatchlist: () => Promise<string[]>;
+        addToWatchlist: (modelId: string) => Promise<{ success: boolean }>;
+        removeFromWatchlist: (modelId: string) => Promise<{ success: boolean }>;
+        getCacheStats: () => Promise<{
+            size: number;
+            maxSize: number;
+            ttlMs: number;
+            oldestAgeMs: number;
+            watchlistSize: number;
+        }>;
+        clearCache: () => Promise<{ success: boolean; removed: number }>;
+        testDownloadedModel: (filePath: string) => Promise<{
+            success: boolean;
+            error?: string;
+            metadata?: { architecture?: string; contextLength?: number };
+        }>;
+        getConversionPresets: () => Promise<Array<{
+            id: 'balanced' | 'quality' | 'speed' | 'tiny';
+            quantization: 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M';
+            description: string;
+        }>>;
+        getOptimizationSuggestions: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<string[]>;
+        validateConversion: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        convertModel: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<{ success: boolean; error?: string; warnings?: string[] }>;
+        onConversionProgress: (
+            callback: (progress: { stage: string; percent: number; message: string }) => void
+        ) => () => void;
+        getModelVersions: (modelId: string) => Promise<Array<{
+            versionId: string;
+            modelId: string;
+            path: string;
+            createdAt: number;
+            notes?: string;
+            pinned?: boolean;
+            metadata?: { architecture?: string; contextLength?: number };
+        }>>;
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<unknown>;
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<unknown>;
+        rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<{ success: boolean; error?: string }>;
+        pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
+        getVersionNotifications: (modelId: string) => Promise<string[]>;
+        prepareFineTuneDataset: (inputPath: string, outputPath: string) => Promise<{
+            success: boolean;
+            outputPath: string;
+            records: number;
+            error?: string;
+        }>;
+        startFineTune: (
+            modelId: string,
+            datasetPath: string,
+            outputPath: string,
+            options?: { epochs?: number; learningRate?: number }
+        ) => Promise<unknown>;
+        listFineTuneJobs: (modelId?: string) => Promise<unknown[]>;
+        getFineTuneJob: (jobId: string) => Promise<unknown>;
+        cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
+        evaluateFineTuneJob: (jobId: string) => Promise<unknown>;
+        exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
+        onFineTuneProgress: (callback: (job: unknown) => void) => () => void;
         downloadFile: (
             url: string,
             outputPath: string,
             expectedSize: number,
-            expectedSha256: string
+            expectedSha256: string,
+            scheduleAtMs?: number
         ) => Promise<{ success: boolean; error?: string }>;
         onDownloadProgress: (
             callback: (progress: { filename: string; received: number; total: number }) => void
@@ -1231,6 +1608,18 @@ export interface ElectronAPI {
             };
         }>;
         getChannels: () => Promise<string[]>;
+    };
+    lazyServices: {
+        getStatus: () => Promise<{
+            registered: string[];
+            loaded: string[];
+            loading: string[];
+            totals: {
+                registered: number;
+                loaded: number;
+                loading: number;
+            };
+        }>;
     };
 
     // Explicit ipcRenderer exposure for flexible components

@@ -33,6 +33,7 @@ const MAX_PROVIDER_ROTATIONS = 10; // Maximum provider switches per task
 const MAX_EVENT_HISTORY = 1000; // Maximum events to keep in history
 const MAX_MESSAGE_HISTORY = 100; // Maximum messages to keep in history
 const MAX_TASK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const RECOVERY_TIMEOUT_MS = 60 * 1000; // 1 minute timeout for recovery state
 
 // ============================================================================
 // State Transition Guards
@@ -148,12 +149,26 @@ function finalizeTransition(state: AgentTaskState, record: AgentEventRecord): Ag
 }
 
 function checkTaskTimeout(state: AgentTaskState): AgentState {
+    // Check for overall task timeout
     if (state.startedAt && (new Date().getTime() - state.startedAt.getTime() > MAX_TASK_DURATION_MS)) {
         if (!['failed', 'completed', 'idle'].includes(state.state)) {
             appLogger.warn('AgentStateMachine', `Task ${state.taskId} timed out after ${MAX_TASK_DURATION_MS}ms`);
             return 'failed';
         }
     }
+
+    // Check for recovery state timeout - prevent stuck in recovering
+    if (state.state === 'recovering') {
+        const lastEvent = state.eventHistory[state.eventHistory.length - 1];
+        if (lastEvent && lastEvent.timestamp) {
+            const timeInRecovery = new Date().getTime() - lastEvent.timestamp.getTime();
+            if (timeInRecovery > RECOVERY_TIMEOUT_MS) {
+                appLogger.warn('AgentStateMachine', `Recovery timeout for task ${state.taskId} after ${RECOVERY_TIMEOUT_MS}ms`);
+                return 'failed';
+            }
+        }
+    }
+
     return state.state;
 }
 
@@ -484,6 +499,16 @@ function handleRecoveryAttempt(
     state: AgentTaskState,
     _event: Extract<AgentEvent, { type: 'RECOVERY_ATTEMPT' }>
 ): AgentTaskState {
+    // Check if recovery attempts are exhausted
+    if (state.recoveryAttempts >= MAX_RECOVERY_ATTEMPTS) {
+        appLogger.warn('AgentStateMachine', `Recovery attempts exhausted (${state.recoveryAttempts}/${MAX_RECOVERY_ATTEMPTS}), transitioning to failed`);
+        return {
+            ...state,
+            state: 'failed',
+            completedAt: new Date()
+        };
+    }
+
     return {
         ...state,
         state: 'recovering'
@@ -679,4 +704,4 @@ export function createInitialAgentState(
 /**
  * Exports
  */
-export { MAX_ITERATIONS, MAX_PROVIDER_ROTATIONS, MAX_RECOVERY_ATTEMPTS };
+export { MAX_ITERATIONS, MAX_PROVIDER_ROTATIONS, MAX_RECOVERY_ATTEMPTS, RECOVERY_TIMEOUT_MS };

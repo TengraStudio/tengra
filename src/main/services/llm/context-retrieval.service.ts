@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { DatabaseService } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 
@@ -56,7 +57,7 @@ export class ContextRetrievalService {
             };
 
         } catch (error) {
-            console.error('[ContextRetrieval] Failed to retrieve context', error);
+            appLogger.error('ContextRetrieval', 'Failed to retrieve context', error as Error);
             return { contextString: '', sources: [] };
         }
     }

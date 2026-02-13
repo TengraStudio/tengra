@@ -1,3 +1,4 @@
+import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { LocalImageService } from '@main/services/llm/local-image.service';
 import { ModelRegistryService } from '@main/services/llm/model-registry.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
@@ -28,6 +29,7 @@ describe('ModelRegistryService', () => {
     let mockAuthService: Partial<AuthService>;
     let mockTokenService: Partial<TokenService>;
     let mockLocalImageService: Partial<LocalImageService>;
+    let mockHuggingFaceService: any;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -36,9 +38,6 @@ describe('ModelRegistryService', () => {
             sendRequest: vi.fn().mockImplementation((_service, payload) => {
                 if (payload.provider === 'ollama') {
                     return Promise.resolve({ success: true, models: [{ name: 'llama3', description: 'Meta Llama 3', tags: ['7b'], pulls: '10M', provider: 'ollama' }] });
-                }
-                if (payload.provider === 'huggingface') {
-                    return Promise.resolve({ success: true, models: [{ id: 'TheBloke/Llama-7B-GGUF', name: 'Llama-7B-GGUF', description: 'GGUF', tags: [], downloads: 5000, likes: 10, provider: 'huggingface' }] });
                 }
                 return Promise.resolve({ success: false });
             })
@@ -56,6 +55,12 @@ describe('ModelRegistryService', () => {
         mockAuthService = { getActiveToken: vi.fn().mockResolvedValue('test-token') };
         mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
         mockLocalImageService = { getSDCppStatus: vi.fn().mockResolvedValue('ready') };
+        mockHuggingFaceService = {
+            searchModels: vi.fn().mockResolvedValue({
+                models: [{ id: 'TheBloke/Llama-7B-GGUF', name: 'Llama-7B-GGUF', description: 'GGUF', tags: [], downloads: 5000, likes: 10, author: 'TheBloke', lastModified: 'today' }],
+                total: 1
+            })
+        };
 
         service = new ModelRegistryService({
             processManager: mockProcessManager as ProcessManagerService,
@@ -65,7 +70,8 @@ describe('ModelRegistryService', () => {
             eventBus: mockEventBus as EventBusService,
             authService: mockAuthService as AuthService,
             tokenService: mockTokenService as TokenService,
-            localImageService: mockLocalImageService as LocalImageService
+            localImageService: mockLocalImageService as LocalImageService,
+            huggingFaceService: mockHuggingFaceService as HuggingFaceService
         });
     });
 
@@ -73,9 +79,7 @@ describe('ModelRegistryService', () => {
         it('should register a recurring job for cache updates', () => {
             expect(mockScheduler.registerRecurringJob).toHaveBeenCalledWith(
                 'model-registry-update',
-
                 expect.any(Function),
-
                 expect.any(Function)
             );
         });
@@ -84,17 +88,17 @@ describe('ModelRegistryService', () => {
     describe('getRemoteModels', () => {
         it('should fetch and cache remote models', async () => {
             const models = await service.getRemoteModels();
-            expect(models.length).toBe(1); // only huggingface is fetched in fetchRemoteModels
-            expect(mockProcessManager.sendRequest).toHaveBeenCalledTimes(1);
+            expect(models.length).toBe(1);
+            expect(mockHuggingFaceService.searchModels).toHaveBeenCalled();
         });
 
         it('should return cached models on subsequent calls', async () => {
-            await service.getRemoteModels()
-                ; (mockProcessManager.sendRequest as ReturnType<typeof vi.fn>).mockClear();
+            await service.getRemoteModels();
+            vi.mocked(mockHuggingFaceService.searchModels!).mockClear();
 
             const models = await service.getRemoteModels();
             expect(models.length).toBe(1);
-            expect(mockProcessManager.sendRequest).not.toHaveBeenCalled();
+            expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
         });
 
         it('should include models with correct provider tags', async () => {
@@ -108,8 +112,7 @@ describe('ModelRegistryService', () => {
 
     describe('getInstalledModels', () => {
         it('should return locally installed models', async () => {
-            // Mock installed models from native service 'ollama' call
-            (mockProcessManager.sendRequest as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+            vi.mocked(mockProcessManager.sendRequest!).mockResolvedValueOnce({
                 success: true,
                 models: [{ id: 'ollama/llama3:7b', name: 'llama3:7b', provider: 'ollama' }]
             });
@@ -122,7 +125,7 @@ describe('ModelRegistryService', () => {
         });
 
         it('should return empty array if error', async () => {
-            (mockProcessManager.sendRequest as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false });
+            vi.mocked(mockProcessManager.sendRequest!).mockResolvedValue({ success: false });
 
             const installed = await service.getInstalledModels();
             expect(installed.length).toBe(0);
@@ -145,7 +148,7 @@ describe('ModelRegistryService', () => {
 
     describe('error handling', () => {
         it('should handle native service errors gracefully', async () => {
-            (mockProcessManager.sendRequest as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: 'Failed' });
+            vi.mocked(mockHuggingFaceService.searchModels!).mockRejectedValue(new Error('Failed'));
 
             const models = await service.getRemoteModels();
             expect(models.length).toBe(0);

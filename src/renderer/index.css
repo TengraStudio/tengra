@@ -7,6 +7,7 @@
 
 /* Checkbox & Toggle Fixes */
 @layer base {
+
     /* Reset checkbox appearance */
     input[type='checkbox']:not(.sr-only) {
         appearance: none;
@@ -15,7 +16,7 @@
     }
 
     /* Fix for toggle switches using peer-checked pattern */
-    input[type='checkbox']:checked + div::after {
+    input[type='checkbox']:checked+div::after {
         transform: translateX(100%);
     }
 }
@@ -115,6 +116,7 @@
 
 /* Touch-friendly interactions */
 @media (hover: none) and (pointer: coarse) {
+
     /* Mobile/touch devices */
     .touch-target {
         min-width: 44px;
@@ -149,7 +151,8 @@
 }
 
 /* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
     .retina-border {
         border-width: 0.5px;
     }
@@ -383,11 +386,9 @@
     }
 
     .premium-glass-light {
-        background: linear-gradient(
-            135deg,
-            hsla(0, 0%, 100%, 0.1) 0%,
-            hsla(0, 0%, 100%, 0.05) 100%
-        );
+        background: linear-gradient(135deg,
+                hsla(0, 0%, 100%, 0.1) 0%,
+                hsla(0, 0%, 100%, 0.05) 100%);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -409,6 +410,7 @@
     }
 
     @keyframes vibrate {
+
         0%,
         100% {
             transform: translateX(0);
@@ -512,6 +514,7 @@
 
 /* Component Layer */
 @layer components {
+
     /* Glass Card - Ultra Subtle */
     .glass-card {
         @apply bg-card/20 backdrop-blur-sm border border-white/5 rounded-2xl transition-all duration-200;
@@ -585,14 +588,14 @@
     }
 
     /* Fix for misaligned bullets when content is wrapped in paragraphs */
-    .markdown-body li > p {
+    .markdown-body li>p {
         display: inline-block;
         margin: 0 !important;
         vertical-align: top;
     }
 
-    .markdown-body li > ul,
-    .markdown-body li > ol {
+    .markdown-body li>ul,
+    .markdown-body li>ol {
         @apply mt-2 mb-0;
     }
 
@@ -715,10 +718,12 @@
             transform: scale(0.9);
             opacity: 0;
         }
+
         50% {
             transform: scale(1.02);
             opacity: 1;
         }
+
         100% {
             transform: scale(1);
             opacity: 1;
@@ -990,6 +995,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+
         *,
         *::before,
         *::after {
@@ -1082,6 +1088,7 @@
 
     /* 4. Skeleton Loading Animation */
     @keyframes skeleton-pulse {
+
         0%,
         100% {
             opacity: 0.4;
@@ -1093,12 +1100,10 @@
     }
 
     .skeleton {
-        background: linear-gradient(
-            90deg,
-            hsl(var(--muted)) 0%,
-            hsl(var(--muted) / 0.5) 50%,
-            hsl(var(--muted)) 100%
-        );
+        background: linear-gradient(90deg,
+                hsl(var(--muted)) 0%,
+                hsl(var(--muted) / 0.5) 50%,
+                hsl(var(--muted)) 100%);
         background-size: 200% 100%;
         animation:
             skeleton-pulse 1.5s ease-in-out infinite,
@@ -1148,11 +1153,9 @@
 
     /* 7. Gradient Text */
     .gradient-text {
-        background: linear-gradient(
-            135deg,
-            hsl(var(--primary)) 0%,
-            hsl(var(--accent-foreground)) 100%
-        );
+        background: linear-gradient(135deg,
+                hsl(var(--primary)) 0%,
+                hsl(var(--accent-foreground)) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -1166,14 +1169,12 @@
     }
 
     .gradient-text-rainbow {
-        background: linear-gradient(
-            90deg,
-            hsl(var(--error)),
-            hsl(var(--warning)),
-            hsl(var(--info)),
-            hsl(var(--primary)),
-            hsl(var(--success))
-        );
+        background: linear-gradient(90deg,
+                hsl(var(--error)),
+                hsl(var(--warning)),
+                hsl(var(--info)),
+                hsl(var(--primary)),
+                hsl(var(--success)));
         background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -1197,6 +1198,7 @@
 
     /* 9. Scroll Button Animation */
     @keyframes bounce-subtle {
+
         0%,
         100% {
             transform: translateY(0);
@@ -1213,6 +1215,7 @@
 
     /* 10. Typing Indicator */
     @keyframes typing-dot {
+
         0%,
         60%,
         100% {
@@ -1243,6 +1246,7 @@
 
     /* 12. Pulsing Glow for Active States */
     @keyframes pulse-glow {
+
         0%,
         100% {
             box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
@@ -1262,6 +1266,7 @@
     }
 
     @keyframes pulse-glow-success {
+
         0%,
         100% {
             box-shadow: 0 0 5px hsl(var(--success) / 0.3);
@@ -1340,48 +1345,48 @@
     }
 
     /* 13. Staggered Fade-in for Lists */
-    .stagger-fade-in > * {
+    .stagger-fade-in>* {
         opacity: 0;
         animation: fade-in 0.3s ease-out forwards;
     }
 
-    .stagger-fade-in > *:nth-child(1) {
+    .stagger-fade-in>*:nth-child(1) {
         animation-delay: 0s;
     }
 
-    .stagger-fade-in > *:nth-child(2) {
+    .stagger-fade-in>*:nth-child(2) {
         animation-delay: 0.05s;
     }
 
-    .stagger-fade-in > *:nth-child(3) {
+    .stagger-fade-in>*:nth-child(3) {
         animation-delay: 0.1s;
     }
 
-    .stagger-fade-in > *:nth-child(4) {
+    .stagger-fade-in>*:nth-child(4) {
         animation-delay: 0.15s;
     }
 
-    .stagger-fade-in > *:nth-child(5) {
+    .stagger-fade-in>*:nth-child(5) {
         animation-delay: 0.2s;
     }
 
-    .stagger-fade-in > *:nth-child(6) {
+    .stagger-fade-in>*:nth-child(6) {
         animation-delay: 0.25s;
     }
 
-    .stagger-fade-in > *:nth-child(7) {
+    .stagger-fade-in>*:nth-child(7) {
         animation-delay: 0.3s;
     }
 
-    .stagger-fade-in > *:nth-child(8) {
+    .stagger-fade-in>*:nth-child(8) {
         animation-delay: 0.35s;
     }
 
-    .stagger-fade-in > *:nth-child(9) {
+    .stagger-fade-in>*:nth-child(9) {
         animation-delay: 0.4s;
     }
 
-    .stagger-fade-in > *:nth-child(10) {
+    .stagger-fade-in>*:nth-child(10) {
         animation-delay: 0.45s;
     }
 
@@ -1397,16 +1402,14 @@
     }
 
     .progress-animated {
-        background-image: linear-gradient(
-            45deg,
-            hsl(var(--glass-bg) / 0.15) 25%,
-            transparent 25%,
-            transparent 50%,
-            hsl(var(--glass-bg) / 0.15) 50%,
-            hsl(var(--glass-bg) / 0.15) 75%,
-            transparent 75%,
-            transparent
-        );
+        background-image: linear-gradient(45deg,
+                hsl(var(--glass-bg) / 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                hsl(var(--glass-bg) / 0.15) 50%,
+                hsl(var(--glass-bg) / 0.15) 75%,
+                transparent 75%,
+                transparent);
         background-size: 40px 40px;
         animation: progress-stripe 1s linear infinite;
     }
@@ -1467,11 +1470,9 @@
         top: 0;
         left: 0;
         pointer-events: none;
-        background-image: radial-gradient(
-            circle,
-            hsl(var(--glass-bg) / 0.3) 10%,
-            transparent 10.01%
-        );
+        background-image: radial-gradient(circle,
+                hsl(var(--glass-bg) / 0.3) 10%,
+                transparent 10.01%);
         background-repeat: no-repeat;
         background-position: 50%;
         transform: scale(10, 10);
@@ -1576,13 +1577,11 @@
         position: absolute;
         inset: -2px;
         border-radius: inherit;
-        background: linear-gradient(
-            135deg,
-            hsl(var(--primary)),
-            hsl(var(--accent-foreground)),
-            hsl(var(--info)),
-            hsl(var(--error))
-        );
+        background: linear-gradient(135deg,
+                hsl(var(--primary)),
+                hsl(var(--accent-foreground)),
+                hsl(var(--info)),
+                hsl(var(--error)));
         background-size: 300% 300%;
         animation: gradient-shift 4s ease infinite;
         z-index: -1;
@@ -1652,6 +1651,7 @@
     0% {
         transform: translateY(-100%);
     }
+
     100% {
         transform: translateY(100vh);
     }
@@ -1662,12 +1662,15 @@
         top: -10%;
         opacity: 0;
     }
+
     10% {
         opacity: 1;
     }
+
     90% {
         opacity: 1;
     }
+
     100% {
         top: 110%;
         opacity: 0;
@@ -1678,6 +1681,7 @@
     0% {
         transform: translateX(-100%);
     }
+
     100% {
         transform: translateX(200%);
     }
@@ -1688,10 +1692,12 @@
         transform: scale(1);
         opacity: 0.5;
     }
+
     50% {
         transform: scale(1.5);
         opacity: 0;
     }
+
     100% {
         transform: scale(1);
         opacity: 0.5;
@@ -1712,4 +1718,190 @@
 
 .animate-ping-slow {
     animation: ping-slow 3s ease-in-out infinite;
+}
+
+/* ==============================
+ * ACCESSIBILITY ENHANCEMENTS
+ * ============================== */
+
+/* Screen Reader Only - Visually hidden but accessible */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.sr-only:focus,
+.sr-only:active {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* Enhanced Focus Indicators */
+.enhanced-focus *:focus,
+.enhanced-focus *:focus-visible {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+}
+
+.enhanced-focus button:focus,
+.enhanced-focus a:focus,
+.enhanced-focus [role='button']:focus,
+.enhanced-focus input:focus,
+.enhanced-focus select:focus,
+.enhanced-focus textarea:focus {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3) !important;
+}
+
+/* High Contrast Mode Enhancements */
+.high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --border: 0 0% 50%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 80%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+}
+
+.high-contrast button,
+.high-contrast a,
+.high-contrast [role='button'] {
+    border: 2px solid hsl(var(--foreground));
+}
+
+.high-contrast input,
+.high-contrast select,
+.high-input textarea {
+    border: 2px solid hsl(var(--foreground));
+    background: hsl(var(--background));
+}
+
+.high-contrast .text-muted-foreground {
+    color: hsl(var(--foreground) / 0.9);
+}
+
+.high-contrast *:focus {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+}
+
+/* Reduced Motion */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* Skip Link for Keyboard Navigation */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 1rem 2rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 1rem;
+}
+
+/* Focus Visible Polyfill Styles */
+.focus-visible-polyfill:focus:not(.focus-visible) {
+    outline: none;
+}
+
+.focus-visible-polyfill.focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+}
+
+/* Minimum Touch Target Size (44x44) */
+.touch-target-min {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Keyboard Navigation Indicators */
+[role='menuitem']:focus,
+[role='option']:focus,
+[role='tab']:focus {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: -2px;
+    background: hsl(var(--accent) / 0.5);
+}
+
+/* Focus Trap Container */
+.focus-trap-container {
+    outline: none;
+}
+
+/* Live Region Announcements */
+#sr-announcements {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* High Contrast Focus Ring */
+@media (prefers-contrast: more) {
+    *:focus {
+        outline: 3px solid hsl(var(--primary)) !important;
+        outline-offset: 2px !important;
+    }
+}
+
+/* Forced Colors Mode (Windows High Contrast) */
+@media (forced-colors: active) {
+
+    .btn-primary,
+    .btn-ghost,
+    button,
+    a {
+        border: 1px solid currentColor;
+    }
+
+    .glass-card,
+    .premium-glass {
+        border: 1px solid currentColor;
+        backdrop-filter: none;
+    }
+
+    *:focus {
+        outline: 2px solid Highlight !important;
+    }
 }

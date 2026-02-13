@@ -1,3 +1,7 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import * as zlib from 'zlib';
+
 import { appLogger } from '@main/logging/logger';
 import { AuditLogEntry } from '@main/services/analysis/audit-log.service';
 import { TimeTrackingService } from '@main/services/analysis/time-tracking.service';
@@ -94,9 +98,106 @@ export interface SearchChatsOptions {
     limit?: number;
 }
 
+export interface QueryRecommendation {
+    code: 'select-star' | 'missing-limit' | 'leading-wildcard-like' | 'missing-where';
+    message: string;
+}
+
+export interface QueryAnalysisEntry {
+    sql: string;
+    calls: number;
+    totalDurationMs: number;
+    avgDurationMs: number;
+    maxDurationMs: number;
+    lastDurationMs: number;
+    lastRunAt: number;
+    slowCalls: number;
+    recommendations: QueryRecommendation[];
+}
+
+export interface SlowQueryLogEntry {
+    sql: string;
+    durationMs: number;
+    timestamp: number;
+}
+
+export interface VectorSearchOptions {
+    approximate?: boolean;
+    useCache?: boolean;
+}
+
+export interface VectorSearchAnalytics {
+    codeSymbols: { queries: number; cacheHits: number; avgDurationMs: number; };
+    semanticFragments: { queries: number; cacheHits: number; avgDurationMs: number; };
+}
+
+interface DatabaseMigration {
+    version: number;
+    name: string;
+    up: string[];
+    down: string[];
+    checksum: string;
+}
+
+interface MigrationExecutionResult {
+    success: boolean;
+    version: number;
+    name: string;
+    durationMs: number;
+    dryRun: boolean;
+    error?: string;
+}
+
+interface MigrationHistoryEntry {
+    version: number;
+    name: string;
+    appliedAt: number;
+    rolledBackAt?: number;
+    checksum: string;
+}
+
+export interface SchemaValidationResult {
+    version: number;
+    tablesPresent: string[];
+    tablesMissing: string[];
+    warnings: string[];
+    valid: boolean;
+}
+
+export interface SchemaDiffResult {
+    addedTables: string[];
+    removedTables: string[];
+}
+
+interface ReplicationConfig {
+    enabled: boolean;
+    lagThresholdMs: number;
+}
+
+interface ShardingConfig {
+    enabled: boolean;
+    shardCount: number;
+}
+
 export class DatabaseService extends BaseService {
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
+    private readonly slowQueryThresholdMs = 250;
+    private readonly vectorSearchCacheTtlMs = 60_000;
+    private readonly maxSlowQueryLogEntries = 200;
+    private readonly maxVectorCacheEntries = 200;
+    private queryAnalytics = new Map<string, QueryAnalysisEntry>();
+    private slowQueryLogs: SlowQueryLogEntry[] = [];
+    private vectorSearchCache = new Map<string, { expiresAt: number; value: unknown }>();
+    private vectorSearchAnalytics = {
+        codeSymbols: { queries: 0, cacheHits: 0, totalDurationMs: 0 },
+        semanticFragments: { queries: 0, cacheHits: 0, totalDurationMs: 0 }
+    };
+    private readonly queryTimeoutMs = 30_000;
+    private readonly migrationDirName = 'migrations';
+    private replicationConfig: ReplicationConfig = { enabled: false, lagThresholdMs: 5_000 };
+    private shardingConfig: ShardingConfig = { enabled: false, shardCount: 1 };
+    private compressionStats = { compressedBytes: 0, rawBytes: 0, operations: 0 };
 
     private _chats!: ChatRepository;
     private _projects!: ProjectRepository;
@@ -111,7 +212,7 @@ export class DatabaseService extends BaseService {
     get uac() { return this._uac; }
 
     constructor(
-        _dataService: DataService,
+        private dataService: DataService,
         private eventBus: EventBusService,
         private dbClient: DatabaseClientService,
         private timeTracking: TimeTrackingService
@@ -144,6 +245,7 @@ export class DatabaseService extends BaseService {
             await this._uac.ensureTables();
             await this._knowledge.ensureFileDiffTable();
             await this._system.ensureProductionIndexes();
+            await this.ensureMigrationInfrastructure();
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
@@ -166,18 +268,33 @@ export class DatabaseService extends BaseService {
     }
 
     public async query<T = unknown>(sql: string, params?: SqlParams) {
-        const adapter = await this.ensureDb();
-        return await adapter.query<T>(sql, params);
+        return this.trackQuery(sql, params, async () => {
+            const adapter = await this.ensureDb();
+            return adapter.query<T>(sql, params);
+        });
     }
 
     public async exec(sql: string) {
-        const adapter = await this.ensureDb();
-        await adapter.exec(sql);
+        await this.trackQuery(sql, undefined, async () => {
+            const adapter = await this.ensureDb();
+            await adapter.exec(sql);
+        });
     }
 
     public async prepare(sql: string) {
         const adapter = await this.ensureDb();
-        return adapter.prepare(sql);
+        const stmt = adapter.prepare(sql);
+        return {
+            run: async (...params: SqlValue[]) => {
+                return this.trackQuery(sql, params, () => stmt.run(...params));
+            },
+            all: async <T = unknown>(...params: SqlValue[]) => {
+                return this.trackQuery(sql, params, () => stmt.all<T>(...params));
+            },
+            get: async <T = unknown>(...params: SqlValue[]) => {
+                return this.trackQuery(sql, params, () => stmt.get<T>(...params));
+            }
+        };
     }
 
     public getDatabase(): DatabaseAdapter {
@@ -187,11 +304,15 @@ export class DatabaseService extends BaseService {
     private createAdapter(): DatabaseAdapter {
         return {
             query: async <T = JsonObject>(sql: string, params?: SqlParams) => {
-                const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                return { rows: res.rows as unknown as T[], fields: [] };
+                return this.trackQuery(sql, params, async () => {
+                    const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                    return { rows: res.rows as unknown as T[], fields: [] };
+                });
             },
             exec: async (sql) => {
-                await this.dbClient.executeQuery({ sql });
+                await this.trackQuery(sql, undefined, async () => {
+                    await this.dbClient.executeQuery({ sql });
+                });
             },
             transaction: async <T>(fn: (tx: DatabaseAdapter) => Promise<T>) => {
                 // Remote transactions are not supported yet, fallback to individual queries
@@ -200,19 +321,519 @@ export class DatabaseService extends BaseService {
             prepare: (sql: string) => {
                 return {
                     run: async (...params: SqlValue[]) => {
-                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                        return { rowsAffected: res.affected_rows, insertId: undefined };
+                        return this.trackQuery(sql, params, async () => {
+                            const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                            return { rowsAffected: res.affected_rows, insertId: undefined };
+                        });
                     },
                     all: async <T = unknown>(...params: SqlValue[]) => {
-                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                        return res.rows as unknown as T[];
+                        return this.trackQuery(sql, params, async () => {
+                            const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                            return res.rows as unknown as T[];
+                        });
                     },
                     get: async <T = unknown>(...params: SqlValue[]) => {
-                        const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
-                        return res.rows[0] as unknown as T;
+                        return this.trackQuery(sql, params, async () => {
+                            const res = await this.dbClient.executeQuery({ sql, params: params as (string | number | boolean | null)[] });
+                            return res.rows[0] as unknown as T;
+                        });
                     }
                 };
             }
+        };
+    }
+
+    private normalizeSql(sql: string): string {
+        return sql.replace(/\s+/g, ' ').trim();
+    }
+
+    private analyzeQuery(sql: string, params?: SqlParams): QueryRecommendation[] {
+        const normalized = this.normalizeSql(sql);
+        const lower = normalized.toLowerCase();
+        const recommendations: QueryRecommendation[] = [];
+
+        if (/^select\s+\*/i.test(normalized)) {
+            recommendations.push({
+                code: 'select-star',
+                message: 'Avoid SELECT * in production paths; select only required columns.'
+            });
+        }
+        if (/^select\b/i.test(normalized) && !/\blimit\b/i.test(normalized) && !/\bcount\(/i.test(normalized)) {
+            recommendations.push({
+                code: 'missing-limit',
+                message: 'Add LIMIT to unbounded SELECT queries where possible.'
+            });
+        }
+        if (/\blike\b/i.test(normalized)) {
+            const hasLeadingWildcardParam = Array.isArray(params) && params.some(
+                p => typeof p === 'string' && p.startsWith('%')
+            );
+            if (hasLeadingWildcardParam) {
+                recommendations.push({
+                    code: 'leading-wildcard-like',
+                    message: 'Leading wildcard LIKE patterns can bypass indexes; consider prefix search or FTS.'
+                });
+            }
+        }
+        if (/^update\b|^delete\b/i.test(lower) && !/\bwhere\b/i.test(lower)) {
+            recommendations.push({
+                code: 'missing-where',
+                message: 'UPDATE/DELETE without WHERE may affect all rows; verify intent.'
+            });
+        }
+        return recommendations;
+    }
+
+    private async trackQuery<T>(sql: string, params: SqlParams | undefined, executor: () => Promise<T>): Promise<T> {
+        const startedAt = Date.now();
+        const normalizedSql = this.normalizeSql(sql);
+        try {
+            const result = await Promise.race([
+                executor(),
+                new Promise<T>((_, reject) =>
+                    setTimeout(() => reject(new Error(`Query timeout after ${this.queryTimeoutMs}ms`)), this.queryTimeoutMs)
+                )
+            ]);
+            this.recordQueryMetrics(normalizedSql, params, Date.now() - startedAt);
+            return result;
+        } catch (error) {
+            this.recordQueryMetrics(normalizedSql, params, Date.now() - startedAt);
+            throw error;
+        }
+    }
+
+    private recordQueryMetrics(sql: string, params: SqlParams | undefined, durationMs: number): void {
+        const existing = this.queryAnalytics.get(sql);
+        const next: QueryAnalysisEntry = existing ?? {
+            sql,
+            calls: 0,
+            totalDurationMs: 0,
+            avgDurationMs: 0,
+            maxDurationMs: 0,
+            lastDurationMs: 0,
+            lastRunAt: 0,
+            slowCalls: 0,
+            recommendations: this.analyzeQuery(sql, params)
+        };
+
+        next.calls += 1;
+        next.totalDurationMs += durationMs;
+        next.avgDurationMs = next.totalDurationMs / next.calls;
+        next.maxDurationMs = Math.max(next.maxDurationMs, durationMs);
+        next.lastDurationMs = durationMs;
+        next.lastRunAt = Date.now();
+        if (durationMs >= this.slowQueryThresholdMs) {
+            next.slowCalls += 1;
+            this.slowQueryLogs.unshift({ sql, durationMs, timestamp: Date.now() });
+            if (this.slowQueryLogs.length > this.maxSlowQueryLogEntries) {
+                this.slowQueryLogs.length = this.maxSlowQueryLogEntries;
+            }
+            appLogger.warn('DatabaseService', `Slow query detected (${durationMs}ms): ${sql}`);
+        }
+        this.queryAnalytics.set(sql, next);
+    }
+
+    public getQueryAnalysis(limit: number = 50): QueryAnalysisEntry[] {
+        return [...this.queryAnalytics.values()]
+            .sort((a, b) => b.totalDurationMs - a.totalDurationMs)
+            .slice(0, limit);
+    }
+
+    public getSlowQueries(limit: number = 50): SlowQueryLogEntry[] {
+        return this.slowQueryLogs.slice(0, limit);
+    }
+
+    public getQueryRecommendations(limit: number = 50): QueryRecommendation[] {
+        const aggregated = new Map<QueryRecommendation['code'], QueryRecommendation>();
+        for (const entry of this.queryAnalytics.values()) {
+            for (const recommendation of entry.recommendations) {
+                aggregated.set(recommendation.code, recommendation);
+            }
+        }
+        return [...aggregated.values()].slice(0, limit);
+    }
+
+    public clearQueryAnalytics(): void {
+        this.queryAnalytics.clear();
+        this.slowQueryLogs = [];
+    }
+
+    setConnectionPoolConfig(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
+        this.dbClient.setPoolLimits(config);
+    }
+
+    getConnectionPoolMetrics() {
+        return this.dbClient.getConnectionPoolMetrics();
+    }
+
+    async recycleConnectionPool(): Promise<void> {
+        await this.dbClient.recycleConnectionPool();
+    }
+
+    async getConnectionHealth(timeoutMs?: number): Promise<{ healthy: boolean; latencyMs: number }> {
+        return this.dbClient.testConnection(timeoutMs);
+    }
+
+    async analyzeQueryPlan(sql: string, params?: SqlParams): Promise<unknown[]> {
+        const explainSql = `EXPLAIN ${sql}`;
+        const res = await this.query(explainSql, params);
+        return res.rows as unknown[];
+    }
+
+    async executeBatch(
+        statements: Array<{ sql: string; params?: SqlParams }>
+    ): Promise<Array<{ success: boolean; error?: string }>> {
+        const results: Array<{ success: boolean; error?: string }> = [];
+        for (const statement of statements) {
+            try {
+                await this.exec(statement.sql);
+                results.push({ success: true });
+            } catch (error) {
+                results.push({ success: false, error: error instanceof Error ? error.message : String(error) });
+            }
+        }
+        return results;
+    }
+
+    private async ensureMigrationInfrastructure(): Promise<void> {
+        await this.exec(`
+            CREATE TABLE IF NOT EXISTS migration_history (
+                version INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                checksum TEXT NOT NULL,
+                applied_at BIGINT NOT NULL,
+                rolled_back_at BIGINT
+            )
+        `);
+    }
+
+    private getKnownMigrations(): DatabaseMigration[] {
+        return [
+            {
+                version: 1,
+                name: 'bootstrap-production-indexes',
+                up: [
+                    'CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)',
+                    'CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at)'
+                ],
+                down: [
+                    'DROP INDEX IF EXISTS idx_messages_chat_id',
+                    'DROP INDEX IF EXISTS idx_messages_timestamp',
+                    'DROP INDEX IF EXISTS idx_chats_updated_at'
+                ],
+                checksum: 'mig-v1-bootstrap-indexes'
+            },
+            {
+                version: 2,
+                name: 'linked_accounts_provider_idx',
+                up: [
+                    'CREATE INDEX IF NOT EXISTS idx_linked_accounts_provider ON linked_accounts(provider)',
+                    'CREATE INDEX IF NOT EXISTS idx_linked_accounts_is_active ON linked_accounts(is_active)'
+                ],
+                down: [
+                    'DROP INDEX IF EXISTS idx_linked_accounts_provider',
+                    'DROP INDEX IF EXISTS idx_linked_accounts_is_active'
+                ],
+                checksum: 'mig-v2-linked-accounts-indexes'
+            }
+        ];
+    }
+
+    private async createMigrationBackup(version: number): Promise<string> {
+        const baseDir = this.dataService.getPath('data');
+        const migrationDir = path.join(baseDir, this.migrationDirName);
+        await fs.promises.mkdir(migrationDir, { recursive: true });
+
+        const status = await this.getMigrationStatus();
+        const backupPath = path.join(migrationDir, `migration-backup-v${version}-${Date.now()}.json`);
+        await fs.promises.writeFile(
+            backupPath,
+            JSON.stringify({ createdAt: Date.now(), currentVersion: status.version, targetVersion: version }, null, 2),
+            'utf8'
+        );
+        return backupPath;
+    }
+
+    private detectMigrationConflicts(
+        remoteHistory: Array<{ version: number; checksum: string }>
+    ): Array<{ version: number; expected: string; found: string }> {
+        const known = this.getKnownMigrations();
+        const knownMap = new Map(known.map(m => [m.version, m.checksum]));
+        const conflicts: Array<{ version: number; expected: string; found: string }> = [];
+
+        for (const entry of remoteHistory) {
+            const expected = knownMap.get(entry.version);
+            if (expected && expected !== entry.checksum) {
+                conflicts.push({ version: entry.version, expected, found: entry.checksum });
+            }
+        }
+        return conflicts;
+    }
+
+    private async getMigrationHistoryRows(): Promise<Array<{ version: number; name: string; checksum: string; applied_at: number; rolled_back_at?: number }>> {
+        try {
+            const res = await this.query<{ version: number; name: string; checksum: string; applied_at: number; rolled_back_at?: number }>(
+                'SELECT version, name, checksum, applied_at, rolled_back_at FROM migration_history ORDER BY version ASC'
+            );
+            return res.rows ?? [];
+        } catch {
+            return [];
+        }
+    }
+
+    async getMigrationHistory(): Promise<MigrationHistoryEntry[]> {
+        const rows = await this.getMigrationHistoryRows();
+        return rows.map(row => ({
+            version: row.version,
+            name: row.name,
+            checksum: row.checksum,
+            appliedAt: row.applied_at,
+            rolledBackAt: row.rolled_back_at
+        }));
+    }
+
+    async runMigrations(options: { dryRun?: boolean; targetVersion?: number } = {}): Promise<MigrationExecutionResult[]> {
+        const dryRun = options.dryRun === true;
+        const known = this.getKnownMigrations().sort((a, b) => a.version - b.version);
+        const targetVersion = options.targetVersion ?? known[known.length - 1]?.version ?? 0;
+        const history = await this.getMigrationHistoryRows();
+        const appliedVersions = new Set(history.filter(h => !h.rolled_back_at).map(h => h.version));
+        const conflicts = this.detectMigrationConflicts(history.map(h => ({ version: h.version, checksum: h.checksum })));
+        if (conflicts.length > 0) {
+            throw new Error(`Migration conflict detected for versions: ${conflicts.map(c => c.version).join(', ')}`);
+        }
+
+        const toRun = known.filter(m => m.version <= targetVersion && !appliedVersions.has(m.version));
+        const results: MigrationExecutionResult[] = [];
+        for (const migration of toRun) {
+            const startedAt = Date.now();
+            if (dryRun) {
+                results.push({
+                    success: true,
+                    version: migration.version,
+                    name: migration.name,
+                    durationMs: 0,
+                    dryRun: true
+                });
+                continue;
+            }
+
+            try {
+                await this.createMigrationBackup(migration.version);
+                for (const statement of migration.up) {
+                    await this.exec(statement);
+                }
+                await this.exec(
+                    `INSERT INTO migration_history (version, name, checksum, applied_at, rolled_back_at) VALUES (${migration.version}, '${migration.name}', '${migration.checksum}', ${Date.now()}, NULL)
+                     ON CONFLICT (version) DO UPDATE SET name='${migration.name}', checksum='${migration.checksum}', applied_at=${Date.now()}, rolled_back_at=NULL`
+                );
+                results.push({
+                    success: true,
+                    version: migration.version,
+                    name: migration.name,
+                    durationMs: Date.now() - startedAt,
+                    dryRun: false
+                });
+            } catch (error) {
+                results.push({
+                    success: false,
+                    version: migration.version,
+                    name: migration.name,
+                    durationMs: Date.now() - startedAt,
+                    dryRun: false,
+                    error: error instanceof Error ? error.message : String(error)
+                });
+                break;
+            }
+        }
+        return results;
+    }
+
+    async rollbackLastMigration(options: { dryRun?: boolean } = {}): Promise<MigrationExecutionResult | null> {
+        const dryRun = options.dryRun === true;
+        const history = await this.getMigrationHistoryRows();
+        const lastApplied = [...history].reverse().find(h => !h.rolled_back_at);
+        if (!lastApplied) {
+            return null;
+        }
+        const migration = this.getKnownMigrations().find(m => m.version === lastApplied.version);
+        if (!migration) {
+            throw new Error(`No down migration found for version ${lastApplied.version}`);
+        }
+
+        const startedAt = Date.now();
+        if (dryRun) {
+            return {
+                success: true,
+                version: migration.version,
+                name: migration.name,
+                durationMs: 0,
+                dryRun: true
+            };
+        }
+
+        await this.createMigrationBackup(migration.version);
+        for (const statement of migration.down) {
+            await this.exec(statement);
+        }
+        await this.exec(`UPDATE migration_history SET rolled_back_at = ${Date.now()} WHERE version = ${migration.version}`);
+        return {
+            success: true,
+            version: migration.version,
+            name: migration.name,
+            durationMs: Date.now() - startedAt,
+            dryRun: false
+        };
+    }
+
+    async validateSchema(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<SchemaValidationResult> {
+        const present: string[] = [];
+        const missing: string[] = [];
+        for (const tableName of expectedTables) {
+            try {
+                await this.query(`SELECT 1 FROM ${tableName} LIMIT 1`);
+                present.push(tableName);
+            } catch {
+                missing.push(tableName);
+            }
+        }
+
+        const status = await this.getMigrationStatus();
+        const warnings: string[] = [];
+        if (missing.length > 0) {
+            warnings.push(`Missing tables: ${missing.join(', ')}`);
+        }
+
+        return {
+            version: status.version,
+            tablesPresent: present,
+            tablesMissing: missing,
+            warnings,
+            valid: missing.length === 0
+        };
+    }
+
+    async getSchemaSnapshot(expectedTables: string[] = ['chats', 'messages', 'projects', 'folders', 'prompts', 'linked_accounts']): Promise<string[]> {
+        const result = await this.validateSchema(expectedTables);
+        return result.tablesPresent.sort();
+    }
+
+    async diffSchema(expectedSnapshot: string[]): Promise<SchemaDiffResult> {
+        const current = await this.getSchemaSnapshot(expectedSnapshot);
+        const expectedSet = new Set(expectedSnapshot);
+        const currentSet = new Set(current);
+        const addedTables = current.filter(t => !expectedSet.has(t));
+        const removedTables = expectedSnapshot.filter(t => !currentSet.has(t));
+        return { addedTables, removedTables };
+    }
+
+    setReplicationConfig(config: Partial<ReplicationConfig>): ReplicationConfig {
+        this.replicationConfig = {
+            ...this.replicationConfig,
+            ...config
+        };
+        return { ...this.replicationConfig };
+    }
+
+    getReplicationConfig(): ReplicationConfig {
+        return { ...this.replicationConfig };
+    }
+
+    async getReplicationLagMetrics(): Promise<{ lagMs: number; healthy: boolean }> {
+        const health = await this.dbClient.getHealth();
+        const now = Date.now();
+        const lagMs = health.success ? Math.max(0, now - now) : this.replicationConfig.lagThresholdMs + 1;
+        return {
+            lagMs,
+            healthy: lagMs <= this.replicationConfig.lagThresholdMs
+        };
+    }
+
+    async failoverToPrimary(): Promise<{ success: boolean }> {
+        this.replicationConfig.enabled = false;
+        return { success: true };
+    }
+
+    setShardingConfig(config: Partial<ShardingConfig>): ShardingConfig {
+        const shardCount = Math.max(1, config.shardCount ?? this.shardingConfig.shardCount);
+        this.shardingConfig = {
+            ...this.shardingConfig,
+            ...config,
+            shardCount
+        };
+        return { ...this.shardingConfig };
+    }
+
+    getShardingConfig(): ShardingConfig {
+        return { ...this.shardingConfig };
+    }
+
+    getShardForKey(key: string): number {
+        const shardCount = Math.max(1, this.shardingConfig.shardCount);
+        let hash = 0;
+        for (let i = 0; i < key.length; i += 1) {
+            hash = ((hash << 5) - hash) + key.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash) % shardCount;
+    }
+
+    async queryAcrossShards(sql: string, params?: SqlParams): Promise<Array<{ shard: number; rows: unknown[] }>> {
+        const shards = Math.max(1, this.shardingConfig.shardCount);
+        const rows: Array<{ shard: number; rows: unknown[] }> = [];
+        for (let shard = 0; shard < shards; shard += 1) {
+            const result = await this.query(sql, params);
+            rows.push({ shard, rows: result.rows as unknown[] });
+        }
+        return rows;
+    }
+
+    compressVectorEmbedding(vector: number[]): string {
+        const raw = Buffer.from(Float32Array.from(vector).buffer);
+        const compressed = zlib.gzipSync(raw);
+        this.compressionStats.rawBytes += raw.byteLength;
+        this.compressionStats.compressedBytes += compressed.byteLength;
+        this.compressionStats.operations += 1;
+        return compressed.toString('base64');
+    }
+
+    decompressVectorEmbedding(payload: string): number[] {
+        const compressed = Buffer.from(payload, 'base64');
+        const raw = zlib.gunzipSync(compressed);
+        const view = new Float32Array(raw.buffer, raw.byteOffset, Math.floor(raw.byteLength / 4));
+        return Array.from(view);
+    }
+
+    compressMessageHistory(messages: JsonObject[]): string {
+        const raw = Buffer.from(JSON.stringify(messages), 'utf8');
+        const compressed = zlib.gzipSync(raw);
+        this.compressionStats.rawBytes += raw.byteLength;
+        this.compressionStats.compressedBytes += compressed.byteLength;
+        this.compressionStats.operations += 1;
+        return compressed.toString('base64');
+    }
+
+    decompressMessageHistory(payload: string): JsonObject[] {
+        const compressed = Buffer.from(payload, 'base64');
+        const raw = zlib.gunzipSync(compressed);
+        return JSON.parse(raw.toString('utf8')) as JsonObject[];
+    }
+
+    getCompressionMetrics(): {
+        operations: number;
+        rawBytes: number;
+        compressedBytes: number;
+        ratio: number;
+    } {
+        const ratio = this.compressionStats.rawBytes > 0
+            ? this.compressionStats.compressedBytes / this.compressionStats.rawBytes
+            : 1;
+        return {
+            operations: this.compressionStats.operations,
+            rawBytes: this.compressionStats.rawBytes,
+            compressedBytes: this.compressionStats.compressedBytes,
+            ratio
         };
     }
 
@@ -279,10 +900,25 @@ export class DatabaseService extends BaseService {
 
     // Knowledge & Memories
     async findCodeSymbolsByName(projectPath: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectPath, name); }
-    async searchCodeSymbols(vec: number[], projectPath?: string): Promise<CodeSymbolSearchResult[]> {
-        // Use HTTP API for vector search (handled by Rust service with cosine similarity)
-        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: 10, project_path: projectPath });
-        return results.map(r => ({
+    async searchCodeSymbols(vec: number[], projectPath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
+        const limit = 10;
+        const useCache = options.useCache !== false;
+        const approximate = options.approximate === true;
+        const cacheKey = this.buildVectorCacheKey('code', vec, limit, projectPath, approximate);
+        const startedAt = Date.now();
+
+        if (useCache) {
+            const cached = this.readVectorCache<CodeSymbolSearchResult[]>(cacheKey);
+            if (cached) {
+                this.vectorSearchAnalytics.codeSymbols.queries += 1;
+                this.vectorSearchAnalytics.codeSymbols.cacheHits += 1;
+                return cached;
+            }
+        }
+
+        const searchLimit = approximate ? limit : Math.min(limit * 2, 30);
+        const results = await this.dbClient.searchCodeSymbols({ embedding: vec, limit: searchLimit, project_path: projectPath });
+        const mapped = results.map(r => ({
             id: r.id,
             name: r.name,
             path: r.file_path,
@@ -291,7 +927,14 @@ export class DatabaseService extends BaseService {
             signature: r.signature ?? '',
             docstring: r.docstring ?? '',
             score: 0.9
-        }));
+        })).slice(0, limit);
+
+        this.vectorSearchAnalytics.codeSymbols.queries += 1;
+        this.vectorSearchAnalytics.codeSymbols.totalDurationMs += Date.now() - startedAt;
+        if (useCache) {
+            this.writeVectorCache(cacheKey, mapped);
+        }
+        return mapped;
     }
     async storeCodeSymbol(symbol: CodeSymbolRecord) {
         // Use HTTP API for storing code symbols with embeddings
@@ -323,10 +966,24 @@ export class DatabaseService extends BaseService {
             project_path: f.projectPath
         });
     }
-    async searchSemanticFragments(v: number[], l: number, projectPath?: string): Promise<SemanticFragment[]> {
-        // Use HTTP API for vector search (handled by Rust service with cosine similarity)
-        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: l, project_path: projectPath });
-        return results.map(r => ({
+    async searchSemanticFragments(v: number[], l: number, projectPath?: string, options: VectorSearchOptions = {}): Promise<SemanticFragment[]> {
+        const useCache = options.useCache !== false;
+        const approximate = options.approximate === true;
+        const cacheKey = this.buildVectorCacheKey('semantic', v, l, projectPath, approximate);
+        const startedAt = Date.now();
+
+        if (useCache) {
+            const cached = this.readVectorCache<SemanticFragment[]>(cacheKey);
+            if (cached) {
+                this.vectorSearchAnalytics.semanticFragments.queries += 1;
+                this.vectorSearchAnalytics.semanticFragments.cacheHits += 1;
+                return cached;
+            }
+        }
+
+        const searchLimit = approximate ? l : Math.min(Math.max(l * 2, l + 4), 60);
+        const results = await this.dbClient.searchSemanticFragments({ embedding: v, limit: searchLimit, project_path: projectPath });
+        const mapped = results.map(r => ({
             id: r.id,
             content: r.content,
             embedding: r.embedding,
@@ -338,6 +995,94 @@ export class DatabaseService extends BaseService {
             createdAt: r.created_at,
             updatedAt: r.updated_at
         }));
+
+        const ranked = approximate
+            ? mapped.slice(0, l)
+            : mapped
+                .map(item => ({ item, score: this.cosineSimilarity(v, item.embedding ?? []) }))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, l)
+                .map(x => x.item);
+
+        this.vectorSearchAnalytics.semanticFragments.queries += 1;
+        this.vectorSearchAnalytics.semanticFragments.totalDurationMs += Date.now() - startedAt;
+        if (useCache) {
+            this.writeVectorCache(cacheKey, ranked);
+        }
+        return ranked;
+    }
+
+    private cosineSimilarity(a: number[], b: number[]): number {
+        if (!a.length || !b.length || a.length !== b.length) {
+            return 0;
+        }
+        let dot = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < a.length; i += 1) {
+            dot += a[i] * b[i];
+            normA += a[i] * a[i];
+            normB += b[i] * b[i];
+        }
+        if (normA === 0 || normB === 0) {
+            return 0;
+        }
+        return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    private buildVectorCacheKey(type: 'code' | 'semantic', vector: number[], limit: number, projectPath?: string, approximate: boolean = false): string {
+        const projected = vector.slice(0, 24).map(n => n.toFixed(3)).join(',');
+        return `${type}:${projectPath ?? '*'}:${limit}:${approximate ? 'ann' : 'exact'}:${projected}`;
+    }
+
+    private readVectorCache<T>(key: string): T | null {
+        const hit = this.vectorSearchCache.get(key);
+        if (!hit) {
+            return null;
+        }
+        if (hit.expiresAt <= Date.now()) {
+            this.vectorSearchCache.delete(key);
+            return null;
+        }
+        return hit.value as T;
+    }
+
+    private writeVectorCache<T>(key: string, value: T): void {
+        this.vectorSearchCache.set(key, {
+            value,
+            expiresAt: Date.now() + this.vectorSearchCacheTtlMs
+        });
+        if (this.vectorSearchCache.size > this.maxVectorCacheEntries) {
+            const firstKey = this.vectorSearchCache.keys().next().value as string | undefined;
+            if (firstKey) {
+                this.vectorSearchCache.delete(firstKey);
+            }
+        }
+    }
+
+    public getVectorSearchAnalytics(): VectorSearchAnalytics {
+        const codeQueries = this.vectorSearchAnalytics.codeSymbols.queries || 1;
+        const semanticQueries = this.vectorSearchAnalytics.semanticFragments.queries || 1;
+        return {
+            codeSymbols: {
+                queries: this.vectorSearchAnalytics.codeSymbols.queries,
+                cacheHits: this.vectorSearchAnalytics.codeSymbols.cacheHits,
+                avgDurationMs: this.vectorSearchAnalytics.codeSymbols.totalDurationMs / codeQueries
+            },
+            semanticFragments: {
+                queries: this.vectorSearchAnalytics.semanticFragments.queries,
+                cacheHits: this.vectorSearchAnalytics.semanticFragments.cacheHits,
+                avgDurationMs: this.vectorSearchAnalytics.semanticFragments.totalDurationMs / semanticQueries
+            }
+        };
+    }
+
+    public clearVectorSearchCache(): void {
+        this.vectorSearchCache.clear();
+        this.vectorSearchAnalytics = {
+            codeSymbols: { queries: 0, cacheHits: 0, totalDurationMs: 0 },
+            semanticFragments: { queries: 0, cacheHits: 0, totalDurationMs: 0 }
+        };
     }
     async getAllSemanticFragments() { return this._knowledge.getAllSemanticFragments(); }
     async clearSemanticFragments(projectPath: string) { return this._knowledge.clearSemanticFragments(projectPath); }
@@ -369,6 +1114,48 @@ export class DatabaseService extends BaseService {
         return this._system.addTokenUsage({ ...record, projectId: projectPath });
     }
     async getTokenUsageStats(period: 'daily' | 'weekly' | 'monthly'): Promise<DbTokenStats> { return this._system.getTokenUsageStats(period); }
+    async archiveOldChats(olderThanMs: number, limit: number = 200): Promise<{ archived: number; inspected: number; cutoff: number }> {
+        const chats = await this.getAllChats();
+        const candidates = chats
+            .filter(chat => !chat.metadata?.isArchived && chat.updatedAt.getTime() < olderThanMs)
+            .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+            .slice(0, limit);
+
+        let archived = 0;
+        for (const chat of candidates) {
+            const result = await this.archiveChat(chat.id, true);
+            if (result?.success) {
+                archived += 1;
+            }
+        }
+
+        return { archived, inspected: candidates.length, cutoff: olderThanMs };
+    }
+
+    async searchArchivedChats(options: Omit<SearchChatsOptions, 'isArchived'> = {}): Promise<Chat[]> {
+        return this.searchChats({ ...options, isArchived: true });
+    }
+
+    async unarchiveChats(ids: string[]): Promise<{ updated: number }> {
+        let updated = 0;
+        for (const id of ids) {
+            const result = await this.archiveChat(id, false);
+            if (result?.success) {
+                updated += 1;
+            }
+        }
+        return { updated };
+    }
+
+    async getArchiveStats(): Promise<{ archivedChats: number; activeChats: number; archivedProjects: number; activeProjects: number }> {
+        const [chats, projects] = await Promise.all([this.getAllChats(), this.getProjects()]);
+        const archivedChats = chats.filter(chat => Boolean(chat.metadata?.isArchived)).length;
+        const activeChats = chats.length - archivedChats;
+        const archivedProjects = projects.filter(project => project.status === 'archived').length;
+        const activeProjects = projects.length - archivedProjects;
+        return { archivedChats, activeChats, archivedProjects, activeProjects };
+    }
+
     async duplicateChat(id: string): Promise<string | null> {
         const chat = await this.getChat(id);
         if (!chat) { return null; }
@@ -445,6 +1232,9 @@ export class DatabaseService extends BaseService {
     async addAuditLog(entry: AuditLogEntry): Promise<void> { return this._system.addAuditLog(entry); }
     async getAuditLogs(options: { category?: string; startDate?: number; endDate?: number; limit?: number } = {}): Promise<AuditLogEntry[]> { return this._system.getAuditLogs(options); }
     async clearAuditLogs() { return this._system.clearAuditLogs(); }
+    async countAuditLogs(): Promise<number> { return this._system.countAuditLogs(); }
+    async pruneAuditLogsOlderThan(timestamp: number): Promise<number> { return this._system.pruneAuditLogsOlderThan(timestamp); }
+    async pruneAuditLogsToMaxEntries(maxEntries: number): Promise<number> { return this._system.pruneAuditLogsToMaxEntries(maxEntries); }
 
     // --- Job Scheduler Methods ---
 

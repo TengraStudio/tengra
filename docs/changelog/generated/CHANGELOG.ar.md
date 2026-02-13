@@ -1,5 +1,74 @@
 # سجل التغييرات
 
+## [2026-02-13]
+
+### تمت إضافة التحقق من صحة الملفات المرفوعة
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: أمان محسّن للملفات المرفوعة مع التحقق من النوع والحجم وحظر الامتدادات الخطيرة.
+
+- تمت إضافة قائمة بيضاء لأنواع الملفات: نص وJSON وصور ومستندات شائعة.
+- تم تطبيق حد أقصى 10 ميجابايت للملفات لمنع هجمات الحرمان من الخدمة.
+- تمت إضافة حظر الامتدادات الخطيرة (.exe و.bat و.sh و.ps1 وما إلى ذلك).
+- يتم عرض إشعار خطأ عند إسقاط ملفات غير صالحة.
+
+### تمت إضافة التحقق من صحة الملفات المرفوعة
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: أمان محسّن للملفات المرفوعة مع التحقق من النوع والحجم وحظر الامتدادات الخطيرة.
+
+- تمت إضافة قائمة بيضاء لأنواع الملفات: نص وJSON وصور ومستندات شائعة.
+- تم تطبيق حد أقصى 10 ميجابايت للملفات لمنع هجمات الحرمان من الخدمة.
+- تمت إضافة حظر الامتدادات الخطيرة (.exe و.bat و.sh و.ps1 وما إلى ذلك).
+- يتم عرض إشعار خطأ عند إسقاط ملفات غير صالحة.
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### IPC Handler توسيع الاختبارات وإصلاح TEST-01
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: تم حل اختبار TEST-01 (اختبار استئناف نقطة التفتيش) وإكمال تغطية اختبار IPC لقاعدة البيانات ووكيل المشروع handlers.
+
+- **الاختبارات**: تم إصلاح عدم تطابق توقع `agent-executor.service.test.ts` في اختبار استئناف نقطة التفتيش.
+- **IPC التغطية**: تم إنشاء `db.integration.test.ts` يغطي الدردشة والمشروع والمجلد handlers.
+- **IPC التغطية**: تم إنشاء `project-agent.integration.test.ts` يغطي البداية والإيقاف والحالة وHIL handlers.
+- **ذكاء الكود**: تم إصلاح عدم تطابق نوع معلمة TypeScript في `code-intelligence.integration.test.ts`.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### دقة عد الرموز المحسنة
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تم دمج js-tiktoken لتقدير دقيق للرموز عبر نماذج GPT و Claude و Llama.
+
+دمج `js-tiktoken` لترميز دقيق لغرض cl100k_base و o200k_base.
+تحسين إدارة نافذة السياق مع حدود نموذج دقيقة لكبار مزودي LLM.
+الحفاظ على البدائل القائمة على الاستدلال للنماذج غير المدعومة لضمان استمرارية التقدير.
+إضافة اختبارات وحدة شاملة للتحقق من دقة عد الرموز لمختلف النماذج.
+
 ## [2026-02-12]
 
 ### توسيع اختبارات معالج IPC - الدفعة 4
@@ -158,12 +227,12 @@
 - **Status**: completed
 - **Summary**: تنفيذ تدقيق كامل مع إعادة هيكلة وتوثيق على 8 ملفات ضمن `src/main/api` و`src/main/core`.
 
-- [x] **Dead Code Cleanup**: Deleted `api-auth.middleware.ts` and `api-router.ts` (100% commented-out, no live imports).
-- [x] **JSDoc**: Added comprehensive JSDoc (`@param`/`@returns`/`@throws`) to `circuit-breaker.ts`, `container.ts`, `lazy-services.ts`, `service-registry.ts`, `repository.interface.ts`, and `api-server.service.ts`.
-- [x] **Type Safety**: Added explicit return types to private methods in `circuit-breaker.ts`, `service-registry.ts`, and `lazy-services.ts`. Documented intentional `unknown` map usage.
-- [x] **Pagination Types**: Added `PaginationOptions` and `PaginatedResult<T>` interfaces to `repository.interface.ts`.
-- [x] **Observability**: Uncommented load-time logging in `lazy-services.ts` for service startup visibility.
-- [x] **New Tests**: Created `lazy-services.test.ts` (7 tests) and `service-registry.test.ts` (9 tests) — all 30 core tests pass.
+- [x] **تنظيف الكود الميت**: تم حذف `api-auth.middleware.ts` و`api-router.ts` (تم التعليق عليه بنسبة 100%، ولا توجد عمليات استيراد مباشرة).
+- [x] **JSDoc**: تمت إضافة JSDoc الشامل (`@param`/`@returns`/`@throws`) إلى `circuit-breaker.ts`، `container.ts`، `lazy-services.ts`، `service-registry.ts`، `repository.interface.ts`، ​​و`api-server.service.ts`.
+- [x] **أمان النوع**: تمت إضافة أنواع الإرجاع الصريحة إلى الأساليب الخاصة في `circuit-breaker.ts`، و`service-registry.ts`، و`lazy-services.ts`. توثيق الاستخدام المتعمد لخريطة `unknown`.
+- [x] **أنواع ترقيم الصفحات**: تمت إضافة الواجهات `PaginationOptions` و`PaginatedResult<T>` إلى `repository.interface.ts`.
+- [x] **قابلية المراقبة**: تسجيل دخول غير مُعلق في وقت التحميل `lazy-services.ts` لرؤية بدء تشغيل الخدمة.
+- [x] **الاختبارات الجديدة**: تم إنشاء `lazy-services.test.ts` (7 اختبارات) و`service-registry.test.ts` (9 اختبارات) - تم اجتياز جميع الاختبارات الأساسية الثلاثين.
 
 ### إصلاح بناء Go Proxy
 
@@ -171,9 +240,9 @@
 - **Status**: completed
 - **Summary**: تم حل أخطاء بناء Go في البروكسي المضمن الناتجة عن متغيرات "declared and not used".
 
-- [x] **Watcher Fix**: Added debug logging for `totalNewClients` in `internal/watcher/clients.go`.
-- [x] **Server Fix**: Added debug logging for `total` in `internal/api/server.go`.
-- [x] **Build Verification**: Confirmed successful build of `cliproxy-embed.exe` using `node scripts/build-native.js`.
+- [x] **إصلاح المراقب**: تمت إضافة تسجيل التصحيح لـ `totalNewClients` في `internal/watcher/clients.go`.
+- [x] **إصلاح الخادم**: تمت إضافة تسجيل التصحيح لـ `total` في `internal/api/server.go`.
+- [x] **التحقق من الإصدار**: تم تأكيد نجاح إنشاء `cliproxy-embed.exe` باستخدام `node scripts/build-native.js`.
 
 ### تدقيق IPC الجزء 1 (أول 10 ملفات)
 
@@ -181,10 +250,10 @@
 - **Status**: completed
 - **Summary**: تم تدقيق أول 10 ملفات لمعالجات IPC في `src/main/ipc` مع التوثيق وإعادة الهيكلة.
 
-- [x] **Refactoring**: Converted `agent.ts`, `brain.ts`, `code-intelligence.ts`, and `advanced-memory.ts` to use `createSafeIpcHandler` / `createIpcHandler` for robust error handling and logging.
-- [x] **Type Safety**: Fixed strict type issues, added explicit generics to IPC wrappers (e.g., `createSafeIpcHandler<void>`), and ensured no `any` usage in modified files.
-- [x] **Documentation**: Added JSDoc to all exported `register...` functions and key classes in `auth.ts`, `chat.ts`, `db.ts`, `audit.ts`, `backup.ts`, and `collaboration.ts`.
-- [x] **Standardization**: Unified error response shapes where possible, while preserving legacy error behaviors for complex handlers (e.g., `advancedMemory:deleteMany`).
+- [x] **إعادة البناء**: تم تحويل `agent.ts`، و`brain.ts`، و`code-intelligence.ts`، و`advanced-memory.ts` لاستخدام `createSafeIpcHandler` / `createIpcHandler` لمعالجة الأخطاء وتسجيلها بشكل فعال.
+- [x] **أمان النوع**: تم إصلاح مشكلات النوع الصارمة، وإضافة عامة صريحة إلى IPC wrappers (على سبيل المثال، `createSafeIpcHandler<void>`)، وضمان عدم استخدام `any` في الملفات المعدلة.
+- [x] **الوثائق**: تمت إضافة JSDoc إلى جميع وظائف `register...` والفئات الرئيسية المصدرة في `auth.ts`، `chat.ts`، `db.ts`، `audit.ts`، `backup.ts`، و`collaboration.ts`.
+- [x] **التوحيد القياسي**: أشكال موحدة للاستجابة للأخطاء حيثما أمكن ذلك، مع الحفاظ على سلوكيات الأخطاء القديمة لـ handlers المعقدة (على سبيل المثال، `advancedMemory:deleteMany`).
 
 ### تقوية أمن IPC الجزء 2
 
@@ -205,13 +274,13 @@
 - **Status**: completed
 - **Summary**: تمت إزالة جميع تحذيرات وأخطاء ESLint عبر قاعدة الشفرة (114 -> 0).
 
-- [x] **Nullish Coalescing**: Replaced `||` with `??` across `mcp-marketplace.ts` (5), `mcp-marketplace.service.ts` (7), `MCPStore.tsx` (1).
-- [x] **Unnecessary Conditions**: Removed redundant optional chains on required properties in `mcp-marketplace.service.ts`.
-- [x] **Type Safety**: Replaced `any[]` rest params with properly typed `Error` param in `agent-task-executor.ts`.
-- [x] **Non-null Assertions**: Replaced `config!` with guard clauses in `agent-task-executor.ts`.
-- [x] **Optional Chains**: Restructured condition in `getModelConfig` to use optional chaining properly.
-- [x] **Import Sorting**: Auto-fixed imports in `cost-estimation.service.ts` and `ExecutionPlanView.tsx`.
-- [x] **Unused Variables**: Removed unused catch variable in `agent-task-executor.ts`.
+- [x] **الدمج الفارغ**: تم استبدال `||` بـ `??` عبر `mcp-marketplace.ts` (5)، `mcp-marketplace.service.ts` (7)، `MCPStore.tsx` (1).
+- [x] **الشروط غير الضرورية**: تمت إزالة السلاسل الاختيارية المتكررة على الخصائص المطلوبة في `mcp-marketplace.service.ts`.
+- [x] **سلامة النوع**: تم استبدال معلمات الراحة `any[]` بمعلمة `Error` المكتوبة بشكل صحيح في `agent-task-executor.ts`.
+- [x] **التأكيدات غير الفارغة**: تم استبدال `config!` بعبارات الحماية في `agent-task-executor.ts`.
+- [x] **السلاسل الاختيارية**: حالة مُعاد هيكلتها في `getModelConfig` لاستخدام التسلسل الاختياري بشكل صحيح.
+- [x] **فرز الاستيراد**: عمليات الاستيراد التي تم إصلاحها تلقائيًا في `cost-estimation.service.ts` و`ExecutionPlanView.tsx`.
+- [x] **المتغيرات غير المستخدمة**: تمت إزالة متغير الصيد غير المستخدم في `agent-task-executor.ts`.
 
 ### بنية LLM والتعريب
 
@@ -219,10 +288,10 @@
 - **Status**: completed
 - **Summary**: تم توحيد ملفات LLM الثنائية وتعريب رسائل النظام/الأدوات من التركية إلى الإنجليزية.
 
-- [x] **Binary Consolidation**: Moved `llama-server.exe` to `resources/bin/` and updated `LlamaService` to use the standardized path.
-- [x] **Internationalization**: Translated `Ollama` startup dialogs, `Chat` system prompts, and `Tool` definitions from Turkish to English across 6 core services.
-- [x] **Service Reliability**: Fixed missing resource logic and resource disposal in `PerformanceMonitorService`.
-- [x] **Standardization**: Both Go (`cliproxy-embed`) and C++ (`llama-server`) binaries now reside in `resources/bin/`.
+- [x] **الدمج الثنائي**: تم نقل `llama-server.exe` إلى `resources/bin/` وتحديث `LlamaService` لاستخدام المسار الموحد.
+- [x] **التدويل**: مربعات حوار بدء التشغيل المترجمة `Ollama` ومطالبات النظام `Chat` وتعريفات `Tool` من التركية إلى الإنجليزية عبر 6 خدمات أساسية.
+- [x] **موثوقية الخدمة**: تم إصلاح منطق الموارد المفقود والتخلص من الموارد في `PerformanceMonitorService`.
+- [x] **التوحيد القياسي**: يوجد الآن كل من ثنائي Go (`cliproxy-embed`) وC++ (`llama-server`) في `resources/bin/`.
 
 ### تحسين نظام توليد الشعارات
 
@@ -230,12 +299,12 @@
 - **Status**: completed
 - **Summary**: تحديث نظام توليد الشعارات لـ Projects وIdeas مع دعم نماذج/أنماط متعددة وتوليد دفعي حتى 4 شعارات وتحسين UX.
 
-- [x] **Project Logo Generator**: Complete redesign of `LogoGeneratorModal.tsx` with Model/Style selection.
-- [x] **Batch Generation**: Added support for generating multiple logos in a single request.
-- [x] **Drag-and-Drop**: Implemented file drop handling for manual logo application.
-- [x] **Idea Logo Generation**: Refactored `IdeaGeneratorService` to support mandatory model/style arguments and return multiple logo paths.
-- [x] **UI Components**: Created custom `Label` component and consolidated UI exports in `@/components/ui`.
-- [x] **Type Safety**: Achieved 100% type safety across the new logo generation IPC handlers and services.
+- [x] **مولد شعار المشروع**: إعادة تصميم كاملة لـ `LogoGeneratorModal.tsx` مع تحديد النموذج/النمط.
+- [x] **إنشاء الدُفعات**: تمت إضافة دعم لإنشاء شعارات متعددة في طلب واحد.
+- [x] **السحب والإفلات**: تم تنفيذ معالجة إسقاط الملفات لتطبيق الشعار اليدوي.
+- [x] **إنشاء شعار الفكرة**: تمت إعادة هيكلة `IdeaGeneratorService` لدعم وسيطات النموذج/النمط الإلزامية وإرجاع مسارات شعار متعددة.
+- [x] **UI المكونات**: تم إنشاء مكون `Label` مخصص وتصديرات UI الموحدة في `@/components/ui`.
+- [x] **أمان النوع**: تم تحقيق أمان النوع بنسبة 100% عبر إنشاء الشعار الجديد IPC handlers والخدمات.
 
 ### أتمتة Git في Project Agent (AGT-GIT-01..05)
 
@@ -243,12 +312,12 @@
 - **Status**: completed
 - **Summary**: إضافة أتمتة Git على مستوى المهمة عند تشغيل Project Agent إذا كان حساب GitHub مربوطًا والمشروع محددًا.
 
-- [x] **Branch Bootstrap**: Auto-creates an `agent/*` feature branch at execution start (direct run and approved-plan run), only when active GitHub account + selected git project are available.
-- [x] **Step Auto-Commit**: Auto-stages and commits after successful step completion.
-- [x] **Diff Preview**: Emits a diff stat preview into task logs before every auto-commit.
-- [x] **Create PR Node**: Added `create-pr` task node type and renderer/main bridge method to generate/open GitHub compare URL.
-- [x] **Branch Cleanup**: On task completion, checks out base branch and safely deletes auto-created feature branch (`git branch -d`).
-- [x] **Git Command Fixes**: Corrected `GitService` commit/unstage command syntax issues.
+- [x] **Branch Bootstrap**: يُنشئ تلقائيًا ميزة `agent/*` branch عند بدء التنفيذ (التشغيل المباشر وتشغيل الخطة المعتمدة)، فقط عند توفر حساب GitHub النشط + مشروع git المحدد.
+- [x] **الالتزام التلقائي بالخطوة**: المراحل التلقائية والالتزام بعد إكمال الخطوة بنجاح.
+- [x] **Diff Preview**: يصدر معاينة مختلفة للإحصائيات في سجلات المهام قبل كل التزام تلقائي.
+- [x] **إنشاء عقدة علاقات عامة**: تمت إضافة نوع عقدة المهمة `create-pr` وطريقة العارض/الجسر الرئيسي لإنشاء/فتح عنوان URL لمقارنة GitHub.
+- [x] **Branch التنظيف**: عند اكتمال المهمة، قم بفحص القاعدة branch وحذف الميزة التي تم إنشاؤها تلقائيًا branch بأمان (`git branch -d`).
+- [x] **إصلاحات أمر Git**: تم تصحيح مشكلات بناء جملة أمر الالتزام/إلغاء المسرح `GitService`.
 
 ### وكيل المشروع إنسان في الحلقة (AGT-HIL-01..05)
 
@@ -270,12 +339,12 @@
 - **Status**: completed
 - **Summary**: تم تنفيذ الربط الشامل للمرحلة 7/8 عبر startup وطبقة الخدمات وIPC وجسر preload وجسر web mock.
 
-- [x] **Step Model Assignment & Routing**: Enabled per-step model assignment and task-type routing with configurable routing rules.
-- [x] **Voting + Consensus**: Added voting sessions (create/submit/request/resolve/get) and consensus builder API for conflicting model outputs.
-- [x] **Template System**: Enabled built-in and user templates, category filtering, save/delete, export/import, and variable application with validation.
-- [x] **Runtime Integration**: Plan steps are now enriched with collaboration metadata before execution/approval.
-- [x] **Bridge/IPC Coverage**: Added typed IPC/preload/renderer bridge methods for all new collaboration/template operations.
-- [x] **Validation**: `npm run type-check` and `npm run build` pass.
+- [x] **تعيين نموذج الخطوة وتوجيهه**: تمكين تعيين نموذج لكل خطوة وتوجيه نوع المهمة باستخدام قواعد توجيه قابلة للتكوين.
+- [x] **التصويت + الإجماع**: تمت إضافة جلسات التصويت (إنشاء/إرسال/طلب/حل/حصول) ومنشئ الإجماع API لمخرجات النماذج المتعارضة.
+- [x] **نظام القوالب**: تمكين القوالب المضمنة وقوالب المستخدم، وتصفية الفئات، والحفظ/الحذف، والتصدير/الاستيراد، والتطبيق المتغير مع التحقق من الصحة.
+- [x] **Runtime التكامل**: تم الآن إثراء خطوات الخطة ببيانات تعريف التعاون قبل التنفيذ/الموافقة.
+- [x] **الجسر/IPC التغطية**: تمت إضافة أساليب الجسر المكتوبة IPC/التحميل المسبق/العارض لجميع عمليات التعاون/النماذج الجديدة.
+- [x] **التحقق**: `npm run type-check` و`npm run build` مرور.
 
 ### مرونة البروكسي وإدارة العمليات
 
@@ -283,10 +352,10 @@
 - **Status**: completed
 - **Summary**: تم حل أعطال الإقلاع ومشاكل إنهاء العمليات في بروكسي Go المضمن.
 
-- [x] **Auth Sync Resilience**: Modified the Go proxy to warning-log instead of fatal-exit if the initial auth sync fails, allowing it to start even if the Electron server is slightly delayed.
-- [x] **Process Lifecycle**: Removed `detached` mode in development to ensure the proxy process is correctly cleaned up by the main process.
-- [x] **Hardened Termination**: Improved `taskkill` logic on Windows using force (`/F`) and tree-kill (`/T`) flags with better error handling.
-- [x] **Port Verification**: Added pre-start port checking to ensure the proxy doesn't attempt to start on an occupied port.
+- [x] **Auth Sync Resilience**: عدّل وكيل Go إلى سجل التحذير بدلاً من الخروج الفادح في حالة فشل مزامنة المصادقة الأولية، مما يسمح لها بالبدء حتى إذا تأخر خادم Electron قليلاً.
+- [x] **دورة حياة العملية**: تمت إزالة وضع `detached` قيد التطوير لضمان تنظيف عملية الوكيل بشكل صحيح من خلال العملية الرئيسية.
+- [x] **الإنهاء المشدد**: منطق `taskkill` محسّن على Windows باستخدام علامات القوة (`/F`) وعلامات قتل الأشجار (`/T`) مع معالجة أفضل للأخطاء.
+- [x] **التحقق من المنفذ**: تمت إضافة فحص المنفذ قبل البدء للتأكد من عدم محاولة الوكيل البدء على منفذ مشغول.
 
 ### توحيد السكربتات وتنظيفها
 
@@ -294,10 +363,10 @@
 - **Status**: completed
 - **Summary**: تم توحيد سكربتات إعداد بيئة البناء وتقييس إدارة ملفات proxy الثنائية.
 
-- [x] **Proxy Consolidation**: Standardized `cliproxy-embed.exe` to `resources/bin/` with auto-rebuild integration in `ProxyProcessManager`.
-- [x] **Script Consolidation**: Merged `src/scripts/setup-build-env.js` and `scripts/setup-build-env.js` into a single root `scripts/setup-build-env.js` file.
-- [x] **VS Detection Integration**: Integrated Visual Studio version detection and `.npmrc` configuration into the main setup script.
-- [x] **Cleanup**: Removed redundant `src/scripts/` directory, orphaned `vendor/cmd`, `vendor/native`, `vendor/package`, and absolute `proxy.exe` and unused llama binaries.
+- [x] **توحيد الوكيل**: موحد من `cliproxy-embed.exe` إلى `resources/bin/` مع تكامل إعادة البناء التلقائي في `ProxyProcessManager`.
+- [x] **دمج البرنامج النصي**: تم دمج `src/scripts/setup-build-env.js` و`scripts/setup-build-env.js` في ملف `scripts/setup-build-env.js` جذر واحد.
+- [x] **تكامل اكتشاف VS**: اكتشاف إصدار Visual Studio المتكامل وتكوين `.npmrc` في البرنامج النصي للإعداد الرئيسي.
+- [x] **تنظيف**: تمت إزالة دليل `src/scripts/` الزائد، و`vendor/cmd` المعزول، و`vendor/native`، و`vendor/package`، و`proxy.exe` المطلق وثنائيات اللاما غير المستخدمة.
 
 ### تحسين Workspace Explorer وتجربة الاستخدام
 
@@ -305,12 +374,12 @@
 - **Status**: completed
 - **Summary**: تحسين كبير في الأداء والإنتاجية داخل مستكشف مساحة العمل.
 
-- [x] **Performance**: Parallelized `fs.stat` in `listDirectory` and optimized `readFile` with combined binary detection.
-- [x] **UX Stability**: Fixed infinite loading spinners/icons by optimizing React hook dependencies and adding state guards.
-- [x] **Multi-selection**: Implemented standard Ctrl/Cmd and Shift selection support.
-- [x] **Keyboard Navigation**: Added full keyboard control (Arrows, F2 for Rename, Delete/Del, Enter to Open/Toggle).
-- [x] **Batch Actions**: Added support for deleting multiple selected items simultaneously with confirmation.
-- [x] **DND Hardening**: Added distance (8px) and delay (250ms) thresholds to prevent accidental drag-and-drop operations.
+- [x] **الأداء**: موازاة `fs.stat` في `listDirectory` وتحسين `readFile` مع الكشف الثنائي المدمج.
+- [x] **UX الاستقرار**: تم إصلاح أيقونات/أيقونات التحميل اللانهائية عن طريق تحسين تبعيات الخطاف React وإضافة حراس الحالة.
+- [x] **الاختيار المتعدد**: تم تنفيذ دعم التحديد القياسي Ctrl/Cmd وShift.
+- [x] ** التنقل عبر لوحة المفاتيح **: تمت إضافة التحكم الكامل في لوحة المفاتيح (الأسهم، F2 لإعادة التسمية، الحذف/الحذف، الإدخال للفتح/التبديل).
+- [x] **الإجراءات المجمعة**: تمت إضافة دعم لحذف عدة عناصر محددة في وقت واحد مع التأكيد.
+- [x] **تصلب DND**: تمت إضافة حدود المسافة (8 بكسل) والتأخير (250 مللي ثانية) لمنع عمليات السحب والإفلات غير المقصودة.
 
 ### عمليات ملفات Workspace (الحذف والسحب والإفلات)
 
@@ -318,12 +387,12 @@
 - **Status**: completed
 - **Summary**: تم تنفيذ عمليات نظام الملفات داخل المستكشف، مع حذف آمن وسحب وإفلات بأسلوب VS Code.
 
-- [x] **File Deletion**: Added "Delete" action to workspace context menu with confirmation modal.
-- [x] **Drag-and-Drop Move**: Integrated `@dnd-kit` to enable moving files and folders by dragging them onto target directories within the same mount.
-- [x] **Virtualization Support**: Ensured drag-and-drop works seamlessly with the virtualized tree view for large projects.
-- [x] **Type Safety**: achieved full type safety for Move/Delete operations and resolved multiple existing lint/type errors.
-- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules (fixed braces, function length, etc.) in modified hooks.
-- [x] **Bug Fix**: Resolved an incorrect IPC handler signature for `registerFilesIpc` in the main process.
+- [x] **حذف الملف**: تمت إضافة إجراء "حذف" إلى قائمة سياق مساحة العمل مع نموذج التأكيد.
+- [x] **نقل السحب والإفلات**: `@dnd-kit` مدمج لتمكين نقل الملفات والمجلدات عن طريق سحبها إلى الأدلة المستهدفة داخل نفس التحميل.
+- [x] **دعم المحاكاة الافتراضية**: ضمان عمل السحب والإفلات بسلاسة مع العرض الشجري الافتراضي للمشاريع الكبيرة.
+- [x] **أمان النوع**: تم تحقيق الأمان الكامل للنوع لعمليات النقل/الحذف وحل العديد من أخطاء الطباعة/الكتابة الموجودة.
+- [x] **قواعد ناسا**: ضمان الامتثال بنسبة 100% لقواعد ناسا Power of Ten (الأقواس الثابتة، وطول الوظيفة، وما إلى ذلك) في الخطافات المعدلة.
+- [x] **إصلاح الأخطاء**: تم حل توقيع IPC handler غير الصحيح لـ `registerFilesIpc` في العملية الرئيسية.
 
 ### عمليات ملفات Workspace (تحسين DND ودعم Windows)
 
@@ -331,9 +400,9 @@
 - **Status**: completed
 - **Summary**: تحسين الاستقرار عبر قيود تفعيل DND وإصلاح مشكلات المسارات في Windows.
 
-- [x] **DND Hardening**: Implemented `distance` (8px) and `delay` (250ms) thresholds for `PointerSensor` to distinguish between clicks and drags.
-- [x] **Plan Step DND**: Applied similar constraints to AI plan step reordering to prevent accidental displacement.
-- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
+- [x] **تعزيز DND**: تم تنفيذ حدود `distance` (8 بكسل) و`delay` (250 مللي ثانية) لـ `PointerSensor` للتمييز بين النقرات وعمليات السحب.
+- [x] **خطة DND للخطة**: تم تطبيق قيود مماثلة على إعادة ترتيب خطوات خطة الذكاء الاصطناعي لمنع الإزاحة العرضية.
+- [x] **دعم مسار Windows**: تم إصلاح حساسية حالة الأحرف في `isPathAllowed` داخل `FileSystemService` لمنع أخطاء "تم رفض الوصول" على Windows.
 
 ### عمليات ملفات Workspace (دعم Windows والتعريب)
 
@@ -341,274 +410,274 @@
 - **Status**: completed
 - **Summary**: إصلاح أخطاء حرجة في عمليات الملفات على Windows وتعريب واجهة المستخدم.
 
-- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
-- [x] **Path Normalization**: Updated `createEntry`, `renameEntry`, and `moveEntry` to correctly handle Windows backslashes (`\`) and forward slashes (`/`).
-- [x] **UI Localization**: Added Turkish and English translations for workspace modal titles (Delete, Rename, Create).
-- [x] **Type Safety**: Ensured 100% type safety and resolved linting warnings.
+- [x] **دعم مسار Windows**: تم إصلاح حساسية حالة الأحرف في `isPathAllowed` داخل `FileSystemService` لمنع أخطاء "تم رفض الوصول" على Windows.
+- [x] **تسوية المسار**: تم تحديث `createEntry` و`renameEntry` و`moveEntry` للتعامل بشكل صحيح مع الخطوط المائلة العكسية في Windows (`\`) والشرطات المائلة للأمام (`/`).
+- [x] **UI الترجمة**: تمت إضافة الترجمات التركية والإنجليزية للعناوين المشروطة لمساحة العمل (حذف، إعادة تسمية، إنشاء).
+- [x] **سلامة النوع**: ضمان أمان النوع بنسبة 100% وحل تحذيرات الفحص.
 
 ## [2026-02-10]
 
-### Debugging Codex Token Refresh
+### تصحيح تحديث رمز Codex
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a race condition between the `tandem-token-service` (Node/Rust) and embedded Go Proxy that caused Codex (OpenAI) token reuse errors.
+- **Summary**: تم حل حالة السباق بين `tandem-token-service` (العقدة/الصدأ) وGo Proxy المضمن الذي تسبب في حدوث أخطاء في إعادة استخدام الرمز المميز Codex (OpenAI).
 
-- [x] **Race Condition Fix**: Modified `AuthAPIService` to hide `refresh_token` from the Go Proxy for `codex` provider, ensuring only `TokenService` manages refreshes (BUG-002).
-- [x] **Verification**: Validated fix with lint checks.
+- [x] **إصلاح حالة السباق**: تم تعديل `AuthAPIService` لإخفاء `refresh_token` من Go Proxy لموفر `codex`، مما يضمن أن `TokenService` فقط هو الذي يدير عمليات التحديث (BUG-002).
+- [x] **التحقق**: إصلاح تم التحقق منه من خلال فحص الوبر.
 
-### Project Agent Visual Enhancements
+### التحسينات البصرية لوكيل المشروع
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented comprehensive visual enhancements for the Project Agent canvas, improving usability and feedback during plan execution.
+- **Summary**: تم تنفيذ تحسينات مرئية شاملة للوحة وكيل المشروع، مما أدى إلى تحسين سهولة الاستخدام والتعليقات أثناء تنفيذ الخطة.
 
-- [x] **Animated Data Flow**: Added `AnimatedEdge` component to visualize active data flow between nodes (AGT-VIS-01).
-- [x] **Canvas Mini-Map**: Integrated `MiniMap` for easier navigation of large plan graphs (AGT-VIS-02).
-- [x] **Real-time Log Streaming**: Enhanced `LogConsole` with auto-scrolling and virtualized list support (AGT-VIS-03).
-- [x] **Drag & Drop Reordering**: Implemented drag-and-drop functionality for plan steps using `@dnd-kit` (AGT-VIS-04).
-- [x] **Collapsible Step Groups**: Added ability to group and collapse plan steps for better organization (AGT-VIS-05).
-- [x] **Zero Lint/Type Errors**: Ensured all new components pass strict linting and type checking.
+- [x] **تدفق البيانات المتحركة**: تمت إضافة مكون `AnimatedEdge` لتصور تدفق البيانات النشط بين العقد (AGT-VIS-01).
+- [x] **خريطة قماشية صغيرة**: `MiniMap` مدمجة لتسهيل التنقل بين الرسوم البيانية ذات المخططات الكبيرة (AGT-VIS-02).
+- [x] **تدفق السجل في الوقت الفعلي**: `LogConsole` المحسّن مع التمرير التلقائي ودعم القائمة الافتراضية (AGT-VIS-03).
+- [x] **إعادة ترتيب السحب والإسقاط**: تم تنفيذ وظيفة السحب والإفلات لخطوات الخطة باستخدام `@dnd-kit` (AGT-VIS-04).
+- [x] **مجموعات الخطوات القابلة للطي**: تمت إضافة إمكانية تجميع خطوات الخطة وطيها لتنظيم أفضل (AGT-VIS-05).
+- [x] **عدم وجود أخطاء في الوبر/النوع**: ضمان اجتياز جميع المكونات الجديدة لعملية فحص صارمة وفحص النوع.
 
 ## [2026-02-09]
 
-### Advanced Terminal System - Phase 1
+### النظام الطرفي المتقدم - المرحلة الأولى
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a modular terminal architecture with plugin-based backends, user profiles, and workspace integration.
+- **Summary**: تم تنفيذ بنية طرفية معيارية مع واجهات خلفية قائمة على المكونات الإضافية وملفات تعريف المستخدمين وتكامل مساحة العمل.
 
-- [x] **Modular Architecture**: Introduced `ITerminalBackend` interface and `NodePtyBackend` implementation.
-- [x] **Session Persistence**: Enhanced session management with asynchronous creation and backend-aware snapshots.
-- [x] **Terminal Profiles**: Added `TerminalProfileService` to manage custom shell configurations and environments.
-- [x] **Workspace Isolation**: Added `workspaceId` support to terminal sessions for per-project terminal isolation.
-- [x] **IPC Layer**: Updated IPC handlers to support profiles, backends, and reliable asynchronous session creation.
+- [x] **البنية المعيارية**: تقديم واجهة `ITerminalBackend` وتنفيذ `NodePtyBackend`.
+- [x] **استمرارية الجلسة**: إدارة محسنة للجلسة من خلال إنشاء غير متزامن ولقطات مدركة للواجهة الخلفية.
+- [x] **ملفات تعريف المحطة الطرفية**: تمت إضافة `TerminalProfileService` لإدارة تكوينات وبيئات Shell المخصصة.
+- [x] **عزل مساحة العمل**: تمت إضافة دعم `workspaceId` إلى الجلسات الطرفية لعزل المحطة الطرفية لكل مشروع.
+- [x] **IPC Layer**: تم تحديث IPC handlers لدعم الملفات الشخصية والواجهات الخلفية وإنشاء جلسة غير متزامنة موثوقة.
 
-### Advanced Terminal System - Phase 2 (Alacritty)
+### النظام الطرفي المتقدم - المرحلة الثانية (السرعة)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the Alacritty backend for cross-platform GPU-accelerated terminal sessions.
+- **Summary**: تم تنفيذ الواجهة الخلفية Alacritty للجلسات الطرفية المسرَّعة عبر الأنظمة الأساسية GPU.
 
-- [x] **Alacritty Backend**: Added `AlacrittyBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `AlacrittyBackend` in `TerminalService`.
+- [x] **Alacritty Backend**: تمت إضافة تطبيق `AlacrittyBackend` مع الاكتشاف التلقائي وإنشاء النوافذ الخارجية.
+- [x] **تسجيل الواجهة الخلفية**: تم تسجيل `AlacrittyBackend` في `TerminalService`.
 
-### Advanced Terminal System - Phase 2 (Ghostty)
+### النظام الطرفي المتقدم - المرحلة الثانية (Ghostty)
 
 - **Type**: feature
 - **Status**: in_progress
-- **Summary**: Implemented the Ghostty backend for GPU-accelerated terminal sessions.
+- **Summary**: تم تنفيذ الواجهة الخلفية Ghostty للجلسات الطرفية المسرّعة GPU.
 
-- [x] **Ghostty Backend**: Added `GhosttyBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `GhosttyBackend` in `TerminalService` for session management.
+- [x] **Ghostty Backend**: تمت إضافة تطبيق `GhosttyBackend` مع الاكتشاف التلقائي وإنشاء النوافذ الخارجية.
+- [x] **التسجيل الخلفي**: تم تسجيل `GhosttyBackend` في `TerminalService` لإدارة الجلسة.
 
-### Advanced Terminal System - Phase 2 (Warp)
+### النظام الطرفي المتقدم - المرحلة الثانية (الاعوجاج)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the Warp backend for modern AI-powered terminal sessions.
+- **Summary**: تم تنفيذ الواجهة الخلفية Warp للجلسات الطرفية الحديثة التي تعمل بالذكاء الاصطناعي.
 
-- [x] **Warp Backend**: Added `WarpBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `WarpBackend` in `TerminalService`.
+- [x] **Warp Backend**: تمت إضافة تنفيذ `WarpBackend` مع الاكتشاف التلقائي وإنشاء النوافذ الخارجية.
+- [x] **تسجيل الواجهة الخلفية**: تم تسجيل `WarpBackend` في `TerminalService`.
 
-### Database Stability & Stale Port Handling
+### استقرار قاعدة البيانات والتعامل مع المنافذ القديمة
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Database Stability & Stale Port Handling improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: تم تحسين استقرار قاعدة البيانات ومعالجة المنافذ القديمة runtime من الأداء والاستقرار والاتساق التشغيلي عبر مسارات العمل الرئيسية.
 
-- Fixed: `DatabaseClientService` now correctly handles `db-service` restarts and stale ports.
-- Added: Stale port re-discovery mechanism in `DatabaseClientService.apiCall`.
-- Added: Event listener in `DatabaseClientService` for `db-service:ready` to update cached port automatically.
-- Improved: `ProcessManagerService` now clears cached ports on connection errors (`ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`).
-- Technical Debt: Improved reliability of local service communication across app restarts.
-## 2026-02-09 (Update 30): ✨ Chat UI Polish & Math Rendering Improvements
-**Status**: ✅ COMPLETED
-**Summary**: Removed message collapsing functionality for a better reading experience and significantly improved mathematical equation rendering.
-- [x] **Message Collapsing**: Removed `COLLAPSE_THRESHOLD` and all logic related to partial message rendering. Messages are now always displayed in full.
-- [x] **Math Styling**: Improved KaTeX rendering by removing background colors, increasing font size (1.15em), and ensuring perfect theme synchronization.
-- [x] **Type Safety**: Hardened type safety in `MessageBubble.tsx` by replacing `unknown`/`any` in quota handling with a strict `QuotaErrorResponse` interface.
-- [x] **Code Quality**: Cleaned up unused imports and obsolete props/interfaces related to the collapse functionality.
-## 2026-02-08 (Update 29): 🤖 AGT Checkpoint & Recovery Completion (AGT-CP-01..06)
-**Status**: ✅ COMPLETED
-**Summary**: Completed AGT checkpoint/recovery phase with a unified UAC-backed checkpoint service, rollback support, plan version history, and legacy IPC compatibility.
-- [x] **AGT-CP-01**: Added `uac_checkpoints` schema and indexes in `UacRepository`.
-- [x] **AGT-CP-02**: Added `AgentCheckpointService` facade for snapshot serialization/hydration and checkpoint orchestration.
-- [x] **AGT-CP-03**: Wired auto-checkpoint saves on step completion and state sync through `ProjectAgentService`.
-- [x] **AGT-CP-04**: Stabilized resume-from-checkpoint flow and aligned with renderer history/sidebar usage.
-- [x] **AGT-CP-05**: Implemented rollback-to-checkpoint with pre-rollback snapshot guard and UI rollback action.
-- [x] **AGT-CP-06**: Added `uac_plan_versions` schema and version tracking for proposed/approved/rollback plan states.
-- [x] **IPC Compatibility**: Added batchable `project-agent:*` compatibility handlers and new `project:rollback-checkpoint` / `project:get-plan-versions` endpoints.
-## 2026-02-08 (Update 28): 🌐 Internationalization (Phase 4) - Sidebar Components
-**Status**: ✅ COMPLETED
-**Summary**: Successfully implemented Phase 4 of the internationalization (i18n) project, focusing on the remaining layout components within the sidebar.
-- [x] **Sidebar Localization**: Localized `SidebarNavigation`, `WorkspaceSection`, `ToolsSection`, and `ProvidersSection`.
-- [x] **Hardcoded String Removal**: Replaced hardcoded labels for Memory, Agent, Docker, Terminal, and AI providers with localized strings.
-- [x] **Translation Synchronization**: Added missing keys to `en.ts` and `tr.ts` to support sidebar localization.
-- [x] **Quality Control**: Confirmed compliance with `npm run lint` and `npm run type-check` (zero errors).
-## 2026-02-08 (Update 27): 🌐 Internationalization (Phase 3) - Layout & Settings
-**Status**: ✅ COMPLETED
-**Summary**: Successfully implemented Phase 3 of the internationalization (i18n) project, focusing on layout and settings components. Unified MCP i18n keys and refactored the MCP Servers tab for better performance and compliance.
-- [x] **Settings Tabs Localization**: Internationalized `General`, `Appearance`, `Accounts`, `Developer`, `Models`, `Speech`, `Statistics`, and `MCP` settings tabs.
-- [x] **MCP i18n Consolidation**: Unified disparate `mcp` translation blocks in `en.ts` and `tr.ts` into a single root block for consistency.
-- [x] **MCPServersTab Refactor**: Completely refactored `MCPServersTab.tsx` to reduce complexity (from 21 to low single digits), extracted `ServerItem` component, and replaced `console.log` with `appLogger` (NASA rules).
-- [x] **Layout Verification**: Audited and confirmed i18n compliance for `AppHeader`, `ActivityBar`, `StatusBar`, `TitleBar`, `CommandPalette`, and `QuickActionBar`.
-- [x] **Quality Control**: Achieved 100% pass rate on `npm run build`, `npm run lint`, and `npm run type-check`.
-## 2026-02-08 (Update 26): 📝 Component Inventory & Documentation
-**Status**: ✅ COMPLETED
-**Summary**: Created a comprehensive inventory of all React components in the `src/renderer` directory (330+ files) and generated a checklist for tracking.
-- [x] **Component Audit**: Scanned all subdirectories in `src/renderer` to identify every `.tsx` component.
-- [x] **Checklist Generation**: Created `docs/components_checklist.md` with links and checkboxes for all components.
-- [x] **Security/Secrecy**: Updated `.gitignore` to ensure the checklist remains local and is not pushed to GitHub.
-## 2026-02-08 (Update 25): 🚀 Performance Optimizations & Terminal System V2 Planning
-**Status**: ✅ COMPLETED (Planning Phase)
-**Summary**: Implemented UZAY-level (space-grade) performance optimizations for build system, created comprehensive Performance Monitor Service, and designed next-generation terminal system architecture.
-### 🚀 Build Performance Optimizations
-- [x] **Aggressive Code Splitting**: 12 separate chunks (react-core, monaco, react-flow, ui-libs, syntax, katex, markdown, virtualization, icons, charts, vendor)
-- [x] **Terser Minification**: 2-pass optimization, console.log removal, comment stripping
-- [x] **Tree Shaking**: Preset recommended, no side effects on external modules
-- [x] **Build Cleanup**: Auto-delete old dist files on each build (emptyOutDir)
-- [x] **Cache Optimization**: Hashed file names for browser caching
-- [x] **Main Process Minification**: esbuild with code splitting (mcp-servers, services, ipc-handlers)
-- [x] **Preload Minification**: esbuild optimization
-### ⚡ Performance Monitor Service
-- [x] **Real-time Monitoring**: Memory (30s intervals), CPU, IPC latency, DB queries, LLM responses
-- [x] **Startup Metrics**: Track appReady, windowReady, servicesInit, databaseInit
-- [x] **Space-Grade Alerts**: Memory >1GB, IPC >100ms, DB query >50ms, CPU >80%
-- [x] **Resource Tracking**: Garbage collection support, file handle counting
-- [x] **Performance API**: `measure()`, `recordDuration()`, `getSummary()`, `getResourceUsage()`
-### 🖥️ Terminal System V2 Architecture
-- [x] **33 Terminal Tasks**: 5 phases covering infrastructure, backends, features, UI, performance
-- [x] **Backend Integrations**: Ghostty, Alacritty, Warp, WezTerm, Windows Terminal, Kitty, xterm.js fallback
-- [x] **Advanced Features**: Split panes, AI suggestions, semantic parsing, recording, remote terminals
-- [x] **Architecture Document**: Comprehensive design spec (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
-### 📊 Build Results
-- **Renderer Build**: 3m 26s
-- **Main Process**: 12.27s
-- **Preload**: 67ms
-- **Monaco Editor**: 3.75MB (lazy loaded)
-- **Largest Chunks**: Reduced via intelligent splitting
-### 📝 Files Created/Modified
-- `src/main/services/performance/performance-monitor.service.ts` - Space-grade monitoring
-- `docs/architecture/TERMINAL_SYSTEM_V2.md` - Terminal system design
-- `docs/TODO.md` - Added 33 terminal system tasks
-- `vite.config.ts` - Comprehensive build optimizations
-- `package.json` - Added terser, @types/uuid
-## 2026-02-08 (Update 24): ✨ Visual & UX Excellence - Animations & Polish
-**Status**: ✅ COMPLETED
-**Summary**: Enhanced the visual polish and user experience with micro-animations, chat UI improvements, and 3D interactions. Conducted a color contrast accessibility audit.
-### ✨ Animations & Interactions
-- [x] **Modal Springs**: Implemented spring-based pop-in animations for all modals using custom CSS keyframes.
-- [x] **List Transitions**: Added fade-in/slide-in animations for sidebar chat list insertions.
-- [x] **Card Flips**: Implemented 3D card flip animation for Idea cards to reveal technical details.
-- [x] **Micro-interactions**: Added smooth rotation for the Settings gear and hover-to-reveal effects for timestamps.
-### 🎨 UI Polish
-- **Chat Experience**: Added message bubble tails and a bouncing dot typing indicator.
-- **Loading States**: Implemented a shimmering skeleton loader for initial message states.
-- **Visual Feedback**: Added vibrant gradient borders for high-potential ideas.
-### ♿ Accessibility
-- **Contrast Audit**: Conducted WCAG 2.1 contrast audit for primary colors (findings in `contrast_audit.md`).
-### 📝 Files Modified
-- `src/renderer/index.css` - Custom animations and utilities
-- `src/renderer/features/chat/components/*` - Message bubbles, list, skeleton, typing indicator
-- `src/renderer/features/ideas/components/IdeaCard.tsx` - Flip animation and styles
-- `src/renderer/components/ui/modal.tsx` - Animation integration
-- `src/renderer/components/layout/sidebar/*` - List animations and footer rotation
-## 2026-02-08 (Update 23): 🤖 GitHub Actions Automation & Marketplace Planning
-**Status**: ✅ COMPLETED
-**Summary**: Enhanced CI/CD infrastructure with automated workflow cleanup and added comprehensive marketplace system planning for VSCode-style extensions.
-### 🤖 GitHub Actions Automation
-- [x] **Cleanup Workflow**: Created automated workflow to clean old runs (Sundays, UTC midnight)
-- [x] **Cleanup Scripts**: Node.js and PowerShell scripts for manual workflow run deletion
-- [x] **CI/CD Fixes**: Simplified CI workflow, enhanced release workflow with Rust/Go toolchains
-- [x] **Git LFS Support**: Added Git LFS checkout to both CI and release workflows
-- [x] **NPM Scripts**: Added `gh:cleanup`, `gh:cleanup:all`, `gh:cleanup:dry` commands
-### 🛍️ Marketplace System Planning
-- [x] **Architecture Design**: Added 25 marketplace tasks across 5 phases
-- [x] **Extension Types**: MCP servers, themes, commands, languages, agent templates
-- [x] **Security Model**: Signing, sandboxing, code review, user ratings
-- [x] **Developer Experience**: SDK, documentation, testing framework, publishing workflow
-### 📝 Files Created/Modified
-- `.github/workflows/cleanup.yml` - Automated workflow cleanup (weekly)
-- `scripts/cleanup-workflow-runs.js` - Node.js cleanup script
-- `scripts/cleanup-workflow-runs.ps1` - PowerShell cleanup script
-- `scripts/README-workflow-cleanup.md` - Comprehensive documentation
-- `package.json` - Added gh:cleanup npm scripts
-- `docs/TODO.md` - Added 25 marketplace tasks, marked security work complete
-- `docs/CHANGELOG.md` - This update
-## 2026-02-08 (Update 22): 🔒 MCP Security Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Implemented comprehensive security improvements across all 13 MCP (Model Context Protocol) servers covering 34 services and 80+ actions. Added validation framework, rate limiting, audit logging, encryption, path traversal protection, SSRF prevention, and command injection protection.
-### 🔐 Security Frameworks
-- [x] **Validation Framework**: 6 validators (string, number, path, URL, git command, SSH command)
-- [x] **Rate Limiting**: Token bucket algorithm with 13 MCP-specific rate limits
-- [x] **Audit Logging**: Comprehensive logging of all MCP operations with timing and error tracking
-- [x] **Encryption at Rest**: Memory storage encrypted using Electron safeStorage
-### 🛡️ Server-Specific Hardening
-- [x] **Git Server**: Command injection prevention, timeout protection (30s)
-- [x] **Network Server**: SSRF protection via URL validation and IP filtering
-- [x] **Filesystem Server**: Path traversal protection on all 26 operations, symlink detection
-- [x] **SSH Server**: Command sanitization, host validation
-- [x] **Database Server**: Pagination (1-100 limit), size limits (10KB embeddings, 1MB base64)
-- [x] **Intelligence Server**: Memory recall bounds (1-100), timeout protection (2min/1min)
-- [x] **Project Server**: Scan path validation against allowedFileRoots
-### 📝 Files Modified (20 Files)
-- `src/main/mcp/server-utils.ts` - Validation framework, audit logging integration
-- `src/main/services/security/rate-limit.service.ts` - 13 MCP rate limits
-- `src/main/mcp/servers/*.ts` - All 12 MCP server files hardened
-- `src/main/services/external/utility.service.ts` - Memory encryption
-- `src/main/startup/services.ts` - DI configuration
-- `.claude/projects/.../memory/MEMORY.md` - Comprehensive documentation
-### ✅ All 20 Security Tasks Completed
-1. Validation framework 2. Git injection fixes 3. Network SSRF 4. SSH hardening 5. Internet URL validation 6. UI clipboard 7. LLM quota 8. Rate limiting 9. Audit logging 10. Memory encryption 11. DB pagination 12. DB size limits 13. FS path traversal 14. FS symlinks 15. FS size limits 16. Docker env 17. GitHub auth 18. Clipboard consent 19. Memory bounds 20. Idea timeouts
-## 2026-02-06 (Update 21): 💾 Agent Canvas Persistence
-**Status**: ✅ COMPLETED
-**Summary**: Implemented canvas state persistence for the autonomous agent system. Task nodes and edges are now saved to the database and automatically restored when the application restarts.
-### 💾 Persistence Features
-- [x] **Database Schema**: Added `uac_canvas_nodes` and `uac_canvas_edges` tables to store canvas state.
-- [x] **Repository Methods**: Implemented CRUD operations in `UacRepository` for canvas nodes and edges.
-- [x] **IPC Handlers**: Added IPC handlers for `save/get/delete` canvas nodes and edges.
-- [x] **Auto-Save**: Canvas state is automatically saved with 500ms debounce when nodes or edges change.
-- [x] **Auto-Load**: Canvas state is restored on app startup before user interaction.
-### 📝 Files Modified
-- `src/main/services/data/repositories/uac.repository.ts` - Added canvas tables and methods
-- `src/main/ipc/project-agent.ts` - Added canvas persistence IPC handlers
-- `src/main/startup/ipc.ts` - Passed databaseService to registerProjectAgentIpc
-- `src/main/preload.ts` - Added canvas API to preload bridge
-- `src/renderer/electron.d.ts` - Added canvas API types
-- `src/renderer/web-bridge.ts` - Added canvas API stubs
-- `src/renderer/features/project-agent/ProjectAgentView.tsx` - Implemented load/save logic
-## 2026-02-06 (Update 20): 🤖 Agent System Token Tracking & Visual Enhancements
-**Status**: ✅ COMPLETED
-**Summary**: Implemented token usage tracking and visual enhancements for the autonomous agent system, including real-time token counters, step timing display, and progress ring indicators.
-### 🤖 Agent System Enhancements
-- [x] **Token Tracking Backend**: Added `currentStepTokens` tracking in `ProjectAgentService` to accumulate token usage per step from LLM stream chunks.
-- [x] **Step Timing**: Implemented `startStep()` and `completeStep()` helper methods that record timing data (startedAt, completedAt, durationMs) for each plan step.
-- [x] **Type Definitions**: Extended `ProjectStep` and `ProjectState` interfaces with `tokens` and `timing` fields.
-### 🎨 UI Enhancements
-- [x] **Token Counter Component**: Created `TokenCounter` component displaying token usage with formatted numbers (1.2k, 5.5k) and duration (ms/s/m).
-- [x] **Progress Ring**: Implemented `ProgressRing` SVG component showing circular progress around the task node icon during execution.
-- [x] **Step-Level Tokens**: Added token and timing display for each completed/running step in the plan list.
-- [x] **Total Tokens**: Added aggregate token counter and total duration in the progress bar area.
-### 📝 Files Modified
+- تم الإصلاح: `DatabaseClientService` يتعامل الآن بشكل صحيح مع عمليات إعادة تشغيل `db-service` والمنافذ القديمة.
+- تمت الإضافة: آلية إعادة اكتشاف المنفذ القديم في `DatabaseClientService.apiCall`.
+- تمت الإضافة: مستمع الأحداث في `DatabaseClientService` لـ `db-service:ready` لتحديث المنفذ المخزن مؤقتًا تلقائيًا.
+- تم التحسين: `ProcessManagerService` يقوم الآن بمسح المنافذ المخزنة مؤقتًا عند حدوث أخطاء في الاتصال (`ECONNREFUSED`، `ETIMEDOUT`، `ECONNRESET`).
+- الدين الفني: تحسين موثوقية اتصالات الخدمة المحلية عبر عمليات إعادة تشغيل التطبيق.
+## 09-02-2026 (التحديث 30): ✨ الدردشة UI تحسينات في عرض اللغة البولندية والرياضيات
+**الحالة**: ✅ مكتمل
+**ملخص**: تمت إزالة وظيفة طي الرسائل للحصول على تجربة قراءة أفضل وتحسين عرض المعادلات الرياضية بشكل ملحوظ.
+- [x] ** طي الرسالة **: تمت إزالة `COLLAPSE_THRESHOLD` وكل المنطق المتعلق بالعرض الجزئي للرسالة. يتم الآن عرض الرسائل دائمًا بالكامل.
+- [x] **التصميم الرياضي**: تحسين عرض KaTeX عن طريق إزالة ألوان الخلفية، وزيادة حجم الخط (1.15em)، وضمان مزامنة مثالية للموضوع.
+- [x] **أمان النوع**: أمان النوع المعزز في `MessageBubble.tsx` عن طريق استبدال `unknown`/`any` في التعامل مع الحصص بواجهة `QuotaErrorResponse` الصارمة.
+- [x] **جودة الكود**: تنظيف الواردات غير المستخدمة والدعائم/الواجهات القديمة المتعلقة بوظيفة الانهيار.
+## 08-02-2026 (التحديث 29): 🤖 نقطة تفتيش AGT واكتمال الاسترداد (AGT-CP-01..06)
+**الحالة**: ✅ مكتمل
+**الملخص**: تم إكمال مرحلة فحص/استرداد AGT مع خدمة نقاط تفتيش موحدة مدعومة بـ UAC، ودعم العودة إلى الحالة السابقة، وسجل إصدار الخطة، والتوافق القديم IPC.
+- [x] **AGT-CP-01**: تمت إضافة مخطط `uac_checkpoints` والفهارس في `UacRepository`.
+- [x] **AGT-CP-02**: تمت إضافة واجهة `AgentCheckpointService` لتسلسل/ترطيب اللقطات وتنسيق نقاط التفتيش.
+- [x] **AGT-CP-03**: تقوم نقطة التفتيش التلقائية السلكية بالحفظ عند إكمال الخطوة ومزامنة الحالة من خلال `ProjectAgentService`.
+- [x] **AGT-CP-04**: تدفق ثابت للسيرة الذاتية من نقطة التفتيش ومتوافق مع سجل العارض/استخدام الشريط الجانبي.
+- [x] **AGT-CP-05**: تم تنفيذ العودة إلى نقطة التفتيش مع حماية لقطة ما قبل التراجع وإجراءات التراجع UI.
+- [x] **AGT-CP-06**: تمت إضافة مخطط `uac_plan_versions` وتتبع الإصدار لحالات خطة الاستعادة المقترحة/المعتمدة/التراجع.
+- [x] **__توافق TERMTOKEN_0__**: تمت إضافة توافق `project-agent:*` القابل للدفع handlers ونقاط نهاية `project:rollback-checkpoint` / `project:get-plan-versions` الجديدة.
+## 08-02-2026 (التحديث 28): 🌐 التدويل (المرحلة الرابعة) - مكونات الشريط الجانبي
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ المرحلة الرابعة من مشروع التدويل (i18n) بنجاح، مع التركيز على مكونات التخطيط المتبقية داخل الشريط الجانبي.
+- [x] **تعريب الشريط الجانبي**: مترجم `SidebarNavigation`، `WorkspaceSection`، `ToolsSection`، و`ProvidersSection`.
+- [x] **إزالة السلسلة المشفرة**: تم استبدال التصنيفات المشفرة لموفري الذاكرة والوكيل وDocker والمحطة الطرفية والذكاء الاصطناعي بسلاسل مترجمة.
+- [x] **مزامنة الترجمة**: تمت إضافة المفاتيح المفقودة إلى `en.ts` و`tr.ts` لدعم ترجمة الشريط الجانبي.
+- [x] **مراقبة الجودة**: تأكيد الامتثال لـ `npm run lint` و`npm run type-check` (بدون أخطاء).
+## 08-02-2026 (التحديث 27): 🌐 التدويل (المرحلة 3) - التخطيط والإعدادات
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ المرحلة الثالثة من مشروع التدويل (i18n) بنجاح، مع التركيز على مكونات التخطيط والإعدادات. مفاتيح MCP i18n موحدة وإعادة هيكلة علامة التبويب خوادم MCP لتحسين الأداء والامتثال.
+- [x] **تعريب علامات تبويب الإعدادات**: علامات تبويب الإعدادات الدولية `General`، `Appearance`، `Accounts`، `Developer`، `Models`، `Speech`، `Statistics`، و`MCP`.
+- [x] **دمج MCP i18n**: كتل ترجمة موحدة ومتباينة `mcp` في `en.ts` و`tr.ts` في كتلة جذر واحدة لتحقيق الاتساق.
+- [x] **MCPServersTab Refactor**: تمت إعادة هيكلة `MCPServersTab.tsx` بالكامل لتقليل التعقيد (من 21 إلى رقم واحد منخفض)، واستخراج مكون `ServerItem`، واستبدال `console.log` بـ `appLogger` (قواعد ناسا).
+- [x] **التحقق من التخطيط**: تم تدقيق وتأكيد توافق i18n مع `AppHeader`، `ActivityBar`، `StatusBar`، `TitleBar`، `CommandPalette`، و`QuickActionBar`.
+- [x] **مراقبة الجودة**: تم تحقيق معدل نجاح بنسبة 100% في `npm run build` و`npm run lint` و`npm run type-check`.
+## 08-02-2026 (التحديث 26): 📝 جرد المكونات والتوثيق
+**الحالة**: ✅ مكتمل
+**الملخص**: تم إنشاء جرد شامل لجميع مكونات React في دليل `src/renderer` (أكثر من 330 ملفًا) وإنشاء قائمة مرجعية للتتبع.
+- [x] **تدقيق المكونات**: تم فحص جميع الدلائل الفرعية في `src/renderer` لتحديد كل مكون `.tsx`.
+- [x] **إنشاء قائمة التحقق**: تم إنشاء `docs/components_checklist.md` بروابط ومربعات اختيار لجميع المكونات.
+- [x] **الأمان/السرية**: تم تحديث `.gitignore` لضمان بقاء قائمة التحقق محلية وعدم دفعها إلى GitHub.
+## 08-02-2026 (التحديث 25): 🚀 تحسينات الأداء وتخطيط الإصدار الثاني من النظام الطرفي
+**الحالة**: ✅ مكتمل (مرحلة التخطيط)
+**الملخص**: تم تنفيذ تحسينات الأداء على مستوى UZAY (على مستوى الفضاء) لنظام البناء، وإنشاء خدمة مراقبة الأداء الشاملة، وتصميم بنية النظام الطرفي من الجيل التالي.
+### 🚀 بناء تحسينات الأداء
+- [x] **تقسيم التعليمات البرمجية العدواني**: 12 قطعة منفصلة (react-core، وmonaco، وreact-flow، وui-libs، وsyntax، وkatex، وmarkdown، والمحاكاة الافتراضية، والأيقونات، والمخططات، والبائع)
+- [x] **تصغير Terser**: تحسين التمريرتين، وإزالة console.log، وتجريد التعليقات
+- [x] **اهتزاز الشجرة**: يوصى بالإعداد المسبق، ولا توجد آثار جانبية على الوحدات الخارجية
+- [x] **Build Cleanup**: الحذف التلقائي لملفات التوزيع القديمة في كل إصدار (emptyOutDir)
+- [x] **تحسين ذاكرة التخزين المؤقت**: أسماء الملفات المجزأة للتخزين المؤقت للمتصفح
+- [x] **تصغير العملية الرئيسية**: تم إنشاؤها باستخدام تقسيم التعليمات البرمجية (خوادم mcp، الخدمات، ipc-handlers)
+- [x] **تصغير التحميل المسبق**: تحسين البناء
+### ⚡ خدمة مراقبة الأداء
+- [x] **المراقبة في الوقت الفعلي**: الذاكرة (فواصل زمنية تبلغ 30 ثانية)، CPU، IPC زمن الاستجابة، استعلامات قاعدة البيانات، LLM الاستجابات
+- [x] **مقاييس بدء التشغيل**: تتبع appReady وwindowReady وservicesInit وdataInit
+- [x] **تنبيهات على مستوى الفضاء**: الذاكرة > 1 غيغابايت، IPC > 100 مللي ثانية، استعلام قاعدة البيانات > 50 مللي ثانية، CPU > 80%
+- [x] **تتبع الموارد**: دعم جمع البيانات المهملة، وحساب مقبض الملف
+- [x] **الأداء API**: `measure()`، `recordDuration()`، `getSummary()`، `getResourceUsage()`
+### 🖥️ هندسة النظام الطرفي V2
+- [x] **33 مهمة طرفية**: 5 مراحل تغطي البنية التحتية والواجهات الخلفية والميزات وUI والأداء
+- [x] **عمليات التكامل الخلفية**: Ghostty، Alacritty، Warp، WezTerm، Windows Terminal، Kitty، xterm.js fallback
+- [x] **ميزات متقدمة**: تقسيم الأجزاء، واقتراحات الذكاء الاصطناعي، والتحليل الدلالي، والتسجيل، والمحطات الطرفية عن بعد
+- [x] **مستند التصميم المعماري**: مواصفات التصميم الشاملة (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
+### 📊 نتائج البناء
+- **بناء العارض**: 3 دقائق و26 ثانية
+- **العملية الرئيسية**: 12.27 ثانية
+- **التحميل المسبق**: 67 مللي ثانية
+- **محرر موناكو**: 3.75 ميجابايت (تم التحميل البطيء)
+- **أكبر القطع**: تم تقليلها من خلال التقسيم الذكي
+### 📝 الملفات التي تم إنشاؤها/تعديلها
+- `src/main/services/performance/performance-monitor.service.ts` - مراقبة المستوى الفضائي
+- `docs/architecture/TERMINAL_SYSTEM_V2.md` - تصميم النظام الطرفي
+- `docs/TODO.md` - تمت إضافة 33 مهمة للنظام الطرفي
+- `vite.config.ts` - تحسينات شاملة للبناء
+- `package.json` - تمت إضافة المختصر @types/uuid
+## 08-02-2026 (التحديث 24): ✨ المرئي وUX التميز - الرسوم المتحركة والبولندية
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تحسين المظهر المرئي وتجربة المستخدم من خلال الرسوم المتحركة الدقيقة وتحسينات الدردشة UI والتفاعلات ثلاثية الأبعاد. تم إجراء تدقيق لإمكانية الوصول إلى تباين الألوان.
+### ✨ الرسوم المتحركة والتفاعلات
+- [x] **Modal Springs**: تم تنفيذ الرسوم المتحركة المنبثقة المستندة إلى الربيع لجميع الوسائط باستخدام إطارات CSS الرئيسية المخصصة.
+- [x] **انتقالات القائمة**: تمت إضافة رسوم متحركة للتلاشي/الشريحة الداخلية لإدراج قائمة الدردشة في الشريط الجانبي.
+- [x] **Card Flips**: تم تنفيذ الرسوم المتحركة ثلاثية الأبعاد لقلب البطاقة لبطاقات Idea للكشف عن التفاصيل الفنية.
+- [x] **التفاعلات الصغيرة**: تمت إضافة دوران سلس لترس الإعدادات وتأثيرات التمرير للكشف عن الطوابع الزمنية.
+### 🎨 UI بولندية
+- **تجربة الدردشة**: تمت إضافة ذيل فقاعة الرسالة ومؤشر كتابة النقطة المرتدة.
+- **حالات التحميل**: تم تنفيذ أداة تحميل هيكلية متلألئة لحالات الرسالة الأولية.
+- **التعليقات المرئية**: تمت إضافة حدود متدرجة نابضة بالحياة للأفكار ذات الإمكانات العالية.
+### ♿ إمكانية الوصول
+- **تدقيق التباين**: تم إجراء تدقيق التباين WCAG 2.1 للألوان الأساسية (النتائج في `contrast_audit.md`).
+### 📝 الملفات المعدلة
+- `src/renderer/index.css` - الرسوم المتحركة والأدوات المساعدة المخصصة
+- `src/renderer/features/chat/components/*` - فقاعات الرسائل، القائمة، الهيكل العظمي، مؤشر الكتابة
+- `src/renderer/features/ideas/components/IdeaCard.tsx` - قلب الرسوم المتحركة والأنماط
+- `src/renderer/components/ui/modal.tsx` - تكامل الرسوم المتحركة
+- `src/renderer/components/layout/sidebar/*` - قائمة الرسوم المتحركة وتدوير التذييل
+## 08-02-2026 (التحديث 23): 🤖 أتمتة إجراءات GitHub وتخطيط Marketplace
+**الحالة**: ✅ مكتمل
+**الملخص**: بنية أساسية محسنة لـ CI/CD مع تنظيف سير العمل تلقائيًا وإضافة تخطيط شامل لنظام Marketplace للملحقات على نمط VSCode.
+### 🤖 أتمتة إجراءات GitHub
+- [x] **سير عمل التنظيف**: تم إنشاء سير عمل تلقائي لتنظيف عمليات التشغيل القديمة (أيام الأحد، منتصف الليل بالتوقيت العالمي المنسق)
+- [x] **البرامج النصية للتنظيف**: البرامج النصية لـ Node.js وPowerShell للحذف اليدوي لسير العمل
+- [x] **إصلاحات CI/CD**: سير عمل CI مبسط، وسير عمل الإصدار المحسن باستخدام سلاسل أدوات Rust/Go
+- [x] **دعم Git LFS**: تمت إضافة خيار Git LFS إلى سير عمل CI وإصدار الإصدار
+- [x] **نصوص NPM**: تمت إضافة أوامر `gh:cleanup`، `gh:cleanup:all`، `gh:cleanup:dry` الأوامر
+### 🛍️ تخطيط نظام Marketplace
+- [x] **التصميم المعماري**: تمت إضافة 25 مهمة للسوق عبر 5 مراحل
+- [x] **أنواع الامتدادات**: خوادم MCP، والموضوعات، والأوامر، واللغات، وقوالب الوكيل
+- [x] **نموذج الأمان**: التوقيع ووضع الحماية ومراجعة التعليمات البرمجية وتقييمات المستخدم
+- [x] **تجربة المطور**: SDK، الوثائق، إطار الاختبار، سير عمل النشر
+### 📝 الملفات التي تم إنشاؤها/تعديلها
+- `.github/workflows/cleanup.yml` - التنظيف الآلي لسير العمل (أسبوعيًا)
+- `scripts/cleanup-workflow-runs.js` - البرنامج النصي لتنظيف Node.js
+- `scripts/cleanup-workflow-runs.ps1` - البرنامج النصي لتنظيف PowerShell
+- `scripts/README-workflow-cleanup.md` - توثيق شامل
+- `package.json` - تمت إضافة البرامج النصية gh:cleanup npm
+- `docs/TODO.md` - تمت إضافة 25 مهمة للسوق، وتم وضع علامة على اكتمال العمل الأمني
+- `docs/CHANGELOG.md` - هذا التحديث
+## 08-02-2026 (التحديث 22): 🔒 تشديد أمان MCP
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ تحسينات أمنية شاملة عبر جميع خوادم MCP (بروتوكول السياق النموذجي) البالغ عددها 13 والتي تغطي 34 خدمة وأكثر من 80 إجراء. تمت إضافة إطار التحقق من الصحة، وتحديد المعدل، وتسجيل التدقيق، والتشفير، وحماية اجتياز المسار، ومنع SSRF، وحماية حقن الأوامر.
+### 🔐 الأطر الأمنية
+- [x] **إطار عمل التحقق**: 6 أدوات تحقق (سلسلة، رقم، مسار، عنوان URL، أمر git، أمر SSH)
+- [x] **تحديد السعر**: خوارزمية دلو الرمز المميز مع 13 حدًا لمعدل خاص بـ MCP
+- [x] **تسجيل التدقيق**: تسجيل شامل لجميع عمليات MCP مع التوقيت وتتبع الأخطاء
+- [x] **التشفير في حالة الراحة**: تخزين الذاكرة مشفر باستخدام ElectronsafeStorage
+### 🛡️ تصلب خاص بالخادم
+- [x] **Git Server**: منع إدخال الأوامر، وحماية المهلة (30 ثانية)
+- [x] **خادم الشبكة**: حماية SSRF عبر التحقق من صحة عنوان URL وتصفية IP
+- [x] **خادم نظام الملفات**: حماية اجتياز المسار في جميع العمليات الـ 26، واكتشاف الارتباط الرمزي
+- [x] **SSH Server**: تعقيم الأوامر والتحقق من صحة المضيف
+- [x] **خادم قاعدة البيانات**: ترقيم الصفحات (حد 1-100)، حدود الحجم (تضمينات 10 كيلو بايت، 1 ميجابايت base64)
+- [x] **خادم الذكاء**: حدود استدعاء الذاكرة (1-100)، حماية المهلة (2 دقيقة/1 دقيقة)
+- [x] **خادم المشروع**: التحقق من صحة المسار مقابل المسموح به FileRoots
+### 📝 الملفات المعدلة (20 ملف)
+- `src/main/mcp/server-utils.ts` - إطار عمل التحقق، وتكامل تسجيل التدقيق
+- `src/main/services/security/rate-limit.service.ts` - 13 حدًا لمعدل MCP
+- `src/main/mcp/servers/*.ts` - تمت تقوية جميع ملفات خادم MCP البالغ عددها 12 ملفًا
+- `src/main/services/external/utility.service.ts` - تشفير الذاكرة
+- `src/main/startup/services.ts` - تكوين DI
+- `.claude/projects/.../memory/MEMORY.md` - توثيق شامل
+### ✅ تم إكمال جميع المهام الأمنية العشرين
+1. إطار التحقق من الصحة 2. إصلاحات حقن Git 3. شبكة SSRF 4. تقوية SSH 5. التحقق من صحة عنوان URL للإنترنت 6. UI الحافظة 7. حصة LLM 8. تحديد المعدل 9. تسجيل التدقيق 10. تشفير الذاكرة 11. ترقيم الصفحات في قاعدة البيانات 12. حدود حجم قاعدة البيانات 13. اجتياز مسار FS 14. FS الروابط الرمزية 15. حدود حجم FS 16. Docker env 17. مصادقة GitHub 18. موافقة الحافظة 19. حدود الذاكرة 20. مهلات الفكرة
+## 06-02-2026 (التحديث 21): 💾 ثبات قماش العميل
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ ثبات حالة لوحة الرسم لنظام الوكيل المستقل. يتم الآن حفظ عقد المهام وحوافها في قاعدة البيانات واستعادتها تلقائيًا عند إعادة تشغيل التطبيق.
+### 💾 مميزات الثبات
+- [x] **مخطط قاعدة البيانات**: تمت إضافة جدولي `uac_canvas_nodes` و`uac_canvas_edges` لتخزين حالة لوحة الرسم.
+- [x] **طرق المستودع**: تم تنفيذ عمليات CRUD في `UacRepository` لعقد اللوحة القماشية وحوافها.
+- [x] **IPC Handlers**: تمت إضافة IPC handlers لعقد وحواف قماش `save/get/delete`.
+- [x] **الحفظ التلقائي**: يتم حفظ حالة اللوحة القماشية تلقائيًا مع ارتداد قدره 500 مللي ثانية عند تغيير العقد أو الحواف.
+- [x] **التحميل التلقائي**: تتم استعادة حالة اللوحة القماشية عند بدء تشغيل التطبيق قبل تفاعل المستخدم.
+### 📝 الملفات المعدلة
+- `src/main/services/data/repositories/uac.repository.ts` - تمت إضافة جداول وأساليب قماشية
+- `src/main/ipc/project-agent.ts` - تمت إضافة ثبات اللوحة القماشية IPC handlers
+- `src/main/startup/ipc.ts` - تم تمرير خدمة قاعدة البيانات إلى RegisterProjectAgentIpc
+- `src/main/preload.ts` - تمت إضافة اللوحة القماشية API للتحميل المسبق للجسر
+- `src/renderer/electron.d.ts` - تمت إضافة أنواع القماش API
+- `src/renderer/web-bridge.ts` - تمت إضافة بذرة قماش API
+- `src/renderer/features/project-agent/ProjectAgentView.tsx` - تم تنفيذ منطق التحميل/الحفظ
+## 06-02-2026 (التحديث 20): 🤖 تتبع الرموز المميزة لنظام الوكيل والتحسينات المرئية
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ تتبع استخدام الرمز المميز والتحسينات المرئية لنظام الوكيل المستقل، بما في ذلك عدادات الرمز المميز في الوقت الفعلي وعرض توقيت الخطوات ومؤشرات حلقة التقدم.
+### 🤖 تحسينات نظام الوكيل
+- [x] **الواجهة الخلفية لتتبع الرمز المميز**: تمت إضافة تتبع `currentStepTokens` في `ProjectAgentService` لتجميع استخدام الرمز المميز لكل خطوة من LLM مجموعات الدفق.
+- [x] **توقيت الخطوة**: تم تنفيذ الطرق المساعدة `startStep()` و`completeStep()` التي تسجل بيانات التوقيت (startedAt،CompletedAt، DurationMs) لكل خطوة في الخطة.
+- [x] **تعريفات النوع**: واجهات `ProjectStep` و`ProjectState` الموسعة مع حقول `tokens` و`timing`.
+### 🎨 UI التحسينات
+- [x] **مكون عداد الرمز المميز**: تم إنشاء مكون `TokenCounter` يعرض استخدام الرمز المميز بأرقام منسقة (1.2k، 5.5k) والمدة (ms/s/m).
+- [x] **حلقة التقدم**: تم تنفيذ مكون SVG `ProgressRing` الذي يعرض التقدم الدائري حول رمز عقدة المهمة أثناء التنفيذ.
+- [x] **الرموز المميزة على مستوى الخطوة**: تمت إضافة الرمز المميز وعرض التوقيت لكل خطوة مكتملة/قيد التشغيل في قائمة الخطة.
+- [x] **إجمالي الرموز**: تمت إضافة عداد الرموز المميزة وإجمالي المدة في منطقة شريط التقدم.
+### 📝 الملفات المعدلة
 - `src/main/services/project/project-agent.service.ts`
 - `src/shared/types/project-agent.ts`
 - `src/renderer/features/project-agent/nodes/TaskNode.tsx`
 - `src/renderer/features/project-agent/ProjectAgentView.tsx`
 - `docs/TODO.md`
-## 2026-02-06 (Update 19): ✨ Settings UI Refinement & Visual Excellence
-**Status**: ✅ COMPLETED
-**Summary**: Standardized the Settings UI by grouping scattered settings into logical "Glass Cards", updating the `ToggleSwitch` component, and implementing reactive tab highlighting in the restored settings sidebar.
-### ✨ Visual & UX Polish
-- [x] **Glass Card Standard**: Standardized all section cards to use `premium-glass` and premium shadows across `AppearanceTab.tsx`, `GeneralTab.tsx`, `AboutTab.tsx`, and `StatisticsTab.tsx`.
-- [x] **Statistics Standardization**: Refactored the entire `StatisticsTab.tsx` and all quota cards (`AntigravityCard`, `ClaudeCard`, `CodexCard`, `CopilotCard`) to follow the "Premium Glass" unified header and layout system.
-- [x] **Sidebar Restoration**: Restored the missing settings sidebar and implemented reactive `active` state highlighting with `lucide-react` icons.
-- [x] **Premium Toggles**: Refactored `ToggleSwitch` with premium nested-circle aesthetics and support for `title`/`description` props.
-- [x] **Custom Scrollbars**: Implemented a modern, subtle scrollbar system in `index.css` with smooth transitions.
-### 🧹 Code Health & Maintenance
-- [x] **GeneralTab Refactor**: Grouped scattered settings into logical categories (Project Basics, App Intelligence, Lifecycle, Privacy).
-- [x] **Syntax & Lints**: Fixed trailing parenthesis errors in `GeneralTab.tsx` and removed unused imports in `SettingsPage.tsx`.
-### 📝 Files Modified
+## 06-02-2026 (التحديث 19): ✨ الإعدادات UI التحسين والتميز البصري
+**الحالة**: ✅ مكتمل
+**الملخص**: تم توحيد الإعدادات UI من خلال تجميع الإعدادات المتفرقة في "بطاقات زجاجية" منطقية، وتحديث مكون `ToggleSwitch`، وتنفيذ تمييز علامة التبويب التفاعلية في الشريط الجانبي للإعدادات المستعادة.
+### ✨ مرئي و UX بولندي
+- [x] **Glass Card Standard**: تم توحيد جميع بطاقات الأقسام لاستخدام `premium-glass` والظلال المتميزة عبر `AppearanceTab.tsx`، و`GeneralTab.tsx`، و`AboutTab.tsx`، و`StatisticsTab.tsx`.
+- [x] **توحيد الإحصائيات**: تمت إعادة هيكلة `StatisticsTab.tsx` بالكامل وجميع بطاقات الحصص (`AntigravityCard`، `ClaudeCard`، `CodexCard`، `CopilotCard`) لتتبع نظام الرأس والتخطيط الموحد "Premium Glass".
+- [x] **استعادة الشريط الجانبي**: تمت استعادة الشريط الجانبي للإعدادات المفقودة وتنفيذ تمييز حالة `active` التفاعلية باستخدام أيقونات `lucide-react`.
+- [x] **تبديلات مميزة**: `ToggleSwitch` مُعاد تشكيلها مع جماليات الدوائر المتداخلة المتميزة ودعم دعائم `title`/`description`.
+- [x] **أشرطة التمرير المخصصة**: تم تطبيق نظام شريط التمرير الحديث والدقيق في `index.css` مع انتقالات سلسة.
+### 🧹 كود الصحة والصيانة
+- [x] ** GeneralTab Refactor **: إعدادات متفرقة مجمعة في فئات منطقية (أساسيات المشروع، وذكاء التطبيق، ودورة الحياة، والخصوصية).
+- [x] **بناء الجملة والخطوط**: تم إصلاح أخطاء الأقواس الزائدة في `GeneralTab.tsx` وإزالة الواردات غير المستخدمة في `SettingsPage.tsx`.
+### 📝 الملفات المعدلة
 - `src/renderer/index.css`
 - `src/renderer/features/settings/SettingsPage.tsx`
 - `src/renderer/features/settings/components/AppearanceTab.tsx`
@@ -620,20 +689,20 @@
 - `src/renderer/features/settings/components/statistics/ClaudeCard.tsx`
 - `src/renderer/features/settings/components/statistics/CodexCard.tsx`
 - `src/renderer/features/settings/components/statistics/CopilotCard.tsx`
-## 2026-02-06 (Update 18): 🧹 Technical Debt Refactor & Visual Polish
-**Status**: ✅ COMPLETED
-**Summary**: Refactored core services to reduce complexity, hardened type safety across the database layer, and implemented a premium HSL-based shadow system in the UI.
-### 🧹 Refactoring & Type Safety
-- [x] **Time Tracking Service**: Extracted helper methods from `getTimeStats` to reduce cyclomatic complexity and improve readability.
-- [x] **Database Layer Hardening**: Standardized return types for `Project`, `DbStats`, and `KnowledgeRepository` methods. Resolved implicit `any` and `unknown` types.
-- [x] **Interface Standardization**: Updated `DbStats` to extend `JsonObject` for IPC compatibility and fixed fallback logic in `DatabaseClientService`.
-### ✨ Visual & UX Polish
-- [x] **Premium Shadows**: Implemented a set of HSL-based shadow tokens in `index.css` for consistent, tinted shadow aesthetics.
-- [x] **Smooth Transitions**: Added `transition-premium` (cubic-bezier) and hover shadow effects to statistics cards and dashboard components.
-### 🧪 Quality Control
-- [x] Achieved 100% pass rate for build and type-check.
-- [x] Adhered to NASA Power of Ten rules for simplified function logic.
-### 📝 Files Modified
+## 06-02-2026 (التحديث 18): 🧹 إعادة هيكلة الديون الفنية والتلميع البصري
+**الحالة**: ✅ مكتمل
+**ملخص**: تمت إعادة هيكلة الخدمات الأساسية لتقليل التعقيد وتعزيز أمان الكتابة عبر طبقة قاعدة البيانات وتنفيذ نظام ظل متميز يستند إلى HSL في UI.
+### 🧹 إعادة البناء وسلامة النوع
+- [x] **خدمة تتبع الوقت**: الأساليب المساعدة المستخرجة من `getTimeStats` لتقليل التعقيد الدوري وتحسين إمكانية القراءة.
+- [x] **تقوية طبقة قاعدة البيانات**: أنواع الإرجاع القياسية للطرق `Project`، و`DbStats`، و`KnowledgeRepository`. تم حل الأنواع الضمنية `any` و`unknown`.
+- [x] **توحيد الواجهة**: تم تحديث `DbStats` لتوسيع `JsonObject` لتوافق IPC ومنطق fallback الثابت في `DatabaseClientService`.
+### ✨ مرئي و UX بولندي
+- [x] **Premium Shadows**: تم تنفيذ مجموعة من رموز الظل المستندة إلى HSL في `index.css` للحصول على جماليات ظل متناسقة وملونة.
+- [x] **انتقالات سلسة**: تمت إضافة `transition-premium` (مكعب بيزيير) وتأثيرات ظل التمرير إلى بطاقات الإحصائيات ومكونات لوحة المعلومات.
+### 🧪 مراقبة الجودة
+- [x] تم تحقيق معدل نجاح 100% في البناء وفحص النوع.
+- [x] الالتزام بقواعد NASA Power of Ten لتبسيط منطق الوظائف.
+### 📝 الملفات المعدلة
 - `src/main/services/analysis/time-tracking.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/database-client.service.ts`
@@ -642,20 +711,20 @@
 - `src/renderer/index.css`
 - `src/renderer/features/projects/components/ProjectStatsCards.tsx`
 - `src/renderer/features/ssh/StatsDashboard.tsx`
-## 2026-02-06 (Update 17): 📊 Statistics Accuracy & Data Integrity
-**Status**: ✅ COMPLETED
-**Summary**: Resolved inaccuracies in the statistics dashboard by correctly integrating the `TimeTrackingService` and implementing robust database queries for chat, message, and token usage metrics.
-### ✅ Fixes
-- [x] **Time Tracking**: Integrated and initialized `TimeTrackingService` in the main process, ensuring active app and coding time are accurately captured.
-- [x] **Data Integrity**: Refactored `SystemRepository` to use actual database queries instead of default values for message counts, chat counts, and token usage breakdown.
-- [x] **Circular Dependency**: Resolved a circular dependency between `DatabaseService` and `TimeTrackingService` by refactoring the latter to depend on `DatabaseClientService`.
-- [x] **IPC Layer**: Updated IPC handlers for statistics to return consistent data structures with proper fallback values.
-- [x] **Type Safety**: Ensured 100% type safety across the new statistics implementation, removing `any` casts and defining strict interfaces.
-### 🧹 Quality & Stability
-- [x] Resolved legacy type errors in `ProxyService` IPC handlers (`deleteAuthFile`, `getAuthFileContent`).
-- [x] Updated unit and integration tests to accommodate the new service architecture.
-- [x] Achieved 100% pass rate for build, lint, and type-check.
-### 📝 Files Modified
+## 06-02-2026 (التحديث 17): 📊 دقة الإحصائيات وسلامة البيانات
+**الحالة**: ✅ مكتمل
+**ملخص**: تم حل الأخطاء في لوحة معلومات الإحصائيات من خلال دمج `TimeTrackingService` بشكل صحيح وتنفيذ استعلامات قاعدة بيانات قوية لمقاييس استخدام الدردشة والرسائل والرموز المميزة.
+### ✅ الاصلاحات
+- [x] **تتبع الوقت**: تم دمج `TimeTrackingService` وتهيئته في العملية الرئيسية، مما يضمن التقاط التطبيق النشط ووقت الترميز بدقة.
+- [x] **تكامل البيانات**: تمت إعادة تصميم `SystemRepository` لاستخدام استعلامات قاعدة البيانات الفعلية بدلاً من القيم الافتراضية لأعداد الرسائل وأعداد الدردشة وتفاصيل استخدام الرمز المميز.
+- [x] **التبعية الدائرية**: تم حل التبعية الدائرية بين `DatabaseService` و`TimeTrackingService` عن طريق إعادة هيكلة الأخير ليعتمد على `DatabaseClientService`.
+- [x] **IPC Layer**: تم تحديث IPC handlers للإحصائيات لإرجاع بنيات بيانات متسقة مع قيم fallback المناسبة.
+- [x] **أمان النوع**: تم ضمان أمان النوع بنسبة 100% عبر تنفيذ الإحصائيات الجديدة، وإزالة `any` القوالب وتحديد واجهات صارمة.
+### 🧹 الجودة والثبات
+- [x] تم حل أخطاء النوع القديم في `ProxyService` IPC handlers (`deleteAuthFile`، `getAuthFileContent`).
+- [x] تحديث اختبارات الوحدة والتكامل لاستيعاب بنية الخدمة الجديدة.
+- [x] تم تحقيق معدل نجاح بنسبة 100% في البناء والفحص والتحقق من النوع.
+### 📝 الملفات المعدلة
 - `src/main/startup/services.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/repositories/system.repository.ts`
@@ -664,312 +733,312 @@
 - `src/main/ipc/proxy.ts`
 - `src/tests/main/services/data/database.service.test.ts`
 - `src/tests/main/tests/integration/repository-db.integration.test.ts`
-## [Unreleased]
-### Changed
-- Completed AGT-PAR-01 through AGT-PAR-06 for Project Agent parallel execution and canvas graph updates.
-- Added task-scoped `projectAgent` IPC/preload bridge calls (`approvePlan`, `stop`, `getStatus`, `retryStep`) to reduce cross-task interference under concurrent runs.
-- Added priority-aware execution queue scaffolding in `ProjectAgentService` (`low`/`normal`/`high`/`critical`) with bounded concurrent task starts.
-- Extended `ProjectStep` metadata for parallel planning (`type`, `dependsOn`, `priority`, `parallelLane`, `branchId`) and updated `propose_plan` tool schema/normalization to accept structured steps.
-- Updated Project Agent canvas plan rendering to draw dependency edges and lane-aware positions, plus fork/join visuals in `PlanNode`.
-- Fixed repository blockers discovered during AGT-PAR work: `src/main/ipc/theme.ts` type mismatch and `src/main/ipc/git.ts` lint error.
-### Removed
-- Removed `HistoryImportService` and `history:import` IPC handlers.
-- Removed file-based auth management from `ProxyService` (`getAuthFiles`, `syncAuthFiles`, `deleteAuthFile`, etc.).
-- Updated `useBrowserAuth` hook to use the database-backed multi-account API.
-- Cleaned up `preload.ts` and `electron.d.ts` from obsolete auth methods.
-## 2026-02-05 (Update 16): 🛡️ Codex Routing & Proxy Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Resolved "OpenAI API Key not set" error for Codex and Copilot providers by correctly routing them through the embedded proxy.
-### ✅ Fixes
-- [x] **LLM Routing**: Updated `LLMService` to route `codex` and `copilot` providers through the embedded proxy.
-- [x] **Model Normalization**: Fixed missing provider prefixes for `codex` and `copilot` models when hitting the proxy.
-- [x] **Code Quality**: Refactored `getRouteConfig` to reduce cyclomatic complexity and adhere to NASA Power of Ten rules.
-### 🧪 Testing
-- [x] Verified existing `LLMService` tests pass.
-- [x] Added new test case for Codex proxy routing in `llm.service.test.ts`.
-### 📝 Files Modified
+## [غير منشورة]
+### تم التغيير
+- تم إكمال AGT-PAR-01 حتى AGT-PAR-06 للتنفيذ المتوازي لوكيل المشروع وتحديثات الرسم البياني.
+- تمت إضافة `projectAgent` IPC/استدعاءات جسر التحميل المسبق على نطاق المهام (`approvePlan`، `stop`، `getStatus`، `retryStep`) لتقليل التداخل بين المهام أثناء عمليات التشغيل المتزامنة.
+- تمت إضافة سقالات قائمة انتظار التنفيذ المدركة للأولوية في `ProjectAgentService` (`low`/`normal`/`high`/`critical`) مع بدء المهمة المتزامنة المحدودة.
+- البيانات الوصفية `ProjectStep` الموسعة للتخطيط الموازي (`type`، `dependsOn`، `priority`، `parallelLane`، `branchId`) ومخطط/تسوية أداة `propose_plan` المحدثة لقبول الخطوات المنظمة.
+- عرض مخطط قماشي محدث لوكيل المشروع لرسم حواف التبعية ومواضع التعرف على المسار، بالإضافة إلى مرئيات التفرع/الانضمام في `PlanNode`.
+- تم اكتشاف أدوات حظر المستودعات الثابتة أثناء عمل AGT-PAR: `src/main/ipc/theme.ts` عدم تطابق النوع و`src/main/ipc/git.ts` خطأ في الوبر.
+### تمت الإزالة
+- تمت إزالة `HistoryImportService` و`history:import` IPC handlers.
+- تمت إزالة إدارة المصادقة المستندة إلى الملفات من `ProxyService` (`getAuthFiles`، `syncAuthFiles`، `deleteAuthFile`، وما إلى ذلك).
+- تم تحديث خطاف `useBrowserAuth` لاستخدام الحسابات المتعددة المدعومة بقاعدة البيانات API.
+- تنظيف `preload.ts` و`electron.d.ts` من طرق المصادقة القديمة.
+## 05-02-2026 (التحديث 16): 🛡️ توجيه الدستور الغذائي وتقوية الوكيل
+**الحالة**: ✅ مكتمل
+**الملخص**: تم حل الخطأ "OpenAI API لم يتم تعيين المفتاح" لموفري Codex وCopilot عن طريق توجيههم بشكل صحيح عبر الوكيل المضمن.
+### ✅ الاصلاحات
+- [x] **LLM التوجيه**: تم تحديث `LLMService` لتوجيه موفري `codex` و`copilot` من خلال الوكيل المضمن.
+- [x] **تسوية النموذج**: تم إصلاح بادئات الموفر المفقودة لطرازي `codex` و`copilot` عند الضغط على الوكيل.
+- [x] **جودة الكود**: تمت إعادة هيكلتها `getRouteConfig` لتقليل التعقيد الدوري والالتزام بقواعد NASA Power of Ten.
+### 🧪الاختبار
+- [x] تم التحقق من اجتياز اختبارات `LLMService` الحالية.
+- [x] تمت إضافة حالة اختبار جديدة لتوجيه وكيل Codex في `llm.service.test.ts`.
+### 📝 الملفات المعدلة
 - `src/main/services/llm/llm.service.ts`
 - `src/tests/main/services/llm/llm.service.test.ts`
 - `docs/CHANGELOG.md`
-## 2026-02-04 (Update 15): 🟢 NVIDIA Stream & Code Quality Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Resolved critical termination errors during NVIDIA model streaming and performed project-wide code quality improvements.
-### ✅ Fixes
-- [x] Fix NVIDIA Stream: Corrected `Accept` header to `application/json` and fixed method corruption in `LLMService`.
-- [x] Fix NVIDIA Body: Removed non-standard `provider` field and added default `max_tokens: 4096`.
-- [x] Fix Model Logic: Refined `applyReasoningEffort` to target only reasoning-capable models (o1/o3).
-- [x] Fix Regression: Resolved `getReasoningEffort` scope error in `useChatGenerator.ts`.
-- [x] Fix Type Safety: Standardized `getCodexUsage` return types in `ProxyService`.
-- [x] Fix React Hooks: Resolved `set-state-in-effect` error in `ModelSelectorModal.tsx`.
-- [x] Cleanup: Finalized `LLMService` refactor to reduce complexity (NASA Power of Ten).
-### 📝 Files Modified
+## 04-02-2026 (التحديث 15): 🟢 تقوية جودة البث والأكواد من NVIDIA
+**الحالة**: ✅ مكتمل
+**الملخص**: تم حل أخطاء الإنهاء الحرجة أثناء بث نموذج NVIDIA وإجراء تحسينات على جودة التعليمات البرمجية على مستوى المشروع.
+### ✅ الاصلاحات
+- [x] إصلاح NVIDIA Stream: تم تصحيح رأس `Accept` إلى `application/json` وإصلاح تلف الطريقة في `LLMService`.
+- [x] إصلاح NVIDIA Body: تمت إزالة الحقل `provider` غير القياسي وإضافة الحقل `max_tokens: 4096` الافتراضي.
+- [x] إصلاح منطق النموذج: تم تحسين `applyReasoningEffort` لاستهداف النماذج القادرة على التفكير المنطقي فقط (o1/o3).
+- [x] إصلاح الانحدار: تم حل خطأ النطاق `getReasoningEffort` في `useChatGenerator.ts`.
+- [x] إصلاح نوع الأمان: أنواع الإرجاع الموحدة `getCodexUsage` في `ProxyService`.
+- [x] إصلاح خطافات React: تم حل خطأ `set-state-in-effect` في `ModelSelectorModal.tsx`.
+- [x] التنظيف: تم الانتهاء من إعادة بناء `LLMService` لتقليل التعقيد (NASA Power of Ten).
+### 📝 الملفات المعدلة
 - `src/main/services/llm/llm.service.ts`
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/main/services/proxy/proxy.service.ts`
 - `src/renderer/features/models/components/ModelSelectorModal.tsx`
-Track the evolution of Tandem.
-## 2026-02-04: 🤖 BATCH 6: MULTI-AGENT ORCHESTRATION v2
-**Status**: ✅ COMPLETED
-**Summary**: Implemented a sophisticated multi-agent orchestration system and persistent agent profiles. This update allows for coordinated workflows between specialized agents (Planner, Worker, Reviewer) and ensures that agent personalities and system prompts are persisted across sessions.
-### 🤖 Multi-Agent Orchestration
-- **Orchestration Service**: Created `MultiAgentOrchestratorService` to manage complex, multi-step tasks using a "Planner-Worker" architecture.
-- **Planner Phase**: Implemented an "Architect" agent that breaks down high-level user goals into granular tasks and assigns them to specialized agent profiles.
-- **Worker Phase**: Developed an execution loop that cycles through assigned steps, utilizing specific agent personas for targeted implementation.
-- **Interactive Approval**: Added a "Waiting for Approval" state, allowing users to review and modify agent-generated plans before execution begins.
-### 👥 Persistent Agent Profiles
-- **Database Persistence**: Implemented `agent_profiles` table and `SystemRepository` methods for saving, retrieving, and deleting agent configurations.
-- **Agent Registry**: Refactored `AgentRegistryService` to serve as a persistent store for specialized agent personas (e.g., Senior Architect, Full-Stack Engineer).
-- **Profile Management**: Exposed profile registration and deletion via `ProjectAgentService` and IPC, enabling future UI-driven agent customization.
-### 🛡️ Type Safety & Integration
-- **Strict Typing**: Achieved 100% type safety for orchestrated messages and state updates, utilizing strictly defined interfaces and avoiding `any`/`unknown`.
-- **Event-Driven UI**: Enhanced the system-wide `EventBus` to propagate real-time orchestration updates to the frontend.
-- **IPC Layer**: Finalized new IPC handlers (`orchestrator:start`, `orchestrator:approve`, `orchestrator:get-state`) for seamless communication with the renderer.
-## 2026-02-04: 🧠 BATCH 5: MEMORY CORE & DATABASE EVOLUTION
-**Status**: ✅ COMPLETED
-**Summary**: Full consolidation of memory services and finalization of the Rust-based database migration. Unified the RAG system and removed redundant legacy binary dependencies.
-### 🧠 Memory Core & RAG
-- **Service Consolidation**: Merged `MemoryService` into `AdvancedMemoryService`, creating a single source of truth for all memory operations (Semantic, Episodic, Entity, Personality).
-- **Unified Vector Ops**: Integrated all vector storage and search operations with the Rust `db-service`, eliminating the need for the legacy `memory-service` binary.
-- **RAG Hardening**: Implemented a content-validation staging buffer for new memories to reduce noise and improve retrieval quality.
-### 🗄️ Database Service Evolution
-- **Migration Finalization**: Successfully transitioned all database operations to the standalone Rust service.
-- **Dependency Cleanup**: Removed legacy `@electric-sql/pglite` and `better-sqlite3` dependencies from the project.
-- **Orphan Cleanup**: Deleted legacy migration files (`migrations.ts`, `db-migration.service.ts`) and the deprecated native `memory-service` implementation.
-### 🛡️ Quality & Performance
-- **Zero Any Policy**: Overhauled `AdvancedMemoryService` to achieve 100% type safety, removing all `any` and `unknown` casts.
-- **Startup Optimization**: Optimized the service initialization sequence in `startup/services.ts`.
-- **Build Pass**: Confirmed 0 build errors and 0 type-check warnings across the entire main process.
-**Summary**: Refactored the LLM service to eliminate hardcoded model names and context window- ### Security & Type Safety
-- Implemented rate limiting for API requests using `RateLimitService` token bucket (SEC-009)
-- Added validation for Agent Profile registration to prevent system profile overwrites (AGENT-001)
-- Refactored `Message.content` and `UACNode` to use discriminated union types for strict type safety (TYPE-001)
-- Implemented content filtering in `LLMService` to prevent sensitive data leaks (LLM-001)
-- Added authorization checks for provider rotation, window IPC, and logging IPC (SEC-013)
-- Fixed listener memory leaks in SSH IPC service (IPC-001)
-- **Access Control**: Implemented strict validation in `AgentRegistryService` to prevent unauthorized modification of system profiles (AGENT-001-3).
-- **Rate Limiting**: Added `tryAcquire` to `RateLimitService` and implemented API rate limiting in `ApiServerService` to protect against DoS attacks (SEC-009-3).
-- **LLM**: Implemented dynamic context window limits via `ModelRegistryService` integration.
-- **LLM**: Fixed `OllamaService` streaming timeouts and added `AbortSignal` support.
-### 🧠 LLM Intelligence & Scalability
-- **LLM-001-1**: Improved token counting accuracy using a hybrid word/character heuristic.
-- **LLM-001-4**: Fixed streaming timeouts in `OllamaService` by setting consistent defaults.
-- **Dynamic Context Windows**: Added `registerModelLimit` to `TokenEstimationService`. `ModelRegistryService` now automatically pushes context window metadata (fetched from the Rust service) to the estimator.
-- **Constant Extraction**: Completed the extraction of all default model names (`DEFAULT_MODELS`) across OpenAI, Anthropic, Groq, and Embedding providers.
-### 🧪 Testing & Reliability
-- **TEST-003-L1**: Built a comprehensive test suite for `OllamaService` with 100% coverage of connection and availability logic.
-- **Reliable History**: Implemented `MAX_MESSAGE_HISTORY` and `MAX_EVENT_HISTORY` limits in the Agent state machine to prevent memory bloat and context overflow.
-### 🛡️ IPC & Security
-- **SEC-011-3**: Implemented rate limiting for Git operations (`commit`, `push`, `pull`, `stage`, `unstage`, `checkout`) to prevent rapid-fire process spawning.
-- **SEC-011-4**: Added rate limiting to all database write operations including chats, messages, projects, folders, and prompts.
-- **SEC-011-5**: Ensured tool execution is strictly rate-limited.
-- **SEC-011-6**: Added rate limiting and size validation (1MB) to `terminal:write` IPC handler.
-- **IPC-001-5**: Centralized rate limiting utility for write-heavy operations including token usage and usage recording.
-### 🧹 Quality & Stability
-- Fixed React Compiler errors in `TaskNode.tsx` by adding missing dependencies to `useCallback`.
-- Extracted `AgentProfileSelector` and `TaskMetaInfo` sub-components in `TaskNode.tsx` to reduce complexity.
-- Resolved multiple "Sort imports" and "Unnecessary conditional" lint warnings across the codebase.
-- Achieved 100% build pass rate on both TypeScript and Rust components.
-## 2026-02-02: 🛡️ ELECTRON SECURITY HARDENING - PHASE 4
-**Status**: ✅ COMPLETED
-**Summary**: Hardened the Electron application by implementing certificate validation and permission request handlers.
-### 🔐 Security Improvements (3 items completed)
-**Electron Security Hardening**:
-- **SEC-004-3**: Added `certificate-error` handler in the main process to deny all certificate errors by default, preventing potential MITM attacks.
-- **SEC-004-4**: Implemented `setPermissionRequestHandler` and `setPermissionCheckHandler` in the main process to deny all device and notification permission requests by default.
-**External Process Security**:
-- **SEC-005-4**: Implemented privilege escalation checks for SSH commands by creating a centralized `CommandValidator` and integrating it into `SSHService` and `CommandService`.
-**Cryptography Improvements**:
-- **SEC-007-3**: Implemented at-rest encryption for the application's master key using Electron's `safeStorage`, with automatic migration for legacy plain-text keys.
-## 2026-02-02: 🎯 COMPREHENSIVE SECURITY & CODE QUALITY IMPROVEMENTS - PHASE 3
-**Status**: ✅ COMPLETED
-**Summary**: Major security hardening initiative completing 169 of 210 TODO items (80.5% completion rate). Addressed critical security vulnerabilities, input validation gaps, code quality issues, and performance bottlenecks across the entire codebase.
-### 🔐 Security Improvements (28 items completed)
-**Command Injection Prevention**:
-- **SEC-001-1**: Fixed command injection in `security.server.ts` nmap execution with strict parameter validation
-- **SEC-001-2**: Enhanced shell command execution in `command.service.ts` with proper argument escaping
-- **SEC-001-3**: Sanitized command/args in `process.ts` IPC handler to prevent spawn injection
-- **SEC-001-4**: Fixed command concatenation in `process.service.ts` using `quoteShellArg` utility
-**Path Traversal Prevention**:
-- **SEC-002-1**: Fixed path validation bypass in `filesystem.service.ts` using strict directory boundary checks
-- **SEC-002-2**: Added path validation to `filesystem.server.ts` downloadFile function
-- **SEC-002-3**: Validated file paths in `files.ts` IPC handler against allowedRoots
-- **SEC-002-4**: Fixed direct path concatenation in `ExtensionInstallPrompt.tsx`
-**Secrets & Credentials Management**:
-- **SEC-003-1**: Removed hardcoded API key 'opencode' from `chat.ts`
-- **SEC-003-2**: Removed hardcoded 'public' key from `llm.service.ts`
-- **SEC-003-3**: Moved CLIENT_ID to environment variables in `local-auth-server.util.ts`
-- **SEC-003-4**: Verified `.env` properly excluded from version control
-- **SEC-003-5**: Fixed hardcoded 'connected' proxyKey in `llm.service.ts`
-**Electron Security Hardening**:
-- **SEC-004-1**: Hardened CSP policy, removed unsafe-eval/unsafe-inline where possible
-- **SEC-004-2**: Enabled sandbox mode in Electron browser windows
-- **SEC-004-5**: Removed ELECTRON_DISABLE_SECURITY_WARNINGS suppression
-**External Process Security**:
-- **SEC-005-1**: Added resource limits (max buffer size) to MCP plugin spawns
-- **SEC-005-2**: Implemented environment variable whitelisting for plugin execution
-**SQL Injection Prevention**:
-- **SEC-006-1**: Fixed dynamic SQL in `knowledge.repository.ts` with proper parameterization
-- **SEC-006-2**: Parameterized LIMIT clause in `chat.repository.ts`
-- **SEC-006-3**: Added LIKE pattern sanitization to prevent wildcard injection
-- **SEC-006-4**: Fixed LIKE-based DoS vulnerability with pattern sanitization
-**Cryptography Improvements**:
-- **SEC-007-1**: Replaced `Math.random()` with `crypto.randomBytes()` for token generation
-- **SEC-007-2**: Fixed random ID generation in `utility.service.ts`
-**API Security**:
-- **SEC-008-2**: Added tool name validation (alphanumeric + `._-` only)
-- **SEC-008-3**: Implemented message schema validation (role, content structure)
-- **SEC-008-4**: Added MCP parameter validation (URL, query, count limits)
-- **SEC-009-1**: Fixed permissive CORS policy with strict origin validation
-- **SEC-009-2**: Added request size limits (10MB JSON, 50MB file uploads)
-- **SEC-009-4**: Implemented 5-minute timeout for SSE streaming with proper cleanup
-- **SEC-010-3**: Added LIKE pattern sanitization in knowledge repository methods
-**Input Validation**:
-- **IPC-001-4**: Terminal input validation (cols: 1-500, rows: 1-200, data: 1MB max)
-**File Permissions**:
-- **SEC-014-4**: Added secure file permissions (mode 0o700) for 7 critical directories:
-    - Logs directory (`logger.ts`)
-    - Backup + config directories (`backup.service.ts`)
-    - Data directory + all subdirs (`data.service.ts`)
-    - SSH storage directory (`ssh.service.ts`)
-    - Migration directory (`migration.service.ts`)
-    - Feature flag config (`feature-flag.service.ts`)
-**Prompt Injection Prevention**:
-- **SEC-015-1**: Sanitized user brain content in `brain.service.ts` (5000 char limit, remove code blocks, limit newlines)
-- **SEC-015-2**: Validated custom prompts in `idea-generator.service.ts` (1000 char limit, sanitize markers)
-**Rate Limiting**:
-- **SEC-011-1**: Added rate limiting to chat streaming
-- **SEC-011-2**: Added rate limiting to file search operations
-### 🚀 Performance Optimizations (15 items completed)
-**State Management**:
-- **PERF-002-1**: Consolidated 5 separate `useState` calls into single state object in `useProjectManager.ts`
-**Database Query Optimization**:
-- **PERF-003-1**: Fixed N+1 query in `prompt.repository.ts` with direct WHERE query
-- **PERF-003-2**: Fixed N+1 query in `folder.repository.ts` with direct WHERE query
-- **PERF-003-3**: Converted loop inserts to bulk VALUES insert in `uac.repository.ts`
-- **PERF-003-5**: Optimized expensive EXISTS clause to IN subquery in `chat.repository.ts`
-**Caching**:
-- **PERF-005-1**: Added 1-minute cache for model loads in `model-fetcher.ts`
-- **PERF-005-4**: Fixed expensive deep copy to shallow copy for immutable messages in `useChatHistory.ts`
-**Debouncing**:
-- **PERF-006-1**: Added 300ms debounce to FileExplorer folder toggles
-**Verified Already Optimized**:
-- **PERF-002-4**: ChatInput handlers already use stable refs
-- **PERF-002-5**: MCPStore filteredTools already memoized
-- **PERF-006-2**: ChatInput typing already efficient
-- **PERF-006-3**: Resize handlers already efficient
-### 📚 Documentation (7 items completed)
-**New Documentation Files**:
-- **Created `docs/CONFIG.md`**: Environment variables and configuration precedence
-- **Created `docs/API.md`**: REST API endpoint documentation
-- **Created `docs/MCP.md`**: MCP server contracts and tool documentation
-- **Created `docs/IPC.md`**: IPC handler contracts and validation requirements
-**Code Documentation**:
-- **QUAL-001-1**: Added JSDoc to `utility.service.ts` public methods
-- **QUAL-001-2**: Added JSDoc to `copilot.service.ts` public methods
-- **QUAL-001-3**: Added JSDoc to `project.service.ts` public methods
-- **QUAL-001-4**: Documented 13 helper functions in `response-normalizer.util.ts`
-### 🧹 Code Quality Improvements (31 items completed)
-**Logging Migration** (32 files):
-- Migrated all `console.error` calls to `appLogger.error` across IPC handlers, services, and utilities
-- Standardized error logging format: `appLogger.error('ServiceName', 'Message', error as Error)`
-- Files: auth.ts, ollama.ts, code-intelligence.ts, chat.ts, db.ts, git.ts, files.ts, and 25+ service files
-**Error Handling**:
-- **ERR-001**: Added proper error property to catch blocks in repositories (5 files)
-- Fixed: chat, folder, knowledge, llm, project, prompt, settings repositories
-**Type Safety**:
-- **TYPE-001-1**: Fixed unsafe double cast in `sanitize.util.ts`
-- **TYPE-001-2**: Fixed unsafe casts in `ipc-wrapper.util.ts`
-- **TYPE-001-3**: Verified `response-normalizer.util.ts` already uses safe helpers
-**Code Organization**:
-- **QUAL-005-1**: Removed unused `_scanner`, `_embedding` parameters from `utility.service.ts`
-**IPC Handler Optimization**:
-- **IPC-001-1**: Removed 5 duplicate handler registrations in `db.ts` (getChat, getAllChats, getProjects, getFolders, getStats)
-- **IPC-001-2**: Removed 3 duplicate handler registrations in `git.ts` (getBranch, getStatus, getBranches)
-- **IPC-001-3**: Removed 3 duplicate handler registrations in `auth.ts` (get-linked-accounts, get-active-linked-account, has-linked-account)
-- Added comments explaining batch handler optimization pattern
-**Constant Extraction**:
-- Extracted hardcoded values to named constants:
+تتبع تطور جنبا إلى جنب.
+## 04-02-2026: 🤖 الدفعة 6: التنسيق متعدد الوكلاء الإصدار الثاني
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تنفيذ نظام تنسيق متطور متعدد الوكلاء وملفات تعريف الوكلاء المستمرة. يسمح هذا التحديث بسير عمل منسق بين الوكلاء المتخصصين (المخطط والعامل والمراجع) ويضمن استمرار شخصيات الوكلاء ومطالبات النظام عبر الجلسات.
+### 🤖 تنسيق متعدد الوكلاء
+- **خدمة التنسيق**: تم إنشاء `MultiAgentOrchestratorService` لإدارة المهام المعقدة ومتعددة الخطوات باستخدام بنية "Planner-Worker".
+- **مرحلة المخطط**: تم تنفيذ وكيل "مهندس معماري" يقسم أهداف المستخدم عالية المستوى إلى مهام دقيقة ويعينها لملفات تعريف الوكلاء المتخصصة.
+- **مرحلة العمل**: تم تطوير حلقة تنفيذ تتنقل عبر الخطوات المعينة، باستخدام شخصيات وكيل محددة للتنفيذ المستهدف.
+- **الموافقة التفاعلية**: تمت إضافة حالة "في انتظار الموافقة"، مما يسمح للمستخدمين بمراجعة وتعديل الخطط التي أنشأها الوكيل قبل بدء التنفيذ.
+### 👥 ملفات تعريف الوكيل الدائم
+- **استمرارية قاعدة البيانات**: تم تنفيذ جدول `agent_profiles` وأساليب `SystemRepository` لحفظ تكوينات الوكيل واستردادها وحذفها.
+- **سجل الوكلاء**: تمت إعادة تصميم `AgentRegistryService` ليكون بمثابة متجر دائم لشخصيات الوكلاء المتخصصة (على سبيل المثال، مهندس معماري أول، مهندس متكامل).
+- **إدارة الملف الشخصي**: تسجيل الملف الشخصي المكشوف وحذفه عبر `ProjectAgentService` وIPC، مما يتيح تخصيص الوكيل المستند إلى UI في المستقبل.
+### 🛡️ نوع الأمان والتكامل
+- **الكتابة الصارمة**: تم تحقيق أمان الكتابة بنسبة 100% للرسائل المنسقة وتحديثات الحالة، وذلك باستخدام واجهات محددة بدقة وتجنب `any`/`unknown`.
+- **مدفوعة بالأحداث UI**: تم تحسين `EventBus` على مستوى النظام لنشر تحديثات التنسيق في الوقت الفعلي إلى الواجهة الأمامية.
+- **IPC الطبقة**: تم الانتهاء من IPC handlers الجديد (`orchestrator:start`، `orchestrator:approve`، `orchestrator:get-state`) للتواصل السلس مع العارض.
+## 04-02-2026: 🧠 الدفعة 5: الذاكرة الأساسية وتطور قاعدة البيانات
+**الحالة**: ✅ مكتمل
+**الملخص**: الدمج الكامل لخدمات الذاكرة والانتهاء من ترحيل قاعدة البيانات المستندة إلى Rust. توحيد نظام RAG وإزالة التبعيات الثنائية القديمة الزائدة عن الحاجة.
+### 🧠 الذاكرة الأساسية وRAG
+- **توحيد الخدمة**: تم دمج `MemoryService` في `AdvancedMemoryService`، مما يؤدي إلى إنشاء مصدر واحد للحقيقة لجميع عمليات الذاكرة (الدلالية، والعرضية، والكيان، والشخصية).
+- **Unified Vector Ops**: دمج جميع عمليات تخزين المتجهات والبحث باستخدام Rust `db-service`، مما يلغي الحاجة إلى الثنائي القديم `memory-service`.
+- **تصلب RAG**: تم تنفيذ مخزن مؤقت للتحقق من صحة المحتوى للذكريات الجديدة لتقليل الضوضاء وتحسين جودة الاسترجاع.
+### 🗄️ تطور خدمة قواعد البيانات
+- **الانتهاء من الترحيل**: تم بنجاح نقل كافة عمليات قاعدة البيانات إلى خدمة Rust المستقلة.
+- **تنظيف التبعيات**: تمت إزالة التبعيات القديمة `@electric-sql/pglite` و`better-sqlite3` من المشروع.
+- **التنظيف اليتيم**: ملفات الترحيل القديمة المحذوفة (`migrations.ts`، `db-migration.service.ts`) وتنفيذ `memory-service` الأصلي المهمل.
+### 🛡️ الجودة والأداء
+- **عدم وجود أي سياسة**: تم إصلاح `AdvancedMemoryService` لتحقيق أمان النوع بنسبة 100%، وإزالة جميع قوالب `any` و`unknown`.
+- **تحسين بدء التشغيل**: تحسين تسلسل تهيئة الخدمة في `startup/services.ts`.
+- **Build Pass**: تم تأكيد عدم وجود أخطاء في البناء و0 تحذيرات بشأن التحقق من النوع عبر العملية الرئيسية بأكملها.
+**الملخص**: تمت إعادة هيكلة خدمة LLM لإزالة أسماء النماذج المشفرة ونافذة السياق - ### الأمان وسلامة النوع
+- تم تطبيق حد المعدل لطلبات API باستخدام مجموعة الرمز المميز `RateLimitService` (SEC-009)
+- تمت إضافة التحقق من صحة تسجيل ملف تعريف الوكيل لمنع الكتابة فوق ملف تعريف النظام (AGENT-001)
+- تمت إعادة صياغة `Message.content` و`UACNode` لاستخدام أنواع النقابات المميزة لضمان سلامة النوع بشكل صارم (TYPE-001)
+- تم تنفيذ تصفية المحتوى في `LLMService` لمنع تسرب البيانات الحساسة (LLM-001)
+- تمت إضافة عمليات التحقق من الترخيص لتناوب الموفر والنافذة IPC والتسجيل IPC (SEC-013)
+- تسرب ذاكرة المستمع الثابتة في خدمة SSH IPC (IPC-001)
+- **التحكم في الوصول**: تم تنفيذ التحقق الصارم من الصحة في `AgentRegistryService` لمنع التعديل غير المصرح به لملفات تعريف النظام (AGENT-001-3).
+- **تحديد المعدل**: تمت إضافة `tryAcquire` إلى `RateLimitService` وتنفيذ تحديد المعدل API في `ApiServerService` للحماية من هجمات DoS (SEC-009-3).
+- **LLM**: تم تنفيذ حدود نافذة السياق الديناميكي عبر تكامل `ModelRegistryService`.
+- **LLM**: تم إصلاح مهلات البث `OllamaService` وإضافة دعم `AbortSignal`.
+### 🧠 LLM الذكاء وقابلية التوسع
+- **LLM-001-1**: تحسين دقة حساب الرموز المميزة باستخدام إرشادي مختلط للكلمات/الأحرف.
+- **LLM-001-4**: تم إصلاح مهلات البث في `OllamaService` عن طريق تعيين إعدادات افتراضية متسقة.
+- **السياق الديناميكي لنظام Windows**: تمت إضافة `registerModelLimit` إلى `TokenEstimationService`. يقوم `ModelRegistryService` الآن تلقائيًا بدفع البيانات التعريفية لنافذة السياق (التي تم جلبها من خدمة Rust) إلى المُقدِّر.
+- **الاستخراج المستمر**: تم الانتهاء من استخراج جميع أسماء النماذج الافتراضية (`DEFAULT_MODELS`) عبر موفري OpenAI، وAnthropic، وGroq، وEmbedding.
+### 🧪 الاختبار والموثوقية
+- **TEST-003-L1**: تم إنشاء مجموعة اختبار شاملة لـ `OllamaService` مع تغطية 100% لمنطق الاتصال والتوفر.
+- **السجل الموثوق به**: تم تنفيذ حدود `MAX_MESSAGE_HISTORY` و`MAX_EVENT_HISTORY` في جهاز حالة الوكيل لمنع تضخم الذاكرة وتجاوز السياق.
+### 🛡️ IPC والأمن
+- **SEC-011-3**: تم تنفيذ تحديد المعدل لعمليات Git (`commit`، `push`، `pull`، `stage`، `unstage`، `checkout`) لمنع ظهور عملية الإطلاق السريع.
+- **SEC-011-4**: تمت إضافة تحديد المعدل لجميع عمليات الكتابة في قاعدة البيانات بما في ذلك الدردشات والرسائل والمشاريع والمجلدات والمطالبات.
+- **SEC-011-5**: ضمان تنفيذ الأداة محدود للغاية.
+- **SEC-011-6**: تمت إضافة تحديد المعدل والتحقق من الحجم (1 ميجابايت) إلى `terminal:write` IPC handler.
+- **IPC-001-5**: أداة مساعدة مركزية لتحديد المعدل لعمليات الكتابة الثقيلة بما في ذلك استخدام الرمز المميز وتسجيل الاستخدام.
+### 🧹 الجودة والثبات
+- تم إصلاح أخطاء المترجم React في `TaskNode.tsx` عن طريق إضافة التبعيات المفقودة إلى `useCallback`.
+- تم استخراج المكونات الفرعية `AgentProfileSelector` و`TaskMetaInfo` في `TaskNode.tsx` لتقليل التعقيد.
+- تم حل العديد من تحذيرات "فرز الواردات" و"الشرطية غير الضرورية" عبر قاعدة التعليمات البرمجية.
+- تم تحقيق معدل نجاح بناء بنسبة 100% على كل من مكونات TypeScript وRust.
+##2026-02-02: 🛡️ التعزيز الأمني ​​الإلكتروني - المرحلة الرابعة
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت تقوية تطبيق Electron من خلال تنفيذ التحقق من صحة الشهادة وطلب الإذن handlers.
+### 🔐 تحسينات أمنية (تم إكمال 3 عناصر)
+**Electron تشديد الأمان**:
+- **SEC-004-3**: تمت إضافة `certificate-error` handler في العملية الرئيسية لرفض جميع أخطاء الشهادة بشكل افتراضي، مما يمنع هجمات MITM المحتملة.
+- **SEC-004-4**: تم تنفيذ `setPermissionRequestHandler` و`setPermissionCheckHandler` في العملية الرئيسية لرفض جميع طلبات إذن الجهاز والإشعارات بشكل افتراضي.
+**أمان العمليات الخارجية**:
+- **SEC-005-4**: تم تنفيذ عمليات التحقق من تصعيد الامتيازات لأوامر SSH عن طريق إنشاء `CommandValidator` مركزي ودمجه في `SSHService` و`CommandService`.
+**تحسينات التشفير**:
+- **SEC-007-3**: تم تنفيذ التشفير غير النشط للمفتاح الرئيسي للتطبيق باستخدام `safeStorage` الخاص بـ Electron، مع الترحيل التلقائي لمفاتيح النص العادي القديمة.
+## 02-02-2026: 🎯 تحسينات شاملة على الأمان وجودة التعليمات البرمجية - المرحلة 3
+**الحالة**: ✅ مكتمل
+**الملخص**: مبادرة تعزيز الأمان الرئيسية التي تكمل 169 عنصرًا من أصل 210 عناصر المهام (معدل إكمال 80.5%). تمت معالجة الثغرات الأمنية الحرجة، وفجوات التحقق من صحة الإدخال، ومشكلات جودة التعليمات البرمجية، واختناقات الأداء عبر قاعدة التعليمات البرمجية بأكملها.
+### 🔐 تحسينات أمنية (تم إكمال 28 عنصرًا)
+**منع حقن الأوامر**:
+- **SEC-001-1**: تم إصلاح إدخال الأوامر في تنفيذ `security.server.ts` nmap مع التحقق الصارم من صحة المعلمات
+- **SEC-001-2**: تنفيذ أمر Shell محسّن في `command.service.ts` مع هروب الوسيطة المناسبة
+- **SEC-001-3**: الأمر/الوسائط المنقحة في `process.ts` IPC handler لمنع حقن النشر
+- **SEC-001-4**: تم إصلاح تسلسل الأوامر في `process.service.ts` باستخدام الأداة المساعدة `quoteShellArg`
+**منع اجتياز المسار**:
+- **SEC-002-1**: تجاوز التحقق من صحة المسار الثابت في `filesystem.service.ts` باستخدام عمليات التحقق الصارمة من حدود الدليل
+- **SEC-002-2**: تمت إضافة التحقق من صحة المسار إلى وظيفة `filesystem.server.ts` downloadFile
+- **SEC-002-3**: مسارات الملفات التي تم التحقق من صحتها في `files.ts` IPC handler مقابل الجذور المسموح بها
+- **SEC-002-4**: تسلسل المسار المباشر الثابت في `ExtensionInstallPrompt.tsx`
+** إدارة الأسرار وبيانات الاعتماد **:
+- **SEC-003-1**: تمت إزالة المفتاح الثابت API "الرمز المفتوح" من `chat.ts`
+- **SEC-003-2**: تمت إزالة المفتاح "العام" المشفر من `llm.service.ts`
+- **SEC-003-3**: تم نقل CLIENT_ID إلى متغيرات البيئة في `local-auth-server.util.ts`
+- **SEC-003-4**: تم التحقق من استبعاد `.env` بشكل صحيح من التحكم في الإصدار
+- **SEC-003-5**: تم إصلاح مفتاح الوكيل "المتصل" المضمن في `llm.service.ts`
+**Electron تشديد الأمان**:
+- **SEC-004-1**: سياسة CSP المشددة، تمت إزالة التقييم غير الآمن/غير الآمن المضمّن حيثما أمكن ذلك
+- **SEC-004-2**: تمكين وضع الحماية في نوافذ المتصفح Electron
+- **SEC-004-5**: تمت إزالة منع ELECTRON_DISABLE_SECURITY_WARNINGS
+**أمان العمليات الخارجية**:
+- **SEC-005-1**: تمت إضافة حدود الموارد (الحد الأقصى لحجم المخزن المؤقت) إلى عمليات نشر البرنامج المساعد MCP
+- **SEC-005-2**: تم تنفيذ القائمة البيضاء لمتغير البيئة لتنفيذ البرنامج المساعد
+** منع حقن SQL **:
+- **SEC-006-1**: تم إصلاح SQL الديناميكي في `knowledge.repository.ts` مع تحديد المعلمات المناسبة
+- **SEC-006-2**: جملة LIMIT ذات معلمات في `chat.repository.ts`
+- **SEC-006-3**: تمت إضافة تعقيم نمط LIKE لمنع حقن أحرف البدل
+- **SEC-006-4**: تم إصلاح ثغرة DoS المستندة إلى LIKE مع تعقيم الأنماط
+**تحسينات التشفير**:
+- **SEC-007-1**: تم استبدال `Math.random()` بـ `crypto.randomBytes()` لإنشاء الرمز المميز
+- **SEC-007-2**: تم إصلاح إنشاء معرف عشوائي في `utility.service.ts`
+**API الأمان**:
+- **SEC-008-2**: تمت إضافة التحقق من صحة اسم الأداة (الأبجدية الرقمية + `._-` فقط)
+- **SEC-008-3**: التحقق من صحة مخطط الرسالة (الدور، بنية المحتوى)
+- **SEC-008-4**: تمت إضافة التحقق من صحة معلمة MCP (عنوان URL والاستعلام وحدود العدد)
+- **SEC-009-1**: سياسة CORS المسموح بها الثابتة مع التحقق الصارم من صحة الأصل
+- **SEC-009-2**: تمت إضافة حدود حجم الطلب (10 ميجابايت JSON، تحميلات ملفات بحجم 50 ميجابايت)
+- **SEC-009-4**: تم تنفيذ مهلة مدتها 5 دقائق لبث SSE مع التنظيف المناسب
+- **SEC-010-3**: تمت إضافة تعقيم نمط LIKE في أساليب مستودع المعرفة
+**التحقق من صحة الإدخال**:
+- **IPC-001-4**: التحقق من صحة الإدخال الطرفي (الأعمدة: 1-500، الصفوف: 1-200، البيانات: 1 ميجابايت كحد أقصى)
+**أذونات الملف**:
+- **SEC-014-4**: تمت إضافة أذونات الملفات الآمنة (الوضع 0o700) لـ 7 أدلة مهمة:
+- دليل السجلات (`logger.ts`)
+- النسخ الاحتياطي + أدلة التكوين (`backup.service.ts`)
+- دليل البيانات + جميع الأدلة الفرعية (`data.service.ts`)
+- دليل تخزين SSH (`ssh.service.ts`)
+- دليل الترحيل (`migration.service.ts`)
+- تكوين علامة الميزة (`feature-flag.service.ts`)
+**المنع الفوري للحقن**:
+- **SEC-015-1**: محتوى دماغ المستخدم المعقم في `brain.service.ts` (5000 حرف كحد أقصى، وإزالة كتل التعليمات البرمجية، والحد من الأسطر الجديدة)
+- **SEC-015-2**: المطالبات المخصصة التي تم التحقق منها في `idea-generator.service.ts` (حد 1000 حرف، علامات التعقيم)
+** تحديد السعر **:
+- **SEC-011-1**: تمت إضافة حدود للمعدل لتدفق الدردشة
+- **SEC-011-2**: تمت إضافة حدود للمعدل لعمليات البحث عن الملفات
+### 🚀 تحسينات الأداء (تم إكمال 15 عنصرًا)
+**إدارة الدولة**:
+- **PERF-002-1**: تم دمج 5 استدعاءات منفصلة `useState` في كائن حالة واحدة في `useProjectManager.ts`
+** تحسين استعلام قاعدة البيانات **:
+- **PERF-003-1**: استعلام N+1 ثابت في `prompt.repository.ts` مع استعلام WHERE المباشر
+- **PERF-003-2**: استعلام N+1 ثابت في `folder.repository.ts` مع استعلام WHERE المباشر
+- **PERF-003-3**: إدراجات الحلقة المحولة إلى إدراج VALUES مجمعة في `uac.repository.ts`
+- **PERF-003-5**: عبارة EXISTS مُحسَّنة باهظة الثمن للاستعلام الفرعي في `chat.repository.ts`
+**التخزين المؤقت**:
+- **PERF-005-1**: تمت إضافة ذاكرة تخزين مؤقت مدتها دقيقة واحدة لعمليات تحميل النموذج في `model-fetcher.ts`
+- **PERF-005-4**: تم إصلاح النسخة العميقة باهظة الثمن والنسخة السطحية للرسائل غير القابلة للتغيير في `useChatHistory.ts`
+**الرفض**:
+- **PERF-006-1**: تمت إضافة ارتداد قدره 300 مللي ثانية إلى مفاتيح تبديل مجلد FileExplorer
+** تم التحقق من أنه تم تحسينه بالفعل **:
+- **PERF-002-4**: يستخدم ChatInput handlers بالفعل مراجع ثابتة
+- **PERF-002-5**: تم حفظ أدوات MCPStore التي تمت تصفيتها بالفعل
+- **PERF-006-2**: كتابة ChatInput فعالة بالفعل
+- **PERF-006-3**: تغيير حجم handlers فعال بالفعل
+### 📚 التوثيق (تم الانتهاء من 7 بنود)
+**ملفات التوثيق الجديدة**:
+- **تم الإنشاء `docs/CONFIG.md`**: متغيرات البيئة وأسبقية التكوين
+- **تم إنشاء `docs/API.md`**: REST API وثائق نقطة النهاية
+- **تم الإنشاء `docs/MCP.md`**: عقود خادم MCP ووثائق الأداة
+- **تم إنشاء `docs/IPC.md`**: IPC handler العقود ومتطلبات التحقق من الصحة
+**وثائق الكود**:
+- **QUAL-001-1**: تمت إضافة JSDoc إلى الطرق العامة `utility.service.ts`
+- **QUAL-001-2**: تمت إضافة JSDoc إلى الطرق العامة `copilot.service.ts`
+- **QUAL-001-3**: تمت إضافة JSDoc إلى الطرق العامة `project.service.ts`
+- **QUAL-001-4**: تم توثيق 13 وظيفة مساعدة في `response-normalizer.util.ts`
+### 🧹 تحسينات جودة الكود (تم إكمال 31 عنصرًا)
+**تسجيل الترحيل** (32 ملفًا):
+- ترحيل جميع مكالمات `console.error` إلى `appLogger.error` عبر IPC handlers والخدمات والأدوات المساعدة
+- تنسيق تسجيل الأخطاء القياسي: `appLogger.error('ServiceName', 'Message', error as Error)`
+- الملفات: auth.ts، وollama.ts، وcode-intelligence.ts، وchat.ts، وdb.ts، وgit.ts، وfiles.ts، وأكثر من 25 ملف خدمة
+**معالجة الأخطاء**:
+- **ERR-001**: تمت إضافة خاصية الخطأ المناسبة لالتقاط الكتل في المستودعات (5 ملفات)
+- ثابت: الدردشة، المجلد، المعرفة، ماجستير، مشروع، موجه، مستودعات الإعدادات
+**نوع الأمان**:
+- **TYPE-001-1**: تم إصلاح الصب المزدوج غير الآمن في `sanitize.util.ts`
+- **TYPE-001-2**: تم إصلاح القوالب غير الآمنة في `ipc-wrapper.util.ts`
+- **TYPE-001-3**: تم التحقق من أن `response-normalizer.util.ts` يستخدم بالفعل مساعدين آمنين
+** تنظيم الكود **:
+- **QUAL-005-1**: تمت إزالة معلمات `_scanner` و`_embedding` غير المستخدمة من `utility.service.ts`
+**IPC Handler التحسين**:
+- **IPC-001-1**: تمت إزالة 5 تسجيلات handler مكررة في `db.ts` (getChat، getAllChats، getProjects، getFolders، getStats)
+- **IPC-001-2**: تمت إزالة 3 تسجيلات handler مكررة في `git.ts` (getBranch، getStatus، getBranches)
+- **IPC-001-3**: تمت إزالة 3 تسجيلات handler مكررة في `auth.ts` (الحصول على حسابات مرتبطة، حساب مرتبط نشط، حساب مرتبط)
+- تمت إضافة تعليقات تشرح نمط التحسين الدفعي handler
+** الاستخراج المستمر **:
+- استخراج القيم المضمنة إلى الثوابت المسماة:
     - `COPILOT_USER_AGENT`
     - `EXCHANGE_RATE_API_BASE`
     - `MCP_REQUEST_TIMEOUT_MS`
-    - Message schema validation constants
-### 🌐 Internationalization (11 items completed)
-**Translation Keys Added**:
-- Added 30+ missing translation keys to both `en.ts` and `tr.ts`
-- Fixed duplicate key consolidation causing type errors
-- Categories: Terminal, SSH, Memory, Models, Settings, Chat, Projects, Prompts
-### 🗄️ Database Improvements (8 items completed)
-**Schema Enhancement**:
-- **DB-001-4**: Created migration 24 with 3 new indexes:
-    - `idx_chat_messages_embedding` (INTEGER field for vector search optimization)
-    - `idx_chats_folder_id` (Foreign key index)
-    - `idx_chat_messages_chat_id_created_at` (Composite index for message retrieval)
-**Query Optimization**:
-- Fixed N+1 patterns in prompt and folder repositories
-- Implemented bulk insert operations
-- Optimized subquery patterns
-### ♿ Accessibility (30 items completed)
-**ARIA Labels & Keyboard Navigation**:
-- Added `aria-label`, `role`, and keyboard handlers to 30+ interactive components
-- Fixed form labels and semantic HTML across the application
-- Categories: Chat, Projects, Settings, Terminal, Memory, SSH, Models
-### ⚛️ React Best Practices (17 items completed)
-**Effect Cleanup**:
-- Added cleanup functions to useEffect hooks in 10+ components
-- Fixed memory leaks from interval timers, event listeners, and subscriptions
-**Debouncing**:
-- Implemented debouncing for search inputs and resize handlers in 7 components
-### 📊 Statistics
-**Overall Progress**: 169 of 210 items completed (80.5%)
-- Critical: 7 remaining (was 47)
-- High: 39 remaining (was 113)
-- Medium: 32 remaining (was 93)
-- Low: 13 remaining (was 49)
-**Categories Fully Completed** (16 categories, 109 items):
-- Logging (32 items)
-- Error Handling (4 items)
-- Database (8 items)
-- i18n (11 items)
-- React (17 items)
-- Accessibility (30 items)
-- Documentation (7 items)
-**Files Modified**: 100+ files across main, renderer, and shared modules
-### 🎯 Remaining Work (41 items)
-**Priority Areas**:
-- Security: Rate limiting, resource limits, auth/authorization, master key encryption (31 items)
-- Code Quality: OpenAPI docs, unused params, unimplemented TODOs (4 items)
-- Performance: Virtualization, connection pooling, caching (6 items)
-- Testing: All test categories untouched (50 items - logged but not prioritized)
-## 2026-02-02: 🔧 LOGGING CONSISTENCY - Additional IPC Handlers
-**Status**: ✅ COMPLETED
-**Summary**: Extended the `console.error` to `appLogger.error` migration to additional IPC handlers for consistent structured logging across the codebase.
-### Key Fixes
-1.  **Logging Standardization (LOG-001 continuation)**:
-    - **LOG-001-6**: Replaced `console.error` with `appLogger.error` in `auth.ts` for all authentication-related error handlers (get-linked-accounts, get-active-linked-account, set-active-linked-account, link-account, unlink-account, unlink-provider, has-linked-account).
-    - **LOG-001-7**: Replaced `console.error` with `appLogger.error` in `ollama.ts` for chat stream and library models error handlers.
-    - **LOG-001-8**: Replaced `console.error` with `appLogger.error` in `index.ts` for Ollama connection check error handler.
-    - **LOG-001-9**: Replaced `console.error` with `appLogger.error` in `code-intelligence.ts` for all code intelligence handlers (scanTodos, findSymbols, searchFiles, indexProject, queryIndexedSymbols).
-### Files Impacted
+- ثوابت التحقق من صحة مخطط الرسالة
+### 🌐 التدويل (تم إكمال 11 عنصرًا)
+** تمت إضافة مفاتيح الترجمة **:
+- تمت إضافة أكثر من 30 مفتاح ترجمة مفقودًا لكل من `en.ts` و`tr.ts`
+- تم إصلاح دمج المفاتيح المكررة التي تسبب أخطاء في الكتابة
+- الفئات: المحطة الطرفية، SSH، الذاكرة، النماذج، الإعدادات، الدردشة، المشاريع، المطالبات
+### 🗄️ تحسينات قاعدة البيانات (تم إكمال 8 عناصر)
+**تحسين المخطط**:
+- **DB-001-4**: تم إنشاء الترحيل 24 بثلاثة فهارس جديدة:
+- `idx_chat_messages_embedding` (حقل عدد صحيح لتحسين البحث عن المتجهات)
+- `idx_chats_folder_id` (فهرس المفاتيح الخارجية)
+- `idx_chat_messages_chat_id_created_at` (فهرس مركب لاسترجاع الرسائل)
+** تحسين الاستعلام **:
+- تم إصلاح أنماط N+1 في مستودعات الموجهات والمجلدات
+- تنفيذ عمليات إدراج بالجملة
+- أنماط الاستعلام الفرعي الأمثل
+### ♿ إمكانية الوصول (تم إكمال 30 عنصرًا)
+** تسميات ARIA والتنقل عبر لوحة المفاتيح **:
+- تمت إضافة `aria-label` و`role` ولوحة المفاتيح handlers إلى أكثر من 30 مكونًا تفاعليًا
+- تسميات النماذج الثابتة وHTML الدلالي عبر التطبيق
+- الفئات: الدردشة، المشاريع، الإعدادات، المحطة، الذاكرة، SSH، النماذج
+### ⚛️ React أفضل الممارسات (تم إكمال 17 عنصرًا)
+**تنظيف التأثير**:
+- تمت إضافة وظائف التنظيف لاستخدام خطافات التأثير في أكثر من 10 مكونات
+- تسرب الذاكرة الثابتة من أجهزة ضبط الوقت الفاصلة، ومستمعي الأحداث، والاشتراكات
+**الرفض**:
+- تم تنفيذ الارتداد لمدخلات البحث وتغيير حجم handlers في 7 مكونات
+### 📊 إحصائيات
+**التقدم العام**: تم إكمال 169 عنصرًا من أصل 210 (80.5%)
+- الحرجة: 7 متبقيين (كان 47)
+- الأعلى: 39 متبقيًا (كان 113)
+- المتوسط: 32 متبقيًا (كان 93)
+- منخفض: 13 متبقيًا (كان 49)
+**الفئات مكتملة بالكامل** (16 فئة، 109 عناصر):
+- التسجيل (32 مادة)
+- معالجة الأخطاء (4 عناصر)
+- قاعدة البيانات (8 عناصر)
+- i18n (11 العناصر)
+- React (17 عنصرًا)
+- إمكانية الوصول (30 عنصرًا)
+- التوثيق (7 مواد)
+**الملفات المعدلة**: أكثر من 100 ملف عبر الوحدات الرئيسية والعارضة والمشتركة
+### 🎯 العمل المتبقي (41 مادة)
+**المجالات ذات الأولوية**:
+- الأمان: تحديد المعدل، وحدود الموارد، والمصادقة/الترخيص، وتشفير المفتاح الرئيسي (31 عنصرًا)
+- جودة الكود: مستندات OpenAPI، المعلمات غير المستخدمة، مهام المهام غير المنفذة (4 عناصر)
+- الأداء: المحاكاة الافتراضية، وتجميع الاتصالات، والتخزين المؤقت (6 عناصر)
+- الاختبار: جميع فئات الاختبار لم تمس (50 عنصرًا - تم تسجيلها ولكن لم يتم تحديد أولوياتها)
+## 02-02-2026: 🔧 اتساق التسجيل - IPC إضافي Handlers
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تمديد ترحيل `console.error` إلى `appLogger.error` إلى IPC handlers إضافي لتسجيل منظم ومتسق عبر قاعدة التعليمات البرمجية.
+### الإصلاحات الرئيسية
+1. **توحيد التسجيل (استمرار LOG-001)**:
+- **LOG-001-6**: تم استبدال `console.error` بـ `appLogger.error` في `auth.ts` لجميع الأخطاء المتعلقة بالمصادقة handlers (الحصول على حسابات مرتبطة، حساب نشط مرتبط، تعيين حساب مرتبط نشط، حساب ربط، حساب إلغاء الارتباط، مزود إلغاء الارتباط، لديه حساب مرتبط).
+- **LOG-001-7**: تم استبدال `console.error` بـ `appLogger.error` في `ollama.ts` لخطأ تدفق الدردشة ونماذج المكتبة handlers.
+- **LOG-001-8**: تم استبدال `console.error` بـ `appLogger.error` في `index.ts` لخطأ التحقق من الاتصال Ollama handler.
+- **LOG-001-9**: تم استبدال `console.error` بـ `appLogger.error` في `code-intelligence.ts` لجميع معلومات التعليمات البرمجية handlers (scanTodos، وfindSymbols، وsearchFiles، وindexProject، وqueryIndexedSymbols).
+### الملفات المتأثرة
 - `src/main/ipc/auth.ts`
 - `src/main/ipc/ollama.ts`
 - `src/main/ipc/index.ts`
 - `src/main/ipc/code-intelligence.ts`
-## 2026-02-02: 🛡️ SECURITY & PERFORMANCE - PHASE 2 (Critical Vulnerabilities & N+1 Fixes)
-**Status**: ✅ COMPLETED
-**Summary**: Addressed critical security vulnerabilities in shell execution and file system access, along with high-priority performance optimizations for database queries.
-### Key Fixes
-1.  **Critical Security Hardening**:
-    - **SEC-001-2**: Blocked dangerous shell control operators (`;`, `&&`, `||`) in `CommandService` to prevent injection attacks.
-    - **SEC-002-1**: Fixed path traversal vulnerability in `FilesystemService` by enforcing strict directory boundary checks (preventing partial matches).
-    - **SEC-001-1**: Analyzed and secured `CommandService` usage in `security.server.ts` (nmap command) with strict input validation.
-    - **SEC-002-2**: Fixed path traversal vulnerability in `FilesystemService.downloadFile` by enforcing allowed path check.
-    - **LOG-001-5**: Implemented audit logging for External MCP Plugin dispatching to track all tool executions.
-2.  **Performance & Quality**:
-    - **DB-001-1 / PERF-003**: Optimized `PromptRepository` and `SystemRepository` to eliminate N+1 query patterns by implementing direct ID lookups.
-    - **DB-001-2 / DB-001-3**: Optimized `FolderRepository` and `DatabaseService` to eliminate N+1 query patterns for folder lookups.
-    - **TYPE-001-2**: Removed unsafe `as unknown` double casts in `ipc-wrapper.util.ts`, improving type safety for IPC handlers.
-    - **QUAL-001**: Added comprehensive JSDoc documentation to `CopilotService`, `ProjectService`, and `UtilityService`.
-### Files Impacted
+## 02-02-2026: 🛡️ الأمان والأداء - المرحلة الثانية (الثغرات الأمنية الحرجة وإصلاحات N+1)
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت معالجة الثغرات الأمنية الخطيرة في تنفيذ الصدفة والوصول إلى نظام الملفات، إلى جانب تحسينات الأداء ذات الأولوية العالية لاستعلامات قاعدة البيانات.
+### الإصلاحات الرئيسية
+1. **تشديد الإجراءات الأمنية الحرجة**:
+- **SEC-001-2**: تم حظر عوامل التحكم في القشرة الخطيرة (`;`، `&&`، `||`) في `CommandService` لمنع هجمات الحقن.
+- **SEC-002-1**: تم إصلاح ثغرة أمنية في اجتياز المسار في `FilesystemService` من خلال فرض عمليات فحص صارمة لحدود الدليل (منع التطابقات الجزئية).
+- **SEC-001-1**: تم تحليل وتأمين استخدام `CommandService` في `security.server.ts` (أمر nmap) مع التحقق الصارم من صحة الإدخال.
+- **SEC-002-2**: تم إصلاح ثغرة أمنية في اجتياز المسار في `FilesystemService.downloadFile` من خلال فرض التحقق من المسار المسموح به.
+- **LOG-001-5**: تم تنفيذ تسجيل التدقيق لإرسال البرنامج الإضافي الخارجي لـ MCP لتتبع جميع عمليات تنفيذ الأداة.
+2. **الأداء والجودة**:
+- **DB-001-1 / PERF-003**: تم تحسين `PromptRepository` و`SystemRepository` للتخلص من أنماط استعلام N+1 عن طريق تنفيذ عمليات البحث المباشر عن المعرفات.
+- **DB-001-2 / DB-001-3**: تم تحسين `FolderRepository` و`DatabaseService` للتخلص من أنماط استعلام N+1 لعمليات البحث عن المجلدات.
+- **TYPE-001-2**: تمت إزالة القوالب المزدوجة `as unknown` غير الآمنة في `ipc-wrapper.util.ts`، مما أدى إلى تحسين أمان النوع لـ IPC handlers.
+- **QUAL-001**: تمت إضافة وثائق JSDoc الشاملة إلى `CopilotService` و`ProjectService` و`UtilityService`.
+### الملفات المتأثرة
 - `src/main/services/system/command.service.ts`
 - `src/main/services/data/filesystem.service.ts`
 - `src/main/mcp/servers/security.server.ts`
@@ -978,1115 +1047,1115 @@ Track the evolution of Tandem.
 - `src/main/services/data/database.service.ts`
 - `src/main/mcp/external-plugin.ts`
 - `src/main/utils/ipc-wrapper.util.ts`
-## 2026-02-02: ⚡ QUANTUM SPEED FIXES - CODE CLEANUP & SECURITY
-**Status**: ✅ COMPLETED
-**Summary**: Addressed multiple "quick win" items from the TODO list, focusing on code quality, security configuration, and dead code removal.
-### Key Fixes
-1.  **Security Hardening**:
-    - **SEC-004-2**: Enabled `sandbox: true` in `main.ts` for Electron `BrowserWindow`, enhancing preload script isolation.
-    - **SEC-004-5**: Removed development-mode suppression of Electron security warnings in `main.ts` to ensure deeper security awareness.
-    - **SEC-003-1/2/3/5**: Removed hardcoded secrets/API keys from `chat.ts`, `llm.service.ts`, and `local-auth-server.util.ts`, ensuring they are loaded via configuration/environment variables.
-    - **SEC-001-3**: Added input validation for `command` string in `process:spawn` IPC handler to prevent shell injection.
-    - **SEC-007-1/2**: Replaced weak `Math.random` with `crypto.randomBytes` for token/ID generation in `api-server.service.ts` and `utility.service.ts`.
-    - **SEC-008-1**: Added type validation for arguments in `ToolExecutor` to prevent invalid casting.
-    - **SEC-009-1**: Restricted CORS in `api-server.service.ts` to allow only extensions and localhost, mitigating wildcard access risks.
-2.  **Code Quality & Cleanup**:
-    - **LOG-001-1/2/3/4**: Replaced `console.error` with `appLogger.error` in memory, agent, llama, and terminal IPC handlers for consistent logging.
-    - **TYPE-001-1**: Reinstated safe casting in `src/shared/utils/sanitize.util.ts` to resolve build errors while maintaining type safety.
-    - **QUAL-005-1**: Removed unused parameters from `UtilityService` methods.
-    - **QUAL-002-5**: Refactored hardcoded window dimensions in `window.ts`.
-### Files Impacted
+## 02-02-2026: ⚡ إصلاحات السرعة الكمية - تنظيف الكود والأمان
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت معالجة العديد من عناصر "الفوز السريع" من قائمة المهام، مع التركيز على جودة التعليمات البرمجية وتكوين الأمان وإزالة التعليمات البرمجية الميتة.
+### الإصلاحات الرئيسية
+1. **التشديد الأمني**:
+- **SEC-004-2**: تم تمكين `sandbox: true` في `main.ts` لـ Electron `BrowserWindow`، مما يعزز عزل البرنامج النصي للتحميل المسبق.
+- **SEC-004-5**: تمت إزالة منع وضع التطوير لتحذيرات الأمان Electron في `main.ts` لضمان وعي أمني أعمق.
+- **SEC-003-1/2/3/5**: تمت إزالة المفاتيح السرية/API من `chat.ts`، و`llm.service.ts`، و`local-auth-server.util.ts`، مما يضمن تحميلها عبر متغيرات التكوين/البيئة.
+- **SEC-001-3**: تمت إضافة التحقق من صحة الإدخال لسلسلة `command` في `process:spawn` IPC handler لمنع حقن الصدفة.
+- **SEC-007-1/2**: تم استبدال `Math.random` الضعيف بـ `crypto.randomBytes` لإنشاء الرمز المميز/المعرف في `api-server.service.ts` و`utility.service.ts`.
+- **SEC-008-1**: تمت إضافة التحقق من صحة النوع للوسائط في `ToolExecutor` لمنع الإرسال غير الصالح.
+- **SEC-009-1**: CORS مقيد في `api-server.service.ts` للسماح فقط بالامتدادات والمضيف المحلي، مما يخفف من مخاطر الوصول إلى أحرف البدل.
+2. **جودة الكود وتنظيفه**:
+- **LOG-001-1/2/3/4**: تم استبدال `console.error` بـ `appLogger.error` في الذاكرة والوكيل واللاما والمحطة الطرفية IPC handlers للتسجيل المتسق.
+- **TYPE-001-1**: تمت إعادة الإرسال الآمن في `src/shared/utils/sanitize.util.ts` لحل أخطاء البناء مع الحفاظ على أمان النوع.
+- **QUAL-005-1**: تمت إزالة المعلمات غير المستخدمة من أساليب `UtilityService`.
+- **QUAL-002-5**: أبعاد النافذة المشفرة المعاد تشكيلها في `window.ts`.
+### الملفات المتأثرة
 - `src/main/main.ts`
 - `src/main/services/external/utility.service.ts`
 - `src/main/ipc/window.ts`
 - `src/main/ipc/memory.ts`
 - `src/shared/utils/sanitize.util.ts`
-## 2026-02-02: 🛡️ AI RULE REINFORCEMENT & TYPE USAGE AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Overhauled the entire AI rule infrastructure to ensure better compliance and consistency across different AI assistants (Claude, Gemini, Copilot, Agent). Generated a comprehensive audit of `any` and `unknown` type usages to guide future refactoring.
-### Key Achievements
-1. **Performance & Intelligence Refinement**:
-    - Integrated **Skills** and **MCP Tools** directory into the Master Commandments for enhanced agent capabilities.
-    - Enforced the **Boy Scout Rule**: Agents must fix at least one existing lint warning or type issue in any file they edit.
-    - Strictly prohibited both `any` and `unknown` types across all updates and new files.
-    - Optimized `MASTER_COMMANDMENTS.md` to serve as the unified core logic for Gemini, Claude, and Copilot.
-2. **Cross-Platform Rule Synchronization**:
-    - Updated `.agent/rules/code-style-guide.md` with assertive, "always-on" triggers.
-    - Overhauled `.claude/CLAUDE.md`, `.gemini/GEMINI.md`, and `.copilot/COPILOT.md` to point to the new Master Commandments.
-    - Standardized the "Prohibited Actions" list across all configurations.
-3. **Type Usage Audit**:
-    - Developed a PowerShell script (`scripts/generate_type_report.ps1`) to scan the codebase for `any` and `unknown` types.
-    - Generated `docs/TYPE_USAGE_REPORT.md` documenting 673 instances across 200+ files.
-    - Identified top "any-heavy" files (e.g., `backup.service.test.ts`, `web-bridge.ts`, `error.util.ts`) to prioritize for future type-hardening.
-4. **Documentation & Process**:
-    - Added a "TL;DR" critical summary to the top of `docs/AI_RULES.md`.
-    - Updated `docs/TODO.md` with completed rule and audit tasks.
-    - Verified that all rule files are properly formatted and accessible to agents.
-## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - Session 2 (111 → 61 Warnings)
-**Status**: ✅ IN PROGRESS
-**Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **111 to 61** (45% reduction this session). Fixed unnecessary condition warnings, misused promises, optional chaining issues, and extracted more sub-components.
-### Latest Session Fixes
-1. **Import/Autofix (14 warnings)**:
-    - Applied `--fix` for simple-import-sort/imports warnings
-    - Removed unused imports (Language, useEffect, useState from App.tsx)
-    - Removed unused variables (chats from useChatGenerator, t from AdvancedMemoryInspector)
-    - Removed unused type imports (MemoryCategory from useMemoryLogic)
-2. **Promise Handling Fixes**:
-    - `MemoryModals.tsx`: Added `void` wrapper for async onClick handlers
-3. **Unnecessary Condition Fixes**:
-    - `useChatManager.ts`: Simplified streaming state access with currentStreamState variable
-    - `IdeasPage.tsx`: Removed unnecessary `??` operator
-    - `Terminal.tsx`: Removed unnecessary `&& term` conditionals (always truthy)
-    - `useAgentTask.ts`: Made payload types optional to validate `?.` usage
-    - `useAgentHandlers.ts`: Typed payload properly with optional data field
-    - `TaskInputForm.tsx`: Changed `??` to `||` for boolean operators
-4. **Other ESLint Fixes**:
-    - `useWorkspaceManager.ts`: Removed non-null assertion with proper null check
-    - `ProjectWizardModal.tsx`: Wrapped handleSSHConnect in useCallback to fix exhaustive-deps
-    - `useAgentTask.ts`: Changed `||` to `??` for prefer-nullish-coalescing
-5. **Sub-Component Extraction**:
-    - `MemoryInspector.tsx`: Extracted `AddFactModal` component
-    - `StatisticsTab.tsx`: Extracted `CodingTimeCard`, `TokenUsageCard` components
-    - `OverviewCards.tsx`: Extracted `getStatsValues` helper function
-    - `SidebarMenuItem.tsx`: Extracted `MenuItemActions` component
-    - `ChatContext.tsx`: Extracted `isUndoKey`, `isRedoKey` helper functions
-6. **Function Parameter Refactoring**:
-    - `IdeaDetailsModal.tsx`: Converted 9-parameter function to options object interface
-### Files Modified (20+)
-- App.tsx, useChatGenerator.ts, AdvancedMemoryInspector.tsx, useMemoryLogic.ts
-- MemoryModals.tsx, MemoryInspector.tsx, useChatManager.ts, IdeasPage.tsx
-- Terminal.tsx, useAgentTask.ts, useAgentHandlers.ts, TaskInputForm.tsx
-- useWorkspaceManager.ts, ProjectWizardModal.tsx, StatisticsTab.tsx
-- OverviewCards.tsx, SidebarMenuItem.tsx, IdeaDetailsModal.tsx, ChatContext.tsx
-### Impact
-- ✅ Reduced warnings from **111 to 61** (45% reduction this session)
-- ✅ Total reduction from **310 to 61** (80% overall reduction)
-- ✅ Zero TypeScript errors maintained
-- ✅ Improved type safety with proper optional types
-## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - 232+ WARNINGS FIXED (75% REDUCTION)
-**Status**: ✅ COMPLETED
-**Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **310 to 78** (75% reduction). Fixed 5 TypeScript `any` type errors and applied lookup tables, custom hooks, and sub-component extraction patterns across more files.
-### Latest Session Fixes
-1. **TypeScript Error Fixes (5 errors → 0)**:
-    - `useTaskInputLogic.ts`: Replaced `any` types with `AppSettings | null` and `(key: string) => string`
-    - `useTerminal.ts`: Created `TerminalCleanups` interface, replaced `(term as any)` with ref-based cleanup tracking
-2. **Sub-Component Extraction**:
-    - `PanelLayout.tsx`: Sidebar, BottomPanelView, CenterArea components
-    - `ModelCard.tsx`: ModelHeader, ModelTags components
-    - `WorkspaceTreeItem.tsx`: DirectoryExpandIcon component
-3. **Type Safety Improvements**:
-    - `useChatGenerator.ts`: Changed `Record<string, T>` to `Partial<Record<string, T>>` for streamingStates
-    - `ModelCard.tsx`: Fixed unnecessary type check for `model.provider === 'ollama'`
-    - `ToolDisplay.tsx`: Added Boolean() wrappers for nullish coalescing preference
-4. **Complexity Reductions**:
-    - `useWorkspaceManager.ts`: Extracted `validateSSHMount` helper function
-    - `OverviewCards.tsx`: Pre-computed stats values to reduce inline `??` operators
-### Additional Refactoring Applied
-1. **Lookup Tables Added**:
-    - `SessionHistory.tsx`: STATUS_ICONS, IDEA_STATUS_BADGES for status indicators
-    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu components
-    - `ToolDisplay.tsx`: Added ExpandedToolContent, useAutoExpandCommand hook
-    - `SSHContentPanel.tsx`: TAB_COMPONENTS lookup for tab rendering
-2. **Custom Hooks Extracted**:
-    - `useAutoExpandCommand()` in ToolDisplay for terminal expansion logic
-    - `useSpeechDevices()` in SpeechTab for device enumeration
-    - `TabContent` component in MemoryInspector for cleaner tab rendering
-3. **Sub-Component Extraction**:
-    - `IdeaDetailsContent.tsx`: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
-    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu
-    - `MemoryInspector.tsx`: TabContent
-    - `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
-    - `process-stream.ts`: buildNewStreamingState helper
-    - `StatisticsTab.tsx`: PeriodSelector component
-    - `SpeechTab.tsx`: VoiceSection, DeviceSection components
-    - `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
-    - `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
-    - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry with lookup tables
-    - `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
-    - `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
-4. **Reducer/Helper Refactoring**:
-    - `useProjectListStateMachine.ts`: Extracted 12 handler functions from 33-complexity reducer
-    - `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
-### Files Modified (25+)
-- **Chat Components**: ToolDisplay.tsx, process-stream.ts
-- **Ideas Components**: IdeaDetailsContent.tsx, SessionHistory.tsx
-- **Memory Components**: MemoryInspector.tsx
-- **UI Components**: SelectDropdown.tsx
-- **Settings Components**: StatisticsTab.tsx, SpeechTab.tsx, ManualSessionModal.tsx, OverviewCards.tsx, AppearanceTab.tsx
-- **Project Components**: WorkspaceModals.tsx, CouncilPanel.tsx, TodoItemCard.tsx
-- **SSH Components**: SSHContentPanel.tsx
-- **Project Hooks**: useProjectListStateMachine.ts, useAgentEvents.ts
-- **Project Utils**: git-utils.ts
-### i18n Keys Added
+## 02-02-2026: 🛡️ تعزيز قواعد الذكاء الاصطناعي وتدقيق استخدام النوع
+**الحالة**: ✅ مكتمل
+**ملخص**: تم إصلاح البنية الأساسية لقواعد الذكاء الاصطناعي بالكامل لضمان الامتثال والاتساق بشكل أفضل عبر مساعدي الذكاء الاصطناعي المختلفين (Claude، وGemini، وCopilot، وAgent). تم إنشاء تدقيق شامل لاستخدامات النوع `any` و`unknown` لتوجيه إعادة البناء في المستقبل.
+### الإنجازات الرئيسية
+1. **تحسين الأداء والذكاء**:
+- دليل **المهارات** و**أدوات MCP** المتكامل في الوصايا الرئيسية لتعزيز قدرات الوكيل.
+- فرض **قاعدة الكشافة**: يجب على الوكلاء إصلاح تحذير واحد موجود على الأقل من الوبر أو كتابة المشكلة في أي ملف يقومون بتحريره.
+- يُمنع منعًا باتًا كلا النوعين `any` و`unknown` في جميع التحديثات والملفات الجديدة.
+- تم تحسين `MASTER_COMMANDMENTS.md` ليكون بمثابة المنطق الأساسي الموحد لـ Gemini وClaude وCopilot.
+2. **مزامنة القواعد عبر الأنظمة الأساسية**:
+- تم تحديث `.agent/rules/code-style-guide.md` بمشغلات حازمة "دائمة التشغيل".
+- تم إصلاح `.claude/CLAUDE.md`، `.gemini/GEMINI.md`، و`.copilot/COPILOT.md` للإشارة إلى الوصايا الرئيسية الجديدة.
+- توحيد قائمة "الإجراءات المحظورة" في جميع التكوينات.
+3. **نوع تدقيق الاستخدام**:
+- تم تطوير برنامج PowerShell النصي (`scripts/generate_type_report.ps1`) لمسح قاعدة التعليمات البرمجية لأنواع `any` و`unknown`.
+- تم إنشاء `docs/TYPE_USAGE_REPORT.md` لتوثيق 673 حالة عبر أكثر من 200 ملف.
+- تم تحديد أهم الملفات "الثقيلة" (على سبيل المثال، `backup.service.test.ts`، `web-bridge.ts`، `error.util.ts`) لإعطاء الأولوية لتقوية النوع في المستقبل.
+4. **التوثيق والعملية**:
+- تمت إضافة ملخص نقدي "TL;DR" إلى أعلى `docs/AI_RULES.md`.
+- تم تحديث `docs/TODO.md` بمهام القواعد والتدقيق المكتملة.
+- التحقق من أن جميع ملفات القواعد منسقة بشكل صحيح ويمكن للوكلاء الوصول إليها.
+## 01-02-2026: 🧹 استمرار تنظيف الوبر - الجلسة الثانية (111 ← 61 تحذيرًا)
+**الحالة**: ✅ قيد التقدم
+**ملخص**: استمرار التنظيف المنهجي لتحذيرات ESLint مما يقلل إجمالي التحذيرات من **111 إلى 61** (تخفيض بنسبة 45% في هذه الجلسة). تم إصلاح تحذيرات الحالة غير الضرورية والوعود التي يساء استخدامها ومشكلات التسلسل الاختيارية واستخراج المزيد من المكونات الفرعية.
+### إصلاحات الجلسة الأخيرة
+1. **استيراد/إصلاح تلقائي (14 تحذيرًا)**:
+- تم تطبيق `--fix` على تحذيرات الاستيراد/الفرز البسيط/الواردات
+- إزالة الواردات غير المستخدمة (اللغة، useEffect، useState من App.tsx)
+- إزالة المتغيرات غير المستخدمة (المحادثات من useChatGenerator، t من AdvancedMemoryInspector)
+- إزالة استيرادات النوع غير المستخدمة (MemoryCategory من useMemoryLogic)
+2. **إصلاحات التعامل مع الوعد**:
+- `MemoryModals.tsx`: تمت إضافة `void` wrapper لعدم المزامنة عند النقر handlers
+3. **إصلاحات الحالة غير الضرورية**:
+- `useChatManager.ts`: وصول مبسط إلى حالة التدفق باستخدام متغير CurrentStreamState
+- `IdeasPage.tsx`: تمت إزالة عامل التشغيل `??` غير الضروري
+- `Terminal.tsx`: تمت إزالة الشروط الشرطية `&& term` غير الضرورية (صحيحة دائمًا)
+- `useAgentTask.ts`: جعل أنواع الحمولة اختيارية للتحقق من صحة استخدام `?.`
+- `useAgentHandlers.ts`: الحمولة المكتوبة بشكل صحيح باستخدام حقل البيانات الاختياري
+- `TaskInputForm.tsx`: تم تغيير `??` إلى `||` للعوامل المنطقية
+4. **إصلاحات ESLint الأخرى**:
+- `useWorkspaceManager.ts`: تمت إزالة التأكيد غير الفارغ مع التحقق من القيمة الفارغة المناسبة
+- `ProjectWizardModal.tsx`: المقبض الملتفSSHConnect قيد الاستخدام، رد الاتصال لإصلاح عمليات التوقف الشاملة
+- `useAgentTask.ts`: تم تغيير `||` إلى `??` لتفضيل الدمج الصفري
+5. **استخراج المكونات الفرعية**:
+- `MemoryInspector.tsx`: مكون `AddFactModal` المستخرج
+- `StatisticsTab.tsx`: المكونات المستخرجة `CodingTimeCard`، `TokenUsageCard`
+- `OverviewCards.tsx`: وظيفة المساعدة المستخرجة `getStatsValues`
+- `SidebarMenuItem.tsx`: مكون `MenuItemActions` المستخرج
+- `ChatContext.tsx`: الوظائف المساعدة المستخرجة `isUndoKey`، `isRedoKey`
+6. **إعادة هيكلة معلمات الوظيفة**:
+- `IdeaDetailsModal.tsx`: تحويل دالة ذات 9 معلمات إلى واجهة كائن خيارات
+### الملفات المعدلة (20+)
+- App.tsx، useChatGenerator.ts، AdvancedMemoryInspector.tsx، useMemoryLogic.ts
+- MemoryModals.tsx، MemoryInspector.tsx، useChatManager.ts، IdeasPage.tsx
+- Terminal.tsx، useAgentTask.ts، useAgentHandlers.ts، TaskInputForm.tsx
+- useWorkspaceManager.ts، ProjectWizardModal.tsx، StatisticsTab.tsx
+- OverviewCards.tsx، SidebarMenuItem.tsx، IdeaDetailsModal.tsx، ChatContext.tsx
+### تأثير
+- ✅ تخفيض التحذيرات من **111 إلى 61** (تخفيض بنسبة 45% في هذه الجلسة)
+- ✅ التخفيض الإجمالي من **310 إلى 61** (التخفيض الإجمالي بنسبة 80%)
+- ✅ الحفاظ على عدم وجود أخطاء TypeScript
+- ✅ تحسين سلامة النوع مع الأنواع الاختيارية المناسبة
+## 01-02-2026: 🧹 استمرار تنظيف الوبر - تم إصلاح أكثر من 232 تحذيرًا (تخفيض بنسبة 75%)
+**الحالة**: ✅ مكتمل
+**الملخص**: التنظيف المنهجي المستمر لتحذير ESLint مما يقلل إجمالي التحذيرات من **310 إلى 78** (تخفيض بنسبة 75%). تم إصلاح 5 أخطاء في الكتابة TypeScript `any` وجداول البحث المطبقة والخطافات المخصصة وأنماط استخراج المكونات الفرعية عبر المزيد من الملفات.
+### إصلاحات الجلسة الأخيرة
+1. **TypeScript إصلاحات الأخطاء (5 أخطاء → 0)**:
+- `useTaskInputLogic.ts`: تم استبدال أنواع `any` بـ `AppSettings | null` و`(key: string) => string`
+- `useTerminal.ts`: تم إنشاء واجهة `TerminalCleanups`، واستبدال `(term as any)` بتتبع التنظيف المستند إلى المرجع
+2. **استخراج المكونات الفرعية**:
+- `PanelLayout.tsx`: الشريط الجانبي، وBottomPanelView، ومكونات CenterArea
+- `ModelCard.tsx`: مكونات ModelHeader وModelTags
+- `WorkspaceTreeItem.tsx`: مكون DirectoryExpandIcon
+3. **تحسينات سلامة النوع**:
+- `useChatGenerator.ts`: تم تغيير `Record<string, T>` إلى `Partial<Record<string, T>>` لحالات البث
+- `ModelCard.tsx`: تم إصلاح التحقق من النوع غير الضروري لـ `model.provider === 'ollama'`
+- `ToolDisplay.tsx`: تمت إضافة Boolean() wrappers لتفضيل الدمج الفارغ
+4. **تقليل التعقيد**:
+- `useWorkspaceManager.ts`: وظيفة المساعدة المستخرجة `validateSSHMount`
+- `OverviewCards.tsx`: قيم الإحصائيات المحسوبة مسبقًا لتقليل عوامل تشغيل `??` المضمنة
+### تم تطبيق إعادة هيكلة إضافية
+1. **تمت إضافة جداول البحث**:
+- `SessionHistory.tsx`: STATUS_ICONS وIDEA_STATUS_BADGES لمؤشرات الحالة
+- `SelectDropdown.tsx`: زر التشغيل، مكونات القائمة العائمة
+- `ToolDisplay.tsx`: تمت إضافة ExpandedToolContent، وخطاف useAutoExpandCommand
+- `SSHContentPanel.tsx`: بحث TAB_COMPONENTS عن عرض علامات التبويب
+2. **تم استخراج الخطافات المخصصة**:
+- `useAutoExpandCommand()` في ToolDisplay لمنطق التوسعة الطرفية
+- `useSpeechDevices()` في SpeechTab لتعداد الأجهزة
+- مكون `TabContent` في MemoryInspector لعرض علامة التبويب بشكل أكثر نظافة
+3. **استخراج المكونات الفرعية**:
+- `IdeaDetailsContent.tsx`: OverviewTab، MarketTab، StrategyTab، TechnologyTab، RoadmapTab، UsersTab، BusinessTab، CoreConceptHeader، LogoGeneratorSection
+- `SelectDropdown.tsx`: زر التشغيل، القائمة العائمة
+- `MemoryInspector.tsx`: محتوى علامة التبويب
+- `ToolDisplay.tsx`: ImageOutput، MarkdownOutput، JsonOutput، ExpandedToolContent
+- `process-stream.ts`: مساعد buildNewStreamingState
+- `StatisticsTab.tsx`: مكون محدد الفترة
+- `SpeechTab.tsx`: قسم الصوت، مكونات قسم الجهاز
+- `ManualSessionModal.tsx`: قسم الرأس، قسم التعليمات، قسم الإدخال، SaveButtonContent
+- `WorkspaceModals.tsx`: MountTypeToggle، LocalMountForm، SSHMountForm، MountModal، EntryModal
+- `CouncilPanel.tsx`: StatsCards، AgentList، ActivityLogEntry مع جداول البحث
+- `OverviewCards.tsx`: بطاقة الرسائل، بطاقة الدردشة، بطاقة الرموز، بطاقة الوقت
+- `AppearanceTab.tsx`: قسم السمات، قسم الطباعة، ToggleSwitch
+4. **إعادة الهيكلة المخفض/المساعد**:
+- `useProjectListStateMachine.ts`: تم استخراج 12 وظيفة handler من مخفض التعقيد 33
+- `git-utils.ts`: extractBranch، extractIsClean، extractLastCommit، extractRecentCommits، extractChangedFiles، extractStagedFiles، extractUnstagedFiles المساعدين
+### الملفات المعدلة (25+)
+- **مكونات الدردشة**: ToolDisplay.tsx، وprocess-stream.ts
+- **مكونات الأفكار**: IdeaDetailsContent.tsx، وSessionHistory.tsx
+- **مكونات الذاكرة**: MemoryInspector.tsx
+- **UI المكونات**: SelectDropdown.tsx
+- **مكونات الإعدادات**: StatisticsTab.tsx، وSpeechTab.tsx، وManualSessionModal.tsx، وOverviewCards.tsx، وAppearanceTab.tsx
+- **مكونات المشروع**: WorkspaceModals.tsx، CouncilPanel.tsx، TodoItemCard.tsx
+- **مكونات SSH**: SSHContentPanel.tsx
+- **خطافات المشروع**: useProjectListStateMachine.ts, useAgentEvents.ts
+- **أدوات المشروع**: git-utils.ts
+### تمت إضافة مفاتيح i18n
 - `ideas.status.archived` (EN/TR)
-### Impact
-- ✅ Reduced warnings from **310 to 78** (75% reduction)
-- ✅ Zero TypeScript errors (fixed 5 `any` type errors)
-- ✅ Improved component readability with tab-based content rendering
-- ✅ Better state management in streaming handlers
-- ✅ Cleaner reducer implementations
-- ✅ Reusable UI components (ToggleSwitch, PeriodSelector, Sidebar, etc.)
-## 2026-02-01: 🧹 MAJOR LINT CLEANUP - 216 WARNINGS FIXED (69% REDUCTION)
-**Status**: ✅ COMPLETED
-**Summary**: Massive ESLint warning cleanup reducing total warnings from **310 to 94** (69.7% reduction). Implemented systematic refactoring patterns including lookup tables, custom hooks, and sub-component extraction.
-### Refactoring Patterns Applied
-1. **Lookup Tables (Record<Type, Config>)**: Replaced complex if-else chains with type-safe lookup objects
-    - `AssistantIdentity.tsx`: PROVIDER_CONFIGS, MODEL_CONFIGS with brand styling
-    - `TerminalView.tsx`: STATUS_CLASSES for terminal states
-    - `AudioChatOverlay.tsx`: State configs for listening/speaking/processing
-    - `SidebarSection.tsx`: BADGE_CLASSES for variants
-    - `UpdateNotification.tsx`: STATE_CONFIGS for update states
-2. **Custom Hooks Extraction**: Reduced component complexity by extracting effects
-    - `useSelectionHandler()` for QuickActionBar text selection
-    - `useChatInitialization()` for chat loading
-    - `useLazyMessageLoader()` for message lazy loading
-    - `useUndoRedoKeyboard()` for keyboard shortcuts
-    - `useHistorySync()` for chat history management
-3. **Sub-Component Extraction**: Split large components into focused pieces
-    - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-    - `TerminalView.tsx`: TerminalHeader, OutputContent
-    - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Controls
-    - `MessageBubble.tsx`: MessageFooter component
-    - `GlassModal.tsx`: ModalHeader component
-    - `SidebarSection.tsx`: SectionHeader, SectionContent
-    - `UpdateNotification.tsx`: UpdateContent, UpdateActions
-4. **Helper Function Extraction**: Moved logic to pure functions
+### تأثير
+- ✅ تخفيض التحذيرات من **310 إلى 78** (تخفيض بنسبة 75%)
+- ✅ صفر أخطاء في نوع TypeScript (تم إصلاح 5 أخطاء في نوع `any`)
+- ✅ تحسين إمكانية قراءة المكونات من خلال عرض المحتوى المستند إلى علامة التبويب
+- ✅ إدارة أفضل للحالة في البث handlers
+- ✅ تطبيقات المخفض الأنظف
+- ✅ مكونات UI القابلة لإعادة الاستخدام (ToggleSwitch، وPeriodSelector، والشريط الجانبي، وما إلى ذلك)
+## 01-02-2026: 🧹 عملية تنظيف كبيرة للوبر - تم إصلاح 216 تحذيرًا (تخفيض بنسبة 69%)
+**الحالة**: ✅ مكتمل
+**الملخص**: عملية تنظيف واسعة النطاق لتحذير ESLint تقلل إجمالي التحذيرات من **310 إلى 94** (تخفيض بنسبة 69.7%). تم تنفيذ أنماط إعادة هيكلة منهجية بما في ذلك جداول البحث والخطافات المخصصة واستخراج المكونات الفرعية.
+### تم تطبيق أنماط إعادة البناء
+1. **جداول البحث (سجل<النوع، التكوين>)**: تم استبدال سلاسل if-else المعقدة بكائنات بحث آمنة من النوع
+- `AssistantIdentity.tsx`: PROVIDER_CONFIGS، MODEL_CONFIGS مع تصميم العلامة التجارية
+- `TerminalView.tsx`: STATUS_CLASSES للحالات الطرفية
+- `AudioChatOverlay.tsx`: إعدادات الحالة للاستماع/التحدث/المعالجة
+- `SidebarSection.tsx`: BADGE_CLASSES للمتغيرات
+- `UpdateNotification.tsx`: STATE_CONFIGS لحالات التحديث
+2. **استخراج الخطافات المخصصة**: تقليل تعقيد المكونات عن طريق استخراج التأثيرات
+- `useSelectionHandler()` لاختيار نص QuickActionBar
+- `useChatInitialization()` لتحميل الدردشة
+- `useLazyMessageLoader()` للتحميل البطيء للرسالة
+- `useUndoRedoKeyboard()` لاختصارات لوحة المفاتيح
+- `useHistorySync()` لإدارة سجل الدردشة
+3. **استخراج المكونات الفرعية**: قم بتقسيم المكونات الكبيرة إلى أجزاء مركزة
+- `ToolDisplay.tsx`: ExecutingSpinner، ToolStatusButton، FilePreview، SearchResults
+- `TerminalView.tsx`: رأس المحطة الطرفية، محتوى الإخراج
+- `AudioChatOverlay.tsx`: PulseRings، CentralIcon، عناصر التحكم
+- `MessageBubble.tsx`: مكون تذييل الرسالة
+- `GlassModal.tsx`: مكون ModalHeader
+- `SidebarSection.tsx`: رأس القسم، محتوى القسم
+- `UpdateNotification.tsx`: محتوى التحديث، إجراءات التحديث
+4. **استخراج الوظيفة المساعدة**: تم نقل المنطق إلى وظائف خالصة
     - `getStatusText()`, `getAudioState()`, `getStateConfig()`
     - `handleTextSelection()`, `handleSelectionClear()`
     - `applyHistoryState()`, `formatRateLimitError()`
-### Files Modified (30+)
-- **Chat Components**: ToolDisplay.tsx, TerminalView.tsx, AssistantIdentity.tsx, AudioChatOverlay.tsx, MessageBubble.tsx
-- **Layout Components**: QuickActionBar.tsx, UpdateNotification.tsx, SidebarMenuItem.tsx, SidebarSection.tsx
-- **Context**: ChatContext.tsx, useChatManager.ts
-- **UI Components**: GlassModal.tsx, SelectDropdown.tsx
-### Impact
-- ✅ Reduced warnings from **310 to 94** (69.7% reduction)
-- ✅ Complexity scores reduced (e.g., AssistantIdentity 25→8, AudioChatOverlay 23→8)
-- ✅ Zero TypeScript errors
-- ✅ Improved code maintainability with consistent patterns
-- ✅ Better component reusability through sub-components
-- ✅ Cleaner separation of concerns
-## 2026-01-31: 🧹 LINT WARNING CLEANUP - 48 WARNINGS FIXED
-**Status**: ✅ COMPLETED
-**Summary**: Fixed 48 ESLint warnings across the codebase, improving code quality and type safety. Reduced total warnings from **354 to 306** (13.6% reduction).
-### Fixes Applied
-1. **Prefer Nullish Coalescing (26 fixes)**: Replaced logical OR operators (`||`) with nullish coalescing operators (`??`) for safer null/undefined checks.
-    - Files: `SessionSetup.tsx`, `ModelSelector.tsx`, `ProjectDashboard.tsx`, `ProjectWizardModal.tsx`, `WorkspaceTreeItem.tsx`, `FileExplorer.tsx`, `CouncilPanel.tsx`, `WorkspaceModals.tsx`, `useAgentEvents.ts`, `AdvancedTab.tsx`, `AppearanceTab.tsx`, `IdeaDetailsContent.tsx`, `SessionHistory.tsx`, `CategorySelector.tsx`, `vite.config.ts`, and others.
-2. **No Unnecessary Conditions (15 fixes)**: Removed unnecessary optional chains and conditional checks on non-nullish values.
-    - Files: `DockerDashboard.tsx`, `ModelExplorer.tsx`, `ModelSelector.tsx`, `ModelSelectorTrigger.tsx`, `useModelCategories.ts`, `useModelSelectorLogic.ts`, `model-fetcher.ts`, `LogoGeneratorModal.tsx`, `useAgentTask.ts`, and others.
-3. **Removed Unused Variables (4 fixes)**: Cleaned up unused imports and variable assignments.
-    - Files: `WorkspaceSection.tsx`, `extension-detector.service.ts`, `WizardSSHBrowserStep.tsx`, `useChatGenerator.ts`, `AdvancedMemoryInspector.tsx`.
-4. **Promise Handler Fixes (1 fix)**: Wrapped async handlers with `void` to satisfy ESLint promise rules.
-    - File: `App.tsx`.
-5. **Refactoring for Better Practices (2 fixes)**:
-    - Extracted complex nested logic into helper method `calculateQuotaPercentage()` in `local-image.service.ts` (fixes max-depth warning).
-    - Converted method with 8 parameters to use parameter object in `advanced-memory.service.ts` (fixes max-params warning).
-### Files Modified
-- **Main Process** (9 files): `api-server.service.ts`, `extension-detector.service.ts`, `job-scheduler.service.ts`, `tool-executor.ts`, `model-router.util.ts`, `response-parser.ts`, `local-image.service.ts`, `advanced-memory.service.ts`, `project-agent.service.ts`
-- **Renderer** (35+ files): Components in `features/chat/`, `features/ideas/`, `features/models/`, `features/projects/`, `features/settings/`, and core components
-- **Config** (1 file): `vite.config.ts`
-### Impact
-- ✅ Reduced warnings from **354 to 306** (13.6% reduction)
-- ✅ Improved code maintainability and type safety
-- ✅ Better null/undefined handling across the application
-- ✅ Cleaner code structure with reduced complexity
-- ✅ Fixed critical syntax errors and build issues
-## 2026-01-31: 🔧 IPC HANDLER RESTORATION & CORE SYSTEM STABILIZATION
-**Status**: ✅ COMPLETED
-**Summary**: Identified and restored 13 missing IPC handler registrations in the application's startup sequence. This fixes the critical `extension:shouldShowWarning` error and restores full access to several core systems that were previously unreachable from the UI.
-### Key Achievements
-1. **IPC Handler Restoration**:
-    - Restored 13 missing IPC registration calls in `src/main/startup/ipc.ts`.
-    - Systems restored include: Browser Extension management, Audit Logs, Backup/Restore, Brain (Memory), Multi-Model Comparison, Model Collaboration, Health Checks, Metrics, and Token Estimation.
-    - Resolved the "No handler registered" runtime error for `extension:shouldShowWarning`.
-- Fixed Browser Extension initialization by rectifying service worker script loading paths and moving `service-worker.js` to the extension root.
-- Resolved "Could not establish connection" errors in the extension by correcting message formats and ensuring `page-analyzer.js` is properly loaded in the content script's isolated world.
-- Improved Proxy Service reliability by fixing status reporting when reusing existing proxy processes.
-- Enhanced Extension communication with a heartbeat/ready signal and more robust error logging.
-2. **Interface Synchronization**:
-    - Synchronized `src/main/startup/ipc.ts` with the comprehensive list of handlers defined in `src/main/ipc/index.ts`.
-    - Ensured all service dependencies are correctly injected into the restored handlers.
-3. **Quality Assurance**:
-    - Verified 100% pass rate for `npm run lint` and `npm run type-check`.
-    - Confirmed that restored handlers have correct type-safe dependency injection from the services container.
-### Files Impacted
-- **Main Process Infrastructure**: `src/main/startup/ipc.ts`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🤖 INTERACTIVE AGENT PLANNING & WORKFLOW REFINEMENT
-**Status**: ✅ COMPLETED
-**Summary**: Implemented a more robust and interactive workflow for the Project Agent. The agent now generates a technical plan and explicitly proposes it for user approval using the `propose_plan` tool. Execution only proceeds after explicit user confirmation, ensuring safety and alignment with user goals.
-### Key Achievements
-1. **Interactive Planning Tooling**:
-    - Added `propose_plan` tool to the agent's toolbelt.
-    - Updated `ProjectAgentService` to pause execution and wait for approval after a plan is proposed.
-    - Refactored `planningLoop` and `executionLoop` for better state management and tool handling.
-2. **User Approval Workflow**:
-    - Implemented "Approve" button in `TaskNode` UI.
-    - Updated IPC bridge to handle plan approval and transmission of the approved steps back to the agent.
-    - Agent history now includes the approved plan for context during execution.
-3. **Execution Improvements**:
-    - Agent now correctly updates individual plan step statuses (`pending` → `running` → `completed`/`failed`).
-    - Fixed several TypeScript and bridging issues in `ToolExecutor` and `TaskNode`.
-    - Hardened type safety for tool execution results and options.
-4. **Integration & Stability**:
-    - Updated `electron.d.ts` and `web-bridge.ts` with the new agent IPC methods.
-    - Verified full build, lint, and type-check passing status.
-### Files Impacted
-- **Agent Services**: `src/main/services/project/project-agent.service.ts`, `src/main/tools/tool-executor.ts`, `src/main/tools/tool-definitions.ts`.
-- **UI Components**: `src/renderer/features/project-agent/nodes/TaskNode.tsx`.
-- **Infrastructure**: `src/shared/types/events.ts`, `src/main/ipc/project-agent.ts`, `src/renderer/electron.d.ts`, `src/renderer/web-bridge.ts`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🧹 DEPRECATED FEATURE REMOVAL & BUILD STABILIZATION (Batch 14)
-**Status**: ✅ COMPLETED
-**Summary**: Full removal of the legacy "Agent Council" feature from the codebase. This cleanup simplifies the architecture, reduces technical debt, and resolves critical TypeScript errors that were blocking the build. Achieved 100% build pass rate.
-### Key Achievements
-1. **Agent Council Removal**:
-    - Deleted `AgentCouncilService` and its IPC handlers.
-    - Removed `CouncilSession`, `CouncilLog`, and `AgentProfile` types from the data layer.
-    - Cleaned up `DatabaseService` and `SystemRepository` by removing all council-related persistence logic.
-    - Updated `startup/services.ts` and `startup/ipc.ts` to fully decommission the service bundle.
-2. **Preload & Bridge Cleanup**:
-    - Removed `council` bridge from `ElectronAPI` and `web-bridge.ts`.
-    - Synchronized `electron.d.ts` with the new lean API surface.
-3. **UI & State Simplification**:
-    - Removed all council-related tabs, panels, and hooks from the `ProjectWorkspace`.
-    - Eliminated dead `viewTab` state and logic that previously managed transitions between editor and council views.
-    - Simplified `WorkspaceSidebar` and `AIAssistantSidebar` to focus exclusively on the core AI Chat experience.
-4. **Build Stabilization**:
-    - Resolved over 40+ TypeScript errors across main and renderer processes.
-    - Verified build with `npm run build`: Success with exit code 0.
-    - Cleaned up unused imports and props discovered during the refactoring pass.
-### Files Impacted
-- **Main Process**: `src/main/services/data/database.service.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/startup/services.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`, `src/main/preload.ts`, `src/main/services/llm/agent-council.service.ts` (deleted), `src/main/ipc/council.ts` (deleted).
-- **Renderer Hooks**: `src/renderer/features/projects/hooks/useProjectState.ts`, `src/renderer/features/projects/hooks/useProjectWorkspaceController.ts`, `src/renderer/features/projects/hooks/useWorkspaceManager.ts`, `src/renderer/features/projects/hooks/useProjectActions.ts`, `src/renderer/hooks/useKeyboardShortcuts.ts`.
-- **Renderer Components**: `src/renderer/features/projects/components/ProjectWorkspace.tsx`, `src/renderer/features/projects/components/workspace/WorkspaceSidebar.tsx`, `src/renderer/features/projects/components/workspace/AIAssistantSidebar.tsx`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🏗️ UI COMPLEXITY REDUCTION & COMPONENT REFACTORING (Batch 13)
-**Status**: ✅ COMPLETED
-**Summary**: Major refactoring of high-complexity UI components to improve maintainability and performance. Focused on breaking down monolithic components into smaller, reusable parts and resolving critical React ref access issues.
-### Key Achievements
-1. **ProjectWizardModal Refactoring**:
-    - Extracted 5 specialized step components: `WizardDetailsStep`, `WizardSelectionStep`, `WizardSSHConnectStep`, `WizardSSHBrowserStep`, `WizardCreatingStep`.
-    - Reduced main component line count by 60% and simplified state orchestration.
-    - Resolved all type safety issues in SSH form handling.
-2. **ModelSelector System Overhaul**:
-    - Fully decoupled logic from UI using custom hooks: `useModelCategories`, `useModelSelectorLogic`.
-    - Modularized the dropdown UI into `ModelSelectorTrigger`, `ModelSelectorContent`, and `ModelSelectorItem`.
-    - **Ref Safety**: Resolved "Cannot access refs during render" errors by properly destructuring and using ref callbacks.
-    - Type-hardened all model and category interfaces.
-3. **TerminalSession Hardening**:
-    - Resolved `setState` in effect warnings by implementing safe asynchronous updates.
-    - Extracted `TerminalErrorOverlay` to simplify the main render block.
-    - Met strict complexity requirements (<10) for core terminal management methods.
-4. **Lint & Type Pass**:
-    - Successfully ran `eslint --fix` across all modified directories.
-    - Standardized import sorting and simplified conditional logic (`||` → `??`).
-    - Verified 100% build compatibility with the refactored architecture.
-### Files Impacted
-- **Model Selector**: `src/renderer/features/models/components/ModelSelector.tsx`, `ModelsSelectorTrigger.tsx`, `ModelSelectorContent.tsx`, `ModelSelectorItem.tsx`
-- **Project Wizard**: `src/renderer/features/projects/components/ProjectWizardModal.tsx`, `WizardDetailsStep.tsx`, `WizardSelectionStep.tsx`, `WizardSSHConnectStep.tsx`, `WizardSSHBrowserStep.tsx`, `WizardCreatingStep.tsx`
-- **Terminal**: `src/renderer/features/terminal/components/TerminalSession.tsx`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🗄️ DATABASE SERVICE COMPATIBILITY & INTELLIGENCE REFACTORING (Batch 12)
-**Status**: ✅ COMPLETED
-**Summary**: Full verification and hardening of the `DatabaseClientService` integration with the Rust backend. Refactored the Code Intelligence and Context Retrieval systems to consistently use project paths, ensuring reliable RAG and search functionality across distinct workspaces.
-### Key Achievements
-1. **Service Compatibility & Bridging**:
-    - Tightened the contract between TypeScript `DatabaseService` and Rust `tandem-db-service`.
-    - Implemented path-resolution logic in `DatabaseService` to bridge UUID-based project references to path-indexed intelligence data.
-    - Verified all core database operations (Chat, Messages, Projects, Knowledge) against the Rust HTTP API.
-2. **Code Intelligence Refactoring**:
-    - **CodeIntelligenceService**: Refactored indexing, clearing, and querying logic to use `rootPath` (absolute directory path) as the primary identifier.
-    - **ContextRetrievalService**: Implemented project path resolution from UUIDs to ensure vector searches are filtered correctly by project, preventing cross-project context leakage.
-    - **IPC Layer**: Updated `ProjectIPC` and `CodeIntelligenceIPC` handlers to pass the necessary path arguments.
-3. **Data Integrity & Schema Consistency**:
-    - Hardened `TokenUsage` tracking and `FileDiff` storage to use absolute paths as unique project keys.
-    - Verified that vector search results for both symbols and semantic fragments are correctly scoped to the active project.
-    - Resolved a critical issue where background file indexing used incorrect project identifiers.
-4. **Build & Quality Assurance**:
-    - Achieved 100% build pass rate: Native Rust services, Vite frontend, and Electron main process.
-    - Clean `npm run type-check` and `npm run lint` results.
-    - Verified that long-running operations like project indexing are correctly scheduled and associated with the physical workspace.
-### Files Impacted
-- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/services/project/code-intelligence.service.ts`, `src/main/services/llm/context-retrieval.service.ts`
-- **Repositories**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/project.repository.ts`
+### الملفات المعدلة (30+)
+- **مكونات الدردشة**: ToolDisplay.tsx، وTerminalView.tsx، وAssistantIdentity.tsx، وAudioChatOverlay.tsx، وMessageBubble.tsx
+- **مكونات التخطيط**: QuickActionBar.tsx، UpdateNotification.tsx، SidebarMenuItem.tsx، SidebarSection.tsx
+- **السياق**: ChatContext.tsx، useChatManager.ts
+- **UI المكونات**: GlassModal.tsx، SelectDropdown.tsx
+### تأثير
+- ✅ تخفيض التحذيرات من **310 إلى 94** (تخفيض بنسبة 69.7%)
+- ✅ تم تقليل درجات التعقيد (على سبيل المثال، AssistantIdentity 25→8، AudioChatOverlay 23→8)
+- ✅ صفر أخطاء TypeScript
+- ✅ تحسين إمكانية صيانة التعليمات البرمجية مع أنماط متسقة
+- ✅ إمكانية إعادة استخدام المكونات بشكل أفضل من خلال المكونات الفرعية
+- ✅ الفصل الأنظف بين الاهتمامات
+## 31-01-2026: 🧹 تنظيف التحذير من الوبر - تم إصلاح 48 تحذيرًا
+**الحالة**: ✅ مكتمل
+**الملخص**: تم إصلاح 48 تحذيرًا من ESLint عبر قاعدة التعليمات البرمجية، مما أدى إلى تحسين جودة التعليمات البرمجية وسلامة الكتابة. تم تقليل إجمالي التحذيرات من **354 إلى 306** (تخفيض بنسبة 13.6%).
+### تم تطبيق الإصلاحات
+1. ** تفضيل الدمج الفارغ (26 إصلاحًا) **: تم استبدال عوامل تشغيل OR المنطقية (`||`) بعوامل تشغيل الدمج الفارغة (`??`) لإجراء عمليات تحقق خالية/غير محددة أكثر أمانًا.
+- الملفات: `SessionSetup.tsx`، `ModelSelector.tsx`، `ProjectDashboard.tsx`، `ProjectWizardModal.tsx`، `WorkspaceTreeItem.tsx`، `FileExplorer.tsx`، `CouncilPanel.tsx`، `WorkspaceModals.tsx`، `useAgentEvents.ts`، `AdvancedTab.tsx`، `AppearanceTab.tsx`، `IdeaDetailsContent.tsx`، `SessionHistory.tsx`، `CategorySelector.tsx`، `vite.config.ts`، وغيرها.
+2. ** لا توجد شروط غير ضرورية (15 إصلاحًا) **: تمت إزالة السلاسل الاختيارية غير الضرورية والفحوصات المشروطة على القيم غير الفارغة.
+- الملفات: `DockerDashboard.tsx`، `ModelExplorer.tsx`، `ModelSelector.tsx`، `ModelSelectorTrigger.tsx`، `useModelCategories.ts`، `useModelSelectorLogic.ts`، `model-fetcher.ts`، `LogoGeneratorModal.tsx`، ​​`useAgentTask.ts`، وغيرها.
+3. **إزالة المتغيرات غير المستخدمة (4 إصلاحات)**: تنظيف الواردات غير المستخدمة وتعيينات المتغيرات.
+- الملفات: `WorkspaceSection.tsx`، `extension-detector.service.ts`، `WizardSSHBrowserStep.tsx`، `useChatGenerator.ts`، `AdvancedMemoryInspector.tsx`.
+4. **إصلاحات الوعد Handler (إصلاح واحد)**: ملفوف غير متزامن handlers مع `void` لتلبية قواعد وعد ESLint.
+- الملف: `App.tsx`.
+5. **إعادة البناء من أجل ممارسات أفضل (إصلاحان)**:
+- تم استخراج المنطق المتداخل المعقد في طريقة المساعدة `calculateQuotaPercentage()` في `local-image.service.ts` (يصلح تحذير العمق الأقصى).
+- طريقة محولة تحتوي على 8 معلمات لاستخدام كائن المعلمة في `advanced-memory.service.ts` (إصلاح تحذير الحد الأقصى للمعلمات).
+### الملفات المعدلة
+- **العملية الرئيسية** (9 ملفات): `api-server.service.ts`, `extension-detector.service.ts`, `job-scheduler.service.ts`, `tool-executor.ts`, `model-router.util.ts`, `response-parser.ts`, `local-image.service.ts`, `advanced-memory.service.ts`, `project-agent.service.ts`
+- **العارض** (أكثر من 35 ملفًا): المكونات في `features/chat/`، `features/ideas/`، `features/models/`، `features/projects/`، `features/settings/`، والمكونات الأساسية
+- **التكوين** (ملف واحد): `vite.config.ts`
+### تأثير
+- ✅ تخفيض التحذيرات من **354 إلى 306** (تخفيض بنسبة 13.6%)
+- ✅ تحسين إمكانية صيانة التعليمات البرمجية وسلامة النوع
+- ✅ معالجة أفضل للقيمة الفارغة/غير المحددة عبر التطبيق
+- ✅ بنية أكواد أكثر نظافة مع تعقيد أقل
+- ✅ إصلاح الأخطاء النحوية الحرجة ومشكلات البناء
+## 31-01-2026: 🔧 IPC استعادة المعالج واستقرار النظام الأساسي
+**الحالة**: ✅ مكتمل
+**الملخص**: تم تحديد واستعادة 13 تسجيلًا مفقودًا IPC handler في تسلسل بدء تشغيل التطبيق. يؤدي هذا إلى إصلاح الخطأ الفادح `extension:shouldShowWarning` واستعادة الوصول الكامل إلى العديد من الأنظمة الأساسية التي لم يكن من الممكن الوصول إليها سابقًا من UI.
+### الإنجازات الرئيسية
+1. **IPC Handler الاستعادة**:
+- تمت استعادة 13 مكالمة تسجيل IPC مفقودة في `src/main/startup/ipc.ts`.
+- تشمل الأنظمة التي تمت استعادتها ما يلي: إدارة امتدادات المتصفح، وسجلات التدقيق، والنسخ الاحتياطي/الاستعادة، والدماغ (الذاكرة)، ومقارنة النماذج المتعددة، وتعاون النماذج، والفحوصات الصحية، والمقاييس، وتقدير الرمز المميز.
+- تم حل الخطأ "لم يتم تسجيل handler" runtime لـ `extension:shouldShowWarning`.
+- تم إصلاح تهيئة ملحق المتصفح عن طريق تصحيح مسارات تحميل البرنامج النصي لعامل الخدمة ونقل `service-worker.js` إلى جذر الامتداد.
+- تم حل أخطاء "تعذر إنشاء اتصال" في الامتداد عن طريق تصحيح تنسيقات الرسائل والتأكد من تحميل `page-analyzer.js` بشكل صحيح في العالم المعزول للبرنامج النصي للمحتوى.
+- تحسين موثوقية خدمة الوكيل عن طريق إصلاح تقارير الحالة عند إعادة استخدام عمليات الوكيل الحالية.
+- اتصال تمديد محسّن مع إشارة نبض القلب/الاستعداد وتسجيل أخطاء أكثر قوة.
+2. **مزامنة الواجهة**:
+- تمت مزامنة `src/main/startup/ipc.ts` مع القائمة الشاملة لـ handlers المحددة في `src/main/ipc/index.ts`.
+- التأكد من إدخال جميع تبعيات الخدمة بشكل صحيح في handlers المستعاد.
+3. **ضمان الجودة**:
+- تم التحقق من معدل النجاح بنسبة 100% لـ `npm run lint` و`npm run type-check`.
+- تم التأكد من أن handlers المستعاد يحتوي على حقن تبعية صحيح وآمن من حاوية الخدمات.
+### الملفات المتأثرة
+- **البنية الأساسية للعملية الرئيسية**: `src/main/startup/ipc.ts`.
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`.
+## 30-01-2026: 🤖 تخطيط الوكيل التفاعلي وتحسين سير العمل
+**الحالة**: ✅ مكتمل
+**ملخص**: تم تنفيذ سير عمل أكثر قوة وتفاعلية لوكيل المشروع. يقوم الوكيل الآن بإنشاء خطة فنية ويقترحها بشكل صريح للحصول على موافقة المستخدم باستخدام أداة `propose_plan`. لا يتم التنفيذ إلا بعد تأكيد صريح من المستخدم، مما يضمن السلامة والمواءمة مع أهداف المستخدم.
+### الإنجازات الرئيسية
+1. **أدوات التخطيط التفاعلية**:
+- تمت إضافة أداة `propose_plan` إلى حزام أدوات الوكيل.
+- تم تحديث `ProjectAgentService` لإيقاف التنفيذ مؤقتًا وانتظار الموافقة بعد اقتراح الخطة.
+- تمت إعادة تصميم `planningLoop` و`executionLoop` لتحسين إدارة الحالة والتعامل مع الأدوات.
+2. **سير عمل موافقة المستخدم**:
+- تم تنفيذ زر "الموافقة" في `TaskNode` UI.
+- تم تحديث جسر IPC للتعامل مع الموافقة على الخطة وإرسال الخطوات المعتمدة مرة أخرى إلى الوكيل.
+- يتضمن سجل الوكيل الآن الخطة المعتمدة للسياق أثناء التنفيذ.
+3. **تحسينات التنفيذ**:
+- يقوم الوكيل الآن بتحديث حالات خطوة الخطة الفردية بشكل صحيح (`pending` → `running` → `completed`/`failed`).
+- تم إصلاح العديد من مشكلات TypeScript ومشكلات التوصيل في `ToolExecutor` و`TaskNode`.
+- أمان النوع المقوى لنتائج وخيارات تنفيذ الأداة.
+4. **التكامل والاستقرار**:
+- تم تحديث `electron.d.ts` و`web-bridge.ts` باستخدام أساليب الوكيل الجديدة IPC.
+- التحقق من حالة اجتياز البناء الكامل والوبر والتحقق من النوع.
+### الملفات المتأثرة
+- **خدمات الوكيل**: `src/main/services/project/project-agent.service.ts`، `src/main/tools/tool-executor.ts`، `src/main/tools/tool-definitions.ts`.
+- **UI المكونات**: `src/renderer/features/project-agent/nodes/TaskNode.tsx`.
+- **البنية التحتية**: `src/shared/types/events.ts`، `src/main/ipc/project-agent.ts`، `src/renderer/electron.d.ts`، `src/renderer/web-bridge.ts`.
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`.
+## 30-01-2026: 🧹 إزالة الميزات الموقوفة وتثبيت البناء (الدفعة 14)
+**الحالة**: ✅ مكتمل
+**الملخص**: الإزالة الكاملة لميزة "Agent Council" القديمة من قاعدة التعليمات البرمجية. تعمل عملية التنظيف هذه على تبسيط البنية وتقليل الديون الفنية وحل أخطاء TypeScript الخطيرة التي كانت تمنع الإنشاء. تم تحقيق معدل نجاح بناء 100%.
+### الإنجازات الرئيسية
+1. **إزالة مجلس الوكلاء**:
+- تم حذف `AgentCouncilService` وIPC handlers.
+- تمت إزالة أنواع `CouncilSession` و`CouncilLog` و`AgentProfile` من طبقة البيانات.
+- تنظيف `DatabaseService` و`SystemRepository` عن طريق إزالة كل منطق الثبات المتعلق بالمجلس.
+- تم تحديث `startup/services.ts` و`startup/ipc.ts` لإيقاف تشغيل حزمة الخدمة بالكامل.
+2. ** تنظيف التحميل المسبق والجسر **:
+- تمت إزالة جسر `council` من `ElectronAPI` و`web-bridge.ts`.
+- `electron.d.ts` متزامن مع سطح API العجاف الجديد.
+3. **UI وتبسيط الحالة**:
+- تمت إزالة جميع علامات التبويب واللوحات والخطافات المتعلقة بالمجلس من `ProjectWorkspace`.
+- تم القضاء على حالة `viewTab` الميتة والمنطق الذي كان يدير سابقًا التحولات بين آراء المحرر والمجلس.
+- `WorkspaceSidebar` و`AIAssistantSidebar` المبسطة للتركيز حصريًا على تجربة الدردشة الأساسية المدعمة بالذكاء الاصطناعي.
+4. **بناء الاستقرار**:
+- تم حل أكثر من 40 خطأ TypeScript عبر العمليات الرئيسية وعمليات العارض.
+- تم التحقق من البناء باستخدام `npm run build`: النجاح برمز الخروج 0.
+- تنظيف الواردات والدعائم غير المستخدمة التي تم اكتشافها أثناء عملية إعادة البناء.
+### الملفات المتأثرة
+- **العملية الرئيسية**: `src/main/services/data/database.service.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/startup/services.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`, `src/main/preload.ts`, `src/main/services/llm/agent-council.service.ts` (محذوف)، `src/main/ipc/council.ts` (محذوف).
+- **خطافات العارض**: `src/renderer/features/projects/hooks/useProjectState.ts`, `src/renderer/features/projects/hooks/useProjectWorkspaceController.ts`, `src/renderer/features/projects/hooks/useWorkspaceManager.ts`, `src/renderer/features/projects/hooks/useProjectActions.ts`, `src/renderer/hooks/useKeyboardShortcuts.ts`.
+- **مكونات العارض**: `src/renderer/features/projects/components/ProjectWorkspace.tsx`، `src/renderer/features/projects/components/workspace/WorkspaceSidebar.tsx`، `src/renderer/features/projects/components/workspace/AIAssistantSidebar.tsx`.
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`.
+## 30-01-2026: 🏗️ UI تقليل التعقيد وإعادة هيكلة المكونات (الدفعة 13)
+**الحالة**: ✅ مكتمل
+**الملخص**: إعادة هيكلة رئيسية لمكونات UI عالية التعقيد لتحسين إمكانية الصيانة والأداء. تركز على تقسيم المكونات المتجانسة إلى أجزاء أصغر قابلة لإعادة الاستخدام وحل مشكلات الوصول إلى المرجع الحرجة React.
+### الإنجازات الرئيسية
+1. **إعادة هيكلة ProjectWizardModal**:
+- تم استخراج 5 مكونات خطوة متخصصة: `WizardDetailsStep`، `WizardSelectionStep`، `WizardSSHConnectStep`، `WizardSSHBrowserStep`، `WizardCreatingStep`.
+- تقليل عدد خطوط المكون الرئيسي بنسبة 60% وتبسيط تنسيق الحالة.
+- تم حل جميع مشكلات أمان النوع في التعامل مع نموذج SSH.
+2. **إصلاح نظام تحديد النماذج**:
+- منطق منفصل تمامًا عن UI باستخدام الخطافات المخصصة: `useModelCategories`، `useModelSelectorLogic`.
+- تم تقسيم القائمة المنسدلة UI إلى `ModelSelectorTrigger`، و`ModelSelectorContent`، و`ModelSelectorItem`.
+- **سلامة المرجع**: تم حل أخطاء "تعذر الوصول إلى المراجع أثناء العرض" عن طريق التفكيك الصحيح واستخدام عمليات رد اتصال المرجع.
+- نوع مقوى لجميع واجهات الطراز والفئة.
+3. **تعزيز الجلسة الطرفية**:
+- تم حل `setState` التحذيرات السارية من خلال تنفيذ تحديثات آمنة غير متزامنة.
+- تم استخراج `TerminalErrorOverlay` لتبسيط كتلة العرض الرئيسية.
+- استيفاء متطلبات التعقيد الصارمة (<10) لأساليب إدارة المحطة الأساسية.
+4. ** تمرير الوبر والكتابة **:
+- تم تشغيل `eslint --fix` بنجاح عبر كافة الأدلة المعدلة.
+- فرز الواردات الموحد والمنطق الشرطي المبسط (`||` → `??`).
+- تم التحقق من توافق البناء بنسبة 100% مع البنية المعاد تصميمها.
+### الملفات المتأثرة
+- **محدد النموذج**: `src/renderer/features/models/components/ModelSelector.tsx`، `ModelsSelectorTrigger.tsx`، `ModelSelectorContent.tsx`، `ModelSelectorItem.tsx`
+- **معالج المشروع**: `src/renderer/features/projects/components/ProjectWizardModal.tsx`, `WizardDetailsStep.tsx`, `WizardSelectionStep.tsx`, `WizardSSHConnectStep.tsx`, `WizardSSHBrowserStep.tsx`, `WizardCreatingStep.tsx`
+- **المحطة**: `src/renderer/features/terminal/components/TerminalSession.tsx`
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`
+##2026-01-27: 🗄️ توافق خدمة قاعدة البيانات وإعادة هيكلة الذكاء (الدفعة 12)
+**الحالة**: ✅ مكتمل
+**الملخص**: التحقق الكامل من تكامل `DatabaseClientService` مع الواجهة الخلفية لـ Rust وتقويته. تمت إعادة هيكلة أنظمة ذكاء الكود واسترجاع السياق لاستخدام مسارات المشروع باستمرار، مما يضمن موثوقية RAG ووظيفة البحث عبر مساحات عمل متميزة.
+### الإنجازات الرئيسية
+1. **توافق الخدمة وتجسيرها**:
+- تم تشديد العقد بين TypeScript `DatabaseService` وRust `tandem-db-service`.
+- تم تنفيذ منطق دقة المسار في `DatabaseService` لربط مراجع المشروع المستندة إلى UUID ببيانات الذكاء المفهرسة بالمسار.
+- تم التحقق من جميع عمليات قاعدة البيانات الأساسية (الدردشة والرسائل والمشاريع والمعرفة) مقابل Rust HTTP API.
+2. **إعادة هيكلة ذكاء الكود**:
+- **CodeIntelligenceService**: منطق الفهرسة والمسح والاستعلام المعاد تصميمه لاستخدام `rootPath` (مسار الدليل المطلق) كمعرف أساسي.
+- **ContextRetrievalService**: تم تنفيذ تحليل مسار المشروع من UUIDs لضمان تصفية عمليات البحث المتجهة بشكل صحيح حسب المشروع، مما يمنع تسرب السياق عبر المشروعات.
+- **IPC Layer**: تم تحديث `ProjectIPC` و`CodeIntelligenceIPC` handlers لتمرير وسيطات المسار الضرورية.
+3. **سلامة البيانات وتناسق المخطط**:
+- تتبع `TokenUsage` معزز وتخزين `FileDiff` لاستخدام المسارات المطلقة كمفاتيح مشروع فريدة.
+- التحقق من أن نتائج البحث المتجه لكل من الرموز والأجزاء الدلالية قد تم تحديد نطاقها بشكل صحيح للمشروع النشط.
+- تم حل مشكلة حرجة حيث كانت فهرسة ملفات الخلفية تستخدم معرفات مشروع غير صحيحة.
+4. **البناء وضمان الجودة**:
+- تم تحقيق معدل نجاح بناء بنسبة 100%: خدمات Native Rust وواجهة Vite الأمامية والعملية الرئيسية Electron.
+- تنظيف نتائج `npm run type-check` و`npm run lint`.
+- التحقق من أن العمليات طويلة الأمد مثل فهرسة المشروع تمت جدولتها بشكل صحيح وارتباطها بمساحة العمل الفعلية.
+### الملفات المتأثرة
+- **الخدمات الأساسية**: `src/main/services/data/database.service.ts`، `src/main/services/project/code-intelligence.service.ts`، `src/main/services/llm/context-retrieval.service.ts`
+- **المستودعات**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/project.repository.ts`
 - **IPC Handlers**: `src/main/ipc/project.ts`, `src/main/ipc/code-intelligence.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🏗️ PROJECT PATH MIGRATION & END-TO-END CONSISTENCY (Batch 11)
-**Status**: ✅ COMPLETED
-**Summary**: Finalized the migration from `project_id` to `project_path` across the entire ecosystem. This included updating the Rust database schema and migrations, refactoring TypeScript repositories and services, and stabilizing the build with targeted type fixes in the renderer.
-### Key Achievements
-1. **Database Schema Evolution**:
-    - Implemented Rust migrations to rename `project_id` to `project_path` in `file_diffs` and `token_usage` tables.
-    - Updated indices to align with the new path-based lookup strategy.
-2. **Backend Repository Refactoring**:
-    - Updated `KnowledgeRepository` and `SystemRepository` to use `project_path` consistently.
-    - Synchronized `SemanticFragment` storage and `TokenUsage` tracking with the new schema.
-3. **Build Stabilization & Type Safety**:
-    - Resolved 11+ critical TypeScript errors across `settings.service.ts`, `CommandPalette.tsx`, `ModelSelector.tsx`, and `ChatHistorySection.tsx`.
-    - Hardened optional property access and fixed null/undefined checks in the renderer's quota and chat management modules.
-    - Fixed an asynchronous mismatch in `ToolExecutor.ts` by correctly awaiting MCP tool definitions.
-4. **Code Quality & Maintenance**:
-    - Fixed a duplicate variable declaration in `ssh.service.ts` that blocked compilation.
-    - Addressed several lint warnings related to nullish coalescing operators (`??`) and complexity.
-    - Verified end-to-end consistency with a successful Rust backend build and clean TypeScript type-checks.
-### Files Impacted
-- **Rust Backend**: `src/services/db-service/src/database.rs`
-- **Main Process Services**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/services/system/settings.service.ts`, `src/main/services/project/ssh.service.ts`, `src/main/tools/tool-executor.ts`
-- **Renderer Components**: `src/renderer/components/layout/CommandPalette.tsx`, `src/renderer/components/layout/sidebar/ChatHistorySection.tsx`, `src/renderer/features/models/components/ModelSelector.tsx`
-- **Shared Types**: `src/shared/types/db-api.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 💾 DATABASE CLIENT REFACTORING & BUILD STABILIZATION (Batch 9)
-**Status**: ✅ COMPLETED
-**Summary**: Refactored the `DatabaseService` to act as a remote client for the new standalone Rust database service. This completes the transition to a separate process-managed database architecture. Also performed a sweeping build stabilization pass, resolving 19 TypeScript errors and several critical syntax bugs across core modules.
-### Key Achievements
-1.  **Remote Database Client**:
-    - Refactored `DatabaseService` to delegate all operations to `DatabaseClientService`.
-    - Removed all legacy `PGlite` dependencies and local file system paths from the main database service.
-    - Implemented a remote `DatabaseAdapter` bridged via HTTP/JSON-RPC.
-    - Maintained full backward compatibility with the existing Repository pattern.
-2.  **Service Lifecycle & Discovery**:
-    - Integrated `DatabaseClientService` into the main application container.
-    - Established dependency-based startup order: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
-    - Automated service discovery using port files in `%APPDATA%`.
-3.  **Build Stabilization**:
-    - Resolved all 19 TypeScript errors introduced by the architectural shift.
-    - Fixed critical syntax errors in `PanelLayout.tsx` (movePanel) and `rate-limiter.util.ts` (getRateLimiter) caused by previous merge conflicts.
-    - Hardened type safety in `message-normalizer.util.ts` with explicit role casting.
-    - Fixed a long-standing type error in `ollama.ts` related to response status codes.
-4.  **Test Suite Alignment**:
-    - Updated `DatabaseService` unit tests to use mocked remote client behavior.
-    - Updated `repository-db.integration.test.ts` to support the new constructor signature and remote communication patterns.
-    - Verified build with clean `npm run type-check` and `npm run lint` results.
-### Files Impacted
-- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/startup/services.ts`, `src/main/services/data/database-client.service.ts`
-- **Utilities**: `src/main/utils/rate-limiter.util.ts`, `src/main/utils/message-normalizer.util.ts`, `src/main/startup/ollama.ts`
-- **Renderer**: `src/renderer/components/layout/PanelLayout.tsx`
-- **Tests**: `src/tests/main/services/data/database.service.test.ts`, `src/tests/main/tests/integration/repository-db.integration.test.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🗄️ DATABASE SERVICE REFACTORING (Architecture 4.3)
-**Status**: ✅ COMPLETED
-**Summary**: Refactored the embedded PGlite database into a standalone Windows Service with a Rust-based host, completing Architecture Roadmap task 4.3. The database now runs as an independent service, improving reliability and allowing the database to persist across app restarts.
-### Key Achievements
-1. **Rust Database Service (`tandem-db-service`)**:
-    - New Rust service in `src/services/db-service/`
-    - SQLite database with WAL mode for concurrency
-    - Vector search using bincode-serialized embeddings
-    - Cosine similarity search for code symbols and semantic fragments
-    - Full CRUD API for chats, messages, projects, folders, prompts
-2. **Windows Service Integration**:
-    - Native Windows Service support via `windows-service` crate
-    - Auto-start with Windows, auto-restart on failure
-    - Service discovery via port file (`%APPDATA%/Tandem/services/db-service.port`)
-    - Install/uninstall via `scripts/install-db-service.ps1`
-3. **HTTP API**:
-    - RESTful API on dynamic port
-    - Health check endpoint at `/health`
-    - CRUD endpoints under `/api/v1/*`
-    - Raw SQL query support for migration compatibility
-4. **TypeScript Client**:
-    - `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
-    - HTTP client using axios with automatic retry
-    - Service discovery and startup via `ProcessManagerService`
-    - Compatible interface for gradual migration
-5. **Shared Types**:
-    - New `src/shared/types/db-api.ts` defining API contract
-    - Request/response types for all endpoints
-    - `DbServiceClient` interface for type safety
-### Files Created
-- **Rust Service**: `src/services/db-service/` (Cargo.toml, main.rs, database.rs, server.rs, types.rs, handlers/\*)
-- **TypeScript**: `src/shared/types/db-api.ts`, `src/main/services/data/database-client.service.ts`
-- **Scripts**: `scripts/install-db-service.ps1`
-### Files Modified
-- `src/services/Cargo.toml` - Added db-service to workspace
-- `src/shared/types/index.ts` - Export db-api types
-- `docs/TODO/architecture.md` - Updated task 4.3 status
-### Next Steps
-- Migration testing with existing data
-- Performance benchmarking vs embedded PGlite
-- Cloud sync integration (deferred)
-## 2026-01-27: 🏗️ MCP SYSTEM MODULARIZATION & REFACTORING (Batch 8)
-**Status**: ✅ COMPLETED
-**Summary**: Successfully refactored the MCP (Model Context Protocol) system, extracting internal tools into a modular server architecture. This improves maintainability, reduces file size of the registry, and prepares the system for future plugin expansion.
-### Key Achievements
-1.  **Modular Server Architecture**:
-    - Extracted 20+ internal tools from a monolithic `registry.ts` into specialized server modules:
-        - `core.server.ts`: File system, command execution, and system info.
-        - `network.server.ts`: Web search, SSH, and network utilities.
-        - `utility.server.ts`: Screenshots, notifications, monitoring, and clipboard.
-        - `project.server.ts`: Git, Docker, and project scanning.
-        - `data.server.ts`: Database, embeddings, and Ollama utilities.
-        - `security.server.ts`: Security helpers and network auditing.
-    - Implemented `server-utils.ts` for shared types, result normalization, and security guardrails.
-2.  **Lint & Maintenance**:
-    - Further reduced global warning count from **655** to **468**.
-    - Resolved all import sorting issues in the new MCP modules.
-    - Improved code readability by moving distinct domain logic into separate, focused files.
-3.  **Documentation & Roadmap Update**:
-    - Completed task 3.2 in the Architecture Roadmap.
-    - Updated the central TODO tracking to reflect the current state of the codebase and lint progress.
-### Files Impacted
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`
+## 27-01-2026: 🏗️ ترحيل مسار المشروع والاتساق الشامل (الدفعة 11)
+**الحالة**: ✅ مكتمل
+**الملخص**: تم الانتهاء من الترحيل من `project_id` إلى `project_path` عبر النظام البيئي بأكمله. وشمل ذلك تحديث مخطط قاعدة بيانات Rust وعمليات الترحيل، وإعادة بناء مستودعات وخدمات TypeScript، وتثبيت البنية من خلال إصلاحات النوع المستهدف في العارض.
+### الإنجازات الرئيسية
+1. **تطور مخطط قاعدة البيانات**:
+- تم تنفيذ عمليات ترحيل Rust لإعادة تسمية `project_id` إلى `project_path` في الجداول `file_diffs` و`token_usage`.
+- مؤشرات محدثة لتتماشى مع استراتيجية البحث الجديدة القائمة على المسار.
+2. **إعادة هيكلة المستودع الخلفي**:
+- تم تحديث `KnowledgeRepository` و`SystemRepository` لاستخدام `project_path` بشكل متسق.
+- تخزين `SemanticFragment` متزامن وتتبع `TokenUsage` مع المخطط الجديد.
+3. **تثبيت البناء وسلامة النوع**:
+- تم حل أكثر من 11 خطأ فادحًا في TypeScript عبر `settings.service.ts`، و`CommandPalette.tsx`، و`ModelSelector.tsx`، و`ChatHistorySection.tsx`.
+- الوصول إلى الخصائص الاختيارية المعززة والتحققات الفارغة/غير المحددة الثابتة في وحدات إدارة الدردشة والحصص الخاصة بالعارض.
+- تم إصلاح عدم التطابق غير المتزامن في `ToolExecutor.ts` من خلال انتظار تعريفات أداة MCP بشكل صحيح.
+4. **جودة الكود وصيانته**:
+- تم إصلاح تعريف المتغير المكرر في `ssh.service.ts` الذي منع التجميع.
+- تمت معالجة العديد من تحذيرات الوبر المتعلقة بعوامل الدمج الفارغة (`??`) والتعقيد.
+- تم التحقق من الاتساق الشامل من خلال إنشاء واجهة خلفية ناجحة لـ Rust وعمليات فحص نوع TypeScript نظيفة.
+### الملفات المتأثرة
+- **واجهة الصدأ**: `src/services/db-service/src/database.rs`
+- **خدمات العمليات الرئيسية**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/services/system/settings.service.ts`, `src/main/services/project/ssh.service.ts`, `src/main/tools/tool-executor.ts`
+- **مكونات العارض**: `src/renderer/components/layout/CommandPalette.tsx`، `src/renderer/components/layout/sidebar/ChatHistorySection.tsx`، `src/renderer/features/models/components/ModelSelector.tsx`
+- **الأنواع المشتركة**: `src/shared/types/db-api.ts`
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`
+## 27-01-2026: 💾 إعادة هيكلة عميل قاعدة البيانات واستقرار البناء (الدفعة 9)
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت إعادة هيكلة `DatabaseService` ليكون بمثابة عميل بعيد لخدمة قاعدة بيانات Rust المستقلة الجديدة. يكمل هذا الانتقال إلى بنية قاعدة بيانات منفصلة تُدار بواسطة العمليات. تم أيضًا إجراء تمريرة شاملة لتثبيت البنية، وحل 19 خطأ TypeScript والعديد من الأخطاء النحوية الحرجة عبر الوحدات الأساسية.
+### الإنجازات الرئيسية
+1. **عميل قاعدة البيانات البعيدة**:
+- تمت إعادة تصميم `DatabaseService` لتفويض جميع العمليات إلى `DatabaseClientService`.
+- تمت إزالة جميع تبعيات `PGlite` القديمة ومسارات نظام الملفات المحلية من خدمة قاعدة البيانات الرئيسية.
+- تم تنفيذ `DatabaseAdapter` عن بعد عبر HTTP/JSON-RPC.
+- الحفاظ على التوافق الكامل مع الإصدارات السابقة مع نمط المستودع الحالي.
+2. **دورة حياة الخدمة واكتشافها**:
+- تم دمج `DatabaseClientService` في حاوية التطبيق الرئيسية.
+- تم إنشاء أمر بدء التشغيل القائم على التبعية: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
+- اكتشاف الخدمة تلقائيًا باستخدام ملفات المنفذ في `%APPDATA%`.
+3. **بناء الاستقرار**:
+- تم حل جميع أخطاء TypeScript التسعة عشر التي قدمها التحول المعماري.
+- تم إصلاح الأخطاء النحوية الحرجة في `PanelLayout.tsx` (movePanel) و`rate-limiter.util.ts` (getRateLimiter) الناجمة عن تعارضات الدمج السابقة.
+- أمان النوع المقوى في `message-normalizer.util.ts` مع تحديد الأدوار بشكل واضح.
+- تم إصلاح خطأ طويل الأمد في النوع `ollama.ts` المتعلق برموز حالة الاستجابة.
+4. **اختبار محاذاة المجموعة**:
+- تم تحديث اختبارات الوحدة `DatabaseService` لاستخدام سلوك العميل البعيد الساخر.
+- تم تحديث `repository-db.integration.test.ts` لدعم توقيع المُنشئ الجديد وأنماط الاتصال عن بُعد.
+- تم التحقق من البنية بنتائج نظيفة `npm run type-check` و`npm run lint`.
+### الملفات المتأثرة
+- **الخدمات الأساسية**: `src/main/services/data/database.service.ts`، `src/main/startup/services.ts`، `src/main/services/data/database-client.service.ts`
+- **الأدوات المساعدة**: `src/main/utils/rate-limiter.util.ts`، `src/main/utils/message-normalizer.util.ts`، `src/main/startup/ollama.ts`
+- **العارض**: `src/renderer/components/layout/PanelLayout.tsx`
+- **الاختبارات**: `src/tests/main/services/data/database.service.test.ts`، `src/tests/main/tests/integration/repository-db.integration.test.ts`
+- **المستندات**: `docs/TODO.md`، `docs/CHANGELOG.md`
+## 27-01-2026: 🗄️ إعادة هيكلة خدمة قواعد البيانات (الهندسة المعمارية 4.3)
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت إعادة هيكلة قاعدة بيانات PGlite المضمنة وتحويلها إلى خدمة Windows مستقلة مع مضيف يستند إلى Rust، وإكمال مهمة خريطة طريق البنية 4.3. تعمل قاعدة البيانات الآن كخدمة مستقلة، مما يؤدي إلى تحسين الموثوقية والسماح لقاعدة البيانات بالاستمرار عبر عمليات إعادة تشغيل التطبيق.
+### الإنجازات الرئيسية
+1. ** خدمة قاعدة بيانات الصدأ (`tandem-db-service`)**:
+- خدمة الصدأ الجديدة في `src/services/db-service/`
+- قاعدة بيانات SQLite مع وضع WAL للتزامن
+- البحث عن المتجهات باستخدام التضمينات المتسلسلة من bincode
+- بحث تشابه جيب التمام عن رموز الكود والأجزاء الدلالية
+- CRUD API كامل للمحادثات والرسائل والمشاريع والمجلدات والمطالبات
+2. **تكامل خدمة Windows**:
+- دعم خدمة Windows الأصلية عبر صندوق `windows-service`
+- بدء التشغيل التلقائي مع نظام التشغيل Windows، وإعادة التشغيل التلقائي في حالة الفشل
+- اكتشاف الخدمة عبر ملف المنفذ (`%APPDATA%/Tandem/services/db-service.port`)
+- التثبيت/إلغاء التثبيت عبر `scripts/install-db-service.ps1`
+3. ** واجهة برمجة تطبيقات HTTP **:
+- RESTful API على المنفذ الديناميكي
+- نقطة نهاية التحقق من الصحة عند `/health`
+- نقاط النهاية CRUD ضمن `/api/v1/*`
+- دعم استعلام SQL الخام لتوافق الترحيل
+4. **TypeScript العميل**:
+- `DatabaseClientService` في `src/main/services/data/database-client.service.ts`
+- عميل HTTP يستخدم axios مع إعادة المحاولة التلقائية
+- اكتشاف الخدمة وبدء التشغيل عبر `ProcessManagerService`
+- واجهة متوافقة للهجرة التدريجية
+5. **الأنواع المشتركة**:
+- `src/shared/types/db-api.ts` الجديد الذي يحدد عقد API
+- أنواع الطلب/الاستجابة لجميع نقاط النهاية
+- واجهة `DbServiceClient` لسلامة النوع
+### الملفات التي تم إنشاؤها
+- **خدمة الصدأ**: `src/services/db-service/` (Cargo.toml, main.rs, قاعدة بيانات.rs, server.rs, Types.rs, handlers/\*)
+- **TypeScript**: `src/shared/types/db-api.ts`، `src/main/services/data/database-client.service.ts`
+- **النصوص البرمجية**: `scripts/install-db-service.ps1`
+### الملفات المعدلة
+- `src/services/Cargo.toml` - تمت إضافة خدمة db إلى مساحة العمل
+- `src/shared/types/index.ts` - تصدير أنواع db-api
+- `docs/TODO/architecture.md` - تم تحديث حالة المهمة 4.3
+### الخطوات التالية
+- اختبار الهجرة مع البيانات الموجودة
+- قياس الأداء مقابل PGlite المضمن
+- تكامل المزامنة السحابية (مؤجل)
+##27-01-2026: 🏗️ تعديل وإعادة هيكلة نظام MCP (الدفعة 8)
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت إعادة هيكلة نظام MCP (بروتوكول السياق النموذجي) بنجاح، واستخراج الأدوات الداخلية في بنية خادم معيارية. يؤدي ذلك إلى تحسين إمكانية الصيانة وتقليل حجم ملف التسجيل وإعداد النظام لتوسيع البرنامج الإضافي في المستقبل.
+### الإنجازات الرئيسية
+1. **بنية الخادم المعيارية**:
+- تم استخراج أكثر من 20 أداة داخلية من `registry.ts` المتجانسة إلى وحدات الخادم المتخصصة:
+- `core.server.ts`: نظام الملفات وتنفيذ الأوامر ومعلومات النظام.
+- `network.server.ts`: بحث الويب وSSH وأدوات الشبكة المساعدة.
+- `utility.server.ts`: لقطات الشاشة والإشعارات والمراقبة والحافظة.
+- `project.server.ts`: فحص Git وDocker والمشروع.
+- `data.server.ts`: قاعدة البيانات والتضمينات والأدوات المساعدة Ollama.
+- `security.server.ts`: مساعدو الأمان وتدقيق الشبكة.
+- تم تنفيذ `server-utils.ts` للأنواع المشتركة وتطبيع النتائج وحواجز الحماية الأمنية.
+2. **الوبر والصيانة**:
+- مزيد من التخفيض في عدد التحذيرات العالمية من **655** إلى **468**.
+- تم حل جميع مشكلات فرز الاستيراد في وحدات MCP الجديدة.
+- تحسين إمكانية قراءة التعليمات البرمجية عن طريق نقل منطق المجال المميز إلى ملفات منفصلة ومركزة.
+3. **تحديث الوثائق وخريطة الطريق**:
+- إكمال المهمة 3.2 في خارطة طريق الهندسة المعمارية.
+- تم تحديث تتبع TODO المركزي ليعكس الحالة الحالية لقاعدة التعليمات البرمجية وتقدم الوبر.
+### الملفات المتأثرة
 - **MCP**: `src/main/mcp/registry.ts`, `src/main/mcp/server-utils.ts`
-- **MCP Servers**: `src/main/mcp/servers/core.server.ts`, `src/main/mcp/servers/network.server.ts`, `src/main/mcp/servers/utility.server.ts`, `src/main/mcp/servers/project.server.ts`, `src/main/mcp/servers/data.server.ts`, `src/main/mcp/servers/security.server.ts`
-- **Docs**: `docs/TODO/architecture.md`, `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-26: 🛠️ MAIN-PROCESS REFACTORING & COMPLEXITY REDUCTION (Batch 7)
-**Status**: ✅ COMPLETED
-**Summary**: Orchestrated a major refactoring of high-complexity main-process services and utilities. Resolved 149 lint warnings and hardened type safety across core modules.
-### Key Achievements
-1.  **Complexity Hotspot Resolution**:
-    - **StreamParser.processBuffer**: Reduced complexity from **48** to **<10** using a modular payload handler approach.
-    - **SettingsService**: Modularized provider merging and save queue logic (Refactored from complexity 46/38).
-    - **HistoryImportService**: Modularized OpenAI and JSON import loops, splitting heavy logic into testable helpers.
-    - **ResponseNormalizer**: Isolated provider-specific normalization logic to meet NASA Power of Ten rules.
-2.  **Lint & Type Hardening**:
-    - Reduced global warning count from **804** to **655** (Total handled in this project: 38% reduction).
-    - Eliminated all forbidden `any` types in `SettingsService` and `StreamParser`.
-    - Resolved project-wide TS errors in `FolderRepository` and its integration tests.
-3.  **NASA Power of Ten Compliance**:
-    - Enforced fixed loop bounds in stream parsing (Safety iterations: 1,000,000).
-    - Guaranteed short functions (<60 lines) in all refactored modules.
-    - Minimized variable scope and strictly checked all return values.
-### Files Impacted
-- **Utilities**: `src/main/utils/stream-parser.util.ts`, `src/main/utils/response-normalizer.util.ts`
-- **Services**: `src/main/services/system/settings.service.ts`, `src/main/services/external/history-import.service.ts`
-- **Repositories**: `src/main/repositories/folder.repository.ts`
-- **Tests**: `src/tests/main/tests/integration/repository-db.integration.test.ts`
-## 2026-01-26: 🚀 PERFORMANCE ENFORCEMENT & LINT REPORTING
-**Status**: ✅ COMPLETED
-**Summary**: Documented all 804 lint warnings in a detailed report and established 12 new mandatory performance rules across all agent configurations.
-### Enhancements
-1.  **Performance Optimization Rules**:
-    - Introduced 12 strict rules for performance including mandatory Lazy Loading, Memoization, IPC Batching, and Virtualization (>50 items).
-    - Updated all agent rule configurations: `docs/AI_RULES.md`, `.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, and `.claude/CLAUDE.md`.
-2.  **Lint Reporting**:
-    - Created `docs/LINT_ISSUES.md` with a detailed breakdown of 804 warnings by file path and line number.
-    - Set lint resolution as a high-priority task for future development.
-3.  **Logging Standards**:
-    - Mandatory debugging log directory established at `logs/` for all agent output.
-## 2026-01-26: 🔄 LIVE ACCOUNT UPDATES & IPC REFACTORING
-**Status**: ✅ COMPLETED
-**Summary**: Resolved a critical UX issue where adding multiple accounts for the same provider didn't trigger an immediate UI refresh. Refactored the Authentication IPC layer for better dependency management and bridged main-process events to the renderer.
-### Improvements
-1.  **Live Account Updates**:
-    - Implemented a main-to-renderer event bridge for `account:linked`, `account:updated`, and `account:unlinked` events.
-    - Updated the `useLinkedAccounts` hook in the renderer to listen for these events and refresh automatically.
-    - Result: Adding a second GitHub or Copilot account now reflects instantly in the Settings UI.
-2.  **IPC Dependency Refactoring**:
-    - Refactored `registerAuthIpc` to use a structured dependencies object.
-    - Resolved lint warnings regarding excessive parameter counts.
-    - Aligned Auth IPC with established patterns used in Chat and Ollama services.
-3.  **Code Maintenance**:
-    - Cleaned up unused dependencies in the Auth IPC layer.
-    - Verified project-wide type safety after refactoring.
-### Files Impacted
-- **Main**: `src/main/ipc/auth.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`
-- **Renderer**: `src/renderer/features/settings/hooks/useLinkedAccounts.ts`
-## 2026-01-25: 🗄️ DATABASE ARCHITECTURE MIGRATION & TYPE STABILIZATION
-**Status**: ✅ FULLY COMPLETED
-**Summary**: Orchestrated a major architectural shift in the data layer by migrating the monolithic `DatabaseService` into a specialized Repository pattern. Concurrent with this migration, I achieved project-wide type stabilization, resolving over 50 legacy TypeScript errors and unifying IPC communication contracts.
-### Core Architecture Improvements
-1. **Repository Pattern Implementation**:
-    - **BaseRepository**: Standardized database adapter access and error handling.
-    - **ChatRepository**: Isolated chat history and message persistence logic.
-    - **ProjectRepository**: Managed project metadata and environment state.
-    - **KnowledgeRepository**: Optimized vector storage and code symbol indexing.
-    - **SystemRepository**: Unified system stats, folder management, and auth accounts.
-    - **DatabaseService**: Refactored as a lightweight delegation layer, adhering to NASA's Power of Ten rules.
-2. **Unified Usage Tracking**:
-    - Standardized `TokenUsageRecord` across main and renderer processes.
-    - Fixed cost estimation accuracy and provider-specific mapping in IPC bridges.
-3. **Gallery & Media Persistence**:
-    - Implemented `gallery_items` schema for high-fidelity image metadata storage.
-    - Enhanced `ImagePersistenceService` with robust error handling and automated metadata mapping.
-    - Integrated logic into `LogoService` for seamless asset generation history.
-### Technical Hardening
-- **TypeScript Perfection**: Resolved all `type-check` errors related to assignability, missing properties, and outdated interfaces.
-- **IPC Safety**: Hardened IPC handlers for file diffs and token statistics with strict parameter validation.
-- **Code Quality**: Enforced JSDoc standards on all new repository classes and verified NASA rule compliance (short functions, minimal scope).
-- **Test Integrity**: Updated and fixed `DatabaseService` tests to align with the new repository-based architecture.
-### Files Impacted (30+ files)
-- **Services**: `DatabaseService`, `ImagePersistenceService`, `FileChangeTracker`, `LogoService`
-- **Repositories**: `ChatRepository`, `ProjectRepository`, `KnowledgeRepository`, `SystemRepository`
-- **Infrastructure**: `migrations.ts`, `db-migration.service.ts`, `ipc/db.ts`, `ipc/file-diff.ts`
-- **Tests**: `database.service.test.ts`
-## 2026-01-25: 🚀 IDEAS SYSTEM COMPLETE OVERHAUL (7 Major Features)
-**Status**: ✅ 7 HIGH-IMPACT FEATURES COMPLETED
-**Summary**: Implemented 7 critical enhancements to the Ideas System including search/filtering, export, retry logic, regeneration, custom prompts, and market research preview.
-### Features Implemented
-**Session 1: Search, Export, and Retry Logic (3 items)**
-1. **ENH-IDX-004**: Search and Filter Session History _(~45 min)_
-    - **Search**: Real-time search across idea titles and descriptions
-    - **Filters**: Status (pending/approved/rejected) and category dropdowns
-    - **Active Filters UI**: Visual indicator showing applied filters with "Clear all" option
-    - **Smart Filtering**: Sessions with no matching ideas are automatically hidden
-    - **Performance**: Uses useMemo for efficient filtering without repeated computation
-    - Files: `SessionHistory.tsx`, `en.ts`, `tr.ts`
-2. **ENH-IDX-009**: Export Ideas to Markdown/JSON _(~50 min)_
-    - **Markdown Export**: Professional formatted document with:
-        - Session metadata (ID, date, idea count)
-        - Each idea with status emoji (✅/❌/⏳)
-        - Full details: category, description, market analysis, tech stack, effort estimate
-    - **JSON Export**: Structured data export for programmatic use
-    - **Export Button**: Dropdown menu in review stage header
-    - **Naming**: Auto-generated filenames with session ID and date
-    - Files: `IdeasPage.tsx`, `IdeasHeader.tsx`, `en.ts`, `tr.ts`
-3. **ENH-IDX-017**: Retry Logic for LLM Failures _(~40 min)_
-    - **Retry Wrapper**: `retryLLMCall()` method wraps all 13 LLM operations in idea-generator
-    - **Smart Detection**: Retries only on transient errors (rate limit, timeout, network issues)
-    - **Exponential Backoff**: 1s → 2s → 4s delays (max 30s cap)
-    - **Max 3 Retries**: Prevents infinite loops while handling most transient failures
-    - **Error Types**: Handles 429, quota exceeded, ECONNRESET, ETIMEDOUT, network errors
-    - **Logging**: Warns on each retry attempt with clear context
-    - Files: `idea-generator.service.ts` (13 LLM calls wrapped)
-**Session 2: Regeneration and Custom Prompts (2 items)**
-4. **ENH-IDX-011**: Regenerate Single Idea _(~45 min)_
-    - **UI**: "Regenerate" button in IdeaDetailsModal header (only for pending ideas)
-    - **Backend**: New `regenerateIdea()` method in IdeaGeneratorService
-    - **Process**: Runs full 9-stage pipeline with same category, replaces existing idea
-    - **Deduplication**: Excludes current idea from similarity check to avoid conflicts
-    - **IPC**: New handler `ideas:regenerateIdea` with success/idea response
-    - **State Management**: Loading state with disabled button and pulsing icon
-    - **Event**: Emits `idea:regenerated` event for real-time updates
-    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `IdeaDetailsModal.tsx`, `IdeasPage.tsx`, `preload.ts`, `electron.d.ts`
-5. **ENH-IDX-012**: Custom Prompt Input _(~60 min)_
-    - **UI**: Optional textarea in SessionSetup for custom requirements/constraints
-    - **Schema**: Added `customPrompt` field to IdeaSessionConfig and IdeaSession types
-    - **Database**: Migration #21 adds `custom_prompt` column to idea_sessions table
-    - **Storage**: Persisted in database, loaded with session, passed to generation
-    - **Integration**: Incorporated into seed generation prompts as "USER CONSTRAINTS" section
-    - **UX**: Placeholder text with examples, character count would be helpful
-    - **Translation**: Full i18n support (EN/TR)
-    - Files: `SessionSetup.tsx`, `ideas.ts` (types), `migrations.ts`, `idea-generator.service.ts`, `en.ts`, `tr.ts`
-**Session 3: Market Research Preview (1 item)**
-6. **ENH-IDX-013**: Market Research Preview _(~50 min)_
-    - **Quick Analysis**: Lightweight preview before full research commitment
-    - **Backend**: New `generateMarketPreview()` method using gpt-4o-mini for speed/cost
-    - **Preview Data**: For each category, shows:
-        - Market Summary (2-3 sentences)
-        - Top 3 Key Trends (bulleted list)
-        - Market Size/Growth estimate
-        - Competition Level (low/medium/high with visual badge)
-    - **UI**: MarketPreviewModal with beautiful card-based layout
-    - **Preview Button**: Appears in SessionSetup when categories are selected
-    - **Flow**: Preview → Continue → Full Research (or Cancel)
-    - **Performance**: Parallel processing of all categories (~5-10 seconds total)
-    - **IPC**: New handler `ideas:generateMarketPreview` with category array input
-    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `SessionSetup.tsx`, `MarketPreviewModal.tsx`, `preload.ts`, `electron.d.ts`, `en.ts`, `tr.ts`
-### Technical Details
-**Regenerate Implementation:**
-- Backend creates new idea using same category and session context
-- Filters out the current idea from deduplication checks
-- Preserves original ID and createdAt timestamp
-- Resets status to 'pending' after regeneration
-- Full pipeline: seed → research → names → description → roadmap → tech stack → competitors
-**Custom Prompt Integration:**
-- Stored as optional TEXT column in database (NULL if not provided)
-- Passed through entire generation pipeline via session object
-- Injected into `buildSeedGenerationPrompt()` as "USER CONSTRAINTS" section
-- Appears between creative direction and "THINK DEEPLY" sections
-- Only included if non-empty (trimmed during session creation)
-**Database Changes:**
-- Migration #21: `ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`
-- No default value (NULL allowed for existing sessions)
-- Backward compatible - existing sessions work without custom prompts
-**Market Preview Implementation:**
-- Uses gpt-4o-mini for faster, cheaper analysis
-- Parallel Promise.all() for all categories (~5-10s total)
-- JSON-based response parsing with fallback defaults
-- Visual competition badges: green (low), yellow (medium), red (high)
-- Modal with scrollable content for multiple categories
-- "Continue with Full Research" button triggers form submission
-### Files Modified (19 files)
-1. `src/renderer/features/ideas/components/SessionHistory.tsx` - Search/filter UI
-2. `src/renderer/features/ideas/components/IdeasHeader.tsx` - Export dropdown
-3. `src/renderer/features/ideas/IdeasPage.tsx` - Export & regenerate handlers
-4. `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Regenerate button
-5. `src/renderer/features/ideas/components/SessionSetup.tsx` - Custom prompt input + preview button
-6. `src/renderer/features/ideas/components/MarketPreviewModal.tsx` - NEW preview modal
-7. `src/renderer/features/ideas/components/index.ts` - Export MarketPreviewModal
-8. `src/main/services/llm/idea-generator.service.ts` - Retry logic, regeneration, custom prompts, market preview
-9. `src/main/ipc/idea-generator.ts` - Regenerate + preview IPC handlers
-10. `src/main/services/data/migrations.ts` - Migration #21
-11. `src/shared/types/ideas.ts` - Type updates for customPrompt
-12. `src/main/preload.ts` - regenerateIdea + generateMarketPreview bindings
-13. `src/renderer/electron.d.ts` - TypeScript definitions
-14. `src/renderer/i18n/en.ts` - English translations
-15. `src/renderer/i18n/tr.ts` - Turkish translations
-16. `src/main/services/data/repositories/system.repository.ts` - Fixed syntax errors
-17. `docs/TODO/ideas.md` - Completion status
-18. `docs/CHANGELOG.md` - This entry
-### Translation Keys Added
+- **خوادم MCP**: `src/main/mcp/servers/core.server.ts`, `src/main/mcp/servers/network.server.ts`, `src/main/mcp/servers/utility.server.ts`, `src/main/mcp/servers/project.server.ts`, `src/main/mcp/servers/data.server.ts`, `src/main/mcp/servers/security.server.ts`
+- **المستندات**: `docs/TODO/architecture.md`، `docs/TODO.md`، `docs/CHANGELOG.md`
+## 26-01-2026: 🛠️ إعادة هيكلة العمليات الرئيسية وتقليل التعقيد (الدفعة 7)
+**الحالة**: ✅ مكتمل
+**ملخص**: تم تنظيم عملية إعادة هيكلة رئيسية لخدمات ومرافق العملية الرئيسية عالية التعقيد. تم حل 149 تحذيرًا من الوبر وتعزيز سلامة النوع عبر الوحدات الأساسية.
+### الإنجازات الرئيسية
+1. **حل النقاط الساخنة للتعقيد**:
+- **StreamParser.processBuffer**: تقليل التعقيد من **48** إلى **<10** باستخدام أسلوب الحمولة المعيارية handler.
+- **SettingsService**: مزود نمطي لدمج وحفظ منطق قائمة الانتظار (معاد هيكلته من التعقيد 46/38).
+- **HistoryImportService**: حلقات استيراد نمطية OpenAI وJSON، مما يؤدي إلى تقسيم المنطق الثقيل إلى مساعدين قابلين للاختبار.
+- **ResponseNormalizer**: منطق تسوية معزول خاص بموفر الخدمة لتلبية قواعد NASA Power of Ten.
+2. **تصلب الوبر والنوع**:
+- تم تقليل عدد التحذيرات العالمية من **804** إلى **655** (الإجمالي الذي تم التعامل معه في هذا المشروع: تخفيض بنسبة 38%).
+- تمت إزالة جميع أنواع `any` المحظورة في `SettingsService` و`StreamParser`.
+- تم حل أخطاء TS على مستوى المشروع في `FolderRepository` واختبارات التكامل الخاصة به.
+3. ** قوة ناسا للامتثال العشرة **:
+- حدود الحلقة الثابتة المفروضة في تحليل الدفق (تكرارات الأمان: 1,000,000).
+- وظائف قصيرة مضمونة (<60 سطرًا) في جميع الوحدات المعاد تشكيلها.
+- تصغير نطاق المتغير والتحقق بدقة من جميع قيم الإرجاع.
+### الملفات المتأثرة
+- **الأدوات المساعدة**: `src/main/utils/stream-parser.util.ts`، `src/main/utils/response-normalizer.util.ts`
+- **الخدمات**: `src/main/services/system/settings.service.ts`, `src/main/services/external/history-import.service.ts`
+- **المستودعات**: `src/main/repositories/folder.repository.ts`
+- **الاختبارات**: `src/tests/main/tests/integration/repository-db.integration.test.ts`
+## 26-01-2026: 🚀 تنفيذ الأداء وتقارير لينت
+**الحالة**: ✅ مكتمل
+**الملخص**: تم توثيق جميع تحذيرات الوبر البالغ عددها 804 في تقرير مفصل ووضع 12 قاعدة أداء إلزامية جديدة عبر جميع تكوينات الوكيل.
+### التحسينات
+1. **قواعد تحسين الأداء**:
+- تم تقديم 12 قاعدة صارمة للأداء بما في ذلك التحميل البطيء الإلزامي، والحفظ، وIPC التجميع، والمحاكاة الافتراضية (> 50 عنصرًا).
+- تم تحديث جميع تكوينات قاعدة الوكيل: `docs/AI_RULES.md`، `.gemini/GEMINI.md`، `.agent/rules/code-style-guide.md`، `.copilot/COPILOT.md`، و`.claude/CLAUDE.md`.
+2. **تقارير الوبر**:
+- تم إنشاء `docs/LINT_ISSUES.md` مع تقسيم تفصيلي لـ 804 تحذيرات حسب مسار الملف ورقم السطر.
+- تعيين دقة الوبر كمهمة ذات أولوية عالية للتطوير المستقبلي.
+3. **معايير التسجيل**:
+- تم إنشاء دليل سجل تصحيح الأخطاء الإلزامي في `logs/` لجميع مخرجات الوكيل.
+## 26-01-2026: 🔄 تحديثات الحساب الحقيقي وIPC إعادة البناء
+**الحالة**: ✅ مكتمل
+**الملخص**: تم حل مشكلة UX الحرجة حيث لم تؤدي إضافة حسابات متعددة لنفس الموفر إلى تحديث UI فورًا. تمت إعادة هيكلة طبقة المصادقة IPC لتحسين إدارة التبعية وربط أحداث العملية الرئيسية بالعارض.
+### التحسينات
+1. **تحديثات الحساب الحقيقي**:
+- تم تنفيذ جسر حدث من الرئيسي إلى العارض لأحداث `account:linked`، و`account:updated`، و`account:unlinked`.
+- تم تحديث الخطاف `useLinkedAccounts` في العارض للاستماع إلى هذه الأحداث والتحديث تلقائيًا.
+- النتيجة: إضافة حساب GitHub أو Copilot ثانٍ يظهر الآن على الفور في الإعدادات UI.
+2. **IPC إعادة هيكلة التبعية**:
+- تمت إعادة تصميم `registerAuthIpc` لاستخدام كائن تبعيات منظم.
+- تم حل تحذيرات الوبر المتعلقة بعدد المعلمات الزائد.
+- تمت محاذاة المصادقة IPC مع الأنماط المحددة المستخدمة في خدمات الدردشة وOllama.
+3. **صيانة الكود**:
+- تنظيف التبعيات غير المستخدمة في طبقة Auth IPC.
+- التحقق من سلامة النوع على مستوى المشروع بعد إعادة البناء.
+### الملفات المتأثرة
+- **الرئيسي**: `src/main/ipc/auth.ts`، `src/main/startup/ipc.ts`، `src/main/ipc/index.ts`
+- **العارض**: `src/renderer/features/settings/hooks/useLinkedAccounts.ts`
+## 25-01-2026: 🗄️ ترحيل بنية قاعدة البيانات وتثبيت النوع
+**الحالة**: ✅ مكتملة بالكامل
+**الملخص**: تم تنظيم تحول معماري كبير في طبقة البيانات عن طريق ترحيل `DatabaseService` المتجانس إلى نمط مستودع متخصص. بالتزامن مع هذا الترحيل، حققت استقرار النوع على مستوى المشروع وحل أكثر من 50 خطأ TypeScript قديمًا وتوحيد IPC عقود الاتصال.
+### تحسينات البنية الأساسية
+1. **تنفيذ نمط المستودع**:
+- **BaseRepository**: الوصول القياسي لمحول قاعدة البيانات ومعالجة الأخطاء.
+- **ChatRepository**: سجل الدردشة المعزول ومنطق استمرارية الرسالة.
+- **ProjectRepository**: البيانات الوصفية المُدارة للمشروع وحالة البيئة.
+- **KnowledgeRepository**: تخزين محسّن للمتجهات وفهرسة رموز التعليمات البرمجية.
+- **SystemRepository**: إحصائيات النظام الموحدة وإدارة المجلدات وحسابات المصادقة.
+- **DatabaseService**: تمت إعادة هيكلتها كطبقة تفويض خفيفة الوزن، تلتزم بقواعد قوة العشرة التابعة لناسا.
+2. **تتبع الاستخدام الموحد**:
+- `TokenUsageRecord` موحد عبر العمليات الرئيسية وعمليات العارض.
+- دقة تقدير التكلفة الثابتة والتخطيط الخاص بالموفر في جسور IPC.
+3. **استمرارية المعرض والوسائط**:
+- تم تنفيذ مخطط `gallery_items` لتخزين البيانات الوصفية للصور بدقة عالية.
+- `ImagePersistenceService` محسّن من خلال معالجة قوية للأخطاء وتعيين بيانات التعريف تلقائيًا.
+- منطق متكامل في `LogoService` لتاريخ إنشاء الأصول بسلاسة.
+### التصلب الفني
+- **TypeScript الكمال**: تم حل جميع أخطاء `type-check` المتعلقة بقابلية التخصيص والخصائص المفقودة والواجهات القديمة.
+- **IPC الأمان**: IPC handlers المعزز لاختلافات الملفات وإحصائيات الرمز المميز مع التحقق الصارم من صحة المعلمات.
+- **جودة الكود**: معايير JSDoc المفروضة على جميع فئات المستودعات الجديدة والتحقق من الامتثال لقاعدة ناسا (وظائف قصيرة، نطاق محدود).
+- **تكامل الاختبار**: اختبارات `DatabaseService` المحدثة والثابتة لتتوافق مع البنية الجديدة القائمة على المستودع.
+### الملفات المتأثرة (+30 ملفًا)
+- **الخدمات**: `DatabaseService`, `ImagePersistenceService`, `FileChangeTracker`, `LogoService`
+- **المستودعات**: `ChatRepository`, `ProjectRepository`, `KnowledgeRepository`, `SystemRepository`
+- **البنية الأساسية**: `migrations.ts`, `db-migration.service.ts`, `ipc/db.ts`, `ipc/file-diff.ts`
+- **الاختبارات**: `database.service.test.ts`
+## 25-01-2026: 🚀 تجديد شامل لنظام الأفكار (7 ميزات رئيسية)
+**الحالة**: ✅ تم إكمال 7 ميزات عالية التأثير
+**الملخص**: تم تنفيذ 7 تحسينات مهمة على نظام الأفكار، بما في ذلك البحث/التصفية، والتصدير، ومنطق إعادة المحاولة، والتجديد، والمطالبات المخصصة، ومعاينة أبحاث Marketplace.
+### الميزات المنفذة
+**الجلسة الأولى: منطق البحث والتصدير وإعادة المحاولة (3 عناصر)**
+1. **ENH-IDX-004**: سجل جلسة البحث والتصفية _(~45 دقيقة)_
+- **البحث**: البحث في الوقت الفعلي عبر عناوين الأفكار وأوصافها
+- **المرشحات**: الحالة (معلقة/موافق عليها/مرفوضة) والقوائم المنسدلة للفئة
+- **عوامل التصفية النشطة UI**: مؤشر مرئي يوضح عوامل التصفية المطبقة مع خيار "مسح الكل"
+- **التصفية الذكية**: يتم تلقائيًا إخفاء الجلسات التي لا تحتوي على أفكار متطابقة
+- **الأداء**: يستخدم useMemo للتصفية الفعالة دون إجراء عمليات حسابية متكررة
+- الملفات: `SessionHistory.tsx`، `en.ts`، `tr.ts`
+2. **ENH-IDX-009**: تصدير الأفكار إلى Markdown/JSON _(~50 دقيقة)_
+- **Markdown تصدير**: مستند منسق احترافي يحتوي على:
+- البيانات الوصفية للجلسة (المعرف، التاريخ، عدد الأفكار)
+- كل فكرة مع الحالة التعبيرية (✅/❌/⏳)
+- التفاصيل الكاملة: الفئة، الوصف، تحليل Marketplace، التكنولوجيا، تقدير الجهد
+- **JSON تصدير**: تصدير البيانات المنظمة للاستخدام البرمجي
+- **زر التصدير**: القائمة المنسدلة في رأس مرحلة المراجعة
+- **التسمية**: أسماء الملفات التي يتم إنشاؤها تلقائيًا مع معرف الجلسة والتاريخ
+- الملفات: `IdeasPage.tsx`، `IdeasHeader.tsx`، `en.ts`، `tr.ts`
+3. **ENH-IDX-017**: إعادة محاولة المنطق لحالات الفشل LLM_(~40 دقيقة)_
+- **إعادة المحاولة Wrapper**: طريقة `retryLLMCall()` تلتف جميع عمليات LLM الـ 13 في منشئ الأفكار
+- **الكشف الذكي**: إعادة المحاولة فقط في حالة الأخطاء العابرة (حد المعدل، المهلة، مشكلات الشبكة)
+- **التراجع الأسي**: 1 ثانية → 2 ثانية → 4 ثانية تأخير (حد أقصى 30 ثانية)
+- **3 عمليات إعادة المحاولة كحد أقصى**: يمنع تكرار الحلقات اللانهائية أثناء التعامل مع معظم حالات الفشل العابرة
+- **أنواع الأخطاء**: يعالج 429، تم تجاوز الحصة النسبية، ECONNRESET، ETIMEDOUT، أخطاء الشبكة
+- **التسجيل**: تحذير عند كل محاولة إعادة محاولة بسياق واضح
+- الملفات: `idea-generator.service.ts` (13 LLM مكالمة ملفوفة)
+**الجلسة 2: التجديد والمطالبات المخصصة (عنصران)**
+4. **ENH-IDX-011**: إعادة إنشاء فكرة فردية _(~45 دقيقة)_
+- **UI**: زر "إعادة الإنشاء" في رأس IdeaDetailsModal (فقط للأفكار المعلقة)
+- **الواجهة الخلفية**: طريقة `regenerateIdea()` الجديدة في IdeaGeneratorService
+- **العملية**: تشغيل خط أنابيب كامل مكون من 9 مراحل بنفس الفئة، واستبدال الفكرة الحالية
+- **إلغاء البيانات المكررة**: استبعاد الفكرة الحالية من التحقق من التشابه لتجنب التعارضات
+- **IPC**: handler `ideas:regenerateIdea` الجديد مع استجابة ناجحة/فكرة
+- **إدارة الحالة**: تحميل الحالة باستخدام زر معطل وأيقونة نابضة
+- **الحدث**: يُصدر حدث `idea:regenerated` للحصول على التحديثات في الوقت الفعلي
+- الملفات: `idea-generator.service.ts`، `idea-generator.ts`، `IdeaDetailsModal.tsx`، `IdeasPage.tsx`، `preload.ts`، `electron.d.ts`
+5. **ENH-IDX-012**: إدخال موجه مخصص _(~60 دقيقة)_
+- **UI**: منطقة نصية اختيارية في SessionSetup للمتطلبات/القيود المخصصة
+- **المخطط**: تمت إضافة حقل `customPrompt` إلى أنواع IdeaSessionConfig وIdeaSession
+- **قاعدة البيانات**: الترحيل رقم 21 يضيف عمود `custom_prompt` إلى جدول idea_sessions
+- **التخزين**: موجود في قاعدة البيانات، ومحمل بالجلسة، ويتم تمريره إلى الإنشاء
+- **التكامل**: تم دمجه في مطالبات إنشاء البذور كقسم "قيود المستخدم"
+- **UX**: نص العنصر النائب مع الأمثلة وعدد الأحرف سيكون مفيدًا
+- **الترجمة**: دعم كامل لـ i18n (EN/TR)
+- الملفات: `SessionSetup.tsx`، `ideas.ts` (الأنواع)، `migrations.ts`، `idea-generator.service.ts`، `en.ts`، `tr.ts`
+**الجلسة 3: معاينة أبحاث Marketplace (عنصر واحد)**
+6. **ENH-IDX-013**: معاينة أبحاث Marketplace _(~50 دقيقة)_
+- **تحليل سريع**: معاينة خفيفة قبل الالتزام بالبحث الكامل
+- **الخلفية**: طريقة `generateMarketPreview()` الجديدة باستخدام gpt-4o-mini للسرعة/التكلفة
+- **معاينة البيانات**: لكل فئة، يظهر:
+- ملخص Marketplace (2-3 جمل)
+- أهم 3 اتجاهات رئيسية (قائمة نقطية)
+- حجم Marketplace/تقدير النمو
+- مستوى المنافسة (منخفض/متوسط/عالي مع شارة مرئية)
+- **UI**: MarketPreviewModal بتصميم جميل يعتمد على البطاقة
+- **زر المعاينة**: يظهر في SessionSetup عند تحديد الفئات
+- **التدفق**: معاينة → متابعة → بحث كامل (أو إلغاء)
+- **الأداء**: معالجة متوازية لجميع الفئات (إجمالي يتراوح من 5 إلى 10 ثوانٍ تقريبًا)
+- **IPC**: handler `ideas:generateMarketPreview` جديد مع إدخال مصفوفة الفئات
+- الملفات: `idea-generator.service.ts`، `idea-generator.ts`، `SessionSetup.tsx`، `MarketPreviewModal.tsx`، `preload.ts`، `electron.d.ts`، `en.ts`، `tr.ts`
+### التفاصيل الفنية
+** إعادة التنفيذ: **
+- تقوم الواجهة الخلفية بإنشاء فكرة جديدة باستخدام نفس الفئة وسياق الجلسة
+- تصفية الفكرة الحالية من عمليات التحقق من إلغاء البيانات المكررة
+- يحافظ على الهوية الأصلية والطابع الزمني الذي تم إنشاؤه
+- إعادة تعيين الحالة إلى "معلق" بعد التجديد
+- المسار الكامل: البذور ← البحث ← الأسماء ← الوصف ← خريطة الطريق ← مكدس التكنولوجيا ← المنافسون
+**التكامل الفوري المخصص:**
+- تم تخزينه كعمود نص اختياري في قاعدة البيانات (NULL إذا لم يتم توفيره)
+- تم تمريره عبر خط أنابيب الجيل بأكمله عبر كائن الجلسة
+- تم إدخاله في `buildSeedGenerationPrompt()` كقسم "قيود المستخدم".
+- يظهر بين قسمي التوجيه الإبداعي و"التفكير العميق".
+- يتم تضمينه فقط إذا كان غير فارغ (تم قطعه أثناء إنشاء الجلسة)
+** تغييرات قاعدة البيانات: **
+- الهجرة رقم 21: `ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`
+- لا توجد قيمة افتراضية (مسموح بـ NULL للجلسات الحالية)
+- متوافق مع الإصدارات السابقة - تعمل الجلسات الحالية بدون مطالبات مخصصة
+**تنفيذ معاينة Marketplace:**
+- يستخدم gpt-4o-mini لتحليل أسرع وأرخص
+- Parallel Promise.all() لجميع الفئات (إجمالي 5-10 ثوانٍ تقريبًا)
+- تحليل الاستجابة المستندة إلى JSON باستخدام الإعدادات الافتراضية fallback
+- شارات المنافسة المرئية: الأخضر (منخفض)، الأصفر (متوسط)، الأحمر (عالي)
+- مشروط مع محتوى قابل للتمرير لفئات متعددة
+- زر "متابعة البحث الكامل" يؤدي إلى إرسال النموذج
+### الملفات المعدلة (19 ملفًا)
+1. `src/renderer/features/ideas/components/SessionHistory.tsx` - بحث/تصفية UI
+2. `src/renderer/features/ideas/components/IdeasHeader.tsx` - القائمة المنسدلة للتصدير
+3. `src/renderer/features/ideas/IdeasPage.tsx` - تصدير وتجديد handlers
+4. `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - زر التجديد
+5. `src/renderer/features/ideas/components/SessionSetup.tsx` - زر الإدخال السريع المخصص + زر المعاينة
+6. `src/renderer/features/ideas/components/MarketPreviewModal.tsx` - نموذج معاينة جديد
+7. `src/renderer/features/ideas/components/index.ts` - تصدير MarketPreviewModal
+8. `src/main/services/llm/idea-generator.service.ts` - منطق إعادة المحاولة، والتجديد، والمطالبات المخصصة، ومعاينة Marketplace
+9. `src/main/ipc/idea-generator.ts` - إعادة إنشاء + معاينة IPC handlers
+10. `src/main/services/data/migrations.ts` - الهجرة رقم 21
+11. `src/shared/types/ideas.ts` - اكتب التحديثات لـ customPrompt
+12. `src/main/preload.ts` - روابط regenerateIdea + generatorMarketPreview
+13. `src/renderer/electron.d.ts` - TypeScript تعريفات
+14. `src/renderer/i18n/en.ts` - الترجمات الإنجليزية
+15. `src/renderer/i18n/tr.ts` - الترجمات التركية
+16. `src/main/services/data/repositories/system.repository.ts` - أخطاء بناء الجملة الثابتة
+17. `docs/TODO/ideas.md` - حالة الإكمال
+18. `docs/CHANGELOG.md` - هذا الإدخال
+### تمت إضافة مفاتيح الترجمة
 ```typescript
-// Custom prompt
-customPrompt: {
-  label: 'Custom Requirements',
-  optional: 'Optional',
-  placeholder: 'e.g., Must use TypeScript, focus on accessibility, target small businesses...',
-  hint: 'Add specific constraints or requirements for the AI to consider during idea generation.'
+// موجه مخصص
+موجه مخصص: {
+التسمية: "المتطلبات المخصصة"،
+اختياري: "اختياري"،
+العنصر النائب: 'على سبيل المثال، يجب استخدام TypeScript، والتركيز على إمكانية الوصول، واستهداف الأنشطة التجارية الصغيرة...',
+تلميح: "أضف قيودًا أو متطلبات محددة ليأخذها الذكاء الاصطناعي في الاعتبار أثناء توليد الأفكار."
 }
-// Market preview
-previewMarket: 'Preview Market Research'
+// معاينة Marketplace
+PreviewMarket: "معاينة أبحاث Marketplace"
 ```
-### Type Check Status
-- ✅ 33 errors (all pre-existing in db.ts/proxy.ts)
-- ✅ No new errors introduced
-- ✅ All features type-safe
-### Performance & UX
-- **Search/Filter**: Instant, no perceptible lag even with 100+ ideas
-- **Export**: Client-side, no server load, downloads in <100ms
-- **Retry Logic**: Transparent to users, automatic recovery
-- **Regenerate**: Shows loading state, typical completion ~30-60 seconds
-- **Custom Prompts**: Seamlessly integrated, affects all generated ideas
-- **Market Preview**: Fast parallel processing, ~5-10 seconds for all categories
-### Total Session Progress
-**Completed Today (12 items):**
-1. ✅ ENH-IDX-005: Keyboard shortcuts
-2. ✅ ENH-IDX-001: Rejection confirmation
-3. ✅ ENH-IDX-002: Edit/rename ideas
-4. ✅ ENH-IDX-016: Session caching
-5. ✅ ENH-IDX-015: Optimistic UI updates
-6. ✅ NEW: Complete deletion system (single + bulk)
-7. ✅ ENH-IDX-004: Search/filter session history
-8. ✅ ENH-IDX-009: Export ideas (Markdown/JSON)
-9. ✅ ENH-IDX-017: LLM retry logic
-10. ✅ ENH-IDX-011: Regenerate single idea
-11. ✅ ENH-IDX-012: Custom prompt input
-12. ✅ ENH-IDX-013: Market research preview
-**Build Status**: ✅ All features tested and working!
+### اكتب حالة التحقق
+- ✅ 33 خطأ (جميعها موجودة مسبقًا في db.ts/proxy.ts)
+- ✅ لم يتم إدخال أي أخطاء جديدة
+- ✅ جميع المميزات آمنة من النوع
+### الأداء وUX
+- **بحث/تصفية**: فوري، دون أي تأخير ملحوظ حتى مع وجود أكثر من 100 فكرة
+- **التصدير**: من جانب العميل، بدون تحميل على الخادم، يتم التنزيل في أقل من 100 مللي ثانية
+- **منطق إعادة المحاولة**: شفاف للمستخدمين، استرداد تلقائي
+- **التجديد**: يعرض حالة التحميل، والإكمال النموذجي يتراوح بين 30 إلى 60 ثانية تقريبًا
+- **المطالبات المخصصة**: متكاملة بسلاسة، وتؤثر على جميع الأفكار التي يتم إنشاؤها
+- **معاينة Marketplace**: معالجة متوازية سريعة، تتراوح من 5 إلى 10 ثوانٍ تقريبًا لجميع الفئات
+### إجمالي تقدم الجلسة
+**اكتمل اليوم (12 عنصرًا):**
+1. ✅ ENH-IDX-005: اختصارات لوحة المفاتيح
+2. ✅ ENH-IDX-001: تأكيد الرفض
+3. ✅ ENH-IDX-002: تحرير/إعادة تسمية الأفكار
+4. ✅ ENH-IDX-016: التخزين المؤقت للجلسة
+5. ✅ ENH-IDX-015: تحديثات UI المتفائلة
+6. ✅ جديد: نظام الحذف الكامل (مفرد + مجمّع)
+7. ✅ ENH-IDX-004: سجل جلسة البحث/التصفية
+8. ✅ ENH-IDX-009: تصدير الأفكار (Markdown/JSON)
+9. ✅ ENH-IDX-017: LLM منطق إعادة المحاولة
+10. ✅ ENH-IDX-011: تجديد فكرة واحدة
+11. ✅ ENH-IDX-012: إدخال سريع مخصص
+12. ✅ ENH-IDX-013: معاينة أبحاث Marketplace
+**حالة البناء**: ✅ تم اختبار جميع الميزات وهي تعمل!
 ## [2026-01-26]
-### Added
-- Comprehensive JSDoc documentation for core services:
-    - [SettingsService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
-    - [SecurityService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
-    - [ConfigService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
-- Enhanced type safety in `ipc-batch.util.ts` for quota related operations.
-### Fixed
-- A critical argument mismatch in `src/main/ipc/chat.ts`'s `sanitizeStreamInputs` call.
-- Type mismatches in `AccountManager.tsx` related to `LinkedAccountInfo` interface update.
-- Minor lint warnings in `SettingsService` regarding unnecessary conditionals.
-- Duplicated JSDoc blocks in `SettingsService`.
-## 2026-01-25: ✨ MEDIUM PRIORITY ENHANCEMENTS + IDEA DELETION
-**Status**: ✅ 6 ITEMS COMPLETED
-**Summary**: Implemented fastest actionable MEDIUM priority items + added complete idea deletion system with bulk operations.
-### Ideas System Enhancements (6 items completed)
-- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow
-- [x] **ENH-IDX-001**: Rejection confirmation dialog
-- [x] **ENH-IDX-002**: Edit/Rename generated ideas _(NEW)_
-- [x] **ENH-IDX-016**: Session caching _(NEW)_
-- [x] **ENH-IDX-015**: Optimistic UI updates _(NEW)_
-- [x] **NEW FEATURE**: Complete Idea Deletion System _(USER REQUEST)_
-**Idea Deletion Implementation:**
-1. **Single Delete**: Trash button in IdeaDetailsModal header with confirmation
-2. **Bulk Delete**:
-    - Checkboxes for each idea in SessionHistory
-    - Selection counter showing N ideas selected
-    - "Delete Selected" button with bulk confirmation
-    - Clear selection option
-3. **Backend**: IPC handlers already existed (deleteIdea, deleteSession)
-4. **Confirmation**: Native confirm() dialogs prevent accidental deletion
-**Implementation Details:**
-1. **Title & Description Editing**: Users can now edit both idea title and description before approval. Shows "Reset" button when modified.
-2. **Session Caching**: Added useMemo for ideas and sessions to avoid repeated fetches, improving performance.
-3. **Optimistic Updates**: UI updates immediately on approve/reject actions, with automatic rollback if API fails. Dramatically improved perceived responsiveness.
-4. **Deletion System**: Checkbox selection + bulk operations similar to project management system.
-### Files Modified (8 files)
-- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added delete button & confirmation
-- `src/renderer/features/ideas/components/SessionHistory.tsx` - Added checkboxes & bulk delete UI
-- `src/renderer/features/ideas/components/IdeaDetailsContent.tsx` - Description editing
-- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - Keyboard hints
-- `src/renderer/features/ideas/IdeasPage.tsx` - Delete handlers & caching
-- `docs/TODO/ideas.md` - Marked 3 items complete
-- `docs/CHANGELOG.md` - Updated
-### Type Check
-✅ No new errors (33 pre-existing errors in db.ts/proxy.ts)
-## 2026-01-25: ✨ MEDIUM PRIORITY ENHANCEMENTS
-**Status**: ✅ IN PROGRESS
-**Summary**: Implemented easiest MEDIUM priority items after upgrading all LOW todos.
-### Ideas System Enhancements (2 items completed)
-- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow _(COMPLETED)_
-    - Added Escape to close modal
-    - Added Ctrl+Enter to approve idea (when folder selected)
-    - Added Ctrl+Backspace to reject idea (with confirmation)
-    - Visual keyboard hints on buttons (hover to see)
-- [x] **ENH-IDX-001**: Rejection confirmation dialog _(COMPLETED)_
-    - Show "Are you sure?" modal before rejecting ideas
-    - Optional reason text field for tracking why ideas were rejected
-    - Integrated with keyboard shortcuts (Esc to cancel confirmation)
-### Files Modified
-- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added keyboard shortcuts and rejection confirmation
-- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - Added keyboard hint badges
-### Priority Upgrades
-All LOW priority items upgraded to MEDIUM across all TODO files:
-- features.md: Keyboard Shortcut Customization, Theme Creator
-- architecture.md: Linux Support, Database Service refactoring
-- quality.md: Property-based testing, Advanced linting, Code metrics
-- ideas.md: Keyboard shortcuts, Drag-and-drop, Collaborative features, Versioning
-- council.md: AI-powered optimization, Multi-project coordination, Human-AI workflows
-- projects.md: AI-powered project assistant
-## 2026-01-25: 📝 TODO SESSION COMPLETE
-**Status**: ✅ SESSION COMPLETE
-**Summary**: Comprehensive TODO audit and implementation session completed. All actionable LOW and MEDIUM priority items addressed. Remaining items are large features requiring significant architectural work.
-### Session Achievements
-1. **Council Critical Fixes** (3 items) - Dynamic model/provider, tool permissions, retry logic
-2. **Theme Color Migration** (50+ files) - Migrated to CSS variables
-3. **LOW Priority Audit** (6 items) - Verified existing features, reviewed code quality
-4. **MEDIUM Security Audit** (2 items) - Credential logging review, permission system verification
-5. **Bug Fixes** (2 items) - Artificial delays optimization, EventBus enablement
-### Files Modified This Session
-**Core Services:**
-- `src/main/services/llm/idea-generator.service.ts` - Made artificial delays configurable (90% faster by default)
-- `src/main/services/data/file-change-tracker.service.ts` - Enabled real-time EventBus emissions
-**Documentation:**
-- `docs/TODO/security.md` - Marked MEDIUM items complete
-- `docs/TODO/ideas.md` - Marked BUG-IDX-007 fixed
-- `docs/CHANGELOG.md` - Comprehensive session documentation
-### Remaining Work Analysis
-**Large Features (Require dedicated sprints):**
-- Memory/RAG management system
-- Custom agent system and workflow engine
-- Test coverage infrastructure (React Testing Library, E2E)
-- Plugin architecture extraction
-- Advanced project scaffolding
-**Medium Features (Multiple days each):**
-- API documentation generation (TypeDoc)
-- Specialized agent library
-- Project template system
-- Idea system enhancements
-**Technical Debt:**
-- JSDoc coverage (86 services to document)
-- Linux packaging and testing
-- Database architecture refactoring
-All quick wins and actionable items have been completed. Future work requires product decisions and architectural planning.
-## 2026-01-25: 🐛 BUG FIXES & OPTIMIZATIONS
-**Status**: ✅ COMPLETED
-**Summary**: Fixed medium priority bugs including artificial delays in idea generation pipeline.
-### Ideas (MEDIUM Bugs) - ideas.md
-- [x] **BUG-IDX-007**: Research pipeline artificial delays _(OPTIMIZED)_
-    - Made delays configurable via `IDEA_DELAY_MULTIPLIER` environment variable
-    - Default reduced to 0.1 (10% of original delays: 1000ms → 100ms)
-    - Can be disabled with `IDEA_DELAY_MULTIPLIER=0` or restored with `IDEA_DELAY_MULTIPLIER=1`
-    - Significantly improves UX when AI research is fast while maintaining slight pacing for visual feedback
-## 2026-01-25: 🔐 MEDIUM PRIORITY SECURITY AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Audited and verified MEDIUM priority security items. All items are implemented or verified as complete.
-### Security (MEDIUM) - security.md
-- [x] **Audit logging for credential leakage** - Reviewed: AuditLogService exists, credential logging audited in auth.service.ts, token.service.ts, ssh.service.ts - no passwords/tokens are logged, only email/accountId
-- [x] **Permission checks for privileged actions** - Verified: ToolPermissions system handles tool-based permissions in agent-council.service.ts. Single-user desktop app relies on OS-level permissions for file system/process actions
-### Access Control (MEDIUM) - security.md
-All IPC security items already completed:
-- Schema validation for all IPC payloads ✅
-- Rate limiting on sensitive channels (60-120 req/min) ✅
-- Tool security restrictions (ToolPermissions, Protected Paths) ✅
-## 2026-01-25: ✅ LOW PRIORITY TODO AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Audited all LOW priority items across TODO files. Many items already existed or were verified complete.
-### Features (LOW) - features.md
-- [x] **Chat Export/Import** - Already exists: `ExportModal.tsx` (Markdown/PDF), `history-import.service.ts` (ChatGPT/Claude import)
-- [x] **Log Viewer** - Already exists: `LoggingDashboard.tsx` accessible via Ctrl+L
-- [ ] Keyboard Shortcut Customization - Requires new settings UI
-- [ ] Theme Creator - Requires complex UI builder
-### Security (LOW) - security.md
-- [x] **Context Isolation** - Verified: `contextIsolation: true` in all window creation (main.ts, export.service.ts, project-scaffold.service.ts, window.ts)
-### Quality (LOW) - quality.md
-- [x] **Consolidate duplicate utilities** - Reviewed: No true duplicates. ipc-batch.util.ts in main/renderer are complementary (register vs invoke). error.util.ts have different purposes.
-- [x] **Remove dead code** - Reviewed: ~8 commented lines across entire codebase, mostly debug-related. No action needed.
-## 2026-01-25: 🎨 THEME COLOR MIGRATION
-**Status**: ✅ COMPLETED
-**Summary**:
-Global migration of hardcoded `text-white`, `text-black`, `bg-white`, and `bg-black` to theme variables across 50+ files.
-### Changes Made
-- `text-white` → `text-foreground` (all instances)
-- `text-black` → `text-background` (all instances)
-- `bg-black` (solid) → `bg-background` (where appropriate)
-- `bg-white/XX`, `bg-black/XX` (transparency overlays) → preserved intentionally
-### Files Updated (50+ files)
-**UI Components:**
+### أضيفت
+- وثائق JSDoc الشاملة للخدمات الأساسية:
+- [SettingsService] (ملف:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
+- [SecurityService] (ملف:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
+- [ConfigService](ملف:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
+- أمان النوع المحسّن في `ipc-batch.util.ts` للعمليات المتعلقة بالحصص.
+### مُثَبَّت
+- عدم تطابق الوسيطة الحرجة في استدعاء `src/main/ipc/chat.ts` الخاص بـ `sanitizeStreamInputs`.
+- عدم تطابق الكتابة في `AccountManager.tsx` المتعلقة بتحديث واجهة `LinkedAccountInfo`.
+- تحذيرات بسيطة في `SettingsService` بخصوص الشروط الشرطية غير الضرورية.
+- كتل JSDoc مكررة في `SettingsService`.
+## 25-01-2026: ✨ تحسينات الأولوية المتوسطة + حذف الأفكار
+**الحالة**: ✅ 6 عناصر مكتملة
+**الملخص**: تم تنفيذ أسرع العناصر ذات الأولوية المتوسطة القابلة للتنفيذ + إضافة نظام كامل لحذف الأفكار مع عمليات مجمعة.
+### تحسينات نظام الأفكار (تم إكمال 6 عناصر)
+- [x] **ENH-IDX-005**: اختصارات لوحة المفاتيح لسير العمل
+- [x] **ENH-IDX-001**: مربع حوار تأكيد الرفض
+- [x] **ENH-IDX-002**: تحرير/إعادة تسمية الأفكار التي تم إنشاؤها _(جديد)_
+- [x] **ENH-IDX-016**: التخزين المؤقت للجلسة _(جديد)_
+- [x] **ENH-IDX-015**: تحديثات UI المتفائلة _(جديد)_
+- [x] **ميزة جديدة**: نظام حذف الأفكار الكامل _(طلب المستخدم)_
+**تنفيذ حذف الفكرة:**
+1. **حذف فردي**: زر سلة المهملات في رأس IdeaDetailsModal مع التأكيد
+2. **الحذف المجمع**:
+- مربعات الاختيار لكل فكرة في SessionHistory
+- عداد التحديد يوضح N الأفكار المحددة
+- زر "حذف المحدد" مع التأكيد المجمع
+- خيار التحديد الواضح
+3. **الخلفية**: IPC handlers موجود بالفعل (deleteIdea،deleteSession)
+4. **التأكيد**: مربعات حوار التأكيد الأصلية () تمنع الحذف غير المقصود
+**تفاصيل التنفيذ:**
+1. **تحرير العنوان والوصف**: يمكن للمستخدمين الآن تعديل عنوان الفكرة ووصفها قبل الموافقة عليها. يظهر زر "إعادة الضبط" عند التعديل.
+2. **التخزين المؤقت للجلسة**: تمت إضافة useMemo للأفكار والجلسات لتجنب عمليات الجلب المتكررة، وتحسين الأداء.
+3. **تحديثات متفائلة**: يتم تحديث UI فورًا عند إجراءات الموافقة/الرفض، مع التراجع التلقائي في حالة فشل API. تحسين الاستجابة المتصورة بشكل كبير.
+4. **نظام الحذف**: تحديد خانة الاختيار + العمليات المجمعة المشابهة لنظام إدارة المشروع.
+### الملفات المعدلة (8 ملفات)
+- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - تمت إضافة زر الحذف والتأكيد
+- `src/renderer/features/ideas/components/SessionHistory.tsx` - تمت إضافة مربعات الاختيار والحذف المجمع UI
+- `src/renderer/features/ideas/components/IdeaDetailsContent.tsx` - تحرير الوصف
+- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - تلميحات لوحة المفاتيح
+- `src/renderer/features/ideas/IdeasPage.tsx` - حذف handlers والتخزين المؤقت
+- `docs/TODO/ideas.md` - تم وضع علامة على 3 عناصر مكتملة
+- `docs/CHANGELOG.md` - تم التحديث
+### التحقق من النوع
+✅ لا توجد أخطاء جديدة (33 خطأ موجود مسبقًا في db.ts/proxy.ts)
+## 25-01-2026: ✨ تحسينات ذات أولوية متوسطة
+**الحالة**: ✅ قيد التقدم
+**الملخص**: تم تنفيذ العناصر ذات الأولوية المتوسطة الأسهل بعد ترقية جميع المهام المنخفضة.
+### تحسينات نظام الأفكار (تم إكمال عنصرين)
+- [x] **ENH-IDX-005**: اختصارات لوحة المفاتيح لسير العمل _(مكتمل)_
+- أضيفت الهروب لإغلاق مشروط
+- تمت إضافة Ctrl+Enter للموافقة على الفكرة (عند تحديد المجلد)
+- تمت إضافة Ctrl+Backspace لرفض الفكرة (مع التأكيد)
+- تلميحات لوحة المفاتيح المرئية على الأزرار (مرر الماوس للرؤية)
+- [x] **ENH-IDX-001**: مربع حوار تأكيد الرفض _(مكتمل)_
+- عرض "هل أنت متأكد؟" مشروط قبل رفض الأفكار
+- حقل نص السبب الاختياري لتتبع سبب رفض الأفكار
+- متكامل مع اختصارات لوحة المفاتيح (Esc لإلغاء التأكيد)
+### الملفات المعدلة
+- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - تمت إضافة اختصارات لوحة المفاتيح وتأكيد الرفض
+- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - تمت إضافة شارات تلميحات للوحة المفاتيح
+### ترقيات الأولوية
+تمت ترقية جميع العناصر ذات الأولوية المنخفضة إلى MEDIUM عبر جميع ملفات TODO:
+- Features.md: تخصيص اختصارات لوحة المفاتيح، ومنشئ السمات
+- architecture.md: دعم Linux، إعادة هيكلة خدمة قاعدة البيانات
+- Quality.md: الاختبار المبني على الخصائص، والفحص المتقدم، ومقاييس الكود
+- ideas.md: اختصارات لوحة المفاتيح، السحب والإفلات، الميزات التعاونية، تعيين الإصدار
+- Council.md: التحسين المدعوم بالذكاء الاصطناعي، والتنسيق متعدد المشاريع، وسير العمل بين الإنسان والذكاء الاصطناعي
+- project.md: مساعد مشروع مدعوم بالذكاء الاصطناعي
+## 25-01-2026: 📝 اكتملت جلسة المهام
+**الحالة**: ✅ اكتملت الجلسة
+**ملخص**: تم الانتهاء من جلسة التدقيق والتنفيذ الشاملة لـ TODO. تمت معالجة جميع البنود ذات الأولوية المنخفضة والمتوسطة القابلة للتنفيذ. العناصر المتبقية هي ميزات كبيرة تتطلب أعمالًا معمارية كبيرة.
+### إنجازات الجلسة
+1. **إصلاحات المجلس الحاسمة** (3 عناصر) - النموذج الديناميكي/المزود، أذونات الأداة، منطق إعادة المحاولة
+2. **ترحيل ألوان السمة** (أكثر من 50 ملفًا) - تم ترحيلها إلى متغيرات CSS
+3. **تدقيق ذو أولوية منخفضة** (6 عناصر) - تم التحقق من الميزات الحالية، ومراجعة جودة الكود
+4. **تدقيق الأمان المتوسط** (عنصران) - مراجعة تسجيل بيانات الاعتماد، والتحقق من نظام الأذونات
+5. **إصلاحات الأخطاء** (عنصران) - تحسين التأخير الاصطناعي، وتمكين EventBus
+### الملفات المعدلة لهذه الجلسة
+**الخدمات الأساسية:**
+- `src/main/services/llm/idea-generator.service.ts` - جعل التأخيرات المصطنعة قابلة للتكوين (أسرع بنسبة 90% بشكل افتراضي)
+- `src/main/services/data/file-change-tracker.service.ts` - تمكين انبعاثات EventBus في الوقت الحقيقي
+**التوثيق:**
+- `docs/TODO/security.md` - تم وضع علامة على العناصر المتوسطة مكتملة
+- `docs/TODO/ideas.md` - تم إصلاح الخطأ BUG-IDX-007
+- `docs/CHANGELOG.md` - توثيق شامل للجلسة
+### تحليل العمل المتبقي
+** ميزات كبيرة (تتطلب سباقات السرعة المخصصة): **
+- نظام إدارة الذاكرة/RAG
+- نظام الوكيل المخصص ومحرك سير العمل
+- البنية التحتية لتغطية الاختبار (React مكتبة الاختبار، E2E)
+- استخراج بنية البرنامج المساعد
+- سقالات المشروع المتقدمة
+**الميزات المتوسطة (عدة أيام لكل منها):**
+- API إنشاء الوثائق (TypeDoc)
+- مكتبة الوكيل المتخصصة
+- نظام قالب المشروع
+- تحسينات نظام الفكرة
+**الدين الفني:**
+- تغطية JSDoc (86 خدمة للتوثيق)
+- التعبئة والتغليف واختبار لينكس
+- إعادة هيكلة بنية قاعدة البيانات
+تم الانتهاء من جميع المكاسب السريعة والعناصر القابلة للتنفيذ. يتطلب العمل المستقبلي قرارات المنتج والتخطيط المعماري.
+## 25-01-2026: 🐛 إصلاحات الأخطاء والتحسينات
+**الحالة**: ✅ مكتمل
+**الملخص**: تم إصلاح الأخطاء ذات الأولوية المتوسطة، بما في ذلك التأخير الاصطناعي في مسار توليد الأفكار.
+### الأفكار (الأخطاء المتوسطة) - ideas.md
+- [x] **BUG-IDX-007**: تأخيرات مصطنعة في مسار البحث _(OPTIMIZED)_
+- جعل التأخير قابلاً للتكوين عبر متغير البيئة `IDEA_DELAY_MULTIPLIER`
+- تم تقليل القيمة الافتراضية إلى 0.1 (10% من التأخير الأصلي: 1000 مللي ثانية → 100 مللي ثانية)
+- يمكن تعطيله باستخدام `IDEA_DELAY_MULTIPLIER=0` أو استعادته باستخدام `IDEA_DELAY_MULTIPLIER=1`
+- يتم تحسين UX بشكل ملحوظ عندما يكون بحث الذكاء الاصطناعي سريعًا مع الحفاظ على وتيرة بسيطة للتعليقات المرئية
+##25-01-2026: 🔐 التدقيق الأمني ​​ذو الأولوية المتوسطة
+**الحالة**: ✅ مكتمل
+**ملخص**: تم تدقيق العناصر الأمنية ذات الأولوية المتوسطة والتحقق منها. يتم تنفيذ جميع العناصر أو التحقق من اكتمالها.
+### الأمان (متوسط) -security.md
+- [x] **تسجيل التدقيق لتسرب بيانات الاعتماد** - تمت المراجعة: توجد خدمة AuditLogService، وتم تدقيق تسجيل بيانات الاعتماد في auth.service.ts، token.service.ts، ssh.service.ts - لم يتم تسجيل كلمات مرور/رموز مميزة، فقط البريد الإلكتروني/معرف الحساب
+- [x] **التحقق من الأذونات للإجراءات المميزة** - تم التحقق: يتعامل نظام ToolPermissions مع الأذونات المستندة إلى الأداة في agent-council.service.ts. يعتمد تطبيق سطح المكتب لمستخدم واحد على أذونات على مستوى نظام التشغيل لإجراءات نظام الملفات/العملية
+### التحكم في الوصول (متوسط) -security.md
+تم بالفعل إكمال جميع عناصر الأمان IPC:
+- التحقق من صحة المخطط لجميع حمولات IPC ✅
+- تحديد المعدل على القنوات الحساسة (60-120 req/min) ✅
+- القيود الأمنية للأداة (أذونات الأداة، المسارات المحمية) ✅
+## 25-01-2026: ✅ أولوية منخفضة للقيام بالتدقيق
+**الحالة**: ✅ مكتمل
+**الملخص**: تمت مراجعة جميع العناصر ذات الأولوية المنخفضة عبر ملفات TODO. العديد من العناصر موجودة بالفعل أو تم التحقق من اكتمالها.
+### الميزات (منخفضة) - Features.md
+- [x] **تصدير/استيراد الدردشة** - موجود بالفعل: `ExportModal.tsx` (Markdown/PDF)، `history-import.service.ts` (استيراد ChatGPT/Claude)
+- [x] **عارض السجل** - موجود بالفعل: `LoggingDashboard.tsx` يمكن الوصول إليه عبر Ctrl+L
+- [ ] تخصيص اختصارات لوحة المفاتيح - يتطلب إعدادات جديدة UI
+- [ ] منشئ السمات - يتطلب أداة إنشاء UI معقدة
+### الأمان (منخفض) -security.md
+- [x] **عزل السياق** - تم التحقق منه: `contextIsolation: true` في جميع عمليات إنشاء النوافذ (main.ts،export.service.ts،project-scaffold.service.ts،window.ts)
+### الجودة (منخفضة) -quality.md
+- [x] **توحيد الأدوات المساعدة المكررة** - تمت المراجعة: لا توجد تكرارات حقيقية. ipc-batch.util.ts في الملف الرئيسي/العارض متكاملان (التسجيل مقابل الاستدعاء). error.util.ts لها أغراض مختلفة.
+- [x] **إزالة التعليمات البرمجية الميتة** - تمت المراجعة: ~8 أسطر معلقة عبر قاعدة التعليمات البرمجية بأكملها، ومعظمها يتعلق بتصحيح الأخطاء. لا حاجة لاتخاذ أي إجراء.
+##25-01-2026: 🎨 هجرة ألوان الموضوع
+**الحالة**: ✅ مكتمل
+**ملخص**:
+الترحيل العالمي للرموز الثابتة `text-white`، `text-black`، `bg-white`، و`bg-black` إلى متغيرات السمات عبر أكثر من 50 ملفًا.
+### التغييرات التي تم إجراؤها
+- `text-white` → `text-foreground` (جميع الحالات)
+- `text-black` → `text-background` (جميع الحالات)
+- `bg-black` (صلب) → `bg-background` (حيثما كان ذلك مناسبًا)
+- `bg-white/XX`، `bg-black/XX` (تراكبات الشفافية) → تم الحفاظ عليها عمدًا
+### الملفات المحدثة (50+ ملف)
+**UI المكونات:**
 - `modal.tsx`, `LoggingDashboard.tsx`, `FloatingActionButton.tsx`
 - `ScrollToBottomButton.tsx`, `SelectDropdown.tsx`, `tooltip.tsx`, `TipModal.tsx`
-**Layout Components:**
+** مكونات التخطيط: **
 - `SidebarUI.tsx`, `SidebarBadge.tsx`, `StatusBar.tsx`
 - `UpdateNotification.tsx`, `ResultsList.tsx`, `CommandHeader.tsx`
 - `Sidebar.css`
-**Feature Components:**
-- Chat: `GalleryView.tsx`, `AudioChatOverlay.tsx`, `AgentCouncil.tsx`, `WelcomeScreen.tsx`, `SlashMenu.tsx`, `MonacoBlock.tsx`, `MarkdownRenderer.tsx`, `AssistantIdentity.tsx`
-- Settings: `GeneralTab.tsx`, `SpeechTab.tsx`, `ManualSessionModal.tsx`, `PresetCard.tsx`, `QuotaRing.tsx`
-- Ideas: `CategorySelector.tsx`, `IdeaDetailsContent.tsx`, `ResearchProgress.tsx`, `SessionInfo.tsx`
-- Projects: `GitCommitGenerator.tsx`, `ProjectEnvironmentTab.tsx`, `ProjectModals.tsx`, `ProjectWizardModal.tsx`, `LogoGeneratorModal.tsx`
-- Workspace: `CouncilPanel.tsx`, `AIAssistantSidebar.tsx`, `WorkspaceToolbar.tsx`, `EditorTabs.tsx`, `DashboardTabs.tsx`, `WorkspaceModals.tsx`
-- Settings: `SettingsSidebar.tsx`, `SettingsHeader.tsx`
-- Other: `App.tsx`, `ModelExplorer.tsx`, `SSHTerminal.tsx`
-## 2026-01-25: 🔐 AGENT COUNCIL CRITICAL FIXES & TODO AUDIT
-**Status**: ✅ COMPLETED
-**Summary**:
-Comprehensive implementation of Agent Council critical fixes and full audit of all TODO roadmap files.
-### COUNCIL-CRIT-001: Dynamic Model/Provider Configuration
-- Added `model` and `provider` columns to `council_sessions` table
-- Modified `createCouncilSession()` to accept model/provider parameters
-- Updated `runSessionStep()` to use session-configured model/provider
-- Updated IPC handler to support new configuration options
-- Database migration #20 for schema update
-### COUNCIL-CRIT-002: Tool Permission System
-- Implemented `ToolPermissions` interface with `allowed`, `restricted`, `forbidden` levels
-- Added `PROTECTED_PATHS` regex patterns (node_modules, .git, .env, lock files)
-- Added `ALLOWED_SYSTEM_SERVICES` whitelist (codeIntel, web only)
-- Restricted `callSystem` tool to whitelisted services only
-- Added dangerous command blocking for `runCommand` tool
-- Added `setToolPermissions()` method for runtime configuration
-### COUNCIL-CRIT-003: Error Recovery & Retry Logic
-- Implemented exponential backoff with 3 max retries
-- Added `isRetryableError()` method detecting rate limits, timeouts, network errors
-- Consecutive error tracking to prevent infinite retry loops
-- Detailed logging of retry attempts and final failures
-### TODO Roadmap Audit
-- **ideas.md**: Marked BUG-IDX-002 and BUG-IDX-006 as reviewed/fixed
-- **council.md**: All Phase 1 critical items marked complete
-- **features.md**: Council critical fixes marked complete
-- **security.md**: Tool security items marked complete
-**Files Modified**:
+**مكونات الميزة:**
+- الدردشة: `GalleryView.tsx`، `AudioChatOverlay.tsx`، `AgentCouncil.tsx`، `WelcomeScreen.tsx`، `SlashMenu.tsx`، `MonacoBlock.tsx`، `MarkdownRenderer.tsx`، `AssistantIdentity.tsx`
+- الإعدادات: `GeneralTab.tsx`، `SpeechTab.tsx`، `ManualSessionModal.tsx`، `PresetCard.tsx`، `QuotaRing.tsx`
+- الأفكار: `CategorySelector.tsx`، `IdeaDetailsContent.tsx`، `ResearchProgress.tsx`، `SessionInfo.tsx`
+- المشاريع: `GitCommitGenerator.tsx`، `ProjectEnvironmentTab.tsx`، `ProjectModals.tsx`، `ProjectWizardModal.tsx`، `LogoGeneratorModal.tsx`
+- مساحة العمل: `CouncilPanel.tsx`، `AIAssistantSidebar.tsx`، `WorkspaceToolbar.tsx`، `EditorTabs.tsx`، `DashboardTabs.tsx`، `WorkspaceModals.tsx`
+- الإعدادات: `SettingsSidebar.tsx`، `SettingsHeader.tsx`
+- أخرى: `App.tsx`، `ModelExplorer.tsx`، `SSHTerminal.tsx`
+## 25-01-2026: 🔐 الإصلاحات الحاسمة التي قام بها مجلس الوكلاء وتدقيق المهام
+**الحالة**: ✅ مكتمل
+**ملخص**:
+التنفيذ الشامل للإصلاحات الحاسمة لمجلس الوكلاء والمراجعة الكاملة لجميع ملفات خارطة طريق TODO.
+### COUNCIL-CRIT-001: التكوين الديناميكي للنموذج/المزود
+- تمت إضافة العمودين `model` و`provider` إلى الجدول `council_sessions`
+- تم تعديل `createCouncilSession()` لقبول معلمات النموذج/المزود
+- تم تحديث `runSessionStep()` لاستخدام النموذج/المزود الذي تم تكوينه للجلسة
+- تم تحديث IPC handler لدعم خيارات التكوين الجديدة
+- ترحيل قاعدة البيانات رقم 20 لتحديث المخطط
+### COUNCIL-CRIT-002: نظام أذونات الأداة
+- تم تنفيذ واجهة `ToolPermissions` بمستويات `allowed`، `restricted`، `forbidden`
+- تمت إضافة `PROTECTED_PATHS` أنماط التعبير العادي (node_modules، .git، .env، ملفات القفل)
+- تمت إضافة القائمة البيضاء `ALLOWED_SYSTEM_SERVICES` (codeIntel، الويب فقط)
+- أداة `callSystem` مقتصرة على الخدمات المدرجة في القائمة البيضاء فقط
+- تمت إضافة حظر الأوامر الخطير لأداة `runCommand`
+- تمت إضافة طريقة `setToolPermissions()` لتكوين runtime
+### COUNCIL-CRIT-003: منطق استرداد الأخطاء وإعادة المحاولة
+- تم تنفيذ التراجع الأسي مع 3 محاولات كحد أقصى
+- تمت إضافة طريقة `isRetryableError()` للكشف عن حدود المعدل والمهلات وأخطاء الشبكة
+- تتبع الأخطاء المتتالية لمنع حلقات إعادة المحاولة اللانهائية
+- تسجيل مفصل لمحاولات إعادة المحاولة والإخفاقات النهائية
+### تدقيق خارطة الطريق TODO
+- **ideas.md**: تم وضع علامة على BUG-IDX-002 وBUG-IDX-006 كمراجعة/تم إصلاحها
+- **council.md**: تم وضع علامة اكتمال على جميع العناصر المهمة للمرحلة الأولى
+- **features.md**: تم وضع علامة اكتمال على إصلاحات المجلس الحاسمة
+- **security.md**: تم وضع علامة اكتمال على عناصر أمان الأداة
+**الملفات المعدلة**:
 - `src/main/services/llm/agent-council.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/migrations.ts`
 - `src/main/ipc/council.ts`
-- `docs/TODO/*.md` (all TODO files updated)
+- `docs/TODO/*.md` (تم تحديث جميع ملفات TODO)
 - `docs/CHANGELOG.md`
-## 2026-01-25: 📋 COMPLETE TODO ROADMAP AUDIT
-**Status**: ✅ COMPLETED
-**Summary**:
-Comprehensive audit and update of all TODO roadmap files in `docs/TODO/` directory with accurate status tracking and summary sections.
-### Architecture (architecture.md)
-- **BaseService Adoption**: 42/86 services (49%), 76% with lifecycle methods
-- **LLM Plugin System**: ILLMProvider interface and LLMProviderRegistry already implemented
-- **EventBus**: 56 usages, ~300 IPC handlers to migrate
-- Added summary section with completion percentages
-### Council System (council.md)
-- **Model/Provider**: ✅ Now configurable per session
-- **Error Recovery**: ✅ Exponential backoff with 3 retries
-- **Tool Permissions**: ✅ ToolPermissions system implemented
-- Updated Phase 1 status - ALL CRITICAL ITEMS COMPLETE
-### Projects (projects.md)
-- **Phase 1**: ✅ All critical fixes complete (type safety, confirmations, state machine)
-- **Phase 2**: ✅ All core features complete:
-    - Batch operations (useProjectListActions.ts)
-    - Environment variables (ProjectEnvironmentTab.tsx)
-    - Project settings panel (full UI)
-### Security (security.md)
-- **Path Traversal**: Protected via FileSystemService and SSHService
-- **Rate Limiting**: RateLimitService with provider-specific limits
-- **Tool Security**: ✅ ToolPermissions + callSystem whitelist implemented
-- Added summary section
-### Quality (quality.md)
-- **Type Safety**: Critical services fixed
-- **CI/CD**: Pipeline complete with type-check and E2E
-- **Lint**: 0 errors, 794 warnings remaining
-- **Coverage**: 30% (target: 75%)
-- Added summary section
-### Ideas & Features
-- Reviewed but no changes needed - detailed feature lists already accurate
-## 2026-01-25: 🤖 Tandem PROJECT AGENT - AUTONOMOUS DEVELOPER
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented the **Tandem Project Agent**, a fully autonomous AI developer capable of executing complex, multi-step coding tasks directly within the IDE. The agent operates in a "Think -> Plan -> Act -> Observe" loop, maintains context across sessions, and includes built-in resilience for API limits.
-**Key Achievements**:
-- **Autonomous Agent Service**:
-    - Created `ProjectAgentService` with a robust execution loop.
-    - Implemented state persistence (`project-state.json`) to track tasks, plans, and history.
-    - Added error resilience (pauses on 429/Quota errors instead of crashing).
-- **Mission Control UI**:
-    - New **Agent** view in the sidebar.
-    - Live dashboard showing the agent's thought process, active plan, and tool execution logs.
-    - Start/Stop/Pause controls for managing the autonomous session.
-- **System Integration**:
-    - Injected a specialized "Senior Full-Stack Engineer" system prompt (`project-agent.prompts.ts`).
-    - Full integration with Tandem's Tool Executor (run commands, edit files, etc.).
-- **Type Safety**:
-    - Hardened IPC batching utilities (`ipc-batch.util.ts`) with explicit casting to resolve build-time type conflicts.
-**Technical Details**:
-- **Backend**: `project-agent.service.ts` implements the ReAct loop pattern.
-- **Frontend**: `ProjectAgentView.tsx` provides real-time visibility into the agent's state.
-- **Verification**: ✅ Passes full `npm run type- [x] Build and lint verification passed (Reduced warnings from 804 to 736)
-  107: _Last Updated: January 26, 2026_
-  -01-24: 🤖 AUTONOMOUS TOOL USE & MULTI-TURN EXECUTION
-    **Status**: ✅ COMPLETED
-    **Summary**:
-    Implemented full autonomous tool use capabilities, allowing AI models to execute tools, process their results, and iterate until a task is completed. This includes a robust multi-turn execution loop, real-time UI feedback for tool calls, and complete type safety for tool-related messages.
-    **Key Achievements**:
-- **Multi-Turn Tool Execution**:
-    - Implemented `executeToolTurnLoop` in `useChatGenerator` to handle recursive tool calls (max 5 iterations).
-    - Models now automatically process tool results and decide whether to call more tools or provide a final response.
-- **Real-Time UI Feedback**:
-    - Updated streaming state to include `toolCalls`, providing instant feedback to the user while tools are running.
-    - Refined `processChatStream` to synchronize tool call metadata with the React UI.
-- **Type Safety & Normalization**:
-    - Hardened the `Message` interface with a dedicated `tool` role and `toolCallId`.
-    - Standardized normalization logic for OpenAI and custom providers to ensure consistent tool handling.
-- **Architecture Cleanup**:
-    - Refactored logic into modular standalone functions to meet complexity and line-count limits.
-    - Resolved lingering React hook lint errors in `LayoutManager`.
-**Technical Details**:
-- **Backend**: Updated `message-normalizer.util.ts` for consistent role/id mapping.
-- **Frontend**: Enhanced `useChatGenerator` and `process-stream` for tool loop orchestration.
-- **Verification**: ✅ Passes full build, targeted lint, and type-check verification.
-## 2026-01-23: 📊 TOKEN USAGE CHART REDESIGN
-**Status**: ✅ COMPLETED
-**Summary**:
-Redesigned the Token Usage Chart (Statistics Tab) with a premium, engaging UI. Replaced simple bars with animated gradient bars, added a cost estimation calculator, and improved tooltips with detailed timestamp information. Also resolved localization issues by adding missing translation keys for English and Turkish.
-**Key Achievements**:
-- **Premium Chart UI**:
-    - Gradient bars (blue-to-cyan for input, emerald-to-teal for output).
-    - CSS-driven entry animations (`growUp` keyframes).
-    - Interactive tooltips with backdrop blur and arrow indicators.
-- **Cost Estimation**:
-    - Added real-time estimated cost calculation based on token usage ($2.50/1M input, $10.00/1M output).
-    - Displayed prominently in the chart header.
-- **Localization**:
-    - Fixed duplicate keys in `i18n` files.
-    - Added comprehensive translation support for statistics keys in `en.ts` and `tr.ts`.
-**Technical Details**:
-- **Components**: `TokenUsageChart.tsx` completely rewritten using pure React + Tailwind (no heavy chart libraries added).
-- **i18n**: Cleaned up duplicate `statistics` keys and ensured type safety.
-## 2026-01-23: 📊 CHAT PERSISTENCE & USAGE ANALYTICS OVERHAUL
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented comprehensive token usage tracking and visualization across the application. Added persistence for chat tokens, enabled parallel local model execution, and delivered high-fidelity usage charts in the Statistics dashboard.
-**Key Achievements**:
-- **Token Usage Persistence**:
-    - Integrated automatic token recording for every chat message (Input/Output).
-    - Database migration with dedicated `token_usage` table and optimized queries.
-- **Analytics Dashboard**:
-    - Developed `TokenUsageChart` with high-fidelity CSS-based visualizations.
-    - Supported multi-period grouping (Daily/Weekly/Monthly/Yearly) for token consumption.
-- **Parallel Intelligence**:
-    - Increased Ollama concurrency to 10 slots for simultaneous multi-model execution.
-    - Significantly improved responsiveness when comparing multiple local models.
-- **UI UX Refinement**:
-    - Restricted Markdown rendering to AI responses only, as per user request.
-    - Improved consistency between user message display and intent.
-**Technical Details**:
-- **Backend**: Updated `DatabaseService` with period-aware aggregation and `token_usage` integration.
-- **Frontend**: Created reusable `TokenUsageChart` component with interactive tooltips.
-- **Verification**: ✅ Passes full `type-check` and `lint` verification.
-## 2026-01-23: 🛡️ ENTERPRISE QUALITY ASSURANCE & SECURITY HARDENING
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented comprehensive enterprise-grade quality standards including full testing infrastructure, security hardening, and automated quality gates. The application now meets production-ready standards with 75% test coverage, secrets detection, and bundle monitoring.
-**Key Achievements**:
-- **Testing Infrastructure**:
-    - React Testing Library integration for renderer components (8 tests, 100% passing)
-    - Enhanced vitest configuration with dual main/renderer testing
-    - Increased coverage thresholds to 75% (from 30%) across all metrics
-    - Comprehensive test setup with Electron and i18n mocking
-- **Security Hardening**:
-    - SecretLint integration preventing credential leaks
-    - Enhanced CI audit pipeline with high-severity focus
-    - Bundle size monitoring (2MB/500KB/100KB limits)
-    - Production-only dependency validation
-- **Quality Standards**:
-    - Fixed ESLint duplicate rules conflict
-    - Enforced `@typescript-eslint/no-explicit-any` at error level
-    - Enhanced pre-commit hooks with type checking
-    - TypeScript strict mode preparation documented
-**Technical Details**:
-- Main process: 37+ test files, 300+ tests with robust mocking
-- CI/CD pipeline: 9 quality gates vs previous 5 steps
-- Test performance: ~7.8s renderer suite execution
-- Security: Automated secrets scanning on all files
-**Result**: Tandem now meets enterprise standards for testing, security, and code quality! 🚀
-## Recent Updates
+## 25-01-2026: 📋 تدقيق كامل لخريطة الطريق
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تدقيق شامل وتحديث لجميع ملفات خارطة طريق TODO في دليل `docs/TODO/` مع تتبع الحالة الدقيق وأقسام الملخص.
+### الهندسة المعمارية (architecture.md)
+- **اعتماد BaseService**: 42/86 خدمة (49%)، 76% مع أساليب دورة الحياة
+- **LLM نظام المكونات الإضافية**: تم بالفعل تنفيذ واجهة ILLMProvider وLLMProviderRegistry
+- **EventBus**: 56 استخدامًا، ~300 IPC handlers للترحيل
+- أضيفت قسم ملخص مع نسب الإنجاز
+### نظام المجلس (council.md)
+- **النموذج/المزود**: ✅ الآن قابل للتكوين لكل جلسة
+- **استرداد الأخطاء**: ✅ تراجع أسي مع 3 محاولات
+- **أذونات الأداة**: ✅ تم تنفيذ نظام أذونات الأداة
+- تم تحديث حالة المرحلة الأولى - اكتملت جميع العناصر المهمة
+### المشاريع (projects.md)
+- **المرحلة الأولى**: ✅ اكتملت جميع الإصلاحات المهمة (نوع الأمان، التأكيدات، جهاز الحالة)
+- **المرحلة الثانية**: ✅ اكتملت جميع الميزات الأساسية:
+- العمليات المجمعة (useProjectListActions.ts)
+- متغيرات البيئة (ProjectEnvironmentTab.tsx)
+- لوحة إعدادات المشروع (UI كاملة)
+### الأمن (security.md)
+- **اجتياز المسار**: محمي عبر FileSystemService وSSHService
+- **تحديد السعر**: خدمة RateLimitService ذات الحدود الخاصة بالمزود
+- **أمان الأداة**: ✅ تم تنفيذ القائمة البيضاء لأذونات الأداة + نظام الاتصال
+- أضيفت قسم ملخص
+### الجودة (quality.md)
+- **سلامة النوع**: تم إصلاح الخدمات الحيوية
+- **CI/CD**: خط أنابيب كامل مع فحص النوع وE2E
+- **الوبر**: 0 أخطاء، 794 تحذيرًا متبقيًا
+- **التغطية**: 30% (الهدف: 75%)
+- أضيفت قسم ملخص
+### الأفكار والميزات
+- تمت المراجعة ولكن لا توجد تغييرات مطلوبة - قوائم الميزات التفصيلية دقيقة بالفعل
+## 25-01-2026: 🤖 وكيل مشروع ترادفي - مطور مستقل
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تم تنفيذ **Tandem Project Agent**، وهو مطور ذكاء اصطناعي مستقل تمامًا وقادر على تنفيذ مهام ترميز معقدة ومتعددة الخطوات مباشرة داخل IDE. يعمل الوكيل في حلقة "فكر -> خطط -> تصرف -> مراقبة"، ويحافظ على السياق عبر الجلسات، ويتضمن مرونة مدمجة لحدود API.
+**الإنجازات الرئيسية**:
+- **خدمة الوكيل المستقل**:
+- تم إنشاء `ProjectAgentService` بحلقة تنفيذ قوية.
+- تم تنفيذ ثبات الحالة (`project-state.json`) لتتبع المهام والخطط والسجل.
+- تمت إضافة مرونة الخطأ (يتوقف مؤقتًا عند أخطاء 429/الحصة النسبية بدلاً من التعطل).
+- **مراقبة المهمة UI**:
+- عرض **الوكيل** الجديد في الشريط الجانبي.
+- لوحة معلومات مباشرة تعرض عملية التفكير الخاصة بالوكيل، والخطة النشطة، وسجلات تنفيذ الأداة.
+- عناصر التحكم في البدء/الإيقاف/الإيقاف المؤقت لإدارة الجلسة المستقلة.
+- **تكامل النظام**:
+- تم إدخال موجه نظام متخصص "كبير مهندسي المكدس الكامل" (`project-agent.prompts.ts`).
+- التكامل الكامل مع أداة تنفيذ Tandem (أوامر التشغيل، وتحرير الملفات، وما إلى ذلك).
+- **نوع الأمان**:
+- أدوات مساعدة مجمعة IPC (`ipc-batch.util.ts`) مع إرسال صريح لحل تعارضات نوع وقت البناء.
+**التفاصيل الفنية**:
+- **الواجهة الخلفية**: `project-agent.service.ts` ينفذ نمط حلقة ReAct.
+- **الواجهة الأمامية**: `ProjectAgentView.tsx` توفر رؤية في الوقت الفعلي لحالة الوكيل.
+- **التحقق**: ✅ اجتياز نوع التشغيل npm الكامل- [x] تم اجتياز التحقق من البناء والوبر (تحذيرات مخفضة من 804 إلى 736)
+107: _آخر تحديث: 26 يناير 2026_
+-01-24: 🤖 استخدام الأداة المستقلة والتنفيذ المتعدد الأدوار
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تم تنفيذ إمكانات استخدام الأدوات المستقلة الكاملة، مما يسمح لنماذج الذكاء الاصطناعي بتنفيذ الأدوات ومعالجة نتائجها وتكرارها حتى اكتمال المهمة. يتضمن ذلك حلقة تنفيذ قوية متعددة المنعطفات، وملاحظات UI في الوقت الفعلي لاستدعاءات الأداة، وأمانًا كاملاً للرسائل المتعلقة بالأداة.
+**الإنجازات الرئيسية**:
+- **التنفيذ بأداة متعددة الأدوار**:
+- تم تنفيذ `executeToolTurnLoop` في `useChatGenerator` للتعامل مع استدعاءات الأداة العودية (5 تكرارات كحد أقصى).
+- تقوم النماذج الآن بمعالجة نتائج الأداة تلقائيًا وتقرر ما إذا كنت تريد استدعاء المزيد من الأدوات أو تقديم استجابة نهائية.
+- **تعليقات UI في الوقت الفعلي**:
+- تم تحديث حالة البث لتشمل `toolCalls`، مما يوفر تعليقات فورية للمستخدم أثناء تشغيل الأدوات.
+- تم تحسين `processChatStream` لمزامنة البيانات التعريفية لاستدعاء الأداة مع React UI.
+- **سلامة النوع وتطبيعه**:
+- تقوية واجهة `Message` بدور `tool` المخصص و`toolCallId`.
+- منطق التسوية الموحد لـ OpenAI والموفرين المخصصين لضمان التعامل المتسق مع الأدوات.
+- **تنظيف البنية**:
+- إعادة هيكلة المنطق إلى وظائف معيارية مستقلة لتلبية حدود التعقيد وعدد الأسطر.
+- تم حل أخطاء الوبر العالقة React في `LayoutManager`.
+**التفاصيل الفنية**:
+- **الخلفية**: تم تحديث `message-normalizer.util.ts` لتعيين متسق للدور/المعرف.
+- **الواجهة الأمامية**: تم تحسين `useChatGenerator` و`process-stream` لتنسيق حلقة الأداة.
+- **التحقق**: ✅ يجتاز البناء الكامل والوبر المستهدف والتحقق من النوع.
+## 23-01-2026: 📊 إعادة تصميم مخطط استخدام الرمز المميز
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تمت إعادة تصميم مخطط استخدام الرمز المميز (علامة التبويب "الإحصائيات") مع UI مميز وجذاب. تم استبدال الأشرطة البسيطة بأشرطة متدرجة متحركة، وإضافة حاسبة لتقدير التكلفة، وتحسين تلميحات الأدوات بمعلومات تفصيلية عن الطابع الزمني. تم أيضًا حل مشكلات الترجمة عن طريق إضافة مفاتيح الترجمة المفقودة للغتين الإنجليزية والتركية.
+**الإنجازات الرئيسية**:
+- **المخطط المميز UI**:
+- أشرطة متدرجة (من الأزرق إلى السماوي للإدخال، ومن الزمرد إلى الأزرق المخضر للإخراج).
+- رسوم متحركة للإدخال تعتمد على CSS (`growUp` الإطارات الرئيسية).
+- تلميحات أدوات تفاعلية مع خلفية ضبابية ومؤشرات أسهم.
+- **تقدير التكلفة**:
+- تمت إضافة حساب التكلفة المقدرة في الوقت الفعلي استنادًا إلى استخدام الرمز المميز (2.50 دولارًا أمريكيًا لكل مليون إدخال، و10.00 دولارًا أمريكيًا لكل مليون إخراج).
+- يتم عرضه بشكل بارز في رأس الرسم البياني.
+- **التوطين**:
+- إصلاح المفاتيح المكررة في ملفات `i18n`.
+- تمت إضافة دعم شامل للترجمة لمفاتيح الإحصائيات في `en.ts` و`tr.ts`.
+**التفاصيل الفنية**:
+- **المكونات**: `TokenUsageChart.tsx` تمت إعادة كتابته بالكامل باستخدام React + Tailwind (لم تتم إضافة مكتبات مخططات ثقيلة).
+- **i18n**: تنظيف مفاتيح `statistics` المكررة وضمان سلامة الكتابة.
+## 23-01-2026: 📊 إصلاح شامل لاستمرارية الدردشة وتحليلات الاستخدام
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تم تنفيذ تتبع شامل لاستخدام الرمز المميز وتصوره عبر التطبيق. تمت إضافة استمرارية الرموز المميزة للدردشة، وتمكين تنفيذ النموذج المحلي المتوازي، وتقديم مخططات استخدام عالية الدقة في لوحة معلومات الإحصائيات.
+**الإنجازات الرئيسية**:
+- **استمرارية استخدام الرمز المميز**:
+- تسجيل رمزي تلقائي متكامل لكل رسالة دردشة (الإدخال / الإخراج).
+- ترحيل قاعدة البيانات باستخدام جدول `token_usage` المخصص والاستعلامات المحسنة.
+- **لوحة التحكم التحليلية**:
+- تم تطوير `TokenUsageChart` باستخدام تصورات عالية الدقة تعتمد على CSS.
+- دعم التجميع متعدد الفترات (يوميًا / أسبوعيًا / شهريًا / سنويًا) لاستهلاك الرمز المميز.
+- **الذكاء الموازي**:
+- زيادة Ollama التزامن إلى 10 فتحات للتنفيذ المتزامن متعدد النماذج.
+- تحسين الاستجابة بشكل ملحوظ عند مقارنة نماذج محلية متعددة.
+- **UI UX التحسين**:
+- يقتصر عرض Markdown على استجابات الذكاء الاصطناعي فقط، وفقًا لطلب المستخدم.
+- تحسين الاتساق بين عرض رسالة المستخدم والقصد.
+**التفاصيل الفنية**:
+- **الخلفية**: تم تحديث `DatabaseService` من خلال التجميع المراعي للفترة الزمنية والتكامل `token_usage`.
+- **الواجهة الأمامية**: تم إنشاء مكون `TokenUsageChart` قابل لإعادة الاستخدام مع تلميحات أدوات تفاعلية.
+- **التحقق**: ✅ اجتاز التحقق الكامل `type-check` و`lint`.
+## 23-01-2026: 🛡️ ضمان الجودة وتشديد الأمن في المؤسسة
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تم تنفيذ معايير الجودة الشاملة على مستوى المؤسسة بما في ذلك البنية التحتية الكاملة للاختبار، وتشديد الأمان، وبوابات الجودة الآلية. يفي التطبيق الآن بمعايير جاهزة للإنتاج مع تغطية اختبارية بنسبة 75% واكتشاف الأسرار ومراقبة الحزم.
+**الإنجازات الرئيسية**:
+- **اختبار البنية التحتية**:
+- React اختبار تكامل المكتبة لمكونات العارض (8 اختبارات، النجاح بنسبة 100%)
+- تكوين محسّن مع اختبار رئيسي/عارض مزدوج
+- زيادة حدود التغطية إلى 75% (من 30%) عبر جميع المقاييس
+- إعداد اختبار شامل مع Electron وi18n
+- **التشديد الأمني**:
+- تكامل SecretLint يمنع تسرب بيانات الاعتماد
+- خط أنابيب تدقيق CI مُحسّن مع تركيز عالي الخطورة
+- مراقبة حجم الحزمة (حدود 2 ميجابايت/500 كيلو بايت/100 كيلو بايت)
+- التحقق من صحة التبعية للإنتاج فقط
+- **معايير الجودة**:
+- تم إصلاح تعارض قواعد ESLint المكررة
+- فرض `@typescript-eslint/no-explicit-any` عند مستوى الخطأ
+- خطافات محسّنة للالتزام المسبق مع التحقق من النوع
+- TypeScript تم توثيق الإعداد الصارم للوضع
+**التفاصيل الفنية**:
+- العملية الرئيسية: أكثر من 37 ملف اختبار، وأكثر من 300 اختبار مع سخرية قوية
+- خط أنابيب CI/CD: 9 بوابات عالية الجودة مقابل 5 خطوات سابقة
+- أداء الاختبار: تنفيذ مجموعة العارض بحوالي 7.8 ثانية
+- الأمان: مسح الأسرار الآلي لجميع الملفات
+**النتيجة**: يفي Tandem الآن بمعايير المؤسسة للاختبار والأمان وجودة التعليمات البرمجية! 🚀
+## التحديثات الأخيرة
 
-### Terminal Backend Selection & UI Refinements
+### تحديد الواجهة الخلفية للمحطة الطرفية والتحسينات UI
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refined the terminal backend selection UI with persistent user preferences and full localization.
+- **Summary**: تم تحسين اختيار الواجهة الخلفية للمحطة الطرفية UI مع تفضيلات المستخدم المستمرة والترجمة الكاملة.
 
-- [x] **Backend Selection UI**: Implemented backend selection dropdown in the "New Terminal" menu.
-- [x] **Persistence**: Added dual-persistence for preferred terminal backend (localStorage + AppSettings).
-- [x] **Localization**: Completed Turkish and English localization for all terminal backend related strings.
-- [x] **Reliability**: Refactored `TerminalPanel.tsx` for NASA rule compliance and improved fallback logic in `TerminalService.ts`.
+- [x] **تحديد الواجهة الخلفية UI**: تم تنفيذ القائمة المنسدلة لتحديد الواجهة الخلفية في قائمة "المحطة الطرفية الجديدة".
+- [x] **الاستمرارية**: تمت إضافة الثبات المزدوج للواجهة الخلفية للمحطة المفضلة (التخزين المحلي + إعدادات التطبيقات).
+- [x] **الترجمة**: إكمال الترجمة التركية والإنجليزية لجميع السلاسل ذات الصلة بالواجهة الخلفية الطرفية.
+- [x] **الموثوقية**: تمت إعادة تصميم `TerminalPanel.tsx` للامتثال لقواعد NASA وتحسين منطق fallback في `TerminalService.ts`.
 
-### Terminal Smart Suggestions (AI-powered)
+### الاقتراحات الذكية الطرفية (المدعومة بالذكاء الاصطناعي)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented AI-powered command completion (ghost-text) in the integrated terminal.
+- **Summary**: تم تنفيذ إكمال الأوامر المدعومة بالذكاء الاصطناعي (النص الشبح) في المحطة المتكاملة.
 
-- [x] **Smart Service**: Created `TerminalSmartService` for command prediction using LLMs.
-- [x] **IPC Handlers**: Added `terminal:getSuggestions` IPC endpoint.
-- [x] **Ghost Text UI**: Implemented `useTerminalSmartSuggestions` hook using xterm.js decorations.
-- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules and strict React linting.
+- [x] **الخدمة الذكية**: تم إنشاء `TerminalSmartService` للتنبؤ بالأوامر باستخدام LLMs.
+- [x] **IPC Handlers**: تمت إضافة `terminal:getSuggestions` IPC نقطة النهاية.
+- [x] **Ghost Text UI**: تم تنفيذ الخطاف `useTerminalSmartSuggestions` باستخدام زخارف xterm.js.
+- [x] **قواعد NASA**: ضمان الامتثال بنسبة 100% لقواعد NASA Power of Ten والفحص الصارم React.
 
-### UI Optimization
+### UI التحسين
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: UI Optimization improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: UI تم تحسين الأداء runtime، والاستقرار، والاتساق التشغيلي عبر مسارات العمل الرئيسية.
 
-- Removed: Resizable sidebar functionality. Sidebar width is now fixed (280px for main, 350px for agent panel) to improve UI stability.
-- Fixed: Resolved lint errors in `LayoutManager` and `WorkspaceSidebar` related to unused resizing hooks and props.
+- تمت الإزالة: وظيفة الشريط الجانبي التي يمكن تغيير حجمها. تم الآن إصلاح عرض الشريط الجانبي (280 بكسل للجزء الرئيسي، و350 بكسل للوحة الوكيل) لتحسين استقرار UI.
+- تم الإصلاح: تم حل أخطاء الوبر في `LayoutManager` و`WorkspaceSidebar` المتعلقة بخطافات ودعائم تغيير الحجم غير المستخدمة.
 
 ## [2026-01-23]
 
-### Agent Council System Comprehensive Review & Roadmap
+### المراجعة الشاملة لنظام مجلس الوكلاء وخريطة الطريق
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Agent Council System Comprehensive Review & Roadmap advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: مراجعة شاملة لنظام مجلس الوكلاء وخريطة الطريق لقدرات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Analysis Completed
-**Review Findings**:
-- **Strengths Identified**: Solid multi-agent architecture with three-phase workflow (Planning→Execution→Review), autonomous execution with safety limits, comprehensive tool system (6 tools + service invocation), real-time WebSocket integration
-- **Critical Issues Found**: Hardcoded model/provider configuration, security vulnerabilities in tool system, no error recovery mechanisms, limited collaboration patterns
-- **Missing Features**: Custom agent creation, advanced workflows (parallel execution, voting), enhanced UI controls, specialized agent library
-**Major Concerns Discovered**:
-- **Security Risk**: `callSystem` tool can invoke any service method without restrictions - potential system damage
-- **Configuration Lock**: Hardcoded to `gpt-4o`+`openai` with TODO comment in code (line 193)
-- **Poor Error Recovery**: Step failure stops entire session with no retry logic
-- **Limited Agent Types**: Only 3 fixed agents (planner, executor, reviewer) - no customization
-**Strategic Roadmap Created**:
-- **Phase 1** (Critical): Fix model configuration, implement tool security, add error recovery
-- **Phase 2** (High Priority): Custom agent system, enhanced UI controls, session templates
-- **Phase 3** (Advanced): Multi-agent workflows, specialized agents, advanced planning
-- **Phase 4** (Platform): Analytics, integrations, cloud-native features
-**Documentation Added**:
-- `docs/TODO/council.md` - Comprehensive 30+ item roadmap with security analysis and implementation phases
+**الحالة**: اكتمل التحليل
+**نتائج المراجعة**:
+- **نقاط القوة التي تم تحديدها**: بنية قوية متعددة الوكلاء مع سير عمل ثلاثي المراحل (التخطيط → التنفيذ → المراجعة)، والتنفيذ المستقل مع حدود الأمان، ونظام الأدوات الشامل (6 أدوات + استدعاء الخدمة)، وتكامل WebSocket في الوقت الفعلي
+- **تم العثور على مشكلات حرجة**: تكوين النموذج/الموفر المشفر، والثغرات الأمنية في نظام الأدوات، وعدم وجود آليات لاستعادة الأخطاء، وأنماط التعاون المحدودة
+- **الميزات المفقودة**: إنشاء وكيل مخصص، وسير العمل المتقدم (التنفيذ الموازي، والتصويت)، وعناصر تحكم UI المحسنة، ومكتبة الوكلاء المتخصصة
+**المخاوف الرئيسية التي تم اكتشافها**:
+- **المخاطر الأمنية**: يمكن لأداة `callSystem` استدعاء أي طريقة خدمة دون قيود - مما قد يؤدي إلى تلف النظام
+- **قفل التكوين**: مشفر إلى `gpt-4o`+`openai` مع تعليق TODO في الكود (السطر 193)
+- **استرداد الأخطاء ضعيف**: يؤدي فشل الخطوة إلى إيقاف الجلسة بأكملها بدون منطق إعادة المحاولة
+- **أنواع الوكلاء المحدودون**: 3 وكلاء ثابتون فقط (المخطط والمنفذ والمراجع) - بدون تخصيص
+**تم إنشاء خريطة الطريق الإستراتيجية**:
+- **المرحلة الأولى** (حرجة): إصلاح تكوين النموذج، وتنفيذ أمان الأداة، وإضافة استرداد الأخطاء
+- **المرحلة الثانية** (أولوية عالية): نظام الوكيل المخصص، وعناصر تحكم UI المحسنة، وقوالب الجلسة
+- **المرحلة 3** (متقدم): سير العمل متعدد الوكلاء، والوكلاء المتخصصين، والتخطيط المتقدم
+- **المرحلة الرابعة** (النظام الأساسي): التحليلات وعمليات التكامل والميزات السحابية الأصلية
+** تم إضافة الوثائق **:
+- `docs/TODO/council.md` - خريطة طريق شاملة لأكثر من 30 عنصرًا مع التحليل الأمني ​​ومراحل التنفيذ
 
-### Deep Research & Idea Scoring Services
-
-- **Type**: feature
-- **Status**: unknown
-- **Summary**: Deep Research & Idea Scoring Services introduced coordinated maintenance and quality improvements across the related modules.
-
-**Status**: Completed
-**New Features**:
-- **Deep Research Service**: Multi-source research system performing 13 targeted queries per topic with credibility scoring and AI synthesis
-- **AI-Powered Idea Scoring**: 6-dimension scoring system (innovation, market need, feasibility, business potential, target clarity, competitive moat) with detailed breakdowns
-- **Idea Management**: Complete CRUD operations including delete, archive, restore functionality for ideas and sessions
-**API Enhancements**:
-- New IPC handlers: `ideas:deepResearch`, `ideas:validateIdea`, `ideas:scoreIdea`, `ideas:rankIdeas`, `ideas:compareIdeas`
-- Data management handlers: `ideas:deleteIdea`, `ideas:deleteSession`, `ideas:archiveIdea`, `ideas:restoreIdea`
-
-### Design System Overhaul & Hardcoded Color Removal
+### خدمات البحث العميق وتسجيل الأفكار
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Design System Overhaul & Hardcoded Color Removal improved UI consistency, maintainability, and end-user experience across related surfaces.
+- **Summary**: قدمت خدمات البحث العميق وتسجيل الأفكار صيانة منسقة وتحسينات للجودة عبر الوحدات ذات الصلة.
 
-**Status**: ✅ Completed
-**Features**:
-- **Simplified Theme System**: Restricted application themes to a clean "Tandem White" (Light) and "Tandem Black" (Dark) model, enforcing consistency.
-- **Typography Standardization**: Introduced `typography.css` to unify font usage (Inter for UI, JetBrains Mono for code) across the renderer.
-- **Color Token Migration**: Successfully migrated major application components from hardcoded colors (`bg-white`, `bg-black`, `text-gray-300`) to semantic theme tokens (`bg-card`, `bg-background`, `text-muted-foreground`), enabling true dark/light mode compatibility.
-- **Premium Design Enhancements**: Added advanced CSS utilities for glassmorphism, vibrant mesh gradients, and smooth micro-animations.
-**Migrated Components**:
-- **Chat**: `MessageBubble.tsx`, `ChatInput.tsx`
-- **Settings**: `OverviewCards.tsx`, `AntigravityCard.tsx`, `ClaudeCard.tsx`, `CopilotCard.tsx`, `CodexCard.tsx`, `PersonasTab.tsx`, `InstalledModelsList.tsx`
+**الحالة**: مكتمل
+**ميزات جديدة**:
+- **خدمة البحث العميق**: نظام بحث متعدد المصادر يقوم بإجراء 13 استفسارًا مستهدفًا لكل موضوع مع تسجيل المصداقية وتوليف الذكاء الاصطناعي
+- **تسجيل الأفكار المدعومة بالذكاء الاصطناعي**: نظام تسجيل سداسي الأبعاد (الابتكار، واحتياجات Marketplace، والجدوى، وإمكانات الأعمال، ووضوح الأهداف، والخندق التنافسي) مع تفاصيل تفصيلية
+- **إدارة الأفكار**: إكمال عمليات CRUD بما في ذلك وظائف الحذف والأرشفة والاستعادة للأفكار والجلسات
+**API التحسينات**:
+- IPC handlers الجديد: `ideas:deepResearch`، `ideas:validateIdea`، `ideas:scoreIdea`، `ideas:rankIdeas`، `ideas:compareIdeas`
+- إدارة البيانات handlers: `ideas:deleteIdea`، `ideas:deleteSession`، `ideas:archiveIdea`، `ideas:restoreIdea`
+
+### إصلاح نظام التصميم وإزالة الألوان المضمنة
+
+- **Type**: feature
+- **Status**: unknown
+- **Summary**: تم تحسين عملية إصلاح نظام التصميم وإزالة الألوان المشفرة UI من الاتساق وقابلية الصيانة وتجربة المستخدم النهائي عبر الأسطح ذات الصلة.
+
+**الحالة**: ✅ مكتمل
+**سمات**:
+- **نظام السمات المبسط**: تقتصر سمات التطبيق على نموذج "Tandem White" (فاتح) و"Tandem Black" (غامق)، مما يعزز الاتساق.
+- **توحيد الطباعة**: تم تقديم `typography.css` لتوحيد استخدام الخط (Inter لـ UI، وJetBrains Mono للكود) عبر العارض.
+- **ترحيل رمز اللون**: تم ترحيل مكونات التطبيق الرئيسية بنجاح من الألوان المشفرة (`bg-white`، `bg-black`، `text-gray-300`) إلى الرموز المميزة للموضوع الدلالي (`bg-card`، `bg-background`، `text-muted-foreground`)، مما يتيح التوافق الحقيقي بين الوضع الداكن/الفاتح.
+- **تحسينات التصميم المتميزة**: تمت إضافة أدوات مساعدة CSS متقدمة لشكل الزجاج، وتدرجات شبكية نابضة بالحياة، ورسوم متحركة دقيقة سلسة.
+**المكونات المنقولة**:
+- **الدردشة**: `MessageBubble.tsx`، `ChatInput.tsx`
+- **الإعدادات**: `OverviewCards.tsx`، `AntigravityCard.tsx`، `ClaudeCard.tsx`، `CopilotCard.tsx`، `CodexCard.tsx`، `PersonasTab.tsx`، `InstalledModelsList.tsx`
 - **IDE**: `FileExplorer.tsx`, `CodeEditor.tsx`, `Terminal.tsx`, `FolderInspector.tsx`
-- **General**: `Sidebar.tsx`, `ProjectDashboard.tsx`, `TerminalPanel.tsx`
-**Technical Changes**:
-- **CSS**: Overhauled `index.css` with a new HSL-based color palette and premium UI utilities (`premium-glass`, `bg-mesh`).
-- **Standardization**: Removed ~200+ instances of hardcoded hex/Tailwind color classes.
-- **Theme Engine**: Enhanced `ThemeContext.tsx` to properly propagate semantic tokens.
-**Files Modified**:
+- **عام**: `Sidebar.tsx`، `ProjectDashboard.tsx`، `TerminalPanel.tsx`
+** التغييرات الفنية **:
+- **CSS**: تم إصلاح `index.css` باستخدام لوحة ألوان جديدة مستندة إلى HSL وأدوات مساعدة UI المميزة (`premium-glass`، `bg-mesh`).
+- **التوحيد**: تمت إزالة ما يقرب من 200 مثيل لفئات الألوان السداسية/الخلفية ذات الترميز الثابت.
+- **محرك السمات**: `ThemeContext.tsx` محسّن لنشر الرموز الدلالية بشكل صحيح.
+**الملفات المعدلة**:
 - `src/renderer/index.css`
 - `src/renderer/features/chat/components/MessageBubble.tsx`
 - `src/renderer/features/chat/components/ChatInput.tsx`
@@ -2095,247 +2164,247 @@ Implemented comprehensive enterprise-grade quality standards including full test
 - `src/renderer/features/projects/components/ide/FileExplorer.tsx`
 - `src/renderer/features/projects/components/ide/CodeEditor.tsx`
 - `src/renderer/features/terminal/components/TerminalPanel.tsx`
-- [And 12+ other UI components]
+- [وأكثر من 12 مكونًا آخر من مكونات UI]
 
-### 🎉 ENTERPRISE TRANSFORMATION COMPLETE - Performance, Security, Architecture & Type Safety Overhaul
+### 🎉 اكتمال التحول المؤسسي - إصلاح الأداء والأمن والهندسة المعمارية وسلامة النوع
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: 🎉 ENTERPRISE TRANSFORMATION COMPLETE - Performance, Security, Architecture & Type Safety Overhaul strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 🎉 اكتمال التحول المؤسسي - أدى الإصلاح الشامل للأداء والأمن والهندسة المعمارية وسلامة النوع إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتقوية المسارات الحرجة.
 
-**Status**: ✅ FULLY COMPLETED - All Phases Successful
-**Enterprise-Grade Achievement Summary**:
-Tandem has been completely transformed into an enterprise-ready application with dramatic performance improvements, comprehensive security hardening, enhanced architecture, and perfect type safety. The application now handles enterprise workloads (10,000+ items) with optimal resource usage.
-**🚀 PHASE 1 & 2: Enterprise Performance Optimization**
-**Performance Impact**:
-- **Startup Time**: ~50% faster application launch
-- **Memory Usage**: ~50% reduction in RAM consumption
-- **UI Responsiveness**: ~60% fewer unnecessary re-renders
-- **IPC Efficiency**: ~100% improvement in inter-process communication
-- **List Rendering**: Infinite scalability for large datasets (10K+ items)
-- **Data Loading**: 90%+ cache hit rate for repeated operations
-**Phase 1: Critical Foundation Optimizations**:
-1. **Context Memoization System (60% re-render reduction)**:
-    - Added `useMemo()` to all 6 context providers (Model, Project, Auth, Theme, Chat, Settings)
-    - Wrapped heavy components with `React.memo()` (MonacoBlock, ProjectCard, ChatListItem, MarkdownRenderer, StatisticsTab)
-    - Eliminated unnecessary cascade re-renders throughout the application
-2. **Library Lazy Loading (40% startup improvement)**:
-    - Converted Monaco Editor to dynamic import with loading states
-    - Converted Mermaid to dynamic import with proper initialization
-    - Leveraged existing CodeMirror lazy loading optimization
-    - Added graceful loading states for all dynamically loaded components
-3. **Service Lazy Loading (50% startup time + 30% RAM)**:
-    - Implemented sophisticated lazy service registry with proxy pattern
-    - Converted 5 non-essential services to lazy loading: Docker, SSH, Logo, Scanner, PageSpeed
-    - Services now load on first method access, dramatically reducing startup overhead
-    - Proper code splitting ensures lazy services are separate chunks
-4. **IPC Batching Infrastructure (70% fewer IPC calls)**:
-    - Enhanced existing IPC batching system with comprehensive TypeScript support
-    - Added batch interface definitions to `electron.d.ts`
-    - Created reusable batch utilities and common batch operations
-    - Fixed all type errors and added web bridge mock implementations
-**Phase 2: Advanced Performance Optimizations**:
-5. **Expanded IPC Batching (Additional 30% efficiency)**:
-    - Added batchable handlers for database operations (CRUD, queries, stats)
-    - Added batchable handlers for Git operations (status, branches, commits, history)
-    - Added batchable handlers for settings and quota operations
-    - Created high-level batch patterns: `loadSettingsData`, `loadProjectData`, `updateChatsBatch`
-    - Updated hooks to use efficient batching: chat CRUD, settings stats, Git data loading
-6. **Advanced Memory Management (20% additional RAM reduction)**:
-    - Implemented sophisticated LRU (Least Recently Used) cache system
-    - Created intelligent cached database layer with pattern-based invalidation
-    - Added cache wrappers with appropriate TTL: chats (120s), projects (120s), folders (60s), stats (30-60s)
-    - Automatic cache cleanup every 5 minutes prevents memory leaks
-    - Cache statistics available for monitoring and debugging
-7. **Component Performance Optimization (10-15% UI improvement)**:
-    - Created `VirtualizedProjectGrid` for handling 1000+ projects efficiently
-    - Created `VirtualizedIdeaGrid` for handling 1000+ ideas efficiently
-    - Maintained existing `MessageList` virtualization (react-virtuoso)
-    - Added smart virtualization thresholds (activates only for >20 items)
-    - Enhanced debounced search infrastructure for instant filtering
-**Technical Excellence**:
-- **Zero Breaking Changes**: All existing functionality preserved
-- **100% Type Safety**: No `any` types added, full TypeScript compliance
-- **Clean Build**: ✅ Passes TypeScript compilation and ESLint checks
-- **Smart Activation**: Optimizations activate intelligently based on data size
-**Files Added**:
-- `src/main/core/lazy-services.ts` - Lazy service registry and proxy system
-- `src/renderer/utils/ipc-batch.util.ts` - Enhanced IPC batching utilities
-- `src/renderer/utils/lru-cache.util.ts` - LRU cache implementation
-- `src/renderer/utils/cached-database.util.ts` - Cached database operations
-- `src/renderer/features/projects/components/VirtualizedProjectGrid.tsx` - Virtualized project rendering
-- `src/renderer/features/ideas/components/VirtualizedIdeaGrid.tsx` - Virtualized idea rendering
-**Files Enhanced**:
-- `src/main/startup/services.ts` - Added lazy service registration
-- `src/main/ipc/*.ts` - Added batchable handlers (auth, db, git, proxy, settings)
-- `src/renderer/context/*.tsx` - Added context memoization (4 providers)
-- `src/renderer/features/*/hooks/*.ts` - Updated to use batching and caching
-- `src/renderer/features/settings/hooks/useSettingsStats.ts` - Batch loading optimization
-- `src/renderer/features/projects/hooks/useGitData.ts` - Git batch loading optimization
-- `src/renderer/features/chat/hooks/useChatCRUD.ts` - Database batching optimization
-**Result**: Tandem is now **enterprise-grade performant** and ready for heavy production workloads with thousands of chats, projects, and messages.
-**🔒 PHASE 3: Security Hardening - Comprehensive JSON Safety**
-**Status**: ✅ Completed
-**Security Achievements**:
-- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
-- **13+ Critical Security Fixes** across 6 major services (auth-api, idea-generator, copilot, idea-scoring, agent, deep-research)
-- **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
-- **Graceful Error Handling** with intelligent defaults when parsing fails
-- **Attack Vector Elimination** - JSON-based injection attacks now impossible
-**Critical Services Secured**:
-1. **AuthAPIService**: Secured token update endpoint with validation
-2. **IdeaGeneratorService**: Hardened 6 LLM response parsing methods
-3. **CopilotService**: Protected error response parsing
-4. **IdeaScoringService**: Secured scoring and comparison data parsing
-5. **AgentService**: Fixed database field parsing with proper types
-6. **DeepResearchService**: Protected research data parsing operations
-**🏗️ PHASE 4: Architecture Enhancement - Centralized Event Management**
-**Status**: ✅ Completed
-**Architecture Improvements**:
-- **Enhanced EventBusService** with advanced subscription management and debugging
-- **Unique Subscription IDs** for proper lifecycle cleanup and memory management
-- **Event History Persistence** for debugging with 100 events and full metadata
-- **Advanced Event Statistics** and monitoring capabilities for system health
-- **Extended Event Type System** supporting both SystemEvents and custom events
-- **Service Integration** across 8+ core services (Database, Auth, FileChangeTracker, Token, etc.)
-**New Capabilities**:
-- Priority-based event handling for ordered execution
-- One-time subscriptions with automatic cleanup
-- Custom event filtering for selective processing
-- Backward-compatible API maintaining existing service integrations
-- Event debugging tools for development and production monitoring
-**🛡️ PHASE 5: Type Safety Hardening - Zero Unsafe Casts**
-**Status**: ✅ Completed
-**Type Safety Achievements**:
-- **Zero Remaining Unsafe Type Casts** - eliminated ALL `as any` and `as unknown` instances
-- **BackupService Hardening** - replaced 5 unsafe casts with proper JSON serialization
-- **SettingsService Enhancement** - fixed authentication token lookup with proper LinkedAccount types
-- **Improved Type Contracts** between services with accurate interface definitions
-- **Enhanced IDE Support** with perfect type inference and autocomplete accuracy
-**Benefits Realized**:
-- Compile-time error detection prevents runtime failures
-- Better developer experience with accurate IntelliSense
-- Safer refactoring capabilities with type-guided changes
-- Preparation for TypeScript strict mode activation
-**🏆 ENTERPRISE READINESS METRICS**
-**Performance Metrics Achieved**:
-| Aspect | Improvement | Technical Detail |
+**الحالة**: ✅ مكتمل بالكامل - جميع المراحل ناجحة
+**ملخص الإنجاز على مستوى المؤسسة**:
+لقد تم تحويل Tandem بالكامل إلى تطبيق جاهز للمؤسسات مع تحسينات هائلة في الأداء، وتشديد أمني شامل، وبنية محسنة، وأمان مثالي للنوع. يتعامل التطبيق الآن مع أعباء عمل المؤسسة (أكثر من 10000 عنصر) مع الاستخدام الأمثل للموارد.
+**🚀 المرحلة 1 و2: تحسين أداء المؤسسة**
+**تأثير الأداء**:
+- **وقت بدء التشغيل**: تشغيل التطبيق بشكل أسرع بنسبة 50% تقريبًا
+- **استخدام الذاكرة**: انخفاض بنسبة 50% تقريبًا في استهلاك ذاكرة الوصول العشوائي
+- **UI الاستجابة**: ~60% أقل من عمليات إعادة العرض غير الضرورية
+- **IPC الكفاءة**: تحسين بنسبة 100% تقريبًا في الاتصال بين العمليات
+- **عرض القائمة**: قابلية التوسع غير المحدودة لمجموعات البيانات الكبيرة (أكثر من 10 آلاف عنصر)
+- **تحميل البيانات**: 90%+ معدل دخول ذاكرة التخزين المؤقت للعمليات المتكررة
+**المرحلة الأولى: تحسينات الأساسات المهمة**:
+1. **نظام حفظ السياق (تقليل إعادة العرض بنسبة 60%)**:
+- تمت إضافة `useMemo()` إلى جميع موفري السياق الستة (النموذج، المشروع، المصادقة، السمة، الدردشة، الإعدادات)
+- تغليف المكونات الثقيلة بـ `React.memo()` (MonacoBlock، ProjectCard، ChatListItem، MarkdownRenderer، StatisticsTab)
+- تم التخلص من عمليات إعادة العرض المتتالية غير الضرورية في جميع أنحاء التطبيق
+2. **التحميل البطيء للمكتبة (تحسن بنسبة 40% عند بدء التشغيل)**:
+- تحويل محرر موناكو إلى استيراد ديناميكي مع حالات التحميل
+- تحويل حورية البحر إلى استيراد ديناميكي مع التهيئة المناسبة
+- الاستفادة من تحسين التحميل البطيء لـ CodeMirror الحالي
+- تمت إضافة حالات تحميل رشيقة لجميع المكونات المحملة ديناميكيًا
+3. **التحميل البطيء للخدمة (50% وقت بدء التشغيل + 30% من ذاكرة الوصول العشوائي)**:
+- تم تنفيذ سجل خدمة كسولة متطور مع نمط الوكيل
+- تحويل 5 خدمات غير أساسية إلى التحميل البطيء: Docker وSSH وLogo وScanner وPageSpeed
+- يتم الآن تحميل الخدمات عند الوصول إلى الطريقة الأولى، مما يقلل بشكل كبير من تكاليف بدء التشغيل
+- يضمن التقسيم الصحيح للكود أن تكون الخدمات البطيئة عبارة عن أجزاء منفصلة
+4. **IPC البنية الأساسية المجمعة (مكالمات IPC أقل بنسبة 70%)**:
+- نظام الدفع الحالي المحسّن IPC مع دعم شامل TypeScript
+- تمت إضافة تعريفات واجهة الدفعة إلى `electron.d.ts`
+- إنشاء أدوات دفعية قابلة لإعادة الاستخدام وعمليات دفعية مشتركة
+- تم إصلاح جميع أخطاء الكتابة وإضافة تطبيقات وهمية لجسر الويب
+**المرحلة الثانية: تحسينات الأداء المتقدمة**:
+5. **التجميع الموسع IPC (كفاءة إضافية بنسبة 30%)**:
+- تمت إضافة handlers القابل للدفع لعمليات قاعدة البيانات (CRUD والاستعلامات والإحصائيات)
+- تمت إضافة handlers القابل للدفع لعمليات Git (الحالة والفروع والالتزامات والسجل)
+- تمت إضافة handlers القابل للدفع للإعدادات وعمليات الحصص
+- إنشاء أنماط دفعية عالية المستوى: `loadSettingsData`، `loadProjectData`، `updateChatsBatch`
+- تحديث الخطافات لاستخدام التجميع الفعال: الدردشة CRUD، وإحصائيات الإعدادات، وتحميل بيانات Git
+6. **إدارة الذاكرة المتقدمة (تقليل ذاكرة الوصول العشوائي الإضافية بنسبة 20%)**:
+- تم تنفيذ نظام ذاكرة التخزين المؤقت LRU (الأقل استخدامًا مؤخرًا) المتطور
+- إنشاء طبقة قاعدة بيانات ذكية مخزنة مؤقتًا مع إبطال يعتمد على النمط
+- تمت إضافة ذاكرة تخزين مؤقت wrappers مع TTL المناسبة: الدردشات (120 ثانية)، المشاريع (120 ثانية)، المجلدات (60 ثانية)، الإحصائيات (30-60 ثانية)
+- التنظيف التلقائي لذاكرة التخزين المؤقت كل 5 دقائق يمنع تسرب الذاكرة
+- إحصائيات ذاكرة التخزين المؤقت المتاحة للرصد والتصحيح
+7. **تحسين أداء المكونات (10-15% تحسين UI)**:
+- تم إنشاء `VirtualizedProjectGrid` للتعامل مع أكثر من 1000 مشروع بكفاءة
+- تم إنشاء `VirtualizedIdeaGrid` للتعامل مع أكثر من 1000 فكرة بكفاءة
+- الحفاظ على المحاكاة الافتراضية `MessageList` الحالية (التفاعل الموهوب)
+- تمت إضافة عتبات المحاكاة الافتراضية الذكية (يتم التنشيط فقط لأكثر من 20 عنصرًا)
+- بنية تحتية محسنة للبحث المرتد للتصفية الفورية
+**التميز الفني**:
+- **عدم إجراء تغييرات جذرية**: تم الحفاظ على جميع الوظائف الموجودة
+- **أمان النوع بنسبة 100%**: لم تتم إضافة أي أنواع `any`، امتثال كامل لـ TypeScript
+- **البناء النظيف**: ✅ يجتاز تجميع TypeScript وفحوصات ESLint
+- **التنشيط الذكي**: يتم تنشيط التحسينات بذكاء بناءً على حجم البيانات
+**الملفات المضافة**:
+- `src/main/core/lazy-services.ts` - نظام تسجيل الخدمة والوكيل البطيء
+- `src/renderer/utils/ipc-batch.util.ts` - أدوات مساعدة محسّنة للتجميع IPC
+- `src/renderer/utils/lru-cache.util.ts` - تنفيذ ذاكرة التخزين المؤقت LRU
+- `src/renderer/utils/cached-database.util.ts` - عمليات قاعدة البيانات المخزنة مؤقتًا
+- `src/renderer/features/projects/components/VirtualizedProjectGrid.tsx` - عرض المشروع الافتراضي
+- `src/renderer/features/ideas/components/VirtualizedIdeaGrid.tsx` - عرض فكرة افتراضية
+**الملفات المحسنة**:
+- `src/main/startup/services.ts` - تمت إضافة تسجيل الخدمة البطيئة
+- `src/main/ipc/*.ts` - تمت إضافة handlers القابل للدفع (auth، db، git، proxy، settings)
+- `src/renderer/context/*.tsx` - حفظ السياق الإضافي (4 موفري)
+- `src/renderer/features/*/hooks/*.ts` - تم التحديث لاستخدام التجميع والتخزين المؤقت
+- `src/renderer/features/settings/hooks/useSettingsStats.ts` - تحسين التحميل المجمع
+- `src/renderer/features/projects/hooks/useGitData.ts` - تحسين التحميل الدفعي لـ Git
+- `src/renderer/features/chat/hooks/useChatCRUD.ts` - تحسين تجميع قاعدة البيانات
+**النتيجة**: أصبح Tandem الآن **أداء على مستوى المؤسسات** وجاهزًا لأعباء العمل الإنتاجية الثقيلة مع آلاف الدردشات والمشاريع والرسائل.
+**🔒 المرحلة 3: تعزيز الأمان - الأمان الشامل JSON**
+**الحالة**: ✅ مكتمل
+**الإنجازات الأمنية**:
+- **القضاء بنسبة 100%** على مكالمات `JSON.parse()` غير الآمنة عبر التطبيق
+- **أكثر من 13 إصلاحًا أمنيًا بالغ الأهمية** عبر 6 خدمات رئيسية (auth-api، ومولد الأفكار، ومساعد الطيار، وتسجيل الأفكار، والوكيل، والبحث العميق)
+- **التحقق الشامل من صحة الإدخال** لجميع مصادر البيانات الخارجية (LLM الاستجابات، API المكالمات، وحقول قاعدة البيانات)
+- **معالجة أنيقة للأخطاء** باستخدام الإعدادات الافتراضية الذكية عند فشل التحليل
+- **القضاء على ناقلات الهجوم** - أصبح من المستحيل الآن تنفيذ هجمات الحقن المستندة إلى JSON
+**الخدمات الحيوية مؤمنة**:
+1. **AuthAPIService**: نقطة نهاية تحديث الرمز المميز الآمن مع التحقق من الصحة
+2. **IdeaGeneratorService**: 6 طرق لتحليل الاستجابة LLM
+3. **CopilotService**: تحليل استجابة الخطأ المحمي
+4. **IdeaScoringService**: تحليل بيانات التسجيل والمقارنة بشكل آمن
+5. **AgentService**: تم إصلاح تحليل حقل قاعدة البيانات بالأنواع المناسبة
+6. **DeepResearchService**: عمليات تحليل بيانات البحث المحمية
+**🏗️ المرحلة الرابعة: تحسين البنية - إدارة الأحداث المركزية**
+**الحالة**: ✅ مكتمل
+**تحسينات الهندسة المعمارية**:
+- **EventBusService المحسّنة** مع إدارة الاشتراكات المتقدمة وتصحيح الأخطاء
+- **معرفات الاشتراك الفريدة** لتنظيف دورة الحياة وإدارة الذاكرة بشكل مناسب
+- **استمرارية سجل الأحداث** لتصحيح الأخطاء باستخدام 100 حدث وبيانات وصفية كاملة
+- **إحصائيات الأحداث المتقدمة** وإمكانات مراقبة صحة النظام
+- ** نظام نوع الحدث الممتد ** يدعم كلاً من أحداث النظام والأحداث المخصصة
+- **تكامل الخدمة** عبر أكثر من 8 خدمات أساسية (قاعدة البيانات، والمصادقة، وFileChangeTracker، والرمز المميز، وما إلى ذلك)
+**قدرات جديدة**:
+- التعامل مع الأحداث على أساس الأولوية للتنفيذ المطلوب
+- اشتراكات لمرة واحدة مع التنظيف التلقائي
+- تصفية الأحداث المخصصة للمعالجة الانتقائية
+- متوافق مع الإصدارات السابقة API ويحافظ على عمليات تكامل الخدمة الحالية
+- أدوات تصحيح الأحداث للتطوير ومراقبة الإنتاج
+**🛡️ المرحلة 5: نوع التصلب الآمن - عدم وجود قوالب غير آمنة**
+**الحالة**: ✅ مكتمل
+**اكتب إنجازات السلامة**:
+- **لا يوجد أي نسخ متبقية من النوع غير الآمن** - تم إزالة جميع مثيلات `as any` و`as unknown`
+- **تقوية خدمة النسخ الاحتياطي** - تم استبدال 5 قوالب غير آمنة بتسلسل JSON مناسب
+- **تحسين خدمة الإعدادات** - بحث ثابت عن رمز المصادقة مع أنواع LinkedAccount المناسبة
+- **تحسين عقود النوع** بين الخدمات مع تعريفات دقيقة للواجهة
+- ** دعم محسّن لـ IDE ** مع استنتاج مثالي للنوع ودقة الإكمال التلقائي
+**الفوائد المحققة**:
+- اكتشاف الأخطاء في وقت الترجمة يمنع حالات فشل runtime
+- تجربة مطور أفضل مع IntelliSense الدقيق
+- قدرات إعادة هيكلة أكثر أمانًا مع التغييرات الموجهة حسب النوع
+- التحضير لتفعيل الوضع الصارم TypeScript
+**🏆 مقاييس جاهزية المؤسسة**
+**مقاييس الأداء التي تم تحقيقها**:
+| الجانب | تحسين | التفاصيل الفنية |
 |--------|-------------|------------------|
-| **Startup Time** | -50% | Lazy service loading + library code splitting |
-| **Memory Usage** | -50% | LRU caching + intelligent invalidation |
-| **UI Responsiveness** | -60% re-renders | Context memoization across 6 providers |
-| **IPC Efficiency** | +100% | Advanced request batching system |
-| **Type Safety** | 100% safe | Zero unsafe type casts remaining |
-| **Security Posture** | Hardened | Complete JSON input validation |
-| **Architecture Quality** | Enterprise | Centralized event management |
-**Build Quality Validation**:
-- ✅ **TypeScript Compilation** - Zero errors across 1,955+ modules
-- ✅ **ESLint Compliance** - No linting issues found
-- ✅ **Vite Production Build** - Successful with optimized code splitting
-- ✅ **Native Services** - Rust binaries compiled successfully
-- ✅ **Bundle Analysis** - Proper chunk splitting (7,504 modules transformed)
-- ✅ **Backward Compatibility** - 100% existing functionality preserved
-**Enterprise Capabilities Now Available**:
-- Handles 10,000+ chats, projects, and messages without performance degradation
-- Secure processing of untrusted external data (LLM responses, API calls)
-- Centralized event-driven architecture for complex workflows
-- Type-safe development with compile-time error prevention
-- Optimal resource utilization for long-running sessions
-**Next-Generation Foundation**: Tandem is now built on enterprise-grade foundations ready for### [2026-01-26]
-- **Documentation**: Created `docs/LINT_ISSUES.md` with full breakdown of 804 lint warnings, categorized by file and line number.
-- **Rules**: Added 12 new Performance Optimization Rules across all agent-specific config files (`.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, `.claude/CLAUDE.md`, and `docs/AI_RULES.md`).
-- **Standardization**: Established `logs/` as the mandatory directory for all agent debugging output.
+| **وقت بدء التشغيل** | -50% | تحميل الخدمة البطيئة + تقسيم كود المكتبة |
+| **استخدام الذاكرة** | -50% | التخزين المؤقت LRU + إبطال ذكي |
+| **UI الاستجابة** | -60% إعادة عرض | حفظ السياق عبر 6 مقدمي |
+| **IPC الكفاءة** | +100% | نظام تجميع الطلبات المتقدم |
+| **اكتب الأمان** | آمن 100% | لا يوجد أي قوالب غير آمنة متبقية |
+| **الوضع الأمني** | تصلب | أكمل JSON التحقق من صحة الإدخال |
+| **جودة العمارة** | مؤسسة | إدارة الأحداث المركزية |
+** التحقق من جودة البناء **:
+- ✅ **TypeScript التجميع** - صفر أخطاء عبر أكثر من 1955 وحدة
+- ✅ **توافق ESLint** - لم يتم العثور على مشكلات في الفحص
+- ✅ **Vite Production Build** - نجح في تقسيم التعليمات البرمجية بشكل محسّن
+- ✅ **الخدمات الأصلية** - تم تجميع ثنائيات الصدأ بنجاح
+- ✅ **تحليل الحزمة** - التقسيم المناسب للقطعة (تحويل 7,504 وحدة)
+- ✅ **التوافق مع الإصدارات السابقة** - تم الحفاظ على الوظائف الحالية بنسبة 100%
+**إمكانيات المؤسسة متاحة الآن**:
+- يتعامل مع أكثر من 10000 محادثة ومشروع ورسالة دون تدهور الأداء
+- المعالجة الآمنة للبيانات الخارجية غير الموثوق بها (LLM الردود، API المكالمات)
+- بنية مركزية تعتمد على الأحداث لسير العمل المعقد
+- تطوير آمن للنوع مع منع الأخطاء في وقت الترجمة
+- الاستخدام الأمثل للموارد للجلسات الطويلة الأمد
+**مؤسسة الجيل القادم**: تم إنشاء Tandem الآن على أسس على مستوى المؤسسات جاهزة ل### [2026-01-26]
+- **الوثائق**: تم إنشاء `docs/LINT_ISSUES.md` مع تفصيل كامل لـ 804 تحذيرات من الوبر، مصنفة حسب الملف ورقم السطر.
+- **القواعد**: تمت إضافة 12 قاعدة جديدة لتحسين الأداء عبر جميع ملفات التكوين الخاصة بالوكيل (`.gemini/GEMINI.md`، `.agent/rules/code-style-guide.md`، `.copilot/COPILOT.md`، `.claude/CLAUDE.md`، و`docs/AI_RULES.md`).
+- **التوحيد القياسي**: تم إنشاء `logs/` كدليل إلزامي لجميع مخرجات تصحيح أخطاء الوكيل.
 
-### EventBusService Enhancement - Centralized Event Management
+### تحسين خدمة EventBus - إدارة الأحداث المركزية
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: EventBusService Enhancement - Centralized Event Management introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: تحسين خدمة EventBus - قدمت إدارة الأحداث المركزية صيانة منسقة وتحسينات للجودة عبر الوحدات ذات الصلة.
 
-**Status**: ✅ Completed
-**Architecture Impact**:
-- **Centralized Event System**: Enhanced existing EventBusService with subscription management and debugging capabilities
-- **Type-Safe Events**: Extended SystemEvents with new event types (`system:error` and more)
-- **Subscription Management**: Added unique subscription IDs with proper cleanup mechanisms
-- **Event History**: Built-in event persistence for debugging and monitoring
-- **Backward Compatibility**: Maintained existing API while adding new features
-**Key Features Added**:
-1. **Enhanced Subscription Management**:
-    - Unique subscription IDs for proper cleanup
-    - Support for one-time subscriptions with auto-cleanup
-    - Backward compatible function-based unsubscribe
-    - Subscription priority levels for ordered event handling
-2. **Event Persistence & Debugging**:
-    - Event history storage (configurable size, default 100 events)
-    - Event statistics and monitoring (listener counts, recent activity)
-    - Enhanced logging with event IDs and metadata
-    - Error handling with graceful degradation
-3. **Custom Event Support**:
-    - Support for custom events beyond SystemEvents
-    - Extensible event system for plugins and features
-    - Event filtering capabilities for selective handling
-4. **Improved Error Handling**:
-    - Wrapped listeners with try-catch for fault isolation
-    - System error event monitoring and logging
-    - Graceful service initialization and cleanup
-**API Examples**:
+**الحالة**: ✅ مكتمل
+**تأثير الهندسة المعمارية**:
+- **نظام الأحداث المركزي**: خدمة EventBusService الحالية المحسنة مع إدارة الاشتراكات وإمكانيات تصحيح الأخطاء
+- **الأحداث الآمنة للنوع**: أحداث النظام الموسعة مع أنواع الأحداث الجديدة (`system:error` والمزيد)
+- **إدارة الاشتراك**: تمت إضافة معرفات الاشتراك الفريدة مع آليات التنظيف المناسبة
+- **سجل الأحداث**: استمرارية الحدث المضمنة لتصحيح الأخطاء ومراقبتها
+- **التوافق مع الإصدارات السابقة**: تم الحفاظ على API الموجود أثناء إضافة ميزات جديدة
+** الميزات الرئيسية المضافة **:
+1. **إدارة الاشتراك المحسنة**:
+- معرفات الاشتراك الفريدة للتنظيف المناسب
+- دعم الاشتراكات لمرة واحدة مع التنظيف التلقائي
+- إلغاء الاشتراك القائم على الوظيفة المتوافقة مع الإصدارات السابقة
+- مستويات أولوية الاشتراك للتعامل مع الأحداث المطلوبة
+2. **استمرارية الحدث وتصحيح الأخطاء**:
+- تخزين سجل الأحداث (حجم قابل للتكوين، 100 حدث افتراضي)
+- إحصائيات الأحداث ومراقبتها (أعداد المستمعين، النشاط الأخير)
+- تسجيل محسّن بمعرفات الأحداث والبيانات الوصفية
+- خطأ في التعامل مع التدهور الرشيق
+3. **دعم الأحداث المخصصة**:
+- تقديم الدعم للأحداث المخصصة خارج SystemEvents
+- نظام حدث قابل للتوسيع للمكونات الإضافية والميزات
+- قدرات تصفية الأحداث للتعامل الانتقائي
+4. **تحسين معالجة الأخطاء**:
+- ملفوفة المستمعين مع محاولة التقاط لعزل الخطأ
+- رصد وتسجيل أحداث خطأ النظام
+- تهيئة الخدمة وتنظيفها بشكل رائع
+**API أمثلة**:
 ```typescript
-// Traditional usage (returns unsubscribe function)
-const unsubscribe = eventBus.on('auth:changed', payload => {
-    console.log('Auth changed:', payload);
+// الاستخدام التقليدي (إرجاع وظيفة إلغاء الاشتراك)
+const unsubscribe = eventsBus.on('auth:changed', payload => {
+console.log("تم تغيير المصادقة:"، payload);
 });
-// Enhanced usage (returns subscription ID)
-const id = eventBus.on(
-    'auth:changed',
-    payload => {
-        console.log('Auth changed:', payload);
-    },
-    { once: true, priority: 10 }
+// الاستخدام المحسن (إرجاع معرف الاشتراك)
+معرف ثابت = eventsBus.on(
+"المصادقة: تم التغيير"،
+الحمولة => {
+console.log("تم تغيير المصادقة:"، payload);
+},
+{ مرة واحدة: صحيح، الأولوية: 10 }
 );
-// Custom events
-eventBus.emitCustom('my:custom:event', { data: 'value' });
+// الأحداث المخصصة
+eventsBus.emitCustom('my:custom:event', { data: 'value' });
 ```
-**Services Integration**: EventBusService is used by 8+ core services including DatabaseService, AuthService, FileChangeTracker, and TokenService.
+**تكامل الخدمات**: يتم استخدام EventBusService من خلال أكثر من 8 خدمات أساسية، بما في ذلك DatabaseService وAuthService وFileChangeTracker وTokenService.
 
-### 🎨 IDEAS MODULE THEME MIGRATION & SYSTEM STABILIZATION
+### 🎨 ترحيل موضوع وحدة الأفكار واستقرار النظام
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: 🎨 IDEAS MODULE THEME MIGRATION & SYSTEM STABILIZATION improved data model consistency and migration reliability across affected services.
+- **Summary**: 🎨 أدى ترحيل موضوع وحدة الأفكار واستقرار النظام إلى تحسين اتساق نموذج البيانات وموثوقية الترحيل عبر الخدمات المتأثرة.
 
-**Status**: ✅ COMPLETED
-**Summary**:
-Successfully migrated the entire `Ideas` module to the centralized theme system, ensuring consistent aesthetics across light and dark modes. Simultaneously performed critical system stabilization by resolving lint errors and syntax issues in core services.
-**Key Achievements**:
-- **Ideas Module Migration**:
-    - Converted `IdeasPage`, `IdeaCard`, `StageGeneration`, `ApprovalFooter`, `IdeaDetailsContent`, `IdeaGrid`, and `LogoGenerator` to use semantic theme tokens.
-    - Standardized `bg-card`, `text-muted-foreground`, and `border-border` usage throughout the feature.
-- **System-Wide Fixes**:
-    - Resolved a critical `TS5076` syntax error in `StageGeneration.tsx`.
-    - Fixed an unsafe `Function` type linting error in `event-bus.service.ts` to improve type safety.
-    - Conducted a comprehensive audit for hardcoded colors in the migrated components.
-- **Build Quality**: Verified with a successful `npm run build`, `npm run lint`, and `npm run type-check` (Exit code 0).
+**الحالة**: ✅ مكتمل
+**ملخص**:
+تم بنجاح ترحيل وحدة `Ideas` بأكملها إلى نظام السمات المركزي، مما يضمن جماليات متسقة عبر الأوضاع الفاتحة والداكنة. تم إجراء تثبيت مهم للنظام بشكل متزامن من خلال حل أخطاء الوبر ومشكلات بناء الجملة في الخدمات الأساسية.
+**الإنجازات الرئيسية**:
+- **ترحيل وحدة الأفكار**:
+- تم تحويل `IdeasPage`، `IdeaCard`، `StageGeneration`، `ApprovalFooter`، `IdeaDetailsContent`، `IdeaGrid`، و`LogoGenerator` لاستخدام الرموز المميزة للموضوع الدلالي.
+- الاستخدام الموحد `bg-card`، `text-muted-foreground`، و`border-border` في جميع أنحاء الميزة.
+- **الإصلاحات على مستوى النظام**:
+- تم حل خطأ فادح في بناء الجملة `TS5076` في `StageGeneration.tsx`.
+- تم إصلاح خطأ فحص النوع `Function` غير الآمن في `event-bus.service.ts` لتحسين سلامة الكتابة.
+- إجراء تدقيق شامل للألوان المضمنة في المكونات التي تم ترحيلها.
+- **جودة البناء**: تم التحقق من نجاحها باستخدام `npm run build` و`npm run lint` و`npm run type-check` (رمز الخروج 0).
 
-### Ideas to Project Navigation & Missing IPC Handlers
+### أفكار لتنقل المشروع والمفقود IPC Handlers
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Ideas to Project Navigation & Missing IPC Handlers advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: أفكار للتنقل في المشروع والمفقودة IPC Handlers إمكانات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Completed
-**New Features**:
-- **Automatic Project Navigation**: When users approve an idea and create a project, they are now automatically navigated to the newly created project page instead of staying on the Ideas page. This provides a seamless workflow from idea generation to project development.
-- **Complete IPC Handler Coverage**: Added missing IPC handlers for the Ideas system that were implemented in the backend but not exposed to the renderer process.
-**Technical Changes**:
-- **IdeasPage**: Added `onNavigateToProject` callback prop to handle navigation after project creation
-- **ViewManager**: Updated to accept and pass navigation callback to IdeasPage
-- **AppShell**: Added `handleNavigateToProject` callback that reloads projects, selects the new project, and navigates to the projects view
-- **Preload Bridge**: Added 13 missing IPC handlers:
-    - Deep Research: `deepResearch`, `validateIdea`, `clearResearchCache`
-    - Scoring: `scoreIdea`, `rankIdeas`, `compareIdeas`, `quickScore`
-    - Data Management: `deleteIdea`, `deleteSession`, `archiveIdea`, `restoreIdea`, `getArchivedIdeas`
-    - Events: `onDeepResearchProgress`
-**Files Modified**:
+**الحالة**: مكتمل
+**ميزات جديدة**:
+- **التنقل التلقائي للمشروع**: عندما يوافق المستخدمون على فكرة ما ويقومون بإنشاء مشروع، يتم الآن نقلهم تلقائيًا إلى صفحة المشروع الذي تم إنشاؤه حديثًا بدلاً من البقاء في صفحة الأفكار. وهذا يوفر سير عمل سلسًا بدءًا من توليد الأفكار وحتى تطوير المشروع.
+- **التغطية الكاملة IPC Handler**: تمت إضافة IPC handlers المفقودة لنظام الأفكار الذي تم تنفيذه في الواجهة الخلفية ولكن لم يتم تعريضه لعملية العرض.
+** التغييرات الفنية **:
+- **صفحة الأفكار**: تمت إضافة دعامة رد الاتصال `onNavigateToProject` للتعامل مع التنقل بعد إنشاء المشروع
+- **ViewManager**: تم التحديث لقبول رد اتصال التنقل وتمريره إلى IdeasPage
+- **AppShell**: تمت إضافة رد الاتصال `handleNavigateToProject` الذي يعيد تحميل المشاريع، ويحدد المشروع الجديد، وينتقل إلى عرض المشاريع
+- **جسر التحميل المسبق**: تمت إضافة 13 مفقودًا IPC handlers:
+- بحث عميق: `deepResearch`، `validateIdea`، `clearResearchCache`
+- التسجيل: `scoreIdea`، `rankIdeas`، `compareIdeas`، `quickScore`
+- إدارة البيانات: `deleteIdea`، `deleteSession`، `archiveIdea`، `restoreIdea`، `getArchivedIdeas`
+- الأحداث: `onDeepResearchProgress`
+**الملفات المعدلة**:
 - `src/renderer/features/ideas/IdeasPage.tsx`
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/AppShell.tsx`
@@ -2344,308 +2413,308 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/renderer/web-bridge.ts`
 - `CHANGELOG.md`
 
-### Performance Optimizations (120fps Target)
+### تحسينات الأداء (هدف 120 إطارًا في الثانية)
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Performance Optimizations (120fps Target) improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: أدت تحسينات الأداء (الهدف بمعدل 120 إطارًا في الثانية) إلى تحسين أداء runtime واستقراره واتساقه التشغيلي عبر مسارات العمل الرئيسية.
 
-**Status**: Completed
-**Optimizations**:
-- **Code Splitting**: Implemented lazy loading for all core views (`ChatView`, `ProjectsView`, `SettingsView`) to reduce initial bundle size.
-- **Render Performance**: Memoized expensive project filtering operations in `ProjectsPage` to prevent unnecessary re-computations.
-- **Animation Tuning**: Optimized view transitions for smoother (120fps feel) interaction.
-- **Dynamic Imports**: Lazy loaded `mermaid.js` in chat bubbles, reducing initial bundle size by ~1MB.
-- **Granular Chunking**: Refined `vite.config.ts` to split React, Monaco, and heavy libs into separate chunks for better caching.
-**Files Modified**:
+**الحالة**: مكتمل
+**التحسينات**:
+- **تقسيم الكود**: تم تنفيذ التحميل البطيء لجميع طرق العرض الأساسية (`ChatView`، `ProjectsView`، `SettingsView`) لتقليل حجم الحزمة الأولية.
+- **أداء العرض**: عمليات تصفية المشروع الباهظة الثمن والمحفوظة في `ProjectsPage` لمنع عمليات إعادة الحسابات غير الضرورية.
+- **ضبط الرسوم المتحركة**: انتقالات عرض محسنة لتفاعل أكثر سلاسة (إحساس بمعدل 120 إطارًا في الثانية).
+- **الواردات الديناميكية**: تم التحميل البطيء لـ `mermaid.js` في فقاعات الدردشة، مما يقلل حجم الحزمة الأولي بمقدار 1 ميغابايت تقريبًا.
+- **التقطيع الحبيبي**: تم تحسين `vite.config.ts` لتقسيم React، وMonaco، وlibs الثقيلة إلى أجزاء منفصلة لتحسين التخزين المؤقت.
+**الملفات المعدلة**:
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/features/projects/ProjectsPage.tsx`
 
-### Project Dashboard Modularization & Git Tab Extraction
+### وحدة لوحة معلومات المشروع واستخراج علامة تبويب Git
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project Dashboard Modularization & Git Tab Extraction advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: وحدة لوحة معلومات المشروع واستخراج علامة تبويب Git وإمكانيات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Completed
-**Refactoring**:
-- **ProjectDashboard Modularization**: Extracted the Git integration logic into a dedicated `ProjectGitTab` component, significantly reducing the complexity of the main `ProjectDashboard` component.
-- **Custom Hook**: Implemented `useGitData` hook to encapsulate all Git-related state management (fetching, staging, committing, pushing, pulling), improving separation of concerns.
-- **Linting Fixes**: Resolved numerous ESLint warnings in `ProjectDashboard.tsx` and `ProjectGitTab.tsx`, including:
-    - Fixed promise-returning functions in attributes (added `void` operator).
-    - Replaced unsafe `||` operators with nullish coalescing `??`.
-    - Removed unused imports and variables.
-    - Fixed parsing errors and JSX nesting issues.
-- **Performance**: Optimized re-renders by moving complex Git logic out of the main dashboard rendering path.
-**Files Modified**:
-- `src/renderer/features/projects/components/ProjectDashboard.tsx` - Removed Git logic, integrated `ProjectGitTab`.
-- `src/renderer/features/projects/components/ProjectGitTab.tsx` [NEW] - Dedicated Git interface component.
-- `src/renderer/features/projects/hooks/useGitData.ts` [NEW] - Git state management hook.
+**الحالة**: مكتمل
+** إعادة البناء **:
+- **ProjectDashboard Modularization**: تم استخراج منطق تكامل Git في مكون `ProjectGitTab` مخصص، مما يقلل بشكل كبير من تعقيد مكون `ProjectDashboard` الرئيسي.
+- **الخطاف المخصص**: تم تنفيذ الخطاف `useGitData` لتغليف جميع إدارة الحالة المتعلقة بـ Git (الجلب، والتجهيز، والالتزام، والدفع، والسحب)، وتحسين فصل الاهتمامات.
+- **إصلاحات الفحص**: تم حل العديد من تحذيرات ESLint في `ProjectDashboard.tsx` و`ProjectGitTab.tsx`، بما في ذلك:
+- وظائف إرجاع الوعد الثابتة في السمات (تمت إضافة عامل التشغيل `void`).
+- تم استبدال عوامل التشغيل `||` غير الآمنة بالدمج الفارغ `??`.
+- إزالة الواردات والمتغيرات غير المستخدمة.
+- تم إصلاح أخطاء التحليل ومشكلات تداخل JSX.
+- **الأداء**: عمليات إعادة عرض محسّنة عن طريق نقل منطق Git المعقد خارج مسار عرض لوحة المعلومات الرئيسية.
+**الملفات المعدلة**:
+- `src/renderer/features/projects/components/ProjectDashboard.tsx` - تمت إزالة منطق Git، وتكامل `ProjectGitTab`.
+- `src/renderer/features/projects/components/ProjectGitTab.tsx` [جديد] - مكون واجهة Git مخصص.
+- `src/renderer/features/projects/hooks/useGitData.ts` [جديد] - ربط إدارة حالة Git.
 
-### Project Settings Panel Enhancement (PROJ-HIGH-005)
+### تحسين لوحة إعدادات المشروع (PROJ-HIGH-005)
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Project Settings Panel Enhancement (PROJ-HIGH-005) advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: تحسين لوحة إعدادات المشروع (PROJ-HIGH-005) قدرات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Completed
-**Features**:
-- **Expanded Settings**: Added dedicated sections for Build & Test, Dev Server, and Advanced Options.
-- **Refactored UI**: Improved `ProjectSettingsPanel` by extracting state management into a custom `useProjectSettingsForm` hook and splitting UI into modular section components.
-- **Form Handling**: Implemented robust dirty state checking, form reset, and split-view sections.
-**Files Modified**:
+**الحالة**: مكتمل
+**سمات**:
+- **الإعدادات الموسعة**: تمت إضافة أقسام مخصصة للإنشاء والاختبار وخادم التطوير والخيارات المتقدمة.
+- **معاد تصميم UI**: تم تحسين `ProjectSettingsPanel` عن طريق استخراج إدارة الحالة إلى خطاف `useProjectSettingsForm` مخصص وتقسيم UI إلى مكونات قسم معيارية.
+- **التعامل مع النموذج**: تم تنفيذ فحص قوي للحالة القذرة، وإعادة تعيين النموذج، وأقسام العرض المنقسمة.
+**الملفات المعدلة**:
 - `src/renderer/features/projects/components/ProjectSettingsPanel.tsx`
-- `src/shared/types/project.ts` (extended Project interface)
+- `src/shared/types/project.ts` (واجهة المشروع الموسعة)
 
-### Project State Machine Implementation (PROJ-CRIT-003)
+### التنفيذ الآلي لحالة المشروع (PROJ-CRIT-003)
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Project State Machine Implementation (PROJ-CRIT-003) advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: يقدم تطبيق Project State Machine Implementation (PROJ-CRIT-003) إمكانات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Completed
-**Problem Solved**:
-- Race conditions in project list operations (edit, delete, archive, bulk operations)
-- Multiple operations could be triggered simultaneously, causing UI inconsistencies
-- State could become out of sync during rapid user interactions
-**Solution**:
-- **New Hook**: Created `useProjectListStateMachine` - a reducer-based state machine for project list operations
-- **Explicit States**: Defined clear states (`idle`, `editing`, `deleting`, `archiving`, `bulk_deleting`, `bulk_archiving`, `loading`, `error`)
-- **Guarded Transitions**: Operations can only start from `idle` state, preventing overlapping actions
-- **Coordinated Async**: All async operations go through a central dispatcher with proper loading/success/error handling
-**Files Added/Modified**:
-- `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [NEW] - State machine implementation
-- `src/renderer/features/projects/ProjectsPage.tsx` - Migrated to use state machine
+**الحالة**: مكتمل
+**حل المشكلة**:
+- شروط السباق في عمليات قائمة المشروع (تحرير، حذف، أرشفة، عمليات مجمعة)
+- قد يتم تشغيل عمليات متعددة في وقت واحد، مما يتسبب في حدوث تناقضات في UI
+- يمكن أن تصبح الحالة غير متزامنة أثناء تفاعلات المستخدم السريعة
+**حل**:
+- **خطاف جديد**: تم إنشاء `useProjectListStateMachine` - آلة حالة قائمة على المخفض لعمليات قائمة المشاريع
+- **الحالات الصريحة**: الحالات الواضحة المحددة (`idle`، `editing`، `deleting`، `archiving`، `bulk_deleting`، `bulk_archiving`، `loading`، `error`)
+- **الانتقالات الآمنة**: يمكن أن تبدأ العمليات فقط من حالة `idle`، مما يمنع الإجراءات المتداخلة
+- **غير المتزامن المنسق**: تمر جميع العمليات غير المتزامنة عبر مرسل مركزي مع التحميل/النجاح/المعالجة الصحيحة للأخطاء
+**الملفات المضافة/المعدلة**:
+- `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [جديد] - تنفيذ آلة الحالة
+- `src/renderer/features/projects/ProjectsPage.tsx` - تم الترحيل لاستخدام جهاز الحالة
 
-### Project System Bug Fixes
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Project System Bug Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
-
-**Status**: Fixed Critical Issues
-**Issues Resolved**:
-#### **Bug #1: Sidebar Links Disappearing** ✅
-- **Problem**: When user selected a project, entire sidebar disappeared, preventing navigation back to other views
-- **Root Cause**: Conditional rendering in App.tsx completely hid sidebar when `currentView === 'projects' && selectedProject`
-- **Fix**: Removed conditional logic - sidebar now always visible, allowing users to navigate between views even while in project workspace
-- **File**: `src/renderer/App.tsx` - Simplified sidebar rendering logic
-#### **Bug #2: Vector Dimension Error in Code Intelligence** ✅
-- **Problem**: Project analysis failed with "vector must have at least 1 dimension" error during code indexing
-- **Root Cause**: When embedding provider set to 'none', service returned empty array `[]` which database rejected (PostgreSQL vector type requires 1+ dimensions)
-- **Fix**: Return 384-dimensional zero vector `new Array(384).fill(0)` instead of empty array for 'none' provider
-- **File**: `src/main/services/llm/embedding.service.ts` - Replaced empty array with proper default vector
-- **Additional**: Fixed unreachable code (duplicate return statement) in getCurrentProvider()
-**Technical Details**:
-- **Sidebar Fix**: Users can now access all navigation options while viewing projects, maintaining consistent UX
-- **Vector Fix**: Code intelligence indexing will work with 'none' embedding provider using zero vectors, preventing database constraint violations
-- **Database Compatibility**: Zero vectors maintain proper dimensions for PostgreSQL vector operations while indicating no semantic meaning
-**Files Modified**:
-- `src/renderer/App.tsx` - Removed problematic conditional sidebar rendering
-- `src/main/services/llm/embedding.service.ts` - Fixed vector dimension issue and unreachable code
-- `CHANGELOG.md` - Added fix documentation
-**Testing Status**: TypeScript compilation successful, no type errors found
-**User Impact**:
-- Project navigation now works properly without losing sidebar access
-- Code analysis/indexing will complete successfully regardless of embedding provider choice
-- Improved reliability and user experience in project management workflow
-
-### Project System Comprehensive Review & Roadmap
+### إصلاحات أخطاء نظام المشروع
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project System Comprehensive Review & Roadmap advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: أدت إصلاحات الأخطاء في نظام المشروع إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتعزيز المسارات الحرجة.
 
-**Status**: Analysis Completed
-**Review Findings**:
-- **Strengths Identified**: Intelligent project analysis (40+ languages), rich scaffolding system (6 categories), advanced workspace integration with multi-mount support, robust PGlite database persistence
-- **Critical Issues Found**: Type safety problems, missing confirmation dialogs, state management race conditions, limited batch operations
-- **Missing Features**: Custom templates, project exports, environment variable management, advanced Git integration
-**Strategic Roadmap Created**:
-- **Phase 1** (Critical): Fix type safety, add confirmations, proper state management
-- **Phase 2** (High Priority): Batch operations, environment manager, project settings panel
-- **Phase 3** (Advanced): Custom templates, export system, AI-driven scaffolding
-- **Phase 4** (Platform): Dependency management, analytics dashboard, Git integration
-**Documentation Added**:
-- `docs/TODO/projects.md` - Comprehensive 50+ item roadmap with priorities and implementation phases
+**الحالة**: المشكلات الحرجة التي تم إصلاحها
+**المشكلات التي تم حلها**:
+#### **الخطأ رقم 1: اختفاء روابط الشريط الجانبي** ✅
+- **المشكلة**: عندما يحدد المستخدم مشروعًا، يختفي الشريط الجانبي بأكمله، مما يمنع الرجوع إلى طرق العرض الأخرى
+- **السبب الجذري**: أدى العرض الشرطي في App.tsx إلى إخفاء الشريط الجانبي تمامًا عند `currentView === 'projects' && selectedProject`
+- **الإصلاح**: تمت إزالة المنطق الشرطي - أصبح الشريط الجانبي مرئيًا دائمًا، مما يسمح للمستخدمين بالتنقل بين طرق العرض حتى أثناء وجودهم في مساحة عمل المشروع
+- **الملف**: `src/renderer/App.tsx` - منطق عرض الشريط الجانبي المبسط
+#### **الخطأ رقم 2: خطأ في البعد المتجه في ذكاء الكود** ✅
+- **المشكلة**: فشل تحليل المشروع بسبب الخطأ "يجب أن يحتوي المتجه على بُعد واحد على الأقل" أثناء فهرسة الكود
+- **السبب الجذري**: عند تعيين موفر التضمين على "لا شيء"، أعادت الخدمة مصفوفة فارغة `[]` والتي رفضتها قاعدة البيانات (يتطلب نوع ناقل PostgreSQL أكثر من 1 بُعد)
+- **الإصلاح**: إرجاع المتجه الصفري ذي الأبعاد 384 `new Array(384).fill(0)` بدلاً من المصفوفة الفارغة للموفر "لا شيء"
+- **الملف**: `src/main/services/llm/embedding.service.ts` - تم استبدال المصفوفة الفارغة بالمتجه الافتراضي المناسب
+- **إضافي**: تم إصلاح التعليمات البرمجية التي لا يمكن الوصول إليها (بيان الإرجاع المكرر) في getCurrentProvider()
+**التفاصيل الفنية**:
+- **إصلاح الشريط الجانبي**: يمكن للمستخدمين الآن الوصول إلى جميع خيارات التنقل أثناء عرض المشاريع، مع الحفاظ على الاتساق UX
+- **إصلاح المتجهات**: ستعمل فهرسة ذكاء التعليمات البرمجية مع موفر التضمين "لا شيء" باستخدام متجهات صفرية، مما يمنع انتهاكات قيود قاعدة البيانات
+- **توافق قاعدة البيانات**: تحافظ المتجهات الصفرية على الأبعاد المناسبة لعمليات متجهات PostgreSQL بينما لا تشير إلى أي معنى دلالي
+**الملفات المعدلة**:
+- `src/renderer/App.tsx` - تمت إزالة عرض الشريط الجانبي الشرطي الذي به مشكلات
+- `src/main/services/llm/embedding.service.ts` - تم إصلاح مشكلة أبعاد المتجه والكود الذي لا يمكن الوصول إليه
+- `CHANGELOG.md` - تمت إضافة وثائق الإصلاح
+**حالة الاختبار**: تم تجميع TypeScript بنجاح، ولم يتم العثور على أخطاء في الكتابة
+**تأثير المستخدم**:
+- يعمل التنقل في المشروع الآن بشكل صحيح دون فقدان إمكانية الوصول إلى الشريط الجانبي
+- سيتم إكمال تحليل/فهرسة الكود بنجاح بغض النظر عن اختيار موفر التضمين
+- تحسين الموثوقية وتجربة المستخدم في سير عمل إدارة المشروع
 
-### Project System Improvements (Batch Operations & Refactoring)
+### مراجعة شاملة لنظام المشروع وخريطة الطريق
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project System Improvements (Batch Operations & Refactoring) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: مراجعة شاملة لنظام المشروع وخريطة الطريق وإمكانيات وكيل المشروع المتقدمة وجودة التنفيذ عبر التخطيط وتدفقات runtime.
 
-**Status**: Completed (Phase 1 & Phase 2 Early Items)
-**New Features**:
-- **Multi-Selection System**: Added checkboxes to project cards for selecting multiple projects.
-- **Bulk Actions**: Implemented "Archive Selected" and "Delete Selected" with batch processing.
-- **Improved Confirmations**: Added specific confirmation modals for single and bulk delete/archive actions, including a "Delete project files" option.
-- **Progress Tracking**: Added loading states and success notifications for batch operations.
-**Technical Changes**:
-- **Component Refactoring**:
-    - Split `ProjectCard.tsx` into smaller, focused sub-components.
-    - Split `ProjectModals.tsx` into specialized modal components to reduce complexity.
-- **Action Decoupling**: Created `useProjectListActions` hook to isolate list-level logic from workspace-level logic.
-- **Type Safety**:
-    - Hardened project-related interfaces and eliminated unsafe type assertions.
-    - Fixed pre-existing type mismatch in `idea-generator.service.ts` where Date objects were incorrectly used as timestamps.
-- **Internationalization**: Added 10+ new translation keys for bulk operations and confirmation dialogs.
-**Files Added/Modified**:
-- `src/renderer/features/projects/ProjectsPage.tsx` - Integrated multi-selection and bulk actions.
-- `src/renderer/features/projects/components/ProjectCard.tsx` - Modularized card UI.
-- `src/renderer/features/projects/components/ProjectModals.tsx` - Modularized modal components.
-- `src/renderer/features/projects/components/ProjectsHeader.tsx` [NEW] - Bulk action controls.
-- `src/renderer/features/projects/hooks/useProjectListActions.ts` [NEW] - List management logic.
-- `src/renderer/features/projects/hooks/useProjectActions.ts` - Restored to original workspace scope.
-- `src/main/services/llm/idea-generator.service.ts` - Fixed type mismatch in project approval.
-- `src/renderer/i18n/en.ts` / `tr.ts` - Added new operation strings.
-**Status**: Completed
-**New Features**:
-- **New Language Support**: Added German (de), French (fr), and Spanish (es) language files
-- **Enhanced Translation Keys**: Added memory, terminal, and auth sections to translation files
-- **CHANGELOG Consolidation**: Merged `docs/CHANGELOG.md` into root `CHANGELOG.md`
-**Technical Changes**:
-- Added `de.ts`, `fr.ts`, `es.ts` language files with comprehensive translations
-- Updated `index.ts` to export new languages and support 5 languages total (en, tr, de, fr, es)
-- Added `memory` section: inspector, facts, episodes, entities translations
-- Added `terminal` section: shell, session status translations
-- Added `auth` section: session key modal, device code modal translations
-- Added missing `mcp` keys: noServers, remove, official, byAuthor
-**Files Added/Modified**:
-- `src/renderer/i18n/de.ts` [NEW] - German translations
-- `src/renderer/i18n/fr.ts` [NEW] - French translations
-- `src/renderer/i18n/es.ts` [NEW] - Spanish translations
-- `src/renderer/i18n/en.ts` - Added memory, terminal, auth sections
-- `src/renderer/i18n/tr.ts` - Added memory, terminal, auth sections
-- `src/renderer/i18n/index.ts` - Export new languages
-- `CHANGELOG.md` - Consolidated from docs/CHANGELOG.md
+**الحالة**: اكتمل التحليل
+**نتائج المراجعة**:
+- **نقاط القوة التي تم تحديدها**: تحليل ذكي للمشروع (أكثر من 40 لغة)، ونظام سقالات غني (6 فئات)، وتكامل مساحة عمل متقدمة مع دعم متعدد التركيب، واستمرارية قوية لقاعدة بيانات PGlite
+- **تم العثور على مشكلات حرجة**: مشكلات تتعلق بسلامة الكتابة، ومربعات حوار التأكيد المفقودة، وظروف سباق إدارة الحالة، وعمليات الدفعات المحدودة
+- **الميزات المفقودة**: القوالب المخصصة، وتصدير المشروعات، وإدارة متغيرات البيئة، وتكامل Git المتقدم
+**تم إنشاء خريطة الطريق الإستراتيجية**:
+- **المرحلة الأولى** (حرجة): إصلاح سلامة النوع، وإضافة التأكيدات، والإدارة السليمة للحالة
+- **المرحلة الثانية** (أولوية عالية): العمليات المجمعة، مدير البيئة، لوحة إعدادات المشروع
+- **المرحلة 3** (متقدم): قوالب مخصصة ونظام تصدير وسقالات تعتمد على الذكاء الاصطناعي
+- **المرحلة الرابعة** (النظام الأساسي): إدارة التبعيات، ولوحة التحكم التحليلية، وتكامل Git
+** تم إضافة الوثائق **:
+- `docs/TODO/projects.md` - خريطة طريق شاملة لأكثر من 50 عنصرًا مع الأولويات ومراحل التنفيذ
 
-### Security Hardening - Safe JSON Parsing
+### تحسينات نظام المشروع (العمليات المجمعة وإعادة البناء)
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: قدمت تحسينات نظام المشروع (العمليات المجمعة وإعادة البناء) عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
+
+**الحالة**: مكتمل (العناصر المبكرة للمرحلة 1 والمرحلة 2)
+**ميزات جديدة**:
+- **نظام الاختيار المتعدد**: تمت إضافة مربعات اختيار إلى بطاقات المشروع لاختيار مشاريع متعددة.
+- **الإجراءات المجمعة**: تم تنفيذ "تم تحديد الأرشيف" و"حذف المحدد" مع المعالجة المجمعة.
+- **التأكيدات المحسنة**: تمت إضافة نماذج تأكيد محددة لإجراءات الحذف/الأرشفة الفردية والمجمعة، بما في ذلك خيار "حذف ملفات المشروع".
+- **تتبع التقدم**: تمت إضافة حالات التحميل وإشعارات النجاح للعمليات المجمعة.
+** التغييرات الفنية **:
+- **إعادة هيكلة المكونات**:
+- قم بتقسيم `ProjectCard.tsx` إلى مكونات فرعية أصغر حجمًا ومركزة.
+- قم بتقسيم `ProjectModals.tsx` إلى مكونات نمطية متخصصة لتقليل التعقيد.
+- **فصل الإجراء**: تم إنشاء خطاف `useProjectListActions` لعزل منطق مستوى القائمة عن منطق مستوى مساحة العمل.
+- **نوع الأمان**:
+- تقوية الواجهات المتعلقة بالمشروع وإزالة تأكيدات النوع غير الآمنة.
+- تم إصلاح عدم تطابق النوع الموجود مسبقًا في `idea-generator.service.ts` حيث تم استخدام كائنات التاريخ بشكل غير صحيح كطوابع زمنية.
+- **التدويل**: تمت إضافة أكثر من 10 مفاتيح ترجمة جديدة للعمليات المجمعة ومربعات حوار التأكيد.
+**الملفات المضافة/المعدلة**:
+- `src/renderer/features/projects/ProjectsPage.tsx` - إجراءات متكاملة ومتعددة الاختيارات.
+- `src/renderer/features/projects/components/ProjectCard.tsx` - البطاقة المعيارية UI.
+- `src/renderer/features/projects/components/ProjectModals.tsx` - مكونات نمطية.
+- `src/renderer/features/projects/components/ProjectsHeader.tsx` [جديد] - عناصر التحكم في الإجراءات المجمعة.
+- `src/renderer/features/projects/hooks/useProjectListActions.ts` [جديد] - منطق إدارة القائمة.
+- `src/renderer/features/projects/hooks/useProjectActions.ts` - تمت الاستعادة إلى نطاق مساحة العمل الأصلية.
+- `src/main/services/llm/idea-generator.service.ts` - تم إصلاح عدم تطابق النوع في الموافقة على المشروع.
+- `src/renderer/i18n/en.ts` / `tr.ts` - تمت إضافة سلاسل عمليات جديدة.
+**الحالة**: مكتمل
+**ميزات جديدة**:
+- ** دعم اللغة الجديدة **: تمت إضافة ملفات اللغات الألمانية (de)، والفرنسية (fr)، والإسبانية (es).
+- ** مفاتيح الترجمة المحسنة **: تمت إضافة أقسام الذاكرة والمحطة والمصادقة إلى ملفات الترجمة
+- **دمج سجل التغيير**: تم دمج `docs/CHANGELOG.md` في الجذر `CHANGELOG.md`
+** التغييرات الفنية **:
+- تمت إضافة ملفات اللغة `de.ts`، `fr.ts`، `es.ts` مع ترجمات شاملة
+- تم تحديث `index.ts` لتصدير لغات جديدة ودعم 5 لغات إجمالاً (en، tr، de، fr، es)
+- تمت إضافة قسم `memory`: المفتش، الحقائق، الحلقات، ترجمات الكيانات
+- تمت إضافة قسم `terminal`: الصدفة، وترجمات حالة الجلسة
+- تمت إضافة قسم `auth`: مفتاح الجلسة المشروط، والترجمات المشروطة لرمز الجهاز
+- تمت إضافة مفاتيح `mcp` المفقودة: noServers، إزالة، رسمي، بواسطة المؤلف
+**الملفات المضافة/المعدلة**:
+- `src/renderer/i18n/de.ts` [جديد] - الترجمات الألمانية
+- `src/renderer/i18n/fr.ts` [جديد] - ترجمات فرنسية
+- `src/renderer/i18n/es.ts` [جديد] - الترجمات الإسبانية
+- `src/renderer/i18n/en.ts` - تمت إضافة الذاكرة والمحطة الطرفية وأقسام المصادقة
+- `src/renderer/i18n/tr.ts` - تمت إضافة الذاكرة والمحطة الطرفية وأقسام المصادقة
+- `src/renderer/i18n/index.ts` - تصدير لغات جديدة
+- `CHANGELOG.md` - تم الدمج من docs/CHANGELOG.md
+
+### تشديد الأمان - تحليل آمن JSON
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Security Hardening - Safe JSON Parsing strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: تعزيز الأمان - آمن JSON أدى التحليل إلى تعزيز الموثوقية والأمان من خلال معالجة المشكلات المعروفة وتعزيز المسارات الحرجة.
 
-**Status**: ✅ Completed (Included in Enterprise Transformation above)
-**Security Impact**:
-- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
-- **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
-- **Graceful Error Handling** with sensible defaults when parsing fails
-- **Type Safety Preservation** while adding security layers
-**Critical Services Hardened**:
-1. **Authentication Service** (`auth-api.service.ts`):
-    - Secured token update endpoint JSON parsing
-    - Added validation for malformed authentication data
-    - Proper type casting for token fields
-2. **AI/LLM Services** (6 services, 13+ instances):
-    - `idea-generator.service.ts`: Secured all LLM response parsing (6 methods)
-    - `idea-scoring.service.ts`: Protected scoring and comparison data (2 methods)
-    - `copilot.service.ts`: Hardened error response parsing
-    - `agent.service.ts`: Secured database field parsing (2 methods)
-    - `deep-research.service.ts`: Protected research data parsing (2 methods)
-3. **Pattern Applied**:
+**الحالة**: ✅ مكتمل (مضمن في تحويل المؤسسة أعلاه)
+**التأثير الأمني**:
+- **القضاء بنسبة 100%** على مكالمات `JSON.parse()` غير الآمنة عبر التطبيق
+- **التحقق الشامل من صحة الإدخال** لجميع مصادر البيانات الخارجية (LLM الاستجابات، API المكالمات، وحقول قاعدة البيانات)
+- **معالجة أنيقة للأخطاء** مع إعدادات افتراضية معقولة عند فشل التحليل
+- **اكتب الحفاظ على السلامة** أثناء إضافة طبقات الأمان
+**تعزيز الخدمات الحيوية**:
+1. **خدمة المصادقة** (`auth-api.service.ts`):
+- تحليل نقطة نهاية تحديث الرمز المميز JSON
+- تمت إضافة التحقق من صحة بيانات المصادقة المشوهة
+- صب النوع المناسب لحقول الرمز المميز
+2. **خدمات AI/LLM** (6 خدمات، أكثر من 13 مثيلًا):
+- `idea-generator.service.ts`: تأمين تحليل استجابة LLM بالكامل (6 طرق)
+- `idea-scoring.service.ts`: بيانات التسجيل والمقارنة المحمية (طريقتان)
+- `copilot.service.ts`: تحليل استجابة الخطأ المشدد
+- `agent.service.ts`: تحليل حقل قاعدة البيانات الآمنة (طريقتان)
+- `deep-research.service.ts`: تحليل بيانات البحث المحمية (طريقتان)
+3. **النمط المطبق**:
     ```typescript
-    // Before: Unsafe
-    const data = JSON.parse(untrustedInput);
-    // After: Safe with defaults
-    const data = safeJsonParse(untrustedInput, {
-        sensibleDefaults: 'here',
-    });
+// قبل: غير آمن
+بيانات ثابتة = JSON.parse(untrustedInput);
+// بعد: آمن مع الإعدادات الافتراضية
+بيانات ثابتة = SafeJsonParse(untrustedInput, {
+sensibleDefaults: "هنا"،
+});
     ```
-**Benefits**:
-- **Crash Prevention**: Malformed JSON no longer crashes the application
-- **Data Integrity**: All parsing operations have sensible fallbacks
-- **Security Posture**: Eliminates JSON-based attack vectors
-- **User Experience**: Graceful degradation when external services return bad data
-**Build Quality**: ✅ All changes maintain 100% TypeScript compliance and pass strict type checking.
+**فوائد**:
+- **منع الأعطال**: لم يعد JSON المشوه يعطل التطبيق
+- **سلامة البيانات**: جميع عمليات التحليل لها إجراءات احتياطية معقولة
+- **الوضع الأمني**: يزيل نواقل الهجوم المستندة إلى JSON
+- **تجربة المستخدم**: تدهور بسيط عندما تقوم الخدمات الخارجية بإرجاع بيانات سيئة
+**جودة البناء**: ✅ تحافظ جميع التغييرات على الامتثال بنسبة 100% TypeScript وتجتاز فحصًا صارمًا للنوع.
 
-### Strategic Research System & Local Image Generation
+### نظام البحث الاستراتيجي وتوليد الصور المحلية
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Strategic Research System & Local Image Generation introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: قدم نظام البحث الاستراتيجي وتوليد الصور المحلية صيانة منسقة وتحسينات في الجودة عبر الوحدات ذات الصلة.
 
-**Status**: Completed
-**New Features**:
-- **Strategic Research Pipeline**: Expanded the `IdeaGeneratorService` with a 12-stage analysis framework, generating Personas, SWOT matrices, GTM plans, and Financial strategies.
-- **Local & Free Image Generation**: Introduced `LocalImageService` supporting Ollama, SD-WebUI (A1111), and Pollinations.ai (Flux) as a no-key fallback.
-- **Research Assistant RAG**: Integrated interactive research chat side-panel for deep-diving into generated project insights.
-- **Roadmap Expansion**: Audited and expanded `docs/TODO.md` with 7 new strategic milestones focusing on local AI maturity and research exports.
-**Technical Changes**:
-- **Services**: Created `LocalImageService`, refactored `LogoService` and `IdeaGeneratorService` to prioritize local hardware and community APIs.
-- **Settings**: Updated `AppSettings` schema to include granular image provider configurations.
-- **Type Safety**: Improved type safety and error boundaries in the 12-stage generation pipeline.
-- **Documentation**: Updated `walkthrough.md`, `i18n.md`, and the entire `docs/TODO/` system.
-**Files Modified**:
+**الحالة**: مكتمل
+**ميزات جديدة**:
+- **خط أنابيب البحث الاستراتيجي**: تم توسيع `IdeaGeneratorService` بإطار تحليل مكون من 12 مرحلة، وإنشاء شخصيات، ومصفوفات SWOT، وخطط GTM، والاستراتيجيات المالية.
+- **إنشاء صور محلية ومجانية**: تم تقديم `LocalImageService` الذي يدعم Ollama، وSD-WebUI (A1111)، وPollinations.ai (Flux) باعتباره fallback بدون مفتاح.
+- **مساعد البحث RAG**: لوحة جانبية للدردشة البحثية التفاعلية المتكاملة للتعمق في رؤى المشروع التي تم إنشاؤها.
+- **توسيع خريطة الطريق**: تم تدقيقها وتوسيعها `docs/TODO.md` مع 7 معالم استراتيجية جديدة تركز على نضج الذكاء الاصطناعي المحلي وصادرات الأبحاث.
+** التغييرات الفنية **:
+- **الخدمات**: تم إنشاء `LocalImageService`، وإعادة تصميم `LogoService` و`IdeaGeneratorService` لتحديد أولويات الأجهزة المحلية وواجهات برمجة التطبيقات المجتمعية.
+- **الإعدادات**: تم تحديث مخطط `AppSettings` ليشمل تكوينات موفر الصور الدقيقة.
+- **سلامة النوع**: تحسين سلامة النوع وحدود الأخطاء في خط أنابيب التوليد المكون من 12 مرحلة.
+- **الوثائق**: تم تحديث `walkthrough.md`، `i18n.md`، ونظام `docs/TODO/` بأكمله.
+**الملفات المعدلة**:
 - `CHANGELOG.md`
 - `docs/TODO.md`
 - `docs/TODO/ideas.md`
 - `docs/TODO/features.md`
-- `src/main/services/llm/local-image.service.ts` [NEW]
+- `src/main/services/llm/local-image.service.ts` [جديد]
 - `src/main/services/llm/idea-generator.service.ts`
 - `src/main/services/external/logo.service.ts`
 - `src/shared/types/settings.ts`
 
-### Type Safety Hardening - Elimination of Unsafe Type Casts
+### تقوية أمان النوع - التخلص من القوالب غير الآمنة
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Type Safety Hardening - Elimination of Unsafe Type Casts strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: تقوية أمان النوع - أدى التخلص من القوالب غير الآمنة إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتقوية المسارات الحرجة.
 
-**Status**: ✅ Completed
-**Code Quality Impact**:
-- **Zero Remaining `as any` Casts**: Eliminated all unsafe type casting in critical services
-- **Proper Type Definitions**: Replaced unsafe casts with correct type imports and interfaces
-- **JSON Serialization Safety**: Improved backup/restore operations with proper type handling
-- **Enhanced Type Safety**: Better LinkedAccount type usage across authentication flows
-**Critical Services Hardened**:
-1. **BackupService** (`backup.service.ts`):
-    - Replaced 5 instances of `as unknown as JsonObject[]` with proper JSON serialization
-    - Used `JSON.parse(JSON.stringify())` pattern for safe type conversion
-    - Proper date handling for database object serialization
-    - Type-safe chat, prompt, and folder backup/restore operations
-2. **SettingsService** (`settings.service.ts`):
-    - Fixed unsafe `as unknown as Record<string, unknown>[]` cast
-    - Added proper `LinkedAccount` type import from database service
-    - Corrected authentication token lookup with proper typing
-    - Improved function signatures for better type safety
-3. **Previous Services** (from earlier phases):
-    - **DatabaseService**: Fixed ~10 instances of unsafe type usage
-    - **LLMService, QuotaService, HealthCheckService**: All type issues resolved
-    - **IdeaGeneratorService**: Secured LLM response parsing with safeJsonParse defaults
-**Benefits**:
-- **Compile-Time Safety**: TypeScript can now catch more errors at build time
-- **Runtime Reliability**: Eliminates potential runtime type errors
-- **Better IDE Support**: Improved IntelliSense and autocomplete accuracy
-- **Maintainability**: Clearer type contracts between services
-**Next Steps Ready**:
-- Enable `noImplicitAny` in `tsconfig.json` (now safe to activate)
-- Enable strict null checks without breaking changes
-- Add additional TypeScript strict mode flags
-**Build Quality**: ✅ All changes maintain 100% TypeScript compliance with zero breaking changes.
+**الحالة**: ✅ مكتمل
+**تأثير جودة الكود**:
+- **لا يوجد أي `as any` أي إرسالات متبقية**: تم التخلص من جميع أنواع الإرسال غير الآمنة في الخدمات المهمة
+- **تعريفات النوع المناسبة**: تم استبدال القوالب غير الآمنة باستيراد النوع الصحيح والواجهات
+- **JSON سلامة التسلسل**: تحسين عمليات النسخ الاحتياطي/الاستعادة من خلال التعامل مع النوع بشكل مناسب
+- **أمان محسّن للنوع**: استخدام أفضل لنوع LinkedAccount عبر تدفقات المصادقة
+**تعزيز الخدمات الحيوية**:
+1. **خدمة النسخ الاحتياطي** (`backup.service.ts`):
+- تم استبدال 5 حالات من `as unknown as JsonObject[]` بالتسلسل المناسب لـ JSON
+- تم استخدام نمط `JSON.parse(JSON.stringify())` لتحويل النوع الآمن
+- التعامل مع التاريخ المناسب لتسلسل كائن قاعدة البيانات
+- عمليات النسخ الاحتياطي / الاستعادة للدردشة والمطالبة والمجلدات بشكل آمن
+2. **خدمة الإعدادات** (`settings.service.ts`):
+- تم إصلاح طاقم الممثلين غير الآمن `as unknown as Record<string, unknown>[]`
+- تمت إضافة نوع الاستيراد المناسب `LinkedAccount` من خدمة قاعدة البيانات
+- تصحيح البحث عن رمز المصادقة مع الكتابة الصحيحة
+- تحسين التوقيعات الوظيفية لتحسين سلامة الكتابة
+3. **الخدمات السابقة** (من المراحل السابقة):
+- **DatabaseService**: تم إصلاح حوالي 10 حالات لاستخدام النوع غير الآمن
+- **LLMService، QuotaService، HealthCheckService**: تم حل جميع مشكلات النوع
+- **IdeaGeneratorService**: تحليل استجابة LLM الآمن باستخدام إعدادات SafeJsonParse الافتراضية
+**فوائد**:
+- **سلامة وقت الترجمة**: يمكن لـ TypeScript الآن اكتشاف المزيد من الأخطاء في وقت الإنشاء
+- **Runtime الموثوقية**: يزيل الأخطاء المحتملة في نوع runtime
+- **دعم أفضل لـ IDE**: تحسين التحسس الذكي ودقة الإكمال التلقائي
+- **قابلية الصيانة**: نوع العقود الأكثر وضوحًا بين الخدمات
+**الخطوات التالية جاهزة**:
+- قم بتمكين `noImplicitAny` في `tsconfig.json` (الآن آمن للتنشيط)
+- تمكين عمليات التحقق الخالية الصارمة دون كسر التغييرات
+- أضف علامات الوضع الصارم TypeScript الإضافية
+**جودة البناء**: ✅ تحافظ جميع التغييرات على امتثال TypeScript بنسبة 100% مع عدم حدوث أي تغييرات.
 
 ## [2026-01-22]
 
-### Idea Generator Refactoring & Type Safety Fixes
+### إعادة هيكلة مولد الفكرة وإصلاحات أمان النوع
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Idea Generator Refactoring & Type Safety Fixes delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: قدمت إعادة هيكلة مولد الأفكار وإصلاحات أمان النوع عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-**Status**: Completed
-**Features**:
-- **Ideas View Refactoring**: Modularized the complex `IdeasView.tsx` by extracting sub-components: `IdeaList`, `IdeaDetail`, `SessionConfig`, `ResearchVisualizer`, and `GenerationProgress`. Improved readability and maintainability.
-- **Enhanced Type Safety**: Fixed several type mismatches in the Ideas feature and shared Project types.
-- **Sidebar Integration**: Added 'Ideas' view to the Sidebar navigation with proper type support.
-**Technical Changes**:
-- **Refactoring**: Extracted 5 sub-components from `IdeasView.tsx` into `src/renderer/features/ideas/components/`.
-- **Type Fixes**:
-    - Updated `DatabaseService` to use shared `WorkspaceMount` type and provide `updatedAt` field.
-    - Updated shared `Project` type to include `updatedAt: Date`.
-    - Fixed `AppView` and `SidebarProps` to consistently include `'ideas'`.
-    - Added `ideas` mock to `web-bridge.ts` to match `ElectronAPI` interface.
-- **Service Layer**: Fixed type casting in `IdeaGeneratorService` for `ResearchData` parsing.
-**Files Modified**:
+**الحالة**: مكتمل
+**سمات**:
+- **إعادة هيكلة عرض الأفكار**: تم تقسيم المجمع `IdeasView.tsx` إلى وحدات عن طريق استخراج المكونات الفرعية: `IdeaList`، `IdeaDetail`، `SessionConfig`، `ResearchVisualizer`، و`GenerationProgress`. تحسين إمكانية القراءة وقابلية الصيانة.
+- **أمان محسّن للنوع**: تم إصلاح العديد من حالات عدم تطابق الأنواع في ميزة الأفكار وأنواع المشاريع المشتركة.
+- **تكامل الشريط الجانبي**: تمت إضافة عرض "الأفكار" إلى شريط التنقل في الشريط الجانبي مع دعم النوع المناسب.
+** التغييرات الفنية **:
+- **إعادة البناء**: تم استخراج 5 مكونات فرعية من `IdeasView.tsx` إلى `src/renderer/features/ideas/components/`.
+- **إصلاحات النوع**:
+- تم تحديث `DatabaseService` لاستخدام نوع `WorkspaceMount` المشترك وتوفير حقل `updatedAt`.
+- تم تحديث نوع `Project` المشترك ليشمل `updatedAt: Date`.
+- تم إصلاح `AppView` و`SidebarProps` ليشمل `'ideas'` باستمرار.
+- تمت إضافة `ideas` وهمي إلى `web-bridge.ts` لمطابقة واجهة `ElectronAPI`.
+- **طبقة الخدمة**: تم إصلاح نوع الإرسال في `IdeaGeneratorService` لتحليل `ResearchData`.
+**الملفات المعدلة**:
 - `src/renderer/features/ideas/IdeasView.tsx`
 - `src/renderer/features/ideas/components/IdeaList.tsx`
 - `src/renderer/features/ideas/components/IdeaDetail.tsx`
@@ -2659,23 +2728,23 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/main/services/llm/idea-generator.service.ts`
 - `src/shared/types/project.ts`
 
-### Multi-Model Response System & Prompt Enhancement
+### نظام الاستجابة متعدد النماذج والتحسين الفوري
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Multi-Model Response System & Prompt Enhancement introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: قدم نظام الاستجابة متعدد النماذج والتحسين الفوري صيانة منسقة وتحسينات للجودة عبر الوحدات ذات الصلة.
 
-**Status**: Completed
-**New Features**:
-- **Multi-Model Response Tabs**: When users select multiple models (up to 4) using Shift+Click, the system now sends requests to ALL selected models in parallel and displays responses in a tabbed interface instead of chevron navigation.
-- **Prompt Enhancement Button**: Added a sparkle button (✨) in the chat input area that enhances user prompts using AI. Automatically selects Ollama models if available, otherwise falls back to Anthropic/Copilot lightweight models.
-- **Improved Chat Titles**: Fixed chat title generation to properly use the assistant's first response line instead of the user's input message.
-**Technical Changes**:
-- `useChatGenerator.ts`: Added `generateMultiModelResponse` function for parallel multi-model responses.
-- `MessageBubble.tsx`: Replaced chevron navigation with styled tab buttons for multi-model variants.
-- `ChatInput.tsx`: Added `handleEnhancePrompt` function and enhance button UI.
-- `process-stream.ts`: Fixed title generation condition from `messages.length <= 1` to `messages.length <= 2`.
-**Files Modified**:
+**الحالة**: مكتمل
+**ميزات جديدة**:
+- ** علامات تبويب الاستجابة متعددة النماذج **: عندما يحدد المستخدمون نماذج متعددة (حتى 4) باستخدام Shift+Click، يرسل النظام الآن طلبات إلى جميع النماذج المحددة بالتوازي ويعرض الاستجابات في واجهة مبوبة بدلاً من التنقل على شكل رتبة عسكرية.
+- **زر التحسين الفوري**: تمت إضافة زر لامع (✨) في منطقة إدخال الدردشة مما يعمل على تحسين مطالبات المستخدم باستخدام الذكاء الاصطناعي. تحديد نماذج Ollama تلقائيًا إذا كانت متوفرة، وإلا فسيتم الرجوع إلى نماذج Anthropic/Copilot خفيفة الوزن.
+- **عناوين الدردشة المحسّنة**: تم إصلاح إنشاء عناوين الدردشة لاستخدام سطر الاستجابة الأول للمساعد بشكل صحيح بدلاً من رسالة إدخال المستخدم.
+** التغييرات الفنية **:
+- `useChatGenerator.ts`: تمت إضافة وظيفة `generateMultiModelResponse` للاستجابات المتوازية متعددة النماذج.
+- `MessageBubble.tsx`: تم استبدال التنقل على شكل رتبة عسكرية بأزرار علامات التبويب ذات النمط لمتغيرات النماذج المتعددة.
+- `ChatInput.tsx`: تمت إضافة وظيفة `handleEnhancePrompt` وزر التحسين UI.
+- `process-stream.ts`: تم إصلاح شرط إنشاء العنوان من `messages.length <= 1` إلى `messages.length <= 2`.
+**الملفات المعدلة**:
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/renderer/features/chat/hooks/useChatManager.ts`
 - `src/renderer/features/chat/hooks/process-stream.ts`
@@ -2684,48 +2753,48 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/renderer/context/ChatContext.tsx`
 - `src/renderer/i18n/en.ts`, `src/renderer/i18n/tr.ts`
 
-### Native Service Stability & Process Recovery
+### استقرار الخدمة الأصلية واستعادة العمليات
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Native Service Stability & Process Recovery improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: أدى استقرار الخدمة الأصلية واسترداد العمليات إلى تحسين أداء runtime واستقرارها واتساقها التشغيلي عبر مسارات العمل الرئيسية.
 
-**Status**: Completed (00:55:00)
-**Fixes**:
-- **Rust token-service**: Fixed a critical panic when printing to `stdout` in a detached state (Windows pipe closing). Replaced `println!` with non-panicking `writeln!`.
+**الحالة**: مكتمل (00:55:00)
+**الإصلاحات**:
+- **خدمة رمز الصدأ**: تم إصلاح حالة الذعر الحرجة عند الطباعة إلى `stdout` في حالة منفصلة (إغلاق توجيه Windows). تم استبدال `println!` بـ `writeln!` غير المذعور.
 - **ProcessManagerService**:
-    - Implemented **auto-restart logic** for persistent services (token-service, model-service, etc.) if they crash with a non-zero exit code.
-    - Fixed `sendRequest` and `sendGetRequest` to properly use the **timeout parameter** with axios to prevent hanging during service failures.
-- **Authentication Zombie Token Cleanup**:
-    - Fixed an issue where the background `token-service` would continue refreshing "zombie" tokens (old tokens no longer in the Electron database).
-    - `TokenService` now automatically unregisters any monitored tokens found during sync that are not present in the app's database.
-    - Fixed `AuthService.unlinkAllForProvider` to correctly emit unlinking events, ensuring background service cleanup during mass logouts.
-- **Service Stability**: Rebuilt all native binaries to include the Rust stability fix.
-**Files Modified**:
-- `src/services/token-service/src/main.rs`: Replaced panicking `println!` with robust logging.
-- `src/main/services/system/process-manager.service.ts`: Added auto-restart and timeout implementation.
-- `resources/bin/*.exe`: Updated binaries via a clean rebuild.
+- تم تنفيذ **منطق إعادة التشغيل التلقائي** للخدمات المستمرة (خدمة الرمز المميز، خدمة النموذج، وما إلى ذلك) في حالة تعطلها برمز خروج غير صفري.
+- تم إصلاح `sendRequest` و`sendGetRequest` لاستخدام **معلمة المهلة** بشكل صحيح مع المحاور لمنع التعليق أثناء فشل الخدمة.
+- **تنظيف رمز الزومبي للمصادقة**:
+- تم إصلاح مشكلة استمرار الخلفية `token-service` في تحديث الرموز المميزة "الزومبي" (لم تعد الرموز القديمة موجودة في قاعدة بيانات Electron).
+- `TokenService` يقوم الآن تلقائيًا بإلغاء تسجيل أي رموز مميزة يتم مراقبتها أثناء المزامنة وغير موجودة في قاعدة بيانات التطبيق.
+- تم إصلاح `AuthService.unlinkAllForProvider` لإصدار أحداث إلغاء الارتباط بشكل صحيح، مما يضمن تنظيف الخدمة في الخلفية أثناء عمليات تسجيل الخروج الجماعي.
+- **استقرار الخدمة**: إعادة بناء جميع الثنائيات الأصلية لتشمل إصلاح استقرار Rust.
+**الملفات المعدلة**:
+- `src/services/token-service/src/main.rs`: تم استبدال `println!` المذعور بتسجيل قوي.
+- `src/main/services/system/process-manager.service.ts`: تمت إضافة إعادة التشغيل التلقائي وتنفيذ المهلة.
+- `resources/bin/*.exe`: تحديث الثنائيات عبر إعادة البناء النظيفة.
 
-### Token Usage Tracking & Account Identification
+### تتبع استخدام الرمز المميز وتحديد الحساب
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Token Usage Tracking & Account Identification introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: قدم تتبع استخدام الرمز المميز وتحديد الحساب صيانة منسقة وتحسينات للجودة عبر الوحدات ذات الصلة.
 
-**Status**: Completed (Phase 1 & 3)
-**New Features**:
-- **Token Usage Database Layer**: Added comprehensive token usage tracking infrastructure including migration #17 with `token_usage` table, `addTokenUsage()` and `getTokenUsageStats()` methods in DatabaseService.
-- **Token Statistics API**: New IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) for frontend access to token usage statistics with aggregation by provider, model, and timeline.
-- **Account Email Visibility**: Updated `AccountRow.tsx` to always display email address prominently for clear account identification.
-**Technical Changes**:
-- `src/main/services/data/migrations.ts`: Added migration #17 with `token_usage` table schema.
-- `src/main/services/data/database.service.ts`: Added `addTokenUsage()`, `getTokenUsageStats()`, and `getPeriodMs()` methods.
-- `src/main/ipc/db.ts`: Added `db:getTokenStats` and `db:addTokenUsage` IPC handlers.
-- `src/main/preload.ts`: Added token stats methods to preload bridge and type definitions.
-- `src/renderer/electron.d.ts`: Added `getTokenStats` and `addTokenUsage` type definitions.
-- `src/renderer/web-bridge.ts`: Added mock implementations for web development.
-- `src/renderer/features/settings/components/accounts/AccountRow.tsx`: Email now always displayed.
-**Files Modified**:
+**الحالة**: مكتمل (المرحلة 1 و3)
+**ميزات جديدة**:
+- **طبقة قاعدة بيانات استخدام الرمز المميز**: تمت إضافة بنية أساسية شاملة لتتبع استخدام الرمز المميز بما في ذلك الترحيل رقم 17 مع جدول `token_usage` وطرق `addTokenUsage()` و`getTokenUsageStats()` في DatabaseService.
+- ** إحصائيات الرمز المميز API**: IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) الجديد للوصول إلى الواجهة الأمامية لإحصائيات استخدام الرمز المميز مع التجميع حسب الموفر والطراز والمخطط الزمني.
+- **رؤية البريد الإلكتروني للحساب**: تم تحديث `AccountRow.tsx` لعرض عنوان البريد الإلكتروني دائمًا بشكل بارز لتحديد الحساب بشكل واضح.
+** التغييرات الفنية **:
+- `src/main/services/data/migrations.ts`: تمت إضافة الترحيل رقم 17 مع مخطط الجدول `token_usage`.
+- `src/main/services/data/database.service.ts`: تمت إضافة طرق `addTokenUsage()` و`getTokenUsageStats()` و`getPeriodMs()`.
+- `src/main/ipc/db.ts`: تمت إضافة `db:getTokenStats` و`db:addTokenUsage` IPC handlers.
+- `src/main/preload.ts`: تمت إضافة طرق إحصائيات الرمز المميز للتحميل المسبق للجسر وتعريفات النوع.
+- `src/renderer/electron.d.ts`: تمت إضافة تعريفات النوع `getTokenStats` و`addTokenUsage`.
+- `src/renderer/web-bridge.ts`: تمت إضافة تطبيقات وهمية لتطوير الويب.
+- `src/renderer/features/settings/components/accounts/AccountRow.tsx`: يتم الآن عرض البريد الإلكتروني دائمًا.
+**الملفات المعدلة**:
 - `src/main/services/data/migrations.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/ipc/db.ts`
@@ -2736,615 +2805,615 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 
 ## [2026-01-21]
 
-### Bug Fixes
+### إصلاحات الأخطاء
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Bug Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: أدت إصلاحات الأخطاء إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتعزيز المسارات الحرجة.
 
-- **PromptTemplatesService**: Fixed `TS5076` error where `||` and `??` operations were mixed without parentheses in the `search` method. Improved logic to ensure boolean results for the search filter.
-- **DI Container**: Updated `AuthService` registration to include `EventBusService` dependency.
-**Files Modified**:
-- `src/services/token-service/src/main.rs`: Added `UnregisterRequest` struct and `handle_unregister` handler.
-- `src/shared/types/events.ts`: Added `account:unlinked` event type.
-- `src/main/services/security/auth.service.ts`: Added EventBusService dependency and event emission.
-- `src/main/services/security/token.service.ts`: Added `unregisterToken()` method and event listener.
-- `src/main/startup/services.ts`: Updated AuthService registration.
-- `src/tests/main/services/security/auth.migration.test.ts`: Updated mock for new constructor signature.
-### Batch 10: MCP Plugin Architecture (2026-01-27)
-- **Refactoring**: Implemented modular MCP Plugin Architecture.
-- **Service Layer**: Created `McpPluginService` to manage tool lifecycles.
-- **Plugin System**: Added `IMcpPlugin` interface with `InternalMcpPlugin` and `ExternalMcpPlugin` implementations.
-- **Core Improvements**: Isolated internal tools from the main dispatcher, allowing for future migration to standalone binaries.
-- **Stability**: Fixed missing tool initialization in `main.ts`.
-### Batch 9: Database & Build Stabilization (2026-01-27)
-**Status**: Completed (20:15:00)
-**Core Architectural Changes**:
-- **Bidirectional Persistence** ✅:
-    - Implemented `POST /api/auth/accounts/:id` in `AuthAPIService.ts` to receive token updates from external services.
-    - Updated Go proxy's `HTTPAuthStore.Save` to push refreshed tokens back to Tandem's database immediately upon refresh.
-    - This ensures tokens refreshed in the background (Claude, Antigravity, Codex) are persisted without requiring UI interaction.
-- **Decommissioned File-based Sync** ✅:
-    - Entirely removed `syncAuthFiles()` logic that wrote sensitive tokens to the disk.
-    - Proxy now pulls tokens on-demand from `AuthAPIService` and pushes updates back via HTTP.
-    - Improved security by ensuring zero plain-text/loose JSON credentials reside in the `auth/` directory.
-**Build & Stability Fixes**:
-- **Renderer UI** ✅:
-    - Fixed polymorphic ref type mismatch in `AnimatedCard.tsx` (TS2322).
-    - Implemented a robust callback ref pattern to handle dynamic components (`div`, `button`, `article`) while satisfying strict intersection types.
-- **System Services** ✅:
-    - **EventBus**: Fixed `logDebug` signature mismatch in `event-bus.service.ts`.
-    - **Security**: Fixed `SecurityService` test constructor by properly injecting mocked `DataService`.
-    - **Themes**: Resolved type mismatch in `theme-store.util.ts` by providing a non-null schema to `safeJsonParse`.
-**Verification**:
-- Verified full build chain consistency: `tsc` → `lint` → `vite build` → `native build`.
-- Final build succeeded at 20:12:00.
+- **PromptTemplatesService**: تم إصلاح خطأ `TS5076` حيث تم خلط عمليتي `||` و`??` بدون أقواس في الأسلوب `search`. منطق محسّن لضمان الحصول على نتائج منطقية لمرشح البحث.
+- **حاوية DI**: تم تحديث تسجيل `AuthService` ليشمل تبعية `EventBusService`.
+**الملفات المعدلة**:
+- `src/services/token-service/src/main.rs`: تمت إضافة بنية `UnregisterRequest` و`handle_unregister` handler.
+- `src/shared/types/events.ts`: تمت إضافة نوع الحدث `account:unlinked`.
+- `src/main/services/security/auth.service.ts`: تمت إضافة تبعية EventBusService وانبعاث الحدث.
+- `src/main/services/security/token.service.ts`: تمت إضافة طريقة `unregisterToken()` ومستمع الأحداث.
+- `src/main/startup/services.ts`: تم تحديث تسجيل AuthService.
+- `src/tests/main/services/security/auth.migration.test.ts`: نموذج محدث لتوقيع المنشئ الجديد.
+### الدفعة 10: بنية البرنامج الإضافي لـ MCP (27/01/2026)
+- ** إعادة البناء **: تم تنفيذ بنية المكونات الإضافية MCP المعيارية.
+- **طبقة الخدمة**: تم إنشاء `McpPluginService` لإدارة دورات حياة الأداة.
+- **نظام البرنامج المساعد**: تمت إضافة واجهة `IMcpPlugin` مع تطبيقات `InternalMcpPlugin` و`ExternalMcpPlugin`.
+- **التحسينات الأساسية**: أدوات داخلية معزولة عن المرسل الرئيسي، مما يسمح بالانتقال في المستقبل إلى الثنائيات المستقلة.
+- **الاستقرار**: تم إصلاح تهيئة الأداة المفقودة في `main.ts`.
+### الدفعة 9: قاعدة البيانات وبناء الاستقرار (2026-01-27)
+**الحالة**: مكتمل (20:15:00)
+** التغييرات المعمارية الأساسية **:
+- **الثبات ثنائي الاتجاه** ✅:
+- تم تنفيذ `POST /api/auth/accounts/:id` في `AuthAPIService.ts` لتلقي تحديثات الرمز المميز من الخدمات الخارجية.
+- تم تحديث `HTTPAuthStore.Save` الخاص بوكيل Go لدفع الرموز المميزة المحدثة مرة أخرى إلى قاعدة بيانات Tandem فور التحديث.
+- يضمن ذلك استمرار تحديث الرموز المميزة في الخلفية (Claude، وAntigravity، وCodex) دون الحاجة إلى تفاعل UI.
+- **المزامنة المستندة إلى الملفات التي تم إيقاف تشغيلها** ✅:
+- تمت إزالة منطق `syncAuthFiles()` الذي كتب الرموز المميزة الحساسة على القرص بالكامل.
+- يسحب الوكيل الآن الرموز المميزة عند الطلب من `AuthAPIService` ويدفع التحديثات مرة أخرى عبر HTTP.
+- تحسين الأمان من خلال ضمان عدم وجود أي نص عادي/بيانات اعتماد JSON فضفاضة في الدليل `auth/`.
+**إصلاحات البناء والاستقرار**:
+- **العارض UI** ✅:
+- تم إصلاح عدم تطابق نوع المرجع متعدد الأشكال في `AnimatedCard.tsx` (TS2322).
+- تم تنفيذ نمط مرجع رد اتصال قوي للتعامل مع المكونات الديناميكية (`div`، `button`، `article`) مع تلبية أنواع التقاطع الصارمة.
+- **خدمات النظام** ✅:
+- **EventBus**: تم إصلاح عدم تطابق توقيع `logDebug` في `event-bus.service.ts`.
+- **الأمان**: تم إصلاح مُنشئ اختبار `SecurityService` عن طريق حقن `DataService` المستهزئ بشكل صحيح.
+- **الموضوعات**: تم حل مشكلة عدم تطابق النوع في `theme-store.util.ts` من خلال توفير مخطط غير فارغ لـ `safeJsonParse`.
+**تَحَقّق**:
+- تم التحقق من الاتساق الكامل لسلسلة البناء: `tsc` → `lint` → `vite build` → `native build`.
+- تم البناء النهائي الساعة 20:12:00.
 
-### ESLint Warning Fixes - Session 2
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: ESLint Warning Fixes - Session 2 strengthened reliability and safety by addressing known issues and hardening critical paths.
-
-**Status**: Fixed 113 warnings (1044 → 931)
-**Fixes Applied**:
-- **Nullish Coalescing** (`prefer-nullish-coalescing`): 83 fixes
-    - Converted `||` to `??` across IPC handlers, services, and renderer components
-    - Files: `ipc/chat.ts`, `ipc/git.ts`, `ipc/ollama.ts`, `ipc/process.ts`, `ipc/logging.ts`
-    - Services: `mcp/dispatcher.ts`, `mcp/registry.ts`, repositories
-    - Renderer: `ChatContext.tsx`, `SettingsContext.tsx`, feature components
-- **Explicit Any Types** (`no-explicit-any`): 12 fixes
-    - `event-bus.service.ts`: Changed `any[]` to `unknown[]` for event args
-    - `theme-store.util.ts`: Added proper theme config types
-    - `App.tsx`: Fixed view parameter to use proper union type
-    - `AnimatedCard.tsx`: Added proper motion component types
-    - `ChatContext.tsx`: Typed event handlers properly
-    - `Terminal.tsx`: Used type assertions for xterm internal properties
-- **Unnecessary Conditions** (`no-unnecessary-condition`): 8 fixes
-    - Removed unnecessary nullish coalescing where types guaranteed values
-    - Fixed `ipc/screenshot.ts`: Added undefined check with proper type assertion
-    - Fixed `logging/logger.ts`: Removed dead else branch
-- **Misused Promises** (`no-misused-promises`): 5 fixes
-    - `ipc/settings.ts`: Wrapped async `updateOllamaConnection()` with `void Promise.resolve().catch()`
-    - Various IPC handlers: Added proper void handling
-- **Unused Variables**: 5 fixes
-    - Prefixed unused parameters with underscore (`_processManager`, `_event`)
-    - Removed unused imports (`os` from proxy-process.service.ts)
-**Remaining Warnings (931)**:
-- `no-unnecessary-condition`: 402
-- `complexity`: 238 (requires function refactoring)
-- `prefer-nullish-coalescing`: 218 (complex patterns)
-- `no-misused-promises`: 88
-- `max-lines-per-function`: 42
-- `max-depth`: 18
-- `max-params`: 9
-
-### Fix Token Refresh for Unlinked Accounts
+### إصلاحات تحذير ESLint - الجلسة 2
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Fix Token Refresh for Unlinked Accounts strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: إصلاحات تحذير ESLint - عززت الجلسة الثانية الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتقوية المسارات الحرجة.
 
-**Status**: Completed (20:30:00)
-**Bug Fixed**:
-- When a Claude/Antigravity/Codex account was unlinked (logout), the Rust `token-service` continued attempting to refresh the old account's tokens, causing "invalid_grant" errors.
-**Changes**:
-- **Rust token-service**: Added `/unregister` endpoint to remove tokens from the background refresh queue when accounts are unlinked.
-- **TypeScript AuthService**: Now emits `account:unlinked` event when an account is removed.
-- **TypeScript TokenService**: Listens for `account:unlinked` events and calls `/unregister` on the Rust token-service to stop refreshing deleted accounts.
-- **Event System**: Added new `account:unlinked` event type to `SystemEvents` interface.
+**الحالة**: تم إصلاح 113 تحذيرًا (1044 → 931)
+**الإصلاحات المطبقة**:
+- **الدمج الفارغ** (`prefer-nullish-coalescing`): 83 إصلاحًا
+- تم تحويل `||` إلى `??` عبر IPC handlers والخدمات ومكونات العارض
+- الملفات: `ipc/chat.ts`، `ipc/git.ts`، `ipc/ollama.ts`، `ipc/process.ts`، `ipc/logging.ts`
+- الخدمات: `mcp/dispatcher.ts`، `mcp/registry.ts`، المستودعات
+- العارض: `ChatContext.tsx`، `SettingsContext.tsx`، مكونات الميزة
+- **أي أنواع صريحة** (`no-explicit-any`): 12 إصلاحًا
+- `event-bus.service.ts`: تم تغيير `any[]` إلى `unknown[]` لوسيطات الحدث
+- `theme-store.util.ts`: تمت إضافة أنواع تكوين السمات المناسبة
+- `App.tsx`: تم إصلاح معلمة العرض لاستخدام نوع الاتحاد المناسب
+- `AnimatedCard.tsx`: تمت إضافة أنواع مكونات الحركة المناسبة
+- `ChatContext.tsx`: الحدث المكتوب handlers بشكل صحيح
+- `Terminal.tsx`: تأكيدات النوع المستخدمة لخصائص xterm الداخلية
+- **شروط غير ضرورية** (`no-unnecessary-condition`): 8 إصلاحات
+- تمت إزالة الاندماج الفارغ غير الضروري حيث تضمن الأنواع القيم
+- تم إصلاح `ipc/screenshot.ts`: تمت إضافة فحص غير محدد مع تأكيد النوع المناسب
+- تم إصلاح `logging/logger.ts`: تمت إزالة الميت الآخر branch
+- **الوعود التي أسيء استخدامها** (`no-misused-promises`): 5 إصلاحات
+- `ipc/settings.ts`: ملفوف غير متزامن `updateOllamaConnection()` مع `void Promise.resolve().catch()`
+- IPC handlers متنوع: تمت إضافة معالجة مناسبة للفراغ
+- **المتغيرات غير المستخدمة**: 5 إصلاحات
+- المعلمات غير المستخدمة مسبوقة بشرطة سفلية (`_processManager`، `_event`)
+- إزالة الواردات غير المستخدمة (`os` من proxy-process.service.ts)
+** التحذيرات المتبقية (931) **:
+- ``لا يوجد شرط غير ضروري``: 402
+- `complexity`: 238 (يتطلب إعادة هيكلة الوظيفة)
+- `prefer-nullish-coalescing`: 218 (أنماط معقدة)
+- ``عدم إساءة استخدام الوعود``: 88
+- `الحد الأقصى للخطوط لكل وظيفة`: 42
+- `أقصى عمق`: 18
+- `الحد الأقصى للمعاملات`: 9
+
+### إصلاح تحديث الرمز المميز للحسابات غير المرتبطة
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: أدى إصلاح تحديث الرمز المميز للحسابات غير المرتبطة إلى تعزيز الموثوقية والأمان من خلال معالجة المشكلات المعروفة وتعزيز المسارات المهمة.
+
+**الحالة**: مكتمل (20:30:00)
+** علة ثابتة **:
+- عندما تم إلغاء ربط حساب Claude/Antigravity/Codex (تسجيل الخروج)، استمر Rust `token-service` في محاولة تحديث الرموز المميزة للحساب القديم، مما تسبب في حدوث أخطاء "invalid_grant".
+**التغييرات**:
+- **خدمة رمز الصدأ**: تمت إضافة نقطة نهاية `/unregister` لإزالة الرموز المميزة من قائمة انتظار تحديث الخلفية عند إلغاء ربط الحسابات.
+- **TypeScript AuthService**: يُصدر الآن حدث `account:unlinked` عند إزالة الحساب.
+- **TypeScript TokenService**: يستمع إلى أحداث `account:unlinked` ويستدعي `/unregister` على خدمة الرمز المميز Rust لإيقاف تحديث الحسابات المحذوفة.
+- **نظام الأحداث**: تمت إضافة نوع حدث `account:unlinked` جديد إلى واجهة `SystemEvents`.
 
 ## [2026-01-19]
 
-### Codebase Audit & Security Review
+### تدقيق قاعدة التعليمات البرمجية ومراجعة الأمان
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Codebase Audit & Security Review delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: قدمت مراجعة Codebase & Security Review عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Audit Report Created**: Generated `docs/AUDIT_REPORT_2026_01_19.md` covering technical debt, type safety, and security.
-- **Security Verification**: Confirmed safety of `dangerouslySetInnerHTML` usage in React components (correctly sanitized).
-- **Compliance Check**: Verified adherence to `AI_RULES.md` (no forbidden patterns found).
+- **تم إنشاء تقرير التدقيق**: تم إنشاء `docs/AUDIT_REPORT_2026_01_19.md` يغطي الديون الفنية وسلامة النوع والأمان.
+- **التحقق الأمني**: تم التأكد من سلامة استخدام `dangerouslySetInnerHTML` في مكونات React (تم تعقيمها بشكل صحيح).
+- **فحص الامتثال**: تم التحقق من الالتزام بـ `AI_RULES.md` (لم يتم العثور على أنماط محظورة).
 
-### Critical Security & Architecture Improvements
+### تحسينات هامة في مجال الأمن والهندسة المعمارية
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Critical Security & Architecture Improvements strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: أدت التحسينات الهامة في مجال الأمن والهندسة المعمارية إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتعزيز المسارات الحرجة.
 
-- **Security Enhancements** ✅:
-    - **SSH Path Traversal Protection**: Added `validateRemotePath()` method to `SSHService` to prevent path traversal attacks across 9 file operation methods (listDirectory, readFile, writeFile, deleteFile, deleteDirectory, createDirectory, rename, uploadFile, downloadFile). Paths are now validated against allowed base directories.
-    - **Safe JSON Parsing**: Added `safeJsonParse<T>()` utility to `sanitize.util.ts` with proper error handling and default fallback values.
-    - **Database Service**: Applied safe JSON parsing to 6 instances using existing `parseJsonField()` helper (prompts, templates, audit logs, auth tokens).
-    - **External Services - Safe JSON Parsing Applied**:
-        - `ollama.service.ts`: 5 instances (API responses)
-        - `memory.service.ts`: 4 instances (LLM response parsing)
-        - `agent-council.service.ts`: 3 instances (JSON extraction from LLM output)
-        - `llama.service.ts`: 3 instances (streaming data parsing)
-        - `proxy.service.ts`: 5 instances (HTTP response parsing)
-        - `project.service.ts`: 3 instances (package.json parsing)
-    - **Hardcoded Secrets Audit**: Verified no critical secrets in codebase (OAuth Client IDs are public and acceptable).
-- **Architecture Standardization** ✅:
-    - **Service Naming**: Renamed files to follow `.service.ts` convention:
+- **تحسينات الأمان** ✅:
+- **حماية اجتياز مسار SSH**: تمت إضافة طريقة `validateRemotePath()` إلى `SSHService` لمنع هجمات اجتياز المسار عبر 9 طرق لتشغيل الملفات (listDirectory، readFile، writeFile،deleteFile،deleteDirectory، createDirectory،rename، uploadFile، downloadFile). يتم الآن التحقق من صحة المسارات مقابل الدلائل الأساسية المسموح بها.
+- **التحليل الآمن JSON**: تمت إضافة الأداة المساعدة `safeJsonParse<T>()` إلى `sanitize.util.ts` مع معالجة الأخطاء بشكل صحيح وقيم fallback الافتراضية.
+- **خدمة قاعدة البيانات**: تطبيق التحليل الآمن JSON على 6 مثيلات باستخدام مساعد `parseJsonField()` الموجود (المطالبات والقوالب وسجلات التدقيق ورموز المصادقة المميزة).
+- **الخدمات الخارجية - تم تطبيق التحليل الآمن JSON**:
+- `ollama.service.ts`: 5 حالات (API ردود)
+- `memory.service.ts`: 4 حالات (تحليل الاستجابة LLM)
+- `agent-council.service.ts`: 3 حالات (استخراج JSON من إخراج LLM)
+- `llama.service.ts`: 3 حالات (تحليل تدفق البيانات)
+- `proxy.service.ts`: 5 حالات (تحليل استجابة HTTP)
+- `project.service.ts`: 3 مثيلات (تحليل package.json)
+- **تدقيق الأسرار المشفرة**: تم التحقق من عدم وجود أسرار مهمة في قاعدة التعليمات البرمجية (معرفات عميل OAuth عامة ومقبولة).
+- **توحيد الهندسة المعمارية** ✅:
+- **تسمية الخدمة**: تمت إعادة تسمية الملفات لتتبع اصطلاح `.service.ts`:
         - `chat-queue.manager.ts` → `chat-queue.service.ts`
         - `migration-manager.ts` → `db-migration.service.ts`
-    - Updated all imports in `chat.ts`, `migrations.ts`, and `database.service.ts`.
-- **Type Safety Improvements** ✅:
-    - Removed `any` types from 9 instances across:
-        - `llm.service.ts`: Replaced `any` with `unknown` in parseOpenCodeResponse
-        - `quota.service.ts`: Added proper types for Claude usage formatting and Codex usage
-        - `health-check.service.ts`: Changed event listener args from `any[]` to `unknown[]`
-        - `ollama-health.service.ts`: Changed event emitter args from `any[]` to `unknown[]`
-        - `shared/types/events.ts`: Changed config value type from `any` to `JsonValue`
-**Total Files Modified**: 13 services + 2 TODO docs + 1 CHANGELOG
-**Lines of Code Changed**: ~150+ (security-critical fixes)
+- تم تحديث جميع الواردات في `chat.ts`، و`migrations.ts`، و`database.service.ts`.
+- **تحسينات أمان النوع** ✅:
+- تمت إزالة أنواع `any` من 9 حالات عبر:
+- `llm.service.ts`: تم استبدال `any` بـ `unknown` في التحليل التحليليOpenCodeResponse
+- `quota.service.ts`: تمت إضافة الأنواع المناسبة لتنسيق استخدام Claude واستخدام Codex
+- `health-check.service.ts`: تم تغيير وسائط مستمع الحدث من `any[]` إلى `unknown[]`
+- `ollama-health.service.ts`: تم تغيير وسائط باعث الحدث من `any[]` إلى `unknown[]`
+- `shared/types/events.ts`: تم تغيير نوع قيمة التكوين من `any` إلى `JsonValue`
+** إجمالي الملفات المعدلة **: 13 خدمة + 2 مستند TODO + 1 سجل التغيير
+**تم تغيير أسطر التعليمات البرمجية**: ~150+ (إصلاحات أمنية حرجة)
 
-### ESLint Warning Fixes - Major Progress
+### إصلاحات تحذير ESLint - تقدم كبير
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: ESLint Warning Fixes - Major Progress strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: إصلاحات تحذير ESLint - أدى التقدم الكبير إلى تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتقوية المسارات الحرجة.
 
-**Status**: Fixed 351 warnings per AI_RULES Rule 10 (25% reduction: 1408 → 1057)
-**Phase 1 - Automated Fixes (200 warnings)**:
-- ✅ **Nullish Coalescing**: Replaced 191 instances of `||` with `??` operator (64 files)
-- ✅ **Console Statements**: Converted 42 renderer console.log/info/debug to console.warn (14 files)
-- ✅ **Alert Calls**: Replaced 17 alert() with console.warn() in renderer UI (5 files)
-- ✅ **Non-Null Assertions**: Removed 18 instances of `!` operators (15 files)
-**Phase 2 - Manual Fixes via Task Agents (151 warnings)**:
-- ✅ **Unused Variables** (31 fixed): Removed unused imports (uuidv4, fsPromises, app, useEffect, etc.), prefixed unused parameters with underscore
-- ✅ **Explicit Any Types** (53 fixed): Replaced all `any` with proper types (`unknown`, `Record<string, unknown>`, `JsonValue`, proper interfaces)
-- ✅ **Floating Promises** (81 fixed): Added `void` prefix for fire-and-forget, `await` for critical paths, `.catch()` for error handling
-- ✅ **Non-Null Assertions** (23 fixed): Replaced `!` with proper null checks, optional chaining, type guards
-- ✅ **Console/Alert** (25 fixed): Fixed remaining console statements and replaced alert/confirm/prompt with console.warn
-**Automation Scripts Created**:
-- `scripts/fix-easy-eslint.ps1` - Nullish coalescing operator fixes
-- `scripts/fix-eslint-warnings.ps1` - Console.log to appLogger.info (main process)
-- `scripts/fix-renderer-console.ps1` - Renderer console statement fixes
-- `scripts/fix-non-null-assertion.ps1` - Non-null assertion removal
-- `scripts/fix-floating-promises.ps1` - Add void operator
-- `scripts/fix-manual-warnings.ps1` - Manual warning pattern detection
-**Remaining Warnings (1057)**:
-- 428 no-unnecessary-condition (type system improvements, may require tsconfig changes)
-- 298 prefer-nullish-coalescing (complex patterns requiring manual review)
-- 89 no-misused-promises (async/await context issues)
-- 4 no-explicit-any (edge cases)
-- 3 prefer-optional-chain (minor)
-**Total Files Modified**: 150+ files across automated and manual fixes
-**Total Changes**: 351 warnings eliminated
+**الحالة**: تم إصلاح 351 تحذيرًا لكل AI_RULES القاعدة 10 (تخفيض بنسبة 25%: 1408 → 1057)
+**المرحلة الأولى - الإصلاحات التلقائية (200 تحذير)**:
+- ✅ **Nullish Coalescing**: تم استبدال 191 مثيلًا لـ `||` بعامل التشغيل `??` (64 ملفًا)
+- ✅ **بيانات وحدة التحكم**: تم تحويل 42 جهاز عرض من console.log/info/debug إلى console.warn (14 ملفًا)
+- ✅ **مكالمات التنبيه**: تم استبدال 17 تنبيه() بـ console.warn() في العارض UI (5 ملفات)
+- ✅ **التأكيدات غير الفارغة**: تمت إزالة 18 مثيلًا لعوامل تشغيل `!` (15 ملفًا)
+**المرحلة الثانية - الإصلاحات اليدوية عبر وكلاء المهام (151 تحذيرًا)**:
+- ✅ **المتغيرات غير المستخدمة** (31 ثابتًا): تمت إزالة الواردات غير المستخدمة (uuidv4، fsPromises، app، useEffect، وما إلى ذلك)، والمعلمات غير المستخدمة المسبوقة بشرطة سفلية
+- ✅ **توضيح أي أنواع** (53 ثابتًا): تم استبدال جميع `any` بالأنواع المناسبة (`unknown`، `Record<string, unknown>`، `JsonValue`، الواجهات المناسبة)
+- ✅ **الوعود العائمة** (81 ثابت): تمت إضافة البادئة `void` للتنشيط والنسيان، و`await` للمسارات الحرجة، و`.catch()` لمعالجة الأخطاء
+- ✅ **التأكيدات غير الفارغة** (23 ثابتة): تم استبدال `!` بفحوصات فارغة مناسبة، وتسلسل اختياري، وحماية الكتابة
+- ✅ **وحدة التحكم/التنبيه** (25 ثابتًا): تم إصلاح بيانات وحدة التحكم المتبقية واستبدال التنبيه/التأكيد/المطالبة بـ console.warn
+**تم إنشاء البرامج النصية للأتمتة**:
+- `scripts/fix-easy-eslint.ps1` - إصلاحات عامل الدمج الفارغ
+- `scripts/fix-eslint-warnings.ps1` - Console.log إلى appLogger.info (العملية الرئيسية)
+- `scripts/fix-renderer-console.ps1` - تم إصلاح بيان وحدة تحكم العارض
+- `scripts/fix-non-null-assertion.ps1` - إزالة التأكيد غير الفارغ
+- `scripts/fix-floating-promises.ps1` - إضافة عامل تشغيل فارغ
+- `scripts/fix-manual-warnings.ps1` - الكشف اليدوي عن نمط التحذير
+**التحذيرات المتبقية (1057)**:
+- 428 لا يوجد شرط غير ضروري (نوع تحسينات النظام، قد تتطلب تغييرات tsconfig)
+- 298 تفضيل الدمج الفارغ (الأنماط المعقدة التي تتطلب مراجعة يدوية)
+- 89 وعودًا بعدم إساءة الاستخدام (مشكلات عدم المزامنة/انتظار السياق)
+- 4 حالات غير صريحة (حالات الحافة)
+- 3 يفضل اختياري-سلسلة (قاصر)
+**إجمالي الملفات المعدلة**: أكثر من 150 ملفًا عبر الإصلاحات الآلية واليدوية
+**إجمالي التغييرات**: تمت إزالة 351 تحذيرًا
 
-### Phase 18 - Internationalization (Completed)
+### المرحلة 18 - التدويل (مكتمل)
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Phase 18 - Internationalization (Completed) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 18 - التدويل (مكتمل) قدم عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **UI Components**:
-    - Replaced hardcoded strings with `t()` calls in `MCPStore.tsx`, `ModelComparison.tsx`, `ProjectDashboard.tsx`, `AgentDashboard.tsx`, `AgentCouncil.tsx`, and `ToolDisplay.tsx`.
-    - Resolved key collisions (e.g., `gitStatus`) and updated `ToolDisplay` to properly handle nested translations.
-- **Translations**:
-    - Updated `en.ts` and `tr.ts` with comprehensive coverage for new UI sections.
-    - Verified strict type safety for all new translation keys.
+- **UI المكونات**:
+- تم استبدال السلاسل المشفرة باستدعاءات `t()` في `MCPStore.tsx`، و`ModelComparison.tsx`، و`ProjectDashboard.tsx`، و`AgentDashboard.tsx`، و`AgentCouncil.tsx`، و`ToolDisplay.tsx`.
+- تم حل تصادمات المفاتيح (على سبيل المثال، `gitStatus`) وتحديث `ToolDisplay` للتعامل مع الترجمات المتداخلة بشكل صحيح.
+- **الترجمات**:
+- تم تحديث `en.ts` و`tr.ts` بتغطية شاملة لأقسام UI الجديدة.
+- التحقق من سلامة النوع الصارمة لجميع مفاتيح الترجمة الجديدة.
 
 ## [2026-01-18]
 
-### Claude Authentication & Service Reliability
+### مصادقة كلود وموثوقية الخدمة
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Claude Authentication & Service Reliability improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: قامت مصادقة Claude وموثوقية الخدمة بتحسين أداء runtime واستقرارها واتساقها التشغيلي عبر مسارات العمل الرئيسية.
 
-- **Claude Authentication**:
-    - Implemented **headless session capture** for Claude (claude.ai) using Electron cookies, moving away from internal browser windows.
-    - Added **manual sessionKey fallback** in the UI for cases where automatic capture fails.
-    - Updated `ProxyService` and `QuotaService` to handle `sessionToken` throughout the authentication lifecycle.
-- **Service Reliability**:
-    - Fixed `QuotaService` and `ProxyService` unit tests by ensuring all dependencies (`DataService`, `ProcessManagerService`, etc.) are correctly mocked and injected.
-    - Resolved TypeScript and ESLint errors in `ProxyService` and `LocalAuthServer` related to `any` types and redundant conditionals.
-    - Standardized `getCopilotQuota` and `getClaudeQuota` return types to handle multi-account structures.
-- **Type Safety**:
-    - Achieved cleaner type-check results by adding missing types to `@shared/types/quota`.
+- **مصادقة كلود**:
+- تم تنفيذ **التقاط جلسة بدون رأس** لـ Claude (clude.ai) باستخدام ملفات تعريف الارتباط Electron، والابتعاد عن نوافذ المتصفح الداخلية.
+- تمت إضافة **مفتاح الجلسة اليدوية fallback** في UI للحالات التي يفشل فيها الالتقاط التلقائي.
+- تم تحديث `ProxyService` و`QuotaService` للتعامل مع `sessionToken` طوال دورة حياة المصادقة.
+- **موثوقية الخدمة**:
+- تم إصلاح اختبارات الوحدات `QuotaService` و`ProxyService` من خلال ضمان الاستهزاء والحقن بشكل صحيح في جميع التبعيات (`DataService`، `ProcessManagerService`، وما إلى ذلك).
+- تم حل أخطاء TypeScript وESLint في `ProxyService` و`LocalAuthServer` المتعلقة بأنواع `any` والشروط المتكررة.
+- أنواع الإرجاع `getCopilotQuota` و`getClaudeQuota` الموحدة للتعامل مع الهياكل متعددة الحسابات.
+- **نوع الأمان**:
+- تم تحقيق نتائج أكثر نظافة للتحقق من النوع عن طريق إضافة الأنواع المفقودة إلى `@shared/types/quota`.
 
 ## [2026-01-17]
 
-### Antigravity Model Fetching Refinement
+### نموذج مضاد الجاذبية جلب الصقل
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Antigravity Model Fetching Refinement introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: قدم نموذج مكافحة الجاذبية تحسينات الصيانة المنسقة والجودة عبر الوحدات ذات الصلة.
 
-- **Antigravity Executor**:
-    - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.
-    - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.
-    - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application.
+- ** منفذ مكافحة الجاذبية **:
+- تم تحسين `FetchAntigravityModels` لاستخراج بيانات التعريف التفصيلية (`displayName`، `description`) من استجابة الاكتشاف API.
+- تم تحديث منطق الأسماء المستعارة للنموذج لضمان التعيين المتسق بين معرفات المنبع الأولية والتكوينات الثابتة لدعم التفكير وحدود الرمز المميز.
+- تمت محاذاة `gemini-3-pro-high` و`gemini-3-flash` مع الأسماء المستعارة للمعاينة الخاصة بهما لتمكين تطبيق التكوين الصحيح.
 
 ## [2026-01-16]
 
-### Phase 17 - Stability & Reliability
+### المرحلة 17 - الاستقرار والموثوقية
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 17 - Stability & Reliability delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 17 - قدم الاستقرار والموثوقية عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-- **Critical Fixes**:
-    - Fixed production crash ("Blank Page") by correcting `preload` and `index.html` path resolution in `src/main/main.ts`.
-    - Resolved React crash (circular dependency) by removing problematic `react-vendor` chunk in `vite.config.ts`.
-    - Fixed `SidebarItem` not registering clicks by propagating `data-testid` and other props correctly.
-- **Testing**:
-    - Achieved 100% E2E Test Pass Rate (11/11 tests).
-    - Refactored `chat.spec.ts` to use robust `toBeVisible` assertions.
-    - Added `data-testid` to Window Actions and critical UI flows.
+- **إصلاحات مهمة**:
+- تم إصلاح تعطل الإنتاج ("صفحة فارغة") عن طريق تصحيح `preload` و`index.html` دقة المسار في `src/main/main.ts`.
+- تم حل عطل React (التبعية الدائرية) عن طريق إزالة مقطع `react-vendor` الإشكالي في `vite.config.ts`.
+- تم إصلاح `SidebarItem` عدم تسجيل النقرات عن طريق نشر `data-testid` والدعائم الأخرى بشكل صحيح.
+- **الاختبار**:
+- تم تحقيق معدل اجتياز اختبار E2E بنسبة 100% (اختبارات 11/11).
+- تمت إعادة صياغة `chat.spec.ts` لاستخدام تأكيدات `toBeVisible` القوية.
+- تمت إضافة `data-testid` إلى إجراءات النافذة وتدفقات UI الهامة.
 
-### Phase 18 - Internationalization (Prioritized)
+### المرحلة 18 - التدويل (ذات الأولوية)
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 18 - Internationalization (Prioritized) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 18 - التدويل (ذات الأولوية) قدم عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Hardcoded String Fixes**:
-    - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).
-    - Replaced hardcoded placeholders in `SSHManager.tsx` and `NginxWizard.tsx`.
-    - Replaced hardcoded preset names and labels in `ParameterPresets.tsx` & `AdvancedTab.tsx`.
-    - Replaced hardcoded prompt management text in `PromptManagerModal.tsx`.
-    - Replaced hardcoded loader text in `CodeEditor.tsx`.
-- **Translations**:
-    - Added `ssh.nginx`, `ssh.presets`, `ssh.promptManager`, and `ssh.editor` keys to `en.ts` and `tr.ts`.
-    - Fixed hardcoded Turkish text in `AdvancedTab.tsx` presets.
+- **إصلاحات السلسلة المشفرة**:
+- تم استبدال السلاسل المشفرة في `ThemeStore.tsx` (الموضوعات والمرشحات).
+- تم استبدال العناصر النائبة ذات الترميز الثابت في `SSHManager.tsx` و`NginxWizard.tsx`.
+- تم استبدال الأسماء والتسميات المحددة مسبقًا والمشفرة في `ParameterPresets.tsx` و`AdvancedTab.tsx`.
+- تم استبدال نص إدارة المطالبة المضمن في `PromptManagerModal.tsx`.
+- تم استبدال نص المُحمل المضمن في `CodeEditor.tsx`.
+- **الترجمات**:
+- تمت إضافة مفاتيح `ssh.nginx` و`ssh.presets` و`ssh.promptManager` و`ssh.editor` إلى `en.ts` و`tr.ts`.
+- تم إصلاح النص التركي المشفر في الإعدادات المسبقة `AdvancedTab.tsx`.
 
-### Phase 19 - Technical Debt & Security (Current)
+### المرحلة 19 - الديون الفنية والضمان (الحالي)
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 19 - Technical Debt & Security (Current) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 19 - قدمت الديون الفنية والأمن (الحالي) عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Security**:
-    - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.
-    - Implemented robust command argument handling for Windows platforms.
-- **Refactoring**:
-    - **SSHManager**: Reduced complexity by extracting `SSHConnectionList`, `SSHTerminal`, and `AddConnectionModal` components and `useSSHConnections` hook.
-    - **WorkspaceToolbar**: Extracted `DashboardTabs`.
-    - **Settings**: Implemented `SettingsContext` and refactored `useSettingsLogic` into sub-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).
-- **Internationalization**:
-    - Completed hardcoded string replacements in `SSHManager`, `WorkspaceToolbar`, `ModelComparison`, and others.
-    - Fixed Turkish translation quality issues.
-    - Added Turkish translations for `modelExplorer`, `docker`, `onboarding`, and missing `workspace` keys.
-- **Type Safety**:
-    - Resolved `exactOptionalPropertyTypes` violations and `any` usage.
-    - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`.
+- **حماية**:
+- تم إصلاح ثغرة أمنية خطيرة في `dispatcher.ts` و`window.ts` من خلال فرض `shell: false`.
+- تم تنفيذ معالجة قوية لوسائط الأوامر لمنصات Windows.
+- **إعادة البناء**:
+- **SSHManager**: تقليل التعقيد عن طريق استخراج مكونات `SSHConnectionList` و`SSHTerminal` و`AddConnectionModal` وخطاف `useSSHConnections`.
+- **شريط أدوات مساحة العمل**: تم استخراج `DashboardTabs`.
+- **الإعدادات**: تم تنفيذ `SettingsContext` وإعادة هيكلة `useSettingsLogic` إلى خطافات فرعية (`useSettingsAuth`، `useSettingsStats`، `useSettingsPersonas`).
+- **التدويل**:
+- إكمال عمليات استبدال السلسلة المشفرة في `SSHManager`، `WorkspaceToolbar`، `ModelComparison`، وغيرها.
+- إصلاح مشكلات جودة الترجمة التركية.
+- تمت إضافة ترجمات تركية لـ `modelExplorer`، `docker`، `onboarding`، ومفاتيح `workspace` المفقودة.
+- **نوع الأمان**:
+- تم حل انتهاكات `exactOptionalPropertyTypes` واستخدام `any`.
+- تم إصلاح الوعود غير المنتظرة في `dispatcher.ts` و`SSHManager.tsx`.
 
-### Phase 20 - Independent Microservices Architecture
+### المرحلة 20 - بنية الخدمات الصغيرة المستقلة
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 20 - Independent Microservices Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 20 - قدمت بنية الخدمات الصغيرة المستقلة عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Microservices Refactoring**:
-    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.
-    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\Tandem\services\{service}.port` for discovery.
-    - Services can run **completely independently** of the main Electron application.
+- **إعادة هيكلة الخدمات الصغيرة**:
+- إعادة هيكلة جميع خدمات Rust (`token-service`، `model-service`، `quota-service`، `memory-service`) من أنابيب stdin/stdout إلى **خوادم HTTP المستقلة**.
+- ترتبط كل خدمة الآن بـ **منفذ مؤقت** وتكتب منفذها إلى `%APPDATA%\Tandem\services\{service}.port` لاكتشافه.
+- يمكن تشغيل الخدمات ** بشكل مستقل تمامًا ** عن تطبيق Electron الرئيسي.
 - **ProcessManagerService**:
-    - Updated to use **HTTP requests** via axios instead of stdin pipes.
-    - Implemented **port discovery** mechanism - checks for already-running services before spawning new ones.
-    - Services are now started with `detached: true` to allow independent lifecycle.
-- **Windows Startup Integration**:
-    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.
-    - Services start automatically at Windows login, even before Tandem app is launched.
-    - Supports `-Status`, `-Uninstall` flags for management.
-- **Default Settings**:
-    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.
-    - Tandem now minimizes to **System Tray** by default instead of closing.
+- تم التحديث لاستخدام **طلبات HTTP** عبر axios بدلاً من أنابيب stdin.
+- تم تنفيذ آلية **اكتشاف المنفذ** - للتحقق من الخدمات قيد التشغيل بالفعل قبل إنشاء خدمات جديدة.
+- بدأت الخدمات الآن بـ `detached: true` للسماح بدورة حياة مستقلة.
+- **تكامل بدء تشغيل Windows**:
+- تم إنشاء `scripts/register-services.ps1` لتسجيل الخدمات باعتبارها **مهام مجدولة في Windows**.
+- تبدأ الخدمات تلقائيًا عند تسجيل الدخول إلى Windows، حتى قبل تشغيل تطبيق Tandem.
+- يدعم إشارات `-Status`، `-Uninstall` للإدارة.
+- **الإعدادات الافتراضية**:
+- تم تغيير الإعدادات الافتراضية: `startOnStartup: true`، `workAtBackground: true`.
+- يتم الآن تصغير Tandem إلى **System Tray** بشكل افتراضي بدلاً من الإغلاق.
 
 ## [2026-01-15]
 
-### Build Fixes & Type Safety
+### إصلاحات البناء ونوع الأمان
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Build Fixes & Type Safety strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: تعمل إصلاحات البناء وسلامة النوع على تعزيز الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتقوية المسارات الحرجة.
 
-- **SettingsService**: Converted all synchronous file operations (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) to async equivalents (`fs.promises`). Added `initialize()` lifecycle method for proper async loading.
-- **BackupService**: Already using async file operations - verified and confirmed no changes needed.
-- **Tests**: Updated `settings.service.test.ts` to use async patterns and mock `fs.promises` API.
-- **LlamaService**: Fixed missing `path.join` references causing build failures.
-- **HistoryImportService**: Fixed Date type errors - now correctly creates Date objects for `createdAt`/`updatedAt` fields.
-- **AgentCouncilService**: Fixed CouncilSession type mismatch by aligning imports with DatabaseService types.
-- **AgentService**: Added proper type annotations for database query results.
-- **DatabaseService**: Fixed multiple type errors including unused generics, `projectId` property, and query result typing.
-- **IPC/db.ts**: Fixed Chat type mismatch between shared types and database service.
-- **Cleanup**: Removed unused imports in `registry.ts` and `ipc.ts`.
-- **Types**: Aligned `CouncilSession` status types across shared and database definitions (added `planning`, `reviewing` states).
+- **SettingsService**: تحويل جميع عمليات الملفات المتزامنة (`fs.readFileSync`، `fs.writeFileSync`، `fs.existsSync`) إلى مكافئات غير متزامنة (`fs.promises`). تمت إضافة طريقة دورة الحياة `initialize()` للتحميل غير المتزامن المناسب.
+- **BackupService**: تستخدم بالفعل عمليات الملفات غير المتزامنة - تم التحقق منها وتأكيد عدم الحاجة إلى تغييرات.
+- **الاختبارات**: تم تحديث `settings.service.test.ts` لاستخدام الأنماط غير المتزامنة والمحاكاة `fs.promises` API.
+- **LlamaService**: تم إصلاح مراجع `path.join` المفقودة التي تسبب فشل البناء.
+- **HistoryImportService**: أخطاء في نوع التاريخ الثابت - يتم الآن إنشاء كائنات التاريخ بشكل صحيح لحقول `createdAt`/`updatedAt`.
+- **AgentCouncilService**: تم إصلاح عدم تطابق نوع CouncilSession عن طريق محاذاة الواردات مع أنواع DatabaseService.
+- **AgentService**: تمت إضافة التعليقات التوضيحية للنوع المناسب لنتائج استعلام قاعدة البيانات.
+- **DatabaseService**: تم إصلاح أخطاء الكتابة المتعددة بما في ذلك الأدوية العامة غير المستخدمة، وخاصية `projectId`، وكتابة نتائج الاستعلام.
+- **IPC/db.ts**: تم إصلاح عدم تطابق نوع الدردشة بين الأنواع المشتركة وخدمة قاعدة البيانات.
+- **تنظيف**: تمت إزالة الواردات غير المستخدمة في `registry.ts` و`ipc.ts`.
+- **الأنواع**: أنواع الحالة `CouncilSession` المحاذية عبر التعريفات المشتركة وتعريفات قاعدة البيانات (تمت إضافة حالات `planning` و`reviewing`).
 
-### Critical TODO Items Resolved
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Critical TODO Items Resolved introduced coordinated maintenance and quality improvements across the related modules.
-
-- **TypeScript**: Fixed 13 compilation errors across `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts`, and `audit-log.service.test.ts`.
-- **Logging**: Replaced ~25 `console.log`/`console.error` statements with `appLogger` in `main.ts`, `dispatcher.ts`, and `window.ts`.
-- **Types**: Added `idToken` and `email` fields to `AuthToken` interface.
-- **Async**: Fixed missing `await` on `getAllTokens()` calls in `main.ts` and `settings.service.ts`.
-- **Memory Leaks**: Verified all 8 services with `setInterval` have proper `cleanup()` methods.
-- **Shell Injection**: Strengthened command sanitization in `window.ts` (blocks: backticks, $(), braces, brackets, newlines).
-- **Security**: Removed hardcoded client secret fallbacks in `token.service.ts` and `quota.service.ts`. Added validation before usage.
-- **Logging**: Replaced all console.log/error/warn with appLogger in `token.service.ts` (20 instances) and `ssh.service.ts` (7 instances).
-- **Code Quality**: Fixed 22+ `||` to `??` nullish coalescing conversions in `token.service.ts` and `ssh.service.ts`. Fixed unused variables.
-
-### Database Migrations (Legacy JSON to PostgreSQL)
+### تم حل عناصر TODO الحرجة
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Database Migrations (Legacy JSON to PostgreSQL) improved data model consistency and migration reliability across affected services.
+- **Summary**: تم حل عناصر المهام الحرجة التي تم حلها، مما أدى إلى إجراء صيانة منسقة وتحسينات في الجودة عبر الوحدات ذات الصلة.
 
-- **AuthService**: Migrated from file-based JSON storage to `auth_tokens` table. Implemented secure token encryption/decryption in the database layer.
-- **TokenService**: Complete rewrite to remove synchronous file I/O dependencies. Now uses `AuthService` for token management and `JobSchedulerService` for refresh tasks.
-- **CopilotService**: Updated to support asynchronous token retrieval from `AuthService`, resolving startup race conditions.
-- **UsageTrackingService**: Migrated user activity tracking to `usage_events` table.
-- **PromptTemplatesService**: Migrated custom prompt templates to `prompt_templates` table.
-- **AuditLogService**: Migrated security audit logs to `audit_logs` table.
-- **JobSchedulerService**: Migrated job state persistence to `scheduler_state` table.
-- **Cleanup**: Removed legacy JSON file handling (reading/writing/encryption) from migrated services.
-- **Schema**: Added new tables: `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`.
+- **TypeScript**: تم إصلاح 13 خطأ في التجميع عبر `main.ts`، `settings.service.ts`، `auth.service.ts`، `database.service.ts`، و`audit-log.service.test.ts`.
+- **التسجيل**: تم استبدال ~25 `console.log`/`console.error` بعبارات `appLogger` في `main.ts`، و`dispatcher.ts`، و`window.ts`.
+- **الأنواع**: تمت إضافة الحقلين `idToken` و`email` إلى واجهة `AuthToken`.
+- **غير متزامن**: تم إصلاح `await` المفقود في مكالمات `getAllTokens()` في `main.ts` و`settings.service.ts`.
+- **تسربات الذاكرة**: تم التحقق من أن جميع الخدمات الثمانية التي تحتوي على `setInterval` تحتوي على أساليب `cleanup()` المناسبة.
+- **حقن Shell**: تعزيز تعقيم الأوامر في `window.ts` (الكتل: علامات الظهر، $()، الأقواس، الأقواس، الأسطر الجديدة).
+- **الأمان**: تمت إزالة العناصر الاحتياطية السرية للعميل في `token.service.ts` و`quota.service.ts`. وأضاف التحقق من الصحة قبل الاستخدام.
+- **التسجيل**: تم استبدال كل console.log/error/warn بـ appLogger في `token.service.ts` (20 حالة) و`ssh.service.ts` (7 حالات).
+- **جودة الكود**: تم إصلاح 22+ `||` إلى `??` إلغاء تحويلات الدمج في `token.service.ts` و`ssh.service.ts`. المتغيرات الثابتة غير المستخدمة.
 
-### Phase 10 - Full Database Migration
+### عمليات ترحيل قاعدة البيانات (من JSON القديم إلى PostgreSQL)
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: أدت عمليات ترحيل قاعدة البيانات (من JSON القديمة إلى PostgreSQL) إلى تحسين اتساق نموذج البيانات وموثوقية الترحيل عبر الخدمات المتأثرة.
+
+- **AuthService**: تم الترحيل من مخزن JSON المستند إلى الملفات إلى جدول `auth_tokens`. تم تنفيذ تشفير/فك تشفير الرمز المميز الآمن في طبقة قاعدة البيانات.
+- **TokenService**: أكمل عملية إعادة الكتابة لإزالة تبعيات الإدخال/الإخراج للملفات المتزامنة. يستخدم الآن `AuthService` لإدارة الرموز المميزة و`JobSchedulerService` لمهام التحديث.
+- **CopilotService**: تم التحديث لدعم استرداد الرمز المميز غير المتزامن من `AuthService`، وحل حالات سباق بدء التشغيل.
+- **UsageTrackingService**: تم ترحيل تتبع نشاط المستخدم إلى جدول `usage_events`.
+- **PromptTemplatesService**: تم ترحيل قوالب المطالبة المخصصة إلى جدول `prompt_templates`.
+- **AuditLogService**: تم ترحيل سجلات تدقيق الأمان إلى جدول `audit_logs`.
+- **JobSchedulerService**: تم ترحيل ثبات حالة المهمة إلى جدول `scheduler_state`.
+- **التنظيف**: تمت إزالة معالجة الملفات القديمة JSON (القراءة/الكتابة/التشفير) من الخدمات التي تم ترحيلها.
+- **المخطط**: تمت إضافة جداول جديدة: `auth_tokens`، `usage_events`، `prompt_templates`، `audit_logs`، `scheduler_state`.
+
+### المرحلة 10 - ترحيل قاعدة البيانات الكاملة
 
 - **Type**: docs
 - **Status**: unknown
-- **Summary**: Phase 10 - Full Database Migration delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 10 - قدمت عملية ترحيل قاعدة البيانات الكاملة عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Legacy Data Migration**:
-    - Implemented `handleChatMigration` and `handleMessageMigration` in `DatabaseService` to import legacy SQLite data into PGlite.
-    - Added `chatsPath` and `messagesPath` to `DatabaseService` constructor for migration path management.
-    - Verified end-to-end migration for `UsageTrackingService`, `PromptTemplatesService`, `AuditLogService`, and `JobSchedulerService`.
-- **Data Export**:
-    - Exported `chats` and `messages` tables from legacy `chats.db` SQLite to JSON using CLI tools.
-    - Moved exported files to `runtime/data/db/` for automatic pickup by migration logic.
-- **Documentation**:
-    - Updated `task.md` to reflect Phase 10 progress.
-    - Created `walkthrough.md` documenting the migration implementation.
+- **ترحيل البيانات القديمة**:
+- تم تنفيذ `handleChatMigration` و`handleMessageMigration` في `DatabaseService` لاستيراد بيانات SQLite القديمة إلى PGlite.
+- تمت إضافة `chatsPath` و`messagesPath` إلى مُنشئ `DatabaseService` لإدارة مسار الترحيل.
+- تم التحقق من الترحيل الشامل لـ `UsageTrackingService`، و`PromptTemplatesService`، و`AuditLogService`، و`JobSchedulerService`.
+- **تصدير البيانات**:
+- تم تصدير جداول `chats` و`messages` من `chats.db` SQLite القديم إلى JSON باستخدام أدوات CLI.
+- تم نقل الملفات المصدرة إلى `runtime/data/db/` للالتقاط التلقائي عن طريق منطق الترحيل.
+- **التوثيق**:
+- تم تحديث `task.md` ليعكس تقدم المرحلة العاشرة.
+- تم إنشاء `walkthrough.md` لتوثيق تنفيذ الترحيل.
 
-### Phase 11 - Test Coverage & Database Optimization
+### المرحلة 11 - تغطية الاختبار وتحسين قاعدة البيانات
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 11 - Test Coverage & Database Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 11 - قدمت تغطية الاختبار وتحسين قاعدة البيانات عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Test Coverage**:
-    - Added `JobSchedulerService` unit tests (7 tests) covering scheduling, recurring jobs, and cleanup.
-    - Enhanced `ModelRegistryService` unit tests (8 tests) with proper types and error handling coverage.
-- **Database Optimization**:
-    - Verified comprehensive indexes already in migration ID 7 for performance optimization.
-- **Type Safety**:
-    - Verified `stream-parser.util.ts` and `agent.service.ts` have no `any` types.
+- **تغطية الاختبار**:
+- تمت إضافة اختبارات الوحدة `JobSchedulerService` (7 اختبارات) تغطي الجدولة والمهام المتكررة والتنظيف.
+- اختبارات وحدة `ModelRegistryService` المحسنة (8 اختبارات) مع الأنواع المناسبة وتغطية معالجة الأخطاء.
+- **تحسين قاعدة البيانات**:
+- تم التحقق من الفهارس الشاملة الموجودة بالفعل في معرف الترحيل 7 لتحسين الأداء.
+- **نوع الأمان**:
+- تم التحقق من أن `stream-parser.util.ts` و`agent.service.ts` لا يحتويان على أنواع `any`.
 
-### Phase 12 - Code Quality & E2E Testing
+### المرحلة 12 - جودة الكود واختبار E2E
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 12 - Code Quality & E2E Testing delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 12 - قدمت جودة الكود واختبار E2E عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-- **Code Quality**:
-    - Verified ESLint configuration runs successfully on individual files.
-    - Audited `TerminalPanel.tsx` (9 useEffect hooks) - all have proper cleanup.
-    - Audited `ChatView.tsx` - pure presentation component, no useEffect hooks needed.
-- **E2E Testing**:
-    - Verified existing E2E tests in `chat.spec.ts` cover chat creation, input display, and keyboard shortcuts.
-    - Verified `app.spec.ts` covers app launch.
+- **جودة الكود**:
+- يتم تشغيل تكوين ESLint الذي تم التحقق منه بنجاح على الملفات الفردية.
+- تم تدقيق `TerminalPanel.tsx` (9 خطافات تأثير الاستخدام) - جميعها تتمتع بالتنظيف المناسب.
+- تم التدقيق `ChatView.tsx` - مكون عرض تقديمي خالص، لا حاجة لخطافات تأثير الاستخدام.
+- **اختبار E2E**:
+- تم التحقق من اختبارات E2E الموجودة في `chat.spec.ts` والتي تغطي إنشاء الدردشة وعرض الإدخال واختصارات لوحة المفاتيح.
+- تم التحقق من أن `app.spec.ts` يغطي تشغيل التطبيق.
 
-### Phase 13 - Type Safety & Service Architecture
+### المرحلة 13 - نوع السلامة وبنية الخدمة
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Phase 13 - Type Safety & Service Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 13 - سلمت بنية سلامة الخدمة والخدمة عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-- **Type Safety**:
-    - Verified `quota.service.ts`, `preload.ts`, and `ipc/ollama.ts` have no `any` types.
-- **Async Operations**:
-    - Verified `quota.service.ts` has no synchronous file operations.
-- **Service Architecture**:
-    - Audited 30+ services extending `BaseService` for consistent lifecycle management.
+- **نوع الأمان**:
+- تم التحقق من أن `quota.service.ts` و`preload.ts` و`ipc/ollama.ts` لا تحتوي على أنواع `any`.
+- **العمليات غير المتزامنة**:
+- تم التحقق من أن `quota.service.ts` لا يحتوي على عمليات ملفات متزامنة.
+- **بنية الخدمة**:
+- تم تدقيق أكثر من 30 خدمة تمتد إلى `BaseService` لإدارة دورة الحياة بشكل متسق.
 
-### Phase 14 - Deployment Readiness
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 14 - Deployment Readiness delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Build Fixes**:
-    - Fixed unused `init` method error in `ProxyService` by implementing `initialize`.
-    - Removed unused `fs` import in `proxy.service.test.ts` to fix `tsc` error.
-    - Updated `tsconfig.node.json` and `eslint.config.mjs` to resolve lint paths.
-    - Temporarily removed `lint` step from build script to unblock urgent deployment (pending comprehensive lint fix in tests).
-    - **Build Verified**: `npm run build` passes successfully. Code is ready for deployment.
-
-### Phase 15 - Linting Recovery & Cleanup
+### المرحلة 14 - الاستعداد للنشر
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 15 - Linting Recovery & Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 14 - قدمت جاهزية النشر عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Project Structure**:
-    - Deleted redundant `job-scheduler.service.test.ts` (consolidated into `services/system/`).
-- **Development Health**:
-    - Restored `lint` step to build pipeline.
-    - Configured ESLint to allow `any` types in test files (`src/tests/`), fixing 355+ blocking errors in CI while maintaining strictness for production code.
-- **Documentation**:
-    - Updated `TODO.md` to mark Service Architecture, Database Migration, and Testing gaps as resolved.
+- **إصلاحات البناء**:
+- تم إصلاح خطأ أسلوب `init` غير المستخدم في `ProxyService` عن طريق تنفيذ `initialize`.
+- تمت إزالة استيراد `fs` غير المستخدم في `proxy.service.test.ts` لإصلاح خطأ `tsc`.
+- تم تحديث `tsconfig.node.json` و`eslint.config.mjs` لحل مسارات الوبر.
+- تمت إزالة خطوة `lint` مؤقتًا من البرنامج النصي للإنشاء لإلغاء حظر النشر العاجل (في انتظار إصلاح الوبر الشامل في الاختبارات).
+- **تم التحقق من البناء**: تم تمرير `npm run build` بنجاح. الكود جاهز للنشر.
 
-### Phase 16 - Bundle Optimization
+### المرحلة 15 - استعادة الوبر والتنظيف
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: المرحلة 15 - قامت عملية Linting Recovery & Cleanup بتسليم عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
+
+- **هيكل المشروع**:
+- تم حذف `job-scheduler.service.test.ts` الزائدة عن الحاجة (تم دمجها في `services/system/`).
+- **الصحة التنموية**:
+- تمت استعادة خطوة `lint` لإنشاء خط الأنابيب.
+- تم تكوين ESLint للسماح بأنواع `any` في ملفات الاختبار (`src/tests/`)، وإصلاح أكثر من 355 خطأ حظر في CI مع الحفاظ على صرامة كود الإنتاج.
+- **التوثيق**:
+- تم تحديث `TODO.md` لتمييز فجوات بنية الخدمة وترحيل قاعدة البيانات واختبارها على أنها قد تم حلها.
+
+### المرحلة 16 - تحسين الحزمة
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 16 - Bundle Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 16 - قدمت عملية تحسين الحزمة عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Performance**:
-    - Implemented granular code splitting in `vite.config.ts`.
-    - Created separate chunks for heavy dependencies: `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.
-    - Lazy loaded `SSHManager` and `AudioChatOverlay` to improve initial application startup.
-    - Reduced initial bundle load by deferring unused features.
+- **أداء**:
+- تم تنفيذ تقسيم التعليمات البرمجية الدقيق في `vite.config.ts`.
+- تم إنشاء أجزاء منفصلة للتبعيات الثقيلة: `monaco-editor`، `framer-motion`، `ssh2`، `react-vendor`.
+- تم تحميل `SSHManager` و`AudioChatOverlay` بشكل بطيء لتحسين بدء تشغيل التطبيق الأولي.
+- تقليل التحميل الأولي للحزمة عن طريق تأجيل الميزات غير المستخدمة.
 
-### Phase 4 - Silent Error Handling Cleanup
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Phase 4 - Silent Error Handling Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Error Handling**: Systematically eliminated silent error swallowing in `UtilityService`, `SecurityService`, `SystemService`, and `QuotaService`. All catch blocks now log errors via `appLogger`.
-- **Standardization**: Refactored `BaseService` to inherit from `appLogger`, providing `this.logError`, `this.logDebug`, etc., to all derived services.
-- **Refactoring**: Significantly reduced cyclomatic complexity in `logger.ts` (`init`, `getStats`, `formatValue`) and replaced forbidden `require('electron')` with safe ESM imports.
-- **QuotaService**: Fixed unawaited promises, replaced debug `console.log` with `appLogger.debug`, and resolved numerous logical operator and type lints.
-
-### Phase 5 - Critical Async Conversions & Type Safety
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 5 - Critical Async Conversions & Type Safety delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Database Service**:
-    - Successfully removed ALL explicit `any` types from `DatabaseService.ts` (2,200+ lines).
-    - Modularized high-complexity methods (`searchChats`, `getDetailedStats`, `performChatDuplication`) into granular helpers, satisfying strict cyclomatic complexity limits.
-    - Restored and standardized legacy migration paths for `Folders` and `Prompts`, ensuring reliable data transition to PostgreSQL.
-    - Implemented a generic `DatabaseAdapter` pattern for type-safe transactions and query execution. Fixed `affectedRows` vs `rowsAffected` API mismatches.
-- **Backup Service**: Synchronized with the updated `DatabaseService` API and implemented the `RestoreChatData` interface to ensure strict type safety during JSON restoration.
-- **Async I/O Transitions**: Converted blocking synchronous `fs` operations to `fs.promises` across `UsageTrackingService`, `ProxyService`, and `SettingsService`, eliminating main-process blocking bottlenecks.
-- **Code Quality**:
-    - Resolved `no-case-declarations` and lexical scoping issues in `ChatEventService`.
-    - Harmonized nullish coalescing (`??`) across 50+ locations in core services.
-    - Reduced cyclomatic complexity and nesting depth in critical service paths (NASA Power of Ten compliance).
-    - Standardized all error reporting to use `appLogger` and centralized error utilities.
-    - Modularized `TokenService` logic into explicit provider checks (`isGoogleProvider`, `isCodexProvider`, etc.) and helper methods.
-- **Types**: Rigorous typing for `AuthToken`, `ChatMessage`, `Prompt`, and `Folder` structures ensuring full type safety from the DB layer to the service API.
-- **Verification**: Zero build errors, zero type-check failures, and zero critical lints remaining in the service layer.
-
-### Phase 6 - Test Infrastructure Repair & Verification
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 6 - Test Infrastructure Repair & Verification delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Test Configuration**:
-    - Resolved `vitest` vs `playwright` conflict by explicitly excluding E2E tests from the unit test runner in `vitest.config.ts`.
-- **Test Fixes**:
-    - **LLM Settings**: Fixed `ReferenceError` in integration tests by correcting `vi.mock` hoisting logic.
-    - **Audit Log**: Updated `fs` mocks to include missing `mkdirSync`, enabling proper `AppLogger` initialization during tests.
-    - **Backup Service**: Aligned test expectations with actual error handling for missing files.
-- **Verification Status**:
-    - **Pass Rate**: 100% (298/298 tests passed).
-    - **Coverage**: All 36 test suites executed successfully.
-
-### Phase 7 - Service Architecture Refactoring & SSH Modernization
+### المرحلة 4 - تنظيف معالجة الأخطاء الصامتة
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 7 - Service Architecture Refactoring & SSH Modernization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 4 - قدمت عملية تنظيف معالجة الأخطاء الصامتة عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
 
-- **Service Architecture**:
-    - Systematically relocated 30+ services into domain-specific folders (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).
-    - Standardized directory structure for better modularity and maintainability.
-- **Import Migration**:
-    - Updated imports across the entire codebase to use the new domain-based structure.
-    - Enforced use of path aliases (`@main/services/`) for all service imports.
-- **SSH Service Modernization**:
-    - Converted all remaining synchronous `fs` operations to `fs.promises`.
-    - Achieved 100% type safety by removing all `any` types.
-    - Implemented a comprehensive unit test suite (9 tests) covering profile management, security, connection lifecycle, SFTP, and diagnostics.
-- **Dependency Injection**:
-    - Fixed a critical type mismatch in the `QuotaService` registration within `startup/services.ts`.
-- **IPC Layer**:
-    - Verified and updated all IPC handlers to work with the refactored service structure.
+- **معالجة الأخطاء**: تم التخلص بشكل منهجي من خطأ البلع الصامت في `UtilityService`، و`SecurityService`، و`SystemService`، و`QuotaService`. تقوم جميع كتل الالتقاط الآن بتسجيل الأخطاء عبر `appLogger`.
+- **التوحيد القياسي**: تمت إعادة هيكلة `BaseService` للتوريث من `appLogger`، وتوفير `this.logError`، و`this.logDebug`، وما إلى ذلك، لجميع الخدمات المشتقة.
+- **إعادة البناء**: تقليل التعقيد السيكلوماتيكي بشكل كبير في `logger.ts` (`init`، `getStats`، `formatValue`) واستبدال `require('electron')` المحظورة بواردات ESM الآمنة.
+- **QuotaService**: تم إصلاح الوعود غير المنتظرة، واستبدال تصحيح الأخطاء `console.log` بـ `appLogger.debug`، وحل العديد من عوامل التشغيل المنطقية وخطوط النوع.
 
-### Phase 8 - Global Async & Type Safety Pass
+### المرحلة الخامسة - التحويلات غير المتزامنة الهامة وسلامة النوع
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 8 - Global Async & Type Safety Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة الخامسة - قدمت التحويلات غير المتزامنة الهامة وسلامة النوع عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-- **Async Modernization**:
-    - Converted `TerminalService`, `GitService`, `MigrationService`, and `ExportService` to use `fs.promises` for all file I/O.
-    - Optimized the main process responsiveness by eliminating blocking synchronous calls in core data services.
-- **IPC Handler Hardening**:
-    - Modernized `dialog:saveFile` and `theme:export` handlers to be fully asynchronous.
-    - Implemented improved error catching and temporary file handling in the IPC layer.
-- **Type Safety Excellence**:
-    - Eliminated all `any` types from `message-normalizer.util.ts` and `ipc-wrapper.util.ts`.
-    - Modularized high-complexity logic in `MessageNormalizer` to comply with strict cyclomatic complexity standards (NASA Power of Ten).
-- **Service Refinement**:
-    - Polished `QuotaService` by fixing dependency injection and resolving lingering lint and type safety warnings.
-    - Verified and improved the `QuotaService` unit test suite.
+- **خدمة قاعدة البيانات**:
+- تمت إزالة جميع أنواع `any` الصريحة بنجاح من `DatabaseService.ts` (أكثر من 2200 سطر).
+- الأساليب النمطية عالية التعقيد (`searchChats`، `getDetailedStats`، `performChatDuplication`) إلى مساعدين محببين، مما يلبي حدود التعقيد الدوري الصارمة.
+- مسارات ترحيل قديمة تمت استعادتها وتوحيدها لـ `Folders` و`Prompts`، مما يضمن نقل البيانات بشكل موثوق إلى PostgreSQL.
+- تم تنفيذ نمط `DatabaseAdapter` عام للمعاملات الآمنة وتنفيذ الاستعلام. تم إصلاح عدم التطابق بين `affectedRows` و`rowsAffected` API.
+- **خدمة النسخ الاحتياطي**: تمت المزامنة مع `DatabaseService` API المحدث وتم تنفيذ واجهة `RestoreChatData` لضمان السلامة الصارمة للنوع أثناء استعادة JSON.
+- **انتقالات الإدخال/الإخراج غير المتزامنة**: تم تحويل حظر عمليات `fs` المتزامنة إلى `fs.promises` عبر `UsageTrackingService`، و`ProxyService`، و`SettingsService`، مما يؤدي إلى إزالة اختناقات حظر العملية الرئيسية.
+- **جودة الكود**:
+- تم حل `no-case-declarations` ومشكلات النطاق المعجمي في `ChatEventService`.
+- الدمج الفارغ المنسق (`??`) عبر أكثر من 50 موقعًا في الخدمات الأساسية.
+- تقليل التعقيد الدوري وعمق التداخل في مسارات الخدمة الحرجة (امتثال NASA Power of Ten).
+- توحيد جميع تقارير الأخطاء لاستخدام `appLogger` والأدوات المساعدة المركزية للأخطاء.
+- منطق `TokenService` المعياري في عمليات التحقق الصريحة من الموفر (`isGoogleProvider`، `isCodexProvider`، وما إلى ذلك) والأساليب المساعدة.
+- **الأنواع**: كتابة صارمة لهياكل `AuthToken`، `ChatMessage`، `Prompt`، و`Folder` لضمان أمان النوع الكامل من طبقة قاعدة البيانات إلى الخدمة API.
+- **التحقق**: صفر أخطاء بناء، وصفر فشل في التحقق من النوع، وصفر خطوط حرجة متبقية في طبقة الخدمة.
 
-### Phase 9 - Comprehensive Error Handling & Testing Pass
+### المرحلة السادسة - اختبار إصلاح البنية التحتية والتحقق منها
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: المرحلة 6 - اختبار إصلاح البنية التحتية والتحقق من تسليم عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
+
+- **تكوين الاختبار**:
+- تم حل التعارض `vitest` مقابل `playwright` من خلال الاستبعاد الصريح لاختبارات E2E من مشغل اختبار الوحدة في `vitest.config.ts`.
+- **إصلاحات الاختبار**:
+- **LLM الإعدادات**: تم إصلاح `ReferenceError` في اختبارات التكامل عن طريق تصحيح `vi.mock` منطق الرفع.
+- **سجل التدقيق**: تم تحديث نماذج `fs` لتشمل `mkdirSync` المفقودة، مما يتيح تهيئة `AppLogger` المناسبة أثناء الاختبارات.
+- **خدمة النسخ الاحتياطي**: توافق توقعات الاختبار مع معالجة الأخطاء الفعلية للملفات المفقودة.
+- **حالة التحقق**:
+- **معدل النجاح**: 100% (تم اجتياز 298/298 اختبارًا).
+- **التغطية**: تم تنفيذ جميع مجموعات الاختبار الـ 36 بنجاح.
+
+### المرحلة السابعة - إعادة بناء هيكل الخدمة وتحديث SSH
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: المرحلة السابعة - قدمت إعادة بناء هيكل الخدمة وتحديث SSH عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
+
+- **بنية الخدمة**:
+- نقل أكثر من 30 خدمة بشكل منهجي إلى مجلدات خاصة بالمجال (`Security`، `System`، `Data`، `UI`، `LLM`، `External`، `Analysis`).
+- بنية دليل موحدة لتحسين النمطية وقابلية الصيانة.
+- **ترحيل الاستيراد**:
+- تحديث الواردات عبر قاعدة التعليمات البرمجية بأكملها لاستخدام البنية الجديدة المستندة إلى المجال.
+- الاستخدام القسري للأسماء المستعارة للمسار (`@main/services/`) لجميع عمليات استيراد الخدمة.
+- **تحديث خدمة SSH**:
+- تم تحويل جميع عمليات `fs` المتزامنة المتبقية إلى `fs.promises`.
+- تم تحقيق أمان النوع بنسبة 100% عن طريق إزالة جميع أنواع `any`.
+- تم تنفيذ مجموعة اختبارات شاملة للوحدة (9 اختبارات) تغطي إدارة الملفات الشخصية والأمان ودورة حياة الاتصال وSFTP والتشخيصات.
+- **حقن التبعية**:
+- تم إصلاح عدم تطابق النوع الحرج في تسجيل `QuotaService` ضمن `startup/services.ts`.
+- **IPC الطبقة**:
+- تم التحقق من جميع IPC handlers وتحديثها للعمل مع بنية الخدمة المُعاد هيكلتها.
+
+### المرحلة 8 - تصريح أمان النوع والمزامنة العالمية
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: المرحلة 8 - قدمت Global Async & Type Safety Pass عمليات إعادة البناء المخطط لها، والتنظيف الهيكلي، والتحقق عبر النطاق المستهدف.
+
+- **التحديث غير المتزامن**:
+- تم تحويل `TerminalService`، `GitService`، `MigrationService`، و`ExportService` لاستخدام `fs.promises` لجميع عمليات الإدخال/الإخراج للملفات.
+- تحسين استجابة العملية الرئيسية من خلال إزالة حظر المكالمات المتزامنة في خدمات البيانات الأساسية.
+- **IPC Handler التصلب**:
+- تم تحديث `dialog:saveFile` و`theme:export` handlers ليكونا غير متزامنين تمامًا.
+- تم تحسين عملية اكتشاف الأخطاء ومعالجة الملفات المؤقتة في طبقة IPC.
+- **نوع التميز في السلامة**:
+- تمت إزالة جميع أنواع `any` من `message-normalizer.util.ts` و`ipc-wrapper.util.ts`.
+- منطق معياري عالي التعقيد في `MessageNormalizer` للامتثال لمعايير التعقيد الدوري الصارمة (NASA Power of Ten).
+- **تحسين الخدمة**:
+- مصقول `QuotaService` عن طريق إصلاح حقن التبعية وحل الوبر العالق وتحذيرات سلامة الكتابة.
+- تم التحقق من مجموعة اختبار الوحدة `QuotaService` وتحسينها.
+
+### المرحلة 9 - معالجة الأخطاء الشاملة واجتياز الاختبار
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 9 - Comprehensive Error Handling & Testing Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: المرحلة 9 - قدمت المعالجة الشاملة للأخطاء واجتياز الاختبار عمليات إعادة البناء المخطط لها والتنظيف الهيكلي والتحقق عبر النطاق المستهدف.
 
-- **ProxyService Modernization**:
-    - Complete reconstruction of `ProxyService` to eliminate all `any` types and modularize high-complexity logic.
-    - Standardized error handling with robust logging via `appLogger`.
-    - Added support for GitHub device code flow and improved proxy process lifecycle management.
-- **Database Service Enhancements**:
-    - Expanded unit tests for `searchChats`, `getDetailedStats`, and `duplicateChat`.
-    - Improved transaction reliability and verified data integrity across complex operations.
-- **Error Handling Standardization**:
-    - Conducted a comprehensive audit of `SettingsService` and `ProxyService`, replacing minimal catch blocks with proper recovery and logging.
-    - Verified `npm run type-check` success across the entire codebase, including all test suites.
-- **Test Infrastructure**:
-    - Refactored `TokenService` tests to cover advanced OAuth flows, refresh logic, and error states.
-    - Optimized `PGlite` and `electron.net` mocks for better stability in the development environment.
+- **تحديث خدمة البروكسي**:
+- إعادة بناء كاملة لـ `ProxyService` لإزالة جميع أنواع `any` ونموذجية المنطق عالي التعقيد.
+- معالجة موحدة للأخطاء من خلال التسجيل القوي عبر `appLogger`.
+- تمت إضافة دعم لتدفق كود جهاز GitHub وتحسين إدارة دورة حياة عملية الوكيل.
+- **تحسينات خدمة قاعدة البيانات**:
+- اختبارات الوحدة الموسعة لـ `searchChats`، `getDetailedStats`، و`duplicateChat`.
+- تحسين موثوقية المعاملات وسلامة البيانات التي تم التحقق منها عبر العمليات المعقدة.
+- **توحيد معايير معالجة الأخطاء**:
+- تم إجراء تدقيق شامل لـ `SettingsService` و`ProxyService`، واستبدال الحد الأدنى من كتل الالتقاط بالاسترداد والتسجيل المناسبين.
+- تم التحقق من نجاح `npm run type-check` عبر قاعدة التعليمات البرمجية بأكملها، بما في ذلك جميع مجموعات الاختبار.
+- **البنية الأساسية للاختبار**:
+- اختبارات `TokenService` المعاد تصميمها لتغطية تدفقات OAuth المتقدمة ومنطق التحديث وحالات الخطأ.
+- نماذج محسنة `PGlite` و`electron.net` لتحقيق استقرار أفضل في بيئة التطوير.
 
-### Security & Fixes
+### الأمن والإصلاحات
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Security & Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: لقد عزز الأمان والإصلاحات الموثوقية والسلامة من خلال معالجة المشكلات المعروفة وتعزيز المسارات الحرجة.
 
-- **Security Check**: Fixed critical path traversal and shell injection vulnerabilities in `SSHService`.
-- **Memory Leak**: Fixed memory leak in `TokenService` by implementing proper interval cleanup.
-- **Secrets Management**: Removed hardcoded credentials and migrated vendor secrets (iFlow, Qwen, Codex, Claude, Gemini) to environment variables.
-- **XSS Protection**: Enforced `DOMPurify` sanitization for Mermaid diagrams in `MarkdownRenderer` and `MessageBubble`.
-- **Injection Prevention**: Hardened `LocalAIService` by removing unnecessary `shell: true`.
+- **الفحص الأمني**: تم إصلاح الثغرات الأمنية في اجتياز المسار الحرج وحقن الصدفة في `SSHService`.
+- **تسرب الذاكرة**: تم إصلاح تسرب الذاكرة في `TokenService` عن طريق تنفيذ التنظيف المناسب للفاصل الزمني.
+- **إدارة الأسرار**: تمت إزالة بيانات الاعتماد المشفرة وترحيل أسرار البائعين (iFlow وQwen وCodex وClaude وGemini) إلى متغيرات البيئة.
+- **حماية XSS**: تم فرض عملية تعقيم `DOMPurify` لمخططات حورية البحر في `MarkdownRenderer` و`MessageBubble`.
+- **منع الحقن**: تمت تقوية `LocalAIService` عن طريق إزالة `shell: true` غير الضرورية.
 
 ## [2026-01-14]
 
-### Build Improvements
+### بناء التحسينات
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Build Improvements improved UI consistency, maintainability, and end-user experience across related surfaces.
+- **Summary**: تم تحسين تحسينات البناء UI من حيث الاتساق وقابلية الصيانة وتجربة المستخدم النهائي عبر الأسطح ذات الصلة.
 
-- **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.
-- **IPC**: Standardized `onStreamChunk` return types.
-## Version History
-### v1.2.0: Unified Microservice Sync
-- Transitioned to HTTP-based bidirectional token synchronization.
-- Eliminated persistent file-based credentials for improved security.
-- Standardized cross-process communication between Electron and Go/Rust services.
-### v1.1.0: Multi-LLM Support
-### v1.0.0: Initial Release
-- Basic chat functionality with OpenAI and Anthropic.
-- Local Ollama support.
-- Project management view.
-- Theme support (Dark/Light).
+- **الإنشاء**: تم إصلاح أخطاء TypeScript المتعلقة بالمتغيرات غير المستخدمة وأنواع الإرجاع غير الصحيحة.
+- **IPC**: أنواع الإرجاع القياسية `onStreamChunk`.
+## تاريخ الإصدار
+### الإصدار 1.2.0: مزامنة الخدمات المصغرة الموحدة
+- تم الانتقال إلى مزامنة الرمز المميز ثنائي الاتجاه القائم على HTTP.
+- إزالة بيانات الاعتماد الدائمة المستندة إلى الملفات لتحسين الأمان.
+- اتصال موحد عبر العمليات بين Electron وخدمات Go/Rust.
+### الإصدار 1.1.0: دعم متعدد LLM
+### الإصدار 1.0.0: الإصدار الأولي
+- وظيفة الدردشة الأساسية مع OpenAI وAnthropic.
+- دعم Ollama المحلي.
+- عرض إدارة المشروع.
+- دعم الموضوع (غامق / فاتح).
 
-### Stats & Performance
+### الإحصائيات والأداء
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Stats & Performance improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: الإحصائيات والأداء تم تحسين أداء runtime واستقراره واتساقه التشغيلي عبر مسارات العمل الرئيسية.
 
-- **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats`- [x] Development of the Statistics dashboard (Charts and Token Usage)
-  rectly.
-- **DatabaseService**: Replaced `console` calls with `appLogger` and cleaned up relative imports.
-- **SettingsService**: Integrated `appLogger`, cleaned up relative imports, and enhanced `JSON.parse` with recovery/error handling.
-- **SecurityService**: Integrated `appLogger` and improved error handling for encryption/decryption.
-- **IPC**: Hardened `window.ts` by removing dangerous shell execution fallbacks and sanitizing terminal commands.
-- **Imports**: Completed mass conversion of relative imports to path aliases (`@main`, `@renderer`, `@shared`) across the entire codebase (37+ files).
-- **Renderer**: Fixed UI regressions and corrupted imports in `AgentDashboard.tsx` and `AgentChatRoom.tsx`.
-- **Main**: Resolved parsing errors in `command.service.ts` and `git.service.ts`.
-- **Cleanup**: Removed several unused imports and unused variables identified during the cleanup process.
-- **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).
-- **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.
-- **Chat**: Resolved "placeholder ghosting" when API generation fails.
--   - Replaced silent error catches and console calls with `appLogger` across core services.
-- **Docs**: Consolidated 19 markdown files into 6 themed documents.
-- **Audit**: Completed initial small cleanup tasks from `TODO.md`.
+- **DatabaseService**: تم تنفيذ `getDetailedStats` وإصلاح `getTimeStats`- [x] تطوير لوحة معلومات الإحصائيات (الرسوم البيانية واستخدام الرموز المميزة)
+بشكل مستقيم.
+- **DatabaseService**: تم استبدال مكالمات `console` بـ `appLogger` وتنظيف الواردات النسبية.
+- **SettingsService**: `appLogger` متكامل، وتنظيف الواردات النسبية، وتحسين `JSON.parse` مع الاسترداد/معالجة الأخطاء.
+- **SecurityService**: `appLogger` متكامل وتحسين معالجة الأخطاء للتشفير/فك التشفير.
+- **IPC**: تم تعزيز `window.ts` عن طريق إزالة الإجراءات الاحتياطية الخطيرة لتنفيذ الصدفة وتحسين أوامر المحطة الطرفية.
+- **الواردات**: تم إكمال التحويل الجماعي للواردات النسبية إلى الأسماء المستعارة للمسار (`@main`، `@renderer`، `@shared`) عبر قاعدة التعليمات البرمجية بأكملها (أكثر من 37 ملفًا).
+- **العارض**: تم إصلاح تراجعات UI وعمليات الاستيراد التالفة في `AgentDashboard.tsx` و`AgentChatRoom.tsx`.
+- **الرئيسي**: تم حل أخطاء التحليل في `command.service.ts` و`git.service.ts`.
+- **التنظيف**: تمت إزالة العديد من الواردات غير المستخدمة والمتغيرات غير المستخدمة التي تم تحديدها أثناء عملية التنظيف.
+- **الأمان**: تم تشديد `window` IPC handlers (أوامر الصدفة المعقمة وإزالة exec غير الآمن fallback).
+- **غير متزامن**: تحويل عمليات الملفات المتزامنة إلى غير متزامنة في `QuotaService` و`TokenService`.
+- **الدردشة**: تم حل مشكلة "ظلال العنصر النائب" عند فشل إنشاء API.
+- - تم استبدال عمليات اكتشاف الأخطاء الصامتة ومكالمات وحدة التحكم بـ `appLogger` عبر الخدمات الأساسية.
+- **المستندات**: تم دمج 19 ملفًا تخفيض السعر في 6 مستندات ذات طابع خاص.
+- **التدقيق**: تم إكمال مهام التنظيف الصغيرة الأولية من `TODO.md`.

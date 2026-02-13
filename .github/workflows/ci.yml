@@ -6,9 +6,36 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+    - uses: actions/checkout@v4
+    - id: filter
+      uses: dorny/paths-filter@v3
+      with:
+        filters: |
+          app:
+            - 'src/**'
+            - 'package.json'
+            - 'tsconfig*.json'
+            - 'vite*.ts'
+            - 'electron.vite.config.ts'
+          docs:
+            - 'docs/**'
+            - '*.md'
+
+  validate:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.docs == 'true'
 
     strategy:
       matrix:
@@ -31,6 +58,27 @@ jobs:
     - name: Validate Changelog
       run: npm run changelog:sync
 
+    - name: Changelog i18n Gate
+      run: npm run changelog:i18n:gate
+
+  lint-and-types:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.app == 'true'
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Install Dependencies
+      run: npm ci
     - name: Run Type Check
       run: npm run type-check
 
@@ -38,11 +86,53 @@ jobs:
       run: npm run lint
       continue-on-error: true
 
+  tests:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.app == 'true'
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Install Dependencies
+      run: npm ci
     - name: Run Tests
       run: npm test
       continue-on-error: true
 
+  build-preview:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.app == 'true'
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Install Dependencies
+      run: npm ci
     - name: Build Frontend Only
       run: npx tsc && npx vite build
       env:
         CI: true
+    - name: Upload Preview Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: renderer-preview-${{ github.sha }}
+        path: dist/renderer/**
+        if-no-files-found: warn

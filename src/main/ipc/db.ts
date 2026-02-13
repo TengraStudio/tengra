@@ -7,6 +7,7 @@ import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { Chat, Folder, Message, Prompt } from '@shared/types/chat';
 import { IpcValue, JsonObject } from '@shared/types/common';
+import { SqlValue } from '@shared/types/database';
 import { Project } from '@shared/types/project';
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 
@@ -570,4 +571,103 @@ function registerStatsHandlers(databaseService: DatabaseService, _auditLogServic
         });
         return { success: true };
     }, { success: false }));
+
+    ipcMain.handle('db:runMigrations', createSafeIpcHandler('db:runMigrations', async (
+        _event: IpcMainInvokeEvent,
+        options?: { dryRun?: boolean; targetVersion?: number }
+    ) => {
+        return await databaseService.runMigrations(options ?? {});
+    }, []));
+
+    ipcMain.handle('db:rollbackLastMigration', createSafeIpcHandler('db:rollbackLastMigration', async (
+        _event: IpcMainInvokeEvent,
+        options?: { dryRun?: boolean }
+    ) => {
+        return await databaseService.rollbackLastMigration(options ?? {});
+    }, null));
+
+    ipcMain.handle('db:getMigrationHistory', createSafeIpcHandler('db:getMigrationHistory', async () => {
+        return await databaseService.getMigrationHistory();
+    }, []));
+
+    ipcMain.handle('db:validateSchema', createSafeIpcHandler('db:validateSchema', async (_event: IpcMainInvokeEvent, expectedTables?: string[]) => {
+        return await databaseService.validateSchema(expectedTables);
+    }, { version: 0, tablesPresent: [], tablesMissing: [], warnings: [], valid: false }));
+
+    ipcMain.handle('db:diffSchema', createSafeIpcHandler('db:diffSchema', async (_event: IpcMainInvokeEvent, expectedSnapshot: string[]) => {
+        return await databaseService.diffSchema(expectedSnapshot);
+    }, { addedTables: [], removedTables: [] }));
+
+    ipcMain.handle('db:analyzeQueryPlan', createSafeIpcHandler('db:analyzeQueryPlan', async (_event: IpcMainInvokeEvent, sql: string, params?: unknown[]) => {
+        return await databaseService.analyzeQueryPlan(sql, params as SqlValue[] | undefined);
+    }, []));
+
+    ipcMain.handle('db:executeBatch', createSafeIpcHandler('db:executeBatch', async (
+        _event: IpcMainInvokeEvent,
+        statements: Array<{ sql: string; params?: unknown[] }>
+    ) => {
+        return await databaseService.executeBatch(statements.map(s => ({
+            sql: s.sql,
+            params: s.params as SqlValue[] | undefined
+        })));
+    }, []));
+
+    ipcMain.handle('db:setReplicationConfig', createSafeIpcHandler('db:setReplicationConfig', async (
+        _event: IpcMainInvokeEvent,
+        config: { enabled?: boolean; lagThresholdMs?: number }
+    ) => {
+        return databaseService.setReplicationConfig(config);
+    }, { enabled: false, lagThresholdMs: 5000 }));
+
+    ipcMain.handle('db:getReplicationLag', createSafeIpcHandler('db:getReplicationLag', async () => {
+        return await databaseService.getReplicationLagMetrics();
+    }, { lagMs: 0, healthy: true }));
+
+    ipcMain.handle('db:failoverPrimary', createSafeIpcHandler('db:failoverPrimary', async () => {
+        return await databaseService.failoverToPrimary();
+    }, { success: false }));
+
+    ipcMain.handle('db:setShardingConfig', createSafeIpcHandler('db:setShardingConfig', async (
+        _event: IpcMainInvokeEvent,
+        config: { enabled?: boolean; shardCount?: number }
+    ) => {
+        return databaseService.setShardingConfig(config);
+    }, { enabled: false, shardCount: 1 }));
+
+    ipcMain.handle('db:getShardForKey', createSafeIpcHandler('db:getShardForKey', async (_event: IpcMainInvokeEvent, key: string) => {
+        return databaseService.getShardForKey(key);
+    }, 0));
+
+    ipcMain.handle('db:getPoolMetrics', createSafeIpcHandler('db:getPoolMetrics', async () => {
+        return databaseService.getConnectionPoolMetrics();
+    }, {
+        maxSockets: 0,
+        maxFreeSockets: 0,
+        pendingRequests: 0,
+        maxPendingRequests: 0,
+        totalRequests: 0,
+        failedRequests: 0,
+        errorRate: 0
+    }));
+
+    ipcMain.handle('db:setPoolConfig', createSafeIpcHandler('db:setPoolConfig', async (
+        _event: IpcMainInvokeEvent,
+        config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }
+    ) => {
+        databaseService.setConnectionPoolConfig(config);
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle('db:recyclePool', createSafeIpcHandler('db:recyclePool', async () => {
+        await databaseService.recycleConnectionPool();
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle('db:getConnectionHealth', createSafeIpcHandler('db:getConnectionHealth', async (_event: IpcMainInvokeEvent, timeoutMs?: number) => {
+        return databaseService.getConnectionHealth(timeoutMs);
+    }, { healthy: false, latencyMs: 0 }));
+
+    ipcMain.handle('db:getCompressionMetrics', createSafeIpcHandler('db:getCompressionMetrics', async () => {
+        return databaseService.getCompressionMetrics();
+    }, { operations: 0, rawBytes: 0, compressedBytes: 0, ratio: 1 }));
 }

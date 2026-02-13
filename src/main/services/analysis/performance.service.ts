@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { IPerformanceService } from '@main/types/services';
+import { getCacheAnalyticsSnapshot } from '@main/utils/cache.util';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -8,6 +9,8 @@ export class PerformanceService extends BaseService implements IPerformanceServi
     private memoryHistory: number[] = [];
     private maxHistoryLength = 60; // 1 hour if sampled every minute
     private monitoringInterval?: NodeJS.Timeout;
+    private alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }> = [];
+    private readonly memoryPressureBytes = 800 * 1024 * 1024;
 
     constructor() {
         super('PerformanceService');
@@ -61,9 +64,26 @@ export class PerformanceService extends BaseService implements IPerformanceServi
                 const leak = this.detectLeakSync();
                 if (leak.isPossibleLeak) {
                     appLogger.warn(this.name, 'Possible memory leak detected');
+                    this.pushAlert('warn', 'Possible memory leak detected from heap trend');
+                }
+            }
+
+            // Memory pressure monitoring and automatic GC hint
+            if (stats.rss > this.memoryPressureBytes) {
+                this.pushAlert('warn', `Memory pressure detected (rss=${Math.round(stats.rss / 1024 / 1024)}MB)`);
+                const gc = this.triggerGC();
+                if (!gc.success) {
+                    this.pushAlert('info', 'GC hint skipped (global.gc unavailable)');
                 }
             }
         }, 60000); // 60 seconds
+    }
+
+    private pushAlert(level: 'info' | 'warn' | 'error', message: string): void {
+        this.alerts.push({ timestamp: Date.now(), level, message });
+        if (this.alerts.length > 200) {
+            this.alerts.shift();
+        }
     }
 
     /**
@@ -143,6 +163,7 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         try {
             if (global.gc) {
                 global.gc();
+                this.pushAlert('info', 'Manual garbage collection triggered');
                 return { success: true, result: { success: true } };
             }
             return {
@@ -152,5 +173,29 @@ export class PerformanceService extends BaseService implements IPerformanceServi
         } catch (e) {
             return { success: false, error: getErrorMessage(e) };
         }
+    }
+
+    getDashboard(): ServiceResponse<{
+        memory: {
+            latestRss: number;
+            latestHeapUsed: number;
+            sampleCount: number;
+        };
+        alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
+        caches?: Record<string, unknown>;
+    }> {
+        const usage = process.memoryUsage();
+        return {
+            success: true,
+            result: {
+                memory: {
+                    latestRss: usage.rss,
+                    latestHeapUsed: usage.heapUsed,
+                    sampleCount: this.memoryHistory.length
+                },
+                alerts: [...this.alerts],
+                caches: getCacheAnalyticsSnapshot()
+            }
+        };
     }
 }

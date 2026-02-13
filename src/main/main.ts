@@ -164,6 +164,6 @@ app.whenReady().then(async () => {
 
 }).catch(e => {
     closeSplashWindow();
-    console.error('Critical failure on startup:', e);
+    appLogger.error('Main', 'Critical failure on startup', e as Error);
     app.exit(1);
 });

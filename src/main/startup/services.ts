@@ -46,6 +46,7 @@ import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MarketplaceService } from '@main/services/llm/marketplace.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
+import { ModelFallbackService,modelFallbackService } from '@main/services/llm/model-fallback.service';
 import {
     ModelRegistryDependencies,
     ModelRegistryService,
@@ -59,6 +60,7 @@ import {
 } from '@main/services/llm/ollama-health.service';
 import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
+import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
@@ -444,20 +446,24 @@ function registerLLMServices() {
     container.register('ollamaService', ss => new OllamaService(ss as SettingsService), [
         'settingsService',
     ]);
+    container.register('modelFallbackService', () => modelFallbackService);
+    container.register('responseCacheService', () => new ResponseCacheService());
+
     container.register(
         'llmService',
-        (...args: unknown[]) => {
-            const [hs, cs, krs, rls, ss, ps, ts] = args;
-            return new LLMService({
-                httpService: hs as HttpService,
-                configService: cs as ConfigService,
-                keyRotationService: krs as KeyRotationService,
-                rateLimitService: rls as RateLimitService,
-                settingsService: ss as SettingsService,
-                proxyService: ps as ProxyService,
-                tokenService: ts as TokenService,
-            });
-        },
+        (...args: unknown[]) =>
+            new LLMService({
+                httpService: args[0] as HttpService,
+                configService: args[1] as ConfigService,
+                keyRotationService: args[2] as KeyRotationService,
+                rateLimitService: args[3] as RateLimitService,
+                settingsService: args[4] as SettingsService,
+                proxyService: args[5] as ProxyService,
+                tokenService: args[6] as TokenService,
+                huggingFaceService: args[7] as HuggingFaceService,
+                fallbackService: args[8] as ModelFallbackService,
+                cacheService: args[9] as ResponseCacheService
+            }),
         [
             'httpService',
             'configService',
@@ -466,6 +472,9 @@ function registerLLMServices() {
             'settingsService',
             'proxyService',
             'tokenService',
+            'huggingFaceService',
+            'modelFallbackService',
+            'responseCacheService'
         ]
     );
     container.register(
@@ -522,7 +531,11 @@ function registerLLMServices() {
         (ds, dbs) => new PromptTemplatesService(ds as DataService, dbs as DatabaseService),
         ['dataService', 'databaseService']
     );
-    container.register('huggingFaceService', () => new HuggingFaceService());
+    container.register(
+        'huggingFaceService',
+        hs => new HuggingFaceService(hs as HttpService),
+        ['httpService']
+    );
     container.register(
         'contextRetrievalService',
         (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService),

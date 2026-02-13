@@ -1,5 +1,74 @@
 # Changelog
 
+## [2026-02-13]
+
+### Added Drop Validation for File Attachments
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced security for drag-and-drop file attachments with file type validation, size limits, and dangerous extension blocking.
+
+Added file type whitelist allowing text, JSON, PDF, images, and common document formats.
+Implemented 10MB maximum file size limit to prevent large file DoS.
+Added dangerous extension blocking (.exe, .bat, .sh, .ps1, etc.) for security.
+Shows toast error notification when invalid files are dropped.
+
+### Drag and Drop File Validation
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added file validation for drag and drop to improve security and user experience.
+
+Added file type whitelist for supported formats (text, images, PDF, JSON, etc.)
+Implemented 10MB file size limit with user-friendly error messages
+Blocked dangerous file extensions (.exe, .bat, .sh, etc.)
+Added toast notifications for validation errors
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### IPC Handler Tests expansion & TEST-01 Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.
+
+- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.
+- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.
+- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
+- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### Improved Token Counting Accuracy
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.
+
+Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.
+Improved context window management with precise model limits for major LLM providers.
+Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.
+Added comprehensive unit tests to verify token counting accuracy for various models.
+
 ## [2026-02-12]
 
 ### IPC Handler Tests Expansion - Batch 4

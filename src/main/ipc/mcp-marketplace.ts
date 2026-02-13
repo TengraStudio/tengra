@@ -13,6 +13,14 @@ export function registerMcpMarketplaceHandlers(
     settingsService: SettingsService,
     mcpPluginService: McpPluginService
 ) {
+    const parseCommand = (commandLine: string | undefined): { command: string; args: string[] } => {
+        const cmdParts = commandLine?.split(' ') ?? [];
+        return {
+            command: cmdParts[0] ?? '',
+            args: cmdParts.slice(1)
+        };
+    };
+
     /**
      * List all available servers from marketplace
      */
@@ -78,9 +86,7 @@ export function registerMcpMarketplaceHandlers(
             }
 
             // Parse command into command and args
-            const cmdParts = server.command?.split(' ') ?? [];
-            const command = cmdParts[0] || '';
-            const args = cmdParts.slice(1);
+            const { command, args } = parseCommand(server.command);
 
             // Create server config
             const serverConfig: MCPServerConfig = {
@@ -93,7 +99,9 @@ export function registerMcpMarketplaceHandlers(
                 category: server.categories?.[0],
                 publisher: server.publisher,
                 version: server.version,
-                isOfficial: server.isOfficial
+                isOfficial: server.isOfficial,
+                installedAt: Date.now(),
+                updatedAt: Date.now()
             };
 
             // Add to settings
@@ -105,8 +113,15 @@ export function registerMcpMarketplaceHandlers(
                 return { success: false, error: 'Server already installed' };
             }
 
+            const versionHistory = settings.mcpServerVersionHistory ?? {};
+            versionHistory[serverId] = [
+                ...(versionHistory[serverId] ?? []),
+                server.version ?? '0.0.0'
+            ];
+
             await settingsService.saveSettings({
-                mcpUserServers: [...existing, serverConfig]
+                mcpUserServers: [...existing, serverConfig],
+                mcpServerVersionHistory: versionHistory
             });
 
             appLogger.info('MCP Marketplace', `Installed server: ${server.name}`);
@@ -213,6 +228,115 @@ export function registerMcpMarketplaceHandlers(
             return { success: true };
         } catch (error) {
             appLogger.error('MCP Marketplace', `Failed to refresh cache: ${error}`);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    /**
+     * Update installed server configuration
+     */
+    ipcMain.handle('mcp:marketplace:update-config', async (_event, serverId: string, patch: Partial<MCPServerConfig>) => {
+        try {
+            const settings = settingsService.getSettings();
+            const existing = settings.mcpUserServers ?? [];
+            const current = existing.find(s => s.id === serverId);
+            if (!current) {
+                return { success: false, error: 'Server not found' };
+            }
+
+            const nextVersion = patch.version ?? current.version ?? '0.0.0';
+            const versionHistory = settings.mcpServerVersionHistory ?? {};
+            const previous = versionHistory[serverId] ?? [];
+
+            if (previous[previous.length - 1] !== nextVersion) {
+                versionHistory[serverId] = [...previous, nextVersion];
+            }
+
+            const updated = existing.map(s => {
+                if (s.id !== serverId) {
+                    return s;
+                }
+                const commandInput = patch.command ? parseCommand(patch.command) : { command: s.command, args: s.args };
+                return {
+                    ...s,
+                    ...patch,
+                    command: commandInput.command,
+                    args: patch.args ?? commandInput.args,
+                    previousVersion: s.version,
+                    updatedAt: Date.now()
+                };
+            });
+
+            await settingsService.saveSettings({
+                mcpUserServers: updated,
+                mcpServerVersionHistory: versionHistory
+            });
+
+            return { success: true };
+        } catch (error) {
+            appLogger.error('MCP Marketplace', `Failed to update config: ${error}`);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    /**
+     * Return version history for a server
+     */
+    ipcMain.handle('mcp:marketplace:version-history', async (_event, serverId: string) => {
+        try {
+            const settings = settingsService.getSettings();
+            const history = settings.mcpServerVersionHistory?.[serverId] ?? [];
+            return { success: true, history };
+        } catch (error) {
+            appLogger.error('MCP Marketplace', `Failed to get version history: ${error}`);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    /**
+     * Rollback installed server to a known version (metadata-level rollback)
+     */
+    ipcMain.handle('mcp:marketplace:rollback-version', async (_event, serverId: string, targetVersion: string) => {
+        try {
+            const settings = settingsService.getSettings();
+            const history = settings.mcpServerVersionHistory?.[serverId] ?? [];
+            if (!history.includes(targetVersion)) {
+                return { success: false, error: 'Target version not found in history' };
+            }
+
+            const existing = settings.mcpUserServers ?? [];
+            const updated = existing.map(s => s.id === serverId ? {
+                ...s,
+                previousVersion: s.version,
+                version: targetVersion,
+                updatedAt: Date.now()
+            } : s);
+
+            await settingsService.saveSettings({ mcpUserServers: updated });
+            return { success: true };
+        } catch (error) {
+            appLogger.error('MCP Marketplace', `Failed to rollback version: ${error}`);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    });
+
+    /**
+     * Diagnostics for MCP operations
+     */
+    ipcMain.handle('mcp:marketplace:debug', async () => {
+        try {
+            const pluginMetrics = mcpPluginService.getDispatchMetrics();
+            const settings = settingsService.getSettings();
+            return {
+                success: true,
+                metrics: {
+                    pluginMetrics,
+                    installedCount: (settings.mcpUserServers ?? []).length,
+                    pendingPermissions: (settings.mcpPermissionRequests ?? []).filter(r => r.status === 'pending').length
+                }
+            };
+        } catch (error) {
+            appLogger.error('MCP Marketplace', `Failed to get debug metrics: ${error}`);
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     });

@@ -1,5 +1,74 @@
 # Änderungsprotokoll
 
+## [2026-02-13]
+
+### Drop-Validierung für Dateianhänge hinzugefügt
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Erhöhte Sicherheit für Drag-and-Drop-Dateianhänge mit Dateitypvalidierung, Größenlimits und Blockierung gefährlicher Erweiterungen.
+
+- Dateityp-Whitelist hinzugefügt: Text, JSON, PDF, Bilder und gängige Dokumentformate.
+- 10MB maximale Dateigrößenbeschränkung implementiert, um große Datei-DoS zu verhindern.
+- Blockierung gefährlicher Erweiterungen (.exe, .bat, .sh, .ps1, etc.) für Sicherheit hinzugefügt.
+- Toast-Fehlermeldung wird angezeigt, wenn ungültige Dateien abgelegt werden.
+
+### Drop-Validierung für Dateianhänge hinzugefügt
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Erhöhte Sicherheit für Drag-and-Drop-Dateianhänge mit Dateitypvalidierung, Größenlimits und Blockierung gefährlicher Erweiterungen.
+
+- Dateityp-Whitelist hinzugefügt: Text, JSON, PDF, Bilder und gängige Dokumentformate.
+- 10MB maximale Dateigrößenbeschränkung implementiert, um große Datei-DoS zu verhindern.
+- Blockierung gefährlicher Erweiterungen (.exe, .bat, .sh, .ps1, etc.) für Sicherheit hinzugefügt.
+- Toast-Fehlermeldung wird angezeigt, wenn ungültige Dateien abgelegt werden.
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### Erweiterung der IPC-Handler-Tests & TEST-01-Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: TEST-01 (Checkpoint-Resume-Test) wurde behoben und die IPC-Testabdeckung für Database- und Project-Agent-Handler abgeschlossen.
+
+- **Tests**: Die Nichtübereinstimmung der Erwartungen von „agent-executor.service.test.ts“ im Checkpoint-Resume-Test wurde behoben.
+- **IPC-Abdeckung**: „db.integration.test.ts“ wurde erstellt, das Chat-, Projekt- und Ordner-Handler abdeckt.
+- **IPC-Abdeckung**: „project-agent.integration.test.ts“ erstellt, das Start-, Stopp-, Status- und HIL-Handler abdeckt.
+- **Code Intelligence**: Diskrepanzen zwischen TypeScript-Parametertypen in „code-intelligence.integration.test.ts“ wurden behoben.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### Verbesserte Genauigkeit der Token-Zählung
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: js-tiktoken für präzise Token-Schätzung für GPT-, Claude- und Llama-Modelle integriert.
+
+js-tiktoken für genaue Tokenisierungszuordnung zu cl100k_base und o200k_base Encodings integriert.
+Verbessertes Kontextfenster-Management mit präzisen Modellgrenzen für große LLM-Anbieter.
+Heuristik-basierte Fallbacks für nich unterstützte Modelle beibehalten, um die Kontinuität der Schätzung zu gewährleisten.
+Umfassende Unit-Tests hinzugefügt, um die Genauigkeit der Token-Zählung für verschiedene Modelle zu verifizieren.
+
 ## [2026-02-12]
 
 ### Erweiterung der IPC-Handler-Tests - Batch 4
@@ -1084,18 +1153,18 @@ Verfolgen Sie die Entwicklung von Tandem.
 – `useSpeechDevices()` in SpeechTab für die Geräteaufzählung
 – `TabContent`-Komponente in MemoryInspector für saubereres Tab-Rendering
 3. **Unterkomponentenextraktion**:
-- `IdeaDetailsContent.tsx`: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
-- `SelectDropdown.tsx`: TriggerButton, FloatingMenu
-- `MemoryInspector.tsx`: TabContent
+- „IdeaDetailsContent.tsx“: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
+- „SelectDropdown.tsx“: TriggerButton, FloatingMenu
+- „MemoryInspector.tsx“: TabContent
 – `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
 – `process-stream.ts`: buildNewStreamingState-Helfer
 - `StatisticsTab.tsx`: PeriodSelector-Komponente
 - `SpeechTab.tsx`: VoiceSection-, DeviceSection-Komponenten
-- `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
-- `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
+- „ManualSessionModal.tsx“: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
+- „WorkspaceModals.tsx“: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
 - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry mit Nachschlagetabellen
-- `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
-- `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
+- „OverviewCards.tsx“: MessagesCard, ChatsCard, TokensCard, TimeCard
+- „AppearanceTab.tsx“: ThemeSection, TypographySection, ToggleSwitch
 4. **Reduzierer/Helfer-Refactoring**:
 - `useProjectListStateMachine.ts`: 12 handler-Funktionen aus dem 33-Komplexitätsreduzierer extrahiert
 - `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles Helfer
@@ -1136,12 +1205,12 @@ Verfolgen Sie die Entwicklung von Tandem.
 - `useHistorySync()` für die Chat-Verlaufsverwaltung
 3. **Unterkomponentenextraktion**: Teilen Sie große Komponenten in gezielte Teile auf
 – `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-- `TerminalView.tsx`: TerminalHeader, OutputContent
+- „TerminalView.tsx“: TerminalHeader, OutputContent
 - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Steuerelemente
 - `MessageBubble.tsx`: MessageFooter-Komponente
 - `GlassModal.tsx`: ModalHeader-Komponente
-- `SidebarSection.tsx`: SectionHeader, SectionContent
-- `UpdateNotification.tsx`: UpdateContent, UpdateActions
+- „SidebarSection.tsx“: SectionHeader, SectionContent
+- „UpdateNotification.tsx“: UpdateContent, UpdateActions
 4. **Hilfsfunktionsextraktion**: Logik auf reine Funktionen verschoben
     - `getStatusText()`, `getAudioState()`, `getStateConfig()`
     - `handleTextSelection()`, `handleSelectionClear()`
@@ -1371,13 +1440,13 @@ Verfolgen Sie die Entwicklung von Tandem.
 - Automatischer Start mit Windows, automatischer Neustart bei Fehler
 - Diensterkennung über Portdatei (`%APPDATA%/Tandem/services/db-service.port`)
 - Installation/Deinstallation über `scripts/install-db-service.ps1`
-3. **HTTP API**:
+3. **HTTP-API**:
 – RESTful API auf dynamischem Port
 – Endpunkt für Integritätsprüfung bei `/health`
 – CRUD-Endpunkte unter `/api/v1/*`
 - Unterstützung für Raw-SQL-Abfragen für Migrationskompatibilität
-4. **TypeScript Client**:
-- `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
+4. **TypeScript-Client**:
+- `DatabaseClientService` in der Datei `src/main/services/data/database-client.service.ts`
 - HTTP-Client mit Axios mit automatischer Wiederholung
 - Diensterkennung und -start über `ProcessManagerService`
 - Kompatible Schnittstelle für schrittweise Migration
@@ -1612,7 +1681,7 @@ Verfolgen Sie die Entwicklung von Tandem.
 // Benutzerdefinierte Eingabeaufforderung
 benutzerdefinierte Eingabeaufforderung: {
 Etikett: „Benutzerdefinierte Anforderungen“,
-optional: 'Optional',
+optional: 'Optional (optional)',
 Platzhalter: „z. B. Muss TypeScript verwenden, auf Barrierefreiheit achten, auf kleine Unternehmen abzielen …“,
 Hinweis: „Fügen Sie spezifische Einschränkungen oder Anforderungen hinzu, die die KI bei der Ideengenerierung berücksichtigen soll.“
 }
@@ -1883,7 +1952,7 @@ Implementierung des **Tandem Project Agent**, eines vollständig autonomen KI-En
 – `ProjectAgentService` mit einer robusten Ausführungsschleife erstellt.
 – Statuspersistenz (`project-state.json`) implementiert, um Aufgaben, Pläne und Verlauf zu verfolgen.
 - Fehlerresilienz hinzugefügt (Pausiert bei 429/Quota-Fehlern statt Absturz).
-- **Mission Control UI**:
+- **Mission Control-Benutzeroberfläche**:
 - Neue **Agent**-Ansicht in der Seitenleiste.
 - Live-Dashboard, das den Denkprozess, den aktiven Plan und die Tool-Ausführungsprotokolle des Agenten zeigt.
 - Start-/Stopp-/Pause-Steuerelemente zur Verwaltung der autonomen Sitzung.
@@ -2281,7 +2350,7 @@ const id = eventBus.on(
 'auth:geändert',
 Nutzlast => {
 console.log('Auth geändert:', Nutzlast);
-    },
+},
 { einmal: wahr, Priorität: 10 }
 );
 // Benutzerdefinierte Ereignisse
@@ -2542,7 +2611,7 @@ const data = JSON.parse(untrustedInput);
 // Nachher: ​​Sicher mit Standardeinstellungen
 const data = safeJsonParse(untrustedInput, {
 sensibleDefaults: 'hier',
-    });
+});
     ```
 **Vorteile**:
 - **Absturzverhinderung**: Das fehlerhafte JSON führt nicht mehr zum Absturz der Anwendung
@@ -2591,12 +2660,12 @@ sensibleDefaults: 'hier',
 - **JSON Serialisierungssicherheit**: Verbesserte Sicherungs-/Wiederherstellungsvorgänge mit ordnungsgemäßer Typbehandlung
 - **Erweiterte Typsicherheit**: Bessere Verwendung des LinkedAccount-Typs in allen Authentifizierungsabläufen
 **Kritische Dienste verstärkt**:
-1. **BackupService** (`backup.service.ts`):
+1. **BackupService** (`backup.service.ts`): (Modul)
 – 5 Instanzen von `as unknown as JsonObject[]` durch ordnungsgemäße JSON-Serialisierung ersetzt
 – Verwendetes Muster `JSON.parse(JSON.stringify())` für sichere Typkonvertierung
 - Korrekte Datumsverarbeitung für die Serialisierung von Datenbankobjekten
 - Typsichere Chat-, Eingabeaufforderungs- und Ordnersicherungs-/-wiederherstellungsvorgänge
-2. **SettingsService** (`settings.service.ts`):
+2. **SettingsService** (`settings.service.ts`): (Modul)
 – Unsichere `as unknown as Record<string, unknown>[]`-Umwandlung behoben
 – Korrekter Import vom Typ `LinkedAccount` aus dem Datenbankdienst hinzugefügt
 – Die Suche nach dem Authentifizierungstoken wurde mit korrekter Eingabe korrigiert
@@ -2761,7 +2830,7 @@ sensibleDefaults: 'hier',
 – Der Proxy ruft Token jetzt bei Bedarf von `AuthAPIService` ab und sendet Aktualisierungen über HTTP zurück.
 – Verbesserte Sicherheit, indem sichergestellt wird, dass sich keine Klartext-/losen JSON-Anmeldeinformationen im Verzeichnis `auth/` befinden.
 **Build- und Stabilitätskorrekturen**:
-- **Renderer UI** ✅:
+- **Renderer-Benutzeroberfläche** ✅:
 – Nichtübereinstimmung des polymorphen Referenztyps in `AnimatedCard.tsx` (TS2322) behoben.
 – Ein robustes Rückruf-Referenzmuster implementiert, um dynamische Komponenten (`div`, `button`, `article`) zu verarbeiten und gleichzeitig strenge Schnittmengentypen zu erfüllen.
 - **Systemdienste** ✅:
@@ -2803,13 +2872,13 @@ sensibleDefaults: 'hier',
 – Nicht verwendeten Parametern wurde ein Unterstrich vorangestellt (`_processManager`, `_event`)
 – Ungenutzte Importe entfernt (`os` aus Proxy-Process.service.ts)
 **Verbleibende Warnungen (931)**:
-- `no-unnecessary-condition`: 402
+- „keine unnötige Bedingung“: 402
 - `complexity`: 238 (erfordert Funktions-Refactoring)
 - `prefer-nullish-coalescing`: 218 (komplexe Muster)
-- `no-misused-promises`: 88
-- `max-lines-per-function`: 42
-- `max-depth`: 18
-- `max-params`: 9
+- „keine missbrauchten Versprechen“: 88
+- „max-lines-per-function“: 42
+- „maximale Tiefe“: 18
+- „max-params“: 9
 
 ### Korrektur der Token-Aktualisierung für nicht verknüpfte Konten
 

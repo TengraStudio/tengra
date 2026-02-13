@@ -1,16 +1,18 @@
 import { HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
-import { Download } from 'lucide-react';
+import { Download, Sparkles, Star } from 'lucide-react';
 import React, { memo } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
 interface ModelCardProps {
-    model: UnifiedModel
-    isSelected: boolean
-    isInstalled: boolean
-    onSelect: (model: UnifiedModel) => void | Promise<void>
-    t: (key: string) => string
+    model: UnifiedModel;
+    isSelected: boolean;
+    isInstalled: boolean;
+    isRecommended?: boolean;
+    isWatchlisted?: boolean;
+    onSelect: (model: UnifiedModel) => void | Promise<void>;
+    t: (key: string) => string;
 }
 
 const ARCHITECTURE_MAP: Record<string, string> = {
@@ -24,7 +26,9 @@ const ARCHITECTURE_MAP: Record<string, string> = {
 function detectArchitecture(modelName: string): string {
     const nameLower = modelName.toLowerCase();
     for (const [key, arch] of Object.entries(ARCHITECTURE_MAP)) {
-        if (nameLower.includes(key)) { return arch; }
+        if (nameLower.includes(key)) {
+            return arch;
+        }
     }
     return 'Transformer';
 }
@@ -42,10 +46,8 @@ const DownloadBadge: React.FC<{ count: string | number }> = ({ count }) => (
 
 function getSecondaryBadgeContent(model: UnifiedModel): { count: string | number } | null {
     if (model.provider === 'huggingface') {
-        const downloads = (model as HFModel).downloads;
-        return { count: formatDownloads(downloads) };
+        return { count: formatDownloads((model as HFModel).downloads) };
     }
-    // model.provider === 'ollama' - type narrowing guaranteed
     const ollamaModel = model as OllamaLibraryModel;
     if (ollamaModel.pulls) {
         return { count: ollamaModel.pulls };
@@ -63,7 +65,7 @@ interface ModelHeaderProps {
 const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeContent, t }) => (
     <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
-            <div className={cn("text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm", isOllama ? "bg-warning/20 text-orange border border-orange/20" : "bg-yellow/20 text-warning border border-yellow/20")}>
+            <div className={cn('text-xxxs font-black px-3 py-1.5 rounded-xl uppercase tracking-[0.2em] shadow-sm', isOllama ? 'bg-warning/20 text-orange border border-orange/20' : 'bg-yellow/20 text-warning border border-yellow/20')}>
                 {isOllama ? 'OLLAMA' : 'HUGGINGFACE'}
             </div>
             {isInstalled && (
@@ -76,11 +78,7 @@ const ModelHeader: React.FC<ModelHeaderProps> = ({ isOllama, isInstalled, badgeC
     </div>
 );
 
-interface ModelTagsProps {
-    tags: string[];
-}
-
-const ModelTags: React.FC<ModelTagsProps> = ({ tags }) => (
+const ModelTags: React.FC<{ tags: string[] }> = ({ tags }) => (
     <div className="flex flex-wrap gap-2 mt-auto">
         {tags.slice(0, 4).map(tag => (
             <span key={tag} className="px-3 py-1.5 bg-muted/40 rounded-xl text-xxs font-bold uppercase tracking-wider text-muted-foreground/60 border border-transparent group-hover:border-primary/20 group-hover:bg-primary/5 group-hover:text-primary transition-all">
@@ -91,10 +89,20 @@ const ModelTags: React.FC<ModelTagsProps> = ({ tags }) => (
     </div>
 );
 
-export const ModelCard = memo(({ model, isSelected, isInstalled, onSelect, t }: ModelCardProps) => {
+export const ModelCard = memo(({
+    model,
+    isSelected,
+    isInstalled,
+    isRecommended = false,
+    isWatchlisted = false,
+    onSelect,
+    t
+}: ModelCardProps) => {
     const isOllama = model.provider === 'ollama';
     const name = isOllama ? (model as OllamaLibraryModel).name : (model as HFModel).name;
-    const params = isOllama ? (model as OllamaLibraryModel).tags.find(tag => tag.toLowerCase().includes('b') || tag.toLowerCase().includes('m')) : '';
+    const params = isOllama
+        ? (model as OllamaLibraryModel).tags.find(tag => tag.toLowerCase().includes('b') || tag.toLowerCase().includes('m'))
+        : '';
     const architecture = detectArchitecture(name);
     const badgeContent = getSecondaryBadgeContent(model);
 
@@ -102,12 +110,28 @@ export const ModelCard = memo(({ model, isSelected, isInstalled, onSelect, t }: 
         <motion.div
             onClick={() => void onSelect(model)}
             className={cn(
-                "group relative flex flex-col bg-card border rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer",
-                isSelected ? "border-primary ring-1 ring-primary/20 bg-primary/[0.02]" : "border-border/40 hover:border-primary/30 hover:bg-accent/5"
+                'group relative flex flex-col bg-card border rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer',
+                isSelected ? 'border-primary ring-1 ring-primary/20 bg-primary/[0.02]' : 'border-border/40 hover:border-primary/30 hover:bg-accent/5'
             )}
         >
             <div className="p-7 flex-1 flex flex-col">
                 <ModelHeader isOllama={isOllama} isInstalled={isInstalled} badgeContent={badgeContent} t={t} />
+                {(isRecommended || isWatchlisted) && (
+                    <div className="flex items-center gap-2 mb-3">
+                        {isRecommended && (
+                            <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-primary/15 text-primary border border-primary/20">
+                                <Sparkles className="w-3 h-3" />
+                                Recommended
+                            </span>
+                        )}
+                        {isWatchlisted && (
+                            <span className="inline-flex items-center gap-1 text-xxxs font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-warning/15 text-warning border border-warning/20">
+                                <Star className="w-3 h-3" />
+                                Watchlist
+                            </span>
+                        )}
+                    </div>
+                )}
                 <div className="relative mb-2">
                     <h3 className="font-black text-2xl line-clamp-1 tracking-tighter" title={name}>{name}</h3>
                 </div>
@@ -119,6 +143,12 @@ export const ModelCard = memo(({ model, isSelected, isInstalled, onSelect, t }: 
                 <p className="text-sm text-muted-foreground/70 line-clamp-3 mb-8 leading-relaxed font-medium">
                     {model.description || 'Access state-of-the-art intelligence with this advanced language model.'}
                 </p>
+                {model.provider === 'huggingface' && (
+                    <div className="mb-4 text-xxs font-bold text-muted-foreground flex items-center justify-between border border-border/30 rounded-lg px-3 py-2 bg-muted/20">
+                        <span>Benchmark Score</span>
+                        <span className="text-primary">{Math.round((model as HFModel).recommendationScore ?? 0)}/100</span>
+                    </div>
+                )}
                 <ModelTags tags={model.tags} />
             </div>
             <div className="absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-full group-hover:translate-y-0" />
