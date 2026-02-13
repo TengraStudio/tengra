@@ -276,52 +276,87 @@ If NO user facts found, return: []`;
     // Helper methods
 
     private isUserFact(content: string): boolean {
-        const lowerContent = content.toLowerCase();
+        const lowerContent = content.toLowerCase().trim();
 
-        // Must contain user-related indicators
-        const userIndicators = [
-            // English
-            'user', 'i am', 'my', 'i prefer', 'i like', 'i use', 'i know', 'i can', 'i want', 'i work', 'i need',
+        // Skip very short content (likely noise)
+        if (lowerContent.length < 10) {
+            return false;
+        }
+
+        // Must contain user-related indicators with stronger patterns
+        // These patterns require the content to actually be ABOUT the user
+        const userPatterns = [
+            // English - First person statements
+            /\bi am\b/, /\bi'm\b/, /\bi prefer\b/, /\bi like\b/, /\bi use\b/, /\bi know\b/,
+            /\bi can\b/, /\bi want\b/, /\bi work\b/, /\bi need\b/, /\bi have\b/, /\bi enjoy\b/,
+            /\bmy name is\b/, /\bmy role is\b/, /\bmy job is\b/, /\bmy skill\b/, /\bmy goal\b/,
+            /\bmy preference\b/, /\bmy expertise\b/, /\bmy background\b/, /\bmy experience\b/,
             // Turkish
-            'kullanıcı', 'ben ', 'benim', 'tercih ederim', 'seviyorum', 'kullanıyorum', 'istiyorum',
+            /\bben\b/, /\bbenim\b/, /\btercih ederim\b/, /\bseviyorum\b/, /\bkullan.yorum\b/,
+            /\bistiyorum\b/, /\bbiliyorum\b/, /\byapabiliyorum\b/,
             // German
-            'benutzer', 'ich bin', 'mein', 'ich bevorzuge', 'ich mag', 'ich nutze', 'ich will', 'ich brauche',
+            /\bich bin\b/, /\bich bevorzuge\b/, /\bich mag\b/, /\bich nutze\b/,
+            /\bich will\b/, /\bich brauche\b/, /\bmein name\b/, /\bmeine erfahrung\b/,
             // French
-            'utilisateur', 'je suis', 'mon ', 'ma ', 'mes ', 'je préfère', 'j’aime', 'j\'aime', 'j\'utilise', 'je veux',
+            /\bje suis\b/, /\bje pr.f.re\b/, /\bj'aime\b/, /\bj'utilise\b/,
+            /\bje veux\b/, /\bmon nom\b/, /\bmon r.le\b/, /\bma comp.tence\b/,
             // Spanish
-            'usuario', 'yo ', 'mi ', 'mis ', 'prefiero', 'me gusta', 'uso ', 'quiero', 'necesito',
-            // Portuguese (helpful fallback)
-            'usuário', 'eu sou', 'meu ', 'minha ', 'prefiro', 'gosto', 'uso ', 'quero', 'preciso',
-            // Italian (helpful fallback)
-            'utente', 'io sono', 'mio ', 'mia ', 'preferisco', 'mi piace', 'uso ', 'voglio',
-            // Dutch (helpful fallback)
-            'gebruiker', 'ik ben', 'mijn ', 'ik gebruik', 'ik wil',
-            // Arabic / Chinese / Japanese keywords
-            'المستخدم', 'أنا', 'أفضل', 'أستخدم', 'أريد',
-            '用户', '我', '喜欢', '使用', '想要',
-            'ユーザー', '私は', '好き', '使', 'したい'
+            /\byo soy\b/, /\bme llamo\b/, /\bprefiero\b/, /\bme gusta\b/, /\buso\b/,
+            /\bquiero\b/, /\bnecesito\b/, /\bmi nombre\b/, /\bmi trabajo\b/,
+            // Portuguese
+            /\beu sou\b/, /\bmeu nome\b/, /\bprefiro\b/, /\bgosto\b/,
+            // Italian
+            /\bio sono\b/, /\bmi chiamo\b/, /\bpreferisco\b/, /\bmi piace\b/,
+            // Dutch
+            /\bik ben\b/, /\bik gebruik\b/, /\bik wil\b/, /\bmijn naam\b/,
+            // Arabic
+            /\b....\b/, /\b....\b/, /\b....\b/, /\b....\b/, /\b....\b/,
+            // Chinese
+            /\b..\b/, /\b..\b/, /\b...\b/, /\b...\b/, /\b...\b/,
+            // Japanese
+            /\b...\b/, /\b...\b/, /\b..\b/, /\b.\b/, /\b...\b/
         ];
 
-        // Must NOT contain project/conversation indicators
-        const excludeIndicators = [
-            // English
-            'the project', 'this feature', 'we discussed', 'conversation about', 'in the chat', 'the file', 'the code', 'error in',
+        // Must NOT contain project/conversation/temporal indicators
+        const excludePatterns = [
+            // English - Project/feature/code references
+            /\bthe project\b/, /\bthis project\b/, /\bthe feature\b/, /\bthis feature\b/,
+            /\bwe discussed\b/, /\bconversation about\b/, /\bin the chat\b/, /\bthe file\b/,
+            /\bthe code\b/, /\berror in\b/, /\bbug in\b/, /\bissue with\b/, /\bproblem with\b/,
+            /\bthe function\b/, /\bthe class\b/, /\bthe method\b/, /\bthe variable\b/,
+            /\bthe api\b/, /\bthe database\b/, /\bthe server\b/, /\bthe client\b/,
+            /\bthis conversation\b/, /\byou said\b/, /\bi was told\b/, /\bmentioned earlier\b/,
+            /\byesterday\b/, /\btomorrow\b/, /\blast week\b/, /\bnext week\b/, /\bjust now\b/,
             // Turkish
-            'proje', 'özellik', 'sohbette', 'dosya', 'kod', 'hata',
+            /\bproje\b/, /\b.zellik\b/, /\bsohbet\b/, /\bdosya\b/, /\bkod\b/, /\bhata\b/,
             // German/French/Spanish
-            'projekt', 'feature', 'chat', 'datei', 'code', 'fehler',
-            'projet', 'fonctionnalité', 'discussion', 'fichier', 'code', 'erreur',
-            'proyecto', 'funcionalidad', 'conversación', 'archivo', 'código', 'error',
-            // Arabic / Chinese / Japanese
-            'مشروع', 'ميزة', 'محادثة', 'ملف', 'كود', 'خطأ',
-            '项目', '功能', '对话', '文件', '代码', '错误',
-            'プロジェクト', '機能', '会話', 'ファイル', 'コード', 'エラー'
+            /\bprojekt\b/, /\bfeature\b/, /\bchat\b/, /\bdatei\b/, /\bcode\b/, /\bfehler\b/,
+            /\bprojet\b/, /\bfonctionnalit.\b/, /\bdiscussion\b/, /\bfichier\b/, /\berreur\b/,
+            /\bproyecto\b/, /\bfuncionalidad\b/, /\bconversaci.n\b/, /\barchivo\b/, /\bc.digo\b/,
+            /\berror\b/,
+            // Arabic
+            /\b.....\b/, /\b....\b/, /\b......\b/, /\b...\b/, /\b...\b/, /\b....\b/,
+            // Chinese
+            /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/,
+            // Japanese
+            /\b........\b/, /\b.\b/, /\b..\b/, /\b......\b/, /\b...\b/, /\b....\b/
         ];
 
-        const hasUserIndicator = userIndicators.some(indicator => lowerContent.includes(indicator));
-        const hasExcludeIndicator = excludeIndicators.some(indicator => lowerContent.includes(indicator));
+        // Check for exclusion patterns first
+        for (const pattern of excludePatterns) {
+            if (pattern.test(lowerContent)) {
+                return false;
+            }
+        }
 
-        return hasUserIndicator && !hasExcludeIndicator;
+        // Check for user patterns - must match at least one
+        for (const pattern of userPatterns) {
+            if (pattern.test(lowerContent)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private isValidCategory(category: string): category is UserFact['category'] {

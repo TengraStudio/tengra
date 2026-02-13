@@ -5,6 +5,7 @@ import { CommandPalette } from '@renderer/components/layout/CommandPalette';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';
 import { QuickActionBar } from '@renderer/components/layout/QuickActionBar';
+import { SessionLockOverlay } from '@renderer/components/layout/SessionLockOverlay';
 import { Sidebar } from '@renderer/components/layout/Sidebar';
 import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
@@ -12,13 +13,17 @@ import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
+import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
 import { DetachedTerminalWindow } from '@renderer/features/terminal/components/DetachedTerminalWindow';
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts';
+import { useSessionTimeout } from '@renderer/hooks/useSessionTimeout';
 import { useLanguage, useTranslation } from '@renderer/i18n';
+import { useBreakpoint } from '@renderer/lib/responsive';
+import { trackResponsiveBreakpoint } from '@renderer/store/responsive-analytics.store';
 import { ViewManager } from '@renderer/views/ViewManager';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -73,6 +78,7 @@ export default function App() {
 }
 
 function MainApp() {
+    const sessionTimeout = useSessionTimeout();
     const { language } = useLanguage();
     const { handleAntigravityLogout, isAuthModalOpen, setIsAuthModalOpen, setSettingsCategory } =
         useAuth();
@@ -98,6 +104,7 @@ function MainApp() {
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
     const { projects, selectedProject, setSelectedProject } = useProject();
     const appState = useAppState();
+    const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
     const [showExtensionModal, setShowExtensionModal] = useState(false);
 
@@ -109,6 +116,18 @@ function MainApp() {
             appState.setIsSidebarCollapsed(true);
         }
     }, [appState, appState.currentView, selectedProject]);
+
+    useEffect(() => {
+        trackResponsiveBreakpoint({
+            breakpoint,
+            width: window.innerWidth,
+            height: window.innerHeight,
+        });
+        document.documentElement.setAttribute('data-breakpoint', breakpoint);
+        if (breakpoint === 'mobile') {
+            appState.setIsSidebarCollapsed(true);
+        }
+    }, [appState, breakpoint]);
 
     const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
@@ -163,6 +182,43 @@ function MainApp() {
 
     useKeyboardShortcuts(keyboardShortcutsConfig);
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
+
+    useEffect(() => {
+        const remove = window.electron.ipcRenderer.on(
+            'proxy:rate-limit-warning',
+            (_event, payload: unknown) => {
+                const data = (payload ?? {}) as {
+                    provider?: string;
+                    remaining?: number;
+                    limit?: number;
+                };
+                const provider = data.provider ?? 'provider';
+                const remaining = typeof data.remaining === 'number' ? data.remaining : 0;
+                const limit = typeof data.limit === 'number' ? data.limit : 0;
+                appState.addToast({
+                    type: 'warning',
+                    message: `Rate limit warning (${provider}): ${remaining}/${limit} remaining`
+                });
+            }
+        );
+        return () => {
+            if (typeof remove === 'function') {
+                remove();
+            }
+        };
+    }, [appState]);
+
+    useEffect(() => {
+        if (selectedModel) {
+            localStorage.setItem('app.lastModel', selectedModel);
+        }
+    }, [selectedModel]);
+
+    useEffect(() => {
+        if (selectedProject?.id) {
+            localStorage.setItem('app.lastProjectId', selectedProject.id);
+        }
+    }, [selectedProject?.id]);
 
     return (
         <ErrorBoundary
@@ -283,6 +339,15 @@ function MainApp() {
                                     isDragging={appState.isDragging}
                                     setIsDragging={appState.setIsDragging}
                                     onFileDrop={file => {
+                                        // Validate file before processing
+                                        const validation = validateDroppedFile(file);
+                                        if (!validation.valid) {
+                                            appState.addToast({
+                                                type: 'error',
+                                                message: validation.error || 'Invalid file',
+                                            });
+                                            return;
+                                        }
                                         void processFile(file);
                                     }}
                                 >
@@ -305,6 +370,12 @@ function MainApp() {
                         }
                     />
                 </div>
+                <SessionLockOverlay
+                    isOpen={sessionTimeout.isEnabled && sessionTimeout.isLocked}
+                    lockedAt={sessionTimeout.lockedAt}
+                    canUseBiometric={sessionTimeout.canUseBiometric}
+                    onUnlock={sessionTimeout.unlock}
+                />
             </div>
         </ErrorBoundary>
     );

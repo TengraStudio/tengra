@@ -106,4 +106,44 @@ export function registerMcpIpc(mcpDispatcher: McpDispatcher) {
             return mcpDispatcher.uninstallService(name);
         }
     ));
+
+    ipcMain.handle('mcp:debug-metrics', createSafeIpcHandler('mcp:debug-metrics',
+        async () => {
+            return mcpDispatcher.getDebugMetrics();
+        }, []
+    ));
+
+    ipcMain.handle('mcp:permissions:list-requests', createSafeIpcHandler('mcp:permissions:list-requests',
+        async () => {
+            return mcpDispatcher.getPermissionRequests();
+        }, []
+    ));
+
+    ipcMain.handle('mcp:permissions:set', createIpcHandler('mcp:permissions:set',
+        async (_event: IpcMainInvokeEvent, serviceRaw: unknown, actionRaw: unknown, policyRaw: unknown) => {
+            const service = validateServiceName(serviceRaw);
+            const action = validateActionName(actionRaw);
+            if (!service || !action) {
+                throw new Error('Invalid service/action');
+            }
+
+            if (policyRaw !== 'allow' && policyRaw !== 'deny' && policyRaw !== 'ask') {
+                throw new Error('Invalid permission policy');
+            }
+
+            return mcpDispatcher.setActionPermission(service, action, policyRaw);
+        }
+    ));
+
+    ipcMain.handle('mcp:permissions:resolve-request', createIpcHandler('mcp:permissions:resolve-request',
+        async (_event: IpcMainInvokeEvent, requestIdRaw: unknown, decisionRaw: unknown) => {
+            if (typeof requestIdRaw !== 'string' || requestIdRaw.trim().length === 0) {
+                throw new Error('Invalid request id');
+            }
+            if (decisionRaw !== 'approved' && decisionRaw !== 'denied') {
+                throw new Error('Invalid decision');
+            }
+            return mcpDispatcher.resolvePermissionRequest(requestIdRaw, decisionRaw);
+        }
+    ));
 }

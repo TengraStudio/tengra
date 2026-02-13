@@ -92,6 +92,34 @@ export class McpDispatcher {
         return this.pluginService.dispatch(serviceName, actionName, args);
     }
 
+    async getDebugMetrics() {
+        if (!this.pluginService) {
+            return [];
+        }
+        return this.pluginService.getDispatchMetrics();
+    }
+
+    async getPermissionRequests() {
+        if (!this.pluginService) {
+            return [];
+        }
+        return this.pluginService.listPermissionRequests();
+    }
+
+    async setActionPermission(service: string, action: string, policy: 'allow' | 'deny' | 'ask') {
+        if (!this.pluginService) {
+            return { success: false, error: 'MCP Plugin Service not initialized' };
+        }
+        return this.pluginService.setActionPermission(service, action, policy);
+    }
+
+    async resolvePermissionRequest(requestId: string, decision: 'approved' | 'denied') {
+        if (!this.pluginService) {
+            return { success: false, error: 'MCP Plugin Service not initialized' };
+        }
+        return this.pluginService.resolvePermissionRequest(requestId, decision);
+    }
+
     async installService(config: { name: string; description?: string; command: string; args: string[]; env?: Record<string, string> }) {
         if (!this.pluginService) {
             return { success: false };

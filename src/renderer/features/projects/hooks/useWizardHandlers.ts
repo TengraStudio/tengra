@@ -101,7 +101,7 @@ export const useCreateProjectHandler = (options: CreateProjectOptions) => {
             onClose();
 
         } catch (err) {
-            console.error('Project Creation Failed:', err);
+            window.electron.log.error('Project Creation Failed:', err);
             setError(err instanceof Error ? err.message : 'Failed to create project');
             setStep('selection');
         } finally {
@@ -169,3 +169,4 @@ export const useSSHBrowserNextHandler = (options: SSHBrowserNextOptions) => {
 
     return handleSSHBrowserNext;
 };
+

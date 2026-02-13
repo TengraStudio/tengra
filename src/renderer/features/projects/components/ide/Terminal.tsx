@@ -45,7 +45,7 @@ const loadHistory = (projectId?: string): string[] => {
             return safeJsonParse<string[]>(stored, []);
         }
     } catch (error) {
-        console.warn('Failed to load terminal history:', error);
+        window.electron.log.warn('Failed to load terminal history:', error);
     }
     return [];
 };
@@ -57,7 +57,7 @@ const saveHistory = (history: string[], projectId?: string) => {
         const trimmed = history.slice(-MAX_HISTORY_SIZE);
         localStorage.setItem(getHistoryKey(projectId), JSON.stringify(trimmed));
     } catch (error) {
-        console.warn('Failed to save terminal history:', error);
+        window.electron.log.warn('Failed to save terminal history:', error);
     }
 };
 
@@ -106,7 +106,7 @@ const initializeFitAddon = (term: Terminal, containerRef: React.RefObject<HTMLDi
                 fitAddon.fit();
             }
         } catch {
-            console.warn('ide/Terminal: Initial fit failed');
+            window.electron.log.warn('ide/Terminal: Initial fit failed');
         }
     }
 
@@ -382,5 +382,6 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         </div>
     );
 };
+
 
 

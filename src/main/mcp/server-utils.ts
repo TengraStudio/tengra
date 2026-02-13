@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { appLogger } from '@main/logging/logger';
 import { McpAction, McpResult } from '@main/mcp/types';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -326,7 +327,7 @@ export const validateCommand = (value: unknown): string => {
     const dangerousChars = /[;&|`$(){}[\]<>]/;
     if (dangerousChars.test(cmd)) {
         // This is a warning - the actual protection should be using array-based command execution
-        console.warn('[MCP Security] Command contains potentially dangerous characters:', cmd);
+        appLogger.warn('MCP Security', `Command contains potentially dangerous characters: ${cmd}`);
     }
 
     return cmd;

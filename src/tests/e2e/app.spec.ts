@@ -1,8 +1,8 @@
-import { _electron as electron,expect, test } from '@playwright/test';
+import { _electron as electron, ElectronApplication, expect, test } from '@playwright/test';
 
 
 test.describe('Application Launch', () => {
-    let electronApp: any;
+    let electronApp: ElectronApplication;
 
     test.beforeAll(async () => {
         // Launch Electron app from source
@@ -22,8 +22,8 @@ test.describe('Application Launch', () => {
         const window = await electronApp.firstWindow();
         const title = await window.title();
 
-        // Check title (Update expected title as needed)
-        console.warn(`Window title: ${title}`);
+        // Verify a non-empty title is provided by the app shell
+        expect(title.length).toBeGreaterThan(0);
         // expect(title).toContain('Tandem'); 
         // Title usually set in HTML or via setIsTitleVisible. 
         // The main.ts loads index.html.

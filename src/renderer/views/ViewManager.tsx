@@ -4,12 +4,19 @@ import { useModel } from '@renderer/context/ModelContext';
 import { useProject } from '@renderer/context/ProjectContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
+import { renderViewSkeleton } from '@/components/ui/view-skeletons';
 import { Language, useTranslation } from '@/i18n';
+import {
+    getAnimationDurationMs,
+    resolveAnimationPreset,
+    usePrefersReducedMotion,
+} from '@/lib/animation-system';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
+import { trackAnimationEvent } from '@/store/animation-analytics.store';
 
 // Lazy load feature modules
 
@@ -21,9 +28,9 @@ const ModelsPage = lazy(() => import('@/features/models/pages/ModelsPage').then(
 
 import { AppView } from '@renderer/hooks/useAppState';
 
-const ChatViewWrapper = lazy(() => import('./ViewManager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
-const ProjectsView = lazy(() => import('./ViewManager/ProjectsView').then(m => ({ default: m.ProjectsView })));
-const SettingsView = lazy(() => import('./ViewManager/SettingsView').then(m => ({ default: m.SettingsView })));
+const ChatViewWrapper = lazy(() => import('./view-manager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
+const ProjectsView = lazy(() => import('./view-manager/ProjectsView').then(m => ({ default: m.ProjectsView })));
+const SettingsView = lazy(() => import('./view-manager/SettingsView').then(m => ({ default: m.SettingsView })));
 
 interface ViewManagerProps {
     currentView: AppView
@@ -121,9 +128,24 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView, onNavigateToProject } = props;
     const { language } = useAuth();
     const { t } = useTranslation(language);
-    const { stopListening, isListening } = useChat();
+    const { stopListening, isListening, isLoading, stopGeneration } = useChat();
     const { setIsModelMenuOpen } = useModel();
     const { handleOpenTerminal } = useProject();
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (isLoading && loadingStartTime === null) {
+            setLoadingStartTime(Date.now());
+        } else if (!isLoading && loadingStartTime !== null) {
+            setLoadingStartTime(null);
+        }
+    }, [isLoading, loadingStartTime]);
+
+    const pagePreset = useMemo(
+        () => resolveAnimationPreset('page', prefersReducedMotion),
+        [prefersReducedMotion]
+    );
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -132,6 +154,15 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [setIsModelMenuOpen]);
+
+    useEffect(() => {
+        trackAnimationEvent({
+            name: `view-transition:${currentView}`,
+            preset: 'page',
+            durationMs: getAnimationDurationMs('page', prefersReducedMotion),
+            reducedMotion: prefersReducedMotion,
+        });
+    }, [currentView, prefersReducedMotion]);
 
     const renderView = () => {
         switch (currentView) {
@@ -172,9 +203,29 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
             >
-                <Suspense fallback={<LoadingState size="md" />}>{renderView()}</Suspense>
+                {isLoading && (
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[120]">
+                        <LoadingState
+                            size="sm"
+                            compact
+                            message={t('common.loading')}
+                            stage="Streaming response"
+                            operationId="chat-streaming"
+                            analyticsContext="chat-streaming"
+                            startedAt={loadingStartTime ?? Date.now()}
+                            estimatedMs={12000}
+                            onCancel={() => {
+                                void stopGeneration();
+                            }}
+                            cancelLabel={t('common.cancel')}
+                        />
+                    </div>
+                )}
+                <Suspense fallback={renderViewSkeleton(currentView)}>
+                    {renderView()}
+                </Suspense>
             </motion.div>
             {isListening && (
                 <div onClick={() => stopListening()} className="absolute top-4 right-4 z-[9999] cursor-pointer bg-destructive/70 text-destructive-foreground px-3 py-1.5 rounded-full backdrop-blur-md animate-pulse flex items-center gap-2">

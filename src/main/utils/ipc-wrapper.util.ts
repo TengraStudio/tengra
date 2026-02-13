@@ -3,6 +3,7 @@ import type { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
+import { z, ZodError, ZodType } from 'zod';
 
 /**
  * Standard IPC response format used by wrapped handlers.
@@ -174,5 +175,70 @@ export const createSafeIpcHandler = <T = JsonValue, Args extends unknown[] = unk
             return defaultValue;
         }
     };
+};
+
+interface ValidatedIpcHandlerOptions<T, Args extends unknown[]> extends IpcHandlerOptions {
+    argsSchema?: z.ZodTuple<[z.ZodTypeAny, ...z.ZodTypeAny[]]> | z.ZodTuple<[]>;
+    responseSchema?: ZodType<T>;
+    normalizeArgs?: (args: Args) => Args;
+    schemaVersion?: number;
+    onValidationFailed?: (context: {
+        handlerName: string;
+        schemaVersion?: number;
+        stage: 'args' | 'response';
+        issues: string[];
+    }) => void;
+}
+
+/**
+ * Creates an IPC handler with request/response schema validation.
+ *
+ * Security note: schema validation runs in the main process boundary and should be
+ * used for any handler that accepts renderer-originated payloads.
+ */
+export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+    handlerName: string,
+    handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+    options: ValidatedIpcHandlerOptions<T, Args> = {}
+) => {
+    const { argsSchema, responseSchema, normalizeArgs, schemaVersion, onValidationFailed, ...ipcOptions } = options;
+    return createIpcHandler<T, Args>(
+        handlerName,
+        async (event, ...args) => {
+            const parseWithLog = <R>(stage: 'args' | 'response', fn: () => R): R => {
+                try {
+                    return fn();
+                } catch (error) {
+                    if (error instanceof ZodError) {
+                        const issues = error.issues.map(issue => {
+                            const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+                            return `${path}: ${issue.message}`;
+                        });
+                        appLogger.warn(
+                            'IpcValidation',
+                            `[${handlerName}] ${stage} schema validation failed${schemaVersion ? ` (v${schemaVersion})` : ''}: ${issues.join(', ')}`
+                        );
+                        onValidationFailed?.({
+                            handlerName,
+                            schemaVersion,
+                            stage,
+                            issues
+                        });
+                    }
+                    throw error;
+                }
+            };
+
+            const parsedArgs = argsSchema
+                ? parseWithLog('args', () => argsSchema.parse(args) as unknown as Args)
+                : args;
+            const finalArgs = normalizeArgs ? normalizeArgs(parsedArgs) : parsedArgs;
+            const result = await handler(event, ...finalArgs);
+            return responseSchema
+                ? parseWithLog('response', () => responseSchema.parse(result))
+                : result;
+        },
+        ipcOptions
+    );
 };
 

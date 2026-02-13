@@ -7,10 +7,11 @@ import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service'
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createSafeIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
 
 /** Maximum model name length */
 const MAX_MODEL_LENGTH = 256;
@@ -280,4 +281,187 @@ export function registerOllamaIpc(options: {
             return { success: true };
         }, { success: false }
     ));
+
+    // ========================================
+    // OLLAMA-01: Model Health & Recommendations
+    // ========================================
+
+    ipcMain.handle('ollama:checkModelHealth', createValidatedIpcHandler('ollama:checkModelHealth',
+        async (_event: IpcMainInvokeEvent, modelName: string) => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.checkModelHealth(modelName);
+        }, {
+            argsSchema: z.tuple([z.string().trim().min(1).max(MAX_MODEL_LENGTH)]),
+            responseSchema: z.object({
+                name: z.string(),
+                isHealthy: z.boolean(),
+                lastChecked: z.date(),
+                responseTimeMs: z.number(),
+                error: z.string().optional(),
+                size: z.number(),
+                digest: z.string()
+            })
+        }
+    ));
+
+    ipcMain.handle('ollama:checkAllModelsHealth', createSafeIpcHandler('ollama:checkAllModelsHealth',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.checkAllModelsHealth();
+        }, []
+    ));
+
+    ipcMain.handle('ollama:getModelRecommendations', createSafeIpcHandler('ollama:getModelRecommendations',
+        async (_event: IpcMainInvokeEvent, categoryRaw: unknown) => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            const category = typeof categoryRaw === 'string'
+                ? categoryRaw as 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal'
+                : undefined;
+            return await ollamaService.getModelRecommendations(category);
+        }, []
+    ));
+
+    ipcMain.handle('ollama:getRecommendedModelForTask', createSafeIpcHandler('ollama:getRecommendedModelForTask',
+        async (_event: IpcMainInvokeEvent, taskRaw: unknown) => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            const task = typeof taskRaw === 'string' ? taskRaw : '';
+            return await ollamaService.getRecommendedModelForTask(task);
+        }, null
+    ));
+
+    // ========================================
+    // OLLAMA-02: Connection Handling
+    // ========================================
+
+    ipcMain.handle('ollama:getConnectionStatus', createSafeIpcHandler('ollama:getConnectionStatus',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.getConnectionStatus();
+        }, {
+        isConnected: false,
+        host: '127.0.0.1',
+        port: 11434,
+        latency: 0,
+        lastChecked: new Date(),
+        reconnectAttempts: 0,
+        poolSize: 0,
+        activeConnections: 0
+    }
+    ));
+
+    ipcMain.handle('ollama:testConnection', createSafeIpcHandler('ollama:testConnection',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.testConnection();
+        }, { success: false, latency: 0, error: 'Service unavailable' }
+    ));
+
+    ipcMain.handle('ollama:reconnect', createSafeIpcHandler('ollama:reconnect',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.reconnect();
+        }, false
+    ));
+
+    // ========================================
+    // OLLAMA-03: GPU Monitoring
+    // ========================================
+
+    ipcMain.handle('ollama:getGPUInfo', createSafeIpcHandler('ollama:getGPUInfo',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return await ollamaService.getGPUInfo();
+        }, {
+        available: false,
+        gpus: [],
+        lastChecked: new Date(),
+        warnings: ['Service unavailable']
+    }
+    ));
+
+    ipcMain.handle('ollama:startGPUMonitoring', createValidatedIpcHandler('ollama:startGPUMonitoring',
+        async (_event: IpcMainInvokeEvent, intervalMs: number = 10000) => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            ollamaService.startGPUMonitoring(intervalMs);
+            return { success: true, intervalMs };
+        }, {
+            argsSchema: z.tuple([z.number().int().min(1000).max(60000).optional()]),
+            responseSchema: z.object({ success: z.boolean(), intervalMs: z.number().int() })
+        }
+    ));
+
+    ipcMain.handle('ollama:stopGPUMonitoring', createSafeIpcHandler('ollama:stopGPUMonitoring',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            ollamaService.stopGPUMonitoring();
+            return { success: true };
+        }, { success: false }
+    ));
+
+    ipcMain.handle('ollama:setGPUAlertThresholds', createValidatedIpcHandler('ollama:setGPUAlertThresholds',
+        async (_event: IpcMainInvokeEvent, thresholds: {
+            highMemoryPercent?: number;
+            highTemperatureC?: number;
+            lowMemoryMB?: number;
+        }) => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            ollamaService.setGPUAlertThresholds(thresholds);
+            return { success: true };
+        }, {
+            argsSchema: z.tuple([z.object({
+                highMemoryPercent: z.number().min(1).max(100).optional(),
+                highTemperatureC: z.number().min(20).max(120).optional(),
+                lowMemoryMB: z.number().min(1).max(1024 * 256).optional()
+            }).default({})]),
+            responseSchema: z.object({ success: z.boolean() })
+        }
+    ));
+
+    ipcMain.handle('ollama:getGPUAlertThresholds', createSafeIpcHandler('ollama:getGPUAlertThresholds',
+        async () => {
+            if (!ollamaService) {
+                throw new Error('Ollama service unavailable');
+            }
+            return ollamaService.getGPUAlertThresholds();
+        }, { highMemoryPercent: 90, highTemperatureC: 85, lowMemoryMB: 500 }
+    ));
+
+    // Forward GPU alerts to renderer
+    if (ollamaService) {
+        ollamaService.onGPUAlert((alert) => {
+            const windows = BrowserWindow.getAllWindows();
+            windows.forEach(win => {
+                win.webContents.send('ollama:gpuAlert', alert);
+            });
+        });
+
+        ollamaService.onGPUStatus((status) => {
+            const windows = BrowserWindow.getAllWindows();
+            windows.forEach(win => {
+                win.webContents.send('ollama:gpuStatus', status);
+            });
+        });
+    }
 }

@@ -8,6 +8,9 @@ import { ModelCategory, ModelListItem } from '../types';
 
 import { ModelSelectorItem } from './ModelSelectorItem';
 
+/** Minimum padding from viewport edges in pixels */
+const VIEWPORT_PADDING = 16;
+
 export type ChatMode = 'instant' | 'thinking' | 'agent';
 export type ThinkingLevel =
     | 'none'
@@ -77,6 +80,49 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<'models' | 'reasoning'>('models');
     const [pendingModel, setPendingModel] = useState<{ provider: string; id: string } | null>(null);
+    const [modalStyle, setModalStyle] = useState<React.CSSProperties>({});
+
+    // Calculate modal position to ensure it stays within viewport
+    useEffect(() => {
+        if (!isOpen || !modalRef.current) {
+            return;
+        }
+
+        const updatePosition = () => {
+            const modal = modalRef.current;
+            if (!modal) {
+                return;
+            }
+
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const modalRect = modal.getBoundingClientRect();
+
+            const style: React.CSSProperties = {};
+
+            // Check if modal is too wide for viewport
+            if (modalRect.width > viewportWidth - 2 * VIEWPORT_PADDING) {
+                style.width = `${viewportWidth - 2 * VIEWPORT_PADDING}px`;
+                style.maxWidth = `${viewportWidth - 2 * VIEWPORT_PADDING}px`;
+            }
+
+            // Check if modal is too tall for viewport
+            if (modalRect.height > viewportHeight - 2 * VIEWPORT_PADDING) {
+                style.maxHeight = `${viewportHeight - 2 * VIEWPORT_PADDING}px`;
+            }
+
+            setModalStyle(style);
+        };
+
+        // Run after modal has rendered
+        const timer = setTimeout(updatePosition, 0);
+        window.addEventListener('resize', updatePosition);
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [isOpen]);
     const [pendingThinkingLevel, setPendingThinkingLevel] = useState<string | null>(null);
 
     // Check if pending model requires reasoning level selection
@@ -312,6 +358,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             {/* Modal */}
             <div
                 ref={modalRef}
+                style={modalStyle}
                 className={cn(
                     'relative w-full max-w-3xl max-h-[85vh] flex flex-col',
                     'bg-popover/95 backdrop-blur-xl rounded-2xl shadow-2xl',

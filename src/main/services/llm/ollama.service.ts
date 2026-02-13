@@ -1,4 +1,5 @@
 // Ollama service using Node http module with forced IPv4
+import { EventEmitter } from 'events';
 import * as http from 'http';
 
 import { appLogger } from '@main/logging/logger';
@@ -8,6 +9,82 @@ import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import axios from 'axios';
+
+// --- OLLAMA-01: Model Health & Recommendation Types ---
+
+export interface ModelHealthStatus {
+    name: string;
+    isHealthy: boolean;
+    lastChecked: Date;
+    responseTimeMs: number;
+    error?: string;
+    size: number;
+    digest: string;
+    details?: {
+        format: string;
+        family: string;
+        parameter_size: string;
+        quantization_level: string;
+    };
+}
+
+export interface ModelRecommendation {
+    name: string;
+    reason: string;
+    category: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal';
+    sizeEstimate: string;
+    pulls?: string;
+    tags: string[];
+    suitabilityScore: number; // 0-100
+}
+
+// --- OLLAMA-02: Connection Pool Types ---
+
+interface ConnectionPoolEntry {
+    id: string;
+    inUse: boolean;
+    lastUsed: Date;
+    requestCount: number;
+}
+
+export interface ConnectionStatus {
+    isConnected: boolean;
+    host: string;
+    port: number;
+    latency: number;
+    lastChecked: Date;
+    reconnectAttempts: number;
+    poolSize: number;
+    activeConnections: number;
+}
+
+// --- OLLAMA-03: GPU Monitoring Types ---
+
+export interface GPUInfo {
+    index: number;
+    name: string;
+    memoryUsed: number;
+    memoryTotal: number;
+    utilizationPercent: number;
+    temperatureC: number | null;
+}
+
+export interface GPUStatus {
+    available: boolean;
+    gpus: GPUInfo[];
+    lastChecked: Date;
+    warnings: string[];
+}
+
+export interface GPUAlert {
+    type: 'high_memory' | 'high_temperature' | 'low_memory';
+    severity: 'warning' | 'critical';
+    message: string;
+    gpuIndex: number;
+    timestamp: Date;
+    value: number;
+    threshold: number;
+}
 
 
 interface OllamaMessage {
@@ -58,6 +135,24 @@ export class OllamaService {
     private currentRequest: http.ClientRequest | null = null;
     private settingsService: SettingsService;
 
+    // OLLAMA-02: Connection pooling
+    private connectionPool: ConnectionPoolEntry[] = [];
+    private maxPoolSize: number = 5;
+    private reconnectAttempts: number = 0;
+    private maxReconnectAttempts: number = 3;
+    private reconnectDelayMs: number = 1000;
+    private lastConnectionCheck: Date = new Date();
+
+    // OLLAMA-03: GPU monitoring
+    private gpuEventEmitter: EventEmitter = new EventEmitter();
+    private gpuAlertThresholds = {
+        highMemoryPercent: 90,
+        highTemperatureC: 85,
+        lowMemoryMB: 500
+    };
+    private lastGPUCheck: Date = new Date();
+    private gpuMonitoringInterval: NodeJS.Timeout | null = null;
+
     constructor(settingsService: SettingsService) {
         this.settingsService = settingsService;
         const settings = this.settingsService.getSettings();
@@ -70,6 +165,9 @@ export class OllamaService {
                 appLogger.error('OllamaService', 'Invalid Ollama URL provided, using default', e as Error);
             }
         }
+
+        // Initialize connection pool
+        this.initializeConnectionPool();
     }
 
     abort() {
@@ -414,5 +512,530 @@ export class OllamaService {
 
     async isOllamaRunning(): Promise<boolean> {
         return this.isAvailable();
+    }
+
+    // ========================================
+    // OLLAMA-01: Model Management Improvements
+    // ========================================
+
+    /**
+     * Check health status of a specific model
+     */
+    async checkModelHealth(modelName: string): Promise<ModelHealthStatus> {
+        const startTime = Date.now();
+        try {
+            // Try to get model info and run a minimal inference
+            const response = await this.httpRequest({
+                method: 'POST',
+                path: '/api/generate',
+                body: JSON.stringify({
+                    model: modelName,
+                    prompt: 'test',
+                    stream: false,
+                    options: { num_predict: 1 }
+                }),
+                timeout: 30000
+            });
+
+            const responseTimeMs = Date.now() - startTime;
+
+            if (response.ok) {
+                const models = await this.getModels();
+                const modelInfo = models.find(m => m.name === modelName);
+
+                return {
+                    name: modelName,
+                    isHealthy: true,
+                    lastChecked: new Date(),
+                    responseTimeMs,
+                    size: modelInfo?.size ?? 0,
+                    digest: modelInfo?.digest ?? '',
+                    details: modelInfo?.details
+                };
+            } else {
+                return {
+                    name: modelName,
+                    isHealthy: false,
+                    lastChecked: new Date(),
+                    responseTimeMs,
+                    error: `HTTP ${response.status}: ${response.data}`,
+                    size: 0,
+                    digest: ''
+                };
+            }
+        } catch (error) {
+            return {
+                name: modelName,
+                isHealthy: false,
+                lastChecked: new Date(),
+                responseTimeMs: Date.now() - startTime,
+                error: getErrorMessage(error as Error),
+                size: 0,
+                digest: ''
+            };
+        }
+    }
+
+    /**
+     * Check health status of all installed models
+     */
+    async checkAllModelsHealth(): Promise<ModelHealthStatus[]> {
+        const models = await this.getModels();
+        const healthChecks: ModelHealthStatus[] = [];
+
+        for (const model of models) {
+            const health = await this.checkModelHealth(model.name);
+            healthChecks.push(health);
+        }
+
+        return healthChecks;
+    }
+
+    /**
+     * Get model recommendations based on use case
+     */
+    async getModelRecommendations(
+        category?: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal'
+    ): Promise<ModelRecommendation[]> {
+        const recommendations: ModelRecommendation[] = [
+            // Coding models
+            {
+                name: 'deepseek-coder',
+                reason: 'Excellent for code generation, completion, and understanding. Supports multiple programming languages.',
+                category: 'coding',
+                sizeEstimate: '1.3B - 33B',
+                tags: ['1.3b', '6.7b', '33b'],
+                suitabilityScore: 95
+            },
+            {
+                name: 'codellama',
+                reason: 'Meta\'s code-specialized model, great for code completion and generation.',
+                category: 'coding',
+                sizeEstimate: '7B - 70B',
+                tags: ['7b', '13b', '34b', '70b'],
+                suitabilityScore: 88
+            },
+            {
+                name: 'starcoder2',
+                reason: 'State-of-the-art code generation model with broad language support.',
+                category: 'coding',
+                sizeEstimate: '3B - 15B',
+                tags: ['3b', '7b', '15b'],
+                suitabilityScore: 85
+            },
+            // Reasoning models
+            {
+                name: 'deepseek-r1',
+                reason: 'Advanced reasoning model with chain-of-thought capabilities. Best for complex problem solving.',
+                category: 'reasoning',
+                sizeEstimate: '1.5B - 671B',
+                tags: ['1.5b', '7b', '8b', '14b', '32b', '70b', '671b'],
+                suitabilityScore: 98
+            },
+            {
+                name: 'llama3.1',
+                reason: 'Strong general reasoning and instruction following capabilities.',
+                category: 'reasoning',
+                sizeEstimate: '8B - 405B',
+                tags: ['8b', '70b', '405b'],
+                suitabilityScore: 82
+            },
+            // Creative models
+            {
+                name: 'llama3.2',
+                reason: 'Great for creative writing, storytelling, and content generation.',
+                category: 'creative',
+                sizeEstimate: '1B - 90B',
+                tags: ['1b', '3b', '11b', '90b'],
+                suitabilityScore: 85
+            },
+            {
+                name: 'mistral',
+                reason: 'Excellent balance of creativity and coherence for writing tasks.',
+                category: 'creative',
+                sizeEstimate: '7B',
+                tags: ['7b'],
+                suitabilityScore: 80
+            },
+            // Multimodal models
+            {
+                name: 'llama3.2-vision',
+                reason: 'Vision-language model for image understanding and description.',
+                category: 'multimodal',
+                sizeEstimate: '11B - 90B',
+                tags: ['11b', '90b'],
+                suitabilityScore: 88
+            },
+            {
+                name: 'qwen2.5',
+                reason: 'Strong multimodal capabilities with vision and language understanding.',
+                category: 'multimodal',
+                sizeEstimate: '0.5B - 72B',
+                tags: ['0.5b', '1.5b', '3b', '7b', '14b', '32b', '72b'],
+                suitabilityScore: 85
+            },
+            // General purpose
+            {
+                name: 'llama3.1',
+                reason: 'Best all-around model for general tasks, good balance of speed and quality.',
+                category: 'general',
+                sizeEstimate: '8B - 405B',
+                tags: ['8b', '70b', '405b'],
+                suitabilityScore: 92
+            },
+            {
+                name: 'gemma2',
+                reason: 'Google\'s efficient model, great for general tasks with lower resource usage.',
+                category: 'general',
+                sizeEstimate: '2B - 27B',
+                tags: ['2b', '9b', '27b'],
+                suitabilityScore: 78
+            },
+            {
+                name: 'phi3',
+                reason: 'Microsoft\'s compact but capable model, excellent for resource-constrained environments.',
+                category: 'general',
+                sizeEstimate: '3.8B - 14B',
+                tags: ['mini', 'medium'],
+                suitabilityScore: 75
+            }
+        ];
+
+        // Filter by category if specified
+        let filtered = category
+            ? recommendations.filter(r => r.category === category)
+            : recommendations;
+
+        // Sort by suitability score
+        filtered = filtered.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+
+        // Try to enrich with pull counts
+        try {
+            const libraryModels = await this.getLibraryModels();
+            filtered = filtered.map(rec => {
+                const libModel = libraryModels.find(m => m.name === rec.name);
+                return {
+                    ...rec,
+                    pulls: libModel?.pulls
+                };
+            });
+        } catch {
+            // Ignore errors enriching with pulls
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Get recommended model for a specific task
+     */
+    async getRecommendedModelForTask(task: string): Promise<ModelRecommendation | null> {
+        const taskLower = task.toLowerCase();
+
+        // Detect task category from description
+        let category: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal' = 'general';
+
+        if (taskLower.includes('code') || taskLower.includes('program') || taskLower.includes('function') || taskLower.includes('debug')) {
+            category = 'coding';
+        } else if (taskLower.includes('write') || taskLower.includes('story') || taskLower.includes('creative') || taskLower.includes('article')) {
+            category = 'creative';
+        } else if (taskLower.includes('analyze') || taskLower.includes('reason') || taskLower.includes('solve') || taskLower.includes('explain')) {
+            category = 'reasoning';
+        } else if (taskLower.includes('image') || taskLower.includes('visual') || taskLower.includes('picture') || taskLower.includes('screenshot')) {
+            category = 'multimodal';
+        }
+
+        const recommendations = await this.getModelRecommendations(category);
+        return recommendations[0] || null;
+    }
+
+    // ========================================
+    // OLLAMA-02: Connection Handling
+    // ========================================
+
+    /**
+     * Initialize connection pool
+     */
+    private initializeConnectionPool(): void {
+        for (let i = 0; i < this.maxPoolSize; i++) {
+            this.connectionPool.push({
+                id: `conn-${i}`,
+                inUse: false,
+                lastUsed: new Date(),
+                requestCount: 0
+            });
+        }
+        appLogger.info('OllamaService', `Connection pool initialized with ${this.maxPoolSize} connections`);
+    }
+
+    /**
+     * Get current connection status
+     */
+    async getConnectionStatus(): Promise<ConnectionStatus> {
+        const startTime = Date.now();
+        let isConnected = false;
+        let latency = 0;
+
+        try {
+            isConnected = await this.isAvailable();
+            latency = Date.now() - startTime;
+        } catch {
+            latency = -1;
+        }
+
+        this.lastConnectionCheck = new Date();
+
+        return {
+            isConnected,
+            host: this.host,
+            port: this.port,
+            latency,
+            lastChecked: this.lastConnectionCheck,
+            reconnectAttempts: this.reconnectAttempts,
+            poolSize: this.maxPoolSize,
+            activeConnections: this.connectionPool.filter(c => c.inUse).length
+        };
+    }
+
+    /**
+     * Test connection with detailed diagnostics
+     */
+    async testConnection(): Promise<{
+        success: boolean;
+        latency: number;
+        error?: string;
+        serverInfo?: {
+            version?: string;
+            modelsCount: number;
+        };
+    }> {
+        const startTime = Date.now();
+
+        try {
+            const [available, models] = await Promise.all([
+                this.isAvailable(),
+                this.getModels()
+            ]);
+
+            const latency = Date.now() - startTime;
+
+            if (available) {
+                this.reconnectAttempts = 0; // Reset on successful connection
+                return {
+                    success: true,
+                    latency,
+                    serverInfo: {
+                        modelsCount: models.length
+                    }
+                };
+            } else {
+                return {
+                    success: false,
+                    latency,
+                    error: 'Ollama server not responding'
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                latency: Date.now() - startTime,
+                error: getErrorMessage(error as Error)
+            };
+        }
+    }
+
+    /**
+     * Attempt to reconnect with exponential backoff
+     */
+    async reconnect(): Promise<boolean> {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            appLogger.warn('OllamaService', `Max reconnect attempts (${this.maxReconnectAttempts}) reached`);
+            return false;
+        }
+
+        this.reconnectAttempts++;
+        const delay = this.reconnectDelayMs * Math.pow(2, this.reconnectAttempts - 1);
+
+        appLogger.info('OllamaService', `Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} after ${delay}ms`);
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        const connected = await this.isAvailable();
+        if (connected) {
+            this.reconnectAttempts = 0;
+            appLogger.info('OllamaService', 'Reconnection successful');
+            return true;
+        }
+
+        return this.reconnect();
+    }
+
+    // ========================================
+    // OLLAMA-03: GPU Monitoring
+    // ========================================
+
+    /**
+     * Get GPU information from Ollama
+     */
+    async getGPUInfo(): Promise<GPUStatus> {
+        const warnings: string[] = [];
+        const gpus: GPUInfo[] = [];
+
+        try {
+            // Ollama exposes GPU info through /api/ps endpoint
+            const response = await this.httpRequest({ path: '/api/ps', timeout: 5000 });
+
+            if (response.ok) {
+                const data = safeJsonParse<{
+                    models?: Array<{
+                        name: string;
+                        details?: {
+                            gpu_memory?: number;
+                            total_memory?: number;
+                        };
+                    }>
+                }>(response.data, { models: [] });
+
+                // Parse GPU info from running models
+                // Note: Ollama doesn't expose detailed GPU metrics directly
+                // This is a best-effort implementation
+                for (const model of data.models || []) {
+                    if (model.details?.gpu_memory) {
+                        gpus.push({
+                            index: 0,
+                            name: 'GPU 0',
+                            memoryUsed: model.details.gpu_memory,
+                            memoryTotal: model.details.total_memory || model.details.gpu_memory,
+                            utilizationPercent: model.details.total_memory
+                                ? (model.details.gpu_memory / model.details.total_memory) * 100
+                                : 0,
+                            temperatureC: null // Ollama doesn't expose temperature
+                        });
+                    }
+                }
+            }
+
+            this.lastGPUCheck = new Date();
+
+            // Generate warnings based on thresholds
+            for (const gpu of gpus) {
+                if (gpu.utilizationPercent > this.gpuAlertThresholds.highMemoryPercent) {
+                    warnings.push(`GPU ${gpu.index} memory usage is high: ${gpu.utilizationPercent.toFixed(1)}%`);
+                }
+                if (gpu.temperatureC !== null && gpu.temperatureC > this.gpuAlertThresholds.highTemperatureC) {
+                    warnings.push(`GPU ${gpu.index} temperature is high: ${gpu.temperatureC}°C`);
+                }
+                const availableMemory = gpu.memoryTotal - gpu.memoryUsed;
+                if (availableMemory < this.gpuAlertThresholds.lowMemoryMB * 1024 * 1024) {
+                    warnings.push(`GPU ${gpu.index} has low available memory: ${(availableMemory / 1024 / 1024).toFixed(0)}MB`);
+                }
+            }
+
+            return {
+                available: gpus.length > 0,
+                gpus,
+                lastChecked: this.lastGPUCheck,
+                warnings
+            };
+        } catch (error) {
+            appLogger.error('OllamaService', 'Failed to get GPU info', error as Error);
+            return {
+                available: false,
+                gpus: [],
+                lastChecked: new Date(),
+                warnings: ['Unable to retrieve GPU information']
+            };
+        }
+    }
+
+    /**
+     * Start continuous GPU monitoring
+     */
+    startGPUMonitoring(intervalMs: number = 10000): void {
+        if (this.gpuMonitoringInterval) {
+            this.stopGPUMonitoring();
+        }
+
+        this.gpuMonitoringInterval = setInterval(async () => {
+            try {
+                const status = await this.getGPUInfo();
+
+                // Emit alerts for any warnings
+                for (const warning of status.warnings) {
+                    const alert: GPUAlert = {
+                        type: warning.includes('temperature') ? 'high_temperature' :
+                            warning.includes('low') ? 'low_memory' : 'high_memory',
+                        severity: warning.includes('critical') ? 'critical' : 'warning',
+                        message: warning,
+                        gpuIndex: 0,
+                        timestamp: new Date(),
+                        value: 0,
+                        threshold: 0
+                    };
+                    this.gpuEventEmitter.emit('alert', alert);
+                }
+
+                this.gpuEventEmitter.emit('status', status);
+            } catch (error) {
+                appLogger.error('OllamaService', 'GPU monitoring error', error as Error);
+            }
+        }, intervalMs);
+
+        appLogger.info('OllamaService', `GPU monitoring started with ${intervalMs}ms interval`);
+    }
+
+    /**
+     * Stop GPU monitoring
+     */
+    stopGPUMonitoring(): void {
+        if (this.gpuMonitoringInterval) {
+            clearInterval(this.gpuMonitoringInterval);
+            this.gpuMonitoringInterval = null;
+            appLogger.info('OllamaService', 'GPU monitoring stopped');
+        }
+    }
+
+    /**
+     * Subscribe to GPU alerts
+     */
+    onGPUAlert(callback: (alert: GPUAlert) => void): () => void {
+        this.gpuEventEmitter.on('alert', callback);
+        return () => this.gpuEventEmitter.off('alert', callback);
+    }
+
+    /**
+     * Subscribe to GPU status updates
+     */
+    onGPUStatus(callback: (status: GPUStatus) => void): () => void {
+        this.gpuEventEmitter.on('status', callback);
+        return () => this.gpuEventEmitter.off('status', callback);
+    }
+
+    /**
+     * Set GPU alert thresholds
+     */
+    setGPUAlertThresholds(thresholds: Partial<typeof OllamaService.prototype.gpuAlertThresholds>): void {
+        this.gpuAlertThresholds = {
+            ...this.gpuAlertThresholds,
+            ...thresholds
+        };
+        appLogger.info('OllamaService', 'GPU alert thresholds updated', this.gpuAlertThresholds);
+    }
+
+    /**
+     * Get current GPU alert thresholds
+     */
+    getGPUAlertThresholds(): typeof OllamaService.prototype.gpuAlertThresholds {
+        return { ...this.gpuAlertThresholds };
+    }
+
+    /**
+     * Cleanup resources
+     */
+    destroy(): void {
+        this.stopGPUMonitoring();
+        this.gpuEventEmitter.removeAllListeners();
+        this.connectionPool = [];
+        appLogger.info('OllamaService', 'Service destroyed and resources cleaned up');
     }
 }

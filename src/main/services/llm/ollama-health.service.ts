@@ -17,6 +17,11 @@ export class OllamaHealthService extends BaseService {
     private baseUrl: string = 'http://127.0.0.1:11434';
     private checkInterval: number = 30000; // 30 seconds
     private events = new EventEmitter();
+    /** Lock to prevent concurrent health checks (race condition fix) */
+    private isChecking: boolean = false;
+    /** Debounce timer for rapid check requests */
+    private lastCheckTime: number = 0;
+    private readonly minCheckIntervalMs: number = 2000; // Minimum 2s between checks
 
     constructor(baseUrl?: string) {
         super('OllamaHealthService');
@@ -77,6 +82,21 @@ export class OllamaHealthService extends BaseService {
     }
 
     async checkHealth(): Promise<OllamaStatus> {
+        // Prevent race condition: skip if already checking
+        if (this.isChecking) {
+            this.logInfo('Health check already in progress, skipping');
+            return this.status;
+        }
+
+        // Debounce: skip if checked recently
+        const now = Date.now();
+        if (now - this.lastCheckTime < this.minCheckIntervalMs) {
+            this.logInfo('Health check debounced, returning cached status');
+            return this.status;
+        }
+
+        this.isChecking = true;
+        this.lastCheckTime = now;
         const wasOnline = this.status.online;
 
         try {
@@ -123,13 +143,17 @@ export class OllamaHealthService extends BaseService {
                 this.emit('offline', this.status);
                 this.emit('statusChange', this.status);
             }
+        } finally {
+            this.isChecking = false;
         }
 
         return this.status;
     }
 
-    // Force an immediate check
+    // Force an immediate check (bypasses debounce but not the lock)
     async forceCheck(): Promise<OllamaStatus> {
+        // Reset debounce timer for forced checks
+        this.lastCheckTime = 0;
         return this.checkHealth();
     }
 }

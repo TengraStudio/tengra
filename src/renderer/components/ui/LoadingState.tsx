@@ -1,7 +1,12 @@
-import { Loader2 } from 'lucide-react';
-import React from 'react';
+import { Loader2, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
+import {
+    beginLoadingOperation,
+    completeLoadingOperation,
+    updateLoadingOperationProgress,
+} from '@/store/loading-analytics.store';
 
 export interface LoadingStateProps {
     /**
@@ -24,6 +29,42 @@ export interface LoadingStateProps {
      * Whether to show inline (smaller, for buttons/inputs)
      */
     inline?: boolean
+    /**
+     * Optional operation id for loading analytics correlation.
+     */
+    operationId?: string
+    /**
+     * Optional context label for loading analytics.
+     */
+    analyticsContext?: string
+    /**
+     * Optional operation start timestamp for estimation.
+     */
+    startedAt?: number
+    /**
+     * Optional estimated total duration in milliseconds.
+     */
+    estimatedMs?: number
+    /**
+     * Optional explicit progress percentage [0..100].
+     */
+    progress?: number
+    /**
+     * Optional stage label shown under the loading message.
+     */
+    stage?: string
+    /**
+     * Optional cancellation callback.
+     */
+    onCancel?: () => void
+    /**
+     * Optional cancellation button label.
+     */
+    cancelLabel?: string
+    /**
+     * Compact layout variant for overlays/toolbars.
+     */
+    compact?: boolean
 }
 
 /**
@@ -47,8 +88,19 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     size = 'md',
     fullScreen = false,
     className,
-    inline = false
+    inline = false,
+    operationId,
+    analyticsContext,
+    startedAt,
+    estimatedMs,
+    progress,
+    stage,
+    onCancel,
+    cancelLabel = 'Cancel',
+    compact = false
 }) => {
+    const hasRegisteredRef = useRef(false);
+
     const sizeClasses = {
         sm: 'w-4 h-4',
         md: 'w-8 h-8',
@@ -61,6 +113,63 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         lg: 'text-base'
     };
 
+    const clampedProgress = useMemo(() => {
+        if (typeof progress === 'number' && Number.isFinite(progress)) {
+            return Math.max(0, Math.min(100, progress));
+        }
+        if (
+            typeof startedAt === 'number' &&
+            Number.isFinite(startedAt) &&
+            typeof estimatedMs === 'number' &&
+            Number.isFinite(estimatedMs) &&
+            estimatedMs > 0
+        ) {
+            const elapsed = Math.max(0, Date.now() - startedAt);
+            return Math.max(0, Math.min(98, (elapsed / estimatedMs) * 100));
+        }
+        return undefined;
+    }, [estimatedMs, progress, startedAt]);
+
+    const estimateLabel = useMemo(() => {
+        if (
+            typeof startedAt !== 'number' ||
+            !Number.isFinite(startedAt) ||
+            typeof estimatedMs !== 'number' ||
+            !Number.isFinite(estimatedMs) ||
+            estimatedMs <= 0
+        ) {
+            return null;
+        }
+        const remaining = Math.max(0, estimatedMs - (Date.now() - startedAt));
+        const seconds = Math.ceil(remaining / 1000);
+        return seconds > 0 ? `~${seconds}s remaining` : 'Finalizing...';
+    }, [estimatedMs, startedAt]);
+
+    useEffect(() => {
+        if (!operationId || hasRegisteredRef.current) {
+            return;
+        }
+        beginLoadingOperation({
+            id: operationId,
+            context: analyticsContext ?? 'loading-state',
+            estimatedMs,
+            progress: clampedProgress,
+            cancellable: typeof onCancel === 'function',
+        });
+        hasRegisteredRef.current = true;
+        return () => {
+            completeLoadingOperation(operationId, 'completed');
+            hasRegisteredRef.current = false;
+        };
+    }, [operationId]);
+
+    useEffect(() => {
+        if (!operationId || clampedProgress === undefined) {
+            return;
+        }
+        updateLoadingOperationProgress(operationId, clampedProgress);
+    }, [clampedProgress, operationId]);
+
     if (inline) {
         return (
             <Loader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" />
@@ -70,10 +179,35 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     if (fullScreen) {
         return (
             <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm', className)} role="status" aria-live="polite">
-                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground min-w-[260px]">
                     <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
                     {message && (
                         <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
+                    )}
+                    {stage && (
+                        <span className="text-xs text-muted-foreground">{stage}</span>
+                    )}
+                    {clampedProgress !== undefined && (
+                        <div className="w-56 h-1.5 bg-muted/50 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary transition-[width] duration-300 ease-out"
+                                style={{ width: `${clampedProgress}%` }}
+                            />
+                        </div>
+                    )}
+                    {estimateLabel && <span className="text-xs text-muted-foreground/80">{estimateLabel}</span>}
+                    {onCancel && (
+                        <button
+                            onClick={() => {
+                                if (operationId) {
+                                    completeLoadingOperation(operationId, 'cancelled');
+                                }
+                                onCancel();
+                            }}
+                            className="mt-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
+                        >
+                            {cancelLabel}
+                        </button>
                     )}
                 </div>
             </div>
@@ -81,10 +215,40 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     }
 
     return (
-        <div className={cn('flex flex-col items-center justify-center min-h-[200px] gap-3 text-muted-foreground', className)} role="status" aria-live="polite">
+        <div
+            className={cn(
+                'flex flex-col items-center justify-center gap-3 text-muted-foreground',
+                compact ? 'min-h-0 py-2 px-3 rounded-lg border border-border/50 bg-card/70' : 'min-h-[200px]',
+                className
+            )}
+            role="status"
+            aria-live="polite"
+        >
             <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
-            {message && (
-                <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>
+            {message && <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>}
+            {stage && <span className="text-xs text-muted-foreground">{stage}</span>}
+            {clampedProgress !== undefined && (
+                <div className={cn('h-1.5 bg-muted/50 rounded-full overflow-hidden', compact ? 'w-44' : 'w-56')}>
+                    <div
+                        className="h-full bg-primary transition-[width] duration-300 ease-out"
+                        style={{ width: `${clampedProgress}%` }}
+                    />
+                </div>
+            )}
+            {estimateLabel && <span className="text-xs text-muted-foreground/80">{estimateLabel}</span>}
+            {onCancel && (
+                <button
+                    onClick={() => {
+                        if (operationId) {
+                            completeLoadingOperation(operationId, 'cancelled');
+                        }
+                        onCancel();
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border/60 text-xs text-foreground hover:bg-accent/40"
+                >
+                    <X className="w-3 h-3" />
+                    {cancelLabel}
+                </button>
             )}
         </div>
     );

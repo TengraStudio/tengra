@@ -49,6 +49,24 @@ export const webElectronMock: ElectronAPI = {
     unlinkProvider: async (_provider: string) => ({ success: true }),
     hasLinkedAccount: async (_provider: string) => false,
     getAccountsByProvider: async (_provider: string) => [],
+    getAuthProviderHealth: async (_provider?: string) => [],
+    getAuthProviderAnalytics: async () => [],
+    getTokenAnalytics: async (_provider?: string) => ({
+        totalAccounts: 0,
+        withAccessToken: 0,
+        withRefreshToken: 0,
+        withSessionToken: 0,
+        expiringWithin30m: 0,
+        expired: 0,
+        revoked: 0,
+    }),
+    startAuthSession: async (_provider: string, _accountId?: string, _source?: string) => ({ sessionId: '00000000-0000-0000-0000-000000000000' }),
+    touchAuthSession: async (_sessionId: string) => ({ success: true }),
+    endAuthSession: async (_sessionId: string) => ({ success: true }),
+    setAuthSessionLimit: async (_provider: string, _limit: number) => ({ limit: 5 }),
+    getAuthSessionAnalytics: async (_provider?: string) => ({ totalActiveSessions: 0, byProvider: {} }),
+    setAuthSessionTimeout: async (_timeoutMs: number) => ({ timeoutMs: _timeoutMs }),
+    getAuthSessionTimeout: async () => ({ timeoutMs: 30 * 60 * 1000 }),
 
     code: {
         scanTodos: async (_rootPath: string) => [],
@@ -177,6 +195,18 @@ export const webElectronMock: ElectronAPI = {
         _provider?: string,
         _model?: string
     ) => 0,
+    performance: {
+        getMemoryStats: async () => ({ success: true, data: { main: {}, timestamp: Date.now() } }),
+        detectLeak: async () => ({ success: true, data: { isPossibleLeak: false, trend: [] } }),
+        triggerGC: async () => ({ success: true, data: { success: true } }),
+        getDashboard: async () => ({
+            success: true,
+            data: {
+                memory: { latestRss: 0, latestHeapUsed: 0, sampleCount: 0 },
+                alerts: []
+            }
+        }),
+    },
 
     getModels: async () => [],
     chat: async (_messages: Message[], _model: string) => ({ content: 'Mock response' }),
@@ -367,6 +397,35 @@ export const webElectronMock: ElectronAPI = {
     agent: {
         getAll: async () => [],
         get: async (_id: string) => null,
+        create: async (_payload: {
+            agent: {
+                id?: string;
+                name: string;
+                description?: string;
+                systemPrompt: string;
+                tools?: string[];
+                parentModel?: string;
+                color?: string;
+            };
+            options?: { cloneFromId?: string; createWorkspace?: boolean };
+        }) => ({ success: true, id: 'mock-agent-id', workspacePath: '/mock/agent-workspace' }),
+        delete: async (
+            _id: string,
+            _options?: { confirm?: boolean; softDelete?: boolean; backupBeforeDelete?: boolean }
+        ) => ({ success: true, archivedId: 'mock-archive-id', recoveryToken: 'mock-recovery-token' }),
+        clone: async (_id: string, _newName?: string) => ({ success: true, id: 'mock-agent-clone-id' }),
+        exportAgent: async (_id: string) => JSON.stringify({ version: 1, exportedAt: Date.now(), agent: { id: _id } }),
+        importAgent: async (_payload: string) => ({ success: true, id: 'mock-imported-agent-id', workspacePath: '/mock/imported-agent-workspace' }),
+        getTemplatesLibrary: async () => [],
+        validateTemplate: async (_template: {
+            name?: string;
+            description?: string;
+            systemPrompt?: string;
+            tools?: string[];
+            parentModel?: string;
+            color?: string;
+        }) => ({ valid: true, errors: [] }),
+        recover: async (_archiveId: string) => ({ success: true, id: 'mock-recovered-agent-id' }),
     },
 
     modelRegistry: {
@@ -377,6 +436,40 @@ export const webElectronMock: ElectronAPI = {
 
     terminal: {
         isAvailable: async () => true,
+        getProfiles: async () => [],
+        saveProfile: async (_profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => { },
+        deleteProfile: async (_id: string) => { },
+        validateProfile: async (_profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => ({ valid: true, errors: [] }),
+        getProfileTemplates: async () => [],
+        exportProfiles: async () => JSON.stringify({ version: 1, exportedAt: Date.now(), profiles: [] }),
+        exportProfileShareCode: async (_profileId: string) => 'termprofile:mock',
+        importProfiles: async (_payload: string, _options?: { overwrite?: boolean }) => ({
+            success: true,
+            imported: 0,
+            skipped: 0,
+            errors: [],
+        }),
+        importProfileShareCode: async (_shareCode: string, _options?: { overwrite?: boolean }) => ({
+            success: true,
+            imported: true,
+            profileId: 'mock-profile',
+        }),
         getShells: async () => [],
         getBackends: async () => [],
         create: async (_options: {
@@ -386,6 +479,7 @@ export const webElectronMock: ElectronAPI = {
             cols?: number;
             rows?: number;
             backendId?: string;
+            title?: string;
         }) => 'mock-session-id',
         detach: async (_options: {
             sessionId: string;
@@ -438,6 +532,80 @@ export const webElectronMock: ElectronAPI = {
         onExit: (_callback: (data: { id: string; code: number }) => void) => () => { },
         removeAllListeners: () => { },
         getSessions: async () => [],
+        restoreAllSnapshots: async () => ({ restored: 0, failed: 0, sessionIds: [] }),
+        exportSession: async (_sessionId: string, _options?: { includeScrollback?: boolean }) =>
+            JSON.stringify({ version: 1, kind: 'terminal-session', exportedAt: Date.now() }),
+        importSession: async (_payload: string, _options?: { overwrite?: boolean; sessionId?: string }) => ({
+            success: true,
+            sessionId: 'mock-session-id',
+        }),
+        createSessionShareCode: async (_sessionId: string, _options?: { includeScrollback?: boolean }) =>
+            'termshare:mock',
+        importSessionShareCode: async (
+            _shareCode: string,
+            _options?: { overwrite?: boolean; sessionId?: string }
+        ) => ({
+            success: true,
+            sessionId: 'mock-session-id',
+        }),
+        getSnapshotSessions: async () => [],
+        getSessionTemplates: async () => [],
+        saveSessionTemplate: async (_payload: { sessionId: string; templateId?: string; name?: string }) => ({
+            id: 'tpl-mock',
+            name: 'Mock Template',
+            shell: 'bash',
+            cwd: '/',
+            cols: 80,
+            rows: 24,
+            backendId: 'node-pty',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        }),
+        deleteSessionTemplate: async (_templateId: string) => true,
+        createFromSessionTemplate: async (_templateId: string, _options?: { sessionId?: string; title?: string }) =>
+            'mock-session-id',
+        restoreSnapshotSession: async (_snapshotId: string) => true,
+        searchScrollback: async (
+            _sessionId: string,
+            _query: string,
+            _options?: { regex?: boolean; caseSensitive?: boolean; limit?: number }
+        ) => [],
+        exportScrollback: async (_sessionId: string, _exportPath?: string) => ({ success: true }),
+        getSessionAnalytics: async (_sessionId: string) => ({
+            sessionId: _sessionId,
+            bytes: 0,
+            lineCount: 0,
+            commandCount: 0,
+            updatedAt: 0,
+        }),
+        getSearchAnalytics: async () => ({
+            totalSearches: 0,
+            regexSearches: 0,
+            plainSearches: 0,
+            lastSearchAt: 0,
+        }),
+        getSearchSuggestions: async (_query?: string, _limit?: number) => [],
+        exportSearchResults: async (
+            _sessionId: string,
+            _query: string,
+            _options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
+            _exportPath?: string,
+            _format?: 'json' | 'txt'
+        ) => ({ success: true, content: '' }),
+        addScrollbackMarker: async (_sessionId: string, _label: string, _lineNumber?: number) => ({
+            id: 'mock-marker-id',
+            sessionId: _sessionId,
+            label: _label,
+            lineNumber: _lineNumber ?? 1,
+            createdAt: Date.now(),
+        }),
+        listScrollbackMarkers: async (_sessionId?: string) => [],
+        deleteScrollbackMarker: async (_markerId: string) => true,
+        filterScrollback: async (
+            _sessionId: string,
+            _options?: { query?: string; fromLine?: number; toLine?: number; caseSensitive?: boolean }
+        ) => [],
+        setSessionTitle: async (_sessionId: string, _title: string) => true,
         readBuffer: async (_sessionId: string) => '',
     },
 
@@ -591,6 +759,10 @@ export const webElectronMock: ElectronAPI = {
         toggle: async (_service: string, _enabled: boolean) => ({ success: true, isEnabled: true }),
         install: async (_config: Record<string, IpcValue>) => ({ success: true }),
         uninstall: async (_name: string) => ({ success: true }),
+        getDebugMetrics: async () => [],
+        listPermissionRequests: async () => [],
+        setActionPermission: async (_service: string, _action: string, _policy: 'allow' | 'deny' | 'ask') => ({ success: true }),
+        resolvePermissionRequest: async (_requestId: string, _decision: 'approved' | 'denied') => ({ success: true }),
         onResult: (_callback: (result: IpcValue) => void) => { },
         removeResultListener: () => { },
     },
@@ -604,6 +776,10 @@ export const webElectronMock: ElectronAPI = {
         uninstall: async (_serverId: string) => ({ success: true }),
         installed: async () => ({ success: true, servers: [] }),
         toggle: async (_serverId: string, _enabled: boolean) => ({ success: true }),
+        updateConfig: async (_serverId: string, _patch: Record<string, IpcValue>) => ({ success: true }),
+        versionHistory: async (_serverId: string) => ({ success: true, history: [] }),
+        rollbackVersion: async (_serverId: string, _targetVersion: string) => ({ success: true }),
+        debug: async () => ({ success: true, metrics: {} }),
         refresh: async () => ({ success: true }),
     },
 
@@ -648,12 +824,71 @@ export const webElectronMock: ElectronAPI = {
             models: [],
             total: 0,
         }),
+        getRecommendations: async (_limit?: number, _query?: string) => [],
         getFiles: async (_modelId: string) => [],
+        getModelPreview: async (_modelId: string) => null,
+        compareModels: async (_modelIds: string[]) => ({ previews: [], recommendation: {} }),
+        validateCompatibility: async (
+            _file: { path: string; size: number; oid?: string; quantization: string },
+            _availableRamGB?: number,
+            _availableVramGB?: number
+        ) => ({ compatible: true, reasons: [], estimatedRamGB: 0, estimatedVramGB: 0 }),
+        getWatchlist: async () => [],
+        addToWatchlist: async (_modelId: string) => ({ success: true }),
+        removeFromWatchlist: async (_modelId: string) => ({ success: true }),
+        getCacheStats: async () => ({ size: 0, maxSize: 0, ttlMs: 0, oldestAgeMs: 0, watchlistSize: 0 }),
+        clearCache: async () => ({ success: true, removed: 0 }),
+        testDownloadedModel: async (_filePath: string) => ({ success: true, metadata: {} }),
+        getConversionPresets: async () => [],
+        getOptimizationSuggestions: async (_options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => [],
+        validateConversion: async (_options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => ({ valid: true, errors: [] }),
+        convertModel: async (_options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => ({ success: true, warnings: [] }),
+        onConversionProgress: (
+            _callback: (progress: { stage: string; percent: number; message: string }) => void
+        ) => () => { },
+        getModelVersions: async (_modelId: string) => [],
+        registerModelVersion: async (_modelId: string, _filePath: string, _notes?: string) => null,
+        compareModelVersions: async (_modelId: string, _leftVersionId: string, _rightVersionId: string) => null,
+        rollbackModelVersion: async (_modelId: string, _versionId: string, _targetPath: string) => ({ success: true }),
+        pinModelVersion: async (_modelId: string, _versionId: string, _pinned: boolean) => ({ success: true }),
+        getVersionNotifications: async (_modelId: string) => [],
+        prepareFineTuneDataset: async (_inputPath: string, _outputPath: string) => ({ success: true, outputPath: _outputPath, records: 0 }),
+        startFineTune: async (
+            _modelId: string,
+            _datasetPath: string,
+            _outputPath: string,
+            _options?: { epochs?: number; learningRate?: number }
+        ) => null,
+        listFineTuneJobs: async (_modelId?: string) => [],
+        getFineTuneJob: async (_jobId: string) => null,
+        cancelFineTuneJob: async (_jobId: string) => ({ success: true }),
+        evaluateFineTuneJob: async (_jobId: string) => ({ success: true, metrics: {} }),
+        exportFineTunedModel: async (_jobId: string, _exportPath: string) => ({ success: true }),
+        onFineTuneProgress: (_callback: (job: unknown) => void) => () => { },
         downloadFile: async (
             _url: string,
             _outputPath: string,
             _expectedSize: number,
-            _expectedSha256: string
+            _expectedSha256: string,
+            _scheduleAtMs?: number
         ) => ({ success: true }),
         onDownloadProgress: (
             _callback: (progress: { filename: string; received: number; total: number }) => void
@@ -822,6 +1057,14 @@ export const webElectronMock: ElectronAPI = {
             timing: { startTime: Date.now(), endTime: Date.now(), totalMs: 0 },
         }),
         getChannels: async () => [],
+    },
+    lazyServices: {
+        getStatus: async () => ({
+            registered: [],
+            loaded: [],
+            loading: [],
+            totals: { registered: 0, loaded: 0, loading: 0 },
+        }),
     },
 
     ipcRenderer: {

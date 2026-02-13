@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -108,16 +109,43 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
  * Hardens WebContents security with CSP and permission restrictions.
  */
 function setupWebContentsSecurity(win: BrowserWindow) {
+    const nonce = randomBytes(16).toString('base64');
+    const isDev = !app.isPackaged;
+    const scriptSources = [
+        `'self'`,
+        `'nonce-${nonce}'`,
+        'blob:',
+        ...(isDev ? [`'unsafe-eval'`] : [])
+    ];
+    const csp = [
+        `default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*`,
+        `script-src ${scriptSources.join(' ')}`,
+        `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+        `img-src 'self' data: safe-file: https: http://localhost:*`,
+        `media-src 'self' safe-file: https:`,
+        `font-src 'self' data: https://fonts.gstatic.com`,
+        `connect-src 'self' https: http://localhost:* ws://localhost:* wss://localhost:*`,
+        `object-src 'none'`,
+        `base-uri 'self'`,
+        `frame-ancestors 'none'`
+    ].join('; ');
+
     // Security: Set Content-Security-Policy
     win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
         callback({
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
-                    "default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: safe-file: https: http://localhost:*; media-src 'self' safe-file: https:; font-src 'self' data: https://fonts.gstatic.com;",
+                    csp,
                 ],
             },
         });
+    });
+
+    win.webContents.on('console-message', event => {
+        if (event.message.includes('Content Security Policy')) {
+            appLogger.warn('Security', `CSP violation observed: ${event.message}`);
+        }
     });
 
     win.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {

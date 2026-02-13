@@ -1,5 +1,74 @@
 # Registro de cambios
 
+## [2026-02-13]
+
+### Validación de archivos adjuntos añadida
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Seguridad mejorada para archivos adjuntos con validación de tipo, límites de tamaño y bloqueo de extensiones peligrosas.
+
+- Lista blanca de tipos de archivo añadida: texto, JSON, PDF, imágenes y formatos de documento comunes.
+- Límite máximo de 10MB implementado para prevenir ataques DoS.
+- Bloqueo de extensiones peligrosas (.exe, .bat, .sh, .ps1, etc.) añadido por seguridad.
+- Notificación de error toast mostrada cuando se sueltan archivos inválidos.
+
+### Validación de archivos adjuntos añadida
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Seguridad mejorada para archivos adjuntos con validación de tipo, límites de tamaño y bloqueo de extensiones peligrosas.
+
+- Lista blanca de tipos de archivo añadida: texto, JSON, PDF, imágenes y formatos de documento comunes.
+- Límite máximo de 10MB implementado para prevenir ataques DoS.
+- Bloqueo de extensiones peligrosas (.exe, .bat, .sh, .ps1, etc.) añadido por seguridad.
+- Notificación de error toast mostrada cuando se sueltan archivos inválidos.
+
+### Core HuggingFace Integration & GGUF Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+
+- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
+- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
+- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
+- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
+- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+
+### Ampliación de pruebas de handlers IPC y corrección de TEST-01
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Se resolvió TEST-01 (prueba de reanudación desde checkpoint) y se completó la cobertura de pruebas IPC para los handlers de Database y Project Agent.
+
+- **Pruebas**: Se corrigió la discrepancia en las expectativas de `agent-executor.service.test.ts` en la prueba de reanudación del punto de control.
+- **Cobertura IPC**: se creó `db.integration.test.ts` que cubre los controladores de chat, proyectos y carpetas.
+- **Cobertura IPC**: se creó `project-agent.integration.test.ts` que cubre los controladores de inicio, parada, estado y HIL.
+- **Code Intelligence**: Se corrigieron discrepancias de tipos de parámetros de TypeScript en `code-intelligence.integration.test.ts`.
+
+### LLM Service Improvements: Fallback & Caching
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+
+- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
+- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
+- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
+- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### Precisión de conteo de tokens mejorada
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Integrado js-tiktoken para una estimación precisa de tokens en modelos GPT, Claude y Llama.
+
+Integrado `js-tiktoken` para un mapeo de tokenización preciso a las codificaciones cl100k_base y o200k_base.
+Gestión mejorada de la ventana de contexto con límites de modelo precisos para los principales proveedores de LLM.
+Se mantuvieron los fallbacks basados en heurística para modelos no compatibles para asegurar la continuidad de la estimación.
+Se agregaron pruebas unitarias exhaustivas para verificar la precisión del conteo de tokens para varios modelos.
+
 ## [2026-02-12]
 
 ### Expansion de pruebas de controladores IPC - Lote 4
@@ -1379,7 +1448,7 @@ Sigue la evolución de Tandem.
 - Inicio automático con Windows, reinicio automático en caso de falla
 - Descubrimiento de servicios a través del archivo de puerto (`%APPDATA%/Tandem/services/db-service.port`)
 - Instalar/desinstalar mediante `scripts/install-db-service.ps1`
-3. **HTTP API**:
+3. **API HTTP**:
 - RESTful API en puerto dinámico
 - Punto final de verificación de estado en `/health`
 - Puntos finales CRUD bajo `/api/v1/*`
@@ -2289,7 +2358,7 @@ ID constante = eventBus.on(
 'autenticación:cambiada',
 carga útil => {
 console.log('Auth cambiado:', carga útil);
-    },
+},
 {una vez: verdadero, prioridad: 10}
 );
 // Eventos personalizados
@@ -2550,7 +2619,7 @@ datos constantes = JSON.parse(untrustedInput);
 // Después: Seguro con valores predeterminados
 datos constantes = safeJsonParse(untrustedInput, {
 sensateDefaults: 'aquí',
-    });
+});
     ```
 **Beneficios**:
 - **Prevención de fallos**: JSON con formato incorrecto ya no bloquea la aplicación
@@ -2811,12 +2880,12 @@ sensateDefaults: 'aquí',
 - Parámetros no utilizados con prefijo con guión bajo (`_processManager`, `_event`)
 - Se eliminaron las importaciones no utilizadas (`os` de proxy-process.service.ts)
 **Advertencias restantes (931)**:
-- `no-unnecessary-condition`: 402
+- `sin-condición-innecesaria`: 402
 - `complexity`: 238 (requiere refactorización de funciones)
 - `prefer-nullish-coalescing`: 218 (patrones complejos)
-- `no-misused-promises`: 88
-- `max-lines-per-function`: 42
-- `max-depth`: 18
+- `promesas-sin-mal uso`: 88
+- `líneas máximas por función`: 42
+- `profundidad máxima`: 18
 - `max-params`: 9
 
 ### Arreglar la actualización de tokens para cuentas desvinculadas

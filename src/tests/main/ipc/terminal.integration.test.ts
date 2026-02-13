@@ -49,14 +49,73 @@ describe('Terminal IPC Integration', () => {
         write: vi.fn().mockResolvedValue(true),
         resize: vi.fn().mockReturnValue(true),
         getActiveSessions: vi.fn().mockReturnValue([]),
+        getSessionSnapshots: vi.fn().mockReturnValue([]),
+        exportSession: vi.fn().mockResolvedValue('{"version":1}'),
+        importSession: vi.fn().mockResolvedValue({ success: true, sessionId: 'term-2' }),
+        generateSessionShareCode: vi.fn().mockResolvedValue('termshare:abc'),
+        importSessionShareCode: vi.fn().mockResolvedValue({ success: true, sessionId: 'term-3' }),
+        getSessionTemplates: vi.fn().mockReturnValue([]),
+        createSessionTemplate: vi.fn().mockResolvedValue({
+            id: 'tpl-1',
+            name: 'Template',
+            shell: 'powershell.exe',
+            cwd: 'C:/repo',
+            cols: 80,
+            rows: 24,
+            backendId: 'node-pty',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        }),
+        deleteSessionTemplate: vi.fn().mockResolvedValue(true),
+        restoreSessionTemplate: vi.fn().mockResolvedValue('term-template-1'),
+        restoreSnapshotSession: vi.fn().mockResolvedValue(true),
+        restoreAllSnapshots: vi.fn().mockResolvedValue({ restored: 1, failed: 0, sessionIds: ['term-1'] }),
         getSessionBuffer: vi.fn().mockReturnValue('buffer'),
+        searchSessionScrollback: vi.fn().mockResolvedValue([]),
+        getSearchSuggestions: vi.fn().mockReturnValue(['npm test']),
+        exportSearchResults: vi.fn().mockResolvedValue({ success: true, content: '' }),
+        exportSessionScrollback: vi.fn().mockResolvedValue({ success: true }),
+        getSessionAnalytics: vi.fn().mockResolvedValue({
+            sessionId: 'term-1',
+            bytes: 0,
+            lineCount: 0,
+            commandCount: 0,
+            updatedAt: 0,
+        }),
+        getSearchAnalytics: vi.fn().mockReturnValue({
+            totalSearches: 3,
+            regexSearches: 1,
+            plainSearches: 2,
+            lastSearchAt: Date.now(),
+        }),
+        addScrollbackMarker: vi.fn().mockResolvedValue({
+            id: 'marker-1',
+            sessionId: 'term-1',
+            label: 'checkpoint',
+            lineNumber: 12,
+            createdAt: Date.now(),
+        }),
+        listScrollbackMarkers: vi.fn().mockReturnValue([]),
+        deleteScrollbackMarker: vi.fn().mockResolvedValue(true),
+        filterSessionScrollback: vi.fn().mockResolvedValue(['line 1', 'line 2']),
+        setSessionTitle: vi.fn().mockResolvedValue(true),
         getCommandHistory: vi.fn().mockReturnValue([]),
         clearCommandHistory: vi.fn().mockResolvedValue(true)
     };
     const mockProfileService = {
         getProfiles: vi.fn().mockReturnValue([]),
         saveProfile: vi.fn().mockReturnValue(true),
-        deleteProfile: vi.fn().mockReturnValue(true)
+        deleteProfile: vi.fn().mockReturnValue(true),
+        validateProfile: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+        getProfileTemplates: vi.fn().mockReturnValue([]),
+        exportProfiles: vi.fn().mockReturnValue('{"profiles":[]}'),
+        importProfiles: vi.fn().mockResolvedValue({ success: true, imported: 1, skipped: 0, errors: [] }),
+        exportProfileShareCode: vi.fn().mockReturnValue('termprofile:abc'),
+        importProfileShareCode: vi.fn().mockResolvedValue({
+            success: true,
+            imported: true,
+            profileId: 'p1',
+        }),
     };
     const mockSmartService = {
         getSuggestions: vi.fn().mockResolvedValue([])
@@ -88,6 +147,12 @@ describe('Terminal IPC Integration', () => {
         expect(ipcMainHandlers.has('terminal:getProfiles')).toBe(true);
         expect(ipcMainHandlers.has('terminal:saveProfile')).toBe(true);
         expect(ipcMainHandlers.has('terminal:deleteProfile')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:validateProfile')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getProfileTemplates')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:exportProfiles')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:importProfiles')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:exportProfileShareCode')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:importProfileShareCode')).toBe(true);
         expect(ipcMainHandlers.has('terminal:isAvailable')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getShells')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getBackends')).toBe(true);
@@ -97,7 +162,29 @@ describe('Terminal IPC Integration', () => {
         expect(ipcMainHandlers.has('terminal:resize')).toBe(true);
         expect(ipcMainHandlers.has('terminal:kill')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getSessions')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:restoreAllSnapshots')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:exportSession')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:importSession')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:createSessionShareCode')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:importSessionShareCode')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getSnapshotSessions')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getSessionTemplates')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:saveSessionTemplate')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:deleteSessionTemplate')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:createFromSessionTemplate')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:restoreSnapshotSession')).toBe(true);
         expect(ipcMainHandlers.has('terminal:readBuffer')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:setSessionTitle')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:searchScrollback')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:exportScrollback')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getSessionAnalytics')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getSearchAnalytics')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:getSearchSuggestions')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:exportSearchResults')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:addScrollbackMarker')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:listScrollbackMarkers')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:deleteScrollbackMarker')).toBe(true);
+        expect(ipcMainHandlers.has('terminal:filterScrollback')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getCommandHistory')).toBe(true);
         expect(ipcMainHandlers.has('terminal:getSuggestions')).toBe(true);
         expect(ipcMainHandlers.has('terminal:clearCommandHistory')).toBe(true);
@@ -114,6 +201,25 @@ describe('Terminal IPC Integration', () => {
             onData: expect.any(Function),
             onExit: expect.any(Function)
         }));
+    });
+
+    it('validates terminal profile payload', async () => {
+        const handler = ipcMainHandlers.get('terminal:validateProfile')!;
+        const payload = { id: 'p1', name: 'PowerShell', shell: 'powershell.exe' };
+        const result = await handler({} as IpcMainInvokeEvent, payload);
+
+        expect(result).toEqual({ valid: true, errors: [] });
+        expect(mockProfileService.validateProfile).toHaveBeenCalledWith(payload);
+    });
+
+    it('exports and imports terminal profile share code', async () => {
+        const exportHandler = ipcMainHandlers.get('terminal:exportProfileShareCode')!;
+        const importHandler = ipcMainHandlers.get('terminal:importProfileShareCode')!;
+        const code = await exportHandler({} as IpcMainInvokeEvent, 'p1');
+        const result = await importHandler({} as IpcMainInvokeEvent, code, { overwrite: true });
+
+        expect(code).toBe('termprofile:abc');
+        expect(result).toEqual({ success: true, imported: true, profileId: 'p1' });
     });
 
     it('loads available backends', async () => {
@@ -170,6 +276,74 @@ describe('Terminal IPC Integration', () => {
 
         expect(Array.isArray(result)).toBe(true);
         expect(mockTerminalService.getCommandHistory).toHaveBeenCalledWith('npm', 20);
+    });
+
+    it('searches terminal scrollback', async () => {
+        mockTerminalService.searchSessionScrollback.mockResolvedValue([
+            { lineNumber: 10, line: 'npm test --watch' }
+        ]);
+        const handler = ipcMainHandlers.get('terminal:searchScrollback')!;
+        const result = await handler(
+            {} as IpcMainInvokeEvent,
+            'term-1',
+            'npm test',
+            { regex: false, caseSensitive: false, limit: 20 }
+        );
+
+        expect(result).toEqual([{ lineNumber: 10, line: 'npm test --watch' }]);
+        expect(mockTerminalService.searchSessionScrollback).toHaveBeenCalledWith(
+            'term-1',
+            'npm test',
+            { regex: false, caseSensitive: false, limit: 20 }
+        );
+    });
+
+    it('exports and imports terminal session payloads', async () => {
+        const exportHandler = ipcMainHandlers.get('terminal:exportSession')!;
+        const importHandler = ipcMainHandlers.get('terminal:importSession')!;
+        const codeHandler = ipcMainHandlers.get('terminal:createSessionShareCode')!;
+
+        const exported = await exportHandler({} as IpcMainInvokeEvent, 'term-1', {
+            includeScrollback: true,
+        });
+        const imported = await importHandler({} as IpcMainInvokeEvent, '{"version":1}', {
+            overwrite: true,
+            sessionId: 'term-2',
+        });
+        const shareCode = await codeHandler({} as IpcMainInvokeEvent, 'term-1');
+
+        expect(exported).toBe('{"version":1}');
+        expect(imported).toEqual({ success: true, sessionId: 'term-2' });
+        expect(shareCode).toBe('termshare:abc');
+    });
+
+    it('returns search suggestions', async () => {
+        const handler = ipcMainHandlers.get('terminal:getSearchSuggestions')!;
+        const result = await handler({} as IpcMainInvokeEvent, 'npm', 5);
+
+        expect(result).toEqual(['npm test']);
+        expect(mockTerminalService.getSearchSuggestions).toHaveBeenCalledWith('npm', 5);
+    });
+
+    it('sets terminal session title', async () => {
+        const handler = ipcMainHandlers.get('terminal:setSessionTitle')!;
+        const result = await handler({} as IpcMainInvokeEvent, 'term-1', 'Backend Logs');
+
+        expect(result).toBe(true);
+        expect(mockTerminalService.setSessionTitle).toHaveBeenCalledWith('term-1', 'Backend Logs');
+    });
+
+    it('adds scrollback marker', async () => {
+        const handler = ipcMainHandlers.get('terminal:addScrollbackMarker')!;
+        const result = await handler({} as IpcMainInvokeEvent, 'term-1', 'checkpoint', 12);
+
+        expect(result).toEqual(expect.objectContaining({
+            id: 'marker-1',
+            sessionId: 'term-1',
+            label: 'checkpoint',
+            lineNumber: 12,
+        }));
+        expect(mockTerminalService.addScrollbackMarker).toHaveBeenCalledWith('term-1', 'checkpoint', 12);
     });
 
     it('returns smart command suggestions', async () => {

@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-02-13T01:11:46.244Z",
+  "iterations": 500,
+  "totalMs": 4,
+  "metrics": {
+    "avgMs": 0.0023,
+    "minMs": 0.0009,
+    "p95Ms": 0.0054,
+    "p99Ms": 0.0099,
+    "maxMs": 0.0687
+  }
+}

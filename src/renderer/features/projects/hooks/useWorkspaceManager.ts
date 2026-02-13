@@ -392,7 +392,7 @@ function useTabManagement() {
         (tabId: string) => {
             const tab = openTabs.find(t => t.id === tabId);
             if (tab && tab.content !== tab.savedContent) {
-                console.warn(`Close without saving "${tab.name}"?`);
+                window.electron.log.warn(`Close without saving "${tab.name}"?`);
             }
             setOpenTabs(prev => prev.filter(t => t.id !== tabId));
             if (activeTabId === tabId) {
@@ -471,7 +471,7 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
             try {
                 await window.electron.db.updateProject(project.id, { mounts: nextMounts });
             } catch (error) {
-                console.error('Failed to save mounts', error);
+                window.electron.log.error('Failed to save mounts', error);
                 notify('error', 'Failed to save mounts.');
             }
         },
@@ -661,3 +661,4 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
         pickLocalFolder,
     };
 }
+

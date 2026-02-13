@@ -61,7 +61,18 @@ describe('HuggingFace IPC Handlers', () => {
 
         mockHFService = {
             getModelFiles: vi.fn().mockResolvedValue([]),
-            downloadFile: vi.fn().mockResolvedValue({ success: true })
+            downloadFile: vi.fn().mockResolvedValue({ success: true }),
+            cancelPendingDownloads: vi.fn().mockResolvedValue(2),
+            getRecommendations: vi.fn().mockResolvedValue([]),
+            getModelPreview: vi.fn().mockResolvedValue(null),
+            compareModels: vi.fn().mockResolvedValue({ previews: [], recommendation: {} }),
+            validateModelCompatibility: vi.fn().mockResolvedValue({ compatible: true, reasons: [], estimatedRamGB: 4, estimatedVramGB: 2 }),
+            getWatchlist: vi.fn().mockResolvedValue([]),
+            addToWatchlist: vi.fn().mockResolvedValue(true),
+            removeFromWatchlist: vi.fn().mockResolvedValue(true),
+            getCacheStats: vi.fn().mockResolvedValue({ size: 0, maxSize: 200, ttlMs: 600000, oldestAgeMs: 0, watchlistSize: 0 }),
+            clearCache: vi.fn().mockResolvedValue({ success: true, removed: 1 }),
+            testDownloadedModel: vi.fn().mockResolvedValue({ success: true, metadata: {} })
         } as unknown as HuggingFaceService;
 
         mockEvent = {
@@ -201,9 +212,9 @@ describe('HuggingFace IPC Handlers', () => {
             const args = vi.mocked(mockHFService.downloadFile).mock.calls[0];
             expect(args[0]).toBe(url);
             expect(args[1]).toBe(outputPath);
-            expect(args[2]).toBe(1024000);
-            expect(args[3]).toBe('abc123'.padEnd(64, '0'));
-            expect(typeof args[4]).toBe('function'); // Progress callback
+            expect(args[2]?.expectedSize).toBe(1024000);
+            expect(args[2]?.expectedSha256).toBe('abc123'.padEnd(64, '0'));
+            expect(typeof args[2]?.onProgress).toBe('function');
         });
 
         it('should reject non-https URLs', async () => {
@@ -240,7 +251,7 @@ describe('HuggingFace IPC Handlers', () => {
             await handler!(mockEvent, url, outputPath, 1024, 'invalid-sha');
 
             const args = vi.mocked(mockHFService.downloadFile).mock.calls[0];
-            expect(args[3]).toBe(''); // Should be empty string due to validation
+            expect(args[2]?.expectedSha256).toBe(''); // Should be empty string due to validation
         });
 
         it('should send progress events during download', async () => {
@@ -248,9 +259,9 @@ describe('HuggingFace IPC Handlers', () => {
             const url = 'https://huggingface.co/model.gguf';
             const outputPath = '/path/to/model.gguf';
 
-            vi.mocked(mockHFService.downloadFile).mockImplementation(async (_u, _o, _s, _h, progressCb) => {
-                if (progressCb) {
-                    progressCb(512, 1024);
+            vi.mocked(mockHFService.downloadFile).mockImplementation(async (_url: string, _path: string, options: { onProgress?: (received: number, total: number) => void }) => {
+                if (options.onProgress) {
+                    options.onProgress(512, 1024);
                 }
                 return { success: true };
             });
@@ -272,7 +283,7 @@ describe('HuggingFace IPC Handlers', () => {
 
             const result = await handler!(mockEvent);
 
-            expect(result).toEqual({ cancelled: true });
+            expect(result).toEqual({ cancelled: true, pendingCancelled: 2 });
         });
 
         it('should handle cancellation placeholder', async () => {
@@ -282,6 +293,24 @@ describe('HuggingFace IPC Handlers', () => {
             const result = await handler!(mockEvent);
 
             expect(result).toHaveProperty('cancelled');
+        });
+    });
+
+    describe('hf:test-downloaded-model', () => {
+        it('should invoke file test endpoint', async () => {
+            const handler = ipcMainHandlers.get('hf:test-downloaded-model');
+            expect(handler).toBeDefined();
+
+            vi.mocked(mockHFService.testDownloadedModel).mockResolvedValue({
+                success: true,
+                metadata: { architecture: 'llama', contextLength: 4096 }
+            });
+
+            const result = await handler!(mockEvent, 'C:/models/test.gguf');
+            expect(result).toEqual({
+                success: true,
+                metadata: { architecture: 'llama', contextLength: 4096 }
+            });
         });
     });
 });

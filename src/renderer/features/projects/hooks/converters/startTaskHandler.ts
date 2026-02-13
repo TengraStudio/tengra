@@ -26,7 +26,7 @@ interface StartTaskResult {
  */
 export const validateTaskInput = (userPrompt: string, selectedModel: ModelOption | null): string | null => {
     if (!userPrompt.trim()) {
-        console.warn('[Renderer] startTask aborted: empty prompt');
+        window.electron.log.warn('[Renderer] startTask aborted: empty prompt');
         return 'Prompt is empty';
     }
 
@@ -85,3 +85,4 @@ export const invokeStartTask = async (
         };
     }
 };
+

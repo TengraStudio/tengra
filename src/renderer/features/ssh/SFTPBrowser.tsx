@@ -60,7 +60,7 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         if (result.success) {
             void loadFiles(currentPath);
         } else {
-            console.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
+            window.electron.log.warn(t('ssh.connectionError', { error: result.error ?? 'Unknown error' }));
         }
     };
 
@@ -148,3 +148,4 @@ export function SFTPBrowser({ connectionId }: SFTPBrowserProps) {
         </div>
     );
 }
+

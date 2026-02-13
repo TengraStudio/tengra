@@ -916,7 +916,7 @@ export class CopilotService extends BaseService {
 
     private handleError(error: Error | string | unknown, context: string): never {
         const message = getErrorMessage(error as Error);
-        console.error(`[CopilotService] Error in ${context}:`, message);
+        this.logError(`Error in ${context}: ${message}`);
         if (error instanceof Error) { throw error; }
         throw new Error(`Error in ${context}: ${message}`);
     }

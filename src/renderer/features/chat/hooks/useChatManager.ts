@@ -4,11 +4,17 @@ import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator
 import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager';
 import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager';
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
 import { CatchError, IpcValue } from '@/types/common';
+
+/** Maximum messages to keep in memory per chat to prevent memory leaks */
+const MAX_MESSAGES_IN_MEMORY = 100;
+
+/** Maximum chats to keep in memory */
+const MAX_CHATS_IN_MEMORY = 50;
 
 interface SelectedModelInfo { provider: string; model: string }
 
@@ -27,11 +33,41 @@ interface UseChatManagerOptions {
     projectId?: string | undefined
 }
 
+/**
+ * Trims messages to prevent memory bloat in long-running sessions.
+ * Keeps only the most recent messages up to MAX_MESSAGES_IN_MEMORY.
+ */
+function trimMessages(messages: Message[]): Message[] {
+    if (messages.length <= MAX_MESSAGES_IN_MEMORY) {
+        return messages;
+    }
+    return messages.slice(-MAX_MESSAGES_IN_MEMORY);
+}
+
+/**
+ * Trims chats to prevent memory bloat.
+ * Keeps only the most recent chats up to MAX_CHATS_IN_MEMORY.
+ */
+function trimChats(chats: Chat[]): Chat[] {
+    if (chats.length <= MAX_CHATS_IN_MEMORY) {
+        return chats;
+    }
+    // Sort by updatedAt and keep most recent
+    return [...chats]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, MAX_CHATS_IN_MEMORY);
+}
+
 function useChatInitialization(loadFolders: () => Promise<void>, setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
     useEffect(() => {
         const load = async () => {
             const allChats = await window.electron.db.getAllChats();
-            setChats(allChats as Chat[]);
+            // Limit chats loaded into memory and trim messages per chat
+            const trimmedChats = trimChats((allChats as Chat[]).map(chat => ({
+                ...chat,
+                messages: trimMessages(chat.messages)
+            })));
+            setChats(trimmedChats);
             await loadFolders();
         };
         void load();
@@ -53,13 +89,15 @@ function useLazyMessageLoader(currentChatId: string | null, chats: Chat[], setCh
         const fetchMessages = async () => {
             try {
                 const messages = await window.electron.db.getMessages(currentChatId);
-                setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, messages: messages as Message[] } : c));
+                // Trim messages to prevent memory bloat
+                const trimmedMessages = trimMessages(messages as Message[]);
+                setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, messages: trimmedMessages } : c));
             } catch (e) {
                 window.electron.log.error(`Failed to load messages for ${currentChatId}`, e as Error);
             }
         };
         void fetchMessages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentChatId]);
 }
 
@@ -72,6 +110,9 @@ export function useChatManager(options: UseChatManagerOptions) {
     const [input, setInput] = useState('');
     const [contextTokens] = useState(0);
     const [systemMode, setSystemMode] = useState<'thinking' | 'agent' | 'fast'>('agent');
+
+    // Track previous chat ID for cleanup
+    const prevChatIdRef = useRef<string | null>(null);
 
     const { prompts, createPrompt, deletePrompt, updatePrompt } = usePromptManager();
     const { streamingStates, generateResponse, stopGeneration } = useChatGenerator({
@@ -86,6 +127,19 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     useChatInitialization(loadFolders, setChats);
     useLazyMessageLoader(currentChatId, chats, setChats);
+
+    // Cleanup: Trim messages in non-active chats when switching chats
+    useEffect(() => {
+        if (prevChatIdRef.current !== null && prevChatIdRef.current !== currentChatId) {
+            // Switched away from a chat - trim its messages to prevent memory bloat
+            setChats(prev => prev.map(c =>
+                c.id === prevChatIdRef.current && c.messages.length > MAX_MESSAGES_IN_MEMORY
+                    ? { ...c, messages: trimMessages(c.messages) }
+                    : c
+            ));
+        }
+        prevChatIdRef.current = currentChatId;
+    }, [currentChatId, setChats]);
 
     const currentChat = chats.find(c => c.id === currentChatId);
     const currentStreamState = currentChatId ? streamingStates[currentChatId] : undefined;

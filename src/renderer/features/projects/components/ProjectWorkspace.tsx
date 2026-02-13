@@ -3,7 +3,6 @@ import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoG
 import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip';
 import { WorkspaceMain } from '@renderer/features/projects/components/workspace/WorkspaceMain';
 import { WorkspaceModals } from '@renderer/features/projects/components/workspace/WorkspaceModals';
-import { WorkspaceNotifications } from '@renderer/features/projects/components/workspace/WorkspaceNotifications';
 import { WorkspaceSidebar } from '@renderer/features/projects/components/workspace/WorkspaceSidebar';
 import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar';
 import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer';
@@ -386,9 +385,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     }}
                 />
             </div>
-
-            {/* Notifications */}
-            <WorkspaceNotifications notifications={ps.notifications} />
 
             {/* Terminal Layer */}
             <AnimatePresence>

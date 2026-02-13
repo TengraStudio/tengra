@@ -368,8 +368,10 @@ class ChatIpcManager {
 
 
     private async handleCopilotStream(streamBody: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>, chatId: string, model: string, event: IpcMainInvokeEvent) {
+        let fullContent = '';
         try {
-            const { totalPrompt, totalCompletion } = await this.processCopilotStream(streamBody, chatId, event);
+            const { totalPrompt, totalCompletion, content } = await this.processCopilotStream(streamBody, chatId, event);
+            fullContent = content;
 
             if (totalPrompt > 0 || totalCompletion > 0) {
                 await this.options.databaseService.addTokenUsage({
@@ -383,6 +385,17 @@ class ChatIpcManager {
         } catch (error) {
             appLogger.error('Chat', `[CopilotStream] Error: ${getErrorMessage(error as Error)}`);
             throw error;
+        } finally {
+            if (fullContent) {
+                await this.options.databaseService.addMessage({
+                    chatId,
+                    role: 'assistant',
+                    content: fullContent,
+                    model,
+                    provider: 'copilot',
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
     }
 
@@ -413,7 +426,7 @@ class ChatIpcManager {
             totalCompletion = estimateTokens(fullContent);
         }
 
-        return { totalPrompt, totalCompletion };
+        return { totalPrompt, totalCompletion, content: fullContent };
     }
 
     private async handleOpencodeStream(params: { messages: Message[], model: string, tools: ToolDefinition[] | undefined, chatId: string, event: IpcMainInvokeEvent, signal?: AbortSignal }) {
@@ -421,31 +434,51 @@ class ChatIpcManager {
         let totalPrompt = 0;
         let totalCompletion = 0;
         let fullContent = '';
+        let fullReasoning = '';
 
-        for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools, signal)) {
-            if (chunk.usage) {
-                totalPrompt = chunk.usage.prompt_tokens;
-                totalCompletion = chunk.usage.completion_tokens;
+        try {
+            for await (const chunk of this.options.llmService.chatOpenCodeStream(messages, model, tools, signal)) {
+                if (chunk.usage) {
+                    totalPrompt = chunk.usage.prompt_tokens;
+                    totalCompletion = chunk.usage.completion_tokens;
+                }
+                if (chunk.content) {
+                    fullContent += chunk.content;
+                }
+                if (chunk.reasoning) {
+                    fullReasoning += chunk.reasoning;
+                }
+
+                if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId, provider: 'opencode', model })) { break; }
             }
-            const text = chunk.content ?? chunk.reasoning ?? '';
-            fullContent += text;
+        } finally {
+            // Save partial response if aborted or finished
+            if (fullContent || fullReasoning) {
+                await this.options.databaseService.addMessage({
+                    chatId,
+                    role: 'assistant',
+                    content: fullContent,
+                    reasoning: fullReasoning,
+                    model,
+                    provider: 'opencode',
+                    timestamp: new Date().toISOString()
+                });
+            }
 
-            if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId, provider: 'opencode', model })) { break; }
-        }
+            // Fallback estimation
+            if (totalCompletion === 0 && fullContent.length > 0) {
+                totalCompletion = estimateTokens(fullContent);
+            }
 
-        // Fallback estimation
-        if (totalCompletion === 0 && fullContent.length > 0) {
-            totalCompletion = estimateTokens(fullContent);
-        }
-
-        if (totalPrompt > 0 || totalCompletion > 0) {
-            await this.options.databaseService.addTokenUsage({
-                chatId,
-                provider: 'opencode',
-                model,
-                tokensSent: totalPrompt,
-                tokensReceived: totalCompletion
-            });
+            if (totalPrompt > 0 || totalCompletion > 0) {
+                await this.options.databaseService.addTokenUsage({
+                    chatId,
+                    provider: 'opencode',
+                    model,
+                    tokensSent: totalPrompt,
+                    tokensReceived: totalCompletion
+                });
+            }
         }
     }
 
@@ -459,28 +492,52 @@ class ChatIpcManager {
 
         let totalPrompt = 0;
         let totalCompletion = 0;
+        let fullContent = '';
+        let fullReasoning = '';
 
-        for await (const chunk of this.options.llmService.chatStream(messages, model, providedTools, provider, {
-            systemMode,
-            projectRoot: runtimeProjectRoot,
-            signal,
-            reasoningEffort
-        })) {
-            if (chunk.usage) {
-                totalPrompt = chunk.usage.prompt_tokens;
-                totalCompletion = chunk.usage.completion_tokens;
+        try {
+            for await (const chunk of this.options.llmService.chatStream(messages, model, providedTools, provider, {
+                systemMode,
+                projectRoot: runtimeProjectRoot,
+                signal,
+                reasoningEffort
+            })) {
+                if (chunk.usage) {
+                    totalPrompt = chunk.usage.prompt_tokens;
+                    totalCompletion = chunk.usage.completion_tokens;
+                }
+                if (chunk.content) {
+                    fullContent += chunk.content;
+                }
+                if (chunk.reasoning) {
+                    fullReasoning += chunk.reasoning;
+                }
+
+                if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId, provider, model })) { break; }
             }
-            if (!safeSend(event.sender, 'ollama:streamChunk', { ...chunk, chatId, provider, model })) { break; }
-        }
+        } finally {
+            // Save partial response if aborted or finished
+            if (fullContent || fullReasoning) {
+                await this.options.databaseService.addMessage({
+                    chatId,
+                    role: 'assistant',
+                    content: fullContent,
+                    reasoning: fullReasoning,
+                    model,
+                    provider,
+                    timestamp: new Date().toISOString()
+                });
+            }
 
-        if (totalPrompt > 0 || totalCompletion > 0) {
-            await this.options.databaseService.addTokenUsage({
-                chatId,
-                provider,
-                model,
-                tokensSent: totalPrompt,
-                tokensReceived: totalCompletion
-            });
+            if (totalPrompt > 0 || totalCompletion > 0) {
+                await this.options.databaseService.addTokenUsage({
+                    chatId,
+                    provider,
+                    model,
+                    tokensSent: totalPrompt,
+                    tokensReceived: totalCompletion
+                });
+            }
         }
     }
 }

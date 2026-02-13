@@ -339,6 +339,26 @@ export interface ElectronAPI {
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: 'ok' | 'error' | 'stopped') => void) => void;
 
+    // OLLAMA-01: Model Health & Recommendations
+    checkOllamaModelHealth: (modelName: string) => Promise<IpcValue>;
+    checkAllOllamaModelsHealth: () => Promise<IpcValue[]>;
+    getOllamaModelRecommendations: (category?: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal') => Promise<IpcValue[]>;
+    getRecommendedOllamaModelForTask: (task: string) => Promise<IpcValue | null>;
+
+    // OLLAMA-02: Connection Handling
+    getOllamaConnectionStatus: () => Promise<IpcValue>;
+    testOllamaConnection: () => Promise<IpcValue>;
+    reconnectOllama: () => Promise<boolean>;
+
+    // OLLAMA-03: GPU Monitoring
+    getOllamaGPUInfo: () => Promise<IpcValue>;
+    startOllamaGPUMonitoring: (intervalMs?: number) => Promise<{ success: boolean; intervalMs: number }>;
+    stopOllamaGPUMonitoring: () => Promise<{ success: boolean }>;
+    setOllamaGPUAlertThresholds: (thresholds: { highMemoryPercent?: number; highTemperatureC?: number; lowMemoryMB?: number }) => Promise<{ success: boolean }>;
+    getOllamaGPUAlertThresholds: () => Promise<{ highMemoryPercent: number; highTemperatureC: number; lowMemoryMB: number }>;
+    onOllamaGPUAlert: (callback: (alert: IpcValue) => void) => () => void;
+    onOllamaGPUStatus: (callback: (status: IpcValue) => void) => () => void;
+
     // Ollama scraper for marketplace (deprecated - use marketplace API instead)
     scrapeOllamaLibrary: (bypassCache?: boolean) => Promise<OllamaScrapedModel[]>;
     scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) => Promise<OllamaModelDetails | null>;
@@ -635,10 +655,95 @@ export interface ElectronAPI {
     agent: {
         getAll: () => Promise<AgentDefinition[]>;
         get: (id: string) => Promise<AgentDefinition | null>;
+        create: (payload: {
+            agent: {
+                id?: string;
+                name: string;
+                description?: string;
+                systemPrompt: string;
+                tools?: string[];
+                parentModel?: string;
+                color?: string;
+            };
+            options?: { cloneFromId?: string; createWorkspace?: boolean };
+        }) => Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }>;
+        delete: (
+            id: string,
+            options?: { confirm?: boolean; softDelete?: boolean; backupBeforeDelete?: boolean }
+        ) => Promise<{ success: boolean; archivedId?: string; recoveryToken?: string; error?: string }>;
+        clone: (id: string, newName?: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+        exportAgent: (id: string) => Promise<string | null>;
+        importAgent: (payload: string) => Promise<{ success: boolean; id?: string; workspacePath?: string; error?: string }>;
+        getTemplatesLibrary: () => Promise<Array<{
+            id?: string;
+            name: string;
+            description: string;
+            systemPrompt: string;
+            tools: string[];
+            parentModel?: string;
+            color?: string;
+            category?: string;
+        }>>;
+        validateTemplate: (template: {
+            name?: string;
+            description?: string;
+            systemPrompt?: string;
+            tools?: string[];
+            parentModel?: string;
+            color?: string;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        recover: (archiveId: string) => Promise<{ success: boolean; id?: string; error?: string }>;
     };
 
     terminal: {
         isAvailable: () => Promise<boolean>;
+        getProfiles: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }>>;
+        saveProfile: (profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => Promise<void>;
+        deleteProfile: (id: string) => Promise<void>;
+        validateProfile: (profile: {
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        getProfileTemplates: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            args?: string[];
+            env?: Record<string, string | undefined>;
+            icon?: string;
+            isDefault?: boolean;
+        }>>;
+        exportProfiles: () => Promise<string>;
+        exportProfileShareCode: (profileId: string) => Promise<string | null>;
+        importProfiles: (
+            payload: string,
+            options?: { overwrite?: boolean }
+        ) => Promise<{ success: boolean; imported: number; skipped: number; errors: string[] }>;
+        importProfileShareCode: (
+            shareCode: string,
+            options?: { overwrite?: boolean }
+        ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
         getShells: () => Promise<{ id: string; name: string; path: string }[]>;
         getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
         create: (options: {
@@ -648,6 +753,7 @@ export interface ElectronAPI {
             cols?: number;
             rows?: number;
             backendId?: string;
+            title?: string;
             metadata?: Record<string, unknown>;
         }) => Promise<string>;
         getDockerContainers: () => Promise<Array<{ id: string; name: string; status: string }>>;
@@ -709,6 +815,119 @@ export interface ElectronAPI {
         resize: (sessionId: string, cols: number, rows: number) => Promise<boolean>;
         kill: (sessionId: string) => Promise<boolean>;
         getSessions: () => Promise<string[]>;
+        restoreAllSnapshots: () => Promise<{ restored: number; failed: number; sessionIds: string[] }>;
+        exportSession: (
+            sessionId: string,
+            options?: { includeScrollback?: boolean }
+        ) => Promise<string | null>;
+        importSession: (
+            payload: string,
+            options?: { overwrite?: boolean; sessionId?: string }
+        ) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+        createSessionShareCode: (
+            sessionId: string,
+            options?: { includeScrollback?: boolean }
+        ) => Promise<string | null>;
+        importSessionShareCode: (
+            shareCode: string,
+            options?: { overwrite?: boolean; sessionId?: string }
+        ) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+        getSnapshotSessions: () => Promise<Array<{
+            id: string;
+            shell: string;
+            cwd: string;
+            title?: string;
+            cols: number;
+            rows: number;
+            timestamp: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+        }>>;
+        getSessionTemplates: () => Promise<Array<{
+            id: string;
+            name: string;
+            shell: string;
+            cwd: string;
+            cols: number;
+            rows: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        saveSessionTemplate: (payload: {
+            sessionId: string;
+            templateId?: string;
+            name?: string;
+        }) => Promise<{
+            id: string;
+            name: string;
+            shell: string;
+            cwd: string;
+            cols: number;
+            rows: number;
+            backendId: string;
+            workspaceId?: string;
+            metadata?: Record<string, unknown>;
+            createdAt: number;
+            updatedAt: number;
+        } | null>;
+        deleteSessionTemplate: (templateId: string) => Promise<boolean>;
+        createFromSessionTemplate: (
+            templateId: string,
+            options?: { sessionId?: string; title?: string }
+        ) => Promise<string | null>;
+        restoreSnapshotSession: (snapshotId: string) => Promise<boolean>;
+        searchScrollback: (
+            sessionId: string,
+            query: string,
+            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number }
+        ) => Promise<Array<{ lineNumber: number; line: string }>>;
+        exportScrollback: (
+            sessionId: string,
+            exportPath?: string
+        ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
+        getSessionAnalytics: (sessionId: string) => Promise<{
+            sessionId: string;
+            bytes: number;
+            lineCount: number;
+            commandCount: number;
+            updatedAt: number;
+        }>;
+        getSearchAnalytics: () => Promise<{
+            totalSearches: number;
+            regexSearches: number;
+            plainSearches: number;
+            lastSearchAt: number;
+        }>;
+        getSearchSuggestions: (query?: string, limit?: number) => Promise<string[]>;
+        exportSearchResults: (
+            sessionId: string,
+            query: string,
+            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
+            exportPath?: string,
+            format?: 'json' | 'txt'
+        ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
+        addScrollbackMarker: (
+            sessionId: string,
+            label: string,
+            lineNumber?: number
+        ) => Promise<{ id: string; sessionId: string; label: string; lineNumber: number; createdAt: number } | null>;
+        listScrollbackMarkers: (sessionId?: string) => Promise<Array<{
+            id: string;
+            sessionId: string;
+            label: string;
+            lineNumber: number;
+            createdAt: number;
+        }>>;
+        deleteScrollbackMarker: (markerId: string) => Promise<boolean>;
+        filterScrollback: (
+            sessionId: string,
+            options?: { query?: string; fromLine?: number; toLine?: number; caseSensitive?: boolean }
+        ) => Promise<string[]>;
+        setSessionTitle: (sessionId: string, title: string) => Promise<boolean>;
         onData: (callback: (data: { id: string; data: string }) => void) => void;
         onExit: (callback: (data: { id: string; code: number }) => void) => void;
         readBuffer: (sessionId: string) => Promise<string>;
@@ -820,6 +1039,31 @@ export interface ElectronAPI {
         ) => Promise<{ success: boolean; isEnabled: boolean }>;
         install: (config: MCPServerConfig) => Promise<{ success: boolean; error?: string }>;
         uninstall: (name: string) => Promise<{ success: boolean }>;
+        getDebugMetrics: () => Promise<Array<{
+            key: string;
+            count: number;
+            errors: number;
+            avgDurationMs: number;
+            lastDurationMs: number;
+            lastError?: string;
+        }>>;
+        listPermissionRequests: () => Promise<Array<{
+            id: string;
+            service: string;
+            action: string;
+            createdAt: number;
+            argsPreview?: string;
+            status: 'pending' | 'approved' | 'denied';
+        }>>;
+        setActionPermission: (
+            service: string,
+            action: string,
+            policy: 'allow' | 'deny' | 'ask'
+        ) => Promise<{ success: boolean; error?: string }>;
+        resolvePermissionRequest: (
+            requestId: string,
+            decision: 'approved' | 'denied'
+        ) => Promise<{ success: boolean; error?: string }>;
         onResult: (callback: (result: Record<string, IpcValue>) => void) => void;
         removeResultListener: () => void;
     };
@@ -841,6 +1085,18 @@ export interface ElectronAPI {
             serverId: string,
             enabled: boolean
         ) => Promise<{ success: boolean; error?: string }>;
+        updateConfig: (
+            serverId: string,
+            patch: Partial<MCPServerConfig>
+        ) => Promise<{ success: boolean; error?: string }>;
+        versionHistory: (
+            serverId: string
+        ) => Promise<{ success: boolean; history?: string[]; error?: string }>;
+        rollbackVersion: (
+            serverId: string,
+            targetVersion: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        debug: () => Promise<{ success: boolean; metrics?: Record<string, IpcValue>; error?: string }>;
         refresh: () => Promise<{ success: boolean; error?: string }>;
     };
 
@@ -960,16 +1216,111 @@ export interface ElectronAPI {
         searchModels: (
             query: string,
             limit: number,
-            page: number
+            page: number,
+            sort?: string
         ) => Promise<{ models: { id: string; downloads: number; likes: number }[]; total: number }>;
+        getRecommendations: (
+            limit?: number,
+            query?: string
+        ) => Promise<{ id: string; downloads: number; likes: number; category: string; recommendationScore: number }[]>;
         getFiles: (
             modelId: string
         ) => Promise<{ path: string; size: number; oid: string; quantization: string }[]>;
+        getModelPreview: (modelId: string) => Promise<unknown>;
+        compareModels: (modelIds: string[]) => Promise<unknown>;
+        validateCompatibility: (
+            file: { path: string; size: number; oid?: string; quantization: string },
+            availableRamGB?: number,
+            availableVramGB?: number
+        ) => Promise<{
+            compatible: boolean;
+            reasons: string[];
+            estimatedRamGB: number;
+            estimatedVramGB: number;
+        }>;
+        getWatchlist: () => Promise<string[]>;
+        addToWatchlist: (modelId: string) => Promise<{ success: boolean }>;
+        removeFromWatchlist: (modelId: string) => Promise<{ success: boolean }>;
+        getCacheStats: () => Promise<{
+            size: number;
+            maxSize: number;
+            ttlMs: number;
+            oldestAgeMs: number;
+            watchlistSize: number;
+        }>;
+        clearCache: () => Promise<{ success: boolean; removed: number }>;
+        testDownloadedModel: (filePath: string) => Promise<{
+            success: boolean;
+            error?: string;
+            metadata?: { architecture?: string; contextLength?: number };
+        }>;
+        getConversionPresets: () => Promise<Array<{
+            id: 'balanced' | 'quality' | 'speed' | 'tiny';
+            quantization: 'F16' | 'Q8_0' | 'Q6_K' | 'Q5_K_M' | 'Q4_K_M';
+            description: string;
+        }>>;
+        getOptimizationSuggestions: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<string[]>;
+        validateConversion: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<{ valid: boolean; errors: string[] }>;
+        convertModel: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => Promise<{ success: boolean; error?: string; warnings?: string[] }>;
+        onConversionProgress: (
+            callback: (progress: { stage: string; percent: number; message: string }) => void
+        ) => () => void;
+        getModelVersions: (modelId: string) => Promise<Array<{
+            versionId: string;
+            modelId: string;
+            path: string;
+            createdAt: number;
+            notes?: string;
+            pinned?: boolean;
+            metadata?: { architecture?: string; contextLength?: number };
+        }>>;
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) => Promise<unknown>;
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) => Promise<unknown>;
+        rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) => Promise<{ success: boolean; error?: string }>;
+        pinModelVersion: (modelId: string, versionId: string, pinned: boolean) => Promise<{ success: boolean }>;
+        getVersionNotifications: (modelId: string) => Promise<string[]>;
+        prepareFineTuneDataset: (inputPath: string, outputPath: string) => Promise<{
+            success: boolean;
+            outputPath: string;
+            records: number;
+            error?: string;
+        }>;
+        startFineTune: (
+            modelId: string,
+            datasetPath: string,
+            outputPath: string,
+            options?: { epochs?: number; learningRate?: number }
+        ) => Promise<unknown>;
+        listFineTuneJobs: (modelId?: string) => Promise<unknown[]>;
+        getFineTuneJob: (jobId: string) => Promise<unknown>;
+        cancelFineTuneJob: (jobId: string) => Promise<{ success: boolean }>;
+        evaluateFineTuneJob: (jobId: string) => Promise<unknown>;
+        exportFineTunedModel: (jobId: string, exportPath: string) => Promise<{ success: boolean; error?: string }>;
+        onFineTuneProgress: (callback: (job: unknown) => void) => () => void;
         downloadFile: (
             url: string,
             outputPath: string,
             expectedSize: number,
-            expectedSha256: string
+            expectedSha256: string,
+            scheduleAtMs?: number
         ) => Promise<{ success: boolean; error?: string }>;
         onDownloadProgress: (
             callback: (progress: { filename: string; received: number; total: number }) => void
@@ -1040,6 +1391,95 @@ export interface ElectronAPI {
     unlinkProvider: (provider: string) => Promise<{ success: boolean; error?: string }>;
     hasLinkedAccount: (provider: string) => Promise<boolean>;
     getAccountsByProvider: (provider: string) => Promise<LinkedAccountInfo[]>;
+    detectAuthProvider: (providerHint?: string, tokenData?: TokenData) => Promise<{ provider: string }>;
+    getAuthProviderHealth: (provider?: string) => Promise<Array<{
+        provider: string;
+        checkedAt: number;
+        totalAccounts: number;
+        activeAccountId?: string;
+        hasActiveToken: boolean;
+        hasRefreshToken: boolean;
+        expiringSoonCount: number;
+        expiredCount: number;
+        healthy: boolean;
+    }>>;
+    getAuthProviderAnalytics: () => Promise<Array<{
+        provider: string;
+        totalAccounts: number;
+        activeAccounts: number;
+        lastUpdatedAt?: number;
+        oldestAccountAt?: number;
+        withRefreshToken: number;
+        withSessionToken: number;
+    }>>;
+    rotateTokenEncryption: (provider?: string) => Promise<{ rotated: number; failed: number }>;
+    revokeAccountToken: (
+        accountId: string,
+        options?: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean }
+    ) => Promise<{ success: boolean }>;
+    getTokenAnalytics: (provider?: string) => Promise<{
+        totalAccounts: number;
+        withAccessToken: number;
+        withRefreshToken: number;
+        withSessionToken: number;
+        expiringWithin30m: number;
+        expired: number;
+        revoked: number;
+    }>;
+    startAuthSession: (provider: string, accountId?: string, source?: string) => Promise<{ sessionId: string }>;
+    touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+    endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
+    setAuthSessionLimit: (provider: string, limit: number) => Promise<{ limit: number }>;
+    getAuthSessionAnalytics: (provider?: string) => Promise<{
+        totalActiveSessions: number;
+        byProvider: Record<string, number>;
+        oldestSessionAt?: number;
+    }>;
+    setAuthSessionTimeout: (timeoutMs: number) => Promise<{ timeoutMs: number }>;
+    getAuthSessionTimeout: () => Promise<{ timeoutMs: number }>;
+    getProxyRateLimitMetrics: () => Promise<{
+        generatedAt: number;
+        providers: Array<{
+            provider: string;
+            limit: number;
+            remaining: number;
+            resetAt: number;
+            queued: number;
+            blocked: number;
+            allowed: number;
+            bypassed: number;
+            warnings: number;
+        }>;
+    }>;
+    getProxyRateLimitConfig: () => Promise<Record<string, {
+        windowMs: number;
+        maxRequests: number;
+        warningThreshold: number;
+        maxQueueSize: number;
+        allowPremiumBypass: boolean;
+    }>>;
+    setProxyRateLimitConfig: (
+        provider: string,
+        config: {
+            windowMs?: number;
+            maxRequests?: number;
+            warningThreshold?: number;
+            maxQueueSize?: number;
+            allowPremiumBypass?: boolean;
+        }
+    ) => Promise<{
+        windowMs: number;
+        maxRequests: number;
+        warningThreshold: number;
+        maxQueueSize: number;
+        allowPremiumBypass: boolean;
+    }>;
+    performance: {
+        getMemoryStats: () => Promise<IpcValue>;
+        detectLeak: () => Promise<IpcValue>;
+        triggerGC: () => Promise<IpcValue>;
+        getDashboard: () => Promise<IpcValue>;
+    };
 
     // IPC Batching for performance
     batch: {
@@ -1053,6 +1493,18 @@ export interface ElectronAPI {
         }>;
         getChannels: () => Promise<string[]>;
     };
+    lazyServices: {
+        getStatus: () => Promise<{
+            registered: string[];
+            loaded: string[];
+            loading: string[];
+            totals: {
+                registered: number;
+                loaded: number;
+                loading: number;
+            };
+        }>;
+    };
 
     // Backup & Restore
     backup: {
@@ -1061,6 +1513,11 @@ export interface ElectronAPI {
             includeAuth?: boolean;
             includeSettings?: boolean;
             includePrompts?: boolean;
+            incremental?: boolean;
+            compress?: boolean;
+            encrypt?: boolean;
+            verify?: boolean;
+            cloudSyncDir?: string;
         }) => Promise<{
             success: boolean;
             path?: string;
@@ -1071,6 +1528,11 @@ export interface ElectronAPI {
                 appVersion: string;
                 platform: string;
                 includes: string[];
+                checksum?: string;
+                compressed?: boolean;
+                encrypted?: boolean;
+                incremental?: boolean;
+                baseBackup?: string;
             };
         }>;
         restore: (
@@ -1102,13 +1564,34 @@ export interface ElectronAPI {
             intervalHours: number;
             maxBackups: number;
             lastBackup: string | null;
+            compression: boolean;
+            encryption: boolean;
+            verification: boolean;
+            cloudSyncDir?: string;
         }>;
         configureAutoBackup: (config: {
             enabled: boolean;
             intervalHours?: number;
             maxBackups?: number;
+            compression?: boolean;
+            encryption?: boolean;
+            verification?: boolean;
+            cloudSyncDir?: string;
         }) => Promise<void>;
         cleanup: () => Promise<number>;
+        verify: (
+            backupPath: string
+        ) => Promise<{ valid: boolean; checksum?: string; error?: string }>;
+        syncToCloudDir: (
+            backupPath: string,
+            targetDir: string
+        ) => Promise<{ success: boolean; targetPath?: string; error?: string }>;
+        createDisasterRecoveryBundle: (
+            targetDir?: string
+        ) => Promise<{ success: boolean; bundlePath?: string; files?: string[]; error?: string }>;
+        restoreDisasterRecoveryBundle: (
+            bundlePath: string
+        ) => Promise<{ success: boolean; restored: string[]; errors: string[] }>;
     };
 
     // Export chat to multiple formats
@@ -1382,6 +1865,32 @@ const api: ElectronAPI = {
     unlinkProvider: provider => ipcRenderer.invoke('auth:unlink-provider', provider),
     hasLinkedAccount: provider => ipcRenderer.invoke('auth:has-linked-account', provider),
     getAccountsByProvider: provider => ipcRenderer.invoke('auth:get-linked-accounts', provider),
+    detectAuthProvider: (providerHint?: string, tokenData?: TokenData) =>
+        ipcRenderer.invoke('auth:detect-provider', providerHint, tokenData),
+    getAuthProviderHealth: (provider?: string) =>
+        ipcRenderer.invoke('auth:get-provider-health', provider),
+    getAuthProviderAnalytics: () => ipcRenderer.invoke('auth:get-provider-analytics'),
+    rotateTokenEncryption: (provider?: string) =>
+        ipcRenderer.invoke('auth:rotate-token-encryption', provider),
+    revokeAccountToken: (
+        accountId: string,
+        options?: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean }
+    ) => ipcRenderer.invoke('auth:revoke-account-token', accountId, options),
+    getTokenAnalytics: (provider?: string) => ipcRenderer.invoke('auth:get-token-analytics', provider),
+    startAuthSession: (provider: string, accountId?: string, source?: string) =>
+        ipcRenderer.invoke('auth:start-session', provider, accountId, source),
+    touchAuthSession: (sessionId: string) =>
+        ipcRenderer.invoke('auth:touch-session', sessionId),
+    endAuthSession: (sessionId: string) =>
+        ipcRenderer.invoke('auth:end-session', sessionId),
+    setAuthSessionLimit: (provider: string, limit: number) =>
+        ipcRenderer.invoke('auth:set-session-limit', provider, limit),
+    getAuthSessionAnalytics: (provider?: string) =>
+        ipcRenderer.invoke('auth:get-session-analytics', provider),
+    setAuthSessionTimeout: (timeoutMs: number) =>
+        ipcRenderer.invoke('auth:set-session-timeout', timeoutMs),
+    getAuthSessionTimeout: () =>
+        ipcRenderer.invoke('auth:get-session-timeout'),
 
     code: {
         scanTodos: rootPath => ipcRenderer.invoke('code:scanTodos', rootPath),
@@ -1398,6 +1907,24 @@ const api: ElectronAPI = {
     getCopilotQuota: () => ipcRenderer.invoke('proxy:getCopilotQuota'),
     getCodexUsage: () => ipcRenderer.invoke('proxy:getCodexUsage'),
     getClaudeQuota: () => ipcRenderer.invoke('proxy:getClaudeQuota'),
+    getProxyRateLimitMetrics: () => ipcRenderer.invoke('proxy:get-rate-limit-metrics'),
+    getProxyRateLimitConfig: () => ipcRenderer.invoke('proxy:get-rate-limit-config'),
+    setProxyRateLimitConfig: (
+        provider: string,
+        config: {
+            windowMs?: number;
+            maxRequests?: number;
+            warningThreshold?: number;
+            maxQueueSize?: number;
+            allowPremiumBypass?: boolean;
+        }
+    ) => ipcRenderer.invoke('proxy:set-rate-limit-config', provider, config),
+    performance: {
+        getMemoryStats: () => ipcRenderer.invoke('performance:get-memory-stats'),
+        detectLeak: () => ipcRenderer.invoke('performance:detect-leak'),
+        triggerGC: () => ipcRenderer.invoke('performance:trigger-gc'),
+        getDashboard: () => ipcRenderer.invoke('performance:get-dashboard')
+    },
     checkUsageLimit: (provider: string, model: string) =>
         ipcRenderer.invoke('usage:checkLimit', provider, model),
     getUsageCount: (period: 'hourly' | 'daily' | 'weekly', provider?: string, model?: string) =>
@@ -1436,7 +1963,6 @@ const api: ElectronAPI = {
         void ipcRenderer.invoke('ollama:abort');
     },
     onStreamChunk: callback => {
-        console.warn(`[Preload] onStreamChunk registered on ${window.location.href}`);
         const listener = (
             _event: IpcRendererEvent,
             chunk: {
@@ -1447,17 +1973,14 @@ const api: ElectronAPI = {
                 done?: boolean;
             }
         ) => {
-            console.warn('[Preload] Received ollama:streamChunk:', JSON.stringify(chunk));
             callback(chunk);
         };
         ipcRenderer.on('ollama:streamChunk', listener);
         return () => {
-            console.warn('[Preload] onStreamChunk unsubscribing');
             ipcRenderer.removeListener('ollama:streamChunk', listener);
         };
     },
     removeStreamChunkListener: () => {
-        console.warn('[Preload] removeAllListeners for ollama:streamChunk');
         ipcRenderer.removeAllListeners('ollama:streamChunk');
     },
 
@@ -1495,6 +2018,36 @@ const api: ElectronAPI = {
     scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) =>
         ipcRenderer.invoke('ollama:scrapeModelDetails', modelName, bypassCache),
     clearOllamaScraperCache: () => ipcRenderer.invoke('ollama:clearScraperCache'),
+
+    // OLLAMA-01: Model Health & Recommendations
+    checkOllamaModelHealth: (modelName: string) => ipcRenderer.invoke('ollama:checkModelHealth', modelName),
+    checkAllOllamaModelsHealth: () => ipcRenderer.invoke('ollama:checkAllModelsHealth'),
+    getOllamaModelRecommendations: (category?: 'coding' | 'creative' | 'reasoning' | 'general' | 'multimodal') =>
+        ipcRenderer.invoke('ollama:getModelRecommendations', category),
+    getRecommendedOllamaModelForTask: (task: string) => ipcRenderer.invoke('ollama:getRecommendedModelForTask', task),
+
+    // OLLAMA-02: Connection Handling
+    getOllamaConnectionStatus: () => ipcRenderer.invoke('ollama:getConnectionStatus'),
+    testOllamaConnection: () => ipcRenderer.invoke('ollama:testConnection'),
+    reconnectOllama: () => ipcRenderer.invoke('ollama:reconnect'),
+
+    // OLLAMA-03: GPU Monitoring
+    getOllamaGPUInfo: () => ipcRenderer.invoke('ollama:getGPUInfo'),
+    startOllamaGPUMonitoring: (intervalMs?: number) => ipcRenderer.invoke('ollama:startGPUMonitoring', intervalMs),
+    stopOllamaGPUMonitoring: () => ipcRenderer.invoke('ollama:stopGPUMonitoring'),
+    setOllamaGPUAlertThresholds: (thresholds: { highMemoryPercent?: number; highTemperatureC?: number; lowMemoryMB?: number }) =>
+        ipcRenderer.invoke('ollama:setGPUAlertThresholds', thresholds),
+    getOllamaGPUAlertThresholds: () => ipcRenderer.invoke('ollama:getGPUAlertThresholds'),
+    onOllamaGPUAlert: (callback: (alert: IpcValue) => void) => {
+        const listener = (_event: Electron.IpcRendererEvent, alert: IpcValue) => callback(alert);
+        ipcRenderer.on('ollama:gpuAlert', listener);
+        return () => ipcRenderer.removeListener('ollama:gpuAlert', listener);
+    },
+    onOllamaGPUStatus: (callback: (status: IpcValue) => void) => {
+        const listener = (_event: Electron.IpcRendererEvent, status: IpcValue) => callback(status);
+        ipcRenderer.on('ollama:gpuStatus', listener);
+        return () => ipcRenderer.removeListener('ollama:gpuStatus', listener);
+    },
 
     // Marketplace API (models from database)
     marketplace: {
@@ -1681,6 +2234,35 @@ const api: ElectronAPI = {
     agent: {
         getAll: () => ipcRenderer.invoke('agent:get-all'),
         get: (id: string) => ipcRenderer.invoke('agent:get', id),
+        create: (payload: {
+            agent: {
+                id?: string;
+                name: string;
+                description?: string;
+                systemPrompt: string;
+                tools?: string[];
+                parentModel?: string;
+                color?: string;
+            };
+            options?: { cloneFromId?: string; createWorkspace?: boolean };
+        }) => ipcRenderer.invoke('agent:create', payload),
+        delete: (
+            id: string,
+            options?: { confirm?: boolean; softDelete?: boolean; backupBeforeDelete?: boolean }
+        ) => ipcRenderer.invoke('agent:delete', id, options),
+        clone: (id: string, newName?: string) => ipcRenderer.invoke('agent:clone', id, newName),
+        exportAgent: (id: string) => ipcRenderer.invoke('agent:export', id),
+        importAgent: (payload: string) => ipcRenderer.invoke('agent:import', payload),
+        getTemplatesLibrary: () => ipcRenderer.invoke('agent:get-templates-library'),
+        validateTemplate: (template: {
+            name?: string;
+            description?: string;
+            systemPrompt?: string;
+            tools?: string[];
+            parentModel?: string;
+            color?: string;
+        }) => ipcRenderer.invoke('agent:validate-template', template),
+        recover: (archiveId: string) => ipcRenderer.invoke('agent:recover', archiveId),
     },
 
     ssh: {
@@ -1754,6 +2336,12 @@ const api: ElectronAPI = {
         toggle: (service, enabled) => ipcRenderer.invoke('mcp:toggle', { service, enabled }),
         install: config => ipcRenderer.invoke('mcp:install', config),
         uninstall: name => ipcRenderer.invoke('mcp:uninstall', name),
+        getDebugMetrics: () => ipcRenderer.invoke('mcp:debug-metrics'),
+        listPermissionRequests: () => ipcRenderer.invoke('mcp:permissions:list-requests'),
+        setActionPermission: (service, action, policy) =>
+            ipcRenderer.invoke('mcp:permissions:set', service, action, policy),
+        resolvePermissionRequest: (requestId, decision) =>
+            ipcRenderer.invoke('mcp:permissions:resolve-request', requestId, decision),
         onResult: callback => ipcRenderer.on('mcp:result', (_event, result) => callback(result)),
         removeResultListener: () => ipcRenderer.removeAllListeners('mcp:result'),
     },
@@ -1768,6 +2356,13 @@ const api: ElectronAPI = {
         installed: () => ipcRenderer.invoke('mcp:marketplace:installed'),
         toggle: (serverId, enabled) =>
             ipcRenderer.invoke('mcp:marketplace:toggle', serverId, enabled),
+        updateConfig: (serverId, patch) =>
+            ipcRenderer.invoke('mcp:marketplace:update-config', serverId, patch),
+        versionHistory: serverId =>
+            ipcRenderer.invoke('mcp:marketplace:version-history', serverId),
+        rollbackVersion: (serverId, targetVersion) =>
+            ipcRenderer.invoke('mcp:marketplace:rollback-version', serverId, targetVersion),
+        debug: () => ipcRenderer.invoke('mcp:marketplace:debug'),
         refresh: () => ipcRenderer.invoke('mcp:marketplace:refresh'),
     },
 
@@ -1993,15 +2588,93 @@ const api: ElectronAPI = {
     },
 
     huggingface: {
-        searchModels: (query: string, limit: number, page: number) =>
-            ipcRenderer.invoke('hf:search-models', query, limit, page),
+        searchModels: (query: string, limit: number, page: number, sort?: string) =>
+            ipcRenderer.invoke('hf:search-models', query, limit, page, sort),
+        getRecommendations: (limit?: number, query?: string) =>
+            ipcRenderer.invoke('hf:get-recommendations', limit, query),
         getFiles: (modelId: string) => ipcRenderer.invoke('hf:get-files', modelId),
+        getModelPreview: (modelId: string) => ipcRenderer.invoke('hf:get-model-preview', modelId),
+        compareModels: (modelIds: string[]) => ipcRenderer.invoke('hf:compare-models', modelIds),
+        validateCompatibility: (
+            file: { path: string; size: number; oid?: string; quantization: string },
+            availableRamGB?: number,
+            availableVramGB?: number
+        ) => ipcRenderer.invoke('hf:validate-compatibility', file, availableRamGB, availableVramGB),
+        getWatchlist: () => ipcRenderer.invoke('hf:watchlist:get'),
+        addToWatchlist: (modelId: string) => ipcRenderer.invoke('hf:watchlist:add', modelId),
+        removeFromWatchlist: (modelId: string) => ipcRenderer.invoke('hf:watchlist:remove', modelId),
+        getCacheStats: () => ipcRenderer.invoke('hf:cache-stats'),
+        clearCache: () => ipcRenderer.invoke('hf:cache-clear'),
+        testDownloadedModel: (filePath: string) => ipcRenderer.invoke('hf:test-downloaded-model', filePath),
+        getConversionPresets: () => ipcRenderer.invoke('hf:get-conversion-presets'),
+        getOptimizationSuggestions: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => ipcRenderer.invoke('hf:get-optimization-suggestions', options),
+        validateConversion: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => ipcRenderer.invoke('hf:validate-conversion', options),
+        convertModel: (options: {
+            sourcePath: string;
+            outputPath: string;
+            quantization: string;
+            preset?: string;
+            modelId?: string;
+        }) => ipcRenderer.invoke('hf:convert-model', options),
+        onConversionProgress: callback => {
+            const listener = (_event: IpcRendererEvent, progress: { stage: string; percent: number; message: string }) =>
+                callback(progress);
+            ipcRenderer.on('hf:conversion-progress', listener);
+            return () => ipcRenderer.removeListener('hf:conversion-progress', listener);
+        },
+        getModelVersions: (modelId: string) => ipcRenderer.invoke('hf:versions:list', modelId),
+        registerModelVersion: (modelId: string, filePath: string, notes?: string) =>
+            ipcRenderer.invoke('hf:versions:register', modelId, filePath, notes),
+        compareModelVersions: (modelId: string, leftVersionId: string, rightVersionId: string) =>
+            ipcRenderer.invoke('hf:versions:compare', modelId, leftVersionId, rightVersionId),
+        rollbackModelVersion: (modelId: string, versionId: string, targetPath: string) =>
+            ipcRenderer.invoke('hf:versions:rollback', modelId, versionId, targetPath),
+        pinModelVersion: (modelId: string, versionId: string, pinned: boolean) =>
+            ipcRenderer.invoke('hf:versions:pin', modelId, versionId, pinned),
+        getVersionNotifications: (modelId: string) =>
+            ipcRenderer.invoke('hf:versions:notifications', modelId),
+        prepareFineTuneDataset: (inputPath: string, outputPath: string) =>
+            ipcRenderer.invoke('hf:finetune:prepare-dataset', inputPath, outputPath),
+        startFineTune: (
+            modelId: string,
+            datasetPath: string,
+            outputPath: string,
+            options?: { epochs?: number; learningRate?: number }
+        ) => ipcRenderer.invoke('hf:finetune:start', modelId, datasetPath, outputPath, options),
+        listFineTuneJobs: (modelId?: string) =>
+            ipcRenderer.invoke('hf:finetune:list', modelId),
+        getFineTuneJob: (jobId: string) =>
+            ipcRenderer.invoke('hf:finetune:get', jobId),
+        cancelFineTuneJob: (jobId: string) =>
+            ipcRenderer.invoke('hf:finetune:cancel', jobId),
+        evaluateFineTuneJob: (jobId: string) =>
+            ipcRenderer.invoke('hf:finetune:evaluate', jobId),
+        exportFineTunedModel: (jobId: string, exportPath: string) =>
+            ipcRenderer.invoke('hf:finetune:export', jobId, exportPath),
+        onFineTuneProgress: callback => {
+            const listener = (_event: IpcRendererEvent, job: unknown) => callback(job);
+            ipcRenderer.on('hf:finetune-progress', listener);
+            return () => ipcRenderer.removeListener('hf:finetune-progress', listener);
+        },
         downloadFile: (
             url: string,
             outputPath: string,
             expectedSize: number,
-            expectedSha256: string
-        ) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256),
+            expectedSha256: string,
+            scheduleAtMs?: number
+        ) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256, scheduleAtMs),
         onDownloadProgress: callback =>
             ipcRenderer.on('hf:download-progress', (_event, progress) => callback(progress)),
         cancelDownload: () => {
@@ -2019,6 +2692,18 @@ const api: ElectronAPI = {
 
     terminal: {
         isAvailable: () => ipcRenderer.invoke('terminal:isAvailable'),
+        getProfiles: () => ipcRenderer.invoke('terminal:getProfiles'),
+        saveProfile: profile => ipcRenderer.invoke('terminal:saveProfile', profile),
+        deleteProfile: id => ipcRenderer.invoke('terminal:deleteProfile', id),
+        validateProfile: profile => ipcRenderer.invoke('terminal:validateProfile', profile),
+        getProfileTemplates: () => ipcRenderer.invoke('terminal:getProfileTemplates'),
+        exportProfiles: () => ipcRenderer.invoke('terminal:exportProfiles'),
+        exportProfileShareCode: profileId =>
+            ipcRenderer.invoke('terminal:exportProfileShareCode', profileId),
+        importProfiles: (payload, options) =>
+            ipcRenderer.invoke('terminal:importProfiles', payload, options),
+        importProfileShareCode: (shareCode, options) =>
+            ipcRenderer.invoke('terminal:importProfileShareCode', shareCode, options),
         getShells: () => ipcRenderer.invoke('terminal:getShells'),
         getBackends: () => ipcRenderer.invoke('terminal:getBackends'),
         getDockerContainers: () => ipcRenderer.invoke('terminal:getDockerContainers'),
@@ -2053,6 +2738,52 @@ const api: ElectronAPI = {
             ipcRenderer.invoke('terminal:resize', sessionId, cols, rows),
         kill: sessionId => ipcRenderer.invoke('terminal:kill', sessionId),
         getSessions: () => ipcRenderer.invoke('terminal:getSessions'),
+        restoreAllSnapshots: () => ipcRenderer.invoke('terminal:restoreAllSnapshots'),
+        exportSession: (sessionId, options) =>
+            ipcRenderer.invoke('terminal:exportSession', sessionId, options),
+        importSession: (payload, options) =>
+            ipcRenderer.invoke('terminal:importSession', payload, options),
+        createSessionShareCode: (sessionId, options) =>
+            ipcRenderer.invoke('terminal:createSessionShareCode', sessionId, options),
+        importSessionShareCode: (shareCode, options) =>
+            ipcRenderer.invoke('terminal:importSessionShareCode', shareCode, options),
+        getSnapshotSessions: () => ipcRenderer.invoke('terminal:getSnapshotSessions'),
+        getSessionTemplates: () => ipcRenderer.invoke('terminal:getSessionTemplates'),
+        saveSessionTemplate: payload => ipcRenderer.invoke('terminal:saveSessionTemplate', payload),
+        deleteSessionTemplate: templateId =>
+            ipcRenderer.invoke('terminal:deleteSessionTemplate', templateId),
+        createFromSessionTemplate: (templateId, options) =>
+            ipcRenderer.invoke('terminal:createFromSessionTemplate', templateId, options),
+        restoreSnapshotSession: snapshotId =>
+            ipcRenderer.invoke('terminal:restoreSnapshotSession', snapshotId),
+        searchScrollback: (sessionId, query, options) =>
+            ipcRenderer.invoke('terminal:searchScrollback', sessionId, query, options),
+        exportScrollback: (sessionId, exportPath) =>
+            ipcRenderer.invoke('terminal:exportScrollback', sessionId, exportPath),
+        getSessionAnalytics: sessionId =>
+            ipcRenderer.invoke('terminal:getSessionAnalytics', sessionId),
+        getSearchAnalytics: () => ipcRenderer.invoke('terminal:getSearchAnalytics'),
+        getSearchSuggestions: (query, limit) =>
+            ipcRenderer.invoke('terminal:getSearchSuggestions', query, limit),
+        exportSearchResults: (sessionId, query, options, exportPath, format) =>
+            ipcRenderer.invoke(
+                'terminal:exportSearchResults',
+                sessionId,
+                query,
+                options,
+                exportPath,
+                format
+            ),
+        addScrollbackMarker: (sessionId, label, lineNumber) =>
+            ipcRenderer.invoke('terminal:addScrollbackMarker', sessionId, label, lineNumber),
+        listScrollbackMarkers: sessionId =>
+            ipcRenderer.invoke('terminal:listScrollbackMarkers', sessionId),
+        deleteScrollbackMarker: markerId =>
+            ipcRenderer.invoke('terminal:deleteScrollbackMarker', markerId),
+        filterScrollback: (sessionId, options) =>
+            ipcRenderer.invoke('terminal:filterScrollback', sessionId, options),
+        setSessionTitle: (sessionId, title) =>
+            ipcRenderer.invoke('terminal:setSessionTitle', sessionId, title),
         onData: callback => {
             const listener = (_event: IpcRendererEvent, data: { id: string; data: string }) =>
                 callback(data);
@@ -2111,6 +2842,9 @@ const api: ElectronAPI = {
         invokeSequential: requests => ipcRenderer.invoke('batch:invokeSequential', requests),
         getChannels: () => ipcRenderer.invoke('batch:getChannels'),
     },
+    lazyServices: {
+        getStatus: () => ipcRenderer.invoke('lazy:get-status')
+    },
 
     backup: {
         create: options => ipcRenderer.invoke('backup:create', options),
@@ -2121,6 +2855,13 @@ const api: ElectronAPI = {
         getAutoBackupStatus: () => ipcRenderer.invoke('backup:getAutoBackupStatus'),
         configureAutoBackup: config => ipcRenderer.invoke('backup:configureAutoBackup', config),
         cleanup: () => ipcRenderer.invoke('backup:cleanup'),
+        verify: backupPath => ipcRenderer.invoke('backup:verify', backupPath),
+        syncToCloudDir: (backupPath, targetDir) =>
+            ipcRenderer.invoke('backup:syncToCloudDir', backupPath, targetDir),
+        createDisasterRecoveryBundle: targetDir =>
+            ipcRenderer.invoke('backup:createDisasterRecoveryBundle', targetDir),
+        restoreDisasterRecoveryBundle: bundlePath =>
+            ipcRenderer.invoke('backup:restoreDisasterRecoveryBundle', bundlePath),
     },
 
     export: {

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Tandem Changelog</title>
+<link>https://tandem.local/changelog</link>
+<description>Tandem Changelog feed</description>
+<lastBuildDate>Fri, 13 Feb 2026 01:03:21 GMT</lastBuildDate>
+<language>en</language>
+<item><guid>2026-02-13-ipc-handler-tests-expansion-batch-5-fix-test-01</guid><title>IPC Handler Tests expansion &amp; TEST-01 Fix</title><link>https://tandem.local/changelog#2026-02-13-ipc-handler-tests-expansion-batch-5-fix-test-01</link><pubDate>Fri, 13 Feb 2026 00:00:00 GMT</pubDate><description>Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.
+- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.
+- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.
+- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
+- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.</description><category>fix</category></item>
+<item><guid>2026-02-12-ipc-handler-tests-batch-4</guid><title>IPC Handler Tests Expansion - Batch 4</title><link>https://tandem.local/changelog#2026-02-12-ipc-handler-tests-batch-4</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Created integration tests for 15 additional IPC handlers (advanced-memory, auth, brain, dialog, extension, file-diff, files, gallery, git, idea-generator, mcp, mcp-marketplace, process, proxy, proxy-embed).
+- **Tests**: Added tests for advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts, file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts, mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts</description><category>feature</category></item>
+<item><guid>2026-02-12-ipc-handler-tests-expansion-batch-2</guid><title>IPC Handler Tests Expansion - Batches 2 &amp; 3 + Pre-existing Test Fixes</title><link>https://tandem.local/changelog#2026-02-12-ipc-handler-tests-expansion-batch-2</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Created comprehensive integration tests for 12 additional IPC handlers (HuggingFace, Llama, Ollama, Multi-Model, Key Rotation, Migration, Prompt Templates, SD-CPP, Tools, Usage, Health, Agent) + Fixed all 20 pre-existing theme test failures by completely rewriting theme.integration.test.ts. Total: 852 tests passing (100%).
+**Batch 2 Test Files Created (143 tests):**
+- [x] **huggingface.integration.test.ts** (20 tests): Model search, file listing, download with progress, URL validation, SHA256 verification
+- [x] **llama.integration.test.ts** (32 tests): Model loading, chat with streaming, session management, GPU detection, model downloads, config management
+- [x] **ollama.integration.test.ts** (32 tests): Health status, model pulling with progress, chat/streaming, library scraping, rate limiting, service dependencies
+- [x] **multi-model.integration.test.ts** (14 tests): Model comparison requests, validation (chatId, messages, models array), filtering invalid entries, rate limiting
+- [x] **key-rotation.integration.test.ts** (19 tests): Get current key, rotate keys, initialize provider keys, status with masking, provider name validation
+- [x] **migration.integration.test.ts** (4 tests): Migration status, pending migrations, fresh database, error handling
+- [x] **prompt-templates.integration.test.ts** (22 tests): Get all/by category/by tag, search, CRUD operations, template rendering with variables
+
+**Batch 3 Test Files Created (68 tests):**
+- [x] **sd-cpp.integration.test.ts** (12 tests): Status retrieval, reinstall/repair, error handling, multiple status types
+- [x] **tools.integration.test.ts** (18 tests): Tool execution with rate limiting, kill commands, get definitions with serialization
+- [x] **usage.integration.test.ts** (17 tests): Check limits with Copilot quota, usage counts by period/provider/model, record usage
+- [x] **health.integration.test.ts** (14 tests): Overall health status, check specific services, get service status, list services
+- [x] **agent.integration.test.ts** (7 tests): Get all agents, get agent by ID, JSON serialization
+
+**Pre-existing Test Fixes (20 failures → 0):**
+- [x] **theme.integration.test.ts - COMPLETE REWRITE**: Rewrote all 21 tests to match actual theme.ts API
+  - Fixed handler name mismatches (theme:getActive → theme:getCurrent, theme:activate → theme:set, etc.)
+  - Changed mocks from ThemeService to themeStore (correct dependency)
+  - Updated custom theme validation to match actual validateCustomThemeInput requirements
+  - Added proper category/source/isCustom fields for addCustom tests
+  - Fixed runtime handler mocks (install/uninstall) with proper service instance mocking
+  - All 21 theme tests now passing
+
+**Coverage Highlights:**
+- Input validation for all parameters (IDs, paths, URLs, model names, keys)
+- Security: URL whitelisting (HuggingFace domain), provider name sanitization, key masking in status
+- Error handling: Default values, safe wrappers, invalid input rejection
+- Rate limiting integration across all LLM-related handlers
+- Progress event forwarding (downloads, pulls, streams)
+- Complex service dependencies (Ollama health, scraper, comparison)
+
+**Test Statistics:**
+- **Before:** 721/748 passing (96.4%)
+- **After Batch 2 + Fixes:** 789/789 passing (100%)
+- **After Batch 3:** 852/852 passing (100%) 🎉
+- **New tests:** +211 tests (143 Batch 2 + 68 Batch 3)
+- **Fixed tests:** +20 tests (theme)
+- **New test files:** +12 files
+- **Rewritten test files:** 1 file (theme.integration.test.ts)
+
+**TODO.md Updates:**
+- Marked huggingface.ts, llama.ts, ollama.ts, multi-model.ts, key-rotation.ts, migration.ts, prompt-templates.ts as tested
+
+**Test Patterns Applied:**
+- Static imports at top (no dynamic require - VI hoisting)
+- Mock factories inside vi.mock() blocks
+- Comprehensive parameter validation tests
+- Error path coverage with safe handler defaults
+- Service availability fallback testing</description><category>feature</category></item>
+<item><guid>2026-02-12-ipc-utilities-audit-and-refactor</guid><title>IPC Utilities Audit and Refactor</title><link>https://tandem.local/changelog#2026-02-12-ipc-utilities-audit-and-refactor</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Refactored IPC batch and wrapper utilities to improve type safety, documentation, and compliance with NASA Power of Ten rules.
+- [x] **ipc-batch.util.ts**: Replaced `any` with `IpcValue` and implemented `MAX_BATCH_SIZE=50` to enforce fixed loop bounds (NASA Rule 2).
+- [x] **ipc-wrapper.util.ts**: Added comprehensive JSDoc for all interfaces and lifecycle functions.
+- [x] **local-auth-server.util.ts**: Refactored OAuth handlers into private helpers to comply with NASA Rule 3 (Short functions) and replaced console logs with `appLogger`.
+- [x] **Type Safety**: Resolved type compatibility issues between generic batch handlers and specific IPC implementations.
+- [x] **Audit**: Completed items 109, 110, and 111 of the full file-by-file audit list.</description><category>refactor</category></item>
+<item><guid>2026-02-12-message-normalizer-refactor</guid><title>Message Normalizer Hardening</title><link>https://tandem.local/changelog#2026-02-12-message-normalizer-refactor</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Refactored message normalization utility to enforce strict type safety and NASA Power of Ten rules (fixed loop bounds).
+- **Utils**: Enforced NASA Rule 2 (fixed loop bounds) in `MessageNormalizer`.
+- **Type Safety**: Removed `any` types and added strict type guards in message normalization logic.
+- **Documentation**: Added comprehensive JSDoc for all methods in `message-normalizer.util.ts`.</description><category>security</category></item>
+<item><guid>2026-02-12-models-page-ollama-marketplace-scraper</guid><title>Models Page &amp; Ollama Marketplace Scraper</title><link>https://tandem.local/changelog#2026-02-12-models-page-ollama-marketplace-scraper</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Created standalone Models page with multi-account support, quota display, and Ollama library scraper for marketplace.
+### Models Page (New Standalone View)
+- [x] **Standalone Page**: Created new `ModelsPage` component at `src/renderer/features/models/pages/ModelsPage.tsx`
+- [x] **Sidebar Navigation**: Added &quot;Models&quot; link to sidebar between Projects and Memory
+- [x] **ViewManager Integration**: Added &apos;models&apos; to AppView type and lazy-loaded ModelsPage
+- [x] **Tab System**: Implemented &quot;Installed Models&quot; and &quot;Marketplace&quot; tabs
+- [x] **Multi-Account Support**: Account tabs per provider (copilot, claude, codex, anthropic, antigravity, nvidia, openai)
+- [x] **Quota Display**: Shows quota information per provider account
+- [x] **Action Buttons**: Hide/show model, set as default, add to favorites
+- [x] **Provider Grouping**: Models displayed in collapsible grid sections by provider
+### Ollama Library Scraper
+- [x] **Scraper Service**: Created `OllamaScraperService` at `src/main/services/llm/ollama-scraper.service.ts`
+- [x] **Library Scraping**: Scrapes ollama.com/library for model list (name, pulls, tags, categories, lastUpdated)
+- [x] **Model Details**: Scrapes ollama.com/library/:modelName for short description, long description HTML, versions
+- [x] **Version Info**: Parses /tags page for version name, size, context window, input types
+- [x] **Caching**: 5-minute cache for both library list and model details
+- [x] **Lazy Loading**: Service only loaded when marketplace is accessed
+- [x] **IPC Handlers**: Added `ollama:scrapeLibrary`, `ollama:scrapeModelDetails`, `ollama:clearScraperCache`
+- [x] **Type Definitions**: Added `OllamaScrapedModel`, `OllamaModelDetails`, `OllamaModelVersion` types
+### Dependencies
+- [x] Added `cheerio` package for HTML parsing</description><category>feature</category></item>
+<item><guid>2026-02-12-project-agent-hil-integration-finalization</guid><title>Project Agent HIL Integration Finalization</title><link>https://tandem.local/changelog#2026-02-12-project-agent-hil-integration-finalization</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Completed the end-to-end integration of Human-in-the-Loop (HIL) features, wiring the renderer UI to backend execution services.
+- [x] **HIL Handlers**: Implemented `approveStep`, `skipStep`, `editStep`, `addComment`, and `insertIntervention` async handlers in the renderer.
+- [x] **Hook Integration**: Exposed HIL actions through the `useAgentTask` hook for seamless UI consumption.
+- [x] **UI Wiring**: Connected `ExecutionPlanView` action buttons to the backend via `TaskExecutionView` and `ProjectAgentTab`.
+- [x] **Verification**: Validated all IPC channels and type safety for step-level steering operations.</description><category>feature</category></item>
+<item><guid>2026-02-12-renderer-logging-refactor</guid><title>Renderer Logging Refactor</title><link>https://tandem.local/changelog#2026-02-12-renderer-logging-refactor</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Replaced remaining `console.*` calls in the renderer process with `appLogger` for better persistence and observability.
+- **Logging**: Migrated all renderer features (Terminal, SSH, Projects, Settings) and utilities to use `appLogger`.
+- **Code Quality**: Applied Boy Scout Rule to fix import sorting and type issues in refactored files.
+- **Observability**: Standardized log format with context tags for easier debugging in production.</description><category>refactor</category></item>
+<item><guid>2026-02-12-sd-cpp-core-refinement</guid><title>SD-CPP Core Refinement</title><link>https://tandem.local/changelog#2026-02-12-sd-cpp-core-refinement</link><pubDate>Thu, 12 Feb 2026 00:00:00 GMT</pubDate><description>Refined SD-CPP (Stable Diffusion C++) integration with offline-first fallback, telemetry tracking, and comprehensive integration testing.
+- [x] **Offline-First Fallback**: Augmented `LocalImageService` to automatically fallback to Pollinations (cloud) if local SD-CPP generation fails or assets are missing.
+- [x] **Telemetry Integration**: Added metrics for `sd-cpp-generation-success`, `sd-cpp-generation-failure`, and `sd-cpp-fallback-triggered`.
+- [x] **Integration Testing**: Created `local-image.service.test.ts` covering readiness checks, success paths, and fallback logic.
+- [x] **Documentation**: Updated `AI_RULES.md`, `USER_GUIDE.md`, and `TROUBLESHOOTING.md` with SD-CPP specific technical and user-facing guidance.
+- [x] **NASA Rule Compliance**: Refactored `LocalImageService` to use a dependency interface, reducing constructor complexity (Rule 4).</description><category>refactor</category></item>
+<item><guid>2026-02-11-api-core-file-by-file-audit</guid><title>API &amp; Core File-by-File Audit</title><link>https://tandem.local/changelog#2026-02-11-api-core-file-by-file-audit</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Full audit, refactor, and documentation pass on 8 files across `src/main/api` and `src/main/core`.
+- [x] **Dead Code Cleanup**: Deleted `api-auth.middleware.ts` and `api-router.ts` (100% commented-out, no live imports).
+- [x] **JSDoc**: Added comprehensive JSDoc (`@param`/`@returns`/`@throws`) to `circuit-breaker.ts`, `container.ts`, `lazy-services.ts`, `service-registry.ts`, `repository.interface.ts`, and `api-server.service.ts`.
+- [x] **Type Safety**: Added explicit return types to private methods in `circuit-breaker.ts`, `service-registry.ts`, and `lazy-services.ts`. Documented intentional `unknown` map usage.
+- [x] **Pagination Types**: Added `PaginationOptions` and `PaginatedResult&lt;T&gt;` interfaces to `repository.interface.ts`.
+- [x] **Observability**: Uncommented load-time logging in `lazy-services.ts` for service startup visibility.
+- [x] **New Tests**: Created `lazy-services.test.ts` (7 tests) and `service-registry.test.ts` (9 tests) — all 30 core tests pass.</description><category>refactor</category></item>
+<item><guid>2026-02-11-go-proxy-build-fix</guid><title>Go Proxy Build Fix</title><link>https://tandem.local/changelog#2026-02-11-go-proxy-build-fix</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Resolved Go build failures in the embedded proxy caused by &quot;declared and not used&quot; variables.
+- [x] **Watcher Fix**: Added debug logging for `totalNewClients` in `internal/watcher/clients.go`.
+- [x] **Server Fix**: Added debug logging for `total` in `internal/api/server.go`.
+- [x] **Build Verification**: Confirmed successful build of `cliproxy-embed.exe` using `node scripts/build-native.js`.</description><category>fix</category></item>
+<item><guid>2026-02-11-ipc-audit-part-1-first-10-files</guid><title>IPC Audit Part 1 (First 10 Files)</title><link>https://tandem.local/changelog#2026-02-11-ipc-audit-part-1-first-10-files</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Audited, documented, and refactored the first 10 IPC handler files (`src/main/ipc`).
+- [x] **Refactoring**: Converted `agent.ts`, `brain.ts`, `code-intelligence.ts`, and `advanced-memory.ts` to use `createSafeIpcHandler` / `createIpcHandler` for robust error handling and logging.
+- [x] **Type Safety**: Fixed strict type issues, added explicit generics to IPC wrappers (e.g., `createSafeIpcHandler&lt;void&gt;`), and ensured no `any` usage in modified files.
+- [x] **Documentation**: Added JSDoc to all exported `register...` functions and key classes in `auth.ts`, `chat.ts`, `db.ts`, `audit.ts`, `backup.ts`, and `collaboration.ts`.
+- [x] **Standardization**: Unified error response shapes where possible, while preserving legacy error behaviors for complex handlers (e.g., `advancedMemory:deleteMany`).</description><category>fix</category></item>
+<item><guid>2026-02-11-ipc-security-hardening-part-2</guid><title>IPC Security Hardening Part 2</title><link>https://tandem.local/changelog#2026-02-11-ipc-security-hardening-part-2</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Extended IPC security improvements to remaining handler files with input validation, IPC wrappers, and rate limiting.
+- [x] **process.ts**: Added comprehensive input validation (command, args, path, id), shell control character blocking, dimension bounds checking, and `createSafeIpcHandler` wrappers.
+- [x] **theme.ts**: Added theme ID/name validation with alphanumeric pattern enforcement, JSON size limits (1MB), custom theme validation, and `createIpcHandler`/`createSafeIpcHandler` wrappers for all 22 handlers.
+- [x] **prompt-templates.ts**: Already secure with IPC wrappers and string validation.
+- [x] **settings.ts**: Already secure with `createIpcHandler` wrappers and audit logging for sensitive changes.
+- [x] **token-estimation.ts**: Already secure with `createSafeIpcHandler` wrappers and array/string validation.
+- [x] **window.ts**: Already secure with sender validation, protocol allowlisting, and command sanitization.</description><category>security</category></item>
+<item><guid>2026-02-11-lint-warning-cleanup</guid><title>Lint Warning Cleanup</title><link>https://tandem.local/changelog#2026-02-11-lint-warning-cleanup</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Eliminated all ESLint warnings and errors across the codebase (114 → 0).
+- [x] **Nullish Coalescing**: Replaced `||` with `??` across `mcp-marketplace.ts` (5), `mcp-marketplace.service.ts` (7), `MCPStore.tsx` (1).
+- [x] **Unnecessary Conditions**: Removed redundant optional chains on required properties in `mcp-marketplace.service.ts`.
+- [x] **Type Safety**: Replaced `any[]` rest params with properly typed `Error` param in `agent-task-executor.ts`.
+- [x] **Non-null Assertions**: Replaced `config!` with guard clauses in `agent-task-executor.ts`.
+- [x] **Optional Chains**: Restructured condition in `getModelConfig` to use optional chaining properly.
+- [x] **Import Sorting**: Auto-fixed imports in `cost-estimation.service.ts` and `ExecutionPlanView.tsx`.
+- [x] **Unused Variables**: Removed unused catch variable in `agent-task-executor.ts`.</description><category>fix</category></item>
+<item><guid>2026-02-11-llm-infrastructure-localization</guid><title>LLM Infrastructure &amp; Localization</title><link>https://tandem.local/changelog#2026-02-11-llm-infrastructure-localization</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Consolidated LLM binaries and localized system messages/tools from Turkish to English.
+- [x] **Binary Consolidation**: Moved `llama-server.exe` to `resources/bin/` and updated `LlamaService` to use the standardized path.
+- [x] **Internationalization**: Translated `Ollama` startup dialogs, `Chat` system prompts, and `Tool` definitions from Turkish to English across 6 core services.
+- [x] **Service Reliability**: Fixed missing resource logic and resource disposal in `PerformanceMonitorService`.
+- [x] **Standardization**: Both Go (`cliproxy-embed`) and C++ (`llama-server`) binaries now reside in `resources/bin/`.</description><category>fix</category></item>
+<item><guid>2026-02-11-logo-generation-system-refinement</guid><title>Logo Generation System Refinement</title><link>https://tandem.local/changelog#2026-02-11-logo-generation-system-refinement</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Modernized the logo generation system for both Projects and Ideas. Added support for multiple models, styles, and batch generation (up to 4 logos at once). Improved UX with drag-and-drop file uploads and a refined selection UI.
+- [x] **Project Logo Generator**: Complete redesign of `LogoGeneratorModal.tsx` with Model/Style selection.
+- [x] **Batch Generation**: Added support for generating multiple logos in a single request.
+- [x] **Drag-and-Drop**: Implemented file drop handling for manual logo application.
+- [x] **Idea Logo Generation**: Refactored `IdeaGeneratorService` to support mandatory model/style arguments and return multiple logo paths.
+- [x] **UI Components**: Created custom `Label` component and consolidated UI exports in `@/components/ui`.
+- [x] **Type Safety**: Achieved 100% type safety across the new logo generation IPC handlers and services.</description><category>refactor</category></item>
+<item><guid>2026-02-11-project-agent-git-automation-agt-git-01-05</guid><title>Project Agent Git Automation (AGT-GIT-01..05)</title><link>https://tandem.local/changelog#2026-02-11-project-agent-git-automation-agt-git-01-05</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Added task-scoped Git automation for Project Agent execution when a GitHub account is linked and a project is selected.
+- [x] **Branch Bootstrap**: Auto-creates an `agent/*` feature branch at execution start (direct run and approved-plan run), only when active GitHub account + selected git project are available.
+- [x] **Step Auto-Commit**: Auto-stages and commits after successful step completion.
+- [x] **Diff Preview**: Emits a diff stat preview into task logs before every auto-commit.
+- [x] **Create PR Node**: Added `create-pr` task node type and renderer/main bridge method to generate/open GitHub compare URL.
+- [x] **Branch Cleanup**: On task completion, checks out base branch and safely deletes auto-created feature branch (`git branch -d`).
+- [x] **Git Command Fixes**: Corrected `GitService` commit/unstage command syntax issues.</description><category>fix</category></item>
+<item><guid>2026-02-11-project-agent-human-in-the-loop-agt-hil-01-05</guid><title>Project Agent Human-in-the-Loop (AGT-HIL-01..05)</title><link>https://tandem.local/changelog#2026-02-11-project-agent-human-in-the-loop-agt-hil-01-05</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Implemented comprehensive Human-in-the-Loop (HIL) controls for the Project Agent, allowing granular user intervention during plan execution.
+- [x] **Step Approvals**: Added `requiresApproval` flag and UI controls to pause execution and require explicit user approval before proceeding.
+- [x] **Step Skipping**: Implemented &quot;Skip&quot; functionality to bypass specific steps without halting the entire plan.
+- [x] **Inline Editing**: Enabled click-to-edit for pending step descriptions, allowing dynamic plan refinement.
+- [x] **Interventions**: Added &quot;Insert Intervention&quot; capability to inject manual pause points between steps.
+- [x] **Comments**: Implemented per-step commenting system for user notes and collaboration.
+- [x] **Visual Indicators**: Updated `StepIndicator` to strictly visualize `skipped` and `awaiting_approval` states with distinct icons.
+- [x] **Internationalization**: Full English and Turkish (fallback) localization for all HIL UI elements.</description><category>feature</category></item>
+<item><guid>2026-02-11-project-agent-multi-model-collaboration-templates-agt-col-01-04-agt-tpl-01-04</guid><title>Project Agent Multi-Model Collaboration &amp; Templates (AGT-COL-01..04, AGT-TPL-01..04)</title><link>https://tandem.local/changelog#2026-02-11-project-agent-multi-model-collaboration-templates-agt-col-01-04-agt-tpl-01-04</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Implemented Phase 7/8 end-to-end wiring across startup, service layer, IPC, preload bridge, and web mock bridge.
+- [x] **Step Model Assignment &amp; Routing**: Enabled per-step model assignment and task-type routing with configurable routing rules.
+- [x] **Voting + Consensus**: Added voting sessions (create/submit/request/resolve/get) and consensus builder API for conflicting model outputs.
+- [x] **Template System**: Enabled built-in and user templates, category filtering, save/delete, export/import, and variable application with validation.
+- [x] **Runtime Integration**: Plan steps are now enriched with collaboration metadata before execution/approval.
+- [x] **Bridge/IPC Coverage**: Added typed IPC/preload/renderer bridge methods for all new collaboration/template operations.
+- [x] **Validation**: `npm run type-check` and `npm run build` pass.</description><category>feature</category></item>
+<item><guid>2026-02-11-proxy-resilience-process-management</guid><title>Proxy Resilience &amp; Process Management</title><link>https://tandem.local/changelog#2026-02-11-proxy-resilience-process-management</link><pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate><description>Resolved startup crashes and process termination issues for the embedded Go proxy.
+- [x] **Auth Sync Resilience**: Modified the Go proxy to warning-log instead of fatal-exit if the initial auth sync fails, allowing it to start even if the Electron server is slightly delayed.
+- [x] **Process Lifecycle**: Removed `detached` mode in development to ensure the proxy process is correctly cleaned up by the main process.
+- [x] **Hardened Termination**: Improved `taskkill` logic on Windows using force (`/F`) and tree-kill (`/T`) flags with better error handling.
+- [x] **Port Verification**: Added pre-start port checking to ensure the proxy doesn&apos;t attempt to start on an occupied port.</description><category>feature</category></item>
+</channel>
+</rss>

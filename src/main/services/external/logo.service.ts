@@ -78,7 +78,7 @@ export class LogoService {
             const content = await fs.readFile(pkgPath, 'utf-8');
             pkgData = safeJsonParse<JsonObject>(content, {});
         } catch {
-            console.warn(`[LogoService] No package.json found at ${projectPath}`);
+            appLogger.warn('logo.service', `[LogoService] No package.json found at ${projectPath}`);
         }
 
         // Deep Analysis
@@ -964,7 +964,7 @@ ${context}`;
 
             return targetPath;
         } catch (error) {
-            console.error('[LogoService] Apply logo failed:', error);
+            appLogger.error('logo.service', '[LogoService] Apply logo failed', error as Error);
             throw error;
         }
     }

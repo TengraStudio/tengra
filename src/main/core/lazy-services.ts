@@ -92,6 +92,28 @@ class LazyServiceRegistry {
     getLoadedServices(): string[] {
         return Array.from(this.loadedServices.keys());
     }
+
+    /**
+     * Get list of services that are currently loading.
+     */
+    getLoadingServices(): string[] {
+        return Array.from(this.loadingPromises.keys());
+    }
+
+    /**
+     * Get a snapshot summary for diagnostics and UI indicators.
+     */
+    getStatus(): {
+        registered: string[];
+        loaded: string[];
+        loading: string[];
+    } {
+        return {
+            registered: this.getRegisteredServices(),
+            loaded: this.getLoadedServices(),
+            loading: this.getLoadingServices(),
+        };
+    }
 }
 
 /** Singleton instance of the lazy service registry. */

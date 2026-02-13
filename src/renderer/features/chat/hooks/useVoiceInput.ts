@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { handleError } from '@/utils/error-handler.util';
+
 export interface VoiceInputReturn {
     isListening: boolean
     startListening: () => void
@@ -60,7 +62,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
             };
 
             recognitionInstance.onerror = (event: SpeechRecognitionErrorEventLike) => {
-                console.error('Speech recognition error:', event.error);
+                handleError(new Error(event.error), 'VoiceInput.onerror', { userFacing: false });
                 // 'no-speech' is common, don't stop strictly
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     setIsListening(false);
@@ -91,7 +93,7 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
                 recognitionRef.current.start();
                 setIsListening(true);
             } catch (error) {
-                console.error('Failed to start recognition:', error);
+                handleError(error, 'VoiceInput.startListening');
             }
         }
     }, []);
@@ -111,3 +113,4 @@ export function useVoiceInput(onFinalResult: (text: string) => void, language: s
         isSupported
     };
 }
+

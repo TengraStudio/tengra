@@ -2,6 +2,9 @@ import { CircuitBreaker } from '@main/core/circuit-breaker';
 import { appLogger } from '@main/logging/logger';
 import { ImagePersistenceService } from '@main/services/data/image-persistence.service';
 import { HttpRequestOptions, HttpService } from '@main/services/external/http.service';
+import { HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { ModelFallbackService } from '@main/services/llm/model-fallback.service';
+import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
@@ -53,22 +56,6 @@ export interface OpenAIModelDefinition {
 }
 
 /**
- * HuggingFace API model response structure.
- */
-interface HuggingFaceApiModel {
-    modelId: string;
-    author?: string;
-    downloads?: number;
-    likes?: number;
-    tags?: string[];
-    lastModified?: string;
-    pipeline_tag?: string;
-    cardData?: {
-        short_description?: string;
-    };
-}
-
-/**
  * HuggingFace model metadata structure.
  */
 export interface HFModel {
@@ -90,6 +77,9 @@ export interface LLMServiceDependencies {
     settingsService: SettingsService;
     proxyService: ProxyService;
     tokenService?: TokenService;
+    huggingFaceService: HuggingFaceService;
+    fallbackService: ModelFallbackService;
+    cacheService: ResponseCacheService;
 }
 
 /**
@@ -603,7 +593,54 @@ export class LLMService {
 
     async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number, projectRoot?: string }): Promise<OpenAIResponse> {
         const effectiveProvider = this.resolveProvider(model, provider);
-        const p = effectiveProvider.toLowerCase();
+
+        // LLM-03: Try cache first (only for assistant responses, not tool calls for now)
+        if (!tools || tools.length === 0) {
+            const cached = await this.deps.cacheService.get(messages as Message[], model, options as Record<string, unknown>);
+            if (cached) {
+                return cached;
+            }
+        }
+
+        // LLM-02: Use fallback chain if configured
+        const chain = this.deps.fallbackService.getChain();
+        if (chain.length > 0 && !provider) { // Only fallback if provider wasn't explicitly forced
+            const result = await this.deps.fallbackService.executeWithFallback(
+                messages as Message[],
+                async (p, m, ms, t, opts) => {
+                    const res = await this.executeChatRoute(p, m, ms, t, opts as { temperature?: number, projectRoot?: string });
+                    return { content: res.content, role: 'assistant', reasoning: res.reasoning_content } as unknown as Message;
+                },
+                tools,
+                options as Record<string, unknown>
+            );
+
+            if (result.success && result.data) {
+                const response: OpenAIResponse = {
+                    content: typeof result.data.content === 'string' ? result.data.content : '',
+                    role: 'assistant',
+                    reasoning_content: result.data.reasoning
+                };
+                // Cache the successful result
+                if (!tools || tools.length === 0) {
+                    await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as Record<string, unknown>);
+                }
+                return response;
+            }
+        }
+
+        const response = await this.executeChatRoute(effectiveProvider, model, messages, tools, options);
+
+        // Cache the successful result if not streaming and not tool call
+        if (!tools || tools.length === 0) {
+            await this.deps.cacheService.set(messages as Message[], model, response, 3600000, options as Record<string, unknown>);
+        }
+
+        return response;
+    }
+
+    private async executeChatRoute(provider: string, model: string, messages: Array<Message | ChatMessage>, tools?: ToolDefinition[], options?: { temperature?: number, projectRoot?: string }): Promise<OpenAIResponse> {
+        const p = provider.toLowerCase();
 
         if (p.includes('anthropic') || p.includes('claude')) {
             return this.chatAnthropic(messages, model);
@@ -613,60 +650,14 @@ export class LLMService {
             return this.chatOpenCode(messages, model, tools);
         } else if (p.includes('nvidia')) {
             return this.chatNvidia(messages, model);
-        } 
+        }
 
         const config = await this.getRouteConfig(p, model, tools, options);
         return this.chatOpenAI(messages, config);
     }
 
     async searchHFModels(query: string = '', limit: number = 20, page: number = 0, sort: string = 'downloads'): Promise<{ models: HFModel[], total: number }> {
-        try {
-            const { searchQuery, hfSort } = this.prepareHFSearchParams(query, sort);
-            const params = new URLSearchParams({
-                search: searchQuery, filter: 'gguf', limit: limit.toString(), full: 'true', sort: hfSort, direction: '-1', offset: (page * limit).toString()
-            });
-
-            const response = await this.deps.httpService.fetch(`https://huggingface.co/api/models?${params.toString()}`, { retryCount: 2 });
-            const totalCount = parseInt(response.headers.get('x-total-count') ?? '0');
-            const data = await response.json() as HuggingFaceApiModel[];
-
-            const models = this.mapHFModels(data);
-            const displayTotal = totalCount > 0 ? totalCount : (searchQuery.toLowerCase() === 'gguf' ? 156607 : models.length);
-
-            return { models, total: displayTotal };
-        } catch {
-            return { models: [], total: 0 };
-        }
-    }
-
-    private prepareHFSearchParams(query: string, sort: string) {
-        let searchQuery = query.trim() || 'GGUF';
-        if (searchQuery !== 'GGUF' && !searchQuery.toLowerCase().includes('gguf')) {
-            searchQuery = `${searchQuery} GGUF`;
-        }
-        const hfSort = sort === 'newest' ? 'updated' : sort;
-        return { searchQuery, hfSort };
-    }
-
-    private mapHFModels(data: HuggingFaceApiModel[]): HFModel[] {
-        return data.map((m) => this.mapSingleHFModel(m));
-    }
-
-    private mapSingleHFModel(m: HuggingFaceApiModel): HFModel {
-        return {
-            id: m.modelId,
-            name: m.modelId.split('/')[1] ?? m.modelId,
-            author: m.author ?? 'unknown',
-            description: this.getHFModelDescription(m),
-            downloads: m.downloads ?? 0,
-            likes: m.likes ?? 0,
-            tags: m.tags ?? [],
-            lastModified: m.lastModified ?? ''
-        };
-    }
-
-    private getHFModelDescription(m: HuggingFaceApiModel): string {
-        return m.cardData?.short_description ?? `A ${m.pipeline_tag ?? 'LLM'} model by ${m.author ?? 'unknown'}`;
+        return this.deps.huggingFaceService.searchModels(query, limit, page, sort);
     }
 
     async getEmbeddings(input: string, model: string = DEFAULT_MODELS.EMBEDDING): Promise<number[]> {

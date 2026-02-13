@@ -1,5 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
+import { HFModel, HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -53,6 +54,7 @@ export interface ModelRegistryDependencies {
     authService: AuthService;
     tokenService: TokenService;
     localImageService: import('@main/services/llm/local-image.service').LocalImageService;
+    huggingFaceService: HuggingFaceService;
 }
 
 /**
@@ -365,29 +367,31 @@ export class ModelRegistryService extends BaseService {
         return models.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
     }
 
+    /**
+     * Fetches models from HuggingFace using the HuggingFaceService.
+     */
     private async fetchHuggingFaceModels(): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.deps.processManager.sendRequest<{
-                success: boolean;
-                models: ModelProviderInfo[];
-                error?: string;
-            }>('model-service', {
-                type: 'FetchModels',
-                provider: 'huggingface',
-            });
+            const { models } = await this.deps.huggingFaceService.searchModels('', 50);
 
-            if (response.success && response.models.length > 0) {
-                return response.models;
-            } else if (response.error) {
-                appLogger.error('ModelRegistry', `Native HF fetch failed: ${response.error}`);
-            }
-        } catch (e) {
-            appLogger.error(
-                'ModelRegistry',
-                `Failed to fetch HuggingFace models: ${getErrorMessage(e as Error)}`
-            );
+            return models.map((m: HFModel) => ({
+                id: m.id,
+                name: m.name,
+                provider: 'huggingface',
+                description: m.description,
+                tags: m.tags,
+                downloads: m.downloads,
+                likes: m.likes,
+                author: m.author,
+                lastModified: m.lastModified,
+                capabilities: {
+                    text_generation: true
+                }
+            }));
+        } catch (error) {
+            appLogger.error('ModelRegistryService', `Failed to fetch HF models: ${getErrorMessage(error as Error)}`);
+            return [];
         }
-        return [];
     }
 
     /**

@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-02-13T01:11:46.707Z",
+  "iterations": 3000,
+  "metrics": {
+    "insertReadDeleteOps": 7500,
+    "elapsedMs": 3.245,
+    "opsPerSec": 2310892,
+    "remainingRows": 1500
+  }
+}

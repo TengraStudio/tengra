@@ -22,6 +22,8 @@ import { AppSettings } from '@shared/types/settings';
  * @property {Function} [onEvict] - Callback invoked when an item is removed (expired or evicted)
  */
 export interface CacheOptions<T = JsonValue> {
+    /** Optional cache name for global analytics snapshots */
+    name?: string
     /** Maximum number of entries before eviction triggered */
     maxSize?: number
     /** Default time-to-live in milliseconds */
@@ -59,6 +61,12 @@ export class Cache<T = JsonValue> {
     private readonly maxSize: number;
     private readonly defaultTTL: number;
     private readonly onEvict?: (key: string, value: T) => void;
+    private readonly name?: string;
+    private hits = 0;
+    private misses = 0;
+    private sets = 0;
+    private evictions = 0;
+    private pruned = 0;
 
     /**
      * Creates a new Cache instance.
@@ -66,9 +74,13 @@ export class Cache<T = JsonValue> {
      * @param options - Cache configuration options
      */
     constructor(options: CacheOptions<T> = {}) {
+        this.name = options.name;
         this.maxSize = options.maxSize ?? 100;
         this.defaultTTL = options.defaultTTL ?? 5 * 60 * 1000; // 5 minutes
         this.onEvict = options.onEvict;
+        if (this.name) {
+            registerCache(this.name, () => this.stats());
+        }
     }
 
     /**
@@ -82,16 +94,21 @@ export class Cache<T = JsonValue> {
      */
     get(key: string): T | undefined {
         const entry = this.entries.get(key);
-        if (!entry) { return undefined; }
+        if (!entry) {
+            this.misses++;
+            return undefined;
+        }
 
         // Check expiration
         if (Date.now() > entry.expiresAt) {
             this.delete(key);
+            this.misses++;
             return undefined;
         }
 
         // Update last accessed time for LRU
         entry.lastAccessed = Date.now();
+        this.hits++;
         return entry.value;
     }
 
@@ -116,6 +133,7 @@ export class Cache<T = JsonValue> {
             expiresAt,
             lastAccessed: Date.now()
         });
+        this.sets++;
     }
 
     /**
@@ -203,6 +221,7 @@ export class Cache<T = JsonValue> {
         }
 
         if (oldestKey !== null) {
+            this.evictions++;
             this.delete(oldestKey);
         }
     }
@@ -222,6 +241,7 @@ export class Cache<T = JsonValue> {
                 removed++;
             }
         }
+        this.pruned += removed;
 
         return removed;
     }
@@ -231,10 +251,118 @@ export class Cache<T = JsonValue> {
      * 
      * @returns Object containing cache usage statistics
      */
-    stats(): { size: number; maxSize: number; hitRate?: number } {
+    stats(): {
+        size: number;
+        maxSize: number;
+        hitRate: number;
+        hits: number;
+        misses: number;
+        sets: number;
+        evictions: number;
+        pruned: number;
+    } {
+        const totalReads = this.hits + this.misses;
         return {
             size: this.entries.size,
-            maxSize: this.maxSize
+            maxSize: this.maxSize,
+            hitRate: totalReads > 0 ? this.hits / totalReads : 0,
+            hits: this.hits,
+            misses: this.misses,
+            sets: this.sets,
+            evictions: this.evictions,
+            pruned: this.pruned
+        };
+    }
+}
+
+const cacheRegistry = new Map<string, () => ReturnType<Cache<JsonValue>['stats']>>();
+
+function registerCache(name: string, getStats: () => ReturnType<Cache<JsonValue>['stats']>): void {
+    cacheRegistry.set(name, getStats);
+}
+
+export function getCacheAnalyticsSnapshot(): Record<string, ReturnType<Cache<JsonValue>['stats']>> {
+    const snapshot: Record<string, ReturnType<Cache<JsonValue>['stats']>> = {};
+    for (const [name, getStats] of cacheRegistry.entries()) {
+        snapshot[name] = getStats();
+    }
+    return snapshot;
+}
+
+export interface MultiLevelCacheOptions<T = JsonValue> {
+    name: string;
+    hot: CacheOptions<T>;
+    warm: CacheOptions<T>;
+}
+
+export class MultiLevelCache<T = JsonValue> {
+    private readonly hotCache: Cache<T>;
+    private readonly warmCache: Cache<T>;
+    private l1Hits = 0;
+    private l2Hits = 0;
+    private misses = 0;
+
+    constructor(options: MultiLevelCacheOptions<T>) {
+        this.hotCache = new Cache<T>({ ...options.hot, name: `${options.name}:hot` });
+        this.warmCache = new Cache<T>({ ...options.warm, name: `${options.name}:warm` });
+    }
+
+    get(key: string): T | undefined {
+        const hotValue = this.hotCache.get(key);
+        if (hotValue !== undefined) {
+            this.l1Hits++;
+            return hotValue;
+        }
+
+        const warmValue = this.warmCache.get(key);
+        if (warmValue !== undefined) {
+            this.l2Hits++;
+            this.hotCache.set(key, warmValue);
+            return warmValue;
+        }
+
+        this.misses++;
+        return undefined;
+    }
+
+    set(key: string, value: T, ttl?: { hot?: number; warm?: number }): void {
+        this.hotCache.set(key, value, ttl?.hot);
+        this.warmCache.set(key, value, ttl?.warm);
+    }
+
+    clear(): void {
+        this.hotCache.clear();
+        this.warmCache.clear();
+    }
+
+    warm(entries: Array<{ key: string; value: T; hotTtl?: number; warmTtl?: number }>): void {
+        for (const entry of entries) {
+            this.set(entry.key, entry.value, { hot: entry.hotTtl, warm: entry.warmTtl });
+        }
+    }
+
+    stats(): {
+        l1Hits: number;
+        l2Hits: number;
+        misses: number;
+        totalReads: number;
+        hitRate: number;
+        levels: {
+            hot: ReturnType<Cache<T>['stats']>;
+            warm: ReturnType<Cache<T>['stats']>;
+        };
+    } {
+        const totalReads = this.l1Hits + this.l2Hits + this.misses;
+        return {
+            l1Hits: this.l1Hits,
+            l2Hits: this.l2Hits,
+            misses: this.misses,
+            totalReads,
+            hitRate: totalReads > 0 ? (this.l1Hits + this.l2Hits) / totalReads : 0,
+            levels: {
+                hot: this.hotCache.stats(),
+                warm: this.warmCache.stats()
+            }
         };
     }
 }
@@ -285,18 +413,21 @@ export function memoize<Args extends unknown[], Result>(
 
 /** Cache for LLM model lists (Short TTL) */
 export const modelCache = new Cache<JsonValue[]>({
+    name: 'models',
     maxSize: 10,
     defaultTTL: 5 * 60 * 1000 // 5 minutes
 });
 
 /** Cache for API quota information (Very short TTL) */
 export const quotaCache = new Cache<QuotaResponse>({
+    name: 'quota',
     maxSize: 20,
     defaultTTL: 60 * 1000 // 1 minute
 });
 
 /** Cache for application settings (Short TTL) */
 export const settingsCache = new Cache<AppSettings>({
+    name: 'settings',
     maxSize: 5,
     defaultTTL: 30 * 1000 // 30 seconds
 });

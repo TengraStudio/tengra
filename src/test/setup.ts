@@ -74,4 +74,3 @@ vi.mock('path', async (importOriginal) => {
     };
 });
 
-console.warn('Test setup complete: Electron mocks loaded');

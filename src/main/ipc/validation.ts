@@ -61,3 +61,25 @@ export const fileOpSchema = z.object({
     local: z.string().optional(),
     remote: z.string().optional()
 });
+
+// --- Auth Schemas ---
+export const providerSchema = z.string().trim().min(1).max(64);
+export const accountIdSchema = z.string().trim().min(1).max(128);
+
+export const authTokenDataSchema = z.object({
+    accessToken: z.string().min(1).optional(),
+    refreshToken: z.string().min(1).optional(),
+    sessionToken: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    displayName: z.string().max(256).optional(),
+    avatarUrl: z.string().url().optional(),
+    expiresAt: z.number().int().nonnegative().optional(),
+    scope: z.string().max(1024).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional()
+}).refine(
+    data => Boolean(data.accessToken || data.refreshToken || data.sessionToken),
+    { message: 'At least one token field must be present.' }
+);
+
+export const sessionIdSchema = z.string().uuid();
+export const sessionLimitSchema = z.number().int().min(1).max(100);

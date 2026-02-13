@@ -1,3 +1,4 @@
+import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { LLMTask, MultiLLMOrchestrator } from '@main/services/llm/multi-llm-orchestrator.service';
@@ -87,7 +88,7 @@ export class MultiModelComparisonService extends BaseService {
         }
 
         if (attempts >= maxAttempts) {
-            console.warn('[MultiModelComparisonService] Comparison timed out for some models');
+            appLogger.warn('MultiModelComparisonService', 'Comparison timed out for some models');
         }
     }
 

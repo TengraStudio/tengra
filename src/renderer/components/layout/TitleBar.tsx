@@ -1,5 +1,5 @@
-import { FileText, Minus, Puzzle, Square, X } from 'lucide-react';
-import { type CSSProperties, ReactNode, useMemo, useState } from 'react';
+import { Download, FileText, Loader2, Minus, Puzzle, Search, Square, X } from 'lucide-react';
+import { type CSSProperties, ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import changelogIndex from '@/data/changelog.index.json';
@@ -21,6 +21,23 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
             ? translation.language
             : 'en';
     const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [typeFilter, setTypeFilter] = useState<'all' | string>('all');
+    const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+        try {
+            const raw = localStorage.getItem('changelog.search.history');
+            return raw ? JSON.parse(raw) as string[] : [];
+        } catch {
+            return [];
+        }
+    });
+    const [lazyStatus, setLazyStatus] = useState<{ loaded: number; registered: number; loading: number }>({
+        loaded: 0,
+        registered: 0,
+        loading: 0
+    });
     type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };
     const dragStyle: AppRegionStyle = { WebkitAppRegion: 'drag' };
     const noDragStyle: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
@@ -37,6 +54,143 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([date, items]) => ({ date, items }));
     }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            try {
+                const status = await window.electron.lazyServices.getStatus();
+                if (!mounted) {
+                    return;
+                }
+                setLazyStatus({
+                    loaded: status.totals.loaded,
+                    registered: status.totals.registered,
+                    loading: status.totals.loading
+                });
+            } catch {
+                // noop
+            }
+        };
+        void load();
+        const timer = window.setInterval(() => {
+            void load();
+        }, 5000);
+        return () => {
+            mounted = false;
+            window.clearInterval(timer);
+        };
+    }, []);
+
+    const filteredGroups = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const fromMs = dateFrom ? Date.parse(dateFrom) : undefined;
+        const toMs = dateTo ? Date.parse(dateTo) : undefined;
+
+        return changelogGroups
+            .map(group => {
+                const nextItems = group.items.filter(item => {
+                    const entryDateMs = Date.parse(item.date);
+                    if (fromMs && entryDateMs < fromMs) {
+                        return false;
+                    }
+                    if (toMs && entryDateMs > toMs) {
+                        return false;
+                    }
+                    if (typeFilter !== 'all' && item.type !== typeFilter) {
+                        return false;
+                    }
+                    if (!q) {
+                        return true;
+                    }
+                    const content = getLocaleContent(item, language);
+                    const haystack = [
+                        content.title,
+                        content.summary ?? '',
+                        ...content.items,
+                        item.type,
+                        item.status,
+                        ...item.components ?? []
+                    ].join(' ').toLowerCase();
+                    return haystack.includes(q);
+                });
+                return { ...group, items: nextItems };
+            })
+            .filter(group => group.items.length > 0);
+    }, [changelogGroups, dateFrom, dateTo, language, searchQuery, typeFilter]);
+
+    const typeOptions = useMemo(() => {
+        const set = new Set<string>();
+        for (const group of changelogGroups) {
+            for (const item of group.items) {
+                set.add(item.type);
+            }
+        }
+        return ['all', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+    }, [changelogGroups]);
+
+    const suggestions = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) {
+            return searchHistory.slice(0, 5);
+        }
+        const words = new Set<string>();
+        for (const group of changelogGroups) {
+            for (const item of group.items) {
+                const content = getLocaleContent(item, language);
+                const tokens = `${content.title} ${content.summary ?? ''}`.toLowerCase().split(/\s+/);
+                for (const token of tokens) {
+                    if (token.startsWith(q) && token.length > 2) {
+                        words.add(token);
+                    }
+                }
+            }
+        }
+        return Array.from(words).slice(0, 5);
+    }, [changelogGroups, language, searchHistory, searchQuery]);
+
+    const commitSearch = (forcedQuery?: string) => {
+        const query = (forcedQuery ?? searchQuery).trim();
+        if (!query) {
+            return;
+        }
+        const nextHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 12);
+        setSearchHistory(nextHistory);
+        localStorage.setItem('changelog.search.history', JSON.stringify(nextHistory));
+
+        const analytics = {
+            lastQuery: query,
+            totalSearches: 1,
+            lastSearchedAt: Date.now(),
+        };
+        try {
+            const raw = localStorage.getItem('changelog.search.analytics');
+            if (raw) {
+                const parsed = JSON.parse(raw) as { totalSearches?: number };
+                analytics.totalSearches = (parsed.totalSearches ?? 0) + 1;
+            }
+        } catch {
+            // noop
+        }
+        localStorage.setItem('changelog.search.analytics', JSON.stringify(analytics));
+    };
+
+    const exportFilteredResults = () => {
+        const exportPayload = filteredGroups.flatMap(group => group.items.map(item => ({
+            id: item.id,
+            date: item.date,
+            type: item.type,
+            status: item.status,
+            content: getLocaleContent(item, language)
+        })));
+        const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `changelog-search-${new Date().toISOString().slice(0, 10)}.json`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    };
 
     return (
         <>
@@ -66,6 +220,13 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
 
                 <div className="flex items-center gap-2" style={noDragStyle}>
                     <div className="flex gap-2 titlebar-controls px-2">
+                        <div
+                            className="px-2 py-1 rounded-md border border-border/60 text-xxs text-muted-foreground flex items-center gap-1"
+                            title={`Lazy services: ${lazyStatus.loaded}/${lazyStatus.registered} loaded`}
+                        >
+                            {lazyStatus.loading > 0 && <Loader2 className="w-3 h-3 animate-spin" />}
+                            <span>{lazyStatus.loaded}/{lazyStatus.registered}</span>
+                        </div>
                         <button
                             onClick={() => setIsChangelogOpen(true)}
                             className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-md transition-all duration-200 text-muted-foreground"
@@ -118,7 +279,75 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                     <p className="text-sm text-muted-foreground">{t('titleBar.changelogEmpty')}</p>
                 ) : (
                     <div className="space-y-6">
-                        {changelogGroups.map((group) => (
+                        <section className="rounded-xl border border-border/50 p-4 space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                                <div className="flex-1 min-w-[240px] flex items-center gap-2 px-2 border border-border rounded-md bg-background">
+                                    <Search className="w-4 h-4 text-muted-foreground" />
+                                    <input
+                                        value={searchQuery}
+                                        onChange={event => setSearchQuery(event.target.value)}
+                                        onBlur={() => commitSearch()}
+                                        onKeyDown={event => {
+                                            if (event.key === 'Enter') {
+                                                commitSearch();
+                                            }
+                                        }}
+                                        placeholder="Search changelog..."
+                                        className="w-full bg-transparent text-xs py-2 outline-none"
+                                    />
+                                </div>
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={event => setDateFrom(event.target.value)}
+                                    className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                />
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={event => setDateTo(event.target.value)}
+                                    className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                />
+                                <select
+                                    value={typeFilter}
+                                    onChange={event => setTypeFilter(event.target.value)}
+                                    className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                >
+                                    {typeOptions.map(option => (
+                                        <option key={option} value={option}>
+                                            {option === 'all' ? 'all types' : option}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={exportFilteredResults}
+                                    className="px-2 py-2 rounded-md border border-border hover:bg-muted/40 text-xs flex items-center gap-1"
+                                    title="Export filtered results"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Export
+                                </button>
+                            </div>
+                            {suggestions.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                    {suggestions.map(suggestion => (
+                                        <button
+                                            key={suggestion}
+                                            type="button"
+                                        onClick={() => {
+                                            setSearchQuery(suggestion);
+                                            commitSearch(suggestion);
+                                        }}
+                                            className="px-2 py-1 text-xxs rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                        {filteredGroups.map((group) => (
                             <section key={group.date} className="rounded-xl border border-border/50 p-4">
                                 <h4 className="text-sm font-bold tracking-wide text-primary mb-3">
                                     {group.date}
@@ -183,6 +412,9 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                 </div>
                             </section>
                         ))}
+                        {filteredGroups.length === 0 && (
+                            <p className="text-sm text-muted-foreground">No changelog entry matched your filters.</p>
+                        )}
                     </div>
                 )}
             </Modal>
@@ -195,6 +427,7 @@ interface ChangelogItem {
     id: string;
     type: string;
     status: string;
+    components?: string[];
     contentByLocale: Record<string, ChangelogLocaleContent>;
 }
 

@@ -67,6 +67,27 @@ describe('SettingsService - Initialization', () => {
         // so attemptJsonRecovery is never called. This is a known limitation.
         expect(service.getSettings().general.language).toBe('en'); // Falls back to default
     });
+
+    it('should migrate and validate legacy window bounds payload', async () => {
+        vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+        vi.mocked(fs.promises.readFile).mockResolvedValue(
+            JSON.stringify({
+                window: {
+                    bounds: { width: 320, height: 300, x: 40.9, y: 80.1 },
+                    startOnStartup: false,
+                },
+            })
+        );
+        const { SettingsService } = await import('@main/services/system/settings.service');
+        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        await service.initialize();
+
+        expect(service.getSettings().window?.width).toBe(640);
+        expect(service.getSettings().window?.height).toBe(480);
+        expect(service.getSettings().window?.x).toBe(40);
+        expect(service.getSettings().window?.y).toBe(80);
+        expect(service.getSettings().window?.startOnStartup).toBe(false);
+    });
 });
 
 describe('SettingsService - Persistence', () => {
@@ -93,5 +114,25 @@ describe('SettingsService - Persistence', () => {
         const { SettingsService } = await import('@main/services/system/settings.service');
         const service = new SettingsService(mockDataService as any, mockAuthService as any);
         expect(service.getSettingsPath()).toContain('settings.json');
+    });
+
+    it('should validate window values when saving settings', async () => {
+        const { SettingsService } = await import('@main/services/system/settings.service');
+        const service = new SettingsService(mockDataService as any, mockAuthService as any);
+        await service.initialize();
+
+        const result = await service.saveSettings({
+            window: {
+                width: 99999,
+                height: 120,
+                x: 11.7,
+                y: -8.9,
+            },
+        } as any);
+
+        expect(result.window?.width).toBe(7680);
+        expect(result.window?.height).toBe(480);
+        expect(result.window?.x).toBe(11);
+        expect(result.window?.y).toBe(-9);
     });
 });

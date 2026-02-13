@@ -71,6 +71,11 @@ export class DatabaseClientService extends BaseService {
     private isReady = false;
     // PERF-003-4: HTTP agent for connection pooling
     private httpAgent: http.Agent;
+    private pendingRequests = 0;
+    private maxPendingRequests = 200;
+    private totalRequests = 0;
+    private failedRequests = 0;
+    private lastRequestAt?: number;
 
     constructor(
         private eventBus: EventBusService,
@@ -261,8 +266,17 @@ export class DatabaseClientService extends BaseService {
         if (!this.servicePort) {
             throw new Error('db-service not connected');
         }
+        if (this.pendingRequests >= this.maxPendingRequests) {
+            return {
+                success: false,
+                error: `Connection pool overflow: pending=${this.pendingRequests}, max=${this.maxPendingRequests}`
+            };
+        }
 
         const url = `http://127.0.0.1:${this.servicePort}${path}`;
+        this.pendingRequests += 1;
+        this.totalRequests += 1;
+        this.lastRequestAt = Date.now();
 
         try {
             const response = await this.apiClient.request({
@@ -272,6 +286,7 @@ export class DatabaseClientService extends BaseService {
             });
             return response.data as DbApiResponse<T>;
         } catch (error) {
+            this.failedRequests += 1;
             const isConnectionError =
                 axios.isAxiosError(error) &&
                 (error.code === 'ECONNREFUSED' ||
@@ -296,7 +311,65 @@ export class DatabaseClientService extends BaseService {
                 success: false,
                 error: getErrorMessage(error),
             };
+        } finally {
+            this.pendingRequests = Math.max(0, this.pendingRequests - 1);
         }
+    }
+
+    setPoolLimits(config: { maxSockets?: number; maxFreeSockets?: number; maxPendingRequests?: number }): void {
+        if (typeof config.maxPendingRequests === 'number') {
+            this.maxPendingRequests = Math.max(1, config.maxPendingRequests);
+        }
+        if (typeof config.maxSockets === 'number') {
+            this.httpAgent.maxSockets = Math.max(1, config.maxSockets);
+        }
+        if (typeof config.maxFreeSockets === 'number') {
+            this.httpAgent.maxFreeSockets = Math.max(1, config.maxFreeSockets);
+        }
+    }
+
+    async recycleConnectionPool(): Promise<void> {
+        this.httpAgent.destroy();
+        this.httpAgent = new http.Agent({
+            ...HTTP_AGENT_CONFIG,
+            maxSockets: this.httpAgent.maxSockets,
+            maxFreeSockets: this.httpAgent.maxFreeSockets
+        });
+        this.apiClient.defaults.httpAgent = this.httpAgent;
+    }
+
+    async testConnection(timeoutMs = 5_000): Promise<{ healthy: boolean; latencyMs: number }> {
+        const startedAt = Date.now();
+        const healthPromise = this.getHealth();
+        const timeoutPromise = new Promise<DbApiResponse<DbHealthResponse>>((resolve) => {
+            setTimeout(() => resolve({ success: false, error: 'timeout' }), timeoutMs);
+        });
+        const health = await Promise.race([healthPromise, timeoutPromise]);
+        const latencyMs = Date.now() - startedAt;
+        return { healthy: health.success, latencyMs };
+    }
+
+    getConnectionPoolMetrics(): {
+        maxSockets: number;
+        maxFreeSockets: number;
+        pendingRequests: number;
+        maxPendingRequests: number;
+        totalRequests: number;
+        failedRequests: number;
+        errorRate: number;
+        lastRequestAt?: number;
+    } {
+        const errorRate = this.totalRequests > 0 ? this.failedRequests / this.totalRequests : 0;
+        return {
+            maxSockets: this.httpAgent.maxSockets,
+            maxFreeSockets: this.httpAgent.maxFreeSockets,
+            pendingRequests: this.pendingRequests,
+            maxPendingRequests: this.maxPendingRequests,
+            totalRequests: this.totalRequests,
+            failedRequests: this.failedRequests,
+            errorRate,
+            lastRequestAt: this.lastRequestAt
+        };
     }
 
     // ========================================================================

@@ -1,8 +1,10 @@
+import { ProjectId, toProjectId, toTerminalSessionId } from '@shared/types/ids';
 import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
 import { getTerminalTheme } from '@/lib/terminal-theme';
+import { useSettingsStore } from '@/store/settings.store';
 
 import { loadHistory, saveHistory } from '../utils/terminal-history';
 
@@ -28,7 +30,7 @@ interface TerminalConfig {
     fontWeightBold: '400' | '600';
 }
 
-const TERMINAL_CONFIG: TerminalConfig = {
+const DEFAULT_TERMINAL_CONFIG: TerminalConfig = {
     theme: getTerminalTheme(),
     fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono", Monaco, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
     fontSize: 13,
@@ -41,6 +43,17 @@ const TERMINAL_CONFIG: TerminalConfig = {
     fontWeight: '400',
     fontWeightBold: '600'
 };
+
+/**
+ * Get terminal configuration merged with user settings
+ */
+function getTerminalConfig(settings: { terminal?: Partial<TerminalConfig> } | null): TerminalConfig {
+    return {
+        ...DEFAULT_TERMINAL_CONFIG,
+        ...(settings?.terminal ?? {}),
+        theme: getTerminalTheme(), // Always use current theme
+    };
+}
 
 const KEY_CODES: Record<string, string> = {
     ARROW_UP: '\x1b[A',
@@ -127,6 +140,10 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
     const historyIndexRef = useRef<number>(-1);
     const currentInputRef = useRef<string>('');
     const cleanupsRef = useRef<TerminalCleanups>({});
+    const termRef = useRef<Terminal | null>(null);
+
+    // Get settings from store for terminal configuration
+    const settings = useSettingsStore(snapshot => snapshot.settings);
 
     const addToHistory = useCallback((command: string) => {
         if (command.trim()) {
@@ -140,13 +157,16 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
     }, [projectId]);
 
     useEffect(() => {
-        if (isInitializedRef.current || !terminalRef.current) {return;}
+        if (isInitializedRef.current || !terminalRef.current) { return; }
 
         isInitializedRef.current = true;
-        const terminalId = `term-${projectId ?? 'global'}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`;
+        const normalizedProjectId: ProjectId = toProjectId(projectId ?? 'global');
+        const terminalId = toTerminalSessionId(`term-${normalizedProjectId}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`);
         terminalIdRef.current = terminalId;
 
-        const term = new Terminal(TERMINAL_CONFIG);
+        const terminalConfig = getTerminalConfig(settings);
+        const term = new Terminal(terminalConfig);
+        termRef.current = term;
 
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
@@ -164,7 +184,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
 
         const initTerminal = async (): Promise<void> => {
             const finalTerminalId = terminalIdRef.current;
-            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) {return;}
+            if (!finalTerminalId || initializingTerminals.has(finalTerminalId) || initializedTerminals.has(finalTerminalId)) { return; }
 
             initializingTerminals.add(finalTerminalId);
 
@@ -202,7 +222,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                 cleanupsRef.current = { data: cleanupData, exit: cleanupExit };
 
                 term.onData((data) => {
-                    if (!pidRef.current) {return;}
+                    if (!pidRef.current) { return; }
 
                     if (data === KEY_CODES.ARROW_UP) {
                         lineBuffer = handleArrowUp({ lineBuffer, historyRef, historyIndexRef, currentInputRef, pidRef, addToHistory });
@@ -215,7 +235,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                     }
 
                     if (data === KEY_CODES.ENTER || data === KEY_CODES.NEWLINE) {
-                        if (lineBuffer.trim()) {addToHistory(lineBuffer);}
+                        if (lineBuffer.trim()) { addToHistory(lineBuffer); }
                         lineBuffer = '';
                         historyIndexRef.current = -1;
                     } else {
@@ -256,11 +276,26 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                 initializingTerminals.delete(terminalId);
                 window.electron.terminal.kill(terminalId).catch(() => { });
             }
-            if (cleanupsRef.current.data) {cleanupsRef.current.data();}
-            if (cleanupsRef.current.exit) {cleanupsRef.current.exit();}
+            if (cleanupsRef.current.data) { cleanupsRef.current.data(); }
+            if (cleanupsRef.current.exit) { cleanupsRef.current.exit(); }
             term.dispose();
         };
-    }, [cwd, projectId, t, addToHistory]);
+    }, [cwd, projectId, t, addToHistory, settings]);
+
+    // Update terminal options when settings change
+    useEffect(() => {
+        const term = termRef.current;
+        if (!term) { return; }
+
+        const terminalConfig = getTerminalConfig(settings);
+        term.options.fontSize = terminalConfig.fontSize;
+        term.options.fontFamily = terminalConfig.fontFamily;
+        term.options.lineHeight = terminalConfig.lineHeight;
+        term.options.letterSpacing = terminalConfig.letterSpacing;
+        term.options.cursorStyle = terminalConfig.cursorStyle;
+        term.options.cursorBlink = terminalConfig.cursorBlink;
+        term.options.scrollback = terminalConfig.scrollback;
+    }, [settings]);
 
     return { terminalRef };
 }

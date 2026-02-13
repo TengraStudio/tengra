@@ -25,7 +25,7 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
     const { t } = useTranslation(language);
     const [stats, setStats] = useState<ProjectStats | null>(null);
     const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // Start with loading state to prevent empty state flash
     const [internalTab, setInternalTab] = useState<ProjectDashboardTab>('overview');
     const activeTab = externalTab ?? internalTab;
     const setActiveTab = (onTabChange ?? setInternalTab) as (tab: ProjectDashboardTab) => void;

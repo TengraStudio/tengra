@@ -32,7 +32,7 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
             setIsEditingName(false);
         } catch (error) {
             setEditName(project.title);
-            console.error('Failed to update name', error);
+            window.electron.log.error('Failed to update name', error);
         }
     };
 
@@ -46,7 +46,7 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
             setIsEditingDesc(false);
         } catch (error) {
             setEditDesc(project.description);
-            console.error('Failed to update description', error);
+            window.electron.log.error('Failed to update description', error);
         }
     };
 
@@ -63,3 +63,4 @@ export const useDashboardInlineEdit = ({ project, onUpdate }: UseDashboardInline
         handleSaveDesc
     };
 };
+

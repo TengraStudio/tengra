@@ -26,6 +26,11 @@ export function registerBackupIpc(backupService: BackupService) {
             includeAuth?: boolean
             includeSettings?: boolean
             includePrompts?: boolean
+            incremental?: boolean
+            compress?: boolean
+            encrypt?: boolean
+            verify?: boolean
+            cloudSyncDir?: string
         }
     ): Promise<BackupResult> => {
         return backupService.createBackup(options);
@@ -75,6 +80,10 @@ export function registerBackupIpc(backupService: BackupService) {
         intervalHours: number
         maxBackups: number
         lastBackup: string | null
+        compression: boolean
+        encryption: boolean
+        verification: boolean
+        cloudSyncDir?: string
     }> => {
         return backupService.getAutoBackupStatus();
     }));
@@ -86,6 +95,10 @@ export function registerBackupIpc(backupService: BackupService) {
             enabled: boolean
             intervalHours?: number
             maxBackups?: number
+            compression?: boolean
+            encryption?: boolean
+            verification?: boolean
+            cloudSyncDir?: string
         }
     ): Promise<void> => {
         return backupService.configureAutoBackup(config);
@@ -94,5 +107,37 @@ export function registerBackupIpc(backupService: BackupService) {
     // Trigger auto-backup cleanup
     ipcMain.handle('backup:cleanup', createIpcHandler('backup:cleanup', async (): Promise<number> => {
         return backupService.cleanupOldBackups();
+    }));
+
+    ipcMain.handle('backup:verify', createIpcHandler('backup:verify', async (
+        _event: IpcMainInvokeEvent,
+        backupPath: string
+    ): Promise<{ valid: boolean; checksum?: string; error?: string }> => {
+        return backupService.verifyBackup(backupPath);
+    }));
+
+    ipcMain.handle('backup:syncToCloudDir', createIpcHandler('backup:syncToCloudDir', async (
+        _event: IpcMainInvokeEvent,
+        backupPath: string,
+        targetDir: string
+    ): Promise<{ success: boolean; targetPath?: string; error?: string }> => {
+        return backupService.syncBackupToDirectory(backupPath, targetDir);
+    }));
+
+    ipcMain.handle('backup:createDisasterRecoveryBundle', createIpcHandler('backup:createDisasterRecoveryBundle', async (
+        _event: IpcMainInvokeEvent,
+        targetDir?: string
+    ) => {
+        return backupService.createDisasterRecoveryBundle(targetDir);
+    }));
+
+    ipcMain.handle('backup:restoreDisasterRecoveryBundle', createIpcHandler('backup:restoreDisasterRecoveryBundle', async (
+        _event: IpcMainInvokeEvent,
+        bundlePath: string
+    ): Promise<RestoreResult> => {
+        if (!bundlePath || typeof bundlePath !== 'string' || bundlePath.trim().length === 0) {
+            throw new Error('bundlePath must be a non-empty string');
+        }
+        return backupService.restoreDisasterRecoveryBundle(bundlePath);
     }));
 }

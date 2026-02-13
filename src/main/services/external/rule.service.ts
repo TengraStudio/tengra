@@ -45,7 +45,7 @@ export class RuleService {
             return content;
         } catch (error) {
             if (isNodeError(error as Error) && (error as { code?: string }).code !== 'ENOENT') {
-                console.warn(`[RuleService] Error reading rules from ${rulesPath}:`, error);
+                appLogger.warn('rule.service', `[RuleService] Error reading rules from ${rulesPath}: ${(error as Error).message}`);
             }
             return null; // File doesn't exist or error
         }

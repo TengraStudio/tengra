@@ -41,4 +41,15 @@ export function registerPerformanceIpc(performanceService: IPerformanceService):
             { success: false, data: { success: false } }
         )
     );
+
+    ipcMain.handle(
+        'performance:get-dashboard',
+        createSafeIpcHandler(
+            'performance:get-dashboard',
+            async () => {
+                return performanceService.getDashboard();
+            },
+            { success: false, data: { memory: { latestRss: 0, latestHeapUsed: 0, sampleCount: 0 }, alerts: [] } }
+        )
+    );
 }

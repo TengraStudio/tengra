@@ -1,5 +1,73 @@
 # Değişiklik Günlüğü
 
+## [2026-02-13]
+
+### Dosya Ekleri için Damga Doğrulaması Eklendi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Dosya türü doğrulama, boyut sınırları ve tehlikeli uzantı engelleme ile sürükle-bırak dosya ekleri için güvenlik artırıldı.
+
+- Dosya türü beyaz listesi eklendi: metin, JSON, PDF, resimler ve yaygın belge formatları.
+- Büyük dosya DoS'unu önlemek için 10MB maksimum dosya boyutu sınırı uygulandı.
+- Güvenlik için tehlikeli uzantı engelleme (.exe, .bat, .sh, .ps1, vb.) eklendi.
+- Geçersiz dosyalar bırakıldığında toast hata bildirimi gösteriliyor.
+
+### Dosya Ekleri için Damga Doğrulaması Eklendi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Dosya türü doğrulama, boyut sınırları ve tehlikeli uzantı engelleme ile sürükle-bırak dosya ekleri için güvenlik artırıldı.
+
+- Dosya türü beyaz listesi eklendi: metin, JSON, PDF, resimler ve yaygın belge formatları.
+- Büyük dosya DoS'unu önlemek için 10MB maksimum dosya boyutu sınırı uygulandı.
+- Güvenlik için tehlikeli uzantı engelleme (.exe, .bat, .sh, .ps1, vb.) eklendi.
+- Geçersiz dosyalar bırakıldığında toast hata bildirimi gösteriliyor.
+
+### HuggingFace Entegrasyonu ve GGUF Desteği
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Model kazıyıcı, GGUF meta veri ayrıştırıcı ve gelişmiş indirme yöneticisi dahil olmak üzere HuggingFace entegrasyonu tamamlandı.
+
+- **Kazıyıcı Servisi**: Model arama ve meta veri çekme işlemleri için yerel önbellek destekli `HuggingFaceService` oluşturuldu.
+- **GGUF Ayrıştırma**: Model mimarisini ve bağlam uzunluğunu çıkaran GGUF başlık ayrıştırıcısı eklendi.
+- **İndirme Yöneticisi**: SHA256 doğrulamalı ve gerçek zamanlı ilerleme takipli, duraklatılabilir indirme yöneticisi uygulandı.
+- **Servis Entegrasyonu**: `HuggingFaceService`, bağımlılık enjeksiyonu ile `ModelRegistryService` ve `LLMService`'e entegre edildi.
+
+### IPC İşleyici Testleri Genişletme ve TEST-01 Düzeltmesi
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: TEST-01 (kontrol noktası devam ettirme testi) çözüldü ve Veritabanı ve Proje Aracısı işleyicileri için IPC test kapsamı tamamlandı.
+
+- **Testler**: Kontrol noktası devam ettirme testinde `agent-executor.service.test.ts` beklenen eşleşme hatası düzeltildi.
+- **IPC Kapsamı**: Sohbet, Proje ve Klasör işleyicilerini kapsayan `db.integration.test.ts` oluşturuldu.
+- **IPC Kapsamı**: Başlat, Durdur, Durum ve HIL işleyicilerini kapsayan `project-agent.integration.test.ts` oluşturuldu.
+- **Kod Zekası**: `code-intelligence.integration.test.ts` dosyasındaki TypeScript parametre tipi uyuşmazlıkları düzeltildi.
+
+### LLM Servis İyileştirmeleri: Yedekleme ve Önbelleğe Alma
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: LLM servisi, model yedekleme (fallback), yanıt önbelleğe alma ve iyileştirilmiş akış yanıtı yönetimi ile geliştirildi.
+
+- **Model Yedekleme**: Servis sürekliliğini sağlamak için otomatik sağlayıcı geçişi sağlayan `ModelFallbackService` eklendi.
+- **Yanıt Önbelleğe Alma**: Performansı artırmak ve maliyetleri azaltmak için `ResponseCacheService` üzerinden asistan yanıtları önbelleğe alındı.
+- **Akış İyileştirmeleri**: İptal edilen akışlar için `AbortSignal` yönetimi iyileştirildi ve kısmi yanıt kaydetme özelliği eklendi.
+- **Güvenilirlik**: Hata yönetimi için yedekleme servisi üzerinden 'circuit breaker' desenleri entegre edildi.
+
+### Geliştirilmiş Belirteç Sayma Doğruluğu
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: GPT, Claude ve Llama modellerinde kesin belirteç tahmini için js-tiktoken entegre edildi.
+
+- `cl100k_base` ve `o200k_base` kodlamaları için kesin belirteç eşlemesi amacıyla `js-tiktoken` entegre edildi.
+- Büyük LLM sağlayıcıları için kesin model sınırlarıyla iyileştirilmiş bağlam penceresi yönetimi.
+- Tahmin sürekliliğini sağlamak için desteklenmeyen modeller için buluşsal tabanlı yedekler (fallback) korundu.
+- Çeşitli modeller için belirteç sayma doğruluğunu doğrulamak amacıyla kapsamlı birim testleri eklendi.
+
 ## [2026-02-12]
 
 ### IPC Handler Test Genişletmesi - Batch 4
@@ -1105,7 +1173,7 @@ Tandem'in gelişimini takip edin.
 - **Proje Kancaları**: ProjectListStateMachine.ts'yi kullanın,AgentEvents.ts'yi kullanın
 - **Proje Araçları**: git-utils.ts
 ### i18n Anahtarları Eklendi
-- `ideas.status.archived` (EN/TR)
+- ``fikirler.status.arşivlendi`' (EN/TR)
 ### Darbe
 - ✅ Uyarılar **310'dan 78**'e düşürüldü (%75 azalma)
 - ✅ Sıfır TypeScript hatası (sabit 5 `any` tür hatası)
@@ -1131,7 +1199,7 @@ Tandem'in gelişimini takip edin.
 - Sohbet geçmişi yönetimi için `useHistorySync()`
 3. **Alt Bileşen Çıkarma**: Büyük bileşenleri odaklanmış parçalara ayırın
 - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-- `TerminalView.tsx`: TerminalHeader, OutputContent
+- 'TerminalView.tsx': TerminalHeader, OutputContent
 - `AudioChatOverlay.tsx`: PulseRing'ler, CentralIcon, Kontroller
 - `MessageBubble.tsx`: MesajFooter bileşeni
 - `GlassModal.tsx`: ModalHeader bileşeni
@@ -2276,7 +2344,7 @@ const kimliği = eventBus.on(
 'kimlik:değiştirildi',
 yük => {
 console.log('Kimlik Doğrulama değişti:', yük);
-    },
+},
 { bir kez: doğru, öncelik: 10 }
 );
 // Özel etkinlikler
@@ -2537,7 +2605,7 @@ const veri = JSON.parse(untrustedInput);
 // Sonra: Varsayılanlarla güvenli
 const veri =safeJsonParse(untrustedInput, {
 sensibleDefaults: 'burada',
-    });
+});
     ```
 **Faydalar**:
 - **Çökme Önleme**: Hatalı biçimlendirilmiş JSON artık uygulamayı çökertmiyor
@@ -2798,13 +2866,13 @@ sensibleDefaults: 'burada',
 - Kullanılmayan parametrelere alt çizgi eklendi (`_processManager`, `_event`)
 - Kullanılmayan içe aktarmalar kaldırıldı (proxy-process.service.ts'den `os`)
 **Kalan Uyarılar (931)**:
-- `no-unnecessary-condition`: 402
+- "gereksiz koşul yok": 402
 - `complexity`: 238 (fonksiyonun yeniden düzenlenmesini gerektirir)
 - `prefer-nullish-coalescing`: 218 (karmaşık modeller)
-- `no-misused-promises`: 88
-- `max-lines-per-function`: 42
-- `max-depth`: 18
-- `max-params`: 9
+- "kötüye kullanılmayan sözler": 88
+- 'işlev başına maksimum satır': 42
+- 'maksimum derinlik': 18
+- 'maksimum parametreler': 9
 
 ### Bağlantısız Hesaplar için Token Yenilemeyi Düzeltme
 

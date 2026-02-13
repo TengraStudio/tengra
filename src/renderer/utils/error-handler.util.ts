@@ -1,4 +1,4 @@
-import { getErrorMessage } from '@shared/utils/error.util';
+import { getErrorMessage, getErrorRecoveryStrategy } from '@shared/utils/error.util';
 
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -28,6 +28,10 @@ export interface ErrorDisplayOptions {
      * Whether this is a user-facing error
      */
     userFacing?: boolean
+    /**
+     * Optional callback to react based on standardized recovery strategy.
+     */
+    onRecoverySuggested?: (strategy: ReturnType<typeof getErrorRecoveryStrategy>) => void
 }
 
 /**
@@ -102,13 +106,22 @@ export function handleError(
     context: string,
     options: ErrorDisplayOptions = {}
 ): string {
-    const { showToast = false, logToConsole = true, customMessage, userFacing = true } = options;
+    const {
+        showToast = false,
+        logToConsole = true,
+        customMessage,
+        userFacing = true,
+        onRecoverySuggested
+    } = options;
 
     const message = resolveErrorMessage(error, customMessage);
+    const recovery = getErrorRecoveryStrategy(error);
 
     if (logToConsole) {
         logError(context, error);
     }
+
+    onRecoverySuggested?.(recovery);
 
     const userMessage = userFacing ? mapToUserFriendlyMessage(message) : message;
 

@@ -36,4 +36,12 @@ export interface IPerformanceService {
     }>;
     detectLeak(): Promise<ServiceResponse<{ isPossibleLeak: boolean; trend: number[] }>>;
     triggerGC(): ServiceResponse<{ success: boolean }>;
+    getDashboard(): ServiceResponse<{
+        memory: {
+            latestRss: number;
+            latestHeapUsed: number;
+            sampleCount: number;
+        };
+        alerts: Array<{ timestamp: number; level: 'info' | 'warn' | 'error'; message: string }>;
+    }>;
 }

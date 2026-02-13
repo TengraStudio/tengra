@@ -1,5 +1,5 @@
 import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
-import React from 'react';
+import React, { useLayoutEffect,useRef } from 'react';
 
 import { Chat, Folder } from '@/types';
 
@@ -39,6 +39,26 @@ export const SidebarChatList = React.memo(
         createFolder,
         renderChatItem,
     }: SidebarChatListProps) => {
+        // Preserve scroll position across re-renders
+        const scrollContainerRef = useRef<HTMLDivElement>(null);
+        const scrollPositionRef = useRef<number>(0);
+
+        // Save scroll position before render
+        useLayoutEffect(() => {
+            const container = scrollContainerRef.current;
+            if (container) {
+                scrollPositionRef.current = container.scrollTop;
+            }
+        });
+
+        // Restore scroll position after render
+        useLayoutEffect(() => {
+            const container = scrollContainerRef.current;
+            if (container && scrollPositionRef.current > 0) {
+                container.scrollTop = scrollPositionRef.current;
+            }
+        }, [pinnedChats, activeFolders, recentChats, expandedFolders]);
+
         return (
             <>
                 {/* Search */}
@@ -58,7 +78,10 @@ export const SidebarChatList = React.memo(
                 )}
 
                 {/* Chat List */}
-                <div className="flex-1 overflow-y-auto px-2 space-y-3 scrollbar-thin scrollbar-thumb-border/30">
+                <div
+                    ref={scrollContainerRef}
+                    className="flex-1 overflow-y-auto px-2 space-y-3 scrollbar-thin scrollbar-thumb-border/30"
+                >
                     {/* Pinned */}
                     {pinnedChats.length > 0 && (
                         <div>

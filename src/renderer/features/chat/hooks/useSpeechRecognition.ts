@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { handleError } from '@/utils/error-handler.util';
+
 type SpeechRecognitionResultLike = { isFinal: boolean; 0: { transcript: string } }
 type SpeechRecognitionResultListLike = { length: number;[index: number]: SpeechRecognitionResultLike }
 type SpeechRecognitionEventLike = { resultIndex: number; results: SpeechRecognitionResultListLike }
@@ -35,7 +37,7 @@ export const useSpeechRecognition = (
     const startListening = useCallback(() => {
         const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
         if (!SpeechRecognitionCtor) {
-            console.error('Speech recognition not supported');
+            handleError(new Error('Speech recognition not supported'), 'SpeechRecognition.startListening', { userFacing: false });
             return;
         }
 
@@ -58,7 +60,7 @@ export const useSpeechRecognition = (
         };
 
         recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
-            console.error('Speech recognition error:', event.error);
+            handleError(new Error(event.error), 'SpeechRecognition.onerror', { userFacing: false });
             setIsListening(false);
         };
 
@@ -71,7 +73,7 @@ export const useSpeechRecognition = (
             setIsListening(true);
             window._activeRecognition = recognition;
         } catch (err) {
-            console.error('Failed to start recognition:', err);
+            handleError(err, 'SpeechRecognition.start');
             setIsListening(false);
         }
     }, [language, onResult]);
@@ -90,3 +92,4 @@ export const useSpeechRecognition = (
         stopListening
     };
 };
+

@@ -14,10 +14,11 @@ import {
     Search,
     Settings
 } from 'lucide-react';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { setActivityBarState, useUiLayoutStore } from '@/store/ui-layout.store';
 
 export interface ActivityItem {
     id: string
@@ -89,8 +90,16 @@ export const ActivityBarProvider: React.FC<{
     children: React.ReactNode
     defaultActive?: string
 }> = ({ children, defaultActive = 'chat' }) => {
-    const [activeItem, setActiveItem] = useState(defaultActive);
-    const [collapsed, setCollapsed] = useState(false);
+    const activeItem = useUiLayoutStore(snapshot => snapshot.activityBar.activeItem || defaultActive);
+    const collapsed = useUiLayoutStore(snapshot => snapshot.activityBar.collapsed);
+
+    const setActiveItem = (id: string) => {
+        setActivityBarState({ activeItem: id });
+    };
+
+    const setCollapsed = (next: boolean) => {
+        setActivityBarState({ collapsed: next });
+    };
 
     return (
         <ActivityBarContext.Provider value={{ activeItem, setActiveItem, collapsed, setCollapsed }}>

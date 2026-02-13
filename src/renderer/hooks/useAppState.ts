@@ -3,8 +3,15 @@
  * Centralizes UI state management for the App component
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+    dismissNotification,
+    pushNotification,
+    toActiveToasts,
+    useNotificationCenterStore,
+} from '@/store/notification-center.store';
+import { setAppShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
@@ -54,7 +61,8 @@ export function useAppState(): AppState {
     const [currentView, setCurrentView] = useState<AppView>('chat');
 
     // UI state
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const persistedSidebarCollapsed = useUiLayoutStore(snapshot => snapshot.appShell.sidebarCollapsed);
+    const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(persistedSidebarCollapsed);
     const [isDragging, setIsDragging] = useState(false);
 
     // Modal state
@@ -65,24 +73,28 @@ export function useAppState(): AppState {
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [isAudioOverlayOpen, setIsAudioOverlayOpen] = useState(false);
 
-    // Toast notifications
-    const [toasts, setToasts] = useState<Toast[]>([]);
+    useEffect(() => {
+        setIsSidebarCollapsedState(persistedSidebarCollapsed);
+    }, [persistedSidebarCollapsed]);
+
+    const setIsSidebarCollapsed = useCallback((collapsed: boolean) => {
+        setIsSidebarCollapsedState(collapsed);
+        setAppShellState({ sidebarCollapsed: collapsed });
+    }, []);
+
+    // Toast notifications (shared notification center)
+    const toasts = useNotificationCenterStore(snapshot => toActiveToasts(snapshot.active));
 
     const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-        const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setToasts(prev => [...prev, { ...toast, id }]);
-
-        // Auto-remove after 5 seconds
-        const timer = setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-        }, 5000);
-
-        // Store timer for cleanup if component unmounts
-        return () => clearTimeout(timer);
+        pushNotification({
+            type: toast.type,
+            message: toast.message,
+            source: 'app',
+        });
     }, []);
 
     const removeToast = useCallback((id: string) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+        dismissNotification(id);
     }, []);
 
     // Refs

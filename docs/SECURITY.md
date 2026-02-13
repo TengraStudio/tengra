@@ -44,3 +44,13 @@ AI-generated content and markdown are inherently untrusted.
 2. **Stateless Ephemeral Data**: We avoid writing sensitive session data to disk whenever possible.
 3. **Internal Auditing**: Security-critical operations, such as authentication attempts and encryption upgrades, are recorded in an internal audit log for diagnostic purposes.
 
+## Vulnerability Reporting
+
+Private disclosure is required for potential vulnerabilities.
+
+1. Do not open public issues for exploitable findings.
+2. Share impacted version, reproduction steps, impact analysis, and proof-of-concept.
+3. Include suggested mitigation when possible.
+
+For reporting process details and response SLA, see `docs/SECURITY_POLICY.md`.
+

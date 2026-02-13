@@ -121,8 +121,16 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
         files, loadingFiles,
         downloading, modelsDir,
         pullingOllama,
+        recommendedIds,
+        watchlist,
+        modelPreview,
+        comparisonIds,
+        comparisonResult,
+        comparisonLoading,
+        lastInstallConfig,
+        installTests,
         isInstalled,
-        handleModelSelect, handlePullOllama, handleDownloadHF
+        handleModelSelect, handlePullOllama, handleDownloadHF, toggleWatchlist, toggleComparison, runComparison, clearComparison
     } = useModelExplorer({ onRefreshModels, installedModels });
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +143,41 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
             <div className="p-8 border-b border-border/50 space-y-6 bg-background/50 backdrop-blur-xl sticky top-0 z-30">
                 <ExplorerHeader query={query} totalHf={totalHf} onSearchChange={handleSearchChange} onClose={onClose} t={t} />
                 <ExplorerActions activeSource={activeSource} setActiveSource={setActiveSource} sortBy={sortBy} setSortBy={setSortBy} page={page} setPage={setPage} t={t} />
+                {comparisonIds.length > 0 && (
+                    <div className="rounded-xl border border-info/30 bg-info/5 px-4 py-3 flex items-center justify-between">
+                        <div className="text-xs text-info font-semibold">
+                            Compare Queue: {comparisonIds.length} / 4
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => void runComparison()}
+                                disabled={comparisonIds.length < 2 || comparisonLoading}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-md text-xs font-bold border',
+                                    comparisonIds.length < 2 || comparisonLoading
+                                        ? 'opacity-50 cursor-not-allowed border-border/30'
+                                        : 'border-info/40 bg-info/10 text-info'
+                                )}
+                            >
+                                {comparisonLoading ? 'Comparing...' : 'Run Comparison'}
+                            </button>
+                            <button
+                                onClick={clearComparison}
+                                className="px-3 py-1.5 rounded-md text-xs font-bold border border-border/40"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {Boolean(comparisonResult) && (
+                    <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-xs">
+                        <div className="font-semibold mb-2">Comparison Result</div>
+                        <pre className="whitespace-pre-wrap break-words text-muted-foreground">
+                            {JSON.stringify(comparisonResult, null, 2)}
+                        </pre>
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 flex overflow-hidden bg-gradient-to-br from-background via-background to-primary/5">
@@ -160,6 +203,8 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                                 model={m}
                                 isSelected={selectedModel !== null && selectedModel.provider === m.provider && (m.provider === 'ollama' ? (m as OllamaLibraryModel).name === (selectedModel as OllamaLibraryModel).name : (m as HFModel).id === (selectedModel as HFModel).id)}
                                 isInstalled={isInstalled(m.provider === 'ollama' ? (m as OllamaLibraryModel).name : (m as HFModel).id)}
+                                isRecommended={m.provider === 'huggingface' && recommendedIds.has((m as HFModel).id)}
+                                isWatchlisted={m.provider === 'huggingface' && watchlist.has((m as HFModel).id)}
                                 onSelect={handleModelSelect}
                                 t={t}
                             />
@@ -179,6 +224,14 @@ export function ModelExplorer({ onClose, onRefreshModels, installedModels = [], 
                             handleDownloadHF={handleDownloadHF}
                             handlePullOllama={handlePullOllama}
                             pullingOllama={pullingOllama}
+                            modelPreview={modelPreview}
+                            isWatchlisted={selectedModel.provider === 'huggingface' && watchlist.has((selectedModel as HFModel).id)}
+                            toggleWatchlist={toggleWatchlist}
+                            toggleComparison={toggleComparison}
+                            isInComparison={selectedModel.provider === 'huggingface' && comparisonIds.includes((selectedModel as HFModel).id)}
+                            comparisonCount={comparisonIds.length}
+                            installTests={installTests}
+                            lastInstallConfig={lastInstallConfig}
                             t={t}
                         />
                     )}

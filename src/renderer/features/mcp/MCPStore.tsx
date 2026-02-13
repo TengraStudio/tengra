@@ -2,6 +2,7 @@ import { Check, Download, Plug, Search, Settings, Shield, Star } from 'lucide-re
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { mcpMarketplaceClient } from '@/lib/mcp-marketplace-client';
 import { cn } from '@/lib/utils';
 
 interface McpMarketplaceServer {
@@ -287,14 +288,14 @@ export const MCPStore: React.FC<{
     const loadMarketplace = useCallback(async () => {
         try {
             setLoading(true);
-            const result = await window.electron.mcpMarketplace.list();
+            const result = await mcpMarketplaceClient.list();
             if (result.success && result.servers) {
                 // Properly cast from IpcValue[] to McpMarketplaceServer[]
                 const servers = result.servers as unknown as McpMarketplaceServer[];
                 setMarketplaceServers(servers);
             }
         } catch (error) {
-            console.error('Failed to load marketplace:', error);
+            window.electron.log.error('Failed to load marketplace', error as Error);
         } finally {
             setLoading(false);
         }
@@ -303,14 +304,14 @@ export const MCPStore: React.FC<{
     // Load installed servers
     const loadInstalled = useCallback(async () => {
         try {
-            const result = await window.electron.mcpMarketplace.installed();
+            const result = await mcpMarketplaceClient.installed();
             if (result.success && result.servers) {
                 // Properly cast from IpcValue[] to MCPServerConfig[]
                 const servers = result.servers as unknown as MCPServerConfig[];
                 setInstalledServers(servers);
             }
         } catch (error) {
-            console.error('Failed to load installed servers:', error);
+            window.electron.log.error('Failed to load installed servers', error as Error);
         }
     }, []);
 
@@ -322,13 +323,13 @@ export const MCPStore: React.FC<{
     const handleInstall = useCallback(
         async (serverId: string) => {
             try {
-                const result = await window.electron.mcpMarketplace.install(serverId);
+                const result = await mcpMarketplaceClient.install(serverId);
                 if (result.success) {
                     await loadInstalled();
                     onInstall?.(serverId);
                 }
             } catch (error) {
-                console.error('Failed to install server:', error);
+                window.electron.log.error('Failed to install server', error as Error);
             }
         },
         [loadInstalled, onInstall]
@@ -337,13 +338,13 @@ export const MCPStore: React.FC<{
     const handleUninstall = useCallback(
         async (serverId: string) => {
             try {
-                const result = await window.electron.mcpMarketplace.uninstall(serverId);
+                const result = await mcpMarketplaceClient.uninstall(serverId);
                 if (result.success) {
                     await loadInstalled();
                     onUninstall?.(serverId);
                 }
             } catch (error) {
-                console.error('Failed to uninstall server:', error);
+                window.electron.log.error('Failed to uninstall server', error as Error);
             }
         },
         [loadInstalled, onUninstall]

@@ -714,3 +714,4 @@ describe('files:read handler', () => {
 - [CONFIG.md](CONFIG.md) - Configuration guide
 - [API.md](API.md) - REST API reference
 - [MCP.md](MCP.md) - MCP server documentation
+- [IPC_CHANNELS.md](IPC_CHANNELS.md) - Auto-generated full channel inventory

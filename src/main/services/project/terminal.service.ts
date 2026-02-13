@@ -19,6 +19,8 @@ import { app } from 'electron';
 
 const MAX_COMMAND_HISTORY_SIZE = 2000;
 const MAX_COMMAND_LENGTH = 2000;
+const MAX_SEARCH_HISTORY_SIZE = 500;
+const MAX_SEARCH_QUERY_LENGTH = 512;
 
 export interface TerminalCommandHistoryEntry {
     command: string;
@@ -62,14 +64,107 @@ interface TerminalSnapshot {
     metadata?: Record<string, unknown>;
 }
 
+interface TerminalSessionTemplate {
+    id: string;
+    name: string;
+    shell: string;
+    cwd: string;
+    cols: number;
+    rows: number;
+    backendId: string;
+    workspaceId?: string;
+    metadata?: Record<string, unknown>;
+    createdAt: number;
+    updatedAt: number;
+}
+
+interface ExportedTerminalSessionPayload {
+    version: 1;
+    kind: 'terminal-session';
+    exportedAt: number;
+    snapshot: TerminalSnapshot;
+    scrollback?: string;
+}
+
+export interface TerminalScrollbackSearchResult {
+    lineNumber: number;
+    line: string;
+}
+
+export interface TerminalScrollbackSearchOptions {
+    regex?: boolean;
+    caseSensitive?: boolean;
+    limit?: number;
+}
+
+export interface TerminalScrollbackExportResult {
+    success: boolean;
+    path?: string;
+    content?: string;
+    error?: string;
+}
+
+export interface TerminalSessionAnalytics {
+    sessionId: string;
+    bytes: number;
+    lineCount: number;
+    commandCount: number;
+    updatedAt: number;
+}
+
+export interface TerminalScrollbackMarker {
+    id: string;
+    sessionId: string;
+    label: string;
+    lineNumber: number;
+    createdAt: number;
+}
+
+export interface TerminalScrollbackFilterOptions {
+    query?: string;
+    fromLine?: number;
+    toLine?: number;
+    caseSensitive?: boolean;
+}
+
+export interface TerminalSearchAnalytics {
+    totalSearches: number;
+    regexSearches: number;
+    plainSearches: number;
+    lastSearchAt: number;
+}
+
+interface TerminalSearchStatePayload {
+    analytics: TerminalSearchAnalytics;
+    history: string[];
+}
+
+interface ImportTerminalSessionResult {
+    success: boolean;
+    sessionId?: string;
+    error?: string;
+}
+
 export class TerminalService extends BaseService {
     private sessions: Map<string, TerminalSession> = new Map();
     private backends: Map<string, ITerminalBackend> = new Map();
     private persistencePath: string;
     private historyPath: string;
+    private markersPath: string;
+    private templatesPath: string;
+    private searchStatePath: string;
     private snapshots: Map<string, TerminalSnapshot> = new Map();
+    private templates: Map<string, TerminalSessionTemplate> = new Map();
     private commandHistory: TerminalCommandHistoryEntry[] = [];
     private lineBuffers: Map<string, string> = new Map();
+    private scrollbackMarkers: TerminalScrollbackMarker[] = [];
+    private searchHistory: string[] = [];
+    private searchAnalytics: TerminalSearchAnalytics = {
+        totalSearches: 0,
+        regexSearches: 0,
+        plainSearches: 0,
+        lastSearchAt: 0,
+    };
 
     constructor() {
         super('TerminalService');
@@ -98,6 +193,9 @@ export class TerminalService extends BaseService {
             const userDataPath = app.getPath('userData');
             this.persistencePath = path.join(userDataPath, 'terminal-sessions.json');
             this.historyPath = path.join(userDataPath, 'terminal-command-history.json');
+            this.markersPath = path.join(userDataPath, 'terminal-scrollback-markers.json');
+            this.templatesPath = path.join(userDataPath, 'terminal-session-templates.json');
+            this.searchStatePath = path.join(userDataPath, 'terminal-search-state.json');
 
             // Create logs directory
             const logsPath = path.join(userDataPath, 'terminal-logs');
@@ -108,6 +206,9 @@ export class TerminalService extends BaseService {
             appLogger.error('TerminalService', 'Failed to determine userData path', e as Error);
             this.persistencePath = '';
             this.historyPath = '';
+            this.markersPath = '';
+            this.templatesPath = '';
+            this.searchStatePath = '';
         }
     }
 
@@ -123,6 +224,9 @@ export class TerminalService extends BaseService {
         this.logInfo('Initializing TerminalService...');
         await this.loadSnapshots();
         await this.loadCommandHistory();
+        await this.loadScrollbackMarkers();
+        await this.loadSessionTemplates();
+        await this.loadSearchState();
     }
 
     /**
@@ -256,6 +360,7 @@ export class TerminalService extends BaseService {
         rows?: number;
         backendId?: string;
         workspaceId?: string;
+        title?: string;
         onData: (data: string) => void;
         onExit: (code: number) => void;
         metadata?: Record<string, unknown>;
@@ -350,6 +455,7 @@ export class TerminalService extends BaseService {
                 cols,
                 rows,
                 logStream,
+                title: options.title ?? snapshot?.title,
                 lastActive: Date.now(),
                 backendId,
                 workspaceId: options.workspaceId ?? snapshot?.workspaceId,
@@ -513,6 +619,514 @@ export class TerminalService extends BaseService {
             : this.commandHistory;
 
         return list.slice(0, cappedLimit);
+    }
+
+    getSessionSnapshots(): TerminalSnapshot[] {
+        return Array.from(this.snapshots.values()).sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    async exportSession(
+        sessionId: string,
+        options: { includeScrollback?: boolean } = {}
+    ): Promise<string | null> {
+        const snapshot = this.resolveSnapshot(sessionId);
+        if (!snapshot) {
+            return null;
+        }
+        const payload: ExportedTerminalSessionPayload = {
+            version: 1,
+            kind: 'terminal-session',
+            exportedAt: Date.now(),
+            snapshot,
+        };
+
+        if (options.includeScrollback) {
+            payload.scrollback = await this.readLogAll(sessionId);
+        }
+
+        return JSON.stringify(payload, null, 2);
+    }
+
+    async importSession(
+        payloadRaw: string,
+        options: { overwrite?: boolean; sessionId?: string } = {}
+    ): Promise<ImportTerminalSessionResult> {
+        const parsed = safeJsonParse<ExportedTerminalSessionPayload | null>(payloadRaw, null);
+        if (!parsed || parsed.kind !== 'terminal-session' || parsed.version !== 1 || !parsed.snapshot) {
+            return { success: false, error: 'Invalid terminal session export payload' };
+        }
+
+        const snapshot = parsed.snapshot;
+        const targetSessionId = (options.sessionId ?? snapshot.id).trim();
+        if (!targetSessionId) {
+            return { success: false, error: 'Session id is required' };
+        }
+
+        if (!options.overwrite && (this.snapshots.has(targetSessionId) || this.sessions.has(targetSessionId))) {
+            return { success: false, error: `Session ${targetSessionId} already exists` };
+        }
+
+        this.snapshots.set(targetSessionId, {
+            ...snapshot,
+            id: targetSessionId,
+            timestamp: Date.now(),
+        });
+        await this.saveSnapshots();
+
+        if (typeof parsed.scrollback === 'string' && parsed.scrollback.length > 0) {
+            try {
+                await fs.promises.writeFile(this.getLogPath(targetSessionId), parsed.scrollback, 'utf-8');
+            } catch (error) {
+                appLogger.error('TerminalService', 'Failed to write imported scrollback', error as Error);
+            }
+        }
+
+        return { success: true, sessionId: targetSessionId };
+    }
+
+    async generateSessionShareCode(
+        sessionId: string,
+        options: { includeScrollback?: boolean } = {}
+    ): Promise<string | null> {
+        const payload = await this.exportSession(sessionId, options);
+        if (!payload) {
+            return null;
+        }
+        return `termshare:${Buffer.from(payload, 'utf-8').toString('base64url')}`;
+    }
+
+    async importSessionShareCode(
+        shareCode: string,
+        options: { overwrite?: boolean; sessionId?: string } = {}
+    ): Promise<ImportTerminalSessionResult> {
+        if (typeof shareCode !== 'string' || !shareCode.startsWith('termshare:')) {
+            return { success: false, error: 'Invalid session share code' };
+        }
+
+        const encoded = shareCode.slice('termshare:'.length).trim();
+        if (!encoded) {
+            return { success: false, error: 'Invalid session share code' };
+        }
+
+        try {
+            const payload = Buffer.from(encoded, 'base64url').toString('utf-8');
+            return this.importSession(payload, options);
+        } catch {
+            return { success: false, error: 'Invalid session share code encoding' };
+        }
+    }
+
+    getSessionTemplates(): TerminalSessionTemplate[] {
+        return Array.from(this.templates.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+    }
+
+    async createSessionTemplate(
+        sessionId: string,
+        options: { templateId?: string; name?: string } = {}
+    ): Promise<TerminalSessionTemplate | null> {
+        const snapshot = this.resolveSnapshot(sessionId);
+        if (!snapshot) {
+            return null;
+        }
+
+        const templateId = (options.templateId ?? `tpl-${sessionId}`).trim();
+        if (!templateId) {
+            return null;
+        }
+
+        const previous = this.templates.get(templateId);
+        const now = Date.now();
+        const template: TerminalSessionTemplate = {
+            id: templateId,
+            name: (options.name ?? previous?.name ?? snapshot.title ?? `Template ${templateId}`)
+                .trim()
+                .slice(0, 120),
+            shell: snapshot.shell,
+            cwd: snapshot.cwd,
+            cols: snapshot.cols,
+            rows: snapshot.rows,
+            backendId: snapshot.backendId,
+            workspaceId: snapshot.workspaceId,
+            metadata: snapshot.metadata,
+            createdAt: previous?.createdAt ?? now,
+            updatedAt: now,
+        };
+
+        this.templates.set(templateId, template);
+        await this.saveSessionTemplates();
+        return template;
+    }
+
+    async deleteSessionTemplate(templateId: string): Promise<boolean> {
+        const existed = this.templates.delete(templateId);
+        if (!existed) {
+            return false;
+        }
+        await this.saveSessionTemplates();
+        return true;
+    }
+
+    async restoreSessionTemplate(
+        templateId: string,
+        options: {
+            sessionId?: string;
+            title?: string;
+            onData: (data: string) => void;
+            onExit: (code: number) => void;
+        }
+    ): Promise<string | null> {
+        const template = this.templates.get(templateId);
+        if (!template) {
+            return null;
+        }
+
+        const sessionId =
+            options.sessionId && options.sessionId.trim().length > 0
+                ? options.sessionId.trim()
+                : `term-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+        const created = await this.createSession({
+            id: sessionId,
+            shell: template.shell,
+            cwd: template.cwd,
+            cols: template.cols,
+            rows: template.rows,
+            backendId: template.backendId,
+            workspaceId: template.workspaceId,
+            metadata: template.metadata,
+            title: options.title ?? template.name,
+            onData: options.onData,
+            onExit: options.onExit,
+        });
+        return created ? sessionId : null;
+    }
+
+    async restoreSnapshotSession(options: {
+        snapshotId: string;
+        onData: (data: string) => void;
+        onExit: (code: number) => void;
+    }): Promise<boolean> {
+        const snapshot = this.snapshots.get(options.snapshotId);
+        if (!snapshot) {
+            return false;
+        }
+
+        return this.createSession({
+            id: snapshot.id,
+            shell: snapshot.shell,
+            cwd: snapshot.cwd,
+            cols: snapshot.cols,
+            rows: snapshot.rows,
+            backendId: snapshot.backendId,
+            workspaceId: snapshot.workspaceId,
+            title: snapshot.title,
+            metadata: snapshot.metadata,
+            onData: options.onData,
+            onExit: options.onExit,
+        });
+    }
+
+    async restoreAllSnapshots(options: {
+        onData: (sessionId: string, data: string) => void;
+        onExit: (sessionId: string, code: number) => void;
+    }): Promise<{ restored: number; failed: number; sessionIds: string[] }> {
+        const snapshots = this.getSessionSnapshots();
+        let restored = 0;
+        let failed = 0;
+        const sessionIds: string[] = [];
+
+        for (const snapshot of snapshots) {
+            if (this.sessions.has(snapshot.id)) {
+                continue;
+            }
+            const ok = await this.createSession({
+                id: snapshot.id,
+                shell: snapshot.shell,
+                cwd: snapshot.cwd,
+                cols: snapshot.cols,
+                rows: snapshot.rows,
+                backendId: snapshot.backendId,
+                workspaceId: snapshot.workspaceId,
+                title: snapshot.title,
+                metadata: snapshot.metadata,
+                onData: data => options.onData(snapshot.id, data),
+                onExit: code => options.onExit(snapshot.id, code),
+            });
+            if (ok) {
+                restored += 1;
+                sessionIds.push(snapshot.id);
+            } else {
+                failed += 1;
+            }
+        }
+
+        return { restored, failed, sessionIds };
+    }
+
+    async setSessionTitle(sessionId: string, title: string): Promise<boolean> {
+        const normalized = title.trim().slice(0, 120);
+        if (!normalized) {
+            return false;
+        }
+
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            session.title = normalized;
+        }
+
+        const snapshot = this.snapshots.get(sessionId);
+        if (snapshot) {
+            snapshot.title = normalized;
+            this.snapshots.set(sessionId, snapshot);
+        }
+
+        if (!session && !snapshot) {
+            return false;
+        }
+
+        await this.saveSnapshots();
+        return true;
+    }
+
+    async searchSessionScrollback(
+        sessionId: string,
+        query: string,
+        options: TerminalScrollbackSearchOptions = {}
+    ): Promise<TerminalScrollbackSearchResult[]> {
+        const normalized = query.trim().slice(0, MAX_SEARCH_QUERY_LENGTH);
+        if (!normalized) {
+            return [];
+        }
+        this.recordSearchQuery(normalized);
+        this.searchAnalytics.totalSearches += 1;
+        if (options.regex) {
+            this.searchAnalytics.regexSearches += 1;
+        } else {
+            this.searchAnalytics.plainSearches += 1;
+        }
+        this.searchAnalytics.lastSearchAt = Date.now();
+
+        const content = await this.readLogAll(sessionId);
+        if (!content) {
+            return [];
+        }
+
+        const limit = Math.max(1, Math.min(options.limit ?? 100, 1000));
+        const lines = content.split(/\r?\n/);
+        const results: TerminalScrollbackSearchResult[] = [];
+
+        if (options.regex) {
+            const flags = options.caseSensitive ? 'g' : 'gi';
+            let regex: RegExp;
+            try {
+                regex = new RegExp(normalized, flags);
+            } catch {
+                return [];
+            }
+
+            for (let i = 0; i < lines.length && results.length < limit; i += 1) {
+                const line = lines[i] ?? '';
+                if (!line) {
+                    continue;
+                }
+                regex.lastIndex = 0;
+                if (regex.test(line)) {
+                    results.push({ lineNumber: i + 1, line });
+                }
+            }
+            return results;
+        }
+
+        const needle = options.caseSensitive ? normalized : normalized.toLowerCase();
+        for (let i = 0; i < lines.length && results.length < limit; i += 1) {
+            const line = lines[i] ?? '';
+            if (!line) {
+                continue;
+            }
+            const hay = options.caseSensitive ? line : line.toLowerCase();
+            if (hay.includes(needle)) {
+                results.push({ lineNumber: i + 1, line });
+            }
+        }
+        return results;
+    }
+
+    getSearchSuggestions(query = '', limit = 10): string[] {
+        const normalizedQuery = query.trim().toLowerCase();
+        const max = Math.max(1, Math.min(limit, 100));
+        const suggestions: string[] = [];
+        const seen = new Set<string>();
+
+        const add = (value: string) => {
+            const cleaned = value.trim();
+            if (!cleaned) {
+                return;
+            }
+            const key = cleaned.toLowerCase();
+            if (seen.has(key)) {
+                return;
+            }
+            if (normalizedQuery && !key.includes(normalizedQuery)) {
+                return;
+            }
+            seen.add(key);
+            suggestions.push(cleaned);
+        };
+
+        this.searchHistory.forEach(add);
+        this.commandHistory.forEach(entry => add(entry.command));
+
+        return suggestions.slice(0, max);
+    }
+
+    async exportSearchResults(
+        sessionId: string,
+        query: string,
+        options: TerminalScrollbackSearchOptions = {},
+        exportPath?: string,
+        format: 'json' | 'txt' = 'json'
+    ): Promise<TerminalScrollbackExportResult> {
+        const results = await this.searchSessionScrollback(sessionId, query, options);
+        const payload =
+            format === 'txt'
+                ? results.map(item => `${item.lineNumber}: ${item.line}`).join('\n')
+                : JSON.stringify(
+                      {
+                          sessionId,
+                          query,
+                          options,
+                          count: results.length,
+                          exportedAt: Date.now(),
+                          results,
+                      },
+                      null,
+                      2
+                  );
+
+        if (!exportPath) {
+            return { success: true, content: payload };
+        }
+        try {
+            await fs.promises.writeFile(exportPath, payload, 'utf-8');
+            return { success: true, path: exportPath };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    async exportSessionScrollback(
+        sessionId: string,
+        exportPath?: string
+    ): Promise<TerminalScrollbackExportResult> {
+        try {
+            const content = await this.readLogAll(sessionId);
+            if (!content) {
+                return { success: false, error: 'No scrollback content found' };
+            }
+
+            if (!exportPath) {
+                return { success: true, content };
+            }
+
+            await fs.promises.writeFile(exportPath, content, 'utf-8');
+            return { success: true, path: exportPath };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    }
+
+    async getSessionAnalytics(sessionId: string): Promise<TerminalSessionAnalytics> {
+        const content = await this.readLogAll(sessionId);
+        const bytes = Buffer.byteLength(content, 'utf-8');
+        const lineCount = content ? content.split(/\r?\n/).length : 0;
+        const commandCount = this.commandHistory.filter(item => item.sessionId === sessionId).length;
+        let updatedAt = 0;
+        try {
+            const stats = await fs.promises.stat(this.getLogPath(sessionId));
+            updatedAt = stats.mtimeMs;
+        } catch {
+            updatedAt = 0;
+        }
+        return { sessionId, bytes, lineCount, commandCount, updatedAt };
+    }
+
+    getSearchAnalytics(): TerminalSearchAnalytics {
+        return { ...this.searchAnalytics };
+    }
+
+    async addScrollbackMarker(
+        sessionId: string,
+        label: string,
+        lineNumber?: number
+    ): Promise<TerminalScrollbackMarker | null> {
+        const normalizedLabel = label.trim().slice(0, 120);
+        if (!normalizedLabel) {
+            return null;
+        }
+        const content = await this.readLogAll(sessionId);
+        const lineCount = content ? content.split(/\r?\n/).length : 0;
+        const safeLineNumber = Math.max(1, Math.min(lineNumber ?? lineCount, Math.max(lineCount, 1)));
+        const marker: TerminalScrollbackMarker = {
+            id: `${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            sessionId,
+            label: normalizedLabel,
+            lineNumber: safeLineNumber,
+            createdAt: Date.now(),
+        };
+        this.scrollbackMarkers.unshift(marker);
+        await this.saveScrollbackMarkers();
+        return marker;
+    }
+
+    listScrollbackMarkers(sessionId?: string): TerminalScrollbackMarker[] {
+        const list = sessionId
+            ? this.scrollbackMarkers.filter(item => item.sessionId === sessionId)
+            : this.scrollbackMarkers;
+        return [...list].sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    async deleteScrollbackMarker(markerId: string): Promise<boolean> {
+        const prevLength = this.scrollbackMarkers.length;
+        this.scrollbackMarkers = this.scrollbackMarkers.filter(item => item.id !== markerId);
+        if (this.scrollbackMarkers.length === prevLength) {
+            return false;
+        }
+        await this.saveScrollbackMarkers();
+        return true;
+    }
+
+    async filterSessionScrollback(
+        sessionId: string,
+        options: TerminalScrollbackFilterOptions = {}
+    ): Promise<string[]> {
+        const content = await this.readLogAll(sessionId);
+        if (!content) {
+            return [];
+        }
+        const lines = content.split(/\r?\n/);
+        const fromLine = Math.max(1, options.fromLine ?? 1);
+        const toLine = Math.max(fromLine, options.toLine ?? lines.length);
+        const query = options.query?.trim() ?? '';
+        const caseSensitive = options.caseSensitive === true;
+        const needle = caseSensitive ? query : query.toLowerCase();
+
+        return lines
+            .map((line, index) => ({ line, lineNumber: index + 1 }))
+            .filter(item => item.lineNumber >= fromLine && item.lineNumber <= toLine)
+            .filter(item => {
+                if (!query) {
+                    return true;
+                }
+                const hay = caseSensitive ? item.line : item.line.toLowerCase();
+                return hay.includes(needle);
+            })
+            .map(item => item.line);
     }
 
     async clearCommandHistory(): Promise<boolean> {
@@ -767,6 +1381,9 @@ export class TerminalService extends BaseService {
         this.logInfo('Cleaning up TerminalService...');
         await this.saveSnapshots(); // Last save
         await this.saveCommandHistory();
+        await this.saveScrollbackMarkers();
+        await this.saveSessionTemplates();
+        await this.saveSearchState();
         for (const [, session] of this.sessions) {
             try {
                 session.process?.kill();
@@ -812,6 +1429,191 @@ export class TerminalService extends BaseService {
                 e as Error
             );
             return '';
+        }
+    }
+
+    private async readLogAll(sessionId: string): Promise<string> {
+        const logPath = this.getLogPath(sessionId);
+        try {
+            if (!fs.existsSync(logPath)) {
+                return '';
+            }
+            return await fs.promises.readFile(logPath, 'utf-8');
+        } catch (error) {
+            appLogger.error(
+                'TerminalService',
+                `Failed to read full log for ${sessionId}`,
+                error as Error
+            );
+            return '';
+        }
+    }
+
+    private async loadScrollbackMarkers(): Promise<void> {
+        if (!this.markersPath) {
+            return;
+        }
+        try {
+            if (!fs.existsSync(this.markersPath)) {
+                return;
+            }
+            const raw = await fs.promises.readFile(this.markersPath, 'utf-8');
+            const parsed = safeJsonParse<TerminalScrollbackMarker[]>(raw, []);
+            this.scrollbackMarkers = parsed
+                .filter(item => typeof item?.id === 'string' && typeof item?.sessionId === 'string')
+                .map(item => ({
+                    id: item.id,
+                    sessionId: item.sessionId,
+                    label: typeof item.label === 'string' ? item.label : 'Marker',
+                    lineNumber: Number(item.lineNumber) || 1,
+                    createdAt: Number(item.createdAt) || Date.now(),
+                }));
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to load scrollback markers', error as Error);
+        }
+    }
+
+    private async saveScrollbackMarkers(): Promise<boolean> {
+        if (!this.markersPath) {
+            return false;
+        }
+        try {
+            await fs.promises.writeFile(
+                this.markersPath,
+                JSON.stringify(this.scrollbackMarkers.slice(0, 5000), null, 2),
+                'utf-8'
+            );
+            return true;
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to save scrollback markers', error as Error);
+            return false;
+        }
+    }
+
+    private resolveSnapshot(sessionId: string): TerminalSnapshot | null {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            return {
+                id: session.id,
+                shell: session.shell,
+                cwd: session.cwd,
+                title: session.title,
+                cols: session.cols,
+                rows: session.rows,
+                timestamp: Date.now(),
+                backendId: session.backendId,
+                workspaceId: session.workspaceId,
+                metadata: session.metadata,
+            };
+        }
+        const snapshot = this.snapshots.get(sessionId);
+        return snapshot ? { ...snapshot } : null;
+    }
+
+    private recordSearchQuery(query: string): void {
+        const normalized = query.trim().slice(0, MAX_SEARCH_QUERY_LENGTH);
+        if (!normalized) {
+            return;
+        }
+        this.searchHistory = this.searchHistory.filter(
+            item => item.toLowerCase() !== normalized.toLowerCase()
+        );
+        this.searchHistory.unshift(normalized);
+        if (this.searchHistory.length > MAX_SEARCH_HISTORY_SIZE) {
+            this.searchHistory = this.searchHistory.slice(0, MAX_SEARCH_HISTORY_SIZE);
+        }
+        void this.saveSearchState();
+    }
+
+    private async loadSessionTemplates(): Promise<void> {
+        if (!this.templatesPath) {
+            return;
+        }
+        try {
+            if (!fs.existsSync(this.templatesPath)) {
+                return;
+            }
+            const raw = await fs.promises.readFile(this.templatesPath, 'utf-8');
+            const parsed = safeJsonParse<TerminalSessionTemplate[]>(raw, []);
+            this.templates.clear();
+            parsed
+                .filter(item => typeof item?.id === 'string' && item.id.trim().length > 0)
+                .forEach(item => {
+                    this.templates.set(item.id, {
+                        ...item,
+                        name: typeof item.name === 'string' ? item.name : item.id,
+                        createdAt: Number(item.createdAt) || Date.now(),
+                        updatedAt: Number(item.updatedAt) || Date.now(),
+                    });
+                });
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to load terminal session templates', error as Error);
+        }
+    }
+
+    private async saveSessionTemplates(): Promise<boolean> {
+        if (!this.templatesPath) {
+            return false;
+        }
+        try {
+            await fs.promises.writeFile(
+                this.templatesPath,
+                JSON.stringify(Array.from(this.templates.values()), null, 2),
+                'utf-8'
+            );
+            return true;
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to save terminal session templates', error as Error);
+            return false;
+        }
+    }
+
+    private async loadSearchState(): Promise<void> {
+        if (!this.searchStatePath) {
+            return;
+        }
+        try {
+            if (!fs.existsSync(this.searchStatePath)) {
+                return;
+            }
+            const raw = await fs.promises.readFile(this.searchStatePath, 'utf-8');
+            const parsed = safeJsonParse<TerminalSearchStatePayload | null>(raw, null);
+            if (!parsed) {
+                return;
+            }
+            const history = Array.isArray(parsed.history)
+                ? parsed.history
+                      .filter(item => typeof item === 'string' && item.trim().length > 0)
+                      .slice(0, MAX_SEARCH_HISTORY_SIZE)
+                : [];
+            this.searchHistory = history;
+            if (parsed.analytics) {
+                this.searchAnalytics = {
+                    totalSearches: Number(parsed.analytics.totalSearches) || 0,
+                    regexSearches: Number(parsed.analytics.regexSearches) || 0,
+                    plainSearches: Number(parsed.analytics.plainSearches) || 0,
+                    lastSearchAt: Number(parsed.analytics.lastSearchAt) || 0,
+                };
+            }
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to load terminal search state', error as Error);
+        }
+    }
+
+    private async saveSearchState(): Promise<boolean> {
+        if (!this.searchStatePath) {
+            return false;
+        }
+        try {
+            const payload: TerminalSearchStatePayload = {
+                analytics: this.searchAnalytics,
+                history: this.searchHistory.slice(0, MAX_SEARCH_HISTORY_SIZE),
+            };
+            await fs.promises.writeFile(this.searchStatePath, JSON.stringify(payload, null, 2), 'utf-8');
+            return true;
+        } catch (error) {
+            appLogger.error('TerminalService', 'Failed to save terminal search state', error as Error);
+            return false;
         }
     }
 }

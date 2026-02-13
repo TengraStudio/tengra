@@ -60,7 +60,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
             const data = await window.electron.marketplace.getModels('ollama', 500);
             setModels(data);
         } catch (err) {
-            console.error('Failed to load marketplace models:', err);
+            window.electron.log.error('Failed to load marketplace models:', err);
         } finally {
             setLoading(false);
         }
@@ -75,7 +75,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
                 await loadModels();
             }
         } catch (err) {
-            console.error('Failed to refresh marketplace:', err);
+            window.electron.log.error('Failed to refresh marketplace:', err);
         } finally {
             setRefreshing(false);
         }
@@ -92,7 +92,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
             const results = await window.electron.marketplace.searchModels(query, 'ollama', 100);
             setModels(results);
         } catch (err) {
-            console.error('Failed to search marketplace:', err);
+            window.electron.log.error('Failed to search marketplace:', err);
         }
     }, [loadModels]);
 
@@ -173,7 +173,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
                 });
             }
         } catch (err) {
-            console.error('Failed to get model details:', err);
+            window.electron.log.error('Failed to get model details:', err);
         } finally {
             setLoadingDetails(false);
         }
@@ -186,7 +186,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
         try {
             await window.electron.invoke('ollama:pull', modelName);
         } catch (err) {
-            console.error('Failed to pull model:', err);
+            window.electron.log.error('Failed to pull model:', err);
             setPullingModel(null);
         }
     }, []);
@@ -427,3 +427,4 @@ function MarketplaceModelCard({ model, isSelected, onSelect, t }: MarketplaceMod
         </div>
     );
 }
+

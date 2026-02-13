@@ -35,6 +35,8 @@ export interface HFModel {
     likes: number
     tags: string[]
     lastModified: string
+    category?: 'coding' | 'chat' | 'multimodal' | 'embedding' | 'reasoning' | 'general'
+    recommendationScore?: number
     provider: 'huggingface'
 }
 
@@ -53,5 +55,11 @@ export interface HFFile {
     size: number
     oid: string
     quantization: string
+    compatibility?: {
+        compatible: boolean
+        reasons: string[]
+        estimatedRamGB: number
+        estimatedVramGB: number
+    }
 }
 

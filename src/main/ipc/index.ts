@@ -16,6 +16,7 @@ import { registerGitIpc } from '@main/ipc/git';
 import { registerHealthIpc } from '@main/ipc/health';
 import { registerHFModelIpc } from '@main/ipc/huggingface';
 import { registerKeyRotationIpc } from '@main/ipc/key-rotation';
+import { registerLazyServicesIpc } from '@main/ipc/lazy-services';
 import { registerLlamaIpc } from '@main/ipc/llama';
 import { registerLoggingIpc } from '@main/ipc/logging';
 import { registerMarketplaceIpc } from '@main/ipc/marketplace';
@@ -63,6 +64,7 @@ export function registerAllIpc(
 
     // Window & System
     registerWindowIpc(getWin);
+    registerLazyServicesIpc();
     registerProcessIpc(services.processService);
     setupProcessEvents(services.processService);
     registerLoggingIpc();
@@ -113,10 +115,17 @@ export function registerAllIpc(
         proxyService: services.proxyService,
         copilotService: services.copilotService,
         authService: services.authService,
+        auditLogService: services.auditLogService,
         getMainWindow: getWin,
         eventBus: services.eventBusService,
     });
-    registerProxyIpc(services.proxyService);
+    registerProxyIpc(
+        services.proxyService,
+        undefined,
+        services.authService,
+        getWin,
+        services.eventBusService
+    );
     registerProxyEmbedIpc(services.proxyService);
     registerUsageIpc(
         services.usageTrackingService,

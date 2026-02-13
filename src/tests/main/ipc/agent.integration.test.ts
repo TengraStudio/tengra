@@ -63,6 +63,14 @@ describe('Agent IPC Integration', () => {
         mockAgentService = {
             getAllAgents: vi.fn(),
             getAgent: vi.fn(),
+            createAgent: vi.fn(),
+            deleteAgent: vi.fn(),
+            cloneAgent: vi.fn(),
+            exportAgent: vi.fn(),
+            importAgent: vi.fn(),
+            getAgentTemplatesLibrary: vi.fn(),
+            validateAgentTemplate: vi.fn(),
+            recoverAgentFromArchive: vi.fn(),
         };
 
         registerAgentIpc(mockAgentService);
@@ -71,7 +79,15 @@ describe('Agent IPC Integration', () => {
     it('should register expected handlers', () => {
         expect(mockIpcMainHandlers.has('agent:get-all')).toBe(true);
         expect(mockIpcMainHandlers.has('agent:get')).toBe(true);
-        expect(mockIpcMainHandlers.size).toBe(2);
+        expect(mockIpcMainHandlers.has('agent:create')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:delete')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:clone')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:export')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:import')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:get-templates-library')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:validate-template')).toBe(true);
+        expect(mockIpcMainHandlers.has('agent:recover')).toBe(true);
+        expect(mockIpcMainHandlers.size).toBe(10);
     });
 
     describe('agent:get-all', () => {
@@ -167,6 +183,64 @@ describe('Agent IPC Integration', () => {
 
             await handler!({}, '12345');
             expect(mockAgentService.getAgent).toHaveBeenCalledWith('12345');
+        });
+    });
+
+    describe('agent:create', () => {
+        it('should call service createAgent with parsed payload', async () => {
+            vi.mocked(mockAgentService.createAgent).mockResolvedValue({
+                success: true,
+                id: 'agent-1',
+                workspacePath: '/tmp/workspace',
+            });
+            const handler = mockIpcMainHandlers.get('agent:create');
+            const payload = {
+                agent: {
+                    name: 'CustomAgent',
+                    description: 'test',
+                    systemPrompt: 'This is a custom prompt',
+                    tools: ['code_search'],
+                    parentModel: 'gpt-4o',
+                },
+                options: { createWorkspace: true },
+            };
+
+            const result = await handler!({}, payload);
+
+            expect(mockAgentService.createAgent).toHaveBeenCalledWith({
+                name: 'CustomAgent',
+                description: 'test',
+                systemPrompt: 'This is a custom prompt',
+                tools: ['code_search'],
+                parentModel: 'gpt-4o',
+                id: undefined,
+                color: undefined,
+            }, { createWorkspace: true });
+            expect(result).toEqual({
+                success: true,
+                id: 'agent-1',
+                workspacePath: '/tmp/workspace',
+            });
+        });
+    });
+
+    describe('agent:delete', () => {
+        it('should call service deleteAgent with options', async () => {
+            vi.mocked(mockAgentService.deleteAgent).mockResolvedValue({
+                success: true,
+                archivedId: 'archive-1',
+                recoveryToken: 'recover_1',
+            });
+            const handler = mockIpcMainHandlers.get('agent:delete');
+
+            const result = await handler!({}, 'agent-1', { confirm: true, softDelete: true });
+
+            expect(mockAgentService.deleteAgent).toHaveBeenCalledWith('agent-1', { confirm: true, softDelete: true });
+            expect(result).toEqual({
+                success: true,
+                archivedId: 'archive-1',
+                recoveryToken: 'recover_1',
+            });
         });
     });
 });

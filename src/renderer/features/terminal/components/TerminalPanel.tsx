@@ -35,6 +35,7 @@ export const TerminalPanel: React.FC = () => {
     const [showSelector, setShowSelector] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
     const terminalRefs = useRef<Map<string, { terminal: Terminal; fitAddon: FitAddon }>>(new Map());
+    const restoreAttemptedRef = useRef(false);
 
     const toggleTerminal = useCallback(() => {
         setPanelState(prev => ({
@@ -148,6 +149,23 @@ export const TerminalPanel: React.FC = () => {
         }));
     };
 
+    const renameTerminal = useCallback(async (sessionId: string) => {
+        const current = panelState.sessions.find(s => s.id === sessionId);
+        if (!current) {
+            return;
+        }
+        const next = window.prompt(t('terminal.renamePrompt') || 'New terminal name', current.title);
+        if (!next || !next.trim() || next.trim() === current.title) {
+            return;
+        }
+        const title = next.trim();
+        await window.electron.invoke('terminal:setSessionTitle', sessionId, title);
+        setPanelState(prev => ({
+            ...prev,
+            sessions: prev.sessions.map(s => (s.id === sessionId ? { ...s, title } : s)),
+        }));
+    }, [panelState.sessions, t]);
+
     const initializeTerminal = (sessionId: string, container: HTMLDivElement) => {
         if (terminalRefs.current.has(sessionId)) {
             return;
@@ -205,6 +223,70 @@ export const TerminalPanel: React.FC = () => {
         };
     }, [isResizing]);
 
+    useEffect(() => {
+        if (restoreAttemptedRef.current) {
+            return;
+        }
+        restoreAttemptedRef.current = true;
+
+        const restoreSnapshots = async () => {
+            try {
+                const snapshots = (await window.electron.invoke('terminal:getSnapshotSessions')) as Array<{
+                    id: string;
+                    shell: string;
+                    cwd: string;
+                    title?: string;
+                    timestamp: number;
+                }>;
+                if (!Array.isArray(snapshots) || snapshots.length === 0) {
+                    return;
+                }
+
+                const result = (await window.electron.invoke('terminal:restoreAllSnapshots')) as {
+                    restored: number;
+                    failed: number;
+                    sessionIds: string[];
+                };
+                if (!result || result.restored <= 0 || !Array.isArray(result.sessionIds)) {
+                    return;
+                }
+
+                const restored = snapshots
+                    .filter(s => result.sessionIds.includes(s.id))
+                    .map(s => ({
+                        id: s.id,
+                        title: s.title?.trim() || `${t('terminal.title')} (restored)`,
+                        cwd: s.cwd,
+                        shell: s.shell,
+                        backendType: 'xterm' as const,
+                        status: 'running' as const,
+                        createdAt: s.timestamp,
+                        lastActive: Date.now(),
+                    }));
+
+                if (restored.length === 0) {
+                    return;
+                }
+
+                setPanelState(prev => {
+                    if (prev.sessions.length > 0) {
+                        return prev;
+                    }
+                    return {
+                        ...prev,
+                        isOpen: true,
+                        sessions: restored,
+                        activeSessionId: restored[0]?.id ?? null,
+                    };
+                });
+            } catch (error) {
+                appLogger.error('TerminalPanel', 'Failed to restore snapshot sessions', error as Error);
+            }
+        };
+
+        void restoreSnapshots();
+    }, [t]);
+
     if (!panelState.isOpen) {
         return null;
     }
@@ -220,6 +302,7 @@ export const TerminalPanel: React.FC = () => {
                             key={session.id}
                             className={`terminal-tab ${session.id === panelState.activeSessionId ? 'active' : ''}`}
                             onClick={() => switchTerminal(session.id)}
+                            onDoubleClick={() => void renameTerminal(session.id)}
                         >
                             <span>{session.title}</span>
                             <button

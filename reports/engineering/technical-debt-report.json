@@ -1,0 +1,213 @@
+{
+  "generatedAt": "2026-02-13T11:13:27.860Z",
+  "file": "docs\\TODO.md",
+  "total": 198,
+  "open": 169,
+  "completed": 29,
+  "completionRate": 0.14646464646464646,
+  "sections": [
+    {
+      "name": "Marketplace System (VSCode-style Extensions)",
+      "total": 33,
+      "open": 33,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "UI/UX Improvements",
+      "total": 15,
+      "open": 15,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Agent System Enhancements",
+      "total": 12,
+      "open": 12,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "LLM Service Improvements",
+      "total": 10,
+      "open": 10,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Terminal Improvements",
+      "total": 10,
+      "open": 10,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Model Marketplace (HuggingFace Integration)",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Image Generation",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "SSH & Remote Development",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Context & Memory System",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Git Integration",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Internationalization",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Browser Extension",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "MCP (Model Context Protocol)",
+      "total": 8,
+      "open": 8,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Security & Authentication",
+      "total": 9,
+      "open": 6,
+      "completed": 3,
+      "completionRate": 0.3333333333333333
+    },
+    {
+      "name": "Code Intelligence",
+      "total": 5,
+      "open": 5,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "User-Requested Features",
+      "total": 5,
+      "open": 5,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Infrastructure",
+      "total": 4,
+      "open": 4,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Architecture",
+      "total": 3,
+      "open": 3,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Copilot Service",
+      "total": 2,
+      "open": 2,
+      "completed": 0,
+      "completionRate": 0
+    },
+    {
+      "name": "Database & Persistence",
+      "total": 0,
+      "open": 0,
+      "completed": 0,
+      "completionRate": 1
+    },
+    {
+      "name": "Changelog System",
+      "total": 2,
+      "open": 0,
+      "completed": 2,
+      "completionRate": 1
+    },
+    {
+      "name": "Test Coverage Improvements",
+      "total": 8,
+      "open": 0,
+      "completed": 8,
+      "completionRate": 1
+    },
+    {
+      "name": "Performance Optimizations",
+      "total": 8,
+      "open": 0,
+      "completed": 8,
+      "completionRate": 1
+    },
+    {
+      "name": "IPC Handler Coverage",
+      "total": 0,
+      "open": 0,
+      "completed": 0,
+      "completionRate": 1
+    },
+    {
+      "name": "Code Refactoring",
+      "total": 5,
+      "open": 0,
+      "completed": 5,
+      "completionRate": 1
+    },
+    {
+      "name": "Bugs to Fix",
+      "total": 3,
+      "open": 0,
+      "completed": 3,
+      "completionRate": 1
+    },
+    {
+      "name": "v1.3.0 (Target: Q2 2026)",
+      "total": 0,
+      "open": 0,
+      "completed": 0,
+      "completionRate": 1
+    },
+    {
+      "name": "v1.4.0 (Target: Q3 2026)",
+      "total": 0,
+      "open": 0,
+      "completed": 0,
+      "completionRate": 1
+    },
+    {
+      "name": "v2.0.0 (Target: Q4 2026)",
+      "total": 0,
+      "open": 0,
+      "completed": 0,
+      "completionRate": 1
+    }
+  ]
+}

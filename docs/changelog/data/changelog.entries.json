@@ -4,6 +4,225 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-13-drop-validation",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ui",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Chat",
+        "Attachments"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Added Drop Validation for File Attachments",
+          "summary": "Enhanced security for drag-and-drop file attachments with file type validation, size limits, and dangerous extension blocking.",
+          "items": [
+            "Added file type whitelist allowing text, JSON, PDF, images, and common document formats.",
+            "Implemented 10MB maximum file size limit to prevent large file DoS.",
+            "Added dangerous extension blocking (.exe, .bat, .sh, .ps1, etc.) for security.",
+            "Shows toast error notification when invalid files are dropped."
+          ]
+        },
+        "tr": {
+          "title": "Dosya Ekleri için Damga Doğrulaması Eklendi",
+          "summary": "Dosya türü doğrulama, boyut sınırları ve tehlikeli uzantı engelleme ile sürükle-bırak dosya ekleri için güvenlik artırıldı.",
+          "items": [
+            "Metin, JSON, PDF, resim ve yaygın belge formatlarına izin veren dosya türü beyaz listesi eklendi.",
+            "Büyük dosya DoS'unu önlemek için 10MB maksimum dosya boyutu sınırı uygulandı.",
+            "Güvenlik için tehlikeli uzantı engelleme (.exe, .bat, .sh, .ps1, vb.) eklendi.",
+            "Geçersiz dosyalar bırakıldığında toast hata bildirimi gösteriliyor."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-drop-validation",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "feature",
+      "category": "chat",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "ChatInput",
+        "Attachments"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Drag and Drop File Validation",
+          "summary": "Added file validation for drag and drop to improve security and user experience.",
+          "items": [
+            "Added file type whitelist for supported formats (text, images, PDF, JSON, etc.)",
+            "Implemented 10MB file size limit with user-friendly error messages",
+            "Blocked dangerous file extensions (.exe, .bat, .sh, etc.)",
+            "Added toast notifications for validation errors"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-token-counting-accuracy",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "LLM",
+        "TokenEstimation"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Improved Token Counting Accuracy",
+          "summary": "Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.",
+          "items": [
+            "Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.",
+            "Improved context window management with precise model limits for major LLM providers.",
+            "Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.",
+            "Added comprehensive unit tests to verify token counting accuracy for various models."
+          ]
+        },
+        "tr": {
+          "title": "Geliştirilmiş Token Sayımı Doğruluğu",
+          "summary": "GPT, Claude ve Llama modellerinde kesin token tahmini için js-tiktoken entegrasyonu yapıldı.",
+          "items": [
+            "cl100k_base ve o200k_base kodlamaları için `js-tiktoken` entegrasyonu sağlandı.",
+            "Büyük LLM sağlayıcıları için kesin model sınırlarıyla bağlam penceresi yönetimi iyileştirildi.",
+            "Desteklenmeyen modeller için tahmin sürekliliğini sağlamak üzere sezgisel geri dönüşler korundu.",
+            "Çeşitli modeller için token sayımı doğruluğunu doğrulamak üzere kapsamlı birim testler eklendi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-llm-service-improvements",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "LLM",
+        "Caching",
+        "Reliability"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "LLM Service Improvements: Fallback & Caching",
+          "summary": "Enhanced the LLM service with model fallback, response caching, and improved streaming response management.",
+          "items": [
+            "- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.",
+            "- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.",
+            "- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.",
+            "- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management."
+          ]
+        },
+        "tr": {
+          "title": "LLM Servis İyileştirmeleri: Yedekleme ve Önbelleğe Alma",
+          "summary": "LLM servisi, model yedekleme (fallback), yanıt önbelleğe alma ve iyileştirilmiş akış yanıtı yönetimi ile geliştirildi.",
+          "items": [
+            "- **Model Yedekleme**: Servis sürekliliğini sağlamak için otomatik sağlayıcı geçişi sağlayan `ModelFallbackService` eklendi.",
+            "- **Yanıt Önbelleğe Alma**: Performansı artırmak ve maliyetleri azaltmak için `ResponseCacheService` üzerinden asistan yanıtları önbelleğe alındı.",
+            "- **Akış İyileştirmeleri**: İptal edilen akışlar için `AbortSignal` yönetimi iyileştirildi ve kısmi yanıt kaydetme özelliği eklendi.",
+            "- **Güvenilirlik**: Hata yönetimi için yedekleme servisi üzerinden 'circuit breaker' desenleri entegre edildi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-huggingface-integration-core",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "LLM",
+        "HuggingFace",
+        "Marketplace"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Core HuggingFace Integration & GGUF Support",
+          "summary": "Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.",
+          "items": [
+            "- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.",
+            "- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.",
+            "- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.",
+            "- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.",
+            "- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability."
+          ]
+        },
+        "tr": {
+          "title": "HuggingFace Entegrasyonu ve GGUF Desteği",
+          "summary": "Model kazıyıcı, GGUF meta veri ayrıştırıcı ve gelişmiş indirme yöneticisi dahil olmak üzere HuggingFace entegrasyonu tamamlandı.",
+          "items": [
+            "- **Kazıyıcı Servisi**: Model arama ve meta veri çekme işlemleri için yerel önbellek destekli `HuggingFaceService` oluşturuldu.",
+            "- **GGUF Ayrıştırma**: Model mimarisini ve bağlam uzunluğunu çıkaran GGUF başlık ayrıştırıcısı eklendi.",
+            "- **İndirme Yöneticisi**: SHA256 doğrulamalı ve gerçek zamanlı ilerleme takipli, duraklatılabilir indirme yöneticisi uygulandı.",
+            "- **Servis Entegrasyonu**: `HuggingFaceService`, bağımlılık enjeksiyonu ile `ModelRegistryService` ve `LLMService`'e entegre edildi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-ipc-handler-tests-expansion-batch-5-fix-test-01",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "Tests",
+        "Project Agent"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "IPC Handler Tests expansion & TEST-01 Fix",
+          "summary": "Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.",
+          "items": [
+            "- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.",
+            "- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.",
+            "- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.",
+            "- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-12-renderer-logging-refactor",
       "date": "2026-02-12",
       "channel": "stable",

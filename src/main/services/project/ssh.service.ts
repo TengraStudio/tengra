@@ -432,7 +432,7 @@ export class SSHService extends EventEmitter {
 
         // Setup keepalive
         const timer = setInterval(() => {
-            conn.exec('echo keepalive', () => {});
+            conn.exec('echo keepalive', () => { });
         }, keepaliveInterval);
         this.keepaliveTimers.set(config.id, timer);
 
@@ -662,8 +662,8 @@ export class SSHService extends EventEmitter {
             typeof entry.attrs.isDirectory === 'function'
                 ? entry.attrs.isDirectory()
                 : typeof entry.longname === 'string'
-                  ? entry.longname.startsWith('d')
-                  : false;
+                    ? entry.longname.startsWith('d')
+                    : false;
         return {
             name: entry.filename,
             isDirectory,
@@ -804,6 +804,9 @@ export class SSHService extends EventEmitter {
         });
     }
 
+    /** Minimum interval between progress emissions (ms) */
+    private static readonly PROGRESS_THROTTLE_MS = 100;
+
     async uploadFile(
         connectionId: string,
         localPath: string,
@@ -816,11 +819,34 @@ export class SSHService extends EventEmitter {
         }
 
         const validRemotePath = this.validateRemotePath(remotePath);
+
+        // Throttle progress updates to prevent event flooding
+        let lastProgressTime = 0;
+        let lastTransferred = 0;
+        let lastTotal = 0;
+
+        const throttledProgress = (transferred: number, total: number) => {
+            const now = Date.now();
+            // Always emit on first call, last call (transferred === total), or throttled interval
+            if (transferred === 0 || transferred === total ||
+                now - lastProgressTime >= SSHService.PROGRESS_THROTTLE_MS) {
+                lastProgressTime = now;
+                lastTransferred = transferred;
+                lastTotal = total;
+                if (onProgress) {
+                    onProgress(transferred, total);
+                }
+            }
+        };
+
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) {
                     return reject(err);
                 }
+
+                // Emit initial progress
+                throttledProgress(0, 0);
 
                 // Use fastPut for efficiency
                 sftp.fastPut(
@@ -828,14 +854,16 @@ export class SSHService extends EventEmitter {
                     validRemotePath,
                     {
                         step: (transferred, _chunk, total) => {
-                            if (onProgress) {
-                                onProgress(transferred, total);
-                            }
+                            throttledProgress(transferred, total);
                         },
                     },
                     err => {
                         if (err) {
                             return reject(err);
+                        }
+                        // Emit final progress to ensure 100%
+                        if (onProgress) {
+                            onProgress(lastTransferred, lastTotal);
                         }
                         resolve(true);
                     }
@@ -856,25 +884,50 @@ export class SSHService extends EventEmitter {
         }
 
         const validRemotePath = this.validateRemotePath(remotePath);
+
+        // Throttle progress updates to prevent event flooding
+        let lastProgressTime = 0;
+        let lastTransferred = 0;
+        let lastTotal = 0;
+
+        const throttledProgress = (transferred: number, total: number) => {
+            const now = Date.now();
+            // Always emit on first call, last call (transferred === total), or throttled interval
+            if (transferred === 0 || transferred === total ||
+                now - lastProgressTime >= SSHService.PROGRESS_THROTTLE_MS) {
+                lastProgressTime = now;
+                lastTransferred = transferred;
+                lastTotal = total;
+                if (onProgress) {
+                    onProgress(transferred, total);
+                }
+            }
+        };
+
         return new Promise((resolve, reject) => {
             conn.sftp((err, sftp) => {
                 if (err) {
                     return reject(err);
                 }
 
+                // Emit initial progress
+                throttledProgress(0, 0);
+
                 sftp.fastGet(
                     validRemotePath,
                     localPath,
                     {
                         step: (transferred, _chunk, total) => {
-                            if (onProgress) {
-                                onProgress(transferred, total);
-                            }
+                            throttledProgress(transferred, total);
                         },
                     },
                     err => {
                         if (err) {
                             return reject(err);
+                        }
+                        // Emit final progress to ensure 100%
+                        if (onProgress) {
+                            onProgress(lastTransferred, lastTotal);
                         }
                         resolve(true);
                     }
@@ -1216,9 +1269,9 @@ export class SSHService extends EventEmitter {
                         const parts = l.split('@');
                         return parts[0]
                             ? {
-                                  name: parts[0].trim().replace(/^.* /, ''),
-                                  version: parts[1]?.trim() || 'unknown',
-                              }
+                                name: parts[0].trim().replace(/^.* /, ''),
+                                version: parts[1]?.trim() || 'unknown',
+                            }
                             : null;
                     })
                     .filter((p): p is SSHPackageInfo => p !== null);
