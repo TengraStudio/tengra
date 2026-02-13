@@ -17,7 +17,10 @@ You are in a high-stakes environment. Every decision you make must be justified 
 - [ ] Did I remove all `console.log`?
 - [ ] Is my function under 150 lines?
 - [ ] Did I run `npm run lint`?
-- [ ] Did I update `docs/changelog/data/changelog.entries.json` and run `npm run changelog:sync`?
+- [ ] Did I run `npm run build` and `npm run type-check`?
+- [ ] Did I update `docs/changelog/data/changelog.entries.json` (English first)?
+- [ ] Did I COMMIT after completing the TODO or minor change?
+- [ ] Are translations only being done on weekends (Saturday-Sunday)?
 
 **IF YOU IGNORE THESE RULES, YOU WILL BE DISCONNECTED.**
 

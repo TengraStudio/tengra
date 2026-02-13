@@ -15,6 +15,8 @@ As an AI Agent on Tandem, you ARE these rules. They are your core logic.
 6.  **MESS**: No relative paths for internal modules. Use `@/` aliases.
 7.  **CLUTTER**: No debug files in root/src. Use `logs/` for all temporary output.
 8.  **BLINDNESS**: No commits without building (`npm run build`) and linting (`npm run lint`).
+9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion or minor change.
+10. **TRANSLATION OVERLOAD**: No locale updates on weekdays. English first, translations on weekends only.
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
 1.  **BOY SCOUT RULE**: Leave the code cleaner. If you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
@@ -48,8 +50,20 @@ Use these for direct system and environment interaction:
 2.  **VALIDATE**: Ensure your plan obeys all NASA rules and fixed-loop bounds.
 3.  **IMPLEMENT**: Targeted edits. Full logic. Fix existing warnings in the file.
 4.  **PURIFY**: Run `npm run lint`, `npm run build`, and `npm run type-check`.
-5.  **RECORD**: Update `docs/changelog/data/changelog.entries.json`, locale overrides as needed, run `npm run changelog:sync`, and update `TODO.md`.
-6.  **DELIVER**: Only after purification is complete.
+5.  **RECORD**: Update `docs/changelog/data/changelog.entries.json` (English first), run `npm run changelog:sync`, and update `TODO.md`.
+6.  **COMMIT**: Commit IMMEDIATELY after TODO completion or minor change. No uncommitted work.
+7.  **DELIVER**: Only after purification and commit is complete.
+
+## 📝 COMMIT DISCIPLINE
+- **TODO Completion**: Commit immediately after marking a TODO as done.
+- **Minor Changes**: Every fix, improvement, or refactor gets its own commit.
+- **Pre-Commit Check**: ALWAYS run `npm run build && npm run lint && npm run type-check` before committing.
+- **No Errors**: If any check fails, fix errors first. Only commit when all checks pass.
+
+## 🌍 CHANGELOG RULES
+- **English First**: ALWAYS update `changelog.entries.json` first.
+- **Translations on Weekends**: Locale files (tr, ar, zh, ja) can ONLY be updated on weekends (Saturday-Sunday).
+- **No Overload**: Don't write translations for every minor change during weekdays.
 
 ---
 "Leave no warning behind. Code for performance, type for safety."

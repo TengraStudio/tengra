@@ -969,6 +969,7 @@ When completing a task from `docs/TODO.md`:
 1. **Mark as completed** using `[x]` instead of `[ ]`
 2. **NEVER delete** the item from the file
 3. Keep the history for tracking purposes
+4. **COMMIT IMMEDIATELY** after marking a TODO as completed
 
 ```markdown
 # Example:
@@ -979,15 +980,52 @@ After:
 - [x] Add token caching  ← Mark done, DO NOT DELETE
 ```
 
-### 13.3 Structured Changelog Updates
+### 13.3 Commit Discipline (MANDATORY)
+
+**Every change MUST be committed following these rules:**
+
+1. **TODO Completion Commits**: When a TODO item is finished, commit immediately.
+2. **Minor Change Commits**: Every minor change (fix, improvement, refactor) must be committed separately.
+3. **Pre-Commit Validation**: Before committing, ALWAYS check for errors:
+   ```bash
+   npm run build        # Must pass
+   npm run lint         # Must pass
+   npm run type-check   # Must pass
+   ```
+4. **Commit Only If Clean**: If any check fails, fix errors first. Only commit when all checks pass.
+
+**Commit Workflow:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    COMMIT WORKFLOW                          │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Make code change (TODO completion or minor change)       │
+│ 2. Run: npm run build                                       │
+│ 3. Run: npm run lint                                        │
+│ 4. Run: npm run type-check                                  │
+│ 5. If ANY errors → fix and repeat steps 2-4                 │
+│ 6. If ALL pass → commit with conventional message           │
+│ 7. Push to repository                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 13.4 Structured Changelog Updates
 
 Every code change MUST be recorded in the structured changelog system.
 
 **Canonical source (single source of truth):**
-- `docs/changelog/data/changelog.entries.json`
+- `docs/changelog/data/changelog.entries.json` (English - ALWAYS update this first)
 
-**Locale overrides:**
+**Locale overrides (TRANSLATIONS ONLY ON WEEKENDS):**
 - `docs/changelog/i18n/tr.overrides.json`
+- `docs/changelog/i18n/ar.overrides.json`
+- `docs/changelog/i18n/zh.overrides.json`
+- `docs/changelog/i18n/ja.overrides.json`
+
+**Changelog Rules:**
+1. **English First**: ALWAYS write changelog entries in the English file first (`changelog.entries.json`).
+2. **Translations on Weekends Only**: Locale/translation files can ONLY be updated on weekends (Saturday-Sunday).
+3. **No Translation Overload**: Do not write translations for every minor change during weekdays.
 
 **Generate + validate (mandatory):**
 ```bash
@@ -1002,7 +1040,7 @@ npm run changelog:sync
 **Legacy note:**
 - `docs/CHANGELOG.md` is archive-only and must not be used for new updates.
 
-### 13.4 Complete Workflow Example
+### 13.5 Complete Workflow Example
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -1013,11 +1051,15 @@ npm run changelog:sync
 │ 3. Make code changes                                         │
 │ 4. Run: npm run build                                        │
 │ 5. Run: npm run lint                                         │
-│ 6. If errors → fix and repeat step 4-5                       │
-│ 7. Update docs/TODO.md (mark [x], DON'T delete)              │
-│ 8. Update structured changelog + run `npm run changelog:sync` │
-│ 9. Commit with conventional message                          │
-│ 10. Push to repository                                       │
+│ 6. Run: npm run type-check                                   │
+│ 7. If errors → fix and repeat steps 4-6                      │
+│ 8. Update docs/TODO.md (mark [x], DON'T delete)              │
+│ 9. Update English changelog (changelog.entries.json)         │
+│10. Run `npm run changelog:sync`                              │
+│11. COMMIT IMMEDIATELY (don't wait for more changes)          │
+│12. Push to repository                                        │
+│                                                              │
+│ NOTE: Translations only on weekends (Saturday-Sunday)        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1039,8 +1081,10 @@ npm run changelog:sync
 │ Jobs:     jobScheduler.registerRecurringJob(...)           │
 ├─────────────────────────────────────────────────────────────┤
 │ WORKFLOW: build → lint → type-check → commit → push        │
-│ TODO:     Mark [x] done, NEVER delete                       │
-│ CHANGELOG: Update `entries.json` + locale overrides, then run `changelog:sync` │
+│ COMMITS:  After every TODO completion or minor change       │
+│ TODO:     Mark [x] done, NEVER delete, COMMIT IMMEDIATELY   │
+│ CHANGELOG: English first (entries.json), translations       │
+│           only on weekends (Saturday-Sunday)                │
 ├─────────────────────────────────────────────────────────────┤
 │ NEVER:    any | console.log | files without ext | @ts-ignore│
 └─────────────────────────────────────────────────────────────┘
