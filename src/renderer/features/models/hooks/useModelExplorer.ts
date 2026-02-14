@@ -25,14 +25,16 @@ const getFilteredOllama = (ollamaLibrary: OllamaLibraryModel[], query: string, a
             m.description.toLowerCase().includes(q)
         );
     }
-    if (activeSource === 'all' && filtered.length > 12) {
+    if (activeSource === 'all' && Array.isArray(filtered) && filtered.length > 12) {
         return [...filtered].sort((a, b) => parsePulls(b.pulls) - parsePulls(a.pulls)).slice(0, 12);
     }
-    return filtered;
+    return Array.isArray(filtered) ? filtered : [];
 };
 
 const getSortedModels = (hfResults: HFModel[], filteredOllama: OllamaLibraryModel[], sortBy: string, activeSource: string) => {
-    const base = [...hfResults, ...(activeSource === 'all' || activeSource === 'ollama' ? filteredOllama : [])];
+    const safeHf = Array.isArray(hfResults) ? hfResults : [];
+    const safeOllama = Array.isArray(filteredOllama) ? filteredOllama : [];
+    const base = [...safeHf, ...(activeSource === 'all' || activeSource === 'ollama' ? safeOllama : [])];
     return base.sort((a, b) => {
         if (sortBy === 'name') { return a.name.localeCompare(b.name); }
         if (sortBy === 'popularity') {

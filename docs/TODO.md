@@ -70,7 +70,9 @@ This document contains a comprehensive list of tasks, improvements, and features
     - [ ] Add suspicious pattern detection
 
 ### Database & Persistence
-
+- [x] **BUG-MODELS-01**: Fix "o is not iterable" crash in Marketplace and Model features
+  - Path: `src/renderer/features/models/`
+  - Resolved crashes in `MarketplaceGrid`, `InstalledModelsGrid`, `ModelSelectorModal`, and `ModelExplorer` hooks via defensive array checks.
 
 ---
 

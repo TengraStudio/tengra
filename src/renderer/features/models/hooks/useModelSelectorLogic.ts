@@ -155,6 +155,7 @@ export function useModelSelectorLogic({
             const checks: Record<string, { allowed: boolean; reason?: string }> = {};
             if (groupedModels) {
                 for (const [provider, group] of Object.entries(groupedModels)) {
+                    if (!group || !Array.isArray(group.models)) { continue; }
                     for (const model of group.models) {
                         const modelId = model.id ?? '';
                         if (!modelId) { continue; }

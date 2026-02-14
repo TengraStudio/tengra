@@ -131,10 +131,11 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             return null;
         }
         for (const cat of categories) {
+            if (!Array.isArray(cat.models)) { continue; }
             const found = cat.models.find(
                 m => m.id === pendingModel.id && m.provider === pendingModel.provider
             );
-            if (found?.thinkingLevels && found.thinkingLevels.length > 0) {
+            if (found?.thinkingLevels && Array.isArray(found.thinkingLevels) && found.thinkingLevels.length > 0) {
                 return found.thinkingLevels;
             }
         }
@@ -223,6 +224,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     // Get current model's thinking levels
     const currentModelThinkingLevels = useMemo(() => {
         for (const cat of categories) {
+            if (!Array.isArray(cat.models)) { continue; }
             const found = cat.models.find(m => m.id === selectedModel);
             if (found?.thinkingLevels) {
                 return found.thinkingLevels;
@@ -233,6 +235,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     const currentModelInfo = useMemo(() => {
         for (const cat of categories) {
+            if (!Array.isArray(cat.models)) { continue; }
             const found = cat.models.find(m => m.id === selectedModel);
             if (found) {
                 return found;
@@ -280,9 +283,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             .filter(c => c.id !== 'favorites')
             .map(cat => ({
                 ...cat,
-                models: cat.models.filter(
-                    m => m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query)
-                ),
+                models: Array.isArray(cat.models)
+                    ? cat.models.filter(m => m.label.toLowerCase().includes(query) || m.id.toLowerCase().includes(query))
+                    : [],
             }))
             .filter(cat => cat.models.length > 0);
     }, [categories, searchQuery]);
@@ -480,7 +483,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 </div>
                                 <div className="text-xs text-muted-foreground font-medium mb-3">
                                     {categories
-                                        .flatMap(c => c.models)
+                                        .flatMap(c => Array.isArray(c.models) ? c.models : [])
                                         .find(m => m.id === pendingModel.id)?.label ??
                                         pendingModel.id}
                                 </div>

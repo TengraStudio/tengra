@@ -23,13 +23,14 @@
 - **IPC**: Standardized event broadcasting in Auth, SSH, and Idea Generator services.
 - **Reliability**: Improved system stability during window closure and session resets.
 
-### Marketplace Crash & Clipboard Permission Fix
+### Model Marketplace Robustness & Clipboard Fix
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a critical crash in the Model Marketplace and fixed clipboard permission issues.
+- **Summary**: Resolved critical crashes in the Model Marketplace and fixed clipboard permission issues.
 
-- **Fix**: Resolved `o?.forEach is not a function` crash in Marketplace category filtering.
+- **Fix**: Resolved 'o is not iterable' and 'forEach is not a function' crashes in Marketplace and Model feature components.
+- **Stability**: Added defensive array checks to MarketplaceGrid, InstalledModelsGrid, and ModelSelectorModal to handle unexpected data states.
 - **Clipboard**: Implemented a secure IPC-based clipboard service to bypass browser permission restrictions.
 - **Error Handling**: Updated Error Fallback to use the new secure clipboard service for copying error details.
 

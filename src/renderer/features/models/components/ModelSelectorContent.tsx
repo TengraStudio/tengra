@@ -80,7 +80,7 @@ export const ModelSelectorContent: React.FC<ModelSelectorContentProps> = ({
                                 <span>{category.name}</span>
                             </div>
                             <div className="px-1">
-                                {category.models.map(model => (
+                                {Array.isArray(category.models) && category.models.map(model => (
                                     <ModelSelectorItem
                                         key={`${category.id}-${model.provider}-${model.id}`}
                                         model={model}

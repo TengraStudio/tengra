@@ -205,7 +205,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 font-bold text-primary">
-                                {models.length} {t('modelsPage.modelsAvailable')}
+                                {(Array.isArray(models) ? models.length : 0)} {t('modelsPage.modelsAvailable')}
                             </span>
                         </div>
                     </div>
