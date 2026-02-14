@@ -83,7 +83,8 @@ export function useAppState(): AppState {
     }, []);
 
     // Toast notifications (shared notification center)
-    const toasts = useNotificationCenterStore(snapshot => toActiveToasts(snapshot.active));
+    const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
+    const toasts = useMemo(() => toActiveToasts(activeNotifications), [activeNotifications]);
 
     const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
         pushNotification({

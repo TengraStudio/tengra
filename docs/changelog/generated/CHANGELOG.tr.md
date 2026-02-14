@@ -1,17 +1,26 @@
 # Değişiklik Günlüğü
 
-## [2026-02-13]
+## [2026-02-14]
 
-### Dosya Ekleri için Damga Doğrulaması Eklendi
+### Marketplace UI Error Handling
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
+
+- **UI**: Display user-friendly error message when model fetching fails.
+- **UX**: Added a retry button to recover from transient network or service errors.
+
+### Chat Generation Shimmer Animation
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Dosya türü doğrulama, boyut sınırları ve tehlikeli uzantı engelleme ile sürükle-bırak dosya ekleri için güvenlik artırıldı.
+- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
 
-- Dosya türü beyaz listesi eklendi: metin, JSON, PDF, resimler ve yaygın belge formatları.
-- Büyük dosya DoS'unu önlemek için 10MB maksimum dosya boyutu sınırı uygulandı.
-- Güvenlik için tehlikeli uzantı engelleme (.exe, .bat, .sh, .ps1, vb.) eklendi.
-- Geçersiz dosyalar bırakıldığında toast hata bildirimi gösteriliyor.
+- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
+- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+
+## [2026-02-13]
 
 ### Dosya Ekleri için Damga Doğrulaması Eklendi
 
@@ -46,6 +55,17 @@
 - **IPC Kapsamı**: Başlat, Durdur, Durum ve HIL işleyicilerini kapsayan `project-agent.integration.test.ts` oluşturuldu.
 - **Kod Zekası**: `code-intelligence.integration.test.ts` dosyasındaki TypeScript parametre tipi uyuşmazlıkları düzeltildi.
 
+### IPC Güvenlik Denetimi: Girdi Doğrulama (SEC-003)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Agent ve Terminal IPC işleyicileri için katı Zod şema doğrulaması uygulandı, enjeksiyon önlendi, tip güvenliği sağlandı.
+
+- **Agent IPC**: Manuel doğrulama `createValidatedIpcHandler` ile değiştirildi ve 7 işleyici için Zod şemaları eklendi.
+- **Terminal IPC**: `terminal.ts`, profil, oturum ve arama işlemleri için şemalarla `createValidatedIpcHandler` kullanacak şekilde yeniden düzenlendi.
+- **Ortak Araç**: `createValidatedIpcHandler`, güvenli hata işleme geri dönüşü için `defaultValue` desteğiyle geliştirildi.
+- **Tip Güvenliği**: İşleyici argümanları ve dönüş politikaları için açık tipler sağlandı.
+
 ### LLM Servis İyileştirmeleri: Yedekleme ve Önbelleğe Alma
 
 - **Type**: feature
@@ -56,6 +76,16 @@
 - **Yanıt Önbelleğe Alma**: Performansı artırmak ve maliyetleri azaltmak için `ResponseCacheService` üzerinden asistan yanıtları önbelleğe alındı.
 - **Akış İyileştirmeleri**: İptal edilen akışlar için `AbortSignal` yönetimi iyileştirildi ve kısmi yanıt kaydetme özelliği eklendi.
 - **Güvenilirlik**: Hata yönetimi için yedekleme servisi üzerinden 'circuit breaker' desenleri entegre edildi.
+
+### Ollama Abort Fix & Chat Refactor
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+
+- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
+- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
+- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
 
 ### Geliştirilmiş Belirteç Sayma Doğruluğu
 

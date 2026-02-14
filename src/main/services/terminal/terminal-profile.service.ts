@@ -116,7 +116,7 @@ export class TerminalProfileService extends BaseService {
         if (profile.args && !Array.isArray(profile.args)) {
             errors.push('Args must be an array');
         }
-        if (profile.args && profile.args.some(arg => typeof arg !== 'string')) {
+        if (profile.args?.some(arg => typeof arg !== 'string')) {
             errors.push('All args must be strings');
         }
         if (profile.env && typeof profile.env !== 'object') {
@@ -260,7 +260,7 @@ export class TerminalProfileService extends BaseService {
         try {
             const decoded = Buffer.from(encoded, 'base64url').toString('utf-8');
             const parsed = safeJsonParse<ExportedTerminalProfilePayload | null>(decoded, null);
-            if (!parsed || parsed.kind !== 'terminal-profile' || parsed.version !== 1 || !parsed.profile) {
+            if (parsed?.kind !== 'terminal-profile' || parsed.version !== 1 || !parsed.profile) {
                 return { success: false, imported: false, error: 'Invalid profile payload' };
             }
             const validation = this.validateProfile(parsed.profile);

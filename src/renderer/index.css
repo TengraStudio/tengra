@@ -723,17 +723,22 @@
     }
 
     .animate-text-shimmer {
-        background: linear-gradient(to right, hsl(var(--foreground)) 0%, hsl(var(--foreground)) 40%, hsl(var(--primary)) 50%, hsl(var(--foreground)) 60%, hsl(var(--foreground)) 100%);
+        /* Create a shimmer that goes from foreground -> primary/bright -> foreground */
+        background: linear-gradient(to right,
+                hsl(var(--foreground)) 0%,
+                hsl(var(--foreground)) 35%,
+                hsl(var(--primary)) 45%,
+                hsl(var(--primary)) 55%,
+                hsl(var(--foreground)) 65%,
+                hsl(var(--foreground)) 100%);
         background-size: 200% auto;
         color: transparent;
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: text-shimmer-wave 2s linear infinite;
+        animation: text-shimmer-wave 3s linear infinite;
         display: inline-block;
-        /* Ensure block formatting context for background */
         min-width: 0;
-        /* Fix flex child truncation */
     }
 
     /* Spring Modal Animation */

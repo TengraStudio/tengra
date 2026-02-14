@@ -3,19 +3,20 @@
  * Provides UI for configuring accessibility options.
  */
 
-import React from 'react';
-import { useA11ySettings } from '@/utils/accessibility';
-import { useTranslation } from '@/i18n';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import {
     Accessibility,
     Contrast,
     Eye,
     Focus,
-    Volume2,
     RotateCcw,
+    Volume2,
 } from 'lucide-react';
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/i18n';
+import { useA11ySettings } from '@/utils/accessibility';
 
 interface SettingRowProps {
     icon: React.ReactNode;

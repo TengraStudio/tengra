@@ -1,6 +1,6 @@
 import {
-    DEFAULT_SPLIT_ANALYTICS,
     createCustomSplitPreset,
+    DEFAULT_SPLIT_ANALYTICS,
     incrementSplitAnalytics,
     sanitizeSplitAnalytics,
     sanitizeSplitLayout,

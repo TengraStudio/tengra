@@ -44,11 +44,9 @@ import type {
     TerminalAppearancePreferences,
     TerminalCursorStyle,
 } from './types/terminal-appearance';
+import { serializeTerminalModuleVersion } from './utils/module-version';
+import { clearTerminalSessionFlags } from './utils/session-registry';
 import {
-    TERMINAL_SHORTCUT_PRESETS,
-    type TerminalShortcutAction,
-    type TerminalShortcutBindings,
-    type TerminalShortcutPresetId,
     createShortcutShareCode,
     isTypingElement,
     keyboardEventToShortcut,
@@ -57,18 +55,15 @@ import {
     parseShortcutStorage,
     sanitizeShortcutBindings,
     serializeShortcutStorage,
+    TERMINAL_SHORTCUT_PRESETS,
+    type TerminalShortcutAction,
+    type TerminalShortcutBindings,
+    type TerminalShortcutPresetId,
 } from './utils/shortcut-config';
-import { clearTerminalSessionFlags } from './utils/session-registry';
 import {
-    type TerminalSearchMatch,
-    collectTerminalSearchMatches,
-} from './utils/terminal-search';
-import { serializeTerminalModuleVersion } from './utils/module-version';
-import {
+    createCustomSplitPreset,
     DEFAULT_SPLIT_ANALYTICS,
     DEFAULT_SPLIT_PRESETS,
-    TERMINAL_SPLIT_PRESET_LIMIT,
-    createCustomSplitPreset,
     incrementSplitAnalytics,
     sanitizeSplitAnalytics,
     sanitizeSplitLayout,
@@ -77,7 +72,12 @@ import {
     type SplitAnalytics,
     type SplitPreset,
     type SplitViewState,
+    TERMINAL_SPLIT_PRESET_LIMIT,
 } from './utils/split-config';
+import {
+    collectTerminalSearchMatches,
+    type TerminalSearchMatch,
+} from './utils/terminal-search';
 
 import 'xterm/css/xterm.css';
 

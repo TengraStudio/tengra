@@ -2,7 +2,7 @@
  * Tests for accessibility utilities
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock localStorage
 const localStorageMock = (() => {

@@ -53,19 +53,40 @@ export function installRendererLogger() {
     console.error = (...args: LogValue[]) => {
         original.error(...args);
         send('error', args);
+        if (typeof args[0] === 'string' && args[0].includes('React error #185')) {
+            const raw = args
+                .map(arg => {
+                    if (typeof arg === 'string') {
+                        return arg;
+                    }
+                    if (arg instanceof Error) {
+                        return arg.stack ?? arg.message;
+                    }
+                    try {
+                        return JSON.stringify(arg);
+                    } catch {
+                        return String(arg);
+                    }
+                })
+                .join(' | ');
+            logger.write('error', `react185 details=${raw}`);
+        }
     };
 
     window.addEventListener('error', (event) => {
-        logger.error('window error', {
-            message: event.message,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno
-        });
+        const error = event.error instanceof Error ? event.error : null;
+        const parts = [
+            `message=${event.message}`,
+            `file=${event.filename}`,
+            `line=${event.lineno}`,
+            `col=${event.colno}`,
+            `stack=${error?.stack ?? 'n/a'}`
+        ];
+        logger.write('error', `window error ${parts.join(' | ')}`);
     });
 
     window.addEventListener('unhandledrejection', (event) => {
-        logger.error('unhandledrejection', { reason: formatValue(event.reason) });
+        logger.write('error', `unhandledrejection reason=${formatValue(event.reason)}`);
     });
 }
 

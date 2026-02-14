@@ -155,7 +155,7 @@ export const TerminalPanel: React.FC = () => {
             return;
         }
         const next = window.prompt(t('terminal.renamePrompt') || 'New terminal name', current.title);
-        if (!next || !next.trim() || next.trim() === current.title) {
+        if (!next?.trim() || next.trim() === current.title) {
             return;
         }
         const title = next.trim();

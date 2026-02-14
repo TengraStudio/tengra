@@ -1,4 +1,4 @@
-import { Clock, Download, Layers,RefreshCw, Search } from 'lucide-react';
+import { Clock, Download, Layers, RefreshCw, Search } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { DbMarketplaceModel } from '@/electron';
@@ -42,6 +42,7 @@ function parsePullCount(pulls: string | undefined): number {
 
 export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement {
     const [models, setModels] = useState<DbMarketplaceModel[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,10 +62,11 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
             setModels(data);
         } catch (err) {
             window.electron.log.error('Failed to load marketplace models:', err);
+            setError(t('marketplace.loadError') || 'Failed to load models. Please try again.');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     // Refresh models (scrape and store)
     const handleRefresh = useCallback(async () => {
@@ -204,6 +206,19 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
 
     return (
         <div className="p-6 space-y-6">
+            {/* Error Message */}
+            {error && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg flex items-center justify-between">
+                    <span className="text-sm font-medium">{error}</span>
+                    <button
+                        onClick={() => { setError(null); void loadModels(); }}
+                        className="text-xs hover:underline"
+                    >
+                        {t('common.retry') || 'Retry'}
+                    </button>
+                </div>
+            )}
+
             {/* Search and Controls */}
             <div className="flex items-center gap-4">
                 {/* Search */}

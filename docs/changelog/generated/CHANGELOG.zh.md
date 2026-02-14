@@ -1,28 +1,37 @@
 # 更新日志
 
+## [2026-02-14]
+
+### Marketplace UI Error Handling
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
+
+- **UI**: Display user-friendly error message when model fetching fails.
+- **UX**: Added a retry button to recover from transient network or service errors.
+
+### Chat Generation Shimmer Animation
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
+
+- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
+- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+
 ## [2026-02-13]
 
-### 添加了拖放验证
+### Added Drop Validation for File Attachments
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 通过文件类型验证、大小限制和危险扩展名阻止增强了拖放文件附件的安全性。
+- **Summary**: Enhanced security for drag-and-drop file attachments with file type validation, size limits, and dangerous extension blocking.
 
-- 添加了文件类型白名单：文本、JSON、PDF、图像和常见文档格式。
-- 实施了10MB最大文件大小限制，以防止大文件DoS攻击。
-- 为安全起见添加了危险扩展名阻止（.exe、.bat、.sh、.ps1等）。
-- 放下无效文件时显示烤面包错误通知。
-
-### 添加了拖放验证
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: 通过文件类型验证、大小限制和危险扩展名阻止增强了拖放文件附件的安全性。
-
-- 添加了文件类型白名单：文本、JSON、PDF、图像和常见文档格式。
-- 实施了10MB最大文件大小限制，以防止大文件DoS攻击。
-- 为安全起见添加了危险扩展名阻止（.exe、.bat、.sh、.ps1等）。
-- 放下无效文件时显示烤面包错误通知。
+Added file type whitelist allowing text, JSON, PDF, images, and common document formats.
+Implemented 10MB maximum file size limit to prevent large file DoS.
+Added dangerous extension blocking (.exe, .bat, .sh, .ps1, etc.) for security.
+Shows toast error notification when invalid files are dropped.
 
 ### Core HuggingFace Integration & GGUF Support
 
@@ -47,6 +56,17 @@
 - **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
 - **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.
 
+### IPC Security Audit: Input Validation (SEC-003)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.
+
+- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.
+- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.
+- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.
+- **Type Safety**: Ensured explicit types for handler arguments and return policies.
+
 ### LLM Service Improvements: Fallback & Caching
 
 - **Type**: feature
@@ -58,144 +78,154 @@
 - **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
 - **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
 
-### 提高令牌计数准确性
+### Ollama Abort Fix & Chat Refactor
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+
+- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
+- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
+- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
+
+### Improved Token Counting Accuracy
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: 集成了 js-tiktoken，以便对 GPT、Claude 和 Llama 模型进行精确的令牌估计。
+- **Summary**: Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.
 
-集成了 `js-tiktoken`，用于精确映射到 cl100k_base 和 o200k_base 编码的令牌化。
-通过针对主要 LLM 提供商的精确模型限制，改进了上下文窗口管理。
-保留了针对不支持模型的基于启发式的回退，以确保估计的连续性。
-增加了全面的单元测试，以验证各种模型的令牌计数准确性。
+Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.
+Improved context window management with precise model limits for major LLM providers.
+Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.
+Added comprehensive unit tests to verify token counting accuracy for various models.
 
 ## [2026-02-12]
 
-### IPC Handler Tests Expansion - Batch 4
+### IPC Handler 测试扩展 - 第 4 批
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Created integration tests for 15 additional IPC handlers (advanced-memory, auth, brain, dialog, extension, file-diff, files, gallery, git, idea-generator, mcp, mcp-marketplace, process, proxy, proxy-embed).
+- **Summary**: 为 15 个附加 IPC handlers （高级内存、身份验证、大脑、对话框、扩展、文件差异、文件、图库、git、创意生成器、mcp、mcp-marketplace、进程、代理、代理嵌入）创建了集成测试。
 
-- **Tests**: Added tests for advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts, file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts, mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts
+- **测试**：添加了 Advanced-memory.ts、auth.ts、brain.ts、dialog.ts、extension.ts、file-diff.ts、files.ts、gallery.ts、git.ts、idea-generator.ts、mcp.ts、mcp-marketplace.ts、process.ts、proxy.ts、proxy-embed.ts 的测试
 
-### IPC Handler Tests Expansion - Batches 2 & 3 + Pre-existing Test Fixes
+### IPC Handler 测试扩展 - Batch 2 + 既有测试修复
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Created comprehensive integration tests for 12 additional IPC handlers (HuggingFace, Llama, Ollama, Multi-Model, Key Rotation, Migration, Prompt Templates, SD-CPP, Tools, Usage, Health, Agent) + Fixed all 20 pre-existing theme test failures by completely rewriting theme.integration.test.ts. Total: 852 tests passing (100%).
+- **Summary**: 为 7 个新增 IPC Handler 补齐了完整集成测试，并通过重写 `theme.integration.test.ts` 修复了既有 20 个 theme 测试失败。结果：789/789 测试通过（100%）。
 
-**Batch 2 Test Files Created (143 tests):**
-- [x] **huggingface.integration.test.ts** (20 tests): Model search, file listing, download with progress, URL validation, SHA256 verification
-- [x] **llama.integration.test.ts** (32 tests): Model loading, chat with streaming, session management, GPU detection, model downloads, config management
-- [x] **ollama.integration.test.ts** (32 tests): Health status, model pulling with progress, chat/streaming, library scraping, rate limiting, service dependencies
-- [x] **multi-model.integration.test.ts** (14 tests): Model comparison requests, validation (chatId, messages, models array), filtering invalid entries, rate limiting
-- [x] **key-rotation.integration.test.ts** (19 tests): Get current key, rotate keys, initialize provider keys, status with masking, provider name validation
-- [x] **migration.integration.test.ts** (4 tests): Migration status, pending migrations, fresh database, error handling
-- [x] **prompt-templates.integration.test.ts** (22 tests): Get all/by category/by tag, search, CRUD operations, template rendering with variables
+- **新增覆盖（143 项测试）**：覆盖 HuggingFace、Llama、Ollama、Multi-Model、Key Rotation、Migration、Prompt Templates，包含参数校验、错误路径与进度事件。
+- **theme 测试全量重构**：21 项测试与真实 `theme.ts` API 对齐，修复 handler 命名、mock 依赖与校验规则不一致问题。
+- **安全项验证**：URL 白名单、provider 名称清洗、状态输出中的密钥脱敏。
+- **运行时稳健性**：统一接入 rate limiting，并在错误场景下提供安全 fallback。
+- **统计结果**：改造前 721/748（96.4%），改造后 789/789（100%）。
+- **项目同步**：更新 `docs/TODO.md`，并统一测试实现模式。
+- [x] **migration.integration.test.ts**（4 个测试）：迁移状态、挂起的迁移、全新数据库、错误处理
+- [x] **prompt-templates.integration.test.ts**（22 个测试）：获取全部/按类别/按标签、搜索、CRUD 操作、使用变量的模板渲染
 
-**Batch 3 Test Files Created (68 tests):**
-- [x] **sd-cpp.integration.test.ts** (12 tests): Status retrieval, reinstall/repair, error handling, multiple status types
-- [x] **tools.integration.test.ts** (18 tests): Tool execution with rate limiting, kill commands, get definitions with serialization
-- [x] **usage.integration.test.ts** (17 tests): Check limits with Copilot quota, usage counts by period/provider/model, record usage
-- [x] **health.integration.test.ts** (14 tests): Overall health status, check specific services, get service status, list services
-- [x] **agent.integration.test.ts** (7 tests): Get all agents, get agent by ID, JSON serialization
+**创建第 3 批测试文件（68 个测试）：**
+- [x] **sd-cpp.integration.test.ts**（12 个测试）：状态检索、重新安装/修复、错误处理、多种状态类型
+- [x] **tools.integration.test.ts**（18 个测试）：具有速率限制的工具执行、kill 命令、通过序列化获取定义
+- [x] **usage.integration.test.ts**（17 个测试）：检查 Copilot 配额的限制、按周期/提供商/型号划分的使用计数、记录使用情况
+- [x] **health.integration.test.ts**（14个测试）：整体健康状况、检查特定服务、获取服务状态、列出服务
+- [x] **agent.integration.test.ts**（7 个​​测试）：获取所有代理、通过 ID 获取代理、JSON 序列化
 
-**Pre-existing Test Fixes (20 failures → 0):**
-- [x] **theme.integration.test.ts - COMPLETE REWRITE**: Rewrote all 21 tests to match actual theme.ts API
-  - Fixed handler name mismatches (theme:getActive → theme:getCurrent, theme:activate → theme:set, etc.)
-  - Changed mocks from ThemeService to themeStore (correct dependency)
-  - Updated custom theme validation to match actual validateCustomThemeInput requirements
-  - Added proper category/source/isCustom fields for addCustom tests
-  - Fixed runtime handler mocks (install/uninstall) with proper service instance mocking
-  - All 21 theme tests now passing
+**预先存在的测试修复（20 次失败 → 0）：**
+- [x] **theme.integration.test.ts - 完全重写**：重写所有 21 个测试以匹配实际的 theme.ts API
+- 修复了 handler 名称不匹配（主题：getActive → 主题：getCurrent、主题：activate → 主题：set 等）
+- 将模拟从 ThemeService 更改为 themeStore （正确的依赖关系）
+- 更新了自定义主题验证以匹配实际的 validateCustomThemeInput 要求
+- 为 addCustom 测试添加了正确的类别/源/isCustom 字段
+- 使用正确的服务实例模拟修复了 runtime handler 模拟（安装/卸载）
+- 所有 21 个主题测试现已通过
 
-**Coverage Highlights:**
-- Input validation for all parameters (IDs, paths, URLs, model names, keys)
-- Security: URL whitelisting (HuggingFace domain), provider name sanitization, key masking in status
-- Error handling: Default values, safe wrappers, invalid input rejection
-- Rate limiting integration across all LLM-related handlers
-- Progress event forwarding (downloads, pulls, streams)
-- Complex service dependencies (Ollama health, scraper, comparison)
+**报道亮点：**
+- 所有参数（ID、路径、URL、模型名称、密钥）的输入验证
+- 安全性：URL 白名单（HuggingFace 域）、提供商名称清理、状态中的密钥屏蔽
+- 错误处理：默认值、安全wrappers、无效输入拒绝
+- 所有 LLM 相关 handlers 的速率限制集成
+- 进度事件转发（下载、拉取、流式传输）
+- 复杂的服务依赖关系（Ollama 运行状况、抓取工具、比较）
 
-**Test Statistics:**
-- **Before:** 721/748 passing (96.4%)
-- **After Batch 2 + Fixes:** 789/789 passing (100%)
-- **After Batch 3:** 852/852 passing (100%) 🎉
-- **New tests:** +211 tests (143 Batch 2 + 68 Batch 3)
-- **Fixed tests:** +20 tests (theme)
-- **New test files:** +12 files
-- **Rewritten test files:** 1 file (theme.integration.test.ts)
+**测试统计：**
+- **之前：** 721/748 通过 (96.4%)
+- **第 2 批 + 修复后：** 789/789 通过 (100%)
+- **第 3 批后：** 852/852 通过 (100%) 🎉
+- **新测试：** +211 项测试（143 批次 2 + 68 批次 3）
+- **固定测试：** +20 测试（主题）
+- **新测试文件：** +12 个文件
+- **重写测试文件：** 1 个文件（theme.integration.test.ts）
 
-**TODO.md Updates:**
-- Marked huggingface.ts, llama.ts, ollama.ts, multi-model.ts, key-rotation.ts, migration.ts, prompt-templates.ts as tested
+**TODO.md 更新：**
+- 已测试标记huggingface.ts、llama.ts、ollama.ts、multi-model.ts、key-rotation.ts、migration.ts、prompt-templates.ts
 
-**Test Patterns Applied:**
-- Static imports at top (no dynamic require - VI hoisting)
-- Mock factories inside vi.mock() blocks
-- Comprehensive parameter validation tests
-- Error path coverage with safe handler defaults
-- Service availability fallback testing
+**应用的测试模式：**
+- 顶部静态导入（无动态要求 - VI 提升）
+- vi.mock() 块内的模拟工厂
+- 全面的参数验证测试
+- 使用安全 handler 默认值覆盖错误路径
+- 服务可用性fallback 测试
 
-### IPC Utilities Audit and Refactor
+### IPC 工具库审计与重构
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refactored IPC batch and wrapper utilities to improve type safety, documentation, and compliance with NASA Power of Ten rules.
+- **Summary**: 重构了 IPC 批处理与包装器工具，以提升类型安全、文档质量，并满足 NASA Power of Ten 规则。
 
-- [x] **ipc-batch.util.ts**: Replaced `any` with `IpcValue` and implemented `MAX_BATCH_SIZE=50` to enforce fixed loop bounds (NASA Rule 2).
-- [x] **ipc-wrapper.util.ts**: Added comprehensive JSDoc for all interfaces and lifecycle functions.
-- [x] **local-auth-server.util.ts**: Refactored OAuth handlers into private helpers to comply with NASA Rule 3 (Short functions) and replaced console logs with `appLogger`.
-- [x] **Type Safety**: Resolved type compatibility issues between generic batch handlers and specific IPC implementations.
-- [x] **Audit**: Completed items 109, 110, and 111 of the full file-by-file audit list.
+- [x] **ipc-batch.util.ts**: 用 `IpcValue` 替换 `any`，并实现 `MAX_BATCH_SIZE=50`，强制固定循环边界（NASA 规则 2）。
+- [x] **ipc-wrapper.util.ts**: 为全部接口和生命周期函数补充了完整 JSDoc 文档。
+- [x] **local-auth-server.util.ts**: 将 OAuth 处理器重构为私有 helper，以符合 NASA 规则 3（短函数），并将 console 日志替换为 `appLogger`。
+- [x] **Type Safety**: 解决了通用批处理 handler 与特定 IPC 实现之间的类型兼容问题。
+- [x] **Audit**: 完成了逐文件审计清单中的 109、110、111 项。
 
-### Message Normalizer Hardening
+### 消息规范化器加固
 
 - **Type**: security
 - **Status**: planned
-- **Summary**: Refactored message normalization utility to enforce strict type safety and NASA Power of Ten rules (fixed loop bounds).
+- **Summary**: 重构消息规范化工具，强制执行严格类型安全与 NASA Power of Ten 规则（固定循环边界）。
 
-- **Utils**: Enforced NASA Rule 2 (fixed loop bounds) in `MessageNormalizer`.
-- **Type Safety**: Removed `any` types and added strict type guards in message normalization logic.
-- **Documentation**: Added comprehensive JSDoc for all methods in `message-normalizer.util.ts`.
+- **工具层（Utils）**：在 `MessageNormalizer` 中落实 NASA 规则 2（固定循环边界）。
+- **类型安全**：移除 `any` 类型，并在规范化逻辑中补充严格类型守卫。
+- **文档**：为 `message-normalizer.util.ts` 的所有方法补充完整 JSDoc。
 
-### Models Page & Ollama Marketplace Scraper
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Created standalone Models page with multi-account support, quota display, and Ollama library scraper for marketplace.
-
-### Models Page (New Standalone View)
-- [x] **Standalone Page**: Created new `ModelsPage` component at `src/renderer/features/models/pages/ModelsPage.tsx`
-- [x] **Sidebar Navigation**: Added "Models" link to sidebar between Projects and Memory
-- [x] **ViewManager Integration**: Added 'models' to AppView type and lazy-loaded ModelsPage
-- [x] **Tab System**: Implemented "Installed Models" and "Marketplace" tabs
-- [x] **Multi-Account Support**: Account tabs per provider (copilot, claude, codex, anthropic, antigravity, nvidia, openai)
-- [x] **Quota Display**: Shows quota information per provider account
-- [x] **Action Buttons**: Hide/show model, set as default, add to favorites
-- [x] **Provider Grouping**: Models displayed in collapsible grid sections by provider
-### Ollama Library Scraper
-- [x] **Scraper Service**: Created `OllamaScraperService` at `src/main/services/llm/ollama-scraper.service.ts`
-- [x] **Library Scraping**: Scrapes ollama.com/library for model list (name, pulls, tags, categories, lastUpdated)
-- [x] **Model Details**: Scrapes ollama.com/library/:modelName for short description, long description HTML, versions
-- [x] **Version Info**: Parses /tags page for version name, size, context window, input types
-- [x] **Caching**: 5-minute cache for both library list and model details
-- [x] **Lazy Loading**: Service only loaded when marketplace is accessed
-- [x] **IPC Handlers**: Added `ollama:scrapeLibrary`, `ollama:scrapeModelDetails`, `ollama:clearScraperCache`
-- [x] **Type Definitions**: Added `OllamaScrapedModel`, `OllamaModelDetails`, `OllamaModelVersion` types
-### Dependencies
-- [x] Added `cheerio` package for HTML parsing
-
-### Project Agent HIL Integration Finalization
+### 模型页面与 Ollama 市场爬取器
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Completed the end-to-end integration of Human-in-the-Loop (HIL) features, wiring the renderer UI to backend execution services.
+- **Summary**: 新增独立“模型”页面，支持多账号、配额展示，并为市场功能接入 Ollama 库爬取服务。
 
-- [x] **HIL Handlers**: Implemented `approveStep`, `skipStep`, `editStep`, `addComment`, and `insertIntervention` async handlers in the renderer.
-- [x] **Hook Integration**: Exposed HIL actions through the `useAgentTask` hook for seamless UI consumption.
-- [x] **UI Wiring**: Connected `ExecutionPlanView` action buttons to the backend via `TaskExecutionView` and `ProjectAgentTab`.
-- [x] **Verification**: Validated all IPC channels and type safety for step-level steering operations.
+### 模型页面（新的独立视图）
+- [x] **Standalone Page**: 在 `src/renderer/features/models/pages/ModelsPage.tsx` 新建 `ModelsPage` 组件。
+- [x] **Sidebar Navigation**: 在侧边栏 Projects 与 Memory 之间新增“Models”入口。
+- [x] **ViewManager Integration**: 在 `AppView` 类型中新增 `models`，并对 `ModelsPage` 启用懒加载。
+- [x] **Tab System**: 实现“Installed Models”与“Marketplace”标签页。
+- [x] **Multi-Account Support**: 按 provider 提供账号标签（copilot、claude、codex、anthropic、antigravity、nvidia、openai）。
+- [x] **Quota Display**: 展示每个 provider 账号的配额信息。
+- [x] **Action Buttons**: 支持隐藏/显示模型、设为默认、加入收藏。
+- [x] **Provider Grouping**: 按 provider 分组，在可折叠网格区块中展示模型。
+### Ollama 库爬取器
+- [x] **Scraper Service**: 在 `src/main/services/llm/ollama-scraper.service.ts` 新建 `OllamaScraperService`。
+- [x] **Library Scraping**: 从 ollama.com/library 抓取模型列表（name、pulls、tags、categories、lastUpdated）。
+- [x] **Model Details**: 从 ollama.com/library/:modelName 抓取模型详情（短描述、长描述 HTML、版本）。
+- [x] **Version Info**: 解析 `/tags` 页面，提取版本名、大小、上下文窗口、输入类型。
+- [x] **Caching**: 为模型列表与模型详情都加入 5 分钟缓存。
+- [x] **Lazy Loading**: 仅在访问 marketplace 时加载该服务。
+- [x] **IPC Handlers**: 新增 `ollama:scrapeLibrary`、`ollama:scrapeModelDetails`、`ollama:clearScraperCache`。
+- [x] **Type Definitions**: 新增 `OllamaScrapedModel`、`OllamaModelDetails`、`OllamaModelVersion` 类型。
+### 依赖
+- [x] 新增 `cheerio` 包用于 HTML 解析。
+
+### Project Agent HIL 集成收官
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 完成了 Human-in-the-Loop（HIL）功能的端到端集成，将渲染层 UI 与后端执行服务打通。
+
+- [x] **HIL Handlers**: 在渲染层实现 `approveStep`、`skipStep`、`editStep`、`addComment`、`insertIntervention` 异步处理器。
+- [x] **Hook Integration**: 通过 `useAgentTask` 暴露 HIL 动作，便于 UI 无缝调用。
+- [x] **UI Wiring**: 将 `ExecutionPlanView` 的操作按钮经由 `TaskExecutionView` 与 `ProjectAgentTab` 连接到后端。
+- [x] **Verification**: 验证了所有 IPC 通道及步骤级控制操作的类型安全性。
 
 ### Renderer Logging Refactor
 
@@ -207,477 +237,477 @@
 - **Code Quality**: Applied Boy Scout Rule to fix import sorting and type issues in refactored files.
 - **Observability**: Standardized log format with context tags for easier debugging in production.
 
-### SD-CPP Core Refinement
+### SD-CPP 核心优化
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refined SD-CPP (Stable Diffusion C++) integration with offline-first fallback, telemetry tracking, and comprehensive integration testing.
+- **Summary**: 对 SD-CPP（Stable Diffusion C++）集成进行了优化，覆盖离线优先回退、遥测追踪与完整集成测试。
 
-- [x] **Offline-First Fallback**: Augmented `LocalImageService` to automatically fallback to Pollinations (cloud) if local SD-CPP generation fails or assets are missing.
-- [x] **Telemetry Integration**: Added metrics for `sd-cpp-generation-success`, `sd-cpp-generation-failure`, and `sd-cpp-fallback-triggered`.
-- [x] **Integration Testing**: Created `local-image.service.test.ts` covering readiness checks, success paths, and fallback logic.
-- [x] **Documentation**: Updated `AI_RULES.md`, `USER_GUIDE.md`, and `TROUBLESHOOTING.md` with SD-CPP specific technical and user-facing guidance.
-- [x] **NASA Rule Compliance**: Refactored `LocalImageService` to use a dependency interface, reducing constructor complexity (Rule 4).
+- [x] **Offline-First Fallback**: 增强 `LocalImageService`，当本地 SD-CPP 生成失败或资源缺失时自动回退到 Pollinations（云端）。
+- [x] **Telemetry Integration**: 新增 `sd-cpp-generation-success`、`sd-cpp-generation-failure`、`sd-cpp-fallback-triggered` 指标。
+- [x] **Integration Testing**: 新建 `local-image.service.test.ts`，覆盖就绪检查、成功路径与回退逻辑。
+- [x] **Documentation**: 更新 `AI_RULES.md`、`USER_GUIDE.md`、`TROUBLESHOOTING.md`，补充 SD-CPP 专项技术与用户说明。
+- [x] **NASA Rule Compliance**: 将 `LocalImageService` 重构为依赖接口方式，降低构造函数复杂度（规则 4）。
 
 ## [2026-02-11]
 
-### API & Core File-by-File Audit
+### API 与 Core 逐文件审计
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Full audit, refactor, and documentation pass on 8 files across `src/main/api` and `src/main/core`.
+- **Summary**: 对 `src/main/api` 与 `src/main/core` 下 8 个文件完成审计、重构与文档化。
 
-- [x] **Dead Code Cleanup**: Deleted `api-auth.middleware.ts` and `api-router.ts` (100% commented-out, no live imports).
-- [x] **JSDoc**: Added comprehensive JSDoc (`@param`/`@returns`/`@throws`) to `circuit-breaker.ts`, `container.ts`, `lazy-services.ts`, `service-registry.ts`, `repository.interface.ts`, and `api-server.service.ts`.
-- [x] **Type Safety**: Added explicit return types to private methods in `circuit-breaker.ts`, `service-registry.ts`, and `lazy-services.ts`. Documented intentional `unknown` map usage.
-- [x] **Pagination Types**: Added `PaginationOptions` and `PaginatedResult<T>` interfaces to `repository.interface.ts`.
-- [x] **Observability**: Uncommented load-time logging in `lazy-services.ts` for service startup visibility.
-- [x] **New Tests**: Created `lazy-services.test.ts` (7 tests) and `service-registry.test.ts` (9 tests) — all 30 core tests pass.
+- [x] **死代码清理**：删除了 `api-auth.middleware.ts` 和 `api-router.ts` （100% 注释掉，无实时导入）。
+- [x] **JSDoc**：向 `circuit-breaker.ts`、`container.ts`、`lazy-services.ts`、`service-registry.ts`、`repository.interface.ts` 和 `api-server.service.ts` 添加了全面的 JSDoc (`@param`/`@returns`/`@throws`)。
+- [x] **类型安全**：向 `circuit-breaker.ts`、`service-registry.ts` 和 `lazy-services.ts` 中的私有方法添加了显式返回类型。记录有意的 `unknown` 地图使用情况。
+- [x] **分页类型**：向 `repository.interface.ts` 添加了 `PaginationOptions` 和 `PaginatedResult<T>` 接口。
+- [x] **可观察性**：`lazy-services.ts` 中未注释的加载时日志记录，以实现服务启动可见性。
+- [x] **新测试**：创建了 `lazy-services.test.ts` （7 个测试）和 `service-registry.test.ts` （9 个测试） - 所有 30 个核心测试均通过。
 
-### Go Proxy Build Fix
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Resolved Go build failures in the embedded proxy caused by "declared and not used" variables.
-
-- [x] **Watcher Fix**: Added debug logging for `totalNewClients` in `internal/watcher/clients.go`.
-- [x] **Server Fix**: Added debug logging for `total` in `internal/api/server.go`.
-- [x] **Build Verification**: Confirmed successful build of `cliproxy-embed.exe` using `node scripts/build-native.js`.
-
-### IPC Audit Part 1 (First 10 Files)
+### Go 代理构建修复
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Audited, documented, and refactored the first 10 IPC handler files (`src/main/ipc`).
+- **Summary**: 修复了嵌入式代理中由 "declared and not used" 变量导致的 Go 构建失败。
 
-- [x] **Refactoring**: Converted `agent.ts`, `brain.ts`, `code-intelligence.ts`, and `advanced-memory.ts` to use `createSafeIpcHandler` / `createIpcHandler` for robust error handling and logging.
-- [x] **Type Safety**: Fixed strict type issues, added explicit generics to IPC wrappers (e.g., `createSafeIpcHandler<void>`), and ensured no `any` usage in modified files.
-- [x] **Documentation**: Added JSDoc to all exported `register...` functions and key classes in `auth.ts`, `chat.ts`, `db.ts`, `audit.ts`, `backup.ts`, and `collaboration.ts`.
-- [x] **Standardization**: Unified error response shapes where possible, while preserving legacy error behaviors for complex handlers (e.g., `advancedMemory:deleteMany`).
+- [x] **观察者修复**：在 `internal/watcher/clients.go` 中添加了 `totalNewClients` 的调试日志记录。
+- [x] **服务器修复**：在 `internal/api/server.go` 中添加了 `total` 的调试日志记录。
+- [x] **构建验证**：确认使用 `node scripts/build-native.js` 成功构建 `cliproxy-embed.exe`。
 
-### IPC Security Hardening Part 2
+### IPC 审计第 1 部分（前 10 个文件）
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 已完成对 `src/main/ipc` 前 10 个 handler 文件的审计、文档和重构。
+
+- [x] **重构**：将 `agent.ts`、`brain.ts`、`code-intelligence.ts` 和 `advanced-memory.ts` 转换为使用 `createSafeIpcHandler` / `createIpcHandler` 进行稳健的错误处理和日志记录。
+- [x] **类型安全**：修复了严格的类型问题，向 IPC wrappers 添加显式泛型（例如 `createSafeIpcHandler<void>`），并确保在修改的文件中不使用 `any`。
+- [x] **文档**：向 `auth.ts`、`chat.ts`、`db.ts`、`audit.ts`、`backup.ts` 和 `collaboration.ts` 中的所有导出 `register...` 函数和关键类添加了 JSDoc。
+- [x] **标准化**：尽可能统一错误响应形状，同时保留复杂 handlers （例如 `advancedMemory:deleteMany`）的遗留错误行为。
+
+### IPC 安全加固第 2 部分
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Extended IPC security improvements to remaining handler files with input validation, IPC wrappers, and rate limiting.
+- **Summary**: 将输入校验、IPC 包装器和限流机制扩展到其余 handler 文件。
 
-- [x] **process.ts**: Added comprehensive input validation (command, args, path, id), shell control character blocking, dimension bounds checking, and `createSafeIpcHandler` wrappers.
-- [x] **theme.ts**: Added theme ID/name validation with alphanumeric pattern enforcement, JSON size limits (1MB), custom theme validation, and `createIpcHandler`/`createSafeIpcHandler` wrappers for all 22 handlers.
-- [x] **prompt-templates.ts**: Already secure with IPC wrappers and string validation.
-- [x] **settings.ts**: Already secure with `createIpcHandler` wrappers and audit logging for sensitive changes.
-- [x] **token-estimation.ts**: Already secure with `createSafeIpcHandler` wrappers and array/string validation.
-- [x] **window.ts**: Already secure with sender validation, protocol allowlisting, and command sanitization.
+- [x] **process.ts**：添加了全面的输入验证（命令、参数、路径、id）、shell 控制字符阻止、维度边界检查和 `createSafeIpcHandler` wrappers。
+- [x] **theme.ts**：添加了带有字母数字模式强制执行的主题 ID/名称验证、JSON 大小限制 (1MB)、自定义主题验证以及所有 22 个 handlers 的 `createIpcHandler`/`createSafeIpcHandler` wrappers。
+- [x] **prompt-templates.ts**：已通过 IPC wrappers 和字符串验证确保安全。
+- [x] **settings.ts**：已使用 `createIpcHandler` wrappers 保证安全，并审核敏感更改的日志记录。
+- [x] **token-estimation.ts**：已经通过 `createSafeIpcHandler` wrappers 和数组/字符串验证确保安全。
+- [x] **window.ts**：已通过发件人验证、协议白名单和命令清理确保安全。
 
-### Lint Warning Cleanup
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Eliminated all ESLint warnings and errors across the codebase (114 → 0).
-
-- [x] **Nullish Coalescing**: Replaced `||` with `??` across `mcp-marketplace.ts` (5), `mcp-marketplace.service.ts` (7), `MCPStore.tsx` (1).
-- [x] **Unnecessary Conditions**: Removed redundant optional chains on required properties in `mcp-marketplace.service.ts`.
-- [x] **Type Safety**: Replaced `any[]` rest params with properly typed `Error` param in `agent-task-executor.ts`.
-- [x] **Non-null Assertions**: Replaced `config!` with guard clauses in `agent-task-executor.ts`.
-- [x] **Optional Chains**: Restructured condition in `getModelConfig` to use optional chaining properly.
-- [x] **Import Sorting**: Auto-fixed imports in `cost-estimation.service.ts` and `ExecutionPlanView.tsx`.
-- [x] **Unused Variables**: Removed unused catch variable in `agent-task-executor.ts`.
-
-### LLM Infrastructure & Localization
+### Lint 警告清理
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Consolidated LLM binaries and localized system messages/tools from Turkish to English.
+- **Summary**: 已清除全代码库 ESLint 警告与错误（114 -> 0）。
 
-- [x] **Binary Consolidation**: Moved `llama-server.exe` to `resources/bin/` and updated `LlamaService` to use the standardized path.
-- [x] **Internationalization**: Translated `Ollama` startup dialogs, `Chat` system prompts, and `Tool` definitions from Turkish to English across 6 core services.
-- [x] **Service Reliability**: Fixed missing resource logic and resource disposal in `PerformanceMonitorService`.
-- [x] **Standardization**: Both Go (`cliproxy-embed`) and C++ (`llama-server`) binaries now reside in `resources/bin/`.
+- [x] **无效合并**：在 `mcp-marketplace.ts` (5)、`mcp-marketplace.service.ts` (7)、`MCPStore.tsx` (1) 中将 `||` 替换为 `??`。
+- [x] **不必要的条件**：删除了 `mcp-marketplace.service.ts` 中所需属性上的冗余可选链。
+- [x] **类型安全**：用 `agent-task-executor.ts` 中正确键入的 `Error` 参数替换 `any[]` 其余参数。
+- [x] **非空断言**：用 `agent-task-executor.ts` 中的保护子句替换 `config!`。
+- [x] **可选链**：在 `getModelConfig` 中重构条件以正确使用可选链。
+- [x] **导入排序**：自动修复 `cost-estimation.service.ts` 和 `ExecutionPlanView.tsx` 中的导入。
+- [x] **未使用的变量**：删除了 `agent-task-executor.ts` 中未使用的 catch 变量。
 
-### Logo Generation System Refinement
+### LLM 基础设施与本地化
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 整合 LLM 二进制，并将系统消息/工具从土耳其语统一为英语。
+
+- [x] **二进制合并**：将 `llama-server.exe` 移至 `resources/bin/` 并更新 `LlamaService` 以使用标准化路径。
+- [x] **国际化**：将 `Ollama` 启动对话框、`Chat` 系统提示和 `Tool` 定义从土耳其语翻译成英语，涵盖 6 个核心服务。
+- [x] **服务可靠性**：修复了 `PerformanceMonitorService` 中缺失的资源逻辑和资源处置。
+- [x] **标准化**：Go (`cliproxy-embed`) 和 C++ (`llama-server`) 二进制文件现在都驻留在 `resources/bin/` 中。
+
+### Logo 生成系统优化
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Modernized the logo generation system for both Projects and Ideas. Added support for multiple models, styles, and batch generation (up to 4 logos at once). Improved UX with drag-and-drop file uploads and a refined selection UI.
+- **Summary**: 升级 Projects 与 Ideas 的 Logo 生成：多模型/风格、最多 4 个批量生成，以及更好的交互体验。
 
-- [x] **Project Logo Generator**: Complete redesign of `LogoGeneratorModal.tsx` with Model/Style selection.
-- [x] **Batch Generation**: Added support for generating multiple logos in a single request.
-- [x] **Drag-and-Drop**: Implemented file drop handling for manual logo application.
-- [x] **Idea Logo Generation**: Refactored `IdeaGeneratorService` to support mandatory model/style arguments and return multiple logo paths.
-- [x] **UI Components**: Created custom `Label` component and consolidated UI exports in `@/components/ui`.
-- [x] **Type Safety**: Achieved 100% type safety across the new logo generation IPC handlers and services.
+- [x] **项目徽标生成器**：通过模型/样式选择完全重新设计 `LogoGeneratorModal.tsx`。
+- [x] **批量生成**：添加了对在单个请求中生成多个徽标的支持。
+- [x] **拖放**：为手动徽标应用程序实现了文件放置处理。
+- [x] **Idea Logo Generation**：重构 `IdeaGeneratorService` 以支持强制模型/样式参数并返回多个徽标路径。
+- [x] **UI 组件**：创建了自定义 `Label` 组件并在 `@/components/ui` 中合并了 UI 导出。
+- [x] **类型安全**：在新徽标生成 IPC handlers 和服务中实现了 100% 类型安全。
 
-### Project Agent Git Automation (AGT-GIT-01..05)
+### Project Agent Git 自动化（AGT-GIT-01..05）
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Added task-scoped Git automation for Project Agent execution when a GitHub account is linked and a project is selected.
+- **Summary**: 当已关联 GitHub 账号并选择项目时，为 Project Agent 执行增加任务级 Git 自动化。
 
-- [x] **Branch Bootstrap**: Auto-creates an `agent/*` feature branch at execution start (direct run and approved-plan run), only when active GitHub account + selected git project are available.
-- [x] **Step Auto-Commit**: Auto-stages and commits after successful step completion.
-- [x] **Diff Preview**: Emits a diff stat preview into task logs before every auto-commit.
-- [x] **Create PR Node**: Added `create-pr` task node type and renderer/main bridge method to generate/open GitHub compare URL.
-- [x] **Branch Cleanup**: On task completion, checks out base branch and safely deletes auto-created feature branch (`git branch -d`).
-- [x] **Git Command Fixes**: Corrected `GitService` commit/unstage command syntax issues.
+- [x] **Branch Bootstrap**：仅当活动 GitHub 帐户 + 选定的 git 项目可用时，在执行开始时自动创建 `agent/*` 功能 branch （直接运行和批准计划运行）。
+- [x] **步骤自动提交**：成功完成步骤后自动暂存并提交。
+- [x] **差异预览**：在每次自动提交之前将差异统计预览发送到任务日志中。
+- [x] **创建 PR 节点**：添加了 `create-pr` 任务节点类型和渲染器/主桥方法来生成/打开 GitHub 比较 URL。
+- [x] **Branch 清理**：任务完成后，检查基本 branch 并安全删除自动创建的功能 branch (`git branch -d`)。
+- [x] **Git 命令修复**：更正了 `GitService` commit/unstage 命令语法问题。
 
-### Project Agent Human-in-the-Loop (AGT-HIL-01..05)
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Implemented comprehensive Human-in-the-Loop (HIL) controls for the Project Agent, allowing granular user intervention during plan execution.
-
-- [x] **Step Approvals**: Added `requiresApproval` flag and UI controls to pause execution and require explicit user approval before proceeding.
-- [x] **Step Skipping**: Implemented "Skip" functionality to bypass specific steps without halting the entire plan.
-- [x] **Inline Editing**: Enabled click-to-edit for pending step descriptions, allowing dynamic plan refinement.
-- [x] **Interventions**: Added "Insert Intervention" capability to inject manual pause points between steps.
-- [x] **Comments**: Implemented per-step commenting system for user notes and collaboration.
-- [x] **Visual Indicators**: Updated `StepIndicator` to strictly visualize `skipped` and `awaiting_approval` states with distinct icons.
-- [x] **Internationalization**: Full English and Turkish (fallback) localization for all HIL UI elements.
-
-### Project Agent Multi-Model Collaboration & Templates (AGT-COL-01..04, AGT-TPL-01..04)
+### Project Agent 人机协同控制（AGT-HIL-01..05）
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented Phase 7/8 end-to-end wiring across startup, service layer, IPC, preload bridge, and web mock bridge.
+- **Summary**: 为 Project Agent 实现了完整的人在回路（HIL）控制，支持计划执行期间的细粒度人工干预。
 
-- [x] **Step Model Assignment & Routing**: Enabled per-step model assignment and task-type routing with configurable routing rules.
-- [x] **Voting + Consensus**: Added voting sessions (create/submit/request/resolve/get) and consensus builder API for conflicting model outputs.
-- [x] **Template System**: Enabled built-in and user templates, category filtering, save/delete, export/import, and variable application with validation.
-- [x] **Runtime Integration**: Plan steps are now enriched with collaboration metadata before execution/approval.
-- [x] **Bridge/IPC Coverage**: Added typed IPC/preload/renderer bridge methods for all new collaboration/template operations.
-- [x] **Validation**: `npm run type-check` and `npm run build` pass.
+- [x] **步骤批准**：添加了 `requiresApproval` 标志和 UI 控件以暂停执行并在继续之前需要明确的用户批准。
+- [x] **步骤跳过**：实施“跳过”功能以绕过特定步骤，而无需停止整个计划。
+- [x] **内联编辑**：启用待处理步骤描述的点击编辑功能，允许动态计划细化。
+- [x] **干预**：添加了“插入干预”功能，可在步骤之间插入手动暂停点。
+- [x] **评论**：实现了用于用户注释和协作的每步骤评论系统。
+- [x] **视觉指示器**：更新了 `StepIndicator` 以使用不同的图标严格可视化 `skipped` 和 `awaiting_approval` 状态。
+- [x] **国际化**：所有 HIL UI 元素的完整英语和土耳其语 (fallback) 本地化。
 
-### Proxy Resilience & Process Management
+### Project Agent 多模型协作与模板（AGT-COL-01..04, AGT-TPL-01..04）
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Resolved startup crashes and process termination issues for the embedded Go proxy.
+- **Summary**: 完成了 Phase 7/8 在启动流程、服务层、IPC、preload bridge 与 web mock bridge 的端到端打通。
 
-- [x] **Auth Sync Resilience**: Modified the Go proxy to warning-log instead of fatal-exit if the initial auth sync fails, allowing it to start even if the Electron server is slightly delayed.
-- [x] **Process Lifecycle**: Removed `detached` mode in development to ensure the proxy process is correctly cleaned up by the main process.
-- [x] **Hardened Termination**: Improved `taskkill` logic on Windows using force (`/F`) and tree-kill (`/T`) flags with better error handling.
-- [x] **Port Verification**: Added pre-start port checking to ensure the proxy doesn't attempt to start on an occupied port.
+- [x] **步骤模型分配和路由**：启用每步骤模型分配和具有可配置路由规则的任务类型路由。
+- [x] **投票 + 共识**：为冲突的模型输出添加了投票会话（创建/提交/请求/解决/获取）和共识构建器 API。
+- [x] **模板系统**：启用内置和用户模板、类别过滤、保存/删除、导出/导入以及带验证的变量应用程序。
+- [x] **Runtime 集成**：计划步骤现在在执行/批准之前通过协作元数据得到丰富。
+- [x] **Bridge/IPC 覆盖**：为所有新协作/模板操作添加了类型化 IPC/preload/renderer 桥接方法。
+- [x] **验证**：`npm run type-check` 和 `npm run build` 通过。
 
-### Script Consolidation & Cleanup
+### 代理韧性与进程管理
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 解决了嵌入式 Go 代理的启动崩溃与进程终止问题。
+
+- [x] **身份验证同步弹性**：如果初始身份验证同步失败，则将 Go 代理修改为警告日志而不是致命退出，即使 Electron 服务器略有延迟，也允许它启动。
+- [x] **进程生命周期**：删除了开发中的 `detached` 模式，以确保代理进程被主进程正确清理。
+- [x] **强化终止**：使用强制 (`/F`) 和树终止 (`/T`) 标志改进了 Windows 上的 `taskkill` 逻辑，并具有更好的错误处理能力。
+- [x] **端口验证**：添加了启动前端口检查，以确保代理不会尝试在占用的端口上启动。
+
+### 脚本整合与清理
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Consolidated build environment setup scripts and standardized proxy binary management.
+- **Summary**: 整合构建环境脚本并统一代理二进制管理方式。
 
-- [x] **Proxy Consolidation**: Standardized `cliproxy-embed.exe` to `resources/bin/` with auto-rebuild integration in `ProxyProcessManager`.
-- [x] **Script Consolidation**: Merged `src/scripts/setup-build-env.js` and `scripts/setup-build-env.js` into a single root `scripts/setup-build-env.js` file.
-- [x] **VS Detection Integration**: Integrated Visual Studio version detection and `.npmrc` configuration into the main setup script.
-- [x] **Cleanup**: Removed redundant `src/scripts/` directory, orphaned `vendor/cmd`, `vendor/native`, `vendor/package`, and absolute `proxy.exe` and unused llama binaries.
+- [x] **代理合并**：将 `cliproxy-embed.exe` 标准化为 `resources/bin/`，并在 `ProxyProcessManager` 中自动重建集成。
+- [x] **脚本合并**：将 `src/scripts/setup-build-env.js` 和 `scripts/setup-build-env.js` 合并到单个根 `scripts/setup-build-env.js` 文件中。
+- [x] **VS 检测集成**：将 Visual Studio 版本检测和 `.npmrc` 配置集成到主安装脚本中。
+- [x] **清理**：删除了多余的 `src/scripts/` 目录，孤立的 `vendor/cmd`、`vendor/native`、`vendor/package` 和绝对 `proxy.exe` 以及未使用的 llama 二进制文件。
 
-### Workspace Explorer Polish & UX
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Significant performance and productivity overhaul for the workspace explorer.
-
-- [x] **Performance**: Parallelized `fs.stat` in `listDirectory` and optimized `readFile` with combined binary detection.
-- [x] **UX Stability**: Fixed infinite loading spinners/icons by optimizing React hook dependencies and adding state guards.
-- [x] **Multi-selection**: Implemented standard Ctrl/Cmd and Shift selection support.
-- [x] **Keyboard Navigation**: Added full keyboard control (Arrows, F2 for Rename, Delete/Del, Enter to Open/Toggle).
-- [x] **Batch Actions**: Added support for deleting multiple selected items simultaneously with confirmation.
-- [x] **DND Hardening**: Added distance (8px) and delay (250ms) thresholds to prevent accidental drag-and-drop operations.
-
-### Workspace File Operations (Delete & Drag-and-Drop)
+### Workspace Explorer 打磨与 UX 优化
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Implemented file system manipulation features in the workspace explorer, including secure deletion and VS Code-style drag-and-drop for moving files and folders.
+- **Summary**: 显著提升了 workspace explorer 的性能与生产力体验。
 
-- [x] **File Deletion**: Added "Delete" action to workspace context menu with confirmation modal.
-- [x] **Drag-and-Drop Move**: Integrated `@dnd-kit` to enable moving files and folders by dragging them onto target directories within the same mount.
-- [x] **Virtualization Support**: Ensured drag-and-drop works seamlessly with the virtualized tree view for large projects.
-- [x] **Type Safety**: achieved full type safety for Move/Delete operations and resolved multiple existing lint/type errors.
-- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules (fixed braces, function length, etc.) in modified hooks.
-- [x] **Bug Fix**: Resolved an incorrect IPC handler signature for `registerFilesIpc` in the main process.
+- [x] **性能**：在 `listDirectory` 中并行化 `fs.stat`，并通过组合二进制检测优化 `readFile`。
+- [x] **UX 稳定性**：通过优化 React 挂钩依赖项并添加状态防护，修复了无限加载旋转器/图标。
+- [x] **多重选择**：实现了标准 Ctrl/Cmd 和 Shift 选择支持。
+- [x] **键盘导航**：添加了完整的键盘控制（箭头、F2 用于重命名、删除/删除、Enter 用于打开/切换）。
+- [x] **批量操作**：添加了对同时删除多个选定项目并确认的支持。
+- [x] **DND 强化**：添加了距离（8 像素）和延迟（250 毫秒）阈值，以防止意外的拖放操作。
 
-### Workspace File Operations (DND Polish & Windows Support)
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Improved workspace explorer stability with DND activation constraints and fixed Windows path issues.
-
-- [x] **DND Hardening**: Implemented `distance` (8px) and `delay` (250ms) thresholds for `PointerSensor` to distinguish between clicks and drags.
-- [x] **Plan Step DND**: Applied similar constraints to AI plan step reordering to prevent accidental displacement.
-- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
-
-### Workspace File Operations (Windows Support & Localization)
+### Workspace 文件操作（删除与拖拽）
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed critical bugs in workspace file operations on Windows and localized the UI.
+- **Summary**: 在 workspace explorer 中实现了安全删除与 VS Code 风格的拖拽移动文件/文件夹。
 
-- [x] **Windows Path Support**: Fixed case-sensitivity in `isPathAllowed` within `FileSystemService` to prevent "Access Denied" errors on Windows.
-- [x] **Path Normalization**: Updated `createEntry`, `renameEntry`, and `moveEntry` to correctly handle Windows backslashes (`\`) and forward slashes (`/`).
-- [x] **UI Localization**: Added Turkish and English translations for workspace modal titles (Delete, Rename, Create).
-- [x] **Type Safety**: Ensured 100% type safety and resolved linting warnings.
+- [x] **文件删除**：通过确认模式向工作区上下文菜单添加了“删除”操作。
+- [x] **拖放移动**：集成 `@dnd-kit` 可以通过将文件和文件夹拖到同一安装中的目标目录来移动文件和文件夹。
+- [x] **虚拟化支持**：确保拖放与大型项目的虚拟化树视图无缝配合。
+- [x] **类型安全**：实现了移动/删除操作的完全类型安全，并解决了多个现有的 lint/类型错误。
+- [x] **NASA 规则**：确保修改后的钩子 100% 符合 NASA 的十次幂规则（固定支架、功能长度等）。
+- [x] **错误修复**：解决了主进程中 `registerFilesIpc` 的错误 IPC handler 签名。
+
+### Workspace 文件操作（DND 优化与 Windows 支持）
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 通过 DND 激活约束提升稳定性，并修复 Windows 路径问题。
+
+- [x] **DND 强化**：为 `PointerSensor` 实现了 `distance` (8px) 和 `delay` (250ms) 阈值，以区分单击和拖动。
+- [x] **计划步骤 DND**：对 AI 计划步骤重新排序应用类似的约束，以防止意外移位。
+- [x] **Windows 路径支持**：修复了 `FileSystemService` 中 `isPathAllowed` 的区分大小写问题，以防止 Windows 上出现“拒绝访问”错误。
+
+### Workspace 文件操作（Windows 支持与本地化）
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 修复 Windows 文件操作关键问题并完成界面本地化。
+
+- [x] **Windows 路径支持**：修复了 `FileSystemService` 中 `isPathAllowed` 的区分大小写问题，以防止 Windows 上出现“拒绝访问”错误。
+- [x] **路径规范化**：更新了 `createEntry`、`renameEntry` 和 `moveEntry` 以正确处理 Windows 反斜杠 (`\`) 和正斜杠 (`/`)。
+- [x] **UI 本地化**：为工作区模态标题添加了土耳其语和英语翻译（删除、重命名、创建）。
+- [x] **类型安全**：确保 100% 类型安全并解决了 linting 警告。
 
 ## [2026-02-10]
 
-### Debugging Codex Token Refresh
+### 调试 Codex 令牌刷新
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a race condition between the `tandem-token-service` (Node/Rust) and embedded Go Proxy that caused Codex (OpenAI) token reuse errors.
+- **Summary**: 解决了 `tandem-token-service` (Node/Rust) 和嵌入式 Go 代理之间导致 Codex (OpenAI) 令牌重用错误的竞争条件。
 
-- [x] **Race Condition Fix**: Modified `AuthAPIService` to hide `refresh_token` from the Go Proxy for `codex` provider, ensuring only `TokenService` manages refreshes (BUG-002).
-- [x] **Verification**: Validated fix with lint checks.
+- [x] **竞争条件修复**：修改了 `AuthAPIService` 以从 `codex` 提供程序的 Go 代理中隐藏 `refresh_token`，确保只有 `TokenService` 管理刷新 (BUG-002)。
+- [x] **验证**：通过 lint 检查验证修复。
 
-### Project Agent Visual Enhancements
+### 项目代理视觉增强
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented comprehensive visual enhancements for the Project Agent canvas, improving usability and feedback during plan execution.
+- **Summary**: 为项目代理画布实施了全面的视觉增强，提高了计划执行期间的可用性和反馈。
 
-- [x] **Animated Data Flow**: Added `AnimatedEdge` component to visualize active data flow between nodes (AGT-VIS-01).
-- [x] **Canvas Mini-Map**: Integrated `MiniMap` for easier navigation of large plan graphs (AGT-VIS-02).
-- [x] **Real-time Log Streaming**: Enhanced `LogConsole` with auto-scrolling and virtualized list support (AGT-VIS-03).
-- [x] **Drag & Drop Reordering**: Implemented drag-and-drop functionality for plan steps using `@dnd-kit` (AGT-VIS-04).
-- [x] **Collapsible Step Groups**: Added ability to group and collapse plan steps for better organization (AGT-VIS-05).
-- [x] **Zero Lint/Type Errors**: Ensured all new components pass strict linting and type checking.
+- [x] **动画数据流**：添加了 `AnimatedEdge` 组件以可视化节点之间的活动数据流 (AGT-VIS-01)。
+- [x] **画布迷你地图**：集成 `MiniMap` 以便更轻松地导航大型平面图 (AGT-VIS-02)。
+- [x] **实时日志流**：增强型 `LogConsole` 具有自动滚动和虚拟化列表支持 (AGT-VIS-03)。
+- [x] **拖放重新排序**：使用 `@dnd-kit` (AGT-VIS-04) 实现计划步骤的拖放功能。
+- [x] **可折叠步骤组**：增加了对计划步骤进行分组和折叠的功能，以实现更好的组织 (AGT-VIS-05)。
+- [x] **零 Lint/类型错误**：确保所有新组件都通过严格的 lint 和类型检查。
 
 ## [2026-02-09]
 
-### Advanced Terminal System - Phase 1
+### 先进终端系统 - 第一阶段
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a modular terminal architecture with plugin-based backends, user profiles, and workspace integration.
+- **Summary**: 实现了模块化终端架构，具有基于插件的后端、用户配置文件和工作区集成。
 
-- [x] **Modular Architecture**: Introduced `ITerminalBackend` interface and `NodePtyBackend` implementation.
-- [x] **Session Persistence**: Enhanced session management with asynchronous creation and backend-aware snapshots.
-- [x] **Terminal Profiles**: Added `TerminalProfileService` to manage custom shell configurations and environments.
-- [x] **Workspace Isolation**: Added `workspaceId` support to terminal sessions for per-project terminal isolation.
-- [x] **IPC Layer**: Updated IPC handlers to support profiles, backends, and reliable asynchronous session creation.
+- [x] **模块化架构**：引入了 `ITerminalBackend` 接口和 `NodePtyBackend` 实现。
+- [x] **会话持久性**：通过异步创建和后端感知快照增强会话管理。
+- [x] **终端配置文件**：添加了 `TerminalProfileService` 来管理自定义 shell 配置和环境。
+- [x] **工作区隔离**：为终端会话添加了 `workspaceId` 支持，以实现每个项目的终端隔离。
+- [x] **IPC 层**：更新了 IPC handlers 以支持配置文件、后端和可靠的异步会话创建。
 
-### Advanced Terminal System - Phase 2 (Alacritty)
+### 高级终端系统 - 第 2 阶段 (Alacritty)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the Alacritty backend for cross-platform GPU-accelerated terminal sessions.
+- **Summary**: 为跨平台 GPU 加速终端会话实现了 Alacritty 后端。
 
-- [x] **Alacritty Backend**: Added `AlacrittyBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `AlacrittyBackend` in `TerminalService`.
+- [x] **Alacritty 后端**：添加了具有自动发现和外部窗口生成功能的 `AlacrittyBackend` 实现。
+- [x] **后端注册**：在 `TerminalService` 中注册 `AlacrittyBackend`。
 
-### Advanced Terminal System - Phase 2 (Ghostty)
+### 高级终端系统 - 第 2 阶段（Ghostty）
 
 - **Type**: feature
 - **Status**: in_progress
-- **Summary**: Implemented the Ghostty backend for GPU-accelerated terminal sessions.
+- **Summary**: 为 GPU 加速终端会话实现了 Ghostty 后端。
 
-- [x] **Ghostty Backend**: Added `GhosttyBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `GhosttyBackend` in `TerminalService` for session management.
+- [x] **幽灵后端**：添加了具有自动发现和外部窗口生成功能的 `GhosttyBackend` 实现。
+- [x] **后端注册**：在 `TerminalService` 中注册 `GhosttyBackend` 以进行会话管理。
 
-### Advanced Terminal System - Phase 2 (Warp)
+### 高级终端系统 - 第 2 阶段（曲速）
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the Warp backend for modern AI-powered terminal sessions.
+- **Summary**: 为现代人工智能驱动的终端会话实现了 Warp 后端。
 
-- [x] **Warp Backend**: Added `WarpBackend` implementation with auto-discovery and external window spawning.
-- [x] **Backend Registration**: Registered `WarpBackend` in `TerminalService`.
+- [x] **Warp 后端**：添加了具有自动发现和外部窗口生成功能的 `WarpBackend` 实现。
+- [x] **后端注册**：在 `TerminalService` 中注册 `WarpBackend`。
 
-### Database Stability & Stale Port Handling
+### 数据库稳定性和过时端口处理
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Database Stability & Stale Port Handling improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: 数据库稳定性和过时端口处理改进了关键工作流程中的 runtime 性能、稳定性和操作一致性。
 
-- Fixed: `DatabaseClientService` now correctly handles `db-service` restarts and stale ports.
-- Added: Stale port re-discovery mechanism in `DatabaseClientService.apiCall`.
-- Added: Event listener in `DatabaseClientService` for `db-service:ready` to update cached port automatically.
-- Improved: `ProcessManagerService` now clears cached ports on connection errors (`ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`).
-- Technical Debt: Improved reliability of local service communication across app restarts.
-## 2026-02-09 (Update 30): ✨ Chat UI Polish & Math Rendering Improvements
-**Status**: ✅ COMPLETED
-**Summary**: Removed message collapsing functionality for a better reading experience and significantly improved mathematical equation rendering.
-- [x] **Message Collapsing**: Removed `COLLAPSE_THRESHOLD` and all logic related to partial message rendering. Messages are now always displayed in full.
-- [x] **Math Styling**: Improved KaTeX rendering by removing background colors, increasing font size (1.15em), and ensuring perfect theme synchronization.
-- [x] **Type Safety**: Hardened type safety in `MessageBubble.tsx` by replacing `unknown`/`any` in quota handling with a strict `QuotaErrorResponse` interface.
-- [x] **Code Quality**: Cleaned up unused imports and obsolete props/interfaces related to the collapse functionality.
-## 2026-02-08 (Update 29): 🤖 AGT Checkpoint & Recovery Completion (AGT-CP-01..06)
-**Status**: ✅ COMPLETED
-**Summary**: Completed AGT checkpoint/recovery phase with a unified UAC-backed checkpoint service, rollback support, plan version history, and legacy IPC compatibility.
-- [x] **AGT-CP-01**: Added `uac_checkpoints` schema and indexes in `UacRepository`.
-- [x] **AGT-CP-02**: Added `AgentCheckpointService` facade for snapshot serialization/hydration and checkpoint orchestration.
-- [x] **AGT-CP-03**: Wired auto-checkpoint saves on step completion and state sync through `ProjectAgentService`.
-- [x] **AGT-CP-04**: Stabilized resume-from-checkpoint flow and aligned with renderer history/sidebar usage.
-- [x] **AGT-CP-05**: Implemented rollback-to-checkpoint with pre-rollback snapshot guard and UI rollback action.
-- [x] **AGT-CP-06**: Added `uac_plan_versions` schema and version tracking for proposed/approved/rollback plan states.
-- [x] **IPC Compatibility**: Added batchable `project-agent:*` compatibility handlers and new `project:rollback-checkpoint` / `project:get-plan-versions` endpoints.
-## 2026-02-08 (Update 28): 🌐 Internationalization (Phase 4) - Sidebar Components
-**Status**: ✅ COMPLETED
-**Summary**: Successfully implemented Phase 4 of the internationalization (i18n) project, focusing on the remaining layout components within the sidebar.
-- [x] **Sidebar Localization**: Localized `SidebarNavigation`, `WorkspaceSection`, `ToolsSection`, and `ProvidersSection`.
-- [x] **Hardcoded String Removal**: Replaced hardcoded labels for Memory, Agent, Docker, Terminal, and AI providers with localized strings.
-- [x] **Translation Synchronization**: Added missing keys to `en.ts` and `tr.ts` to support sidebar localization.
-- [x] **Quality Control**: Confirmed compliance with `npm run lint` and `npm run type-check` (zero errors).
-## 2026-02-08 (Update 27): 🌐 Internationalization (Phase 3) - Layout & Settings
-**Status**: ✅ COMPLETED
-**Summary**: Successfully implemented Phase 3 of the internationalization (i18n) project, focusing on layout and settings components. Unified MCP i18n keys and refactored the MCP Servers tab for better performance and compliance.
-- [x] **Settings Tabs Localization**: Internationalized `General`, `Appearance`, `Accounts`, `Developer`, `Models`, `Speech`, `Statistics`, and `MCP` settings tabs.
-- [x] **MCP i18n Consolidation**: Unified disparate `mcp` translation blocks in `en.ts` and `tr.ts` into a single root block for consistency.
-- [x] **MCPServersTab Refactor**: Completely refactored `MCPServersTab.tsx` to reduce complexity (from 21 to low single digits), extracted `ServerItem` component, and replaced `console.log` with `appLogger` (NASA rules).
-- [x] **Layout Verification**: Audited and confirmed i18n compliance for `AppHeader`, `ActivityBar`, `StatusBar`, `TitleBar`, `CommandPalette`, and `QuickActionBar`.
-- [x] **Quality Control**: Achieved 100% pass rate on `npm run build`, `npm run lint`, and `npm run type-check`.
-## 2026-02-08 (Update 26): 📝 Component Inventory & Documentation
-**Status**: ✅ COMPLETED
-**Summary**: Created a comprehensive inventory of all React components in the `src/renderer` directory (330+ files) and generated a checklist for tracking.
-- [x] **Component Audit**: Scanned all subdirectories in `src/renderer` to identify every `.tsx` component.
-- [x] **Checklist Generation**: Created `docs/components_checklist.md` with links and checkboxes for all components.
-- [x] **Security/Secrecy**: Updated `.gitignore` to ensure the checklist remains local and is not pushed to GitHub.
-## 2026-02-08 (Update 25): 🚀 Performance Optimizations & Terminal System V2 Planning
-**Status**: ✅ COMPLETED (Planning Phase)
-**Summary**: Implemented UZAY-level (space-grade) performance optimizations for build system, created comprehensive Performance Monitor Service, and designed next-generation terminal system architecture.
-### 🚀 Build Performance Optimizations
-- [x] **Aggressive Code Splitting**: 12 separate chunks (react-core, monaco, react-flow, ui-libs, syntax, katex, markdown, virtualization, icons, charts, vendor)
-- [x] **Terser Minification**: 2-pass optimization, console.log removal, comment stripping
-- [x] **Tree Shaking**: Preset recommended, no side effects on external modules
-- [x] **Build Cleanup**: Auto-delete old dist files on each build (emptyOutDir)
-- [x] **Cache Optimization**: Hashed file names for browser caching
-- [x] **Main Process Minification**: esbuild with code splitting (mcp-servers, services, ipc-handlers)
-- [x] **Preload Minification**: esbuild optimization
-### ⚡ Performance Monitor Service
-- [x] **Real-time Monitoring**: Memory (30s intervals), CPU, IPC latency, DB queries, LLM responses
-- [x] **Startup Metrics**: Track appReady, windowReady, servicesInit, databaseInit
-- [x] **Space-Grade Alerts**: Memory >1GB, IPC >100ms, DB query >50ms, CPU >80%
-- [x] **Resource Tracking**: Garbage collection support, file handle counting
-- [x] **Performance API**: `measure()`, `recordDuration()`, `getSummary()`, `getResourceUsage()`
-### 🖥️ Terminal System V2 Architecture
-- [x] **33 Terminal Tasks**: 5 phases covering infrastructure, backends, features, UI, performance
-- [x] **Backend Integrations**: Ghostty, Alacritty, Warp, WezTerm, Windows Terminal, Kitty, xterm.js fallback
-- [x] **Advanced Features**: Split panes, AI suggestions, semantic parsing, recording, remote terminals
-- [x] **Architecture Document**: Comprehensive design spec (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
-### 📊 Build Results
-- **Renderer Build**: 3m 26s
-- **Main Process**: 12.27s
-- **Preload**: 67ms
-- **Monaco Editor**: 3.75MB (lazy loaded)
-- **Largest Chunks**: Reduced via intelligent splitting
-### 📝 Files Created/Modified
-- `src/main/services/performance/performance-monitor.service.ts` - Space-grade monitoring
-- `docs/architecture/TERMINAL_SYSTEM_V2.md` - Terminal system design
-- `docs/TODO.md` - Added 33 terminal system tasks
-- `vite.config.ts` - Comprehensive build optimizations
-- `package.json` - Added terser, @types/uuid
-## 2026-02-08 (Update 24): ✨ Visual & UX Excellence - Animations & Polish
-**Status**: ✅ COMPLETED
-**Summary**: Enhanced the visual polish and user experience with micro-animations, chat UI improvements, and 3D interactions. Conducted a color contrast accessibility audit.
-### ✨ Animations & Interactions
-- [x] **Modal Springs**: Implemented spring-based pop-in animations for all modals using custom CSS keyframes.
-- [x] **List Transitions**: Added fade-in/slide-in animations for sidebar chat list insertions.
-- [x] **Card Flips**: Implemented 3D card flip animation for Idea cards to reveal technical details.
-- [x] **Micro-interactions**: Added smooth rotation for the Settings gear and hover-to-reveal effects for timestamps.
-### 🎨 UI Polish
-- **Chat Experience**: Added message bubble tails and a bouncing dot typing indicator.
-- **Loading States**: Implemented a shimmering skeleton loader for initial message states.
-- **Visual Feedback**: Added vibrant gradient borders for high-potential ideas.
-### ♿ Accessibility
-- **Contrast Audit**: Conducted WCAG 2.1 contrast audit for primary colors (findings in `contrast_audit.md`).
-### 📝 Files Modified
-- `src/renderer/index.css` - Custom animations and utilities
-- `src/renderer/features/chat/components/*` - Message bubbles, list, skeleton, typing indicator
-- `src/renderer/features/ideas/components/IdeaCard.tsx` - Flip animation and styles
-- `src/renderer/components/ui/modal.tsx` - Animation integration
-- `src/renderer/components/layout/sidebar/*` - List animations and footer rotation
-## 2026-02-08 (Update 23): 🤖 GitHub Actions Automation & Marketplace Planning
-**Status**: ✅ COMPLETED
-**Summary**: Enhanced CI/CD infrastructure with automated workflow cleanup and added comprehensive marketplace system planning for VSCode-style extensions.
-### 🤖 GitHub Actions Automation
-- [x] **Cleanup Workflow**: Created automated workflow to clean old runs (Sundays, UTC midnight)
-- [x] **Cleanup Scripts**: Node.js and PowerShell scripts for manual workflow run deletion
-- [x] **CI/CD Fixes**: Simplified CI workflow, enhanced release workflow with Rust/Go toolchains
-- [x] **Git LFS Support**: Added Git LFS checkout to both CI and release workflows
-- [x] **NPM Scripts**: Added `gh:cleanup`, `gh:cleanup:all`, `gh:cleanup:dry` commands
-### 🛍️ Marketplace System Planning
-- [x] **Architecture Design**: Added 25 marketplace tasks across 5 phases
-- [x] **Extension Types**: MCP servers, themes, commands, languages, agent templates
-- [x] **Security Model**: Signing, sandboxing, code review, user ratings
-- [x] **Developer Experience**: SDK, documentation, testing framework, publishing workflow
-### 📝 Files Created/Modified
-- `.github/workflows/cleanup.yml` - Automated workflow cleanup (weekly)
-- `scripts/cleanup-workflow-runs.js` - Node.js cleanup script
-- `scripts/cleanup-workflow-runs.ps1` - PowerShell cleanup script
-- `scripts/README-workflow-cleanup.md` - Comprehensive documentation
-- `package.json` - Added gh:cleanup npm scripts
-- `docs/TODO.md` - Added 25 marketplace tasks, marked security work complete
-- `docs/CHANGELOG.md` - This update
-## 2026-02-08 (Update 22): 🔒 MCP Security Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Implemented comprehensive security improvements across all 13 MCP (Model Context Protocol) servers covering 34 services and 80+ actions. Added validation framework, rate limiting, audit logging, encryption, path traversal protection, SSRF prevention, and command injection protection.
-### 🔐 Security Frameworks
-- [x] **Validation Framework**: 6 validators (string, number, path, URL, git command, SSH command)
-- [x] **Rate Limiting**: Token bucket algorithm with 13 MCP-specific rate limits
-- [x] **Audit Logging**: Comprehensive logging of all MCP operations with timing and error tracking
-- [x] **Encryption at Rest**: Memory storage encrypted using Electron safeStorage
-### 🛡️ Server-Specific Hardening
-- [x] **Git Server**: Command injection prevention, timeout protection (30s)
-- [x] **Network Server**: SSRF protection via URL validation and IP filtering
-- [x] **Filesystem Server**: Path traversal protection on all 26 operations, symlink detection
-- [x] **SSH Server**: Command sanitization, host validation
-- [x] **Database Server**: Pagination (1-100 limit), size limits (10KB embeddings, 1MB base64)
-- [x] **Intelligence Server**: Memory recall bounds (1-100), timeout protection (2min/1min)
-- [x] **Project Server**: Scan path validation against allowedFileRoots
-### 📝 Files Modified (20 Files)
-- `src/main/mcp/server-utils.ts` - Validation framework, audit logging integration
-- `src/main/services/security/rate-limit.service.ts` - 13 MCP rate limits
-- `src/main/mcp/servers/*.ts` - All 12 MCP server files hardened
-- `src/main/services/external/utility.service.ts` - Memory encryption
-- `src/main/startup/services.ts` - DI configuration
-- `.claude/projects/.../memory/MEMORY.md` - Comprehensive documentation
-### ✅ All 20 Security Tasks Completed
-1. Validation framework 2. Git injection fixes 3. Network SSRF 4. SSH hardening 5. Internet URL validation 6. UI clipboard 7. LLM quota 8. Rate limiting 9. Audit logging 10. Memory encryption 11. DB pagination 12. DB size limits 13. FS path traversal 14. FS symlinks 15. FS size limits 16. Docker env 17. GitHub auth 18. Clipboard consent 19. Memory bounds 20. Idea timeouts
-## 2026-02-06 (Update 21): 💾 Agent Canvas Persistence
-**Status**: ✅ COMPLETED
-**Summary**: Implemented canvas state persistence for the autonomous agent system. Task nodes and edges are now saved to the database and automatically restored when the application restarts.
-### 💾 Persistence Features
-- [x] **Database Schema**: Added `uac_canvas_nodes` and `uac_canvas_edges` tables to store canvas state.
-- [x] **Repository Methods**: Implemented CRUD operations in `UacRepository` for canvas nodes and edges.
-- [x] **IPC Handlers**: Added IPC handlers for `save/get/delete` canvas nodes and edges.
-- [x] **Auto-Save**: Canvas state is automatically saved with 500ms debounce when nodes or edges change.
-- [x] **Auto-Load**: Canvas state is restored on app startup before user interaction.
-### 📝 Files Modified
-- `src/main/services/data/repositories/uac.repository.ts` - Added canvas tables and methods
-- `src/main/ipc/project-agent.ts` - Added canvas persistence IPC handlers
-- `src/main/startup/ipc.ts` - Passed databaseService to registerProjectAgentIpc
-- `src/main/preload.ts` - Added canvas API to preload bridge
-- `src/renderer/electron.d.ts` - Added canvas API types
-- `src/renderer/web-bridge.ts` - Added canvas API stubs
-- `src/renderer/features/project-agent/ProjectAgentView.tsx` - Implemented load/save logic
-## 2026-02-06 (Update 20): 🤖 Agent System Token Tracking & Visual Enhancements
-**Status**: ✅ COMPLETED
-**Summary**: Implemented token usage tracking and visual enhancements for the autonomous agent system, including real-time token counters, step timing display, and progress ring indicators.
-### 🤖 Agent System Enhancements
-- [x] **Token Tracking Backend**: Added `currentStepTokens` tracking in `ProjectAgentService` to accumulate token usage per step from LLM stream chunks.
-- [x] **Step Timing**: Implemented `startStep()` and `completeStep()` helper methods that record timing data (startedAt, completedAt, durationMs) for each plan step.
-- [x] **Type Definitions**: Extended `ProjectStep` and `ProjectState` interfaces with `tokens` and `timing` fields.
-### 🎨 UI Enhancements
-- [x] **Token Counter Component**: Created `TokenCounter` component displaying token usage with formatted numbers (1.2k, 5.5k) and duration (ms/s/m).
-- [x] **Progress Ring**: Implemented `ProgressRing` SVG component showing circular progress around the task node icon during execution.
-- [x] **Step-Level Tokens**: Added token and timing display for each completed/running step in the plan list.
-- [x] **Total Tokens**: Added aggregate token counter and total duration in the progress bar area.
-### 📝 Files Modified
+- 已修复：`DatabaseClientService` 现在可以正确处理 `db-service` 重新启动和陈旧端口。
+- 添加：`DatabaseClientService.apiCall` 中的过时端口重新发现机制。
+- 添加：`DatabaseClientService` 中的事件监听器用于 `db-service:ready` 自动更新缓存端口。
+- 改进：`ProcessManagerService` 现在会清除连接错误时的缓存端口（`ECONNREFUSED`、`ETIMEDOUT`、`ECONNRESET`）。
+- 技术债务：提高了应用程序重新启动时本地服务通信的可靠性。
+## 2026-02-09（更新 30）：✨ 聊天 UI 波兰语和数学渲染改进
+**状态**： ✅ 已完成
+**摘要**：删除了消息折叠功能，以获得更好的阅读体验并显着改进了数学方程渲染。
+- [x] **消息折叠**：删除了 `COLLAPSE_THRESHOLD` 以及与部分消息呈现相关的所有逻辑。消息现在始终完整显示。
+- [x] **数学样式**：通过删除背景颜色、增加字体大小（1.15em）并确保完美的主题同步来改进 KaTeX 渲染。
+- [x] **类型安全**：通过使用严格的 `QuotaErrorResponse` 接口替换配额处理中的 `unknown`/`any` 来强化 `MessageBubble.tsx` 中的类型安全性。
+- [x] **代码质量**：清理了与折叠功能相关的未使用的导入和过时的道具/接口。
+## 2026-02-08（更新 29）：🤖 AGT 检查点和恢复完成（AGT-CP-01..06）
+**状态**： ✅ 已完成
+**摘要**：通过统一的 UAC 支持的检查点服务、回滚支持、计划版本历史记录和旧版 IPC 兼容性，完成了 AGT 检查点/恢复阶段。
+- [x] **AGT-CP-01**：在 `UacRepository` 中添加了 `uac_checkpoints` 架构和索引。
+- [x] **AGT-CP-02**：添加了 `AgentCheckpointService` 外观，用于快照序列化/水合作用和检查点编排。
+- [x] **AGT-CP-03**：有线自动检查点通过 `ProjectAgentService` 保存步骤完成和状态同步。
+- [x] **AGT-CP-04**：稳定从检查点恢复流程并与渲染器历史/侧边栏使用情况保持一致。
+- [x] **AGT-CP-05**：通过预回滚快照保护和 UI 回滚操作实现回滚到检查点。
+- [x] **AGT-CP-06**：为提议/批准/回滚计划状态添加了 `uac_plan_versions` 架构和版本跟踪。
+- [x] **IPC 兼容性**：添加了可批处理的 `project-agent:*` 兼容性 handlers 和新的 `project:rollback-checkpoint` / `project:get-plan-versions` 端点。
+## 2026-02-08（更新 28）：🌐 国际化（第 4 阶段）- 侧边栏组件
+**状态**： ✅ 已完成
+**摘要**：成功实施了国际化 (i18n) 项目的第四阶段，重点关注侧边栏中的其余布局组件。
+- [x] **侧边栏本地化**：本地化的 `SidebarNavigation`、`WorkspaceSection`、`ToolsSection` 和 `ProvidersSection`。
+- [x] **硬编码字符串删除**：用本地化字符串替换内存、代理、Docker、终端和 AI 提供程序的硬编码标签。
+- [x] **翻译同步**：向 `en.ts` 和 `tr.ts` 添加了缺失的键以支持侧边栏本地化。
+- [x] **质量控制**：确认符合 `npm run lint` 和 `npm run type-check` （零错误）。
+## 2026-02-08（更新 27）：🌐 国际化（第 3 阶段）- 布局和设置
+**状态**： ✅ 已完成
+**摘要**：成功实施了国际化 (i18n) 项目的第三阶段，重点关注布局和设置组件。统一了 MCP i18n 密钥并重构了 MCP 服务器选项卡，以实现更好的性能和合规性。
+- [x] **设置选项卡本地化**：国际化 `General`、`Appearance`、`Accounts`、`Developer`、`Models`、`Speech`、`Statistics` 和 `MCP` 设置选项卡。
+- [x] **MCP i18n 整合**：将 `en.ts` 和 `tr.ts` 中不同的 `mcp` 翻译块统一到单个根块中以保持一致性。
+- [x] **MCPServersTab 重构**：完全重构 `MCPServersTab.tsx` 以降低复杂性（从 21 到低个位数），提取 `ServerItem` 组件，并用 `appLogger` 替换 `console.log` （NASA 规则）。
+- [x] **布局验证**：审核并确认 `AppHeader`、`ActivityBar`、`StatusBar`、`TitleBar`、`CommandPalette` 和 `QuickActionBar` 的 i18n 合规性。
+- [x] **质量控制**：`npm run build`、`npm run lint` 和 `npm run type-check` 实现 100% 通过率。
+## 2026-02-08（更新 26）：📝 组件库存和文档
+**状态**： ✅ 已完成
+**摘要**：创建了 `src/renderer` 目录（330 多个文件）中所有 React 组件的全面清单，并生成了用于跟踪的清单。
+- [x] **组件审核**：扫描 `src/renderer` 中的所有子目录以识别每个 `.tsx` 组件。
+- [x] **清单生成**：创建了 `docs/components_checklist.md` ，其中包含所有组件的链接和复选框。
+- [x] **安全/保密**：更新了 `.gitignore` 以确保检查列表保留在本地并且不会推送到 GitHub。
+## 2026-02-08（更新25）：🚀 性能优化和终端系统V2规划
+**状态**： ✅ 已完成（规划阶段）
+**总结**：对构建系统实施了UZAY级（航天级）性能优化，创建了全面的性能监控服务，并设计了下一代终端系统架构。
+### 🚀 构建性能优化
+- [x] **积极的代码分割**：12个独立的块（react-core、monaco、react-flow、ui-libs、语法、katex、markdown、虚拟化、图标、图表、供应商）
+- [x] **Terser Minification**：2 遍优化、console.log 删除、注释剥离
+- [x] **Tree Shaking**：推荐预设，对外部模块没有副作用
+- [x] **构建清理**：自动删除每个构建上的旧 dist 文件 (emptyOutDir)
+- [x] **缓存优化**：用于浏览器缓存的哈希文件名
+- [x] **主进程缩小**：带有代码分割的 esbuild（mcp-servers、services、ipc-handlers）
+- [x] **预加载缩小**：esbuild 优化
+### ⚡ 性能监控服务
+- [x] **实时监控**：内存（30 秒间隔）、CPU、IPC 延迟、数据库查询、LLM 响应
+- [x] **启动指标**：跟踪 appReady、windowReady、servicesInit、databaseInit
+- [x] **太空级警报**：内存 >1GB，IPC >100ms，数据库查询 >50ms，CPU >80%
+- [x] **资源跟踪**：垃圾收集支持、文件句柄计数
+- [x] **性能 API**：`measure()`、`recordDuration()`、`getSummary()`、`getResourceUsage()`
+### 🖥️终端系统V2架构
+- [x] **33 个终端任务**：5 个阶段，涵盖基础设施、后端、功能、UI、性能
+- [x] **后端集成**：Ghostty、Alacritty、Warp、WezTerm、Windows Terminal、Kitty、xterm.js fallback
+- [x] **高级功能**：分割窗格、人工智能建议、语义解析、记录、远程终端
+- [x] **架构文档**：综合设计规范 (`docs/architecture/TERMINAL_SYSTEM_V2.md`)
+### 📊 构建结果
+- **渲染器构建**：3m 26s
+- **主进程**：12.27s
+- **预载**：67ms
+- **摩纳哥编辑器**：3.75MB（延迟加载）
+- **最大块**：通过智能分割减少
+### 📝 创建/修改的文件
+- `src/main/services/performance/performance-monitor.service.ts` - 太空级监控
+- `docs/architecture/TERMINAL_SYSTEM_V2.md` - 终端系统设计
+- `docs/TODO.md` - 添加了 33 个终端系统任务
+- `vite.config.ts` - 全面的构建优化
+- `package.json` - 添加了 terser，@types/uuid
+## 2026-02-08（更新 24）：✨ 视觉和 UX 卓越 - 动画和波兰语
+**状态**： ✅ 已完成
+**摘要**：通过微动画、聊天 UI 改进和 3D 交互增强了视觉效果和用户体验。进行了颜色对比可访问性审核。
+### ✨ 动画和互动
+- [x] **模态弹簧**：使用自定义 CSS 关键帧为所有模态实现基于弹簧的弹出动画。
+- [x] **列表转换**：为侧边栏聊天列表插入添加了淡入/滑入动画。
+- [x] **卡片翻转**：为创意卡片实现了 3D 卡片翻转动画，以揭示技术细节。
+- [x] **微交互**：为设置齿轮添加了平滑旋转，并为时间戳添加了悬停显示效果。
+### 🎨 UI 波兰语
+- **聊天体验**：添加了消息气泡尾部和弹跳点键入指示器。
+- **加载状态**：为初始消息状态实现了一个闪烁的骨架加载器。
+- **视觉反馈**：为高潜力的想法添加了充满活力的渐变边框。
+### ♿ 辅助功能
+- **对比度审核**：对原色进行 WCAG 2.1 对比度审核（`contrast_audit.md` 中的结果）。
+### 📝 文件已修改
+- `src/renderer/index.css` - 自定义动画和实用程序
+- `src/renderer/features/chat/components/*` - 消息气泡、列表、框架、输入指示器
+- `src/renderer/features/ideas/components/IdeaCard.tsx` - 翻转动画和样式
+- `src/renderer/components/ui/modal.tsx` - 动画集成
+- `src/renderer/components/layout/sidebar/*` - 列表动画和页脚旋转
+## 2026-02-08（更新 23）：🤖 GitHub Actions 自动化和Marketplace规划
+**状态**： ✅ 已完成
+**摘要**：增强了 CI/CD 基础设施，具有自动工作流程清理功能，并为 VSCode 式扩展添加了全面的Marketplace系统规划。
+### 🤖 GitHub 操作自动化
+- [x] **清理工作流程**：创建自动化工作流程来清理旧运行（星期日，UTC 午夜）
+- [x] **清理脚本**：用于手动工作流程运行删除的 Node.js 和 PowerShell 脚本
+- [x] **CI/CD 修复**：简化 CI 工作流程，使用 Rust/Go 工具链增强发布工作流程
+- [x] **Git LFS 支持**：向 CI 和发布工作流程添加了 Git LFS 签出
+- [x] **NPM 脚本**：添加了 `gh:cleanup`、`gh:cleanup:all`、`gh:cleanup:dry` 命令
+### 🛍️ Marketplace系统规划
+- [x] **架构设计**：在 5 个阶段添加了 25 个Marketplace任务
+- [x] **扩展类型**：MCP 服务器、主题、命令、语言、代理模板
+- [x] **安全模型**：签名、沙箱、代码审查、用户评级
+- [x] **开发人员体验**：SDK、文档、测试框架、发布工作流程
+### 📝 创建/修改的文件
+- `.github/workflows/cleanup.yml` - 自动工作流程清理（每周）
+- `scripts/cleanup-workflow-runs.js` - Node.js 清理脚本
+- `scripts/cleanup-workflow-runs.ps1` - PowerShell 清理脚本
+- `scripts/README-workflow-cleanup.md` - 综合文档
+- `package.json` - 添加了 gh:cleanup npm 脚本
+- `docs/TODO.md` - 添加了 25 个Marketplace任务，标记安全工作已完成
+- `docs/CHANGELOG.md` - 此更新
+## 2026-02-08（更新 22）：🔒 MCP 安全强化
+**状态**： ✅ 已完成
+**摘要**：在所有 13 个 MCP（模型上下文协议）服务器上实施了全面的安全改进，涵盖 34 项服务和 80 多项操作。添加了验证框架、速率限制、审核日志记录、加密、路径遍历保护、SSRF 预防和命令注入保护。
+### 🔐 安全框架
+- [x] **验证框架**：6个验证器（字符串、数字、路径、URL、git命令、SSH命令）
+- [x] **速率限制**：具有 13 个 MCP 特定速率限制的令牌桶算法
+- [x] **审核日志记录**：通过计时和错误跟踪全面记录所有 MCP 操作
+- [x] **静态加密**：使用 Electron safeStorage 加密的内存存储
+### 🛡️ 服务器特定的强化
+- [x] **Git Server**：命令注入预防、超时保护（30s）
+- [x] **网络服务器**：通过 URL 验证和 IP 过滤进行 SSRF 保护
+- [x] **文件系统服务器**：所有 26 个操作的路径遍历保护、符号链接检测
+- [x] **SSH 服务器**：命令清理、主机验证
+- [x] **数据库服务器**：分页（1-100 限制）、大小限制（10KB 嵌入、1MB base64）
+- [x] **智能服务器**：内存调用范围（1-100），超时保护（2分钟/1分钟）
+- [x] **Project Server**：针对 allowedFileRoots 扫描路径验证
+### 📝 已修改文件（20 个文件）
+- `src/main/mcp/server-utils.ts` - 验证框架、审计日志记录集成
+- `src/main/services/security/rate-limit.service.ts` - 13 个 MCP 速率限制
+- `src/main/mcp/servers/*.ts` - 所有 12 个 MCP 服务器文件均经过强化
+- `src/main/services/external/utility.service.ts` - 内存加密
+- `src/main/startup/services.ts` - DI 配置
+- `.claude/projects/.../memory/MEMORY.md` - 综合文档
+### ✅ 全部 20 项安全任务已完成
+1. 验证框架 2. Git 注入修复 3. 网络 SSRF 4. SSH 强化 5. Internet URL 验证 6. UI 剪贴板 7. LLM 配额 8. 速率限制 9. 审核日志记录 10. 内存加密 11. 数据库分页 12. 数据库大小限制 13. FS 路径遍历 14. FS 符号链接 15. FS 大小限制 16. Docker env 17. GitHub 身份验证 18. 剪贴板同意 19. 内存限制 20. Idea 超时
+## 2026-02-06（更新 21）：💾 Agent Canvas 持久化
+**状态**： ✅ 已完成
+**摘要**：为自主代理系统实现了画布状态持久性。任务节点和边现在保存到数据库中，并在应用程序重新启动时自动恢复。
+### 💾 持久化特性
+- [x] **数据库架构**：添加了 `uac_canvas_nodes` 和 `uac_canvas_edges` 表来存储画布状态。
+- [x] **存储库方法**：在 `UacRepository` 中为画布节点和边实现 CRUD 操作。
+- [x] **IPC Handlers**：为 `save/get/delete` 画布节点和边缘添加了 IPC handlers。
+- [x] **自动保存**：当节点或边发生变化时，画布状态会自动保存，并具有 500 毫秒的去抖动。
+- [x] **自动加载**：在用户交互之前应用程序启动时恢复画布状态。
+### 📝 文件已修改
+- `src/main/services/data/repositories/uac.repository.ts` - 添加了画布表和方法
+- `src/main/ipc/project-agent.ts` - 添加了画布持久性 IPC handlers
+- `src/main/startup/ipc.ts` - 将databaseService传递给registerProjectAgentIpc
+- `src/main/preload.ts` - 添加画布 API 到预加载桥
+- `src/renderer/electron.d.ts` - 添加了画布 API 类型
+- `src/renderer/web-bridge.ts` - 添加了画布 API 存根
+- `src/renderer/features/project-agent/ProjectAgentView.tsx` - 实现加载/保存逻辑
+## 2026-02-06（更新 20）：🤖 代理系统令牌跟踪和视觉增强
+**状态**： ✅ 已完成
+**摘要**：为自主代理系统实现了令牌使用跟踪和视觉增强，包括实时令牌计数器、步骤计时显示和进度环指示器。
+### 🤖 代理系统增强
+- [x] **令牌跟踪后端**：在 `ProjectAgentService` 中添加了 `currentStepTokens` 跟踪，以累积 LLM 流块中每个步骤的令牌使用情况。
+- [x] **步骤计时**：实现了 `startStep()` 和 `completeStep()` 辅助方法，记录每个计划步骤的计时数据（startedAt、completedAt、durationMs）。
+- [x] **类型定义**：使用 `tokens` 和 `timing` 字段扩展 `ProjectStep` 和 `ProjectState` 接口。
+### 🎨 UI 增强功能
+- [x] **令牌计数器组件**：创建了 `TokenCounter` 组件，显示带有格式化数字（1.2k、5.5k）和持续时间（ms/s/m）的令牌使用情况。
+- [x] **进度环**：实现了 `ProgressRing` SVG 组件，显示执行期间任务节点图标周围的循环进度。
+- [x] **步骤级令牌**：为计划列表中的每个已完成/正在运行的步骤添加了令牌和计时显示。
+- [x] **总令牌**：在进度条区域添加了聚合令牌计数器和总持续时间。
+### 📝 文件已修改
 - `src/main/services/project/project-agent.service.ts`
 - `src/shared/types/project-agent.ts`
 - `src/renderer/features/project-agent/nodes/TaskNode.tsx`
 - `src/renderer/features/project-agent/ProjectAgentView.tsx`
 - `docs/TODO.md`
-## 2026-02-06 (Update 19): ✨ Settings UI Refinement & Visual Excellence
-**Status**: ✅ COMPLETED
-**Summary**: Standardized the Settings UI by grouping scattered settings into logical "Glass Cards", updating the `ToggleSwitch` component, and implementing reactive tab highlighting in the restored settings sidebar.
-### ✨ Visual & UX Polish
-- [x] **Glass Card Standard**: Standardized all section cards to use `premium-glass` and premium shadows across `AppearanceTab.tsx`, `GeneralTab.tsx`, `AboutTab.tsx`, and `StatisticsTab.tsx`.
-- [x] **Statistics Standardization**: Refactored the entire `StatisticsTab.tsx` and all quota cards (`AntigravityCard`, `ClaudeCard`, `CodexCard`, `CopilotCard`) to follow the "Premium Glass" unified header and layout system.
-- [x] **Sidebar Restoration**: Restored the missing settings sidebar and implemented reactive `active` state highlighting with `lucide-react` icons.
-- [x] **Premium Toggles**: Refactored `ToggleSwitch` with premium nested-circle aesthetics and support for `title`/`description` props.
-- [x] **Custom Scrollbars**: Implemented a modern, subtle scrollbar system in `index.css` with smooth transitions.
-### 🧹 Code Health & Maintenance
-- [x] **GeneralTab Refactor**: Grouped scattered settings into logical categories (Project Basics, App Intelligence, Lifecycle, Privacy).
-- [x] **Syntax & Lints**: Fixed trailing parenthesis errors in `GeneralTab.tsx` and removed unused imports in `SettingsPage.tsx`.
-### 📝 Files Modified
+## 2026-02-06（更新 19）：✨ 设置 UI 细化和视觉卓越
+**状态**： ✅ 已完成
+**摘要**：通过将分散的设置分组到逻辑“玻璃卡”中、更新 `ToggleSwitch` 组件以及在恢复的设置侧栏中实现反应式选项卡突出显示，标准化了设置 UI。
+### ✨ 视觉和 UX 波兰语
+- [x] **玻璃卡标准**：标准化所有部分卡以使用 `premium-glass` 以及 `AppearanceTab.tsx`、`GeneralTab.tsx`、`AboutTab.tsx` 和 `StatisticsTab.tsx` 的高级阴影。
+- [x] **统计标准化**：重构了整个 `StatisticsTab.tsx` 和所有配额卡（`AntigravityCard`、`ClaudeCard`、`CodexCard`、`CopilotCard`），以遵循“Premium Glass”统一标头和布局系统。
+- [x] **侧边栏恢复**：恢复了丢失的设置侧边栏并使用 `lucide-react` 图标实现了反应式 `active` 状态突出显示。
+- [x] **高级切换**：重构了 `ToggleSwitch`，具有高级嵌套圆美学并支持 `title`/`description` 道具。
+- [x] **自定义滚动条**：在 `index.css` 中实现了现代、微妙的滚动条系统，具有平滑的过渡。
+### 🧹 代码健康与维护
+- [x] **GeneralTab Refactor**：将分散的设置分组为逻辑类别（项目基础、应用程序智能、生命周期、隐私）。
+- [x] **语法和 Lints**：修复了 `GeneralTab.tsx` 中的尾随括号错误，并删除了 `SettingsPage.tsx` 中未使用的导入。
+### 📝 文件已修改
 - `src/renderer/index.css`
 - `src/renderer/features/settings/SettingsPage.tsx`
 - `src/renderer/features/settings/components/AppearanceTab.tsx`
@@ -689,20 +719,20 @@
 - `src/renderer/features/settings/components/statistics/ClaudeCard.tsx`
 - `src/renderer/features/settings/components/statistics/CodexCard.tsx`
 - `src/renderer/features/settings/components/statistics/CopilotCard.tsx`
-## 2026-02-06 (Update 18): 🧹 Technical Debt Refactor & Visual Polish
-**Status**: ✅ COMPLETED
-**Summary**: Refactored core services to reduce complexity, hardened type safety across the database layer, and implemented a premium HSL-based shadow system in the UI.
-### 🧹 Refactoring & Type Safety
-- [x] **Time Tracking Service**: Extracted helper methods from `getTimeStats` to reduce cyclomatic complexity and improve readability.
-- [x] **Database Layer Hardening**: Standardized return types for `Project`, `DbStats`, and `KnowledgeRepository` methods. Resolved implicit `any` and `unknown` types.
-- [x] **Interface Standardization**: Updated `DbStats` to extend `JsonObject` for IPC compatibility and fixed fallback logic in `DatabaseClientService`.
-### ✨ Visual & UX Polish
-- [x] **Premium Shadows**: Implemented a set of HSL-based shadow tokens in `index.css` for consistent, tinted shadow aesthetics.
-- [x] **Smooth Transitions**: Added `transition-premium` (cubic-bezier) and hover shadow effects to statistics cards and dashboard components.
-### 🧪 Quality Control
-- [x] Achieved 100% pass rate for build and type-check.
-- [x] Adhered to NASA Power of Ten rules for simplified function logic.
-### 📝 Files Modified
+## 2026-02-06（更新 18）：🧹 技术债务重构和视觉打磨
+**状态**： ✅ 已完成
+**摘要**：重构核心服务以降低复杂性，强化整个数据库层的类型安全性，并在 UI 中实现基于 HSL 的高级影子系统。
+### 🧹 重构和类型安全
+- [x] **时间跟踪服务**：从 `getTimeStats` 中提取辅助方法，以降低圈复杂度并提高可读性。
+- [x] **数据库层强化**：`Project`、`DbStats` 和 `KnowledgeRepository` 方法的标准化返回类型。解决了隐式 `any` 和 `unknown` 类型。
+- [x] **接口标准化**：更新了 `DbStats` 以扩展 `JsonObject` 以实现 IPC 兼容性，并修复了 `DatabaseClientService` 中的 fallback 逻辑。
+### ✨ 视觉和 UX 波兰语
+- [x] **Premium Shadows**：在 `index.css` 中实现了一组基于 HSL 的阴影标记，以实现一致的着色阴影美学。
+- [x] **平滑过渡**：向统计卡和仪表板组件添加了 `transition-premium` （三次贝塞尔曲线）和悬停阴影效果。
+### 🧪 质量控制
+- [x] 构建和型式检查的通过率达到 100%。
+- [x] 遵守 NASA 的十次幂规则以简化函数逻辑。
+### 📝 文件已修改
 - `src/main/services/analysis/time-tracking.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/database-client.service.ts`
@@ -711,20 +741,20 @@
 - `src/renderer/index.css`
 - `src/renderer/features/projects/components/ProjectStatsCards.tsx`
 - `src/renderer/features/ssh/StatsDashboard.tsx`
-## 2026-02-06 (Update 17): 📊 Statistics Accuracy & Data Integrity
-**Status**: ✅ COMPLETED
-**Summary**: Resolved inaccuracies in the statistics dashboard by correctly integrating the `TimeTrackingService` and implementing robust database queries for chat, message, and token usage metrics.
-### ✅ Fixes
-- [x] **Time Tracking**: Integrated and initialized `TimeTrackingService` in the main process, ensuring active app and coding time are accurately captured.
-- [x] **Data Integrity**: Refactored `SystemRepository` to use actual database queries instead of default values for message counts, chat counts, and token usage breakdown.
-- [x] **Circular Dependency**: Resolved a circular dependency between `DatabaseService` and `TimeTrackingService` by refactoring the latter to depend on `DatabaseClientService`.
-- [x] **IPC Layer**: Updated IPC handlers for statistics to return consistent data structures with proper fallback values.
-- [x] **Type Safety**: Ensured 100% type safety across the new statistics implementation, removing `any` casts and defining strict interfaces.
-### 🧹 Quality & Stability
-- [x] Resolved legacy type errors in `ProxyService` IPC handlers (`deleteAuthFile`, `getAuthFileContent`).
-- [x] Updated unit and integration tests to accommodate the new service architecture.
-- [x] Achieved 100% pass rate for build, lint, and type-check.
-### 📝 Files Modified
+## 2026-02-06（更新 17）：📊 统计准确性和数据完整性
+**状态**： ✅ 已完成
+**摘要**：通过正确集成 `TimeTrackingService` 并针对聊天、消息和令牌使用指标实施强大的数据库查询，解决了统计仪表板中的不准确问题。
+### ✅ 修复
+- [x] **时间跟踪**：在主进程中集成并初始化`TimeTrackingService`，确保准确捕获活动应用程序和编码时间。
+- [x] **数据完整性**：重构 `SystemRepository` 以使用实际的数据库查询，而不是消息计数、聊天计数和令牌使用细分的默认值。
+- [x] **循环依赖**：通过重构后者以依赖于 `DatabaseClientService` ，解决了 `DatabaseService` 和 `TimeTrackingService` 之间的循环依赖关系。
+- [x] **IPC 层**：更新了 IPC handlers 统计信息，以返回具有正确 fallback 值的一致数据结构。
+- [x] **类型安全**：在新的统计实现中确保 100% 类型安全，删除 `any` 强制转换并定义严格的接口。
+### 🧹 质量和稳定性
+- [x] 解决了 `ProxyService` IPC handlers (`deleteAuthFile`, `getAuthFileContent`) 中的遗留类型错误。
+- [x] 更新了单元和集成测试以适应新的服务架构。
+- [x] 构建、lint 和类型检查的通过率达到 100%。
+### 📝 文件已修改
 - `src/main/startup/services.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/repositories/system.repository.ts`
@@ -733,312 +763,312 @@
 - `src/main/ipc/proxy.ts`
 - `src/tests/main/services/data/database.service.test.ts`
 - `src/tests/main/tests/integration/repository-db.integration.test.ts`
-## [Unreleased]
-### Changed
-- Completed AGT-PAR-01 through AGT-PAR-06 for Project Agent parallel execution and canvas graph updates.
-- Added task-scoped `projectAgent` IPC/preload bridge calls (`approvePlan`, `stop`, `getStatus`, `retryStep`) to reduce cross-task interference under concurrent runs.
-- Added priority-aware execution queue scaffolding in `ProjectAgentService` (`low`/`normal`/`high`/`critical`) with bounded concurrent task starts.
-- Extended `ProjectStep` metadata for parallel planning (`type`, `dependsOn`, `priority`, `parallelLane`, `branchId`) and updated `propose_plan` tool schema/normalization to accept structured steps.
-- Updated Project Agent canvas plan rendering to draw dependency edges and lane-aware positions, plus fork/join visuals in `PlanNode`.
-- Fixed repository blockers discovered during AGT-PAR work: `src/main/ipc/theme.ts` type mismatch and `src/main/ipc/git.ts` lint error.
-### Removed
-- Removed `HistoryImportService` and `history:import` IPC handlers.
-- Removed file-based auth management from `ProxyService` (`getAuthFiles`, `syncAuthFiles`, `deleteAuthFile`, etc.).
-- Updated `useBrowserAuth` hook to use the database-backed multi-account API.
-- Cleaned up `preload.ts` and `electron.d.ts` from obsolete auth methods.
-## 2026-02-05 (Update 16): 🛡️ Codex Routing & Proxy Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Resolved "OpenAI API Key not set" error for Codex and Copilot providers by correctly routing them through the embedded proxy.
-### ✅ Fixes
-- [x] **LLM Routing**: Updated `LLMService` to route `codex` and `copilot` providers through the embedded proxy.
-- [x] **Model Normalization**: Fixed missing provider prefixes for `codex` and `copilot` models when hitting the proxy.
-- [x] **Code Quality**: Refactored `getRouteConfig` to reduce cyclomatic complexity and adhere to NASA Power of Ten rules.
-### 🧪 Testing
-- [x] Verified existing `LLMService` tests pass.
-- [x] Added new test case for Codex proxy routing in `llm.service.test.ts`.
-### 📝 Files Modified
+## [未发布]
+### 已更改
+- 完成了 AGT-PAR-01 到 AGT-PAR-06，用于项目代理并行执行和画布图更新。
+- 添加了任务范围的 `projectAgent` IPC/预加载桥调用（`approvePlan`、`stop`、`getStatus`、`retryStep`），以减少并发运行下的跨任务干扰。
+- 在 `ProjectAgentService` (`low`/`normal`/`high`/`critical`) 中添加了优先级感知执行队列脚手架，并启动有界并发任务。
+- 用于并行规划的扩展 `ProjectStep` 元数据（`type`、`dependsOn`、`priority`、`parallelLane`、`branchId`）并更新了 `propose_plan` 工具架构/规范化以接受结构化步骤。
+- 更新了项目代理画布计划渲染以绘制依赖边缘和车道感知位置，以及 `PlanNode` 中的分叉/连接视觉效果。
+- 修复了 AGT-PAR 工作期间发现的存储库阻止程序：`src/main/ipc/theme.ts` 类型不匹配和 `src/main/ipc/git.ts` lint 错误。
+### 已删除
+- 删除了 `HistoryImportService` 和 `history:import` IPC handlers。
+- 从 `ProxyService`（`getAuthFiles`、`syncAuthFiles`、`deleteAuthFile` 等）中删除了基于文件的身份验证管理。
+- 更新了 `useBrowserAuth` 挂钩以使用数据库支持的多帐户 API。
+- 从过时的身份验证方法中清除了 `preload.ts` 和 `electron.d.ts`。
+## 2026-02-05（更新 16）：🛡️ Codex 路由和代理强化
+**状态**： ✅ 已完成
+**摘要**：通过嵌入式代理正确路由 Codex 和 Copilot 提供程序，解决了“OpenAI API Key not set”错误。
+### ✅ 修复
+- [x] **LLM 路由**：更新了 `LLMService` 以通过嵌入式代理路由 `codex` 和 `copilot` 提供程序。
+- [x] **模型规范化**：修复了在访问代理时缺少 `codex` 和 `copilot` 模型的提供者前缀。
+- [x] **代码质量**：重构 `getRouteConfig` 以降低圈复杂度并遵守 NASA 的十次幂规则。
+### 🧪 测试
+- [x] 已验证现有 `LLMService` 测试通过。
+- [x] 在 `llm.service.test.ts` 中添加了 Codex 代理路由的新测试用例。
+### 📝 文件已修改
 - `src/main/services/llm/llm.service.ts`
 - `src/tests/main/services/llm/llm.service.test.ts`
 - `docs/CHANGELOG.md`
-## 2026-02-04 (Update 15): 🟢 NVIDIA Stream & Code Quality Hardening
-**Status**: ✅ COMPLETED
-**Summary**: Resolved critical termination errors during NVIDIA model streaming and performed project-wide code quality improvements.
-### ✅ Fixes
-- [x] Fix NVIDIA Stream: Corrected `Accept` header to `application/json` and fixed method corruption in `LLMService`.
-- [x] Fix NVIDIA Body: Removed non-standard `provider` field and added default `max_tokens: 4096`.
-- [x] Fix Model Logic: Refined `applyReasoningEffort` to target only reasoning-capable models (o1/o3).
-- [x] Fix Regression: Resolved `getReasoningEffort` scope error in `useChatGenerator.ts`.
-- [x] Fix Type Safety: Standardized `getCodexUsage` return types in `ProxyService`.
-- [x] Fix React Hooks: Resolved `set-state-in-effect` error in `ModelSelectorModal.tsx`.
-- [x] Cleanup: Finalized `LLMService` refactor to reduce complexity (NASA Power of Ten).
-### 📝 Files Modified
+## 2026-02-04（更新 15）：🟢 NVIDIA 流和代码质量强化
+**状态**： ✅ 已完成
+**摘要**：解决了 NVIDIA 模型流传输期间的严重终止错误，并执行了项目范围的代码质量改进。
+### ✅ 修复
+- [x] 修复 NVIDIA Stream：将 `Accept` 标头更正为 `application/json` 并修复了 `LLMService` 中的方法损坏。
+- [x] 修复 NVIDIA Body：删除了非标准 `provider` 字段并添加了默认 `max_tokens: 4096`。
+- [x] 修复模型逻辑：细化 `applyReasoningEffort` 以仅针对具有推理能力的模型 (o1/o3)。
+- [x] 修复回归：解决了 `useChatGenerator.ts` 中的 `getReasoningEffort` 范围错误。
+- [x] 修复类型安全：`ProxyService` 中的标准化 `getCodexUsage` 返回类型。
+- [x] 修复 React 挂钩：解决了 `ModelSelectorModal.tsx` 中的 `set-state-in-effect` 错误。
+- [x] 清理：最终确定 `LLMService` 重构以降低复杂性（NASA 的十次方）。
+### 📝 文件已修改
 - `src/main/services/llm/llm.service.ts`
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/main/services/proxy/proxy.service.ts`
 - `src/renderer/features/models/components/ModelSelectorModal.tsx`
-Track the evolution of Tandem.
-## 2026-02-04: 🤖 BATCH 6: MULTI-AGENT ORCHESTRATION v2
-**Status**: ✅ COMPLETED
-**Summary**: Implemented a sophisticated multi-agent orchestration system and persistent agent profiles. This update allows for coordinated workflows between specialized agents (Planner, Worker, Reviewer) and ensures that agent personalities and system prompts are persisted across sessions.
-### 🤖 Multi-Agent Orchestration
-- **Orchestration Service**: Created `MultiAgentOrchestratorService` to manage complex, multi-step tasks using a "Planner-Worker" architecture.
-- **Planner Phase**: Implemented an "Architect" agent that breaks down high-level user goals into granular tasks and assigns them to specialized agent profiles.
-- **Worker Phase**: Developed an execution loop that cycles through assigned steps, utilizing specific agent personas for targeted implementation.
-- **Interactive Approval**: Added a "Waiting for Approval" state, allowing users to review and modify agent-generated plans before execution begins.
-### 👥 Persistent Agent Profiles
-- **Database Persistence**: Implemented `agent_profiles` table and `SystemRepository` methods for saving, retrieving, and deleting agent configurations.
-- **Agent Registry**: Refactored `AgentRegistryService` to serve as a persistent store for specialized agent personas (e.g., Senior Architect, Full-Stack Engineer).
-- **Profile Management**: Exposed profile registration and deletion via `ProjectAgentService` and IPC, enabling future UI-driven agent customization.
-### 🛡️ Type Safety & Integration
-- **Strict Typing**: Achieved 100% type safety for orchestrated messages and state updates, utilizing strictly defined interfaces and avoiding `any`/`unknown`.
-- **Event-Driven UI**: Enhanced the system-wide `EventBus` to propagate real-time orchestration updates to the frontend.
-- **IPC Layer**: Finalized new IPC handlers (`orchestrator:start`, `orchestrator:approve`, `orchestrator:get-state`) for seamless communication with the renderer.
-## 2026-02-04: 🧠 BATCH 5: MEMORY CORE & DATABASE EVOLUTION
-**Status**: ✅ COMPLETED
-**Summary**: Full consolidation of memory services and finalization of the Rust-based database migration. Unified the RAG system and removed redundant legacy binary dependencies.
-### 🧠 Memory Core & RAG
-- **Service Consolidation**: Merged `MemoryService` into `AdvancedMemoryService`, creating a single source of truth for all memory operations (Semantic, Episodic, Entity, Personality).
-- **Unified Vector Ops**: Integrated all vector storage and search operations with the Rust `db-service`, eliminating the need for the legacy `memory-service` binary.
-- **RAG Hardening**: Implemented a content-validation staging buffer for new memories to reduce noise and improve retrieval quality.
-### 🗄️ Database Service Evolution
-- **Migration Finalization**: Successfully transitioned all database operations to the standalone Rust service.
-- **Dependency Cleanup**: Removed legacy `@electric-sql/pglite` and `better-sqlite3` dependencies from the project.
-- **Orphan Cleanup**: Deleted legacy migration files (`migrations.ts`, `db-migration.service.ts`) and the deprecated native `memory-service` implementation.
-### 🛡️ Quality & Performance
-- **Zero Any Policy**: Overhauled `AdvancedMemoryService` to achieve 100% type safety, removing all `any` and `unknown` casts.
-- **Startup Optimization**: Optimized the service initialization sequence in `startup/services.ts`.
-- **Build Pass**: Confirmed 0 build errors and 0 type-check warnings across the entire main process.
-**Summary**: Refactored the LLM service to eliminate hardcoded model names and context window- ### Security & Type Safety
-- Implemented rate limiting for API requests using `RateLimitService` token bucket (SEC-009)
-- Added validation for Agent Profile registration to prevent system profile overwrites (AGENT-001)
-- Refactored `Message.content` and `UACNode` to use discriminated union types for strict type safety (TYPE-001)
-- Implemented content filtering in `LLMService` to prevent sensitive data leaks (LLM-001)
-- Added authorization checks for provider rotation, window IPC, and logging IPC (SEC-013)
-- Fixed listener memory leaks in SSH IPC service (IPC-001)
-- **Access Control**: Implemented strict validation in `AgentRegistryService` to prevent unauthorized modification of system profiles (AGENT-001-3).
-- **Rate Limiting**: Added `tryAcquire` to `RateLimitService` and implemented API rate limiting in `ApiServerService` to protect against DoS attacks (SEC-009-3).
-- **LLM**: Implemented dynamic context window limits via `ModelRegistryService` integration.
-- **LLM**: Fixed `OllamaService` streaming timeouts and added `AbortSignal` support.
-### 🧠 LLM Intelligence & Scalability
-- **LLM-001-1**: Improved token counting accuracy using a hybrid word/character heuristic.
-- **LLM-001-4**: Fixed streaming timeouts in `OllamaService` by setting consistent defaults.
-- **Dynamic Context Windows**: Added `registerModelLimit` to `TokenEstimationService`. `ModelRegistryService` now automatically pushes context window metadata (fetched from the Rust service) to the estimator.
-- **Constant Extraction**: Completed the extraction of all default model names (`DEFAULT_MODELS`) across OpenAI, Anthropic, Groq, and Embedding providers.
-### 🧪 Testing & Reliability
-- **TEST-003-L1**: Built a comprehensive test suite for `OllamaService` with 100% coverage of connection and availability logic.
-- **Reliable History**: Implemented `MAX_MESSAGE_HISTORY` and `MAX_EVENT_HISTORY` limits in the Agent state machine to prevent memory bloat and context overflow.
-### 🛡️ IPC & Security
-- **SEC-011-3**: Implemented rate limiting for Git operations (`commit`, `push`, `pull`, `stage`, `unstage`, `checkout`) to prevent rapid-fire process spawning.
-- **SEC-011-4**: Added rate limiting to all database write operations including chats, messages, projects, folders, and prompts.
-- **SEC-011-5**: Ensured tool execution is strictly rate-limited.
-- **SEC-011-6**: Added rate limiting and size validation (1MB) to `terminal:write` IPC handler.
-- **IPC-001-5**: Centralized rate limiting utility for write-heavy operations including token usage and usage recording.
-### 🧹 Quality & Stability
-- Fixed React Compiler errors in `TaskNode.tsx` by adding missing dependencies to `useCallback`.
-- Extracted `AgentProfileSelector` and `TaskMetaInfo` sub-components in `TaskNode.tsx` to reduce complexity.
-- Resolved multiple "Sort imports" and "Unnecessary conditional" lint warnings across the codebase.
-- Achieved 100% build pass rate on both TypeScript and Rust components.
-## 2026-02-02: 🛡️ ELECTRON SECURITY HARDENING - PHASE 4
-**Status**: ✅ COMPLETED
-**Summary**: Hardened the Electron application by implementing certificate validation and permission request handlers.
-### 🔐 Security Improvements (3 items completed)
-**Electron Security Hardening**:
-- **SEC-004-3**: Added `certificate-error` handler in the main process to deny all certificate errors by default, preventing potential MITM attacks.
-- **SEC-004-4**: Implemented `setPermissionRequestHandler` and `setPermissionCheckHandler` in the main process to deny all device and notification permission requests by default.
-**External Process Security**:
-- **SEC-005-4**: Implemented privilege escalation checks for SSH commands by creating a centralized `CommandValidator` and integrating it into `SSHService` and `CommandService`.
-**Cryptography Improvements**:
-- **SEC-007-3**: Implemented at-rest encryption for the application's master key using Electron's `safeStorage`, with automatic migration for legacy plain-text keys.
-## 2026-02-02: 🎯 COMPREHENSIVE SECURITY & CODE QUALITY IMPROVEMENTS - PHASE 3
-**Status**: ✅ COMPLETED
-**Summary**: Major security hardening initiative completing 169 of 210 TODO items (80.5% completion rate). Addressed critical security vulnerabilities, input validation gaps, code quality issues, and performance bottlenecks across the entire codebase.
-### 🔐 Security Improvements (28 items completed)
-**Command Injection Prevention**:
-- **SEC-001-1**: Fixed command injection in `security.server.ts` nmap execution with strict parameter validation
-- **SEC-001-2**: Enhanced shell command execution in `command.service.ts` with proper argument escaping
-- **SEC-001-3**: Sanitized command/args in `process.ts` IPC handler to prevent spawn injection
-- **SEC-001-4**: Fixed command concatenation in `process.service.ts` using `quoteShellArg` utility
-**Path Traversal Prevention**:
-- **SEC-002-1**: Fixed path validation bypass in `filesystem.service.ts` using strict directory boundary checks
-- **SEC-002-2**: Added path validation to `filesystem.server.ts` downloadFile function
-- **SEC-002-3**: Validated file paths in `files.ts` IPC handler against allowedRoots
-- **SEC-002-4**: Fixed direct path concatenation in `ExtensionInstallPrompt.tsx`
-**Secrets & Credentials Management**:
-- **SEC-003-1**: Removed hardcoded API key 'opencode' from `chat.ts`
-- **SEC-003-2**: Removed hardcoded 'public' key from `llm.service.ts`
-- **SEC-003-3**: Moved CLIENT_ID to environment variables in `local-auth-server.util.ts`
-- **SEC-003-4**: Verified `.env` properly excluded from version control
-- **SEC-003-5**: Fixed hardcoded 'connected' proxyKey in `llm.service.ts`
-**Electron Security Hardening**:
-- **SEC-004-1**: Hardened CSP policy, removed unsafe-eval/unsafe-inline where possible
-- **SEC-004-2**: Enabled sandbox mode in Electron browser windows
-- **SEC-004-5**: Removed ELECTRON_DISABLE_SECURITY_WARNINGS suppression
-**External Process Security**:
-- **SEC-005-1**: Added resource limits (max buffer size) to MCP plugin spawns
-- **SEC-005-2**: Implemented environment variable whitelisting for plugin execution
-**SQL Injection Prevention**:
-- **SEC-006-1**: Fixed dynamic SQL in `knowledge.repository.ts` with proper parameterization
-- **SEC-006-2**: Parameterized LIMIT clause in `chat.repository.ts`
-- **SEC-006-3**: Added LIKE pattern sanitization to prevent wildcard injection
-- **SEC-006-4**: Fixed LIKE-based DoS vulnerability with pattern sanitization
-**Cryptography Improvements**:
-- **SEC-007-1**: Replaced `Math.random()` with `crypto.randomBytes()` for token generation
-- **SEC-007-2**: Fixed random ID generation in `utility.service.ts`
-**API Security**:
-- **SEC-008-2**: Added tool name validation (alphanumeric + `._-` only)
-- **SEC-008-3**: Implemented message schema validation (role, content structure)
-- **SEC-008-4**: Added MCP parameter validation (URL, query, count limits)
-- **SEC-009-1**: Fixed permissive CORS policy with strict origin validation
-- **SEC-009-2**: Added request size limits (10MB JSON, 50MB file uploads)
-- **SEC-009-4**: Implemented 5-minute timeout for SSE streaming with proper cleanup
-- **SEC-010-3**: Added LIKE pattern sanitization in knowledge repository methods
-**Input Validation**:
-- **IPC-001-4**: Terminal input validation (cols: 1-500, rows: 1-200, data: 1MB max)
-**File Permissions**:
-- **SEC-014-4**: Added secure file permissions (mode 0o700) for 7 critical directories:
-    - Logs directory (`logger.ts`)
-    - Backup + config directories (`backup.service.ts`)
-    - Data directory + all subdirs (`data.service.ts`)
-    - SSH storage directory (`ssh.service.ts`)
-    - Migration directory (`migration.service.ts`)
-    - Feature flag config (`feature-flag.service.ts`)
-**Prompt Injection Prevention**:
-- **SEC-015-1**: Sanitized user brain content in `brain.service.ts` (5000 char limit, remove code blocks, limit newlines)
-- **SEC-015-2**: Validated custom prompts in `idea-generator.service.ts` (1000 char limit, sanitize markers)
-**Rate Limiting**:
-- **SEC-011-1**: Added rate limiting to chat streaming
-- **SEC-011-2**: Added rate limiting to file search operations
-### 🚀 Performance Optimizations (15 items completed)
-**State Management**:
-- **PERF-002-1**: Consolidated 5 separate `useState` calls into single state object in `useProjectManager.ts`
-**Database Query Optimization**:
-- **PERF-003-1**: Fixed N+1 query in `prompt.repository.ts` with direct WHERE query
-- **PERF-003-2**: Fixed N+1 query in `folder.repository.ts` with direct WHERE query
-- **PERF-003-3**: Converted loop inserts to bulk VALUES insert in `uac.repository.ts`
-- **PERF-003-5**: Optimized expensive EXISTS clause to IN subquery in `chat.repository.ts`
-**Caching**:
-- **PERF-005-1**: Added 1-minute cache for model loads in `model-fetcher.ts`
-- **PERF-005-4**: Fixed expensive deep copy to shallow copy for immutable messages in `useChatHistory.ts`
-**Debouncing**:
-- **PERF-006-1**: Added 300ms debounce to FileExplorer folder toggles
-**Verified Already Optimized**:
-- **PERF-002-4**: ChatInput handlers already use stable refs
-- **PERF-002-5**: MCPStore filteredTools already memoized
-- **PERF-006-2**: ChatInput typing already efficient
-- **PERF-006-3**: Resize handlers already efficient
-### 📚 Documentation (7 items completed)
-**New Documentation Files**:
-- **Created `docs/CONFIG.md`**: Environment variables and configuration precedence
-- **Created `docs/API.md`**: REST API endpoint documentation
-- **Created `docs/MCP.md`**: MCP server contracts and tool documentation
-- **Created `docs/IPC.md`**: IPC handler contracts and validation requirements
-**Code Documentation**:
-- **QUAL-001-1**: Added JSDoc to `utility.service.ts` public methods
-- **QUAL-001-2**: Added JSDoc to `copilot.service.ts` public methods
-- **QUAL-001-3**: Added JSDoc to `project.service.ts` public methods
-- **QUAL-001-4**: Documented 13 helper functions in `response-normalizer.util.ts`
-### 🧹 Code Quality Improvements (31 items completed)
-**Logging Migration** (32 files):
-- Migrated all `console.error` calls to `appLogger.error` across IPC handlers, services, and utilities
-- Standardized error logging format: `appLogger.error('ServiceName', 'Message', error as Error)`
-- Files: auth.ts, ollama.ts, code-intelligence.ts, chat.ts, db.ts, git.ts, files.ts, and 25+ service files
-**Error Handling**:
-- **ERR-001**: Added proper error property to catch blocks in repositories (5 files)
-- Fixed: chat, folder, knowledge, llm, project, prompt, settings repositories
-**Type Safety**:
-- **TYPE-001-1**: Fixed unsafe double cast in `sanitize.util.ts`
-- **TYPE-001-2**: Fixed unsafe casts in `ipc-wrapper.util.ts`
-- **TYPE-001-3**: Verified `response-normalizer.util.ts` already uses safe helpers
-**Code Organization**:
-- **QUAL-005-1**: Removed unused `_scanner`, `_embedding` parameters from `utility.service.ts`
-**IPC Handler Optimization**:
-- **IPC-001-1**: Removed 5 duplicate handler registrations in `db.ts` (getChat, getAllChats, getProjects, getFolders, getStats)
-- **IPC-001-2**: Removed 3 duplicate handler registrations in `git.ts` (getBranch, getStatus, getBranches)
-- **IPC-001-3**: Removed 3 duplicate handler registrations in `auth.ts` (get-linked-accounts, get-active-linked-account, has-linked-account)
-- Added comments explaining batch handler optimization pattern
-**Constant Extraction**:
-- Extracted hardcoded values to named constants:
+追踪 Tandem 的演变。
+## 2026-02-04：🤖 第 6 批：多代理编排 v2
+**状态**： ✅ 已完成
+**摘要**：实现了复杂的多代理编排系统和持久代理配置文件。此更新允许在专业代理（计划员、工作人员、审核员）之间协调工作流程，并确保代理个性和系统提示在会话中保持不变。
+### 🤖 多代理编排
+- **编排服务**：创建 `MultiAgentOrchestratorService` 以使用“规划者-工作人员”架构来管理复杂的多步骤任务。
+- **规划阶段**：实现了一个“架构师”代理，将高级用户目标分解为细粒度任务，并将它们分配给专门的代理配置文件。
+- **工作人员阶段**：开发了一个执行循环，循环执行分配的步骤，利用特定的代理角色进行有针对性的实施。
+- **交互式审批**：添加了“等待审批”状态，允许用户在执行开始之前查看和修改代理生成的计划。
+### 👥 持久代理配置文件
+- **数据库持久性**：实现了 `agent_profiles` 表和 `SystemRepository` 方法，用于保存、检索和删除代理配置。
+- **代理注册表**：重构 `AgentRegistryService` 以用作专门代理角色（例如，高级架构师、全栈工程师）的持久存储。
+- **配置文件管理**：通过 `ProjectAgentService` 和 IPC 公开配置文件注册和删除，支持未来 UI 驱动的代理自定义。
+### 🛡️ 类型安全和集成
+- **严格类型**：利用严格定义的接口并避免 `any`/`unknown`，实现了编排消息和状态更新的 100% 类型安全。
+- **事件驱动的 UI**：增强了系统范围的 `EventBus` 以将实时编排更新传播到前端。
+- **IPC 层**：最终确定了新的 IPC handlers（`orchestrator:start`、`orchestrator:approve`、`orchestrator:get-state`），以便与渲染器无缝通信。
+## 2026-02-04：🧠 第 5 批：内存核心和数据库演进
+**状态**： ✅ 已完成
+**总结**：内存服务的全面整合和基于 Rust 的数据库迁移的完成。统一 RAG 系统并删除多余的遗留二进制依赖项。
+### 🧠 内存核心和 RAG
+- **服务整合**：将 `MemoryService` 合并到 `AdvancedMemoryService` 中，为所有内存操作（语义、情景、实体、个性）创建单一事实来源。
+- **统一向量操作**：将所有向量存储和搜索操作与 Rust `db-service` 集成，消除了对旧版 `memory-service` 二进制文件的需要。
+- **RAG 强化**：为新内存实施内容验证暂存缓冲区，以减少噪音并提高检索质量。
+### 🗄️ 数据库服务演进
+- **迁移完成**：成功将所有数据库操作转移到独立的 Rust 服务。
+- **依赖项清理**：从项目中删除了遗留的 `@electric-sql/pglite` 和 `better-sqlite3` 依赖项。
+- **孤立清理**：删除了旧版迁移文件（`migrations.ts`、`db-migration.service.ts`）和已弃用的本机 `memory-service` 实现。
+### 🛡️ 质量和性能
+- **零任何策略**：彻底修改 `AdvancedMemoryService` 以实现 100% 类型安全，删除所有 `any` 和 `unknown` 强制转换。
+- **启动优化**：优化了`startup/services.ts`中的服务初始化顺序。
+- **构建通过**：在整个主流程中确认了 0 个构建错误和 0 个类型检查警告。
+**摘要**：重构了 LLM 服务以消除硬编码模型名称和上下文窗口 - ### 安全性和类型安全
+- 使用 `RateLimitService` 令牌桶对 API 请求实施速率限制 (SEC-009)
+- 添加了对代理配置文件注册的验证，以防止系统配置文件覆盖（AGENT-001）
+- 重构 `Message.content` 和 `UACNode` 以使用可区分的联合类型来实现严格的类型安全（TYPE-001）
+- 在 `LLMService` 中实施内容过滤，以防止敏感数据泄露 (LLM-001)
+- 添加了对提供商轮换、窗口 IPC 和日志记录 IPC 的授权检查 (SEC-013)
+- 修复了 SSH IPC 服务中的侦听器内存泄漏 (IPC-001)
+- **访问控制**：在 `AgentRegistryService` 中实施严格验证，以防止未经授权修改系统配置文件 (AGENT-001-3)。
+- **速率限制**：将 `tryAcquire` 添加到 `RateLimitService` 并在 `ApiServerService` 中实现 API 速率限制，以防止 DoS 攻击 (SEC-009-3)。
+- **LLM**：通过 `ModelRegistryService` 集成实现动态上下文窗口限制。
+- **LLM**：修复了 `OllamaService` 流超时并添加了 `AbortSignal` 支持。
+### 🧠 LLM 智能和可扩展性
+- **LLM-001-1**：使用混合单词/字符启发式提高了标记计数的准确性。
+- **LLM-001-4**：通过设置一致的默认值修复了 `OllamaService` 中的流超时。
+- **动态上下文窗口**：将 `registerModelLimit` 添加到 `TokenEstimationService`。 `ModelRegistryService` 现在自动将上下文窗口元数据（从 Rust 服务获取）推送到估计器。
+- **持续提取**：完成了跨 OpenAI、Anthropic、Groq 和嵌入提供程序的所有默认模型名称 (`DEFAULT_MODELS`) 的提取。
+### 🧪 测试与可靠性
+- **TEST-003-L1**：为 `OllamaService` 构建了全面的测试套件，100% 覆盖连接和可用性逻辑。
+- **可靠的历史记录**：在代理状态机中实施 `MAX_MESSAGE_HISTORY` 和 `MAX_EVENT_HISTORY` 限制，以防止内存膨胀和上下文溢出。
+### 🛡️ IPC 和安全
+- **SEC-011-3**：对 Git 操作（`commit`、`push`、`pull`、`stage`、`unstage`、`checkout`）实施速率限制，以防止快速生成进程。
+- **SEC-011-4**：为所有数据库写入操作添加了速率限制，包括聊天、消息、项目、文件夹和提示。
+- **SEC-011-5**：确保工具执行受到严格的速率限制。
+- **SEC-011-6**：向 `terminal:write` IPC handler 添加了速率限制和大小验证 (1MB)。
+- **IPC-001-5**：用于大量写入操作的集中式速率限制实用程序，包括令牌使用和使用记录。
+### 🧹 质量和稳定性
+- 通过向 `useCallback` 添加缺少的依赖项，修复了 `TaskNode.tsx` 中的 React 编译器错误。
+- 提取 `TaskNode.tsx` 中的 `AgentProfileSelector` 和 `TaskMetaInfo` 子组件以降低复杂性。
+- 解决了代码库中的多个“排序导入”和“不必要的条件”lint 警告。
+- 在 TypeScript 和 Rust 组件上实现了 100% 的构建通过率。
+## 2026-02-02：🛡️ 电子安全强化 - 第 4 阶段
+**状态**： ✅ 已完成
+**摘要**：通过实施证书验证和权限请求 handlers 来强化 Electron 应用程序。
+### 🔐 安全改进（已完成 3 项）
+**Electron 安全强化**：
+- **SEC-004-3**：在主进程中添加了 `certificate-error` handler 以默认拒绝所有证书错误，防止潜在的 MITM 攻击。
+- **SEC-004-4**：在主进程中实现 `setPermissionRequestHandler` 和 `setPermissionCheckHandler` 以默认拒绝所有设备和通知权限请求。
+**外部进程安全**：
+- **SEC-005-4**：通过创建集中式 `CommandValidator` 并将其集成到 `SSHService` 和 `CommandService` 中，实现了 SSH 命令的权限升级检查。
+**密码学改进**：
+- **SEC-007-3**：使用 Electron 的 `safeStorage` 为应用程序的主密钥实现静态加密，并自动迁移旧版纯文本密钥。
+## 2026-02-02：🎯 全面的安全性和代码质量改进 - 第 3 阶段
+**状态**： ✅ 已完成
+**摘要**：重大安全强化计划完成了 210 个 TODO 项目中的 169 个（完成率 80.5%）。解决了整个代码库的关键安全漏洞、输入验证差距、代码质量问题和性能瓶颈。
+### 🔐 安全改进（已完成 28 项）
+**命令注入预防**：
+- **SEC-001-1**：通过严格的参数验证修复了 `security.server.ts` nmap 执行中的命令注入
+- **SEC-001-2**：使用正确的参数转义增强了 `command.service.ts` 中的 shell 命令执行
+- **SEC-001-3**：清理 `process.ts` IPC handler 中的命令/参数以防止生成注入
+- **SEC-001-4**：使用 `quoteShellArg` 实用程序修复了 `process.service.ts` 中的命令串联
+**路径遍历预防**：
+- **SEC-002-1**：使用严格的目录边界检查修复了 `filesystem.service.ts` 中的路径验证绕过
+- **SEC-002-2**：为 `filesystem.server.ts` downloadFile 函数添加了路径验证
+- **SEC-002-3**：根据 allowedRoots 验证 `files.ts` IPC handler 中的文件路径
+- **SEC-002-4**：修复了 `ExtensionInstallPrompt.tsx` 中的直接路径串联
+**秘密和凭证管理**：
+- **SEC-003-1**：从 `chat.ts` 中删除了硬编码 API 密钥“opencode”
+- **SEC-003-2**：从 `llm.service.ts` 中删除了硬编码的“公共”密钥
+- **SEC-003-3**：将 CLIENT_ID 移至 `local-auth-server.util.ts` 中的环境变量
+- **SEC-003-4**：已验证 `.env` 已正确排除在版本控制之外
+- **SEC-003-5**：修复了 `llm.service.ts` 中的硬编码“已连接”proxyKey
+**Electron 安全强化**：
+- **SEC-004-1**：强化 CSP 策略，尽可能删除 unsafe-eval/unsafe-inline
+- **SEC-004-2**：在 Electron 浏览器窗口中启用沙箱模式
+- **SEC-004-5**：删除了 ELECTRON_DISABLE_SECURITY_WARNINGS 抑制
+**外部进程安全**：
+- **SEC-005-1**：为 MCP 插件生成添加资源限制（最大缓冲区大小）
+- **SEC-005-2**：为插件执行实现了环境变量白名单
+**SQL注入预防**：
+- **SEC-006-1**：使用正确的参数化修复了 `knowledge.repository.ts` 中的动态 SQL
+- **SEC-006-2**：`chat.repository.ts` 中的参数化 LIMIT 子句
+- **SEC-006-3**：添加了 LIKE 模式清理以防止通配符注入
+- **SEC-006-4**：通过模式清理修复了基于 LIKE 的 DoS 漏洞
+**密码学改进**：
+- **SEC-007-1**：将 `Math.random()` 替换为 `crypto.randomBytes()` 以生成令牌
+- **SEC-007-2**：修复了 `utility.service.ts` 中的随机 ID 生成
+**API 安全性**：
+- **SEC-008-2**：添加了工具名称验证（仅限字母数字 + `._-`）
+- **SEC-008-3**：实施消息模式验证（角色、内容结构）
+- **SEC-008-4**：添加了 MCP 参数验证（URL、查询、计数限制）
+- **SEC-009-1**：修复了具有严格来源验证的宽松 CORS 策略
+- **SEC-009-2**：添加了请求大小限制（10MB JSON，50MB 文件上传）
+- **SEC-009-4**：通过适当的清理为 SSE 流实现 5 分钟超时
+- **SEC-010-3**：在知识库方法中添加了 LIKE 模式清理
+**输入验证**：
+- **IPC-001-4**：终端输入验证（列：1-500，行：1-200，数据：最大 1MB）
+**文件权限**：
+- **SEC-014-4**：为 7 个关键目录添加了安全文件权限（模式 0o700）：
+- 日志目录 (`logger.ts`)
+- 备份+配置目录（`backup.service.ts`）
+- 数据目录 + 所有子目录 (`data.service.ts`)
+- SSH存储目录（`ssh.service.ts`）
+- 迁移目录 (`migration.service.ts`)
+- 功能标志配置 (`feature-flag.service.ts`)
+**及时预防注射**：
+- **SEC-015-1**：清理 `brain.service.ts` 中的用户大脑内容（5000 个字符限制、删除代码块、限制换行符）
+- **SEC-015-2**：在 `idea-generator.service.ts` 中验证自定义提示（1000 个字符限制，清理标记）
+**速率限制**：
+- **SEC-011-1**：为聊天流添加了速率限制
+- **SEC-011-2**：为文件搜索操作添加了速率限制
+### 🚀 性能优化（已完成 15 项）
+**状态管理**：
+- **PERF-002-1**：将 5 个单独的 `useState` 调用合并到 `useProjectManager.ts` 中的单个状态对象中
+**数据库查询优化**：
+- **PERF-003-1**：使用直接 WHERE 查询修复了 `prompt.repository.ts` 中的 N+1 查询
+- **PERF-003-2**：使用直接 WHERE 查询修复了 `folder.repository.ts` 中的 N+1 查询
+- **PERF-003-3**：将循环插入转换为在 `uac.repository.ts` 中插入批量值
+- **PERF-003-5**：优化了 `chat.repository.ts` 中 IN 子查询的昂贵 EXISTS 子句
+**缓存**：
+- **PERF-005-1**：为 `model-fetcher.ts` 中的模型加载添加了 1 分钟缓存
+- **PERF-005-4**：修复了 `useChatHistory.ts` 中不可变消息的昂贵的深复制到浅复制的问题
+**去抖动**：
+- **PERF-006-1**：向 FileExplorer 文件夹切换添加了 300 毫秒去抖
+**已验证已优化**：
+- **PERF-002-4**：ChatInput handlers 已使用稳定的参考
+- **PERF-002-5**：MCPStore过滤工具已被记忆
+- **PERF-006-2**：ChatInput 打字已经很高效
+- **PERF-006-3**：调整 handlers 的大小已经有效
+### 📚 文档（已完成 7 项）
+**新文档文件**：
+- **创建`docs/CONFIG.md`**：环境变量和配置优先级
+- **创建了 `docs/API.md`**：REST API 端点文档
+- **创建`docs/MCP.md`**：MCP服务器合约和工具文档
+- **创建了 `docs/IPC.md`**：IPC handler 合约和验证要求
+**代码文档**：
+- **QUAL-001-1**：将 JSDoc 添加到 `utility.service.ts` 公共方法
+- **QUAL-001-2**：将 JSDoc 添加到 `copilot.service.ts` 公共方法
+- **QUAL-001-3**：将 JSDoc 添加到 `project.service.ts` 公共方法
+- **QUAL-001-4**：在 `response-normalizer.util.ts` 中记录了 13 个辅助函数
+### 🧹 代码质量改进（已完成 31 项）
+**日志记录迁移**（32 个文件）：
+- 将 IPC handlers、服务和实用程序中的所有 `console.error` 调用迁移到 `appLogger.error`
+- 标准化错误记录格式：`appLogger.error('ServiceName', 'Message', error as Error)`
+- 文件：auth.ts、ollama.ts、code-intelligence.ts、chat.ts、db.ts、git.ts、files.ts 和 25 个以上服务文件
+**错误处理**：
+- **ERR-001**：添加了正确的错误属性来捕获存储库中的块（5 个文件）
+- 修正：聊天、文件夹、知识、llm、项目、提示、设置存储库
+**类型安全**：
+- **TYPE-001-1**：修复了 `sanitize.util.ts` 中不安全的双重转换
+- **TYPE-001-2**：修复了 `ipc-wrapper.util.ts` 中的不安全转换
+- **TYPE-001-3**：已验证 `response-normalizer.util.ts` 已使用安全助手
+**代码组织**：
+- **QUAL-005-1**：从 `utility.service.ts` 中删除了未使用的 `_scanner`、`_embedding` 参数
+**IPC Handler 优化**：
+- **IPC-001-1**：删除了 `db.ts` 中 5 个重复的 handler 注册（getChat、getAllChats、getProjects、getFolders、getStats）
+- **IPC-001-2**：删除了 `git.ts` 中 3 个重复的 handler 注册（getBranch、getStatus、getBranches）
+- **IPC-001-3**：删除了 `auth.ts` 中的 3 个重复的 handler 注册（get-linked-accounts、get-active-linked-account、has-linked-account）
+- 添加了解释批处理 handler 优化模式的注释
+**持续提取**：
+- 将硬编码值提取到命名常量：
     - `COPILOT_USER_AGENT`
     - `EXCHANGE_RATE_API_BASE`
     - `MCP_REQUEST_TIMEOUT_MS`
-    - Message schema validation constants
-### 🌐 Internationalization (11 items completed)
-**Translation Keys Added**:
-- Added 30+ missing translation keys to both `en.ts` and `tr.ts`
-- Fixed duplicate key consolidation causing type errors
-- Categories: Terminal, SSH, Memory, Models, Settings, Chat, Projects, Prompts
-### 🗄️ Database Improvements (8 items completed)
-**Schema Enhancement**:
-- **DB-001-4**: Created migration 24 with 3 new indexes:
-    - `idx_chat_messages_embedding` (INTEGER field for vector search optimization)
-    - `idx_chats_folder_id` (Foreign key index)
-    - `idx_chat_messages_chat_id_created_at` (Composite index for message retrieval)
-**Query Optimization**:
-- Fixed N+1 patterns in prompt and folder repositories
-- Implemented bulk insert operations
-- Optimized subquery patterns
-### ♿ Accessibility (30 items completed)
-**ARIA Labels & Keyboard Navigation**:
-- Added `aria-label`, `role`, and keyboard handlers to 30+ interactive components
-- Fixed form labels and semantic HTML across the application
-- Categories: Chat, Projects, Settings, Terminal, Memory, SSH, Models
-### ⚛️ React Best Practices (17 items completed)
-**Effect Cleanup**:
-- Added cleanup functions to useEffect hooks in 10+ components
-- Fixed memory leaks from interval timers, event listeners, and subscriptions
-**Debouncing**:
-- Implemented debouncing for search inputs and resize handlers in 7 components
-### 📊 Statistics
-**Overall Progress**: 169 of 210 items completed (80.5%)
-- Critical: 7 remaining (was 47)
-- High: 39 remaining (was 113)
-- Medium: 32 remaining (was 93)
-- Low: 13 remaining (was 49)
-**Categories Fully Completed** (16 categories, 109 items):
-- Logging (32 items)
-- Error Handling (4 items)
-- Database (8 items)
-- i18n (11 items)
-- React (17 items)
-- Accessibility (30 items)
-- Documentation (7 items)
-**Files Modified**: 100+ files across main, renderer, and shared modules
-### 🎯 Remaining Work (41 items)
-**Priority Areas**:
-- Security: Rate limiting, resource limits, auth/authorization, master key encryption (31 items)
-- Code Quality: OpenAPI docs, unused params, unimplemented TODOs (4 items)
-- Performance: Virtualization, connection pooling, caching (6 items)
-- Testing: All test categories untouched (50 items - logged but not prioritized)
-## 2026-02-02: 🔧 LOGGING CONSISTENCY - Additional IPC Handlers
-**Status**: ✅ COMPLETED
-**Summary**: Extended the `console.error` to `appLogger.error` migration to additional IPC handlers for consistent structured logging across the codebase.
-### Key Fixes
-1.  **Logging Standardization (LOG-001 continuation)**:
-    - **LOG-001-6**: Replaced `console.error` with `appLogger.error` in `auth.ts` for all authentication-related error handlers (get-linked-accounts, get-active-linked-account, set-active-linked-account, link-account, unlink-account, unlink-provider, has-linked-account).
-    - **LOG-001-7**: Replaced `console.error` with `appLogger.error` in `ollama.ts` for chat stream and library models error handlers.
-    - **LOG-001-8**: Replaced `console.error` with `appLogger.error` in `index.ts` for Ollama connection check error handler.
-    - **LOG-001-9**: Replaced `console.error` with `appLogger.error` in `code-intelligence.ts` for all code intelligence handlers (scanTodos, findSymbols, searchFiles, indexProject, queryIndexedSymbols).
-### Files Impacted
+- 消息模式验证常量
+### 🌐 国际化（已完成 11 项）
+**添加翻译键**：
+- 为 `en.ts` 和 `tr.ts` 添加了 30 多个缺失的翻译键
+- 修复了重复键合并导致类型错误的问题
+- 类别：终端、SSH、内存、模型、设置、聊天、项目、提示
+### 🗄️ 数据库改进（已完成 8 项）
+**架构增强**：
+- **DB-001-4**：创建了具有 3 个新索引的迁移 24：
+- `idx_chat_messages_embedding`（用于向量搜索优化的整数字段）
+- `idx_chats_folder_id`（外键索引）
+- `idx_chat_messages_chat_id_created_at`（消息检索的复合索引）
+**查询优化**：
+- 修复了提示和文件夹存储库中的 N+1 模式
+- 实现批量插入操作
+- 优化子查询模式
+### ♿ 辅助功能（已完成 30 项）
+**ARIA 标签和键盘导航**：
+- 向 30 多个交互式组件添加了 `aria-label`、`role` 和键盘 handlers
+- 修复了整个应用程序中的表单标签和语义 HTML
+- 类别：聊天、项目、设置、终端、内存、SSH、模型
+### ⚛️ React 最佳实践（已完成 17 项）
+**效果清理**：
+- 为 10 多个组件中的 useEffect 挂钩添加了清理功能
+- 修复了间隔计时器、事件侦听器和订阅的内存泄漏问题
+**去抖动**：
+- 实现了搜索输入的去抖动并在 7 个组件中调整 handlers 的大小
+### 📊 统计数据
+**总体进度**：已完成 210 项中的 169 项 (80.5%)
+- 严重：剩余 7 个（原为 47 个）
+- 最高：剩余 39 个（原为 113 个）
+- 中：剩余 32 个（原为 93 个）
+- 低：剩余 13 个（原为 49 个）
+**类别已完全完成**（16 个类别，109 项）：
+- 日志记录（32 项）
+- 错误处理（4 项）
+- 数据库（8项）
+- 国际化 (11 项)
+- React（17 项）
+- 无障碍设施（30 项）
+- 文档（7项）
+**修改的文件**：主模块、渲染器和共享模块中有 100 多个文件
+### 🎯 剩余工作（41 项）
+**优先领域**：
+- 安全性：速率限制、资源限制、身份验证/授权、主密钥加密（31 项）
+- 代码质量：OpenAPI 文档、未使用的参数、未实现的 TODO（4 项）
+- 性能：虚拟化、连接池、缓存（6项）
+- 测试：所有测试类别均保持不变（50 项 - 已记录但未区分优先级）
+## 2026-02-02：🔧 日志记录一致性 - 附加 IPC Handlers
+**状态**： ✅ 已完成
+**摘要**：将 `console.error` 到 `appLogger.error` 迁移扩展到其他 IPC handlers，以在整个代码库中实现一致的结构化日志记录。
+### 关键修复
+1. **记录标准化（LOG-001延续）**：
+- **LOG-001-6**：对于所有与身份验证相关的错误 handlers（get-linked-accounts、get-active-linked-account、set-active-linked-account、link-account、unlink-account、unlink-provider、has-linked-account），将 `auth.ts` 中的 `console.error` 替换为 `appLogger.error`。
+- **LOG-001-7**：针对聊天流和库模型错误 handlers，在 `ollama.ts` 中将 `console.error` 替换为 `appLogger.error`。
+- **LOG-001-8**：针对 Ollama 连接检查错误 handler，在 `index.ts` 中将 `console.error` 替换为 `appLogger.error`。
+- **LOG-001-9**：针对所有代码智能 handlers（scanTodos、findSymbols、searchFiles、indexProject、queryIndexedSymbols），将 `code-intelligence.ts` 中的 `console.error` 替换为 `appLogger.error`。
+### 受影响的文件
 - `src/main/ipc/auth.ts`
 - `src/main/ipc/ollama.ts`
 - `src/main/ipc/index.ts`
 - `src/main/ipc/code-intelligence.ts`
-## 2026-02-02: 🛡️ SECURITY & PERFORMANCE - PHASE 2 (Critical Vulnerabilities & N+1 Fixes)
-**Status**: ✅ COMPLETED
-**Summary**: Addressed critical security vulnerabilities in shell execution and file system access, along with high-priority performance optimizations for database queries.
-### Key Fixes
-1.  **Critical Security Hardening**:
-    - **SEC-001-2**: Blocked dangerous shell control operators (`;`, `&&`, `||`) in `CommandService` to prevent injection attacks.
-    - **SEC-002-1**: Fixed path traversal vulnerability in `FilesystemService` by enforcing strict directory boundary checks (preventing partial matches).
-    - **SEC-001-1**: Analyzed and secured `CommandService` usage in `security.server.ts` (nmap command) with strict input validation.
-    - **SEC-002-2**: Fixed path traversal vulnerability in `FilesystemService.downloadFile` by enforcing allowed path check.
-    - **LOG-001-5**: Implemented audit logging for External MCP Plugin dispatching to track all tool executions.
-2.  **Performance & Quality**:
-    - **DB-001-1 / PERF-003**: Optimized `PromptRepository` and `SystemRepository` to eliminate N+1 query patterns by implementing direct ID lookups.
-    - **DB-001-2 / DB-001-3**: Optimized `FolderRepository` and `DatabaseService` to eliminate N+1 query patterns for folder lookups.
-    - **TYPE-001-2**: Removed unsafe `as unknown` double casts in `ipc-wrapper.util.ts`, improving type safety for IPC handlers.
-    - **QUAL-001**: Added comprehensive JSDoc documentation to `CopilotService`, `ProjectService`, and `UtilityService`.
-### Files Impacted
+## 2026-02-02：🛡️ 安全性和性能 - 第 2 阶段（关键漏洞和 N+1 修复）
+**状态**： ✅ 已完成
+**摘要**：解决了 shell 执行和文件系统访问中的关键安全漏洞，以及数据库查询的高优先级性能优化。
+### 关键修复
+1. **关键安全强化**：
+- **SEC-001-2**：在 `CommandService` 中阻止危险的 shell 控制运算符（`;`、`&&`、`||`）以防止注入攻击。
+- **SEC-002-1**：通过强制执行严格的目录边界检查（防止部分匹配）修复了 `FilesystemService` 中的路径遍历漏洞。
+- **SEC-001-1**：通过严格的输入验证来分析和保护 `security.server.ts`（nmap 命令）中的 `CommandService` 用法。
+- **SEC-002-2**：通过强制执行允许的路径检查，修复了 `FilesystemService.downloadFile` 中的路径遍历漏洞。
+- **LOG-001-5**：实现了外部 MCP 插件调度的审核日志记录，以跟踪所有工具执行情况。
+2. **性能和质量**：
+- **DB-001-1 / PERF-003**：优化了 `PromptRepository` 和 `SystemRepository`，通过实现直接 ID 查找来消除 N+1 查询模式。
+- **DB-001-2 / DB-001-3**：优化了 `FolderRepository` 和 `DatabaseService` 以消除文件夹查找的 N+1 查询模式。
+- **TYPE-001-2**：删除了 `ipc-wrapper.util.ts` 中不安全的 `as unknown` 双重强制转换，提高了 IPC handlers 的类型安全性。
+- **QUAL-001**：向 `CopilotService`、`ProjectService` 和 `UtilityService` 添加了全面的 JSDoc 文档。
+### 受影响的文件
 - `src/main/services/system/command.service.ts`
 - `src/main/services/data/filesystem.service.ts`
 - `src/main/mcp/servers/security.server.ts`
@@ -1047,1115 +1077,1115 @@ Track the evolution of Tandem.
 - `src/main/services/data/database.service.ts`
 - `src/main/mcp/external-plugin.ts`
 - `src/main/utils/ipc-wrapper.util.ts`
-## 2026-02-02: ⚡ QUANTUM SPEED FIXES - CODE CLEANUP & SECURITY
-**Status**: ✅ COMPLETED
-**Summary**: Addressed multiple "quick win" items from the TODO list, focusing on code quality, security configuration, and dead code removal.
-### Key Fixes
-1.  **Security Hardening**:
-    - **SEC-004-2**: Enabled `sandbox: true` in `main.ts` for Electron `BrowserWindow`, enhancing preload script isolation.
-    - **SEC-004-5**: Removed development-mode suppression of Electron security warnings in `main.ts` to ensure deeper security awareness.
-    - **SEC-003-1/2/3/5**: Removed hardcoded secrets/API keys from `chat.ts`, `llm.service.ts`, and `local-auth-server.util.ts`, ensuring they are loaded via configuration/environment variables.
-    - **SEC-001-3**: Added input validation for `command` string in `process:spawn` IPC handler to prevent shell injection.
-    - **SEC-007-1/2**: Replaced weak `Math.random` with `crypto.randomBytes` for token/ID generation in `api-server.service.ts` and `utility.service.ts`.
-    - **SEC-008-1**: Added type validation for arguments in `ToolExecutor` to prevent invalid casting.
-    - **SEC-009-1**: Restricted CORS in `api-server.service.ts` to allow only extensions and localhost, mitigating wildcard access risks.
-2.  **Code Quality & Cleanup**:
-    - **LOG-001-1/2/3/4**: Replaced `console.error` with `appLogger.error` in memory, agent, llama, and terminal IPC handlers for consistent logging.
-    - **TYPE-001-1**: Reinstated safe casting in `src/shared/utils/sanitize.util.ts` to resolve build errors while maintaining type safety.
-    - **QUAL-005-1**: Removed unused parameters from `UtilityService` methods.
-    - **QUAL-002-5**: Refactored hardcoded window dimensions in `window.ts`.
-### Files Impacted
+## 2026-02-02：⚡ 量子速度修复 - 代码清理和安全
+**状态**： ✅ 已完成
+**摘要**：解决了 TODO 列表中的多个“快速获胜”项目，重点关注代码质量、安全配置和死代码删除。
+### 关键修复
+1. **安全加固**：
+- **SEC-004-2**：在 `main.ts` 中为 Electron `BrowserWindow` 启用 `sandbox: true`，增强预加载脚本隔离。
+- **SEC-004-5**：删除了 `main.ts` 中 Electron 安全警告的开发模式抑制，以确保更深入的安全意识。
+- **SEC-003-1/2/3/5**：从 `chat.ts`、`llm.service.ts` 和 `local-auth-server.util.ts` 中删除了硬编码的秘密/API 密钥，确保它们通过配置/环境变量加载。
+- **SEC-001-3**：在 `process:spawn` IPC handler 中添加了对 `command` 字符串的输入验证，以防止 shell 注入。
+- **SEC-007-1/2**：将弱 `Math.random` 替换为 `crypto.randomBytes`，以在 `api-server.service.ts` 和 `utility.service.ts` 中生成令牌/ID。
+- **SEC-008-1**：为 `ToolExecutor` 中的参数添加了类型验证，以防止无效转换。
+- **SEC-009-1**：在 `api-server.service.ts` 中限制 CORS，仅允许扩展和本地主机，从而减轻通配符访问风险。
+2. **代码质量和清理**：
+- **LOG-001-1/2/3/4**：将内存、代理、llama 和终端 IPC handlers 中的 `console.error` 替换为 `appLogger.error`，以实现一致的日志记录。
+- **TYPE-001-1**：在 `src/shared/utils/sanitize.util.ts` 中恢复安全转换，以解决构建错误，同时保持类型安全。
+- **QUAL-005-1**：从 `UtilityService` 方法中删除了未使用的参数。
+- **QUAL-002-5**：在 `window.ts` 中重构硬编码窗口尺寸。
+### 受影响的文件
 - `src/main/main.ts`
 - `src/main/services/external/utility.service.ts`
 - `src/main/ipc/window.ts`
 - `src/main/ipc/memory.ts`
 - `src/shared/utils/sanitize.util.ts`
-## 2026-02-02: 🛡️ AI RULE REINFORCEMENT & TYPE USAGE AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Overhauled the entire AI rule infrastructure to ensure better compliance and consistency across different AI assistants (Claude, Gemini, Copilot, Agent). Generated a comprehensive audit of `any` and `unknown` type usages to guide future refactoring.
-### Key Achievements
-1. **Performance & Intelligence Refinement**:
-    - Integrated **Skills** and **MCP Tools** directory into the Master Commandments for enhanced agent capabilities.
-    - Enforced the **Boy Scout Rule**: Agents must fix at least one existing lint warning or type issue in any file they edit.
-    - Strictly prohibited both `any` and `unknown` types across all updates and new files.
-    - Optimized `MASTER_COMMANDMENTS.md` to serve as the unified core logic for Gemini, Claude, and Copilot.
-2. **Cross-Platform Rule Synchronization**:
-    - Updated `.agent/rules/code-style-guide.md` with assertive, "always-on" triggers.
-    - Overhauled `.claude/CLAUDE.md`, `.gemini/GEMINI.md`, and `.copilot/COPILOT.md` to point to the new Master Commandments.
-    - Standardized the "Prohibited Actions" list across all configurations.
-3. **Type Usage Audit**:
-    - Developed a PowerShell script (`scripts/generate_type_report.ps1`) to scan the codebase for `any` and `unknown` types.
-    - Generated `docs/TYPE_USAGE_REPORT.md` documenting 673 instances across 200+ files.
-    - Identified top "any-heavy" files (e.g., `backup.service.test.ts`, `web-bridge.ts`, `error.util.ts`) to prioritize for future type-hardening.
-4. **Documentation & Process**:
-    - Added a "TL;DR" critical summary to the top of `docs/AI_RULES.md`.
-    - Updated `docs/TODO.md` with completed rule and audit tasks.
-    - Verified that all rule files are properly formatted and accessible to agents.
-## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - Session 2 (111 → 61 Warnings)
-**Status**: ✅ IN PROGRESS
-**Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **111 to 61** (45% reduction this session). Fixed unnecessary condition warnings, misused promises, optional chaining issues, and extracted more sub-components.
-### Latest Session Fixes
-1. **Import/Autofix (14 warnings)**:
-    - Applied `--fix` for simple-import-sort/imports warnings
-    - Removed unused imports (Language, useEffect, useState from App.tsx)
-    - Removed unused variables (chats from useChatGenerator, t from AdvancedMemoryInspector)
-    - Removed unused type imports (MemoryCategory from useMemoryLogic)
-2. **Promise Handling Fixes**:
-    - `MemoryModals.tsx`: Added `void` wrapper for async onClick handlers
-3. **Unnecessary Condition Fixes**:
-    - `useChatManager.ts`: Simplified streaming state access with currentStreamState variable
-    - `IdeasPage.tsx`: Removed unnecessary `??` operator
-    - `Terminal.tsx`: Removed unnecessary `&& term` conditionals (always truthy)
-    - `useAgentTask.ts`: Made payload types optional to validate `?.` usage
-    - `useAgentHandlers.ts`: Typed payload properly with optional data field
-    - `TaskInputForm.tsx`: Changed `??` to `||` for boolean operators
-4. **Other ESLint Fixes**:
-    - `useWorkspaceManager.ts`: Removed non-null assertion with proper null check
-    - `ProjectWizardModal.tsx`: Wrapped handleSSHConnect in useCallback to fix exhaustive-deps
-    - `useAgentTask.ts`: Changed `||` to `??` for prefer-nullish-coalescing
-5. **Sub-Component Extraction**:
-    - `MemoryInspector.tsx`: Extracted `AddFactModal` component
-    - `StatisticsTab.tsx`: Extracted `CodingTimeCard`, `TokenUsageCard` components
-    - `OverviewCards.tsx`: Extracted `getStatsValues` helper function
-    - `SidebarMenuItem.tsx`: Extracted `MenuItemActions` component
-    - `ChatContext.tsx`: Extracted `isUndoKey`, `isRedoKey` helper functions
-6. **Function Parameter Refactoring**:
-    - `IdeaDetailsModal.tsx`: Converted 9-parameter function to options object interface
-### Files Modified (20+)
-- App.tsx, useChatGenerator.ts, AdvancedMemoryInspector.tsx, useMemoryLogic.ts
-- MemoryModals.tsx, MemoryInspector.tsx, useChatManager.ts, IdeasPage.tsx
-- Terminal.tsx, useAgentTask.ts, useAgentHandlers.ts, TaskInputForm.tsx
-- useWorkspaceManager.ts, ProjectWizardModal.tsx, StatisticsTab.tsx
-- OverviewCards.tsx, SidebarMenuItem.tsx, IdeaDetailsModal.tsx, ChatContext.tsx
-### Impact
-- ✅ Reduced warnings from **111 to 61** (45% reduction this session)
-- ✅ Total reduction from **310 to 61** (80% overall reduction)
-- ✅ Zero TypeScript errors maintained
-- ✅ Improved type safety with proper optional types
-## 2026-02-01: 🧹 CONTINUED LINT CLEANUP - 232+ WARNINGS FIXED (75% REDUCTION)
-**Status**: ✅ COMPLETED
-**Summary**: Continued systematic ESLint warning cleanup reducing total warnings from **310 to 78** (75% reduction). Fixed 5 TypeScript `any` type errors and applied lookup tables, custom hooks, and sub-component extraction patterns across more files.
-### Latest Session Fixes
-1. **TypeScript Error Fixes (5 errors → 0)**:
-    - `useTaskInputLogic.ts`: Replaced `any` types with `AppSettings | null` and `(key: string) => string`
-    - `useTerminal.ts`: Created `TerminalCleanups` interface, replaced `(term as any)` with ref-based cleanup tracking
-2. **Sub-Component Extraction**:
-    - `PanelLayout.tsx`: Sidebar, BottomPanelView, CenterArea components
-    - `ModelCard.tsx`: ModelHeader, ModelTags components
-    - `WorkspaceTreeItem.tsx`: DirectoryExpandIcon component
-3. **Type Safety Improvements**:
-    - `useChatGenerator.ts`: Changed `Record<string, T>` to `Partial<Record<string, T>>` for streamingStates
-    - `ModelCard.tsx`: Fixed unnecessary type check for `model.provider === 'ollama'`
-    - `ToolDisplay.tsx`: Added Boolean() wrappers for nullish coalescing preference
-4. **Complexity Reductions**:
-    - `useWorkspaceManager.ts`: Extracted `validateSSHMount` helper function
-    - `OverviewCards.tsx`: Pre-computed stats values to reduce inline `??` operators
-### Additional Refactoring Applied
-1. **Lookup Tables Added**:
-    - `SessionHistory.tsx`: STATUS_ICONS, IDEA_STATUS_BADGES for status indicators
-    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu components
-    - `ToolDisplay.tsx`: Added ExpandedToolContent, useAutoExpandCommand hook
-    - `SSHContentPanel.tsx`: TAB_COMPONENTS lookup for tab rendering
-2. **Custom Hooks Extracted**:
-    - `useAutoExpandCommand()` in ToolDisplay for terminal expansion logic
-    - `useSpeechDevices()` in SpeechTab for device enumeration
-    - `TabContent` component in MemoryInspector for cleaner tab rendering
-3. **Sub-Component Extraction**:
-    - `IdeaDetailsContent.tsx`: OverviewTab, MarketTab, StrategyTab, TechnologyTab, RoadmapTab, UsersTab, BusinessTab, CoreConceptHeader, LogoGeneratorSection
-    - `SelectDropdown.tsx`: TriggerButton, FloatingMenu
-    - `MemoryInspector.tsx`: TabContent
-    - `ToolDisplay.tsx`: ImageOutput, MarkdownOutput, JsonOutput, ExpandedToolContent
-    - `process-stream.ts`: buildNewStreamingState helper
-    - `StatisticsTab.tsx`: PeriodSelector component
-    - `SpeechTab.tsx`: VoiceSection, DeviceSection components
-    - `ManualSessionModal.tsx`: HeaderSection, InstructionsSection, InputSection, SaveButtonContent
-    - `WorkspaceModals.tsx`: MountTypeToggle, LocalMountForm, SSHMountForm, MountModal, EntryModal
-    - `CouncilPanel.tsx`: StatsCards, AgentList, ActivityLogEntry with lookup tables
-    - `OverviewCards.tsx`: MessagesCard, ChatsCard, TokensCard, TimeCard
-    - `AppearanceTab.tsx`: ThemeSection, TypographySection, ToggleSwitch
-4. **Reducer/Helper Refactoring**:
-    - `useProjectListStateMachine.ts`: Extracted 12 handler functions from 33-complexity reducer
-    - `git-utils.ts`: extractBranch, extractIsClean, extractLastCommit, extractRecentCommits, extractChangedFiles, extractStagedFiles, extractUnstagedFiles helpers
-### Files Modified (25+)
-- **Chat Components**: ToolDisplay.tsx, process-stream.ts
-- **Ideas Components**: IdeaDetailsContent.tsx, SessionHistory.tsx
-- **Memory Components**: MemoryInspector.tsx
-- **UI Components**: SelectDropdown.tsx
-- **Settings Components**: StatisticsTab.tsx, SpeechTab.tsx, ManualSessionModal.tsx, OverviewCards.tsx, AppearanceTab.tsx
-- **Project Components**: WorkspaceModals.tsx, CouncilPanel.tsx, TodoItemCard.tsx
-- **SSH Components**: SSHContentPanel.tsx
-- **Project Hooks**: useProjectListStateMachine.ts, useAgentEvents.ts
-- **Project Utils**: git-utils.ts
-### i18n Keys Added
-- `ideas.status.archived` (EN/TR)
-### Impact
-- ✅ Reduced warnings from **310 to 78** (75% reduction)
-- ✅ Zero TypeScript errors (fixed 5 `any` type errors)
-- ✅ Improved component readability with tab-based content rendering
-- ✅ Better state management in streaming handlers
-- ✅ Cleaner reducer implementations
-- ✅ Reusable UI components (ToggleSwitch, PeriodSelector, Sidebar, etc.)
-## 2026-02-01: 🧹 MAJOR LINT CLEANUP - 216 WARNINGS FIXED (69% REDUCTION)
-**Status**: ✅ COMPLETED
-**Summary**: Massive ESLint warning cleanup reducing total warnings from **310 to 94** (69.7% reduction). Implemented systematic refactoring patterns including lookup tables, custom hooks, and sub-component extraction.
-### Refactoring Patterns Applied
-1. **Lookup Tables (Record<Type, Config>)**: Replaced complex if-else chains with type-safe lookup objects
-    - `AssistantIdentity.tsx`: PROVIDER_CONFIGS, MODEL_CONFIGS with brand styling
-    - `TerminalView.tsx`: STATUS_CLASSES for terminal states
-    - `AudioChatOverlay.tsx`: State configs for listening/speaking/processing
-    - `SidebarSection.tsx`: BADGE_CLASSES for variants
-    - `UpdateNotification.tsx`: STATE_CONFIGS for update states
-2. **Custom Hooks Extraction**: Reduced component complexity by extracting effects
-    - `useSelectionHandler()` for QuickActionBar text selection
-    - `useChatInitialization()` for chat loading
-    - `useLazyMessageLoader()` for message lazy loading
-    - `useUndoRedoKeyboard()` for keyboard shortcuts
-    - `useHistorySync()` for chat history management
-3. **Sub-Component Extraction**: Split large components into focused pieces
-    - `ToolDisplay.tsx`: ExecutingSpinner, ToolStatusButton, FilePreview, SearchResults
-    - `TerminalView.tsx`: TerminalHeader, OutputContent
-    - `AudioChatOverlay.tsx`: PulseRings, CentralIcon, Controls
-    - `MessageBubble.tsx`: MessageFooter component
-    - `GlassModal.tsx`: ModalHeader component
-    - `SidebarSection.tsx`: SectionHeader, SectionContent
-    - `UpdateNotification.tsx`: UpdateContent, UpdateActions
-4. **Helper Function Extraction**: Moved logic to pure functions
+## 2026-02-02：🛡️ AI 规则强化和类型使用审核
+**状态**： ✅ 已完成
+**总结**：彻底检查了整个人工智能规则基础设施，以确保不同人工智能助手（Claude、Gemini、Copilot、Agent）之间更好的合规性和一致性。生成了 `any` 和 `unknown` 类型用法的全面审核，以指导未来的重构。
+### 主要成就
+1. **性能和智能优化**：
+- 将 **技能** 和 **MCP 工具** 目录集成到 Master Commandments 中，以增强代理功能。
+- 强制执行 **童子军规则**：特工必须修复他们编辑的任何文件中至少一个现有的 lint 警告或类型问题。
+- 在所有更新和新文件中严格禁止 `any` 和 `unknown` 类型。
+- 优化`MASTER_COMMANDMENTS.md`作为Gemini、Claude、Copilot的统一核心逻辑。
+2. **跨平台规则同步**：
+- 使用断言的“始终开启”触发器更新了 `.agent/rules/code-style-guide.md`。
+- 彻底修改了 `.claude/CLAUDE.md`、`.gemini/GEMINI.md` 和 `.copilot/COPILOT.md` 以指向新的主戒律。
+- 标准化了所有配置中的“禁止行为”列表。
+3. **类型使用审核**：
+- 开发了一个 PowerShell 脚本 (`scripts/generate_type_report.ps1`) 来扫描代码库中的 `any` 和 `unknown` 类型。
+- 生成 `docs/TYPE_USAGE_REPORT.md` 记录 200 多个文件中的 673 个实例。
+- 识别出最重要的“任何重”文件（例如，`backup.service.test.ts`、`web-bridge.ts`、`error.util.ts`），以便为未来的类型强化确定优先级。
+4. **文件和流程**：
+- 在 `docs/AI_RULES.md` 顶部添加了“TL;DR”关键摘要。
+- 使用已完成的规则​​和审核任务更新了 `docs/TODO.md`。
+- 验证所有规则文件格式正确且可供代理访问。
+## 2026-02-01：🧹 继续棉绒清理 - 第 2 节（111 → 61 警告）
+**状态**： ✅ 进行中
+**总结**：持续系统化 ESLint 警告清理，将警告总数从 **111 减少到 61**（本次会议减少了 45%）。修复了不必要的条件警告、误用的承诺、可选的链接问题，并提取了更多的子组件。
+### 最新会话修复
+1. **导入/自动修复（14 条警告）**：
+- 应用 `--fix` 进行简单导入排序/导入警告
+- 删除了未使用的导入（来自 App.tsx 的 Language、useEffect、useState）
+- 删除了未使用的变量（来自 useChatGenerator 的聊天，来自 AdvancedMemoryInspector 的 t）
+- 删除了未使用的类型导入（来自useMemoryLogic的MemoryCategory）
+2. **Promise 处理修复**：
+- `MemoryModals.tsx`：为异步 onClick handlers 添加了 `void` wrapper
+3. **不必要的情况修复**：
+- `useChatManager.ts`：使用 currentStreamState 变量简化流状态访问
+- `IdeasPage.tsx`：删除了不必要的 `??` 运算符
+- `Terminal.tsx`：删除了不必要的 `&& term` 条件（始终为真）
+- `useAgentTask.ts`：使有效负载类型可选以验证 `?.` 的使用
+- `useAgentHandlers.ts`：使用可选数据字段正确输入有效负载
+- `TaskInputForm.tsx`：将布尔运算符的 `??` 更改为 `||`
+4. **其他 ESLint 修复**：
+- `useWorkspaceManager.ts`：通过正确的空检查删除了非空断言
+- `ProjectWizardModal.tsx`：在useCallback中包装handleSSHConnect以修复详尽的依赖
+- `useAgentTask.ts`：将 `||` 更改为 `??` 以实现首选无效合并
+5. **子组件提取**：
+- `MemoryInspector.tsx`：提取的 `AddFactModal` 组件
+- `StatisticsTab.tsx`：提取的 `CodingTimeCard`、`TokenUsageCard` 组件
+- `OverviewCards.tsx`：提取的 `getStatsValues` 辅助函数
+- `SidebarMenuItem.tsx`：提取的 `MenuItemActions` 组件
+- `ChatContext.tsx`：提取的 `isUndoKey`、`isRedoKey` 辅助函数
+6. **函数参数重构**：
+- `IdeaDetailsModal.tsx`：将 9 参数函数转换为选项对象接口
+### 修改文件 (20+)
+- App.tsx、useChatGenerator.ts、AdvancedMemoryInspector.tsx、useMemoryLogic.ts
+- MemoryModals.tsx、MemoryInspector.tsx、useChatManager.ts、IdeasPage.tsx
+- Terminal.tsx、useAgentTask.ts、useAgentHandlers.ts、TaskInputForm.tsx
+- useWorkspaceManager.ts、ProjectWizardModal.tsx、StatisticsTab.tsx
+- OverviewCards.tsx、SidebarMenuItem.tsx、IdeaDetailsModal.tsx、ChatContext.tsx
+＃＃＃ 影响
+- ✅ 将警告从 **111 减少到 61**（本次会议减少了 45%）
+- ✅ 总计从 **310 减少至 61**（总体减少 80%）
+- ✅ 保持零 TypeScript 错误
+- ✅ 通过适当的可选类型提高类型安全性
+## 2026-02-01：🧹 持续的 Lint 清理 - 修复了 232 多个警告（减少了 75%）
+**状态**： ✅ 已完成
+**摘要**：持续系统化 ESLint 警告清理，将警告总数从 **310 减少到 78**（减少 75%）。修复了 5 个 TypeScript `any` 类型错误，并在更多文件中应用了查找表、自定义挂钩和子组件提取模式。
+### 最新会话修复
+1. **TypeScript 错误修复（5 个错误 → 0）**：
+- `useTaskInputLogic.ts`：用 `AppSettings | null` 和 `(key: string) => string` 替换 `any` 类型
+- `useTerminal.ts`：创建了 `TerminalCleanups` 接口，用基于引用的清理跟踪替换了 `(term as any)`
+2. **子组件提取**：
+- `PanelLayout.tsx`：侧边栏、BottomPanelView、CenterArea 组件
+- `ModelCard.tsx`：ModelHeader、ModelTags 组件
+- `WorkspaceTreeItem.tsx`：DirectoryExpandIcon 组件
+3. **类型安全改进**：
+- `useChatGenerator.ts`：将 StreamingStates 的 `Record<string, T>` 更改为 `Partial<Record<string, T>>`
+- `ModelCard.tsx`：修复了 `model.provider === 'ollama'` 不必要的类型检查
+- `ToolDisplay.tsx`：添加了 Boolean() wrappers 以实现无效合并首选项
+4. **复杂性降低**：
+- `useWorkspaceManager.ts`：提取的 `validateSSHMount` 辅助函数
+- `OverviewCards.tsx`：预先计算的统计值以减少内联 `??` 运算符
+### 应用了额外的重构
+1. **添加查找表**：
+- `SessionHistory.tsx`：状态指示器的 STATUS_ICONS、IDEA_STATUS_BADGES
+- `SelectDropdown.tsx`：TriggerButton、FloatingMenu 组件
+- `ToolDisplay.tsx`：添加了 ExpandedToolContent、useAutoExpandCommand 挂钩
+- `SSHContentPanel.tsx`：选项卡渲染的 TAB_COMPONENTS 查找
+2. **提取的自定义挂钩**：
+- ToolDisplay 中的 `useAutoExpandCommand()` 用于终端扩展逻辑
+- SpeechTab 中的 `useSpeechDevices()` 用于设备枚举
+- MemoryInspector 中的 `TabContent` 组件用于更清晰的选项卡渲染
+3. **子组件提取**：
+- `IdeaDetailsContent.tsx`：概览选项卡、Marketplace选项卡、策略选项卡、技术选项卡、路线图选项卡、用户选项卡、业务选项卡、CoreConceptHeader、LogoGeneratorSection
+- `SelectDropdown.tsx`：触发按钮、浮动菜单
+- `MemoryInspector.tsx`：选项卡内容
+- `ToolDisplay.tsx`：图像输出、MarkdownOutput、JsonOutput、ExpandedToolContent
+- `process-stream.ts`：buildNewStreamingState 帮助器
+- `StatisticsTab.tsx`：PeriodSelector 组件
+- `SpeechTab.tsx`：VoiceSection、DeviceSection 组件
+- `ManualSessionModal.tsx`：标题部分、指令部分、输入部分、保存按钮内容
+- `WorkspaceModals.tsx`：MountTypeToggle、LocalMountForm、SSHMountForm、MountModal、EntryModal
+- `CouncilPanel.tsx`：StatsCards、AgentList、带有查找表的 ActivityLogEntry
+- `OverviewCards.tsx`：消息卡、聊天卡、令牌卡、时间卡
+- `AppearanceTab.tsx`：ThemeSection、TypographySection、ToggleSwitch
+4. **Reducer/Helper 重构**：
+- `useProjectListStateMachine.ts`：从 33 复杂度缩减器中提取 12 个 handler 函数
+- `git-utils.ts`：extractBranch、extractIsClean、extractLastCommit、extractRecentCommits、extractChangedFiles、extractStaggedFiles、extractUnstagedFiles 帮助程序
+### 修改文件 (25+)
+- **聊天组件**：ToolDisplay.tsx、process-stream.ts
+- **创意组件**：IdeaDetailsContent.tsx、SessionHistory.tsx
+- **内存组件**：MemoryInspector.tsx
+- **UI 组件**：SelectDropdown.tsx
+- **设置组件**：StatisticsTab.tsx、SpeechTab.tsx、ManualSessionModal.tsx、OverviewCards.tsx、AppearanceTab.tsx
+- **项目组件**：WorkspaceModals.tsx、CouncilPanel.tsx、TodoItemCard.tsx
+- **SSH 组件**：SSHContentPanel.tsx
+- **项目挂钩**：useProjectListStateMachine.ts、useAgentEvents.ts
+- **项目实用程序**：git-utils.ts
+### 添加了 i18n 键
+- `ideas.status.archived`（英文/中文）
+＃＃＃ 影响
+- ✅ 将警告从 **310 减少到 78**（减少 75%）
+- ✅ 零 TypeScript 错误（修复了 5 个 `any` 类型错误）
+- ✅ 通过基于选项卡的内容渲染提高了组件的可读性
+- ✅ 流媒体中更好的状态管理 handlers
+- ✅ 更清洁的减速器实现
+- ✅ 可重复使用的 UI 组件（ToggleSwitch、PeriodSelector、Sidebar 等）
+## 2026-02-01：🧹 主要棉绒清理 - 修复了 216 个警告（减少了 69%）
+**状态**： ✅ 已完成
+**总结**：大规模 ESLint 警告清理将警告总数从 **310 减少到 94**（减少 69.7%）。实现了系统重构模式，包括查找表、自定义挂钩和子组件提取。
+### 应用重构模式
+1. **查找表（Record<Type, Config>）**：用类型安全的查找对象替换复杂的 if-else 链
+- `AssistantIdentity.tsx`：PROVIDER_CONFIGS、MODEL_CONFIGS 以及品牌样式
+- `TerminalView.tsx`：终端状态的 STATUS_CLASSES
+- `AudioChatOverlay.tsx`：听/说/处理的状态配置
+- `SidebarSection.tsx`：变体的 BADGE_CLASSES
+- `UpdateNotification.tsx`：用于更新状态的 STATE_CONFIGS
+2. **自定义 Hooks 提取**：通过提取效果降低组件复杂性
+- `useSelectionHandler()` 用于 QuickActionBar 文本选择
+- `useChatInitialization()` 用于聊天加载
+- `useLazyMessageLoader()` 用于消息延迟加载
+- `useUndoRedoKeyboard()` 用于键盘快捷键
+- `useHistorySync()` 用于聊天记录管理
+3. **子组件提取**：将大组件拆分为集中的部分
+- `ToolDisplay.tsx`：ExecutingSpinner、ToolStatusButton、FilePreview、SearchResults
+- `TerminalView.tsx`：终端标题、输出内容
+- `AudioChatOverlay.tsx`：PulseRings、CentralIcon、控件
+- `MessageBubble.tsx`：MessageFooter 组件
+- `GlassModal.tsx`：ModalHeader 组件
+- `SidebarSection.tsx`：节标题、节内容
+- `UpdateNotification.tsx`：更新内容、更新操作
+4. **辅助函数提取**：将逻辑移至纯函数
     - `getStatusText()`, `getAudioState()`, `getStateConfig()`
     - `handleTextSelection()`, `handleSelectionClear()`
     - `applyHistoryState()`, `formatRateLimitError()`
-### Files Modified (30+)
-- **Chat Components**: ToolDisplay.tsx, TerminalView.tsx, AssistantIdentity.tsx, AudioChatOverlay.tsx, MessageBubble.tsx
-- **Layout Components**: QuickActionBar.tsx, UpdateNotification.tsx, SidebarMenuItem.tsx, SidebarSection.tsx
-- **Context**: ChatContext.tsx, useChatManager.ts
-- **UI Components**: GlassModal.tsx, SelectDropdown.tsx
-### Impact
-- ✅ Reduced warnings from **310 to 94** (69.7% reduction)
-- ✅ Complexity scores reduced (e.g., AssistantIdentity 25→8, AudioChatOverlay 23→8)
-- ✅ Zero TypeScript errors
-- ✅ Improved code maintainability with consistent patterns
-- ✅ Better component reusability through sub-components
-- ✅ Cleaner separation of concerns
-## 2026-01-31: 🧹 LINT WARNING CLEANUP - 48 WARNINGS FIXED
-**Status**: ✅ COMPLETED
-**Summary**: Fixed 48 ESLint warnings across the codebase, improving code quality and type safety. Reduced total warnings from **354 to 306** (13.6% reduction).
-### Fixes Applied
-1. **Prefer Nullish Coalescing (26 fixes)**: Replaced logical OR operators (`||`) with nullish coalescing operators (`??`) for safer null/undefined checks.
-    - Files: `SessionSetup.tsx`, `ModelSelector.tsx`, `ProjectDashboard.tsx`, `ProjectWizardModal.tsx`, `WorkspaceTreeItem.tsx`, `FileExplorer.tsx`, `CouncilPanel.tsx`, `WorkspaceModals.tsx`, `useAgentEvents.ts`, `AdvancedTab.tsx`, `AppearanceTab.tsx`, `IdeaDetailsContent.tsx`, `SessionHistory.tsx`, `CategorySelector.tsx`, `vite.config.ts`, and others.
-2. **No Unnecessary Conditions (15 fixes)**: Removed unnecessary optional chains and conditional checks on non-nullish values.
-    - Files: `DockerDashboard.tsx`, `ModelExplorer.tsx`, `ModelSelector.tsx`, `ModelSelectorTrigger.tsx`, `useModelCategories.ts`, `useModelSelectorLogic.ts`, `model-fetcher.ts`, `LogoGeneratorModal.tsx`, `useAgentTask.ts`, and others.
-3. **Removed Unused Variables (4 fixes)**: Cleaned up unused imports and variable assignments.
-    - Files: `WorkspaceSection.tsx`, `extension-detector.service.ts`, `WizardSSHBrowserStep.tsx`, `useChatGenerator.ts`, `AdvancedMemoryInspector.tsx`.
-4. **Promise Handler Fixes (1 fix)**: Wrapped async handlers with `void` to satisfy ESLint promise rules.
-    - File: `App.tsx`.
-5. **Refactoring for Better Practices (2 fixes)**:
-    - Extracted complex nested logic into helper method `calculateQuotaPercentage()` in `local-image.service.ts` (fixes max-depth warning).
-    - Converted method with 8 parameters to use parameter object in `advanced-memory.service.ts` (fixes max-params warning).
-### Files Modified
-- **Main Process** (9 files): `api-server.service.ts`, `extension-detector.service.ts`, `job-scheduler.service.ts`, `tool-executor.ts`, `model-router.util.ts`, `response-parser.ts`, `local-image.service.ts`, `advanced-memory.service.ts`, `project-agent.service.ts`
-- **Renderer** (35+ files): Components in `features/chat/`, `features/ideas/`, `features/models/`, `features/projects/`, `features/settings/`, and core components
-- **Config** (1 file): `vite.config.ts`
-### Impact
-- ✅ Reduced warnings from **354 to 306** (13.6% reduction)
-- ✅ Improved code maintainability and type safety
-- ✅ Better null/undefined handling across the application
-- ✅ Cleaner code structure with reduced complexity
-- ✅ Fixed critical syntax errors and build issues
-## 2026-01-31: 🔧 IPC HANDLER RESTORATION & CORE SYSTEM STABILIZATION
-**Status**: ✅ COMPLETED
-**Summary**: Identified and restored 13 missing IPC handler registrations in the application's startup sequence. This fixes the critical `extension:shouldShowWarning` error and restores full access to several core systems that were previously unreachable from the UI.
-### Key Achievements
-1. **IPC Handler Restoration**:
-    - Restored 13 missing IPC registration calls in `src/main/startup/ipc.ts`.
-    - Systems restored include: Browser Extension management, Audit Logs, Backup/Restore, Brain (Memory), Multi-Model Comparison, Model Collaboration, Health Checks, Metrics, and Token Estimation.
-    - Resolved the "No handler registered" runtime error for `extension:shouldShowWarning`.
-- Fixed Browser Extension initialization by rectifying service worker script loading paths and moving `service-worker.js` to the extension root.
-- Resolved "Could not establish connection" errors in the extension by correcting message formats and ensuring `page-analyzer.js` is properly loaded in the content script's isolated world.
-- Improved Proxy Service reliability by fixing status reporting when reusing existing proxy processes.
-- Enhanced Extension communication with a heartbeat/ready signal and more robust error logging.
-2. **Interface Synchronization**:
-    - Synchronized `src/main/startup/ipc.ts` with the comprehensive list of handlers defined in `src/main/ipc/index.ts`.
-    - Ensured all service dependencies are correctly injected into the restored handlers.
-3. **Quality Assurance**:
-    - Verified 100% pass rate for `npm run lint` and `npm run type-check`.
-    - Confirmed that restored handlers have correct type-safe dependency injection from the services container.
-### Files Impacted
-- **Main Process Infrastructure**: `src/main/startup/ipc.ts`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🤖 INTERACTIVE AGENT PLANNING & WORKFLOW REFINEMENT
-**Status**: ✅ COMPLETED
-**Summary**: Implemented a more robust and interactive workflow for the Project Agent. The agent now generates a technical plan and explicitly proposes it for user approval using the `propose_plan` tool. Execution only proceeds after explicit user confirmation, ensuring safety and alignment with user goals.
-### Key Achievements
-1. **Interactive Planning Tooling**:
-    - Added `propose_plan` tool to the agent's toolbelt.
-    - Updated `ProjectAgentService` to pause execution and wait for approval after a plan is proposed.
-    - Refactored `planningLoop` and `executionLoop` for better state management and tool handling.
-2. **User Approval Workflow**:
-    - Implemented "Approve" button in `TaskNode` UI.
-    - Updated IPC bridge to handle plan approval and transmission of the approved steps back to the agent.
-    - Agent history now includes the approved plan for context during execution.
-3. **Execution Improvements**:
-    - Agent now correctly updates individual plan step statuses (`pending` → `running` → `completed`/`failed`).
-    - Fixed several TypeScript and bridging issues in `ToolExecutor` and `TaskNode`.
-    - Hardened type safety for tool execution results and options.
-4. **Integration & Stability**:
-    - Updated `electron.d.ts` and `web-bridge.ts` with the new agent IPC methods.
-    - Verified full build, lint, and type-check passing status.
-### Files Impacted
-- **Agent Services**: `src/main/services/project/project-agent.service.ts`, `src/main/tools/tool-executor.ts`, `src/main/tools/tool-definitions.ts`.
-- **UI Components**: `src/renderer/features/project-agent/nodes/TaskNode.tsx`.
-- **Infrastructure**: `src/shared/types/events.ts`, `src/main/ipc/project-agent.ts`, `src/renderer/electron.d.ts`, `src/renderer/web-bridge.ts`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🧹 DEPRECATED FEATURE REMOVAL & BUILD STABILIZATION (Batch 14)
-**Status**: ✅ COMPLETED
-**Summary**: Full removal of the legacy "Agent Council" feature from the codebase. This cleanup simplifies the architecture, reduces technical debt, and resolves critical TypeScript errors that were blocking the build. Achieved 100% build pass rate.
-### Key Achievements
-1. **Agent Council Removal**:
-    - Deleted `AgentCouncilService` and its IPC handlers.
-    - Removed `CouncilSession`, `CouncilLog`, and `AgentProfile` types from the data layer.
-    - Cleaned up `DatabaseService` and `SystemRepository` by removing all council-related persistence logic.
-    - Updated `startup/services.ts` and `startup/ipc.ts` to fully decommission the service bundle.
-2. **Preload & Bridge Cleanup**:
-    - Removed `council` bridge from `ElectronAPI` and `web-bridge.ts`.
-    - Synchronized `electron.d.ts` with the new lean API surface.
-3. **UI & State Simplification**:
-    - Removed all council-related tabs, panels, and hooks from the `ProjectWorkspace`.
-    - Eliminated dead `viewTab` state and logic that previously managed transitions between editor and council views.
-    - Simplified `WorkspaceSidebar` and `AIAssistantSidebar` to focus exclusively on the core AI Chat experience.
-4. **Build Stabilization**:
-    - Resolved over 40+ TypeScript errors across main and renderer processes.
-    - Verified build with `npm run build`: Success with exit code 0.
-    - Cleaned up unused imports and props discovered during the refactoring pass.
-### Files Impacted
-- **Main Process**: `src/main/services/data/database.service.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/startup/services.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`, `src/main/preload.ts`, `src/main/services/llm/agent-council.service.ts` (deleted), `src/main/ipc/council.ts` (deleted).
-- **Renderer Hooks**: `src/renderer/features/projects/hooks/useProjectState.ts`, `src/renderer/features/projects/hooks/useProjectWorkspaceController.ts`, `src/renderer/features/projects/hooks/useWorkspaceManager.ts`, `src/renderer/features/projects/hooks/useProjectActions.ts`, `src/renderer/hooks/useKeyboardShortcuts.ts`.
-- **Renderer Components**: `src/renderer/features/projects/components/ProjectWorkspace.tsx`, `src/renderer/features/projects/components/workspace/WorkspaceSidebar.tsx`, `src/renderer/features/projects/components/workspace/AIAssistantSidebar.tsx`.
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`.
-## 2026-01-30: 🏗️ UI COMPLEXITY REDUCTION & COMPONENT REFACTORING (Batch 13)
-**Status**: ✅ COMPLETED
-**Summary**: Major refactoring of high-complexity UI components to improve maintainability and performance. Focused on breaking down monolithic components into smaller, reusable parts and resolving critical React ref access issues.
-### Key Achievements
-1. **ProjectWizardModal Refactoring**:
-    - Extracted 5 specialized step components: `WizardDetailsStep`, `WizardSelectionStep`, `WizardSSHConnectStep`, `WizardSSHBrowserStep`, `WizardCreatingStep`.
-    - Reduced main component line count by 60% and simplified state orchestration.
-    - Resolved all type safety issues in SSH form handling.
-2. **ModelSelector System Overhaul**:
-    - Fully decoupled logic from UI using custom hooks: `useModelCategories`, `useModelSelectorLogic`.
-    - Modularized the dropdown UI into `ModelSelectorTrigger`, `ModelSelectorContent`, and `ModelSelectorItem`.
-    - **Ref Safety**: Resolved "Cannot access refs during render" errors by properly destructuring and using ref callbacks.
-    - Type-hardened all model and category interfaces.
-3. **TerminalSession Hardening**:
-    - Resolved `setState` in effect warnings by implementing safe asynchronous updates.
-    - Extracted `TerminalErrorOverlay` to simplify the main render block.
-    - Met strict complexity requirements (<10) for core terminal management methods.
-4. **Lint & Type Pass**:
-    - Successfully ran `eslint --fix` across all modified directories.
-    - Standardized import sorting and simplified conditional logic (`||` → `??`).
-    - Verified 100% build compatibility with the refactored architecture.
-### Files Impacted
-- **Model Selector**: `src/renderer/features/models/components/ModelSelector.tsx`, `ModelsSelectorTrigger.tsx`, `ModelSelectorContent.tsx`, `ModelSelectorItem.tsx`
-- **Project Wizard**: `src/renderer/features/projects/components/ProjectWizardModal.tsx`, `WizardDetailsStep.tsx`, `WizardSelectionStep.tsx`, `WizardSSHConnectStep.tsx`, `WizardSSHBrowserStep.tsx`, `WizardCreatingStep.tsx`
-- **Terminal**: `src/renderer/features/terminal/components/TerminalSession.tsx`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🗄️ DATABASE SERVICE COMPATIBILITY & INTELLIGENCE REFACTORING (Batch 12)
-**Status**: ✅ COMPLETED
-**Summary**: Full verification and hardening of the `DatabaseClientService` integration with the Rust backend. Refactored the Code Intelligence and Context Retrieval systems to consistently use project paths, ensuring reliable RAG and search functionality across distinct workspaces.
-### Key Achievements
-1. **Service Compatibility & Bridging**:
-    - Tightened the contract between TypeScript `DatabaseService` and Rust `tandem-db-service`.
-    - Implemented path-resolution logic in `DatabaseService` to bridge UUID-based project references to path-indexed intelligence data.
-    - Verified all core database operations (Chat, Messages, Projects, Knowledge) against the Rust HTTP API.
-2. **Code Intelligence Refactoring**:
-    - **CodeIntelligenceService**: Refactored indexing, clearing, and querying logic to use `rootPath` (absolute directory path) as the primary identifier.
-    - **ContextRetrievalService**: Implemented project path resolution from UUIDs to ensure vector searches are filtered correctly by project, preventing cross-project context leakage.
-    - **IPC Layer**: Updated `ProjectIPC` and `CodeIntelligenceIPC` handlers to pass the necessary path arguments.
-3. **Data Integrity & Schema Consistency**:
-    - Hardened `TokenUsage` tracking and `FileDiff` storage to use absolute paths as unique project keys.
-    - Verified that vector search results for both symbols and semantic fragments are correctly scoped to the active project.
-    - Resolved a critical issue where background file indexing used incorrect project identifiers.
-4. **Build & Quality Assurance**:
-    - Achieved 100% build pass rate: Native Rust services, Vite frontend, and Electron main process.
-    - Clean `npm run type-check` and `npm run lint` results.
-    - Verified that long-running operations like project indexing are correctly scheduled and associated with the physical workspace.
-### Files Impacted
-- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/services/project/code-intelligence.service.ts`, `src/main/services/llm/context-retrieval.service.ts`
-- **Repositories**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/project.repository.ts`
-- **IPC Handlers**: `src/main/ipc/project.ts`, `src/main/ipc/code-intelligence.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🏗️ PROJECT PATH MIGRATION & END-TO-END CONSISTENCY (Batch 11)
-**Status**: ✅ COMPLETED
-**Summary**: Finalized the migration from `project_id` to `project_path` across the entire ecosystem. This included updating the Rust database schema and migrations, refactoring TypeScript repositories and services, and stabilizing the build with targeted type fixes in the renderer.
-### Key Achievements
-1. **Database Schema Evolution**:
-    - Implemented Rust migrations to rename `project_id` to `project_path` in `file_diffs` and `token_usage` tables.
-    - Updated indices to align with the new path-based lookup strategy.
-2. **Backend Repository Refactoring**:
-    - Updated `KnowledgeRepository` and `SystemRepository` to use `project_path` consistently.
-    - Synchronized `SemanticFragment` storage and `TokenUsage` tracking with the new schema.
-3. **Build Stabilization & Type Safety**:
-    - Resolved 11+ critical TypeScript errors across `settings.service.ts`, `CommandPalette.tsx`, `ModelSelector.tsx`, and `ChatHistorySection.tsx`.
-    - Hardened optional property access and fixed null/undefined checks in the renderer's quota and chat management modules.
-    - Fixed an asynchronous mismatch in `ToolExecutor.ts` by correctly awaiting MCP tool definitions.
-4. **Code Quality & Maintenance**:
-    - Fixed a duplicate variable declaration in `ssh.service.ts` that blocked compilation.
-    - Addressed several lint warnings related to nullish coalescing operators (`??`) and complexity.
-    - Verified end-to-end consistency with a successful Rust backend build and clean TypeScript type-checks.
-### Files Impacted
-- **Rust Backend**: `src/services/db-service/src/database.rs`
-- **Main Process Services**: `src/main/services/data/repositories/knowledge.repository.ts`, `src/main/services/data/repositories/system.repository.ts`, `src/main/services/system/settings.service.ts`, `src/main/services/project/ssh.service.ts`, `src/main/tools/tool-executor.ts`
-- **Renderer Components**: `src/renderer/components/layout/CommandPalette.tsx`, `src/renderer/components/layout/sidebar/ChatHistorySection.tsx`, `src/renderer/features/models/components/ModelSelector.tsx`
-- **Shared Types**: `src/shared/types/db-api.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 💾 DATABASE CLIENT REFACTORING & BUILD STABILIZATION (Batch 9)
-**Status**: ✅ COMPLETED
-**Summary**: Refactored the `DatabaseService` to act as a remote client for the new standalone Rust database service. This completes the transition to a separate process-managed database architecture. Also performed a sweeping build stabilization pass, resolving 19 TypeScript errors and several critical syntax bugs across core modules.
-### Key Achievements
-1.  **Remote Database Client**:
-    - Refactored `DatabaseService` to delegate all operations to `DatabaseClientService`.
-    - Removed all legacy `PGlite` dependencies and local file system paths from the main database service.
-    - Implemented a remote `DatabaseAdapter` bridged via HTTP/JSON-RPC.
-    - Maintained full backward compatibility with the existing Repository pattern.
-2.  **Service Lifecycle & Discovery**:
-    - Integrated `DatabaseClientService` into the main application container.
-    - Established dependency-based startup order: `ProcessManager` → `DatabaseClient` → `DatabaseService`.
-    - Automated service discovery using port files in `%APPDATA%`.
-3.  **Build Stabilization**:
-    - Resolved all 19 TypeScript errors introduced by the architectural shift.
-    - Fixed critical syntax errors in `PanelLayout.tsx` (movePanel) and `rate-limiter.util.ts` (getRateLimiter) caused by previous merge conflicts.
-    - Hardened type safety in `message-normalizer.util.ts` with explicit role casting.
-    - Fixed a long-standing type error in `ollama.ts` related to response status codes.
-4.  **Test Suite Alignment**:
-    - Updated `DatabaseService` unit tests to use mocked remote client behavior.
-    - Updated `repository-db.integration.test.ts` to support the new constructor signature and remote communication patterns.
-    - Verified build with clean `npm run type-check` and `npm run lint` results.
-### Files Impacted
-- **Core Services**: `src/main/services/data/database.service.ts`, `src/main/startup/services.ts`, `src/main/services/data/database-client.service.ts`
-- **Utilities**: `src/main/utils/rate-limiter.util.ts`, `src/main/utils/message-normalizer.util.ts`, `src/main/startup/ollama.ts`
-- **Renderer**: `src/renderer/components/layout/PanelLayout.tsx`
-- **Tests**: `src/tests/main/services/data/database.service.test.ts`, `src/tests/main/tests/integration/repository-db.integration.test.ts`
-- **Docs**: `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-27: 🗄️ DATABASE SERVICE REFACTORING (Architecture 4.3)
-**Status**: ✅ COMPLETED
-**Summary**: Refactored the embedded PGlite database into a standalone Windows Service with a Rust-based host, completing Architecture Roadmap task 4.3. The database now runs as an independent service, improving reliability and allowing the database to persist across app restarts.
-### Key Achievements
-1. **Rust Database Service (`tandem-db-service`)**:
-    - New Rust service in `src/services/db-service/`
-    - SQLite database with WAL mode for concurrency
-    - Vector search using bincode-serialized embeddings
-    - Cosine similarity search for code symbols and semantic fragments
-    - Full CRUD API for chats, messages, projects, folders, prompts
-2. **Windows Service Integration**:
-    - Native Windows Service support via `windows-service` crate
-    - Auto-start with Windows, auto-restart on failure
-    - Service discovery via port file (`%APPDATA%/Tandem/services/db-service.port`)
-    - Install/uninstall via `scripts/install-db-service.ps1`
-3. **HTTP API**:
-    - RESTful API on dynamic port
-    - Health check endpoint at `/health`
-    - CRUD endpoints under `/api/v1/*`
-    - Raw SQL query support for migration compatibility
-4. **TypeScript Client**:
-    - `DatabaseClientService` in `src/main/services/data/database-client.service.ts`
-    - HTTP client using axios with automatic retry
-    - Service discovery and startup via `ProcessManagerService`
-    - Compatible interface for gradual migration
-5. **Shared Types**:
-    - New `src/shared/types/db-api.ts` defining API contract
-    - Request/response types for all endpoints
-    - `DbServiceClient` interface for type safety
-### Files Created
-- **Rust Service**: `src/services/db-service/` (Cargo.toml, main.rs, database.rs, server.rs, types.rs, handlers/\*)
-- **TypeScript**: `src/shared/types/db-api.ts`, `src/main/services/data/database-client.service.ts`
-- **Scripts**: `scripts/install-db-service.ps1`
-### Files Modified
-- `src/services/Cargo.toml` - Added db-service to workspace
-- `src/shared/types/index.ts` - Export db-api types
-- `docs/TODO/architecture.md` - Updated task 4.3 status
-### Next Steps
-- Migration testing with existing data
-- Performance benchmarking vs embedded PGlite
-- Cloud sync integration (deferred)
-## 2026-01-27: 🏗️ MCP SYSTEM MODULARIZATION & REFACTORING (Batch 8)
-**Status**: ✅ COMPLETED
-**Summary**: Successfully refactored the MCP (Model Context Protocol) system, extracting internal tools into a modular server architecture. This improves maintainability, reduces file size of the registry, and prepares the system for future plugin expansion.
-### Key Achievements
-1.  **Modular Server Architecture**:
-    - Extracted 20+ internal tools from a monolithic `registry.ts` into specialized server modules:
-        - `core.server.ts`: File system, command execution, and system info.
-        - `network.server.ts`: Web search, SSH, and network utilities.
-        - `utility.server.ts`: Screenshots, notifications, monitoring, and clipboard.
-        - `project.server.ts`: Git, Docker, and project scanning.
-        - `data.server.ts`: Database, embeddings, and Ollama utilities.
-        - `security.server.ts`: Security helpers and network auditing.
-    - Implemented `server-utils.ts` for shared types, result normalization, and security guardrails.
-2.  **Lint & Maintenance**:
-    - Further reduced global warning count from **655** to **468**.
-    - Resolved all import sorting issues in the new MCP modules.
-    - Improved code readability by moving distinct domain logic into separate, focused files.
-3.  **Documentation & Roadmap Update**:
-    - Completed task 3.2 in the Architecture Roadmap.
-    - Updated the central TODO tracking to reflect the current state of the codebase and lint progress.
-### Files Impacted
-- **MCP**: `src/main/mcp/registry.ts`, `src/main/mcp/server-utils.ts`
-- **MCP Servers**: `src/main/mcp/servers/core.server.ts`, `src/main/mcp/servers/network.server.ts`, `src/main/mcp/servers/utility.server.ts`, `src/main/mcp/servers/project.server.ts`, `src/main/mcp/servers/data.server.ts`, `src/main/mcp/servers/security.server.ts`
-- **Docs**: `docs/TODO/architecture.md`, `docs/TODO.md`, `docs/CHANGELOG.md`
-## 2026-01-26: 🛠️ MAIN-PROCESS REFACTORING & COMPLEXITY REDUCTION (Batch 7)
-**Status**: ✅ COMPLETED
-**Summary**: Orchestrated a major refactoring of high-complexity main-process services and utilities. Resolved 149 lint warnings and hardened type safety across core modules.
-### Key Achievements
-1.  **Complexity Hotspot Resolution**:
-    - **StreamParser.processBuffer**: Reduced complexity from **48** to **<10** using a modular payload handler approach.
-    - **SettingsService**: Modularized provider merging and save queue logic (Refactored from complexity 46/38).
-    - **HistoryImportService**: Modularized OpenAI and JSON import loops, splitting heavy logic into testable helpers.
-    - **ResponseNormalizer**: Isolated provider-specific normalization logic to meet NASA Power of Ten rules.
-2.  **Lint & Type Hardening**:
-    - Reduced global warning count from **804** to **655** (Total handled in this project: 38% reduction).
-    - Eliminated all forbidden `any` types in `SettingsService` and `StreamParser`.
-    - Resolved project-wide TS errors in `FolderRepository` and its integration tests.
-3.  **NASA Power of Ten Compliance**:
-    - Enforced fixed loop bounds in stream parsing (Safety iterations: 1,000,000).
-    - Guaranteed short functions (<60 lines) in all refactored modules.
-    - Minimized variable scope and strictly checked all return values.
-### Files Impacted
-- **Utilities**: `src/main/utils/stream-parser.util.ts`, `src/main/utils/response-normalizer.util.ts`
-- **Services**: `src/main/services/system/settings.service.ts`, `src/main/services/external/history-import.service.ts`
-- **Repositories**: `src/main/repositories/folder.repository.ts`
-- **Tests**: `src/tests/main/tests/integration/repository-db.integration.test.ts`
-## 2026-01-26: 🚀 PERFORMANCE ENFORCEMENT & LINT REPORTING
-**Status**: ✅ COMPLETED
-**Summary**: Documented all 804 lint warnings in a detailed report and established 12 new mandatory performance rules across all agent configurations.
-### Enhancements
-1.  **Performance Optimization Rules**:
-    - Introduced 12 strict rules for performance including mandatory Lazy Loading, Memoization, IPC Batching, and Virtualization (>50 items).
-    - Updated all agent rule configurations: `docs/AI_RULES.md`, `.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, and `.claude/CLAUDE.md`.
-2.  **Lint Reporting**:
-    - Created `docs/LINT_ISSUES.md` with a detailed breakdown of 804 warnings by file path and line number.
-    - Set lint resolution as a high-priority task for future development.
-3.  **Logging Standards**:
-    - Mandatory debugging log directory established at `logs/` for all agent output.
-## 2026-01-26: 🔄 LIVE ACCOUNT UPDATES & IPC REFACTORING
-**Status**: ✅ COMPLETED
-**Summary**: Resolved a critical UX issue where adding multiple accounts for the same provider didn't trigger an immediate UI refresh. Refactored the Authentication IPC layer for better dependency management and bridged main-process events to the renderer.
-### Improvements
-1.  **Live Account Updates**:
-    - Implemented a main-to-renderer event bridge for `account:linked`, `account:updated`, and `account:unlinked` events.
-    - Updated the `useLinkedAccounts` hook in the renderer to listen for these events and refresh automatically.
-    - Result: Adding a second GitHub or Copilot account now reflects instantly in the Settings UI.
-2.  **IPC Dependency Refactoring**:
-    - Refactored `registerAuthIpc` to use a structured dependencies object.
-    - Resolved lint warnings regarding excessive parameter counts.
-    - Aligned Auth IPC with established patterns used in Chat and Ollama services.
-3.  **Code Maintenance**:
-    - Cleaned up unused dependencies in the Auth IPC layer.
-    - Verified project-wide type safety after refactoring.
-### Files Impacted
-- **Main**: `src/main/ipc/auth.ts`, `src/main/startup/ipc.ts`, `src/main/ipc/index.ts`
-- **Renderer**: `src/renderer/features/settings/hooks/useLinkedAccounts.ts`
-## 2026-01-25: 🗄️ DATABASE ARCHITECTURE MIGRATION & TYPE STABILIZATION
-**Status**: ✅ FULLY COMPLETED
-**Summary**: Orchestrated a major architectural shift in the data layer by migrating the monolithic `DatabaseService` into a specialized Repository pattern. Concurrent with this migration, I achieved project-wide type stabilization, resolving over 50 legacy TypeScript errors and unifying IPC communication contracts.
-### Core Architecture Improvements
-1. **Repository Pattern Implementation**:
-    - **BaseRepository**: Standardized database adapter access and error handling.
-    - **ChatRepository**: Isolated chat history and message persistence logic.
-    - **ProjectRepository**: Managed project metadata and environment state.
-    - **KnowledgeRepository**: Optimized vector storage and code symbol indexing.
-    - **SystemRepository**: Unified system stats, folder management, and auth accounts.
-    - **DatabaseService**: Refactored as a lightweight delegation layer, adhering to NASA's Power of Ten rules.
-2. **Unified Usage Tracking**:
-    - Standardized `TokenUsageRecord` across main and renderer processes.
-    - Fixed cost estimation accuracy and provider-specific mapping in IPC bridges.
-3. **Gallery & Media Persistence**:
-    - Implemented `gallery_items` schema for high-fidelity image metadata storage.
-    - Enhanced `ImagePersistenceService` with robust error handling and automated metadata mapping.
-    - Integrated logic into `LogoService` for seamless asset generation history.
-### Technical Hardening
-- **TypeScript Perfection**: Resolved all `type-check` errors related to assignability, missing properties, and outdated interfaces.
-- **IPC Safety**: Hardened IPC handlers for file diffs and token statistics with strict parameter validation.
-- **Code Quality**: Enforced JSDoc standards on all new repository classes and verified NASA rule compliance (short functions, minimal scope).
-- **Test Integrity**: Updated and fixed `DatabaseService` tests to align with the new repository-based architecture.
-### Files Impacted (30+ files)
-- **Services**: `DatabaseService`, `ImagePersistenceService`, `FileChangeTracker`, `LogoService`
-- **Repositories**: `ChatRepository`, `ProjectRepository`, `KnowledgeRepository`, `SystemRepository`
-- **Infrastructure**: `migrations.ts`, `db-migration.service.ts`, `ipc/db.ts`, `ipc/file-diff.ts`
-- **Tests**: `database.service.test.ts`
-## 2026-01-25: 🚀 IDEAS SYSTEM COMPLETE OVERHAUL (7 Major Features)
-**Status**: ✅ 7 HIGH-IMPACT FEATURES COMPLETED
-**Summary**: Implemented 7 critical enhancements to the Ideas System including search/filtering, export, retry logic, regeneration, custom prompts, and market research preview.
-### Features Implemented
-**Session 1: Search, Export, and Retry Logic (3 items)**
-1. **ENH-IDX-004**: Search and Filter Session History _(~45 min)_
-    - **Search**: Real-time search across idea titles and descriptions
-    - **Filters**: Status (pending/approved/rejected) and category dropdowns
-    - **Active Filters UI**: Visual indicator showing applied filters with "Clear all" option
-    - **Smart Filtering**: Sessions with no matching ideas are automatically hidden
-    - **Performance**: Uses useMemo for efficient filtering without repeated computation
-    - Files: `SessionHistory.tsx`, `en.ts`, `tr.ts`
-2. **ENH-IDX-009**: Export Ideas to Markdown/JSON _(~50 min)_
-    - **Markdown Export**: Professional formatted document with:
-        - Session metadata (ID, date, idea count)
-        - Each idea with status emoji (✅/❌/⏳)
-        - Full details: category, description, market analysis, tech stack, effort estimate
-    - **JSON Export**: Structured data export for programmatic use
-    - **Export Button**: Dropdown menu in review stage header
-    - **Naming**: Auto-generated filenames with session ID and date
-    - Files: `IdeasPage.tsx`, `IdeasHeader.tsx`, `en.ts`, `tr.ts`
-3. **ENH-IDX-017**: Retry Logic for LLM Failures _(~40 min)_
-    - **Retry Wrapper**: `retryLLMCall()` method wraps all 13 LLM operations in idea-generator
-    - **Smart Detection**: Retries only on transient errors (rate limit, timeout, network issues)
-    - **Exponential Backoff**: 1s → 2s → 4s delays (max 30s cap)
-    - **Max 3 Retries**: Prevents infinite loops while handling most transient failures
-    - **Error Types**: Handles 429, quota exceeded, ECONNRESET, ETIMEDOUT, network errors
-    - **Logging**: Warns on each retry attempt with clear context
-    - Files: `idea-generator.service.ts` (13 LLM calls wrapped)
-**Session 2: Regeneration and Custom Prompts (2 items)**
-4. **ENH-IDX-011**: Regenerate Single Idea _(~45 min)_
-    - **UI**: "Regenerate" button in IdeaDetailsModal header (only for pending ideas)
-    - **Backend**: New `regenerateIdea()` method in IdeaGeneratorService
-    - **Process**: Runs full 9-stage pipeline with same category, replaces existing idea
-    - **Deduplication**: Excludes current idea from similarity check to avoid conflicts
-    - **IPC**: New handler `ideas:regenerateIdea` with success/idea response
-    - **State Management**: Loading state with disabled button and pulsing icon
-    - **Event**: Emits `idea:regenerated` event for real-time updates
-    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `IdeaDetailsModal.tsx`, `IdeasPage.tsx`, `preload.ts`, `electron.d.ts`
-5. **ENH-IDX-012**: Custom Prompt Input _(~60 min)_
-    - **UI**: Optional textarea in SessionSetup for custom requirements/constraints
-    - **Schema**: Added `customPrompt` field to IdeaSessionConfig and IdeaSession types
-    - **Database**: Migration #21 adds `custom_prompt` column to idea_sessions table
-    - **Storage**: Persisted in database, loaded with session, passed to generation
-    - **Integration**: Incorporated into seed generation prompts as "USER CONSTRAINTS" section
-    - **UX**: Placeholder text with examples, character count would be helpful
-    - **Translation**: Full i18n support (EN/TR)
-    - Files: `SessionSetup.tsx`, `ideas.ts` (types), `migrations.ts`, `idea-generator.service.ts`, `en.ts`, `tr.ts`
-**Session 3: Market Research Preview (1 item)**
-6. **ENH-IDX-013**: Market Research Preview _(~50 min)_
-    - **Quick Analysis**: Lightweight preview before full research commitment
-    - **Backend**: New `generateMarketPreview()` method using gpt-4o-mini for speed/cost
-    - **Preview Data**: For each category, shows:
-        - Market Summary (2-3 sentences)
-        - Top 3 Key Trends (bulleted list)
-        - Market Size/Growth estimate
-        - Competition Level (low/medium/high with visual badge)
-    - **UI**: MarketPreviewModal with beautiful card-based layout
-    - **Preview Button**: Appears in SessionSetup when categories are selected
-    - **Flow**: Preview → Continue → Full Research (or Cancel)
-    - **Performance**: Parallel processing of all categories (~5-10 seconds total)
-    - **IPC**: New handler `ideas:generateMarketPreview` with category array input
-    - Files: `idea-generator.service.ts`, `idea-generator.ts`, `SessionSetup.tsx`, `MarketPreviewModal.tsx`, `preload.ts`, `electron.d.ts`, `en.ts`, `tr.ts`
-### Technical Details
-**Regenerate Implementation:**
-- Backend creates new idea using same category and session context
-- Filters out the current idea from deduplication checks
-- Preserves original ID and createdAt timestamp
-- Resets status to 'pending' after regeneration
-- Full pipeline: seed → research → names → description → roadmap → tech stack → competitors
-**Custom Prompt Integration:**
-- Stored as optional TEXT column in database (NULL if not provided)
-- Passed through entire generation pipeline via session object
-- Injected into `buildSeedGenerationPrompt()` as "USER CONSTRAINTS" section
-- Appears between creative direction and "THINK DEEPLY" sections
-- Only included if non-empty (trimmed during session creation)
-**Database Changes:**
-- Migration #21: `ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`
-- No default value (NULL allowed for existing sessions)
-- Backward compatible - existing sessions work without custom prompts
-**Market Preview Implementation:**
-- Uses gpt-4o-mini for faster, cheaper analysis
-- Parallel Promise.all() for all categories (~5-10s total)
-- JSON-based response parsing with fallback defaults
-- Visual competition badges: green (low), yellow (medium), red (high)
-- Modal with scrollable content for multiple categories
-- "Continue with Full Research" button triggers form submission
-### Files Modified (19 files)
-1. `src/renderer/features/ideas/components/SessionHistory.tsx` - Search/filter UI
-2. `src/renderer/features/ideas/components/IdeasHeader.tsx` - Export dropdown
-3. `src/renderer/features/ideas/IdeasPage.tsx` - Export & regenerate handlers
-4. `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Regenerate button
-5. `src/renderer/features/ideas/components/SessionSetup.tsx` - Custom prompt input + preview button
-6. `src/renderer/features/ideas/components/MarketPreviewModal.tsx` - NEW preview modal
-7. `src/renderer/features/ideas/components/index.ts` - Export MarketPreviewModal
-8. `src/main/services/llm/idea-generator.service.ts` - Retry logic, regeneration, custom prompts, market preview
-9. `src/main/ipc/idea-generator.ts` - Regenerate + preview IPC handlers
-10. `src/main/services/data/migrations.ts` - Migration #21
-11. `src/shared/types/ideas.ts` - Type updates for customPrompt
-12. `src/main/preload.ts` - regenerateIdea + generateMarketPreview bindings
-13. `src/renderer/electron.d.ts` - TypeScript definitions
-14. `src/renderer/i18n/en.ts` - English translations
-15. `src/renderer/i18n/tr.ts` - Turkish translations
-16. `src/main/services/data/repositories/system.repository.ts` - Fixed syntax errors
-17. `docs/TODO/ideas.md` - Completion status
-18. `docs/CHANGELOG.md` - This entry
-### Translation Keys Added
+### 修改文件 (30+)
+- **聊天组件**：ToolDisplay.tsx、TerminalView.tsx、AssistantIdentity.tsx、AudioChatOverlay.tsx、MessageBubble.tsx
+- **布局组件**：QuickActionBar.tsx、UpdateNotification.tsx、SidebarMenuItem.tsx、SidebarSection.tsx
+- **上下文**：ChatContext.tsx、useChatManager.ts
+- **UI 组件**：GlassModal.tsx、SelectDropdown.tsx
+＃＃＃ 影响
+- ✅ 将警告从 **310 减少到 94**（减少 69.7%）
+- ✅ 复杂度分数降低（例如，AssistantIdentity 25→8、AudioChatOverlay 23→8）
+- ✅ 零 TypeScript 错误
+- ✅ 通过一致的模式提高了代码的可维护性
+- ✅ 通过子组件更好的组件可重用性
+- ✅ 更清晰的关注点分离
+## 2026-01-31：🧹LINT 警告清理 - 修复了 48 个警告
+**状态**： ✅ 已完成
+**摘要**：修复了代码库中的 48 个 ESLint 警告，提高了代码质量和类型安全性。警告总数从 **354 减少到 306**（减少 13.6%）。
+### 已应用的修复
+1. **首选 Nullish 合并（26 个修复）**：将逻辑 OR 运算符 (`||`) 替换为 nullish 合并运算符 (`??`)，以实现更安全的 null/未定义检查。
+- 文件：`SessionSetup.tsx`、`ModelSelector.tsx`、`ProjectDashboard.tsx`、`ProjectWizardModal.tsx`、`WorkspaceTreeItem.tsx`、`FileExplorer.tsx`、`CouncilPanel.tsx`、`WorkspaceModals.tsx`、`useAgentEvents.ts`、`AdvancedTab.tsx`、`AppearanceTab.tsx`、 `IdeaDetailsContent.tsx`、`SessionHistory.tsx`、`CategorySelector.tsx`、`vite.config.ts` 等。
+2. **没有不必要的条件（15 个修复）**：删除了不必要的可选链和对非空值的条件检查。
+- 文件：`DockerDashboard.tsx`、`ModelExplorer.tsx`、`ModelSelector.tsx`、`ModelSelectorTrigger.tsx`、`useModelCategories.ts`、`useModelSelectorLogic.ts`、`model-fetcher.ts`、`LogoGeneratorModal.tsx`、`useAgentTask.ts` 等。
+3. **删除了未使用的变量（4 个修复）**：清理了未使用的导入和变量分配。
+- 文件：`WorkspaceSection.tsx`、`extension-detector.service.ts`、`WizardSSHBrowserStep.tsx`、`useChatGenerator.ts`、`AdvancedMemoryInspector.tsx`。
+4. **Promise Handler 修复（1 个修复）**：用 `void` 包装异步 handlers 以满足 ESLint Promise 规则。
+- 文件：`App.tsx`。
+5. **重构以获得更好的实践（2 个修复）**：
+- 将复杂的嵌套逻辑提取到 `local-image.service.ts` 中的辅助方法 `calculateQuotaPercentage()` 中（修复最大深度警告）。
+- 具有 8 个参数的转换方法以使用 `advanced-memory.service.ts` 中的参数对象（修复了最大参数警告）。
+### 文件已修改
+- **主流程**（9个文件）：`api-server.service.ts`、`extension-detector.service.ts`、`job-scheduler.service.ts`、`tool-executor.ts`、`model-router.util.ts`、`response-parser.ts`、`local-image.service.ts`、`advanced-memory.service.ts`、`project-agent.service.ts`
+- **渲染器**（超过 35 个文件）：`features/chat/`、`features/ideas/`、`features/models/`、`features/projects/`、`features/settings/` 中的组件和核心组件
+- **配置**（1 个文件）：`vite.config.ts`
+＃＃＃ 影响
+- ✅ 将警告从 **354 减少到 306**（减少 13.6%）
+- ✅ 改进了代码可维护性和类型安全性
+- ✅ 在整个应用程序中更好地处理空/未定义
+- ✅ 更清晰的代码结构，降低复杂性
+- ✅修复了关键语法错误和构建问题
+## 2026-01-31：🔧 IPC 处理程序恢复和核心系统稳定
+**状态**： ✅ 已完成
+**摘要**：识别并恢复了应用程序启动序列中丢失的 13 个 IPC handler 注册。这修复了严重的 `extension:shouldShowWarning` 错误，并恢复了对以前无法从 UI 访问的多个核心系统的完全访问权限。
+### 主要成就
+1. **IPC Handler 恢复**：
+- 恢复了 `src/main/startup/ipc.ts` 中丢失的 13 个 IPC 注册调用。
+- 恢复的系统包括：浏览器扩展管理、审核日志、备份/恢复、大脑（内存）、多模型比较、模型协作、健康检查、指标和令牌估计。
+- 解决了 `extension:shouldShowWarning` 的“未注册 handler”runtime 错误。
+- 通过纠正服务工作线程脚本加载路径并将 `service-worker.js` 移动到扩展根目录来修复浏览器扩展初始化。
+- 通过更正消息格式并确保 `page-analyzer.js` 正确加载到内容脚本的隔离世界中，解决了扩展中的“无法建立连接”错误。
+- 通过修复重用现有代理进程时的状态报告，提高了代理服务的可靠性。
+- 增强了扩展通信，带有心跳/就绪信号和更强大的错误记录。
+2. **接口同步**：
+- 将 `src/main/startup/ipc.ts` 与 `src/main/ipc/index.ts` 中定义的 handlers 的综合列表同步。
+- 确保所有服务依赖项都正确注入到恢复的 handlers 中。
+3. **质量保证**：
+- 已验证 `npm run lint` 和 `npm run type-check` 的通过率为 100%。
+- 确认恢复的 handlers 具有来自服务容器的正确类型安全依赖项注入。
+### 受影响的文件
+- **主流程基础设施**：`src/main/startup/ipc.ts`。
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`。
+## 2026-01-30：🤖 交互式代理规划和工作流程优化
+**状态**： ✅ 已完成
+**摘要**：为项目代理实现了更强大和交互式的工作流程。代理现在生成一个技术计划，并使用 `propose_plan` 工具明确建议用户批准。仅在用户明确确认后才继续执行，确保安全并与用户目标保持一致。
+### 主要成就
+1. **交互式规划工具**：
+- 将 `propose_plan` 工具添加到代理的工具带中。
+- 更新了 `ProjectAgentService` 以在计划提出后暂停执行并等待批准。
+- 重构 `planningLoop` 和 `executionLoop` 以实现更好的状态管理和工具处理。
+2. **用户批准工作流程**：
+- 在 `TaskNode` UI 中实现了“批准”按钮。
+- 更新了 IPC 桥来处理计划批准并将批准的步骤传输回代理。
+- 代理历史记录现在包括执行期间已批准的上下文计划。
+3. **执行改进**：
+- 代理现在可以正确更新各个计划步骤状态（`pending` → `running` → `completed`/`failed`）。
+- 修复了 TypeScript 以及 `ToolExecutor` 和 `TaskNode` 中的桥接问题。
+- 工具执行结果和选项的强化类型安全性。
+4. **集成与稳定性**：
+- 使用新代理 IPC 方法更新了 `electron.d.ts` 和 `web-bridge.ts`。
+- 验证完整构建、lint 和类型检查通过状态。
+### 受影响的文件
+- **代理服务**：`src/main/services/project/project-agent.service.ts`、`src/main/tools/tool-executor.ts`、`src/main/tools/tool-definitions.ts`。
+- **UI 组件**：`src/renderer/features/project-agent/nodes/TaskNode.tsx`。
+- **基础设施**：`src/shared/types/events.ts`、`src/main/ipc/project-agent.ts`、`src/renderer/electron.d.ts`、`src/renderer/web-bridge.ts`。
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`。
+## 2026-01-30：🧹 已弃用的功能删除和构建稳定（第 14 批）
+**状态**： ✅ 已完成
+**摘要**：从代码库中完全删除旧的“代理委员会”功能。此清理简化了架构，减少了技术债务，并解决了阻碍构建的关键 TypeScript 错误。施工合格率达到100%。
+### 主要成就
+1. **代理委员会罢免**：
+- 删除了 `AgentCouncilService` 及其 IPC handlers。
+- 从数据层删除了 `CouncilSession`、`CouncilLog` 和 `AgentProfile` 类型。
+- 通过删除所有与委员会相关的持久性逻辑来清理 `DatabaseService` 和 `SystemRepository`。
+- 更新了 `startup/services.ts` 和 `startup/ipc.ts` 以完全停用服务包。
+2. **预载和桥梁清理**：
+- 从 `ElectronAPI` 和 `web-bridge.ts` 中删除了 `council` 桥。
+- 将 `electron.d.ts` 与新的精益 API 表面同步。
+3. **UI 和状态简化**：
+- 从 `ProjectWorkspace` 中删除了所有与理事会相关的选项卡、面板和挂钩。
+- 消除了先前管理编辑器和理事会视图之间转换的死 `viewTab` 状态和逻辑。
+- 简化了 `WorkspaceSidebar` 和 `AIAssistantSidebar` 以专注于核心 AI 聊天体验。
+4. **构建稳定性**：
+- 解决了主进程和渲染器进程中超过 40 个 TypeScript 错误。
+- 使用 `npm run build` 验证构建：成功，退出代码为 0。
+- 清理了重构过程中发现的未使用的导入和道具。
+### 受影响的文件
+- **主流程**：`src/main/services/data/database.service.ts`、`src/main/services/data/repositories/system.repository.ts`、`src/main/startup/services.ts`、`src/main/startup/ipc.ts`、`src/main/ipc/index.ts`、`src/main/preload.ts`、`src/main/services/llm/agent-council.service.ts`（已删除）、`src/main/ipc/council.ts`（已删除）。
+- **渲染器挂钩**：`src/renderer/features/projects/hooks/useProjectState.ts`、`src/renderer/features/projects/hooks/useProjectWorkspaceController.ts`、`src/renderer/features/projects/hooks/useWorkspaceManager.ts`、`src/renderer/features/projects/hooks/useProjectActions.ts`、`src/renderer/hooks/useKeyboardShortcuts.ts`。
+- **渲染器组件**：`src/renderer/features/projects/components/ProjectWorkspace.tsx`、`src/renderer/features/projects/components/workspace/WorkspaceSidebar.tsx`、`src/renderer/features/projects/components/workspace/AIAssistantSidebar.tsx`。
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`。
+## 2026-01-30：🏗️ UI 复杂性降低和组件重构（第 13 批）
+**状态**： ✅ 已完成
+**摘要**：对高复杂性 UI 组件进行重大重构，以提高可维护性和性能。专注于将整体组件分解为更小的、可重用的部分，并解决关键的 React 引用访问问题。
+### 主要成就
+1. **ProjectWizardModal重构**：
+- 提取了 5 个专用步骤组件：`WizardDetailsStep`、`WizardSelectionStep`、`WizardSSHConnectStep`、`WizardSSHBrowserStep`、`WizardCreatingStep`。
+- 主要组件行数减少了 60%，并简化了状态编排。
+- 解决了 SSH 表单处理中的所有类型安全问题。
+2. **ModelSelector系统大修**：
+- 使用自定义挂钩与 UI 完全解耦逻辑：`useModelCategories`、`useModelSelectorLogic`。
+- 将下拉菜单 UI 模块化为 `ModelSelectorTrigger`、`ModelSelectorContent` 和 `ModelSelectorItem`。
+- **引用安全**：通过正确解构和使用引用回调解决了“渲染期间无法访问引用”错误。
+- 对所有模型和类别接口进行类型强化。
+3. **终端会话强化**：
+- 通过实施安全异步更新解决了 `setState` 有效警告。
+- 提取 `TerminalErrorOverlay` 以简化主渲染块。
+- 满足核心终端管理方法的严格复杂度要求（<10）。
+4. **Lint & Type Pass**：
+- 在所有修改的目录中成功运行 `eslint --fix`。
+- 标准化导入排序和简化条件逻辑 (`||` → `??`)。
+- 已验证与重构架构的 100% 构建兼容性。
+### 受影响的文件
+- **模型选择器**：`src/renderer/features/models/components/ModelSelector.tsx`、`ModelsSelectorTrigger.tsx`、`ModelSelectorContent.tsx`、`ModelSelectorItem.tsx`
+- **项目向导**：`src/renderer/features/projects/components/ProjectWizardModal.tsx`、`WizardDetailsStep.tsx`、`WizardSelectionStep.tsx`、`WizardSSHConnectStep.tsx`、`WizardSSHBrowserStep.tsx`、`WizardCreatingStep.tsx`
+- **终端**：`src/renderer/features/terminal/components/TerminalSession.tsx`
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`
+## 2026-01-27：🗄️ 数据库服务兼容性和智能重构（第 12 批）
+**状态**： ✅ 已完成
+**摘要**：`DatabaseClientService` 与 Rust 后端集成的全面验证和强化。重构了代码智能和上下文检索系统，以一致地使用项目路径，确保跨不同工作区的可靠 RAG 和搜索功能。
+### 主要成就
+1. **服务兼容性和桥接**：
+- 加强了 TypeScript `DatabaseService` 和 Rust `tandem-db-service` 之间的合约。
+- 在 `DatabaseService` 中实现了路径解析逻辑，以将基于 UUID 的项目引用桥接到路径索引的情报数据。
+- 根据 Rust HTTP API 验证所有核心数据库操作（聊天、消息、项目、知识）。
+2. **代码智能重构**：
+- **CodeIntelligenceService**：重构索引、清除和查询逻辑，以使用 `rootPath` （绝对目录路径）作为主标识符。
+- **ContextRetrievalService**：实现了 UUID 的项目路径解析，以确保矢量搜索按项目正确过滤，防止跨项目上下文泄漏。
+- **IPC 层**：更新了 `ProjectIPC` 和 `CodeIntelligenceIPC` handlers 以传递必要的路径参数。
+3. **数据完整性和架构一致性**：
+- 强化 `TokenUsage` 跟踪和 `FileDiff` 存储，以使用绝对路径作为唯一的项目密钥。
+- 验证符号和语义片段的矢量搜索结果是否正确地限定在活动项目的范围内。
+- 解决了后台文件索引使用不正确的项目标识符的关键问题。
+4. **构建和质量保证**：
+- 实现 100% 构建通过率：原生 Rust 服务、Vite 前端和 Electron 主流程。
+- 清理 `npm run type-check` 和 `npm run lint` 结果。
+- 验证项目索引等长时间运行的操作是否已正确安排并与物理工作空间相关联。
+### 受影响的文件
+- **核心服务**：`src/main/services/data/database.service.ts`、`src/main/services/project/code-intelligence.service.ts`、`src/main/services/llm/context-retrieval.service.ts`
+- **存储库**：`src/main/services/data/repositories/knowledge.repository.ts`、`src/main/services/data/repositories/project.repository.ts`
+- **IPC Handlers**：`src/main/ipc/project.ts`、`src/main/ipc/code-intelligence.ts`
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`
+## 2026-01-27：🏗️ 项目路径迁移和端到端一致性（第 11 批）
+**状态**： ✅ 已完成
+**摘要**：完成了整个生态系统从 `project_id` 到 `project_path` 的迁移。这包括更新 Rust 数据库架构和迁移、重构 TypeScript 存储库和服务，以及通过渲染器中的目标类型修复来稳定构建。
+### 主要成就
+1. **数据库架构演变**：
+- 实现了 Rust 迁移，将 `file_diffs` 和 `token_usage` 表中的 `project_id` 重命名为 `project_path`。
+- 更新了索引以与新的基于路径的查找策略保持一致。
+2. **后端存储库重构**：
+- 更新了 `KnowledgeRepository` 和 `SystemRepository` 以一致地使用 `project_path`。
+- 使用新架构同步 `SemanticFragment` 存储和 `TokenUsage` 跟踪。
+3. **构建稳定性和类型安全**：
+- 解决了 `settings.service.ts`、`CommandPalette.tsx`、`ModelSelector.tsx` 和 `ChatHistorySection.tsx` 中的 11 个以上严重 TypeScript 错误。
+- 强化可选属性访问并修复渲染器配额和聊天管理模块中的空/未定义检查。
+- 通过正确等待 MCP 工具定义修复了 `ToolExecutor.ts` 中的异步不匹配问题。
+4. **代码质量和维护**：
+- 修复了 `ssh.service.ts` 中阻止编译的重复变量声明。
+- 解决了与无效合并运算符 (`??`) 和复杂性相关的几个 lint 警告。
+- 通过成功的 Rust 后端构建和干净的 TypeScript 类型检查来验证端到端一致性。
+### 受影响的文件
+- **Rust 后端**：`src/services/db-service/src/database.rs`
+- **主流程服务**：`src/main/services/data/repositories/knowledge.repository.ts`、`src/main/services/data/repositories/system.repository.ts`、`src/main/services/system/settings.service.ts`、`src/main/services/project/ssh.service.ts`、`src/main/tools/tool-executor.ts`
+- **渲染器组件**：`src/renderer/components/layout/CommandPalette.tsx`、`src/renderer/components/layout/sidebar/ChatHistorySection.tsx`、`src/renderer/features/models/components/ModelSelector.tsx`
+- **共享类型**：`src/shared/types/db-api.ts`
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`
+## 2026-01-27：💾 数据库客户端重构和构建稳定性（第 9 批）
+**状态**： ✅ 已完成
+**摘要**：重构了 `DatabaseService` 以充当新的独立 Rust 数据库服务的远程客户端。这样就完成了向单独的流程管理数据库架构的过渡。还执行了全面的构建稳定过程，解决了 19 个 TypeScript 错误和跨核心模块的几个关键语法错误。
+### 主要成就
+1. **远程数据库客户端**：
+- 重构 `DatabaseService` 以将所有操作委托给 `DatabaseClientService`。
+- 从主数据库服务中删除了所有旧版 `PGlite` 依赖项和本地文件系统路径。
+- 实现了通过 HTTP/JSON-RPC 桥接的远程 `DatabaseAdapter`。
+- 保持与现有存储库模式的完全向后兼容性。
+2. **服务生命周期和发现**：
+- 将 `DatabaseClientService` 集成到主应用程序容器中。
+- 建立基于依赖关系的启动顺序：`ProcessManager` → `DatabaseClient` → `DatabaseService`。
+- 使用 `%APPDATA%` 中的端口文件自动发现服务。
+3. **构建稳定性**：
+- 解决了架构转变引入的所有 19 个 TypeScript 错误。
+- 修复了 `PanelLayout.tsx` (movePanel) 和 `rate-limiter.util.ts` (getRateLimiter) 中因先前合并冲突而导致的关键语法错误。
+- `message-normalizer.util.ts` 中具有明确角色转换的强化类型安全性。
+- 修复了 `ollama.ts` 中与响应状态代码相关的长期存在的类型错误。
+4. **测试套件对齐**：
+- 更新了 `DatabaseService` 单元测试以使用模拟的远程客户端行为。
+- 更新了 `repository-db.integration.test.ts` 以支持新的构造函数签名和远程通信模式。
+- 使用干净的 `npm run type-check` 和 `npm run lint` 结果验证构建。
+### 受影响的文件
+- **核心服务**：`src/main/services/data/database.service.ts`、`src/main/startup/services.ts`、`src/main/services/data/database-client.service.ts`
+- **实用程序**：`src/main/utils/rate-limiter.util.ts`、`src/main/utils/message-normalizer.util.ts`、`src/main/startup/ollama.ts`
+- **渲染器**：`src/renderer/components/layout/PanelLayout.tsx`
+- **测试**：`src/tests/main/services/data/database.service.test.ts`、`src/tests/main/tests/integration/repository-db.integration.test.ts`
+- **文档**：`docs/TODO.md`、`docs/CHANGELOG.md`
+## 2026-01-27：🗄️数据库服务重构（架构4.3）
+**状态**： ✅ 已完成
+**总结**：将嵌入式 PGlite 数据库重构为具有基于 Rust 的主机的独立 Windows 服务，完成架构路线图任务 4.3。该数据库现在作为独立服务运行，提高了可靠性并允许数据库在应用程序重新启动时持续存在。
+### 主要成就
+1. **Rust 数据库服务 (`tandem-db-service`)**:
+- `src/services/db-service/` 中的新 Rust 服务
+- 使用 WAL 模式实现并发的 SQLite 数据库
+- 使用 bincode 序列化嵌入进行矢量搜索
+- 代码符号和语义片段的余弦相似度搜索
+- 聊天、消息、项目、文件夹、提示的完整 CRUD API
+2. **Windows服务集成**：
+- 通过 `windows-service` crate 支持本机 Windows 服务
+-随Windows自动启动，失败时自动重新启动
+- 通过端口文件发现服务 (`%APPDATA%/Tandem/services/db-service.port`)
+- 通过 `scripts/install-db-service.ps1` 安装/卸载
+3. **HTTP API**：
+- 动态端口上的 RESTful API
+- 健康检查端点位于 `/health`
+- `/api/v1/*` 下的 CRUD 端点
+- 原始 SQL 查询支持以实现迁移兼容性
+4. **TypeScript 客户端**：
+- `src/main/services/data/database-client.service.ts` 中的 `DatabaseClientService`
+- 使用 axios 的 HTTP 客户端，具有自动重试功能
+- 通过 `ProcessManagerService` 发现和启动服务
+- 兼容接口逐步迁移
+5. **共享类型**：
+- 新的 `src/shared/types/db-api.ts` 定义 API 合约
+- 所有端点的请求/响应类型
+- 用于类型安全的 `DbServiceClient` 接口
+### 文件已创建
+- **Rust 服务**：`src/services/db-service/`（Cargo.toml、main.rs、database.rs、server.rs、types.rs、handlers/\*）
+- **TypeScript**：`src/shared/types/db-api.ts`、`src/main/services/data/database-client.service.ts`
+- **脚本**：`scripts/install-db-service.ps1`
+### 文件已修改
+- `src/services/Cargo.toml` - 将数据库服务添加到工作区
+- `src/shared/types/index.ts` - 导出 db-api 类型
+- `docs/TODO/architecture.md` - 更新了任务 4.3 状态
+### 后续步骤
+- 使用现有数据进行迁移测试
+- 性能基准测试与嵌入式 PGlite
+- 云同步集成（延迟）
+## 2026-01-27: 🏗️ MCP 系统模块化和重构（第 8 批）
+**状态**： ✅ 已完成
+**总结**：成功重构了MCP（模型上下文协议）系统，将内部工具提取到模块化服务器架构中。这提高了可维护性，减少了注册表的文件大小，并为系统将来的插件扩展做好了准备。
+### 主要成就
+1. **模块化服务器架构**：
+- 将 20 多个内部工具从整体 `registry.ts` 提取到专用服务器模块中：
+- `core.server.ts`：文件系统、命令执行和系统信息。
+- `network.server.ts`：Web 搜索、SSH 和网络实用程序。
+- `utility.server.ts`：屏幕截图、通知、监控和剪贴板。
+- `project.server.ts`：Git、Docker 和项目扫描。
+- `data.server.ts`：数据库、嵌入和 Ollama 实用程序。
+- `security.server.ts`：安全助手和网络审核。
+- 为共享类型、结果规范化和安全护栏实现了 `server-utils.ts`。
+2. **棉绒和维护**：
+- 全球警告数量从 **655** 进一步减少至 **468**。
+- 解决了新 MCP 模块中的所有导入排序问题。
+- 通过将不同的域逻辑移动到单独的、集中的文件中来提高代码的可读性。
+3. **文档和路线图更新**：
+- 完成架构路线图中的任务 3.2。
+- 更新了中央 TODO 跟踪以反映代码库的当前状态和 lint 进度。
+### 受影响的文件
+- **MCP**：`src/main/mcp/registry.ts`，`src/main/mcp/server-utils.ts`
+- **MCP 服务器**：`src/main/mcp/servers/core.server.ts`、`src/main/mcp/servers/network.server.ts`、`src/main/mcp/servers/utility.server.ts`、`src/main/mcp/servers/project.server.ts`、`src/main/mcp/servers/data.server.ts`、`src/main/mcp/servers/security.server.ts`
+- **文档**：`docs/TODO/architecture.md`、`docs/TODO.md`、`docs/CHANGELOG.md`
+## 2026-01-26：🛠️ 主流程重构和复杂性降低（第 7 批）
+**状态**： ✅ 已完成
+**摘要**：精心策划了高复杂性主流程服务和实用程序的重大重构。解决了 149 个 lint 警告并强化了核心模块的类型安全性。
+### 主要成就
+1. **复杂性热点解析**：
+- **StreamParser.processBuffer**：使用模块化有效负载 handler 方法将复杂性从 **48** 降低到 **<10**。
+- **SettingsService**：模块化提供者合并和保存队列逻辑（从复杂性 46/38 重构）。
+- **HistoryImportService**：模块化 OpenAI 和 JSON 导入循环，将繁重的逻辑拆分为可测试的助手。
+- **ResponseNormalizer**：隔离的特定于提供商的标准化逻辑，以满足 NASA 的十次方规则。
+2. **绒毛和类型硬化**：
+- 将全球警告数量从 **804** 减少到 **655**（该项目处理的总数：减少 38%）。
+- 消除了 `SettingsService` 和 `StreamParser` 中所有禁止的 `any` 类型。
+- 解决了 `FolderRepository` 及其集成测试中的项目范围的 TS 错误。
+3. **NASA 十项合规权**：
+- 在流解析中强制执行固定循环边界（安全迭代：1,000,000）。
+- 所有重构模块中保证短函数（<60 行）。
+- 最小化变量范围并严格检查所有返回值。
+### 受影响的文件
+- **实用程序**：`src/main/utils/stream-parser.util.ts`、`src/main/utils/response-normalizer.util.ts`
+- **服务**：`src/main/services/system/settings.service.ts`、`src/main/services/external/history-import.service.ts`
+- **存储库**：`src/main/repositories/folder.repository.ts`
+- **测试**：`src/tests/main/tests/integration/repository-db.integration.test.ts`
+## 2026-01-26：🚀 性能执行和 Lint 报告
+**状态**： ✅ 已完成
+**摘要**：在详细报告中记录了所有 804 lint 警告，并在所有代理配置中建立了 12 条新的强制性能规则。
+### 增强功能
+1. **性能优化规则**：
+- 引入了 12 条严格的性能规则，包括强制延迟加载、记忆化、IPC 批处理和虚拟化（>50 项）。
+- 更新了所有代理规则配置：`docs/AI_RULES.md`、`.gemini/GEMINI.md`、`.agent/rules/code-style-guide.md`、`.copilot/COPILOT.md` 和 `.claude/CLAUDE.md`。
+2. **Lint 报告**：
+- 创建了 `docs/LINT_ISSUES.md`，其中按文件路径和行号详细细分了 804 警告。
+- 将 lint 解析设置为未来开发的高优先级任务。
+3. **记录标准**：
+- 在 `logs/` 处为所有代理输出建立强制调试日志目录。
+## 2026-01-26：🔄 真实账户更新和 IPC 重构
+**状态**： ✅ 已完成
+**摘要**：解决了一个关键的 UX 问题，即为同一提供商添加多个帐户不会立即触发 UI 刷新。重构了身份验证 IPC 层，以实现更好的依赖性管理，并将主进程事件桥接到渲染器。
+### 改进
+1. **真实账户更新**：
+- 为 `account:linked`、`account:updated` 和 `account:unlinked` 事件实现了主到渲染器事件桥。
+- 更新了渲染器中的 `useLinkedAccounts` 挂钩以侦听这些事件并自动刷新。
+- 结果：添加第二个 GitHub 或 Copilot 帐户现在会立即反映在设置 UI 中。
+2. **IPC 依赖关系重构**：
+- 重构 `registerAuthIpc` 以使用结构化依赖项对象。
+- 解决了有关参数计数过多的 lint 警告。
+- 将身份验证 IPC 与聊天和 Ollama 服务中使用的既定模式保持一致。
+3. **代码维护**：
+- 清理了 Auth IPC 层中未使用的依赖项。
+- 重构后验证了项目范围的类型安全性。
+### 受影响的文件
+- **主要**：`src/main/ipc/auth.ts`、`src/main/startup/ipc.ts`、`src/main/ipc/index.ts`
+- **渲染器**：`src/renderer/features/settings/hooks/useLinkedAccounts.ts`
+## 2026-01-25：🗄️ 数据库架构迁移和类型稳定
+**状态**： ✅ 完全完成
+**摘要**：通过将整体 `DatabaseService` 迁移到专门的存储库模式，精心策划了数据层的重大架构转变。在这次迁移的同时，我实现了项目范围的类型稳定性，解决了 50 多个遗留的 TypeScript 错误并统一了 IPC 通信合约。
+### 核心架构改进
+1. **存储库模式实现**：
+- **BaseRepository**：标准化数据库适配器访问和错误处理。
+- **ChatRepository**：隔离的聊天历史和消息持久化逻辑。
+- **ProjectRepository**：管理项目元数据和环境状态。
+- **KnowledgeRepository**：优化的矢量存储和代码符号索引。
+- **SystemRepository**：统一的系统统计信息、文件夹管理和身份验证帐户。
+- **DatabaseService**：重构为轻量级委托层，遵守 NASA 的十次幂规则。
+2. **统一使用情况跟踪**：
+- 跨主进程和渲染进程的标准化 `TokenUsageRecord`。
+- 修复了 IPC 桥中的成本估算准确性和特定于提供商的映射。
+3. **图库和媒体持久性**：
+- 实现了用于高保真图像元数据存储的 `gallery_items` 模式。
+- 增强了 `ImagePersistenceService` ，具有强大的错误处理和自动元数据映射。
+- 将逻辑集成到 `LogoService` 中，以实现无缝资产生成历史记录。
+### 技术强化
+- **TypeScript 完美**：解决了与可分配性、缺失属性和过时接口相关的所有 `type-check` 错误。
+- **IPC 安全性**：通过严格的参数验证对文件差异和令牌统计信息进行强化 IPC handlers。
+- **代码质量**：在所有新存储库类上强制执行 JSDoc 标准并验证 NASA 规则合规性（短函数、最小范围）。
+- **测试完整性**：更新并修复了 `DatabaseService` 测试，以与新的基于存储库的架构保持一致。
+### 受影响的文件（30 多个文件）
+- **服务**：`DatabaseService`、`ImagePersistenceService`、`FileChangeTracker`、`LogoService`
+- **存储库**：`ChatRepository`、`ProjectRepository`、`KnowledgeRepository`、`SystemRepository`
+- **基础设施**：`migrations.ts`、`db-migration.service.ts`、`ipc/db.ts`、`ipc/file-diff.ts`
+- **测试**：`database.service.test.ts`
+## 2026-01-25：🚀 IDEAS 系统全面检修（7 大功能）
+**状态**： ✅ 7 个高影响力的功能已完成
+**摘要**：对创意系统实施了 7 项关键增强功能，包括搜索/过滤、导出、重试逻辑、重新生成、自定义提示和Marketplace研究预览。
+### 已实现的功能
+**第 1 节：搜索、导出和重试逻辑（3 项）**
+1. **ENH-IDX-004**：搜索和过滤会话历史记录_（~45 分钟）_
+- **搜索**：跨想法标题和描述的实时搜索
+- **过滤器**：状态（待定/批准/拒绝）和类别下拉列表
+- **活动过滤器 UI**：视觉指示器显示已应用的过滤器以及“全部清除”选项
+- **智能过滤**：没有匹配想法的会话将自动隐藏
+- **性能**：使用useMemo进行高效过滤，无需重复计算
+- 文件：`SessionHistory.tsx`、`en.ts`、`tr.ts`
+2. **ENH-IDX-009**：将想法导出到 Markdown/JSON _（~50 分钟）_
+- **Markdown 导出**：专业格式文档，具有：
+- 会话元数据（ID、日期、想法计数）
+- 每个想法都带有状态表情符号 (✅/❌/⏳)
+- 完整详细信息：类别、描述、Marketplace分析、技术堆栈、工作量估算
+- **JSON 导出**：结构化数据导出以供编程使用
+- **导出按钮**：审核阶段标题中的下拉菜单
+- **命名**：自动生成带有会话 ID 和日期的文件名
+- 文件：`IdeasPage.tsx`、`IdeasHeader.tsx`、`en.ts`、`tr.ts`
+3. **ENH-IDX-017**：LLM 失败的重试逻辑_（~40 分钟）_
+- **重试 Wrapper**：`retryLLMCall()` 方法包装了 idea-generator 中的所有 13 个 LLM 操作
+- **智能检测**：仅重试暂时性错误（速率限制、超时、网络问题）
+- **指数退避**：1s → 2s → 4s 延迟（最多 30 秒上限）
+- **最多 3 次重试**：在处理大多数瞬态故障时防止无限循环
+- **错误类型**：处理 429、超出配额、ECONNRESET、ETIMEDOUT、网络错误
+- **日志记录**：在每次重试尝试时发出警告，并提供清晰的上下文
+- 文件：`idea-generator.service.ts`（13 个 LLM 调用已包装）
+**第 2 节：再生和自定义提示（2 项）**
+4. **ENH-IDX-011**：重新生成单一想法_（~45 分钟）_
+- **UI**：IdeaDetailsModal 标题中的“重新生成”按钮（仅适用于待处理的创意）
+- **后端**：IdeaGeneratorService 中的新 `regenerateIdea()` 方法
+- **流程**：运行相同类别的完整 9 阶段管道，替换现有想法
+- **重复数据删除**：从相似性检查中排除当前想法以避免冲突
+- **IPC**：新的 handler `ideas:regenerateIdea` 具有成功/想法响应
+- **状态管理**：带有禁用按钮和脉冲图标的加载状态
+- **事件**：发出 `idea:regenerated` 事件以进行实时更新
+- 文件：`idea-generator.service.ts`、`idea-generator.ts`、`IdeaDetailsModal.tsx`、`IdeasPage.tsx`、`preload.ts`、`electron.d.ts`
+5. **ENH-IDX-012**：自定义提示输入_（~60分钟）_
+- **UI**：SessionSetup 中用于自定义要求/约束​​的可选文本区域
+- **架构**：向 IdeaSessionConfig 和 IdeaSession 类型添加 `customPrompt` 字段
+- **数据库**：迁移 #21 将 `custom_prompt` 列添加到 idea_sessions 表中
+- **存储**：保存在数据库中，加载会话，传递给生成
+- **集成**：作为“用户约束”部分合并到种子生成提示中
+- **UX**：带有示例的占位符文本，字符数会很有帮助
+- **翻译**：完整的 i18n 支持（EN/TR）
+- 文件：`SessionSetup.tsx`、`ideas.ts`（类型）、`migrations.ts`、`idea-generator.service.ts`、`en.ts`、`tr.ts`
+**第三节：Marketplace研究预览（1 项）**
+6. **ENH-IDX-013**：Marketplace研究预览_（~50 分钟）_
+- **快速分析**：全面研究承诺之前的轻量级预览
+- **后端**：使用 gpt-4o-mini 提高速度/成本的新 `generateMarketPreview()` 方法
+- **预览数据**：对于每个类别，显示：
+- Marketplace总结（2-3句话）
+- 三大主要趋势（项目符号列表）
+- Marketplace规模/增长预测
+- 比赛级别（低/中/高，带有视觉徽章）
+- **UI**：MarketPreviewModal 具有漂亮的基于卡片的布局
+- **预览按钮**：选择类别时出现在 SessionSetup 中
+- **流程**：预览 → 继续 → 全面研究（或取消）
+- **性能**：所有类别的并行处理（总共约 5-10 秒）
+- **IPC**：带有类别数组输入的新 handler `ideas:generateMarketPreview`
+- 文件：`idea-generator.service.ts`、`idea-generator.ts`、`SessionSetup.tsx`、`MarketPreviewModal.tsx`、`preload.ts`、`electron.d.ts`、`en.ts`、`tr.ts`
+### 技术细节
+**重新生成实施：**
+- 后端使用相同的类别和会话上下文创建新的想法
+- 从重复数据删除检查中过滤掉当前的想法
+- 保留原始ID和createdAt时间戳
+- 再生后将状态重置为“待处理”
+- 完整管道：种子→研究→名称→描述→路线图→技术堆栈→竞争对手
+**自定义提示集成：**
+- 作为可选的 TEXT 列存储在数据库中（如果未提供则为 NULL）
+- 通过会话对象传递整个生成管道
+- 作为“用户约束”部分注入 `buildSeedGenerationPrompt()`
+- 出现在创意方向和“深入思考”部分之间
+- 仅在非空时包含（在会话创建期间修剪）
+**数据库更改：**
+- 迁移#21：`ALTER TABLE idea_sessions ADD COLUMN custom_prompt TEXT;`
+- 无默认值（现有会话允许 NULL）
+- 向后兼容 - 现有会话无需自定义提示即可工作
+**Marketplace预览实施：**
+- 使用 gpt-4o-mini 进行更快、更便宜的分析
+- 所有类别的并行 Promise.all() （总共约 5-10 秒）
+- 基于 JSON 的响应解析，默认为 fallback
+- 视觉竞赛徽章：绿色（低）、黄色（中）、红色（高）
+- 具有多个类别的可滚动内容的模态
+- “继续全面研究”按钮触发表单提交
+### 修改文件（19 个文件）
+1. `src/renderer/features/ideas/components/SessionHistory.tsx` - 搜索/过滤 UI
+2. `src/renderer/features/ideas/components/IdeasHeader.tsx` - 导出下拉列表
+3. `src/renderer/features/ideas/IdeasPage.tsx` - 导出并重新生成 handlers
+4. `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - 重新生成按钮
+5. `src/renderer/features/ideas/components/SessionSetup.tsx` - 自定义提示输入+预览按钮
+6. `src/renderer/features/ideas/components/MarketPreviewModal.tsx` - 新的预览模式
+7. __​​CODETOKEN_0__ - 导出Marketplace预览模式
+8. `src/main/services/llm/idea-generator.service.ts` - 重试逻辑、再生、自定义提示、行情预览
+9. `src/main/ipc/idea-generator.ts` - 重新生成 + 预览 IPC handlers
+10. `src/main/services/data/migrations.ts` - 迁移 #21
+11. `src/shared/types/ideas.ts` - customPrompt 的类型更新
+12. `src/main/preload.ts` - regenerateIdea +generateMarketPreview 绑定
+13. `src/renderer/electron.d.ts` - TypeScript 定义
+14. `src/renderer/i18n/en.ts` - 英文翻译
+15. `src/renderer/i18n/tr.ts` - 土耳其语翻译
+16. `src/main/services/data/repositories/system.repository.ts` - 修复了语法错误
+17. __​​CODETOKEN_0__ - 完成状态
+18. `docs/CHANGELOG.md` - 此条目
+### 添加翻译键
 ```typescript
-// Custom prompt
-customPrompt: {
-  label: 'Custom Requirements',
-  optional: 'Optional',
-  placeholder: 'e.g., Must use TypeScript, focus on accessibility, target small businesses...',
-  hint: 'Add specific constraints or requirements for the AI to consider during idea generation.'
+// 自定义提示
+自定义提示：{
+标签：“定制要求”，
+可选：'可选'，
+占位符：“例如，必须使用 TypeScript，注重可访问性，针对小型企业...”，
+提示：“添加人工智能在创意生成过程中考虑的具体约束或要求。”
 }
-// Market preview
-previewMarket: 'Preview Market Research'
+// Marketplace预览
+PreviewMarket：“预览Marketplace研究”
 ```
-### Type Check Status
-- ✅ 33 errors (all pre-existing in db.ts/proxy.ts)
-- ✅ No new errors introduced
-- ✅ All features type-safe
-### Performance & UX
-- **Search/Filter**: Instant, no perceptible lag even with 100+ ideas
-- **Export**: Client-side, no server load, downloads in <100ms
-- **Retry Logic**: Transparent to users, automatic recovery
-- **Regenerate**: Shows loading state, typical completion ~30-60 seconds
-- **Custom Prompts**: Seamlessly integrated, affects all generated ideas
-- **Market Preview**: Fast parallel processing, ~5-10 seconds for all categories
-### Total Session Progress
-**Completed Today (12 items):**
-1. ✅ ENH-IDX-005: Keyboard shortcuts
-2. ✅ ENH-IDX-001: Rejection confirmation
-3. ✅ ENH-IDX-002: Edit/rename ideas
-4. ✅ ENH-IDX-016: Session caching
-5. ✅ ENH-IDX-015: Optimistic UI updates
-6. ✅ NEW: Complete deletion system (single + bulk)
-7. ✅ ENH-IDX-004: Search/filter session history
-8. ✅ ENH-IDX-009: Export ideas (Markdown/JSON)
-9. ✅ ENH-IDX-017: LLM retry logic
-10. ✅ ENH-IDX-011: Regenerate single idea
-11. ✅ ENH-IDX-012: Custom prompt input
-12. ✅ ENH-IDX-013: Market research preview
-**Build Status**: ✅ All features tested and working!
+### 类型检查状态
+- ✅ 33 个错误（全部已存在于 db.ts/proxy.ts 中）
+- ✅ 没有引入新的错误
+- ✅ 所有功能类型安全
+### 性能和 UX
+- **搜索/过滤**：即时，即使有 100 多个想法也没有明显的滞后
+- **导出**：客户端，无服务器负载，下载时间 <100 毫秒
+- **重试逻辑**：对用户透明，自动恢复
+- **重新生成**：显示加载状态，典型完成时间约为 30-60 秒
+- **自定义提示**：无缝集成，影响所有生成的想法
+- **Marketplace预览**：快速并行处理，所有类别约 5-10 秒
+### 总会话进度
+**今天完成（12 项）：**
+1. ✅ ENH-IDX-005：键盘快捷键
+2. ✅ ENH-IDX-001：拒绝确认
+3. ✅ ENH-IDX-002：编辑/重命名想法
+4. ✅ ENH-IDX-016：会话缓存
+5. ✅ ENH-IDX-015：乐观 UI 更新
+6. ✅ 新：完整的删除系统（单个+批量）
+7. ✅ ENH-IDX-004：搜索/过滤会话历史记录
+8. ✅ ENH-IDX-009：导出想法 (Markdown/JSON)
+9. ✅ ENH-IDX-017：LLM 重试逻辑
+10. ✅ ENH-IDX-011：重新生成单一想法
+11. ✅ ENH-IDX-012：自定义提示输入
+12. ✅ ENH-IDX-013：Marketplace研究预览
+**构建状态**： ✅ 所有功能均已测试且正常运行！
 ## [2026-01-26]
-### Added
-- Comprehensive JSDoc documentation for core services:
-    - [SettingsService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
-    - [SecurityService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
-    - [ConfigService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
-- Enhanced type safety in `ipc-batch.util.ts` for quota related operations.
-### Fixed
-- A critical argument mismatch in `src/main/ipc/chat.ts`'s `sanitizeStreamInputs` call.
-- Type mismatches in `AccountManager.tsx` related to `LinkedAccountInfo` interface update.
-- Minor lint warnings in `SettingsService` regarding unnecessary conditionals.
-- Duplicated JSDoc blocks in `SettingsService`.
-## 2026-01-25: ✨ MEDIUM PRIORITY ENHANCEMENTS + IDEA DELETION
-**Status**: ✅ 6 ITEMS COMPLETED
-**Summary**: Implemented fastest actionable MEDIUM priority items + added complete idea deletion system with bulk operations.
-### Ideas System Enhancements (6 items completed)
-- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow
-- [x] **ENH-IDX-001**: Rejection confirmation dialog
-- [x] **ENH-IDX-002**: Edit/Rename generated ideas _(NEW)_
-- [x] **ENH-IDX-016**: Session caching _(NEW)_
-- [x] **ENH-IDX-015**: Optimistic UI updates _(NEW)_
-- [x] **NEW FEATURE**: Complete Idea Deletion System _(USER REQUEST)_
-**Idea Deletion Implementation:**
-1. **Single Delete**: Trash button in IdeaDetailsModal header with confirmation
-2. **Bulk Delete**:
-    - Checkboxes for each idea in SessionHistory
-    - Selection counter showing N ideas selected
-    - "Delete Selected" button with bulk confirmation
-    - Clear selection option
-3. **Backend**: IPC handlers already existed (deleteIdea, deleteSession)
-4. **Confirmation**: Native confirm() dialogs prevent accidental deletion
-**Implementation Details:**
-1. **Title & Description Editing**: Users can now edit both idea title and description before approval. Shows "Reset" button when modified.
-2. **Session Caching**: Added useMemo for ideas and sessions to avoid repeated fetches, improving performance.
-3. **Optimistic Updates**: UI updates immediately on approve/reject actions, with automatic rollback if API fails. Dramatically improved perceived responsiveness.
-4. **Deletion System**: Checkbox selection + bulk operations similar to project management system.
-### Files Modified (8 files)
-- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added delete button & confirmation
-- `src/renderer/features/ideas/components/SessionHistory.tsx` - Added checkboxes & bulk delete UI
-- `src/renderer/features/ideas/components/IdeaDetailsContent.tsx` - Description editing
-- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - Keyboard hints
-- `src/renderer/features/ideas/IdeasPage.tsx` - Delete handlers & caching
-- `docs/TODO/ideas.md` - Marked 3 items complete
-- `docs/CHANGELOG.md` - Updated
-### Type Check
-✅ No new errors (33 pre-existing errors in db.ts/proxy.ts)
-## 2026-01-25: ✨ MEDIUM PRIORITY ENHANCEMENTS
-**Status**: ✅ IN PROGRESS
-**Summary**: Implemented easiest MEDIUM priority items after upgrading all LOW todos.
-### Ideas System Enhancements (2 items completed)
-- [x] **ENH-IDX-005**: Keyboard shortcuts for workflow _(COMPLETED)_
-    - Added Escape to close modal
-    - Added Ctrl+Enter to approve idea (when folder selected)
-    - Added Ctrl+Backspace to reject idea (with confirmation)
-    - Visual keyboard hints on buttons (hover to see)
-- [x] **ENH-IDX-001**: Rejection confirmation dialog _(COMPLETED)_
-    - Show "Are you sure?" modal before rejecting ideas
-    - Optional reason text field for tracking why ideas were rejected
-    - Integrated with keyboard shortcuts (Esc to cancel confirmation)
-### Files Modified
-- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - Added keyboard shortcuts and rejection confirmation
-- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - Added keyboard hint badges
-### Priority Upgrades
-All LOW priority items upgraded to MEDIUM across all TODO files:
-- features.md: Keyboard Shortcut Customization, Theme Creator
-- architecture.md: Linux Support, Database Service refactoring
-- quality.md: Property-based testing, Advanced linting, Code metrics
-- ideas.md: Keyboard shortcuts, Drag-and-drop, Collaborative features, Versioning
-- council.md: AI-powered optimization, Multi-project coordination, Human-AI workflows
-- projects.md: AI-powered project assistant
-## 2026-01-25: 📝 TODO SESSION COMPLETE
-**Status**: ✅ SESSION COMPLETE
-**Summary**: Comprehensive TODO audit and implementation session completed. All actionable LOW and MEDIUM priority items addressed. Remaining items are large features requiring significant architectural work.
-### Session Achievements
-1. **Council Critical Fixes** (3 items) - Dynamic model/provider, tool permissions, retry logic
-2. **Theme Color Migration** (50+ files) - Migrated to CSS variables
-3. **LOW Priority Audit** (6 items) - Verified existing features, reviewed code quality
-4. **MEDIUM Security Audit** (2 items) - Credential logging review, permission system verification
-5. **Bug Fixes** (2 items) - Artificial delays optimization, EventBus enablement
-### Files Modified This Session
-**Core Services:**
-- `src/main/services/llm/idea-generator.service.ts` - Made artificial delays configurable (90% faster by default)
-- `src/main/services/data/file-change-tracker.service.ts` - Enabled real-time EventBus emissions
-**Documentation:**
-- `docs/TODO/security.md` - Marked MEDIUM items complete
-- `docs/TODO/ideas.md` - Marked BUG-IDX-007 fixed
-- `docs/CHANGELOG.md` - Comprehensive session documentation
-### Remaining Work Analysis
-**Large Features (Require dedicated sprints):**
-- Memory/RAG management system
-- Custom agent system and workflow engine
-- Test coverage infrastructure (React Testing Library, E2E)
-- Plugin architecture extraction
-- Advanced project scaffolding
-**Medium Features (Multiple days each):**
-- API documentation generation (TypeDoc)
-- Specialized agent library
-- Project template system
-- Idea system enhancements
-**Technical Debt:**
-- JSDoc coverage (86 services to document)
-- Linux packaging and testing
-- Database architecture refactoring
-All quick wins and actionable items have been completed. Future work requires product decisions and architectural planning.
-## 2026-01-25: 🐛 BUG FIXES & OPTIMIZATIONS
-**Status**: ✅ COMPLETED
-**Summary**: Fixed medium priority bugs including artificial delays in idea generation pipeline.
-### Ideas (MEDIUM Bugs) - ideas.md
-- [x] **BUG-IDX-007**: Research pipeline artificial delays _(OPTIMIZED)_
-    - Made delays configurable via `IDEA_DELAY_MULTIPLIER` environment variable
-    - Default reduced to 0.1 (10% of original delays: 1000ms → 100ms)
-    - Can be disabled with `IDEA_DELAY_MULTIPLIER=0` or restored with `IDEA_DELAY_MULTIPLIER=1`
-    - Significantly improves UX when AI research is fast while maintaining slight pacing for visual feedback
-## 2026-01-25: 🔐 MEDIUM PRIORITY SECURITY AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Audited and verified MEDIUM priority security items. All items are implemented or verified as complete.
-### Security (MEDIUM) - security.md
-- [x] **Audit logging for credential leakage** - Reviewed: AuditLogService exists, credential logging audited in auth.service.ts, token.service.ts, ssh.service.ts - no passwords/tokens are logged, only email/accountId
-- [x] **Permission checks for privileged actions** - Verified: ToolPermissions system handles tool-based permissions in agent-council.service.ts. Single-user desktop app relies on OS-level permissions for file system/process actions
-### Access Control (MEDIUM) - security.md
-All IPC security items already completed:
-- Schema validation for all IPC payloads ✅
-- Rate limiting on sensitive channels (60-120 req/min) ✅
-- Tool security restrictions (ToolPermissions, Protected Paths) ✅
-## 2026-01-25: ✅ LOW PRIORITY TODO AUDIT
-**Status**: ✅ COMPLETED
-**Summary**: Audited all LOW priority items across TODO files. Many items already existed or were verified complete.
-### Features (LOW) - features.md
-- [x] **Chat Export/Import** - Already exists: `ExportModal.tsx` (Markdown/PDF), `history-import.service.ts` (ChatGPT/Claude import)
-- [x] **Log Viewer** - Already exists: `LoggingDashboard.tsx` accessible via Ctrl+L
-- [ ] Keyboard Shortcut Customization - Requires new settings UI
-- [ ] Theme Creator - Requires complex UI builder
-### Security (LOW) - security.md
-- [x] **Context Isolation** - Verified: `contextIsolation: true` in all window creation (main.ts, export.service.ts, project-scaffold.service.ts, window.ts)
-### Quality (LOW) - quality.md
-- [x] **Consolidate duplicate utilities** - Reviewed: No true duplicates. ipc-batch.util.ts in main/renderer are complementary (register vs invoke). error.util.ts have different purposes.
-- [x] **Remove dead code** - Reviewed: ~8 commented lines across entire codebase, mostly debug-related. No action needed.
-## 2026-01-25: 🎨 THEME COLOR MIGRATION
-**Status**: ✅ COMPLETED
-**Summary**:
-Global migration of hardcoded `text-white`, `text-black`, `bg-white`, and `bg-black` to theme variables across 50+ files.
-### Changes Made
-- `text-white` → `text-foreground` (all instances)
-- `text-black` → `text-background` (all instances)
-- `bg-black` (solid) → `bg-background` (where appropriate)
-- `bg-white/XX`, `bg-black/XX` (transparency overlays) → preserved intentionally
-### Files Updated (50+ files)
-**UI Components:**
+### 添加
+- 核心服务的综合 JSDoc 文档：
+- [SettingsService](文件:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
+- [SecurityService](文件:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
+- [ConfigService](文件:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
+- 增强了 `ipc-batch.util.ts` 中配额相关操作的类型安全性。
+＃＃＃ 固定的
+- `src/main/ipc/chat.ts` 的 `sanitizeStreamInputs` 调用中存在关键参数不匹配。
+- 与 `LinkedAccountInfo` 接口更新相关的 `AccountManager.tsx` 中的类型不匹配。
+- `SettingsService` 中关于不必要的条件的轻微 lint 警告。
+- `SettingsService` 中存在重复的 JSDoc 块。
+## 2026-01-25：✨ 中优先级增强 + 想法删除
+**状态**： ✅ 6 项已完成
+**总结**：实施了最快的可操作的中等优先级项目+添加了带有批量操作的完整创意删除系统。
+### 想法系统增强（已完成 6 项）
+- [x] **ENH-IDX-005**：工作流程的键盘快捷键
+- [x] **ENH-IDX-001**：拒绝确认对话框
+- [x] **ENH-IDX-002**：编辑/重命名生成的想法_（新）_
+- [x] **ENH-IDX-016**：会话缓存_（新）_
+- [x] **ENH-IDX-015**：乐观 UI 更新 _（新）_
+- [x] **新功能**：完整的想法删除系统_（用户请求）_
+**想法删除实施：**
+1. **单一删除**：IdeaDetailsModal 标题中的垃圾按钮并带有确认
+2. **批量删除**：
+- SessionHistory 中每个想法的复选框
+- 选择计数器显示已选择的 N 个想法
+- 带有批量确认功能的“删除所选”按钮
+- 清除选择选项
+3. **后端**：IPC handlers已存在（deleteIdea、deleteSession）
+4. **确认**：原生confirm()对话框防止意外删除
+**实施细节：**
+1. **标题和描述编辑**：用户现在可以在批准之前编辑创意标题和描述。修改后显示“重置”按钮。
+2. **会话缓存**：为想法和会话添加了 useMemo，以避免重复获取，提高性能。
+3. **乐观更新**：UI 在批准/拒绝操作时立即更新，如果 API 失败，则自动回滚。显着提高感知响应能力。
+4. **删除系统**：复选框选择+类似于项​​目管理系统的批量操作。
+### 修改文件（8 个文件）
+- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - 添加删除按钮和确认
+- `src/renderer/features/ideas/components/SessionHistory.tsx` - 添加复选框并批量删除 UI
+- `src/renderer/features/ideas/components/IdeaDetailsContent.tsx` - 描述编辑
+- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - 键盘提示
+- `src/renderer/features/ideas/IdeasPage.tsx` - 删除 handlers 和缓存
+- `docs/TODO/ideas.md` - 标记 3 项已完成
+- `docs/CHANGELOG.md` - 已更新
+### 类型检查
+✅ 没有新错误（db.ts/proxy.ts 中已有 33 个错误）
+## 2026-01-25：✨ 中优先级增强
+**状态**： ✅ 进行中
+**总结**：升级所有低待办事项后，实现了最简单的中优先级项目。
+### 创意系统增强功能（已完成 2 项）
+- [x] **ENH-IDX-005**：工作流程的键盘快捷键_（已完成）_
+- 添加了 Escape 来关闭模式
+- 添加了 Ctrl+Enter 来批准想法（选择文件夹时）
+- 添加了 Ctrl+Backspace 来拒绝想法（需要确认）
+- 按钮上的视觉键盘提示（悬停即可查看）
+- [x] **ENH-IDX-001**：拒绝确认对话框_（已完成）_
+- 显示“你确定吗？”拒绝想法之前的模式
+- 可选原因文本字段，用于跟踪想法被拒绝的原因
+- 与键盘快捷键集成（Esc 取消确认）
+### 文件已修改
+- `src/renderer/features/ideas/components/IdeaDetailsModal.tsx` - 添加键盘快捷键和拒绝确认
+- `src/renderer/features/ideas/components/ApprovalFooter.tsx` - 添加键盘提示徽章
+### 优先升级
+所有 TODO 文件中的所有低优先级项目都升级为中级：
+- features.md：键盘快捷键自定义、主题创建器
+- Architecture.md：Linux 支持、数据库服务重构
+-quality.md：基于属性的测试、高级 linting、代码指标
+- ideas.md：键盘快捷键、拖放、协作功能、版本控制
+- Council.md：人工智能驱动的优化、多项目协调、人类-人工智能工作流程
+-projects.md：人工智能驱动的项目助手
+## 2026-01-25：📝 TODO 会话完成
+**状态**： ✅ 会话完成
+**摘要**：全面的 TODO 审核和实施会议已完成。所有可操作的低优先级和中优先级项目均得到解决。其余项目是需要大量建筑工作的大型功能。
+### 会议成果
+1. **理事会关键修复**（3 项）- 动态模型/提供者、工具权限、重试逻辑
+2. **主题颜色迁移**（50+文件）-迁移到CSS变量
+3. **低优先级审计**（6 项）- 验证现有功能，审查代码质量
+4. **中级安全审计**（2 项）- 凭证日志审核、权限系统验证
+5. **错误修复**（2 项）- 人为延迟优化、EventBus 支持
+### 本次会话修改的文件
+**核心服务：**
+- `src/main/services/llm/idea-generator.service.ts` - 使人为延迟可配置（默认情况下快 90%）
+- `src/main/services/data/file-change-tracker.service.ts` - 启用实时 EventBus 排放
+**文件：**
+- `docs/TODO/security.md` - 标记为 MEDIUM 的项目已完成
+- `docs/TODO/ideas.md` - 标记为 BUG-IDX-007 已修复
+- `docs/CHANGELOG.md` - 综合会话文档
+### 剩余工作分析
+**大型功能（需要专门的冲刺）：**
+- 内存/RAG管理系统
+- 定制代理系统和工作流引擎
+- 测试覆盖基础设施（React 测试库，E2E）
+- 插件架构提取
+- 先进的项目脚手架
+**中等功能（每个功能多天）：**
+- API 文档生成 (TypeDoc)
+- 专业代理库
+- 项目模板系统
+- 创意系统增强
+**技术债务：**
+- JSDoc 覆盖范围（86 个文档服务）
+- Linux 打包和测试
+- 数据库架构重构
+所有速效项目和可操作项目均已完成。未来的工作需要产品决策和架构规划。
+## 2026-01-25：🐛 错误修复和优化
+**状态**： ✅ 已完成
+**摘要**：修复了中等优先级的错误，包括创意生成管道中的人为延迟。
+### 想法（中等错误）- ideas.md
+- [x] **BUG-IDX-007**：研究管道人为延迟_（优化）_
+- 通过 `IDEA_DELAY_MULTIPLIER` 环境变量可配置延迟
+- 默认减少到 0.1（原始延迟的 10%：1000ms → 100ms）
+- 可以使用 `IDEA_DELAY_MULTIPLIER=0` 禁用或使用 `IDEA_DELAY_MULTIPLIER=1` 恢复
+- 当人工智能研究速度很快时，显着改进 UX，同时保持视觉反馈的轻微节奏
+## 2026-01-25：🔐 中优先级安全审计
+**状态**： ✅ 已完成
+**摘要**：经过审核和验证的中优先级安全项目。所有项目均已实施或验证为完整。
+### 安全性（中）- security.md
+- [x] **针对凭证泄漏的审核日志记录** - 已审核：AuditLogService 存在，在 auth.service.ts、token.service.ts、ssh.service.ts 中审核凭证日志记录 - 不记录密码/令牌，仅记录 email/accountId
+- [x] **特权操作的权限检查** - 已验证：ToolPermissions 系统处理 agent-council.service.ts 中基于工具的权限。单用户桌面应用程序依赖于操作系统级别的文件系统/进程操作权限
+### 访问控制（中）- security.md
+所有 IPC 安全项目已完成：
+- 所有 IPC 有效负载的架构验证 ✅
+- 敏感通道的速率限制（60-120 请求/分钟）✅
+- 工具安全限制（工具权限、受保护路径）✅
+## 2026-01-25：✅ 低优先级待办事项审核
+**状态**： ✅ 已完成
+**摘要**：审核了 TODO 文件中的所有低优先级项目。许多项目已经存在或已验证完整。
+### 功能（低）- features.md
+- [x] **聊天导出/导入** - 已存在：`ExportModal.tsx` (Markdown/PDF)、`history-import.service.ts` (ChatGPT/Claude 导入)
+- [x] **日志查看器** - 已存在：`LoggingDashboard.tsx` 可通过 Ctrl+L 访问
+- [ ] 键盘快捷键自定义 - 需要新设置 UI
+- [ ] 主题创建器 - 需要复杂的 UI 构建器
+### 安全性（低）- security.md
+- [x] **上下文隔离** - 已验证：所有窗口创建中的 `contextIsolation: true` （main.ts、export.service.ts、project-scaffold.service.ts、window.ts）
+### 质量（低）-quality.md
+- [x] **合并重复的实用程序** - 已审核：没有真正的重复项。 main/renderer 中的 ipc-batch.util.ts 是互补的（注册与调用）。 error.util.ts 有不同的用途。
+- [x] **删除死代码** - 已审核：整个代码库中约有 8 行注释行，大部分与调试相关。无需采取任何行动。
+## 2026-01-25: 🎨 主题色移
+**状态**： ✅ 已完成
+**概括**：
+将硬编码 `text-white`、`text-black`、`bg-white` 和 `bg-black` 全局迁移到 50 多个文件中的主题变量。
+### 所做的更改
+- `text-white` → `text-foreground` （所有实例）
+- `text-black` → `text-background` （所有实例）
+- `bg-black`（实心）→ `bg-background`（如果适用）
+- `bg-white/XX`、`bg-black/XX`（透明覆盖）→ 有意保留
+### 文件已更新（50 多个文件）
+**UI 组件：**
 - `modal.tsx`, `LoggingDashboard.tsx`, `FloatingActionButton.tsx`
 - `ScrollToBottomButton.tsx`, `SelectDropdown.tsx`, `tooltip.tsx`, `TipModal.tsx`
-**Layout Components:**
+**布局组件：**
 - `SidebarUI.tsx`, `SidebarBadge.tsx`, `StatusBar.tsx`
 - `UpdateNotification.tsx`, `ResultsList.tsx`, `CommandHeader.tsx`
 - `Sidebar.css`
-**Feature Components:**
-- Chat: `GalleryView.tsx`, `AudioChatOverlay.tsx`, `AgentCouncil.tsx`, `WelcomeScreen.tsx`, `SlashMenu.tsx`, `MonacoBlock.tsx`, `MarkdownRenderer.tsx`, `AssistantIdentity.tsx`
-- Settings: `GeneralTab.tsx`, `SpeechTab.tsx`, `ManualSessionModal.tsx`, `PresetCard.tsx`, `QuotaRing.tsx`
-- Ideas: `CategorySelector.tsx`, `IdeaDetailsContent.tsx`, `ResearchProgress.tsx`, `SessionInfo.tsx`
-- Projects: `GitCommitGenerator.tsx`, `ProjectEnvironmentTab.tsx`, `ProjectModals.tsx`, `ProjectWizardModal.tsx`, `LogoGeneratorModal.tsx`
-- Workspace: `CouncilPanel.tsx`, `AIAssistantSidebar.tsx`, `WorkspaceToolbar.tsx`, `EditorTabs.tsx`, `DashboardTabs.tsx`, `WorkspaceModals.tsx`
-- Settings: `SettingsSidebar.tsx`, `SettingsHeader.tsx`
-- Other: `App.tsx`, `ModelExplorer.tsx`, `SSHTerminal.tsx`
-## 2026-01-25: 🔐 AGENT COUNCIL CRITICAL FIXES & TODO AUDIT
-**Status**: ✅ COMPLETED
-**Summary**:
-Comprehensive implementation of Agent Council critical fixes and full audit of all TODO roadmap files.
-### COUNCIL-CRIT-001: Dynamic Model/Provider Configuration
-- Added `model` and `provider` columns to `council_sessions` table
-- Modified `createCouncilSession()` to accept model/provider parameters
-- Updated `runSessionStep()` to use session-configured model/provider
-- Updated IPC handler to support new configuration options
-- Database migration #20 for schema update
-### COUNCIL-CRIT-002: Tool Permission System
-- Implemented `ToolPermissions` interface with `allowed`, `restricted`, `forbidden` levels
-- Added `PROTECTED_PATHS` regex patterns (node_modules, .git, .env, lock files)
-- Added `ALLOWED_SYSTEM_SERVICES` whitelist (codeIntel, web only)
-- Restricted `callSystem` tool to whitelisted services only
-- Added dangerous command blocking for `runCommand` tool
-- Added `setToolPermissions()` method for runtime configuration
-### COUNCIL-CRIT-003: Error Recovery & Retry Logic
-- Implemented exponential backoff with 3 max retries
-- Added `isRetryableError()` method detecting rate limits, timeouts, network errors
-- Consecutive error tracking to prevent infinite retry loops
-- Detailed logging of retry attempts and final failures
-### TODO Roadmap Audit
-- **ideas.md**: Marked BUG-IDX-002 and BUG-IDX-006 as reviewed/fixed
-- **council.md**: All Phase 1 critical items marked complete
-- **features.md**: Council critical fixes marked complete
-- **security.md**: Tool security items marked complete
-**Files Modified**:
+**功能组件：**
+- 聊天：`GalleryView.tsx`、`AudioChatOverlay.tsx`、`AgentCouncil.tsx`、`WelcomeScreen.tsx`、`SlashMenu.tsx`、`MonacoBlock.tsx`、`MarkdownRenderer.tsx`、`AssistantIdentity.tsx`
+- 设置：`GeneralTab.tsx`、`SpeechTab.tsx`、`ManualSessionModal.tsx`、`PresetCard.tsx`、`QuotaRing.tsx`
+- 想法：`CategorySelector.tsx`、`IdeaDetailsContent.tsx`、`ResearchProgress.tsx`、`SessionInfo.tsx`
+- 项目：`GitCommitGenerator.tsx`、`ProjectEnvironmentTab.tsx`、`ProjectModals.tsx`、`ProjectWizardModal.tsx`、`LogoGeneratorModal.tsx`
+- 工作区：`CouncilPanel.tsx`、`AIAssistantSidebar.tsx`、`WorkspaceToolbar.tsx`、`EditorTabs.tsx`、`DashboardTabs.tsx`、`WorkspaceModals.tsx`
+- 设置：`SettingsSidebar.tsx`、`SettingsHeader.tsx`
+- 其他：`App.tsx`、`ModelExplorer.tsx`、`SSHTerminal.tsx`
+## 2026-01-25：🔐 代理委员会关键修复和待办事项审计
+**状态**： ✅ 已完成
+**概括**：
+全面实施代理委员会关键修复并对所有 TODO 路线图文件进行全面审核。
+### COUNCIL-CRIT-001：动态模型/提供商配置
+- 在 `council_sessions` 表中添加了 `model` 和 `provider` 列
+- 修改了 `createCouncilSession()` 以接受模型/提供者参数
+- 更新了 `runSessionStep()` 以使用会话配置的模型/提供程序
+- 更新了 IPC handler 以支持新的配置选项
+- 用于架构更新的数据库迁移#20
+### COUNCIL-CRIT-002：工具权限系统
+- 实现了具有 `allowed`、`restricted`、`forbidden` 级别的 `ToolPermissions` 接口
+- 添加了 `PROTECTED_PATHS` 正则表达式模式（node_modules、.git、.env、锁定文件）
+- 添加了 `ALLOWED_SYSTEM_SERVICES` 白名单（codeIntel，仅限网络）
+- 将 `callSystem` 工具限制为仅适用于白名单服务
+- 为 `runCommand` 工具添加了危险命令阻止
+- 为 runtime 配置添加了 `setToolPermissions()` 方法
+### COUNCIL-CRIT-003：错误恢复和重试逻辑
+- 实现了最多 3 次重试的指数退避
+- 添加了 `isRetryableError()` 方法检测速率限制、超时、网络错误
+- 连续错误跟踪以防止无限重试循环
+- 详细记录重试尝试和最终失败
+### TODO 路线图审核
+- **ideas.md**：将 BUG-IDX-002 和 BUG-IDX-006 标记为已审核/已修复
+- **council.md**：所有第一阶段关键项目均标记为完成
+- **features.md**：委员会关键修复标记为完成
+- **security.md**：工具安全项标记为完整
+**修改的文件**：
 - `src/main/services/llm/agent-council.service.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/services/data/migrations.ts`
 - `src/main/ipc/council.ts`
-- `docs/TODO/*.md` (all TODO files updated)
+- `docs/TODO/*.md`（更新所有 TODO 文件）
 - `docs/CHANGELOG.md`
-## 2026-01-25: 📋 COMPLETE TODO ROADMAP AUDIT
-**Status**: ✅ COMPLETED
-**Summary**:
-Comprehensive audit and update of all TODO roadmap files in `docs/TODO/` directory with accurate status tracking and summary sections.
-### Architecture (architecture.md)
-- **BaseService Adoption**: 42/86 services (49%), 76% with lifecycle methods
-- **LLM Plugin System**: ILLMProvider interface and LLMProviderRegistry already implemented
-- **EventBus**: 56 usages, ~300 IPC handlers to migrate
-- Added summary section with completion percentages
-### Council System (council.md)
-- **Model/Provider**: ✅ Now configurable per session
-- **Error Recovery**: ✅ Exponential backoff with 3 retries
-- **Tool Permissions**: ✅ ToolPermissions system implemented
-- Updated Phase 1 status - ALL CRITICAL ITEMS COMPLETE
-### Projects (projects.md)
-- **Phase 1**: ✅ All critical fixes complete (type safety, confirmations, state machine)
-- **Phase 2**: ✅ All core features complete:
-    - Batch operations (useProjectListActions.ts)
-    - Environment variables (ProjectEnvironmentTab.tsx)
-    - Project settings panel (full UI)
-### Security (security.md)
-- **Path Traversal**: Protected via FileSystemService and SSHService
-- **Rate Limiting**: RateLimitService with provider-specific limits
-- **Tool Security**: ✅ ToolPermissions + callSystem whitelist implemented
-- Added summary section
-### Quality (quality.md)
-- **Type Safety**: Critical services fixed
-- **CI/CD**: Pipeline complete with type-check and E2E
-- **Lint**: 0 errors, 794 warnings remaining
-- **Coverage**: 30% (target: 75%)
-- Added summary section
-### Ideas & Features
-- Reviewed but no changes needed - detailed feature lists already accurate
-## 2026-01-25: 🤖 Tandem PROJECT AGENT - AUTONOMOUS DEVELOPER
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented the **Tandem Project Agent**, a fully autonomous AI developer capable of executing complex, multi-step coding tasks directly within the IDE. The agent operates in a "Think -> Plan -> Act -> Observe" loop, maintains context across sessions, and includes built-in resilience for API limits.
-**Key Achievements**:
-- **Autonomous Agent Service**:
-    - Created `ProjectAgentService` with a robust execution loop.
-    - Implemented state persistence (`project-state.json`) to track tasks, plans, and history.
-    - Added error resilience (pauses on 429/Quota errors instead of crashing).
-- **Mission Control UI**:
-    - New **Agent** view in the sidebar.
-    - Live dashboard showing the agent's thought process, active plan, and tool execution logs.
-    - Start/Stop/Pause controls for managing the autonomous session.
-- **System Integration**:
-    - Injected a specialized "Senior Full-Stack Engineer" system prompt (`project-agent.prompts.ts`).
-    - Full integration with Tandem's Tool Executor (run commands, edit files, etc.).
-- **Type Safety**:
-    - Hardened IPC batching utilities (`ipc-batch.util.ts`) with explicit casting to resolve build-time type conflicts.
-**Technical Details**:
-- **Backend**: `project-agent.service.ts` implements the ReAct loop pattern.
-- **Frontend**: `ProjectAgentView.tsx` provides real-time visibility into the agent's state.
-- **Verification**: ✅ Passes full `npm run type- [x] Build and lint verification passed (Reduced warnings from 804 to 736)
-  107: _Last Updated: January 26, 2026_
-  -01-24: 🤖 AUTONOMOUS TOOL USE & MULTI-TURN EXECUTION
-    **Status**: ✅ COMPLETED
-    **Summary**:
-    Implemented full autonomous tool use capabilities, allowing AI models to execute tools, process their results, and iterate until a task is completed. This includes a robust multi-turn execution loop, real-time UI feedback for tool calls, and complete type safety for tool-related messages.
-    **Key Achievements**:
-- **Multi-Turn Tool Execution**:
-    - Implemented `executeToolTurnLoop` in `useChatGenerator` to handle recursive tool calls (max 5 iterations).
-    - Models now automatically process tool results and decide whether to call more tools or provide a final response.
-- **Real-Time UI Feedback**:
-    - Updated streaming state to include `toolCalls`, providing instant feedback to the user while tools are running.
-    - Refined `processChatStream` to synchronize tool call metadata with the React UI.
-- **Type Safety & Normalization**:
-    - Hardened the `Message` interface with a dedicated `tool` role and `toolCallId`.
-    - Standardized normalization logic for OpenAI and custom providers to ensure consistent tool handling.
-- **Architecture Cleanup**:
-    - Refactored logic into modular standalone functions to meet complexity and line-count limits.
-    - Resolved lingering React hook lint errors in `LayoutManager`.
-**Technical Details**:
-- **Backend**: Updated `message-normalizer.util.ts` for consistent role/id mapping.
-- **Frontend**: Enhanced `useChatGenerator` and `process-stream` for tool loop orchestration.
-- **Verification**: ✅ Passes full build, targeted lint, and type-check verification.
-## 2026-01-23: 📊 TOKEN USAGE CHART REDESIGN
-**Status**: ✅ COMPLETED
-**Summary**:
-Redesigned the Token Usage Chart (Statistics Tab) with a premium, engaging UI. Replaced simple bars with animated gradient bars, added a cost estimation calculator, and improved tooltips with detailed timestamp information. Also resolved localization issues by adding missing translation keys for English and Turkish.
-**Key Achievements**:
-- **Premium Chart UI**:
-    - Gradient bars (blue-to-cyan for input, emerald-to-teal for output).
-    - CSS-driven entry animations (`growUp` keyframes).
-    - Interactive tooltips with backdrop blur and arrow indicators.
-- **Cost Estimation**:
-    - Added real-time estimated cost calculation based on token usage ($2.50/1M input, $10.00/1M output).
-    - Displayed prominently in the chart header.
-- **Localization**:
-    - Fixed duplicate keys in `i18n` files.
-    - Added comprehensive translation support for statistics keys in `en.ts` and `tr.ts`.
-**Technical Details**:
-- **Components**: `TokenUsageChart.tsx` completely rewritten using pure React + Tailwind (no heavy chart libraries added).
-- **i18n**: Cleaned up duplicate `statistics` keys and ensured type safety.
-## 2026-01-23: 📊 CHAT PERSISTENCE & USAGE ANALYTICS OVERHAUL
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented comprehensive token usage tracking and visualization across the application. Added persistence for chat tokens, enabled parallel local model execution, and delivered high-fidelity usage charts in the Statistics dashboard.
-**Key Achievements**:
-- **Token Usage Persistence**:
-    - Integrated automatic token recording for every chat message (Input/Output).
-    - Database migration with dedicated `token_usage` table and optimized queries.
-- **Analytics Dashboard**:
-    - Developed `TokenUsageChart` with high-fidelity CSS-based visualizations.
-    - Supported multi-period grouping (Daily/Weekly/Monthly/Yearly) for token consumption.
-- **Parallel Intelligence**:
-    - Increased Ollama concurrency to 10 slots for simultaneous multi-model execution.
-    - Significantly improved responsiveness when comparing multiple local models.
-- **UI UX Refinement**:
-    - Restricted Markdown rendering to AI responses only, as per user request.
-    - Improved consistency between user message display and intent.
-**Technical Details**:
-- **Backend**: Updated `DatabaseService` with period-aware aggregation and `token_usage` integration.
-- **Frontend**: Created reusable `TokenUsageChart` component with interactive tooltips.
-- **Verification**: ✅ Passes full `type-check` and `lint` verification.
-## 2026-01-23: 🛡️ ENTERPRISE QUALITY ASSURANCE & SECURITY HARDENING
-**Status**: ✅ COMPLETED
-**Summary**:
-Implemented comprehensive enterprise-grade quality standards including full testing infrastructure, security hardening, and automated quality gates. The application now meets production-ready standards with 75% test coverage, secrets detection, and bundle monitoring.
-**Key Achievements**:
-- **Testing Infrastructure**:
-    - React Testing Library integration for renderer components (8 tests, 100% passing)
-    - Enhanced vitest configuration with dual main/renderer testing
-    - Increased coverage thresholds to 75% (from 30%) across all metrics
-    - Comprehensive test setup with Electron and i18n mocking
-- **Security Hardening**:
-    - SecretLint integration preventing credential leaks
-    - Enhanced CI audit pipeline with high-severity focus
-    - Bundle size monitoring (2MB/500KB/100KB limits)
-    - Production-only dependency validation
-- **Quality Standards**:
-    - Fixed ESLint duplicate rules conflict
-    - Enforced `@typescript-eslint/no-explicit-any` at error level
-    - Enhanced pre-commit hooks with type checking
-    - TypeScript strict mode preparation documented
-**Technical Details**:
-- Main process: 37+ test files, 300+ tests with robust mocking
-- CI/CD pipeline: 9 quality gates vs previous 5 steps
-- Test performance: ~7.8s renderer suite execution
-- Security: Automated secrets scanning on all files
-**Result**: Tandem now meets enterprise standards for testing, security, and code quality! 🚀
-## Recent Updates
+## 2026-01-25：📋 完成 TODO 路线图审核
+**状态**： ✅ 已完成
+**概括**：
+全面审核和更新 `docs/TODO/` 目录中的所有 TODO 路线图文件，并提供准确的状态跟踪和摘要部分。
+### 架构（architecture.md）
+- **BaseService 采用**：42/86 服务 (49%)，76% 使用生命周期方法
+- **LLM 插件系统**：ILLMProvider 接口和 LLMProviderRegistry 已实现
+- **EventBus**：56 次使用，约 300 IPC handlers 进行迁移
+- 添加了带有完成百分比的摘要部分
+### 理事会系统 (council.md)
+- **模型/提供商**： ✅ 现在可按会话进行配置
+- **错误恢复**： ✅ 重试 3 次的指数退避
+- **工具权限**： ✅ 实施工具权限系统
+- 更新了第一阶段状态 - 所有关键项目均已完成
+### 项目 (projects.md)
+- **阶段 1**： ✅ 完成所有关键修复（类型安全、确认、状态机）
+- **阶段 2**： ✅ 所有核心功能完成：
+- 批量操作（useProjectListActions.ts）
+- 环境变量（ProjectEnvironmentTab.tsx）
+- 项目设置面板（完整UI）
+### 安全（security.md）
+- **路径遍历**：通过 FileSystemService 和 SSHService 保护
+- **速率限制**：具有特定于提供商的限制的 RateLimitService
+- **工具安全**： ✅ 实施 ToolPermissions + callSystem 白名单
+- 添加了摘要部分
+### 质量（quality.md）
+- **类型安全**：修复了关键服务
+- **CI/CD**：包含类型检查和 E2E 的管道
+- **Lint**：0 个错误，剩余 794 个警告
+- **覆盖率**：30%（目标：75%）
+- 添加了摘要部分
+### 想法和特点
+- 已审核但无需更改 - 详细的功能列表已经准确
+## 2026-01-25：🤖 Tandem 项目代理 - 自主开发者
+**状态**： ✅ 已完成
+**概括**：
+实施了 **Tandem Project Agent**，这是一个完全自主的 AI 开发人员，能够直接在 IDE 中执行复杂的多步骤编码任务。该代理以“思考 -> 计划 -> 行动 -> 观察”循环运行，维护跨会话的上下文，并包含针对 API 限制的内置弹性。
+**主要成就**：
+- **自主代理服务**：
+- 创建具有强大执行循环的 `ProjectAgentService`。
+- 实施状态持久性 (`project-state.json`) 来跟踪任务、计划和历史记录。
+- 添加了错误恢复能力（在 429/配额错误时暂停而不是崩溃）。
+- **任务控制UI**：
+- 侧边栏中新的 **代理** 视图。
+- 实时仪表板显示代理的思维过程、活动计划和工具执行日志。
+- 用于管理自主会话的启动/停止/暂停控件。
+- **系统集成**：
+- 注入了专门的“高级全栈工程师”系统提示符（`project-agent.prompts.ts`）。
+- 与 Tandem 的工具执行器完全集成（运行命令、编辑文件等）。
+- **类型安全**：
+- 强化 IPC 批处理实用程序 (`ipc-batch.util.ts`)，具有显式转换以解决构建时类型冲突。
+**技术细节**：
+- **后端**：`project-agent.service.ts` 实现 ReAct 循环模式。
+- **前端**：`ProjectAgentView.tsx` 提供对代理状态的实时可见性。
+- **验证**：✅ 通过完整的 `npm run type- [x] 通过构建和 lint 验证（警告从 804 减少到 736）
+107：_最后更新：2026 年 1 月 26 日_
+-01-24: 🤖 自主工具使用和多轮执行
+**状态**： ✅ 已完成
+**概括**：
+实现了完全自主的工具使用功能，允许人工智能模型执行工具、处理其结果并迭代直至任务完成。这包括强大的多轮执行循环、工具调用的实时 UI 反馈以及工具相关消息的完整类型安全。
+**主要成就**：
+- **多回转刀具执行**：
+- 在 `useChatGenerator` 中实现 `executeToolTurnLoop` 以处理递归工具调用（最多 5 次迭代）。
+- 模型现在自动处理工具结果并决定是否调用更多工具或提供最终响应。
+- **实时 UI 反馈**：
+- 更新了流状态以包含 `toolCalls`，在工具运行时向用户提供即时反馈。
+- 精炼了 `processChatStream` 以将工具调用元数据与 React UI 同步。
+- **类型安全和标准化**：
+- 使用专用的 `tool` 角色和 `toolCallId` 强化了 `Message` 接口。
+- OpenAI 和自定义提供程序的标准化标准化逻辑，以确保一致的工具处理。
+- **架构清理**：
+- 将逻辑重构为模块化独立功能，以满足复杂性和行数限制。
+- 解决了 `LayoutManager` 中挥之不去的 React 挂钩 lint 错误。
+**技术细节**：
+- **后端**：更新了 `message-normalizer.util.ts` 以实现一致的角色/ID 映射。
+- **前端**：增强了 `useChatGenerator` 和 `process-stream` 用于工具循环编排。
+- **验证**： ✅ 通过完整构建、目标 lint 和类型检查验证。
+## 2026-01-23：📊 代币使用图表重新设计
+**状态**： ✅ 已完成
+**概括**：
+重新设计了代币使用图表（统计选项卡），具有溢价、吸引力 UI。用动画渐变条替换了简单条，添加了成本估算计算器，并改进了带有详细时间戳信息的工具提示。还通过添加英语和土耳其语缺少的翻译键解决了本地化问题。
+**主要成就**：
+- **高级图表 UI**：
+- 渐变条（输入为蓝色到青色，输出为翠绿色到青色）。
+- CSS 驱动的进入动画（`growUp` 关键帧）。
+- 带有背景模糊和箭头指示器的交互式工具提示。
+- **成本估算**：
+- 添加了基于代币使用情况的实时估计成本计算（2.50 美元/100 万美元输入，10.00 美元/100 万美元输出）。
+- 在图表标题中突出显示。
+- **本地化**：
+- 修复了 `i18n` 文件中的重复键。
+- 添加了对 `en.ts` 和 `tr.ts` 中统计键的全面翻译支持。
+**技术细节**：
+- **组件**：`TokenUsageChart.tsx` 使用纯 React + Tailwind 完全重写（未添加重型图表库）。
+- **i18n**：清理重复的 `statistics` 键并确保类型安全。
+## 2026-01-23：📊 聊天持久性和使用分析检修
+**状态**： ✅ 已完成
+**概括**：
+在整个应用程序中实施了全面的令牌使用跟踪和可视化。添加了聊天令牌的持久性，启用了并行本地模型执行，并在统计仪表板中提供了高保真使用图表。
+**主要成就**：
+- **令牌使用持久性**：
+- 每个聊天消息（输入/输出）的集成自动令牌记录。
+- 使用专用 `token_usage` 表和优化查询进行数据库迁移。
+- **分析仪表板**：
+- 开发了具有基于 CSS 的高保真可视化的 `TokenUsageChart`。
+- 支持多时段分组（每日/每周/每月/每年）代币消费。
+- **并行智能**：
+- 将 Ollama 并发性增加到 10 个插槽，以便同时执行多模型。
+- 比较多个本地模型时的响应能力显着提高。
+- **UI UX 细化**：
+- 根据用户请求，仅将 Markdown 渲染至 AI 响应。
+- 提高了用户消息显示和意图之间的一致性。
+**技术细节**：
+- **后端**：通过周期感知聚合和 `token_usage` 集成更新了 `DatabaseService`。
+- **前端**：创建了带有交互式工具提示的可重用 `TokenUsageChart` 组件。
+- **验证**： ✅ 通过完整的 `type-check` 和 `lint` 验证。
+## 2026-01-23：🛡️企业质量保证和安全强化
+**状态**： ✅ 已完成
+**概括**：
+实施全面的企业级质量标准，包括完整的测试基础设施、安全强化和自动化质量门。该应用程序现在满足生产就绪标准，具有 75% 的测试覆盖率、秘密检测和捆绑监控。
+**主要成就**：
+- **测试基础设施**：
+- React 渲染器组件的测试库集成（8 次测试，100% 通过）
+- 增强了 vitest 配置，具有双主/渲染器测试
+- 将所有指标的覆盖率阈值从 30% 提高到 75%
+- 使用 Electron 和 i18n 模拟进行全面的测试设置
+- **安全强化**：
+- SecretLint 集成防止凭证泄露
+- 增强 CI 审计流程，重点关注高严重性
+- 捆绑包大小监控（2MB/500KB/100KB 限制）
+- 仅生产依赖性验证
+- **质量标准**：
+- 修复了 ESLint 重复规则冲突
+- 在错误级别强制执行 `@typescript-eslint/no-explicit-any`
+- 增强了带有类型检查的预提交挂钩
+- TypeScript 严格模式准备已记录
+**技术细节**：
+- 主要流程：37+ 测试文件，300+ 测试，具有强大的模拟功能
+- CI/CD 管道：9 个质量门与之前的 5 个步骤相比
+- 测试性能：渲染器套件执行约 7.8 秒
+- 安全性：对所有文件进行自动机密扫描
+**结果**：Tandem 现在满足测试、安全性和代码质量的企业标准！ 🚀
+## 最近更新
 
-### Terminal Backend Selection & UI Refinements
+### 终端后端选择和 UI 改进
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refined the terminal backend selection UI with persistent user preferences and full localization.
+- **Summary**: 通过持久的用户首选项和完全本地化完善了终端后端选择 UI。
 
-- [x] **Backend Selection UI**: Implemented backend selection dropdown in the "New Terminal" menu.
-- [x] **Persistence**: Added dual-persistence for preferred terminal backend (localStorage + AppSettings).
-- [x] **Localization**: Completed Turkish and English localization for all terminal backend related strings.
-- [x] **Reliability**: Refactored `TerminalPanel.tsx` for NASA rule compliance and improved fallback logic in `TerminalService.ts`.
+- [x] **后端选择 UI**：在“新终端”菜单中实现了后端选择下拉列表。
+- [x] **持久性**：为首选终端后端添加了双重持久性（localStorage + AppSettings）。
+- [x] **本地化**：完成所有终端后端相关字符串的土耳其语和英语本地化。
+- [x] **可靠性**：重构了 `TerminalPanel.tsx` 以符合 NASA 规则，并改进了 `TerminalService.ts` 中的 fallback 逻辑。
 
-### Terminal Smart Suggestions (AI-powered)
+### 终端智能建议（AI驱动）
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented AI-powered command completion (ghost-text) in the integrated terminal.
+- **Summary**: 在集成终端中实现了人工智能驱动的命令完成（ghost-text）。
 
-- [x] **Smart Service**: Created `TerminalSmartService` for command prediction using LLMs.
-- [x] **IPC Handlers**: Added `terminal:getSuggestions` IPC endpoint.
-- [x] **Ghost Text UI**: Implemented `useTerminalSmartSuggestions` hook using xterm.js decorations.
-- [x] **NASA Rules**: Ensured 100% compliance with NASA Power of Ten rules and strict React linting.
+- [x] **智能服务**：使用 LLM 创建 `TerminalSmartService` 用于命令预测。
+- [x] **IPC Handlers**：添加了 `terminal:getSuggestions` IPC 端点。
+- [x] **Ghost Text UI**：使用 xterm.js 装饰实现 `useTerminalSmartSuggestions` 挂钩。
+- [x] **NASA 规则**：确保 100% 遵守 NASA 的十次方规则和严格的 React linting。
 
-### UI Optimization
+### UI 优化
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: UI Optimization improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: UI 优化改进了 runtime 关键工作流程的性能、稳定性和操作一致性。
 
-- Removed: Resizable sidebar functionality. Sidebar width is now fixed (280px for main, 350px for agent panel) to improve UI stability.
-- Fixed: Resolved lint errors in `LayoutManager` and `WorkspaceSidebar` related to unused resizing hooks and props.
+- 删除：可调整大小的侧边栏功能。侧边栏宽度现已固定（主面板为 280 像素，代理面板为 350 像素），以提高 UI 稳定性。
+- 已修复：解决了 `LayoutManager` 和 `WorkspaceSidebar` 中与未使用的调整大小钩子和道具相关的 lint 错误。
 
 ## [2026-01-23]
 
-### Agent Council System Comprehensive Review & Roadmap
+### 代理委员会系统全面审查和路线图
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Agent Council System Comprehensive Review & Roadmap advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 代理委员会系统全面审查和路线图提高了项目代理在规划和 runtime 流程中的能力和执行质量。
 
-**Status**: Analysis Completed
-**Review Findings**:
-- **Strengths Identified**: Solid multi-agent architecture with three-phase workflow (Planning→Execution→Review), autonomous execution with safety limits, comprehensive tool system (6 tools + service invocation), real-time WebSocket integration
-- **Critical Issues Found**: Hardcoded model/provider configuration, security vulnerabilities in tool system, no error recovery mechanisms, limited collaboration patterns
-- **Missing Features**: Custom agent creation, advanced workflows (parallel execution, voting), enhanced UI controls, specialized agent library
-**Major Concerns Discovered**:
-- **Security Risk**: `callSystem` tool can invoke any service method without restrictions - potential system damage
-- **Configuration Lock**: Hardcoded to `gpt-4o`+`openai` with TODO comment in code (line 193)
-- **Poor Error Recovery**: Step failure stops entire session with no retry logic
-- **Limited Agent Types**: Only 3 fixed agents (planner, executor, reviewer) - no customization
-**Strategic Roadmap Created**:
-- **Phase 1** (Critical): Fix model configuration, implement tool security, add error recovery
-- **Phase 2** (High Priority): Custom agent system, enhanced UI controls, session templates
-- **Phase 3** (Advanced): Multi-agent workflows, specialized agents, advanced planning
-- **Phase 4** (Platform): Analytics, integrations, cloud-native features
-**Documentation Added**:
-- `docs/TODO/council.md` - Comprehensive 30+ item roadmap with security analysis and implementation phases
+**状态**：分析完成
+**审查结果**：
+- **已确定的优势**：具有三阶段工作流程（规划→执行→审查）的可靠多代理架构、具有安全限制的自主执行、全面的工具系统（6个工具+服务调用）、实时WebSocket集成
+- **发现的关键问题**：硬编码模型/提供者配置、工具系统中的安全漏洞、没有错误恢复机制、有限的协作模式
+- **缺少的功能**：自定义代理创建、高级工作流程（并行执行、投票）、增强的 UI 控件、专用代理库
+**发现的主要问题**：
+- **安全风险**：`callSystem` 工具可以不受限制地调用任何服务方法 - 潜在的系统损坏
+- **配置锁**：硬编码为 `gpt-4o`+`openai`，并在代码中添加 TODO 注释（第 193 行）
+- **差的错误恢复**：步骤失败会停止整个会话，没有重试逻辑
+- **有限的代理类型**：只有 3 个固定代理（计划者、执行者、审阅者）- 无定制
+**创建战略路线图**：
+- **阶段 1**（关键）：修复模型配置，实现工具安全性，添加错误恢复
+- **阶段 2**（高优先级）：自定义代理系统、增强的 UI 控件、会话模板
+- **第 3 阶段**（高级）：多代理工作流程、专业代理、高级规划
+- **第 4 阶段**（平台）：分析、集成、云原生功能
+**添加文档**：
+- `docs/TODO/council.md` - 全面的 30 多个项目路线图，包括安全分析和实施阶段
 
-### Deep Research & Idea Scoring Services
-
-- **Type**: feature
-- **Status**: unknown
-- **Summary**: Deep Research & Idea Scoring Services introduced coordinated maintenance and quality improvements across the related modules.
-
-**Status**: Completed
-**New Features**:
-- **Deep Research Service**: Multi-source research system performing 13 targeted queries per topic with credibility scoring and AI synthesis
-- **AI-Powered Idea Scoring**: 6-dimension scoring system (innovation, market need, feasibility, business potential, target clarity, competitive moat) with detailed breakdowns
-- **Idea Management**: Complete CRUD operations including delete, archive, restore functionality for ideas and sessions
-**API Enhancements**:
-- New IPC handlers: `ideas:deepResearch`, `ideas:validateIdea`, `ideas:scoreIdea`, `ideas:rankIdeas`, `ideas:compareIdeas`
-- Data management handlers: `ideas:deleteIdea`, `ideas:deleteSession`, `ideas:archiveIdea`, `ideas:restoreIdea`
-
-### Design System Overhaul & Hardcoded Color Removal
+### 深入研究和创意评分服务
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Design System Overhaul & Hardcoded Color Removal improved UI consistency, maintainability, and end-user experience across related surfaces.
+- **Summary**: 深度研究和创意评分服务引入了跨相关模块的协调维护和质量改进。
 
-**Status**: ✅ Completed
-**Features**:
-- **Simplified Theme System**: Restricted application themes to a clean "Tandem White" (Light) and "Tandem Black" (Dark) model, enforcing consistency.
-- **Typography Standardization**: Introduced `typography.css` to unify font usage (Inter for UI, JetBrains Mono for code) across the renderer.
-- **Color Token Migration**: Successfully migrated major application components from hardcoded colors (`bg-white`, `bg-black`, `text-gray-300`) to semantic theme tokens (`bg-card`, `bg-background`, `text-muted-foreground`), enabling true dark/light mode compatibility.
-- **Premium Design Enhancements**: Added advanced CSS utilities for glassmorphism, vibrant mesh gradients, and smooth micro-animations.
-**Migrated Components**:
-- **Chat**: `MessageBubble.tsx`, `ChatInput.tsx`
-- **Settings**: `OverviewCards.tsx`, `AntigravityCard.tsx`, `ClaudeCard.tsx`, `CopilotCard.tsx`, `CodexCard.tsx`, `PersonasTab.tsx`, `InstalledModelsList.tsx`
-- **IDE**: `FileExplorer.tsx`, `CodeEditor.tsx`, `Terminal.tsx`, `FolderInspector.tsx`
-- **General**: `Sidebar.tsx`, `ProjectDashboard.tsx`, `TerminalPanel.tsx`
-**Technical Changes**:
-- **CSS**: Overhauled `index.css` with a new HSL-based color palette and premium UI utilities (`premium-glass`, `bg-mesh`).
-- **Standardization**: Removed ~200+ instances of hardcoded hex/Tailwind color classes.
-- **Theme Engine**: Enhanced `ThemeContext.tsx` to properly propagate semantic tokens.
-**Files Modified**:
+**状态**：已完成
+**新功能**：
+- **深度研究服务**：多源研究系统对每个主题执行 13 个有针对性的查询，并进行可信度评分和人工智能合成
+- **人工智能驱动的创意评分**：6 维评分系统（创新、Marketplace需求、可行性、商业潜力、目标清晰度、竞争护城河），包含详细的细分
+- **创意管理**：完整的 CRUD 操作，包括创意和会话的删除、存档、恢复功能
+**API 增强功能**：
+- 新IPC handlers：`ideas:deepResearch`、`ideas:validateIdea`、`ideas:scoreIdea`、`ideas:rankIdeas`、`ideas:compareIdeas`
+- 数据管理handlers：`ideas:deleteIdea`、`ideas:deleteSession`、`ideas:archiveIdea`、`ideas:restoreIdea`
+
+### 设计系统检修和硬编码颜色去除
+
+- **Type**: feature
+- **Status**: unknown
+- **Summary**: 设计系统检修和硬编码颜色去除改进了相关表面的 UI 一致性、可维护性和最终用户体验。
+
+**状态**： ✅ 已完成
+**特征**：
+- **简化的主题系统**：将应用程序主题限制为干净的“Tandem White”（浅色）和“Tandem Black”（深色）模型，以增强一致性。
+- **排版标准化**：引入 `typography.css` 来统一渲染器中的字体使用（Inter 用于 UI，JetBrains Mono 用于代码）。
+- **颜色令牌迁移**：成功将主要应用程序组件从硬编码颜色（`bg-white`、`bg-black`、`text-gray-300`）迁移到语义主题令牌（`bg-card`、`bg-background`、`text-muted-foreground`），实现真正的暗/亮模式兼容性。
+- **高级设计增强**：添加了用于玻璃形态、充满活力的网格渐变和流畅的微动画的高级 CSS 实用程序。
+**迁移的组件**：
+- **聊天**：`MessageBubble.tsx`、`ChatInput.tsx`
+- **设置**：`OverviewCards.tsx`、`AntigravityCard.tsx`、`ClaudeCard.tsx`、`CopilotCard.tsx`、`CodexCard.tsx`、`PersonasTab.tsx`、`InstalledModelsList.tsx`
+- **IDE**：`FileExplorer.tsx`、`CodeEditor.tsx`、`Terminal.tsx`、`FolderInspector.tsx`
+- **一般**：`Sidebar.tsx`、`ProjectDashboard.tsx`、`TerminalPanel.tsx`
+**技术变更**：
+- **CSS**：使用新的基于 HSL 的调色板和高级 UI 实用程序（`premium-glass`、`bg-mesh`）彻底修改了 `index.css`。
+- **标准化**：删除了约 200 多个硬编码的十六进制/Tailwind 颜色类实例。
+- **主题引擎**：增强了 `ThemeContext.tsx` 以正确传播语义标记。
+**修改的文件**：
 - `src/renderer/index.css`
 - `src/renderer/features/chat/components/MessageBubble.tsx`
 - `src/renderer/features/chat/components/ChatInput.tsx`
@@ -2164,247 +2194,247 @@ Implemented comprehensive enterprise-grade quality standards including full test
 - `src/renderer/features/projects/components/ide/FileExplorer.tsx`
 - `src/renderer/features/projects/components/ide/CodeEditor.tsx`
 - `src/renderer/features/terminal/components/TerminalPanel.tsx`
-- [And 12+ other UI components]
+- [以及 12+ 个其他 UI 组件]
 
-### 🎉 ENTERPRISE TRANSFORMATION COMPLETE - Performance, Security, Architecture & Type Safety Overhaul
+### 🎉 企业转型完成 - 性能、安全、架构和类型安全检修
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: 🎉 ENTERPRISE TRANSFORMATION COMPLETE - Performance, Security, Architecture & Type Safety Overhaul strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 🎉 企业转型完成 - 性能、安全性、架构和类型安全检修通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: ✅ FULLY COMPLETED - All Phases Successful
-**Enterprise-Grade Achievement Summary**:
-Tandem has been completely transformed into an enterprise-ready application with dramatic performance improvements, comprehensive security hardening, enhanced architecture, and perfect type safety. The application now handles enterprise workloads (10,000+ items) with optimal resource usage.
-**🚀 PHASE 1 & 2: Enterprise Performance Optimization**
-**Performance Impact**:
-- **Startup Time**: ~50% faster application launch
-- **Memory Usage**: ~50% reduction in RAM consumption
-- **UI Responsiveness**: ~60% fewer unnecessary re-renders
-- **IPC Efficiency**: ~100% improvement in inter-process communication
-- **List Rendering**: Infinite scalability for large datasets (10K+ items)
-- **Data Loading**: 90%+ cache hit rate for repeated operations
-**Phase 1: Critical Foundation Optimizations**:
-1. **Context Memoization System (60% re-render reduction)**:
-    - Added `useMemo()` to all 6 context providers (Model, Project, Auth, Theme, Chat, Settings)
-    - Wrapped heavy components with `React.memo()` (MonacoBlock, ProjectCard, ChatListItem, MarkdownRenderer, StatisticsTab)
-    - Eliminated unnecessary cascade re-renders throughout the application
-2. **Library Lazy Loading (40% startup improvement)**:
-    - Converted Monaco Editor to dynamic import with loading states
-    - Converted Mermaid to dynamic import with proper initialization
-    - Leveraged existing CodeMirror lazy loading optimization
-    - Added graceful loading states for all dynamically loaded components
-3. **Service Lazy Loading (50% startup time + 30% RAM)**:
-    - Implemented sophisticated lazy service registry with proxy pattern
-    - Converted 5 non-essential services to lazy loading: Docker, SSH, Logo, Scanner, PageSpeed
-    - Services now load on first method access, dramatically reducing startup overhead
-    - Proper code splitting ensures lazy services are separate chunks
-4. **IPC Batching Infrastructure (70% fewer IPC calls)**:
-    - Enhanced existing IPC batching system with comprehensive TypeScript support
-    - Added batch interface definitions to `electron.d.ts`
-    - Created reusable batch utilities and common batch operations
-    - Fixed all type errors and added web bridge mock implementations
-**Phase 2: Advanced Performance Optimizations**:
-5. **Expanded IPC Batching (Additional 30% efficiency)**:
-    - Added batchable handlers for database operations (CRUD, queries, stats)
-    - Added batchable handlers for Git operations (status, branches, commits, history)
-    - Added batchable handlers for settings and quota operations
-    - Created high-level batch patterns: `loadSettingsData`, `loadProjectData`, `updateChatsBatch`
-    - Updated hooks to use efficient batching: chat CRUD, settings stats, Git data loading
-6. **Advanced Memory Management (20% additional RAM reduction)**:
-    - Implemented sophisticated LRU (Least Recently Used) cache system
-    - Created intelligent cached database layer with pattern-based invalidation
-    - Added cache wrappers with appropriate TTL: chats (120s), projects (120s), folders (60s), stats (30-60s)
-    - Automatic cache cleanup every 5 minutes prevents memory leaks
-    - Cache statistics available for monitoring and debugging
-7. **Component Performance Optimization (10-15% UI improvement)**:
-    - Created `VirtualizedProjectGrid` for handling 1000+ projects efficiently
-    - Created `VirtualizedIdeaGrid` for handling 1000+ ideas efficiently
-    - Maintained existing `MessageList` virtualization (react-virtuoso)
-    - Added smart virtualization thresholds (activates only for >20 items)
-    - Enhanced debounced search infrastructure for instant filtering
-**Technical Excellence**:
-- **Zero Breaking Changes**: All existing functionality preserved
-- **100% Type Safety**: No `any` types added, full TypeScript compliance
-- **Clean Build**: ✅ Passes TypeScript compilation and ESLint checks
-- **Smart Activation**: Optimizations activate intelligently based on data size
-**Files Added**:
-- `src/main/core/lazy-services.ts` - Lazy service registry and proxy system
-- `src/renderer/utils/ipc-batch.util.ts` - Enhanced IPC batching utilities
-- `src/renderer/utils/lru-cache.util.ts` - LRU cache implementation
-- `src/renderer/utils/cached-database.util.ts` - Cached database operations
-- `src/renderer/features/projects/components/VirtualizedProjectGrid.tsx` - Virtualized project rendering
-- `src/renderer/features/ideas/components/VirtualizedIdeaGrid.tsx` - Virtualized idea rendering
-**Files Enhanced**:
-- `src/main/startup/services.ts` - Added lazy service registration
-- `src/main/ipc/*.ts` - Added batchable handlers (auth, db, git, proxy, settings)
-- `src/renderer/context/*.tsx` - Added context memoization (4 providers)
-- `src/renderer/features/*/hooks/*.ts` - Updated to use batching and caching
-- `src/renderer/features/settings/hooks/useSettingsStats.ts` - Batch loading optimization
-- `src/renderer/features/projects/hooks/useGitData.ts` - Git batch loading optimization
-- `src/renderer/features/chat/hooks/useChatCRUD.ts` - Database batching optimization
-**Result**: Tandem is now **enterprise-grade performant** and ready for heavy production workloads with thousands of chats, projects, and messages.
-**🔒 PHASE 3: Security Hardening - Comprehensive JSON Safety**
-**Status**: ✅ Completed
-**Security Achievements**:
-- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
-- **13+ Critical Security Fixes** across 6 major services (auth-api, idea-generator, copilot, idea-scoring, agent, deep-research)
-- **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
-- **Graceful Error Handling** with intelligent defaults when parsing fails
-- **Attack Vector Elimination** - JSON-based injection attacks now impossible
-**Critical Services Secured**:
-1. **AuthAPIService**: Secured token update endpoint with validation
-2. **IdeaGeneratorService**: Hardened 6 LLM response parsing methods
-3. **CopilotService**: Protected error response parsing
-4. **IdeaScoringService**: Secured scoring and comparison data parsing
-5. **AgentService**: Fixed database field parsing with proper types
-6. **DeepResearchService**: Protected research data parsing operations
-**🏗️ PHASE 4: Architecture Enhancement - Centralized Event Management**
-**Status**: ✅ Completed
-**Architecture Improvements**:
-- **Enhanced EventBusService** with advanced subscription management and debugging
-- **Unique Subscription IDs** for proper lifecycle cleanup and memory management
-- **Event History Persistence** for debugging with 100 events and full metadata
-- **Advanced Event Statistics** and monitoring capabilities for system health
-- **Extended Event Type System** supporting both SystemEvents and custom events
-- **Service Integration** across 8+ core services (Database, Auth, FileChangeTracker, Token, etc.)
-**New Capabilities**:
-- Priority-based event handling for ordered execution
-- One-time subscriptions with automatic cleanup
-- Custom event filtering for selective processing
-- Backward-compatible API maintaining existing service integrations
-- Event debugging tools for development and production monitoring
-**🛡️ PHASE 5: Type Safety Hardening - Zero Unsafe Casts**
-**Status**: ✅ Completed
-**Type Safety Achievements**:
-- **Zero Remaining Unsafe Type Casts** - eliminated ALL `as any` and `as unknown` instances
-- **BackupService Hardening** - replaced 5 unsafe casts with proper JSON serialization
-- **SettingsService Enhancement** - fixed authentication token lookup with proper LinkedAccount types
-- **Improved Type Contracts** between services with accurate interface definitions
-- **Enhanced IDE Support** with perfect type inference and autocomplete accuracy
-**Benefits Realized**:
-- Compile-time error detection prevents runtime failures
-- Better developer experience with accurate IntelliSense
-- Safer refactoring capabilities with type-guided changes
-- Preparation for TypeScript strict mode activation
-**🏆 ENTERPRISE READINESS METRICS**
-**Performance Metrics Achieved**:
-| Aspect | Improvement | Technical Detail |
+**状态**： ✅ 完全完成 - 所有阶段均成功
+**企业级成就总结**：
+Tandem 已完全转变为企业级应用程序，具有显着的性能改进、全面的安全强化、增强的架构和完美的类型安全性。该应用程序现在可以以最佳的资源利用率处理企业工作负载（10,000 多个项目）。
+**🚀 第 1 和 2 阶段：企业绩效优化**
+**性能影响**：
+- **启动时间**：应用程序启动速度加快约 50%
+- **内存使用**：RAM 消耗减少约 50%
+- **UI 响应能力**：不必要的重新渲染减少约 60%
+- **IPC 效率**：进程间通信提高约 100%
+- **列表渲染**：大型数据集（10K+ 项目）的无限可扩展性
+- **数据加载**：重复操作的缓存命中率超过 90%
+**阶段 1：关键基础优化**：
+1. **上下文记忆系统（减少 60% 重新渲染）**：
+- 将 `useMemo()` 添加到所有 6 个上下文提供程序（模型、项目、身份验证、主题、聊天、设置）
+- 使用 `React.memo()` 包装重型组件（MonacoBlock、ProjectCard、ChatListItem、MarkdownRenderer、StatisticsTab）
+- 消除了整个应用程序中不必要的级联重新渲染
+2. **库延迟加载（启动改进 40%）**：
+- 将摩纳哥编辑器转换为具有加载状态的动态导入
+- 通过正确的初始化将 Mermaid 转换为动态导入
+- 利用现有的 CodeMirror 延迟加载优化
+- 为所有动态加载的组件添加了优雅的加载状态
+3. **服务延迟加载（50%启动时间 + 30% RAM）**：
+- 使用代理模式实现了复杂的惰性服务注册表
+- 将 5 个非必要服务转换为延迟加载：Docker、SSH、Logo、Scanner、PageSpeed
+- 服务现在在第一个方法访问时加载，大大减少了启动开销
+- 适当的代码分割确保惰性服务是单独的块
+4. **IPC 批处理基础设施（IPC 调用减少 70%）**：
+- 增强了现有的 IPC 批处理系统，具有全面的 TypeScript 支持
+- 向 `electron.d.ts` 添加了批处理接口定义
+- 创建可重用的批处理实用程序和常见的批处理操作
+- 修复了所有类型错误并添加了网桥模拟实现
+**阶段 2：高级性能优化**：
+5. **扩展 IPC 批处理（额外提高 30% 效率）**：
+- 为数据库操作（CRUD、查询、统计）添加了可批处理的 handlers
+- 为 Git 操作（状态、分支、提交、历史记录）添加了可批处理的 handlers
+- 添加了可批处理的 handlers 用于设置和配额操作
+- 创建了高级批处理模式：`loadSettingsData`、`loadProjectData`、`updateChatsBatch`
+- 更新了挂钩以使用高效批处理：聊天 CRUD、设置统计、Git 数据加载
+6. **高级内存管理（RAM 额外减少 20%）**：
+- 实现了复杂的LRU（最近最少使用）缓存系统
+- 创建了具有基于模式的失效的智能缓存数据库层
+- 添加了具有适当 TTL 的缓存 wrappers：聊天（120 秒）、项目（120 秒）、文件夹（60 秒）、统计信息（30-60 秒）
+- 每 5 分钟自动清理一次缓存，防止内存泄漏
+- 缓存统计信息可用于监控和调试
+7. **组件性能优化（10-15% UI 改进）**：
+- 创建了 `VirtualizedProjectGrid` 来有效处理 1000 多个项目
+- 创建了 `VirtualizedIdeaGrid` 来有效处理 1000 多个想法
+- 维护现有的 `MessageList` 虚拟化 (react-virtuoso)
+- 添加了智能虚拟化阈值（仅针对 >20 个项目激活）
+- 增强的去抖搜索基础设施，用于即时过滤
+**技术卓越**：
+- **零重大更改**：保留所有现有功能
+- **100% 类型安全**：未添加 `any` 类型，完全符合 TypeScript 合规性
+- **干净构建**：✅ 通过 TypeScript 编译和 ESLint 检查
+- **智能激活**：根据数据大小智能激活优化
+**添加的文件**：
+- `src/main/core/lazy-services.ts` - 惰性服务注册和代理系统
+- `src/renderer/utils/ipc-batch.util.ts` - 增强的 IPC 批处理实用程序
+- `src/renderer/utils/lru-cache.util.ts` - LRU 缓存实现
+- `src/renderer/utils/cached-database.util.ts` - 缓存数据库操作
+- `src/renderer/features/projects/components/VirtualizedProjectGrid.tsx` - 虚拟化项目渲染
+- `src/renderer/features/ideas/components/VirtualizedIdeaGrid.tsx` - 虚拟化创意渲染
+**文件增强**：
+- `src/main/startup/services.ts` - 添加了惰性服务注册
+- `src/main/ipc/*.ts` - 添加了可批处理的 handlers （auth、db、git、代理、设置）
+- `src/renderer/context/*.tsx` - 添加了上下文记忆（4 个提供程序）
+- `src/renderer/features/*/hooks/*.ts` - 更新为使用批处理和缓存
+- `src/renderer/features/settings/hooks/useSettingsStats.ts` - 批量加载优化
+- `src/renderer/features/projects/hooks/useGitData.ts` - Git批量加载优化
+- `src/renderer/features/chat/hooks/useChatCRUD.ts` - 数据库批处理优化
+**结果**：Tandem 现在具有**企业级性能**，并已准备好应对包含数千个聊天、项目和消息的繁重生产工作负载。
+**🔒 第 3 阶段：安全强化 - 全面 JSON 安全**
+**状态**： ✅ 已完成
+**安全成就**：
+- **100% 消除**整个应用程序中不安全的 `JSON.parse()` 调用
+- **超过 13 个关键安全修复**，涵盖 6 个主要服务（auth-api、idea-generator、copilot、idea-scoring、agent、deep-research）
+- **针对所有外部数据源的全面输入验证**（LLM 响应、API 调用、数据库字段）
+- **优雅的错误处理**，解析失败时具有智能默认值
+- **攻击向量消除** - 基于 JSON 的注入攻击现在不可能
+**确保关键服务**：
+1. **AuthAPIService**：带验证的安全令牌更新端点
+2. **IdeaGeneratorService**：强化6种LLM响应解析方法
+3. **CopilotService**：受保护的错误响应解析
+4. **IdeaScoringService**：安全评分和比较数据解析
+5. **AgentService**：修复了正确类型的数据库字段解析
+6. **DeepResearchService**：受保护的研究数据解析操作
+**🏗️ 第 4 阶段：架构增强 - 集中事件管理**
+**状态**： ✅ 已完成
+**架构改进**：
+- **增强的 EventBusService** 具有高级订阅管理和调试功能
+- **唯一的订阅 ID** 用于正确的生命周期清理和内存管理
+- **事件历史记录**用于使用 100 个事件和完整元数据进行调试
+- **高级事件统计**和系统健康状况监控功能
+- **扩展事件类型系统**支持系统事件和自定义事件
+- **服务集成** 跨 8 个以上核心服务（数据库、身份验证、FileChangeTracker、令牌等）
+**新功能**：
+- 基于优先级的事件处理以有序执行
+- 具有自动清理功能的一次性订阅
+- 用于选择性处理的自定义事件过滤
+- 向后兼容 API 维护现有服务集成
+- 用于开发和生产监控的事件调试工具
+**🛡️ 第 5 阶段：类型安全强化 - 零不安全强制转换**
+**状态**： ✅ 已完成
+**类型安全成就**：
+- **零剩余不安全类型转换** - 消除了所有 `as any` 和 `as unknown` 实例
+- **BackupService 强化** - 使用正确的 JSON 序列化替换了 5 个不安全的转换
+- **SettingsService 增强** - 使用正确的 LinkedAccount 类型修复身份验证令牌查找
+- **改进了服务之间的类型契约**，具有准确的接口定义
+- **增强的 IDE 支持** 具有完美的类型推断和自动完成准确性
+**实现的好处**：
+- 编译时错误检测可防止 runtime 失败
+- 通过准确的 IntelliSense 获得更好的开发体验
+- 通过类型引导的更改实现更安全的重构功能
+- TypeScript 严格模式激活的准备
+**🏆 企业就绪指标**
+**实现的性能指标**：
+|方面|改进|技术细节|
 |--------|-------------|------------------|
-| **Startup Time** | -50% | Lazy service loading + library code splitting |
-| **Memory Usage** | -50% | LRU caching + intelligent invalidation |
-| **UI Responsiveness** | -60% re-renders | Context memoization across 6 providers |
-| **IPC Efficiency** | +100% | Advanced request batching system |
-| **Type Safety** | 100% safe | Zero unsafe type casts remaining |
-| **Security Posture** | Hardened | Complete JSON input validation |
-| **Architecture Quality** | Enterprise | Centralized event management |
-**Build Quality Validation**:
-- ✅ **TypeScript Compilation** - Zero errors across 1,955+ modules
-- ✅ **ESLint Compliance** - No linting issues found
-- ✅ **Vite Production Build** - Successful with optimized code splitting
-- ✅ **Native Services** - Rust binaries compiled successfully
-- ✅ **Bundle Analysis** - Proper chunk splitting (7,504 modules transformed)
-- ✅ **Backward Compatibility** - 100% existing functionality preserved
-**Enterprise Capabilities Now Available**:
-- Handles 10,000+ chats, projects, and messages without performance degradation
-- Secure processing of untrusted external data (LLM responses, API calls)
-- Centralized event-driven architecture for complex workflows
-- Type-safe development with compile-time error prevention
-- Optimal resource utilization for long-running sessions
-**Next-Generation Foundation**: Tandem is now built on enterprise-grade foundations ready for### [2026-01-26]
-- **Documentation**: Created `docs/LINT_ISSUES.md` with full breakdown of 804 lint warnings, categorized by file and line number.
-- **Rules**: Added 12 new Performance Optimization Rules across all agent-specific config files (`.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, `.claude/CLAUDE.md`, and `docs/AI_RULES.md`).
-- **Standardization**: Established `logs/` as the mandatory directory for all agent debugging output.
+| **启动时间** | -50% |延迟服务加载+库代码分割 |
+| **内存使用情况** | -50% | LRU缓存+智能失效 |
+| **UI 响应能力** | -60% 重新渲染 |跨 6 个提供商的上下文记忆 |
+| **IPC 效率** | +100% |先进的请求批处理系统|
+| **类型安全** | 100% 安全 |剩余零不安全类型转换 |
+| **安全态势** |硬化|完成 JSON 输入验证 |
+| **架构质量** |企业 |集中事件管理 |
+**构建质量验证**：
+- ✅ **TypeScript 编译** - 超过 1,955 个模块的零错误
+- ✅ **ESLint 合规性** - 未发现 linting 问题
+- ✅ **Vite Production Build** - 通过优化代码分割取得成功
+- ✅ **本机服务** - Rust 二进制文件编译成功
+- ✅ **捆绑分析** - 正确的块分割（转换了 7,504 个模块）
+- ✅ **向后兼容性** - 100% 保留现有功能
+**现已提供企业功能**：
+- 处理 10,000 多个聊天、项目和消息，而不会降低性能
+- 安全处理不受信任的外部数据（LLM 响应、API 调用）
+- 适用于复杂工作流程的集中式事件驱动架构
+- 具有编译时错误预防功能的类型安全开发
+- 长时间运行会话的最佳资源利用率
+**下一代基础**：Tandem 现在构建在企业级基础上，为 ### 做好准备 [2026-01-26]
+- **文档**：创建了 `docs/LINT_ISSUES.md`，其中包含 804 lint 警告的完整细分，按文件和行号分类。
+- **规则**：在所有特定于代理的配置文件（`.gemini/GEMINI.md`、`.agent/rules/code-style-guide.md`、`.copilot/COPILOT.md`、`.claude/CLAUDE.md` 和 `docs/AI_RULES.md`）中添加了 12 条新的性能优化规则。
+- **标准化**：将 `logs/` 建立为所有代理调试输出的强制目录。
 
-### EventBusService Enhancement - Centralized Event Management
+### EventBusService 增强 - 集中事件管理
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: EventBusService Enhancement - Centralized Event Management introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: EventBusService 增强 - 集中式事件管理引入了跨相关模块的协调维护和质量改进。
 
-**Status**: ✅ Completed
-**Architecture Impact**:
-- **Centralized Event System**: Enhanced existing EventBusService with subscription management and debugging capabilities
-- **Type-Safe Events**: Extended SystemEvents with new event types (`system:error` and more)
-- **Subscription Management**: Added unique subscription IDs with proper cleanup mechanisms
-- **Event History**: Built-in event persistence for debugging and monitoring
-- **Backward Compatibility**: Maintained existing API while adding new features
-**Key Features Added**:
-1. **Enhanced Subscription Management**:
-    - Unique subscription IDs for proper cleanup
-    - Support for one-time subscriptions with auto-cleanup
-    - Backward compatible function-based unsubscribe
-    - Subscription priority levels for ordered event handling
-2. **Event Persistence & Debugging**:
-    - Event history storage (configurable size, default 100 events)
-    - Event statistics and monitoring (listener counts, recent activity)
-    - Enhanced logging with event IDs and metadata
-    - Error handling with graceful degradation
-3. **Custom Event Support**:
-    - Support for custom events beyond SystemEvents
-    - Extensible event system for plugins and features
-    - Event filtering capabilities for selective handling
-4. **Improved Error Handling**:
-    - Wrapped listeners with try-catch for fault isolation
-    - System error event monitoring and logging
-    - Graceful service initialization and cleanup
-**API Examples**:
+**状态**： ✅ 已完成
+**架构影响**：
+- **集中事件系统**：增强现有的EventBusService，具有订阅管理和调试功能
+- **类型安全事件**：具有新事件类型的扩展系统事件（`system:error` 等）
+- **订阅管理**：添加了具有适当清理机制的唯一订阅 ID
+- **事件历史记录**：内置事件持久性，用于调试和监控
+- **向后兼容性**：在添加新功能的同时维护现有的 API
+**添加的主要功能**：
+1. **增强的订阅管理**：
+- 用于正确清理的唯一订阅 ID
+- 支持具有自动清理功能的一次性订阅
+- 向后兼容基于函数的取消订阅
+- 有序事件处理的订阅优先级
+2. **事件持久化和调试**：
+- 事件历史存储（可配置大小，默认100个事件）
+- 事件统计和监控（听众数量、最近的活动）
+- 增强了事件 ID 和元数据的日志记录
+- 优雅降级的错误处理
+3. **自定义事件支持**：
+- 支持系统事件之外的自定义事件
+- 用于插件和功能的可扩展事件系统
+- 用于选择性处理的事件过滤功能
+4. **改进的错误处理**：
+- 使用 try-catch 包装侦听器以进行故障隔离
+- 系统错误事件监控和记录
+- 优雅的服务初始化和清理
+**API 示例**：
 ```typescript
-// Traditional usage (returns unsubscribe function)
-const unsubscribe = eventBus.on('auth:changed', payload => {
-    console.log('Auth changed:', payload);
+// 传统用法（返回取消订阅函数）
+const unsubscribe = eventBus.on('auth:changed', Payload => {
+console.log('身份验证已更改：', Payload);
 });
-// Enhanced usage (returns subscription ID)
-const id = eventBus.on(
-    'auth:changed',
-    payload => {
-        console.log('Auth changed:', payload);
+// 增强使用（返回订阅 ID）
+const id = eventBus.on（
+'授权：已更改',
+有效负载=> {
+console.log('身份验证已更改：', Payload);
     },
-    { once: true, priority: 10 }
+{ 一次：true，优先级：10 }
 );
-// Custom events
+// 自定义事件
 eventBus.emitCustom('my:custom:event', { data: 'value' });
 ```
-**Services Integration**: EventBusService is used by 8+ core services including DatabaseService, AuthService, FileChangeTracker, and TokenService.
+**服务集成**：EventBusService 由 8 个以上核心服务使用，包括 DatabaseService、AuthService、FileChangeTracker 和 TokenService。
 
-### 🎨 IDEAS MODULE THEME MIGRATION & SYSTEM STABILIZATION
+### 🎨 想法模块主题迁移和系统稳定
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: 🎨 IDEAS MODULE THEME MIGRATION & SYSTEM STABILIZATION improved data model consistency and migration reliability across affected services.
+- **Summary**: 🎨 IDEAS 模块主题迁移和系统稳定性提高了受影响服务之间的数据模型一致性和迁移可靠性。
 
-**Status**: ✅ COMPLETED
-**Summary**:
-Successfully migrated the entire `Ideas` module to the centralized theme system, ensuring consistent aesthetics across light and dark modes. Simultaneously performed critical system stabilization by resolving lint errors and syntax issues in core services.
-**Key Achievements**:
-- **Ideas Module Migration**:
-    - Converted `IdeasPage`, `IdeaCard`, `StageGeneration`, `ApprovalFooter`, `IdeaDetailsContent`, `IdeaGrid`, and `LogoGenerator` to use semantic theme tokens.
-    - Standardized `bg-card`, `text-muted-foreground`, and `border-border` usage throughout the feature.
-- **System-Wide Fixes**:
-    - Resolved a critical `TS5076` syntax error in `StageGeneration.tsx`.
-    - Fixed an unsafe `Function` type linting error in `event-bus.service.ts` to improve type safety.
-    - Conducted a comprehensive audit for hardcoded colors in the migrated components.
-- **Build Quality**: Verified with a successful `npm run build`, `npm run lint`, and `npm run type-check` (Exit code 0).
+**状态**： ✅ 已完成
+**概括**：
+成功将整个 `Ideas` 模块迁移到集中式主题系统，确保浅色和深色模式下的美观一致。通过解决核心服务中的 lint 错误和语法问题，同时执行关键的系统稳定性。
+**主要成就**：
+- **想法模块迁移**：
+- 转换了 `IdeasPage`、`IdeaCard`、`StageGeneration`、`ApprovalFooter`、`IdeaDetailsContent`、`IdeaGrid` 和 `LogoGenerator` 以使用语义主题标记。
+- 在整个功能中标准化 `bg-card`、`text-muted-foreground` 和 `border-border` 的使用。
+- **系统范围内的修复**：
+- 解决了 `StageGeneration.tsx` 中的严重 `TS5076` 语法错误。
+- 修复了 `event-bus.service.ts` 中不安全的 `Function` 类型 linting 错误，以提高类型安全性。
+- 对迁移组件中的硬编码颜色进行了全面审核。
+- **构建质量**：通过成功的 `npm run build`、`npm run lint` 和 `npm run type-check` 进行验证（退出代码 0）。
 
-### Ideas to Project Navigation & Missing IPC Handlers
+### 项目导航的想法和缺失 IPC Handlers
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Ideas to Project Navigation & Missing IPC Handlers advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 项目导航的想法和缺失 IPC Handlers 跨规划和 runtime 流程的高级项目代理能力和执行质量。
 
-**Status**: Completed
-**New Features**:
-- **Automatic Project Navigation**: When users approve an idea and create a project, they are now automatically navigated to the newly created project page instead of staying on the Ideas page. This provides a seamless workflow from idea generation to project development.
-- **Complete IPC Handler Coverage**: Added missing IPC handlers for the Ideas system that were implemented in the backend but not exposed to the renderer process.
-**Technical Changes**:
-- **IdeasPage**: Added `onNavigateToProject` callback prop to handle navigation after project creation
-- **ViewManager**: Updated to accept and pass navigation callback to IdeasPage
-- **AppShell**: Added `handleNavigateToProject` callback that reloads projects, selects the new project, and navigates to the projects view
-- **Preload Bridge**: Added 13 missing IPC handlers:
-    - Deep Research: `deepResearch`, `validateIdea`, `clearResearchCache`
-    - Scoring: `scoreIdea`, `rankIdeas`, `compareIdeas`, `quickScore`
-    - Data Management: `deleteIdea`, `deleteSession`, `archiveIdea`, `restoreIdea`, `getArchivedIdeas`
-    - Events: `onDeepResearchProgress`
-**Files Modified**:
+**状态**：已完成
+**新功能**：
+- **自动项目导航**：当用户批准创意并创建项目时，他们现在会自动导航到新创建的项目页面，而不是停留在创意页面。这提供了从创意产生到项目开发的无缝工作流程。
+- **完整的 IPC Handler 覆盖**：为在后端实现但未暴露给渲染器进程的 Ideas 系统添加了缺失的 IPC handlers 。
+**技术变更**：
+- **IdeasPage**：添加了 `onNavigateToProject` 回调属性来处理项目创建后的导航
+- **ViewManager**：更新为接受导航回调并将其传递给 IdeasPage
+- **AppShell**：添加了 `handleNavigateToProject` 回调，用于重新加载项目、选择新项目并导航到项目视图
+- **预加载桥**：添加了 13 个缺失的 IPC handlers：
+- 深入研究：`deepResearch`、`validateIdea`、`clearResearchCache`
+- 评分：`scoreIdea`、`rankIdeas`、`compareIdeas`、`quickScore`
+- 数据管理：`deleteIdea`、`deleteSession`、`archiveIdea`、`restoreIdea`、`getArchivedIdeas`
+- 事件：`onDeepResearchProgress`
+**修改的文件**：
 - `src/renderer/features/ideas/IdeasPage.tsx`
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/AppShell.tsx`
@@ -2413,308 +2443,308 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/renderer/web-bridge.ts`
 - `CHANGELOG.md`
 
-### Performance Optimizations (120fps Target)
+### 性能优化（120fps 目标）
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Performance Optimizations (120fps Target) improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: 性能优化（120fps 目标）改进了关键工作流程中的 runtime 性能、稳定性和操作一致性。
 
-**Status**: Completed
-**Optimizations**:
-- **Code Splitting**: Implemented lazy loading for all core views (`ChatView`, `ProjectsView`, `SettingsView`) to reduce initial bundle size.
-- **Render Performance**: Memoized expensive project filtering operations in `ProjectsPage` to prevent unnecessary re-computations.
-- **Animation Tuning**: Optimized view transitions for smoother (120fps feel) interaction.
-- **Dynamic Imports**: Lazy loaded `mermaid.js` in chat bubbles, reducing initial bundle size by ~1MB.
-- **Granular Chunking**: Refined `vite.config.ts` to split React, Monaco, and heavy libs into separate chunks for better caching.
-**Files Modified**:
+**状态**：已完成
+**优化**：
+- **代码分割**：对所有核心视图（`ChatView`、`ProjectsView`、`SettingsView`）实现延迟加载，以减少初始包大小。
+- **渲染性能**：在 `ProjectsPage` 中存储昂贵的项目过滤操作，以防止不必要的重新计算。
+- **动画调整**：优化视图过渡，实现更流畅（120fps 的感觉）交互。
+- **动态导入**：在聊天气泡中延迟加载 `mermaid.js`，将初始包大小减少约 1MB。
+- **粒度分块**：细化 `vite.config.ts` 以将 React、Monaco 和重型库拆分为单独的块，以实现更好的缓存。
+**修改的文件**：
 - `src/renderer/views/ViewManager.tsx`
 - `src/renderer/features/projects/ProjectsPage.tsx`
 
-### Project Dashboard Modularization & Git Tab Extraction
+### 项目仪表板模块化和 Git 选项卡提取
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project Dashboard Modularization & Git Tab Extraction advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 项目仪表板模块化和 Git 选项卡提取跨规划和 runtime 流程的高级项目代理功能和执行质量。
 
-**Status**: Completed
-**Refactoring**:
-- **ProjectDashboard Modularization**: Extracted the Git integration logic into a dedicated `ProjectGitTab` component, significantly reducing the complexity of the main `ProjectDashboard` component.
-- **Custom Hook**: Implemented `useGitData` hook to encapsulate all Git-related state management (fetching, staging, committing, pushing, pulling), improving separation of concerns.
-- **Linting Fixes**: Resolved numerous ESLint warnings in `ProjectDashboard.tsx` and `ProjectGitTab.tsx`, including:
-    - Fixed promise-returning functions in attributes (added `void` operator).
-    - Replaced unsafe `||` operators with nullish coalescing `??`.
-    - Removed unused imports and variables.
-    - Fixed parsing errors and JSX nesting issues.
-- **Performance**: Optimized re-renders by moving complex Git logic out of the main dashboard rendering path.
-**Files Modified**:
-- `src/renderer/features/projects/components/ProjectDashboard.tsx` - Removed Git logic, integrated `ProjectGitTab`.
-- `src/renderer/features/projects/components/ProjectGitTab.tsx` [NEW] - Dedicated Git interface component.
-- `src/renderer/features/projects/hooks/useGitData.ts` [NEW] - Git state management hook.
+**状态**：已完成
+**重构**：
+- **ProjectDashboard 模块化**：将 Git 集成逻辑提取到专用的 `ProjectGitTab` 组件中，显着降低主 `ProjectDashboard` 组件的复杂性。
+- **自定义钩子**：实现了 `useGitData` 钩子来封装所有与 Git 相关的状态管理（获取、暂存、提交、推送、拉取），改进关注点分离。
+- **Linting 修复**：解决了 `ProjectDashboard.tsx` 和 `ProjectGitTab.tsx` 中的大量 ESLint 警告，包括：
+- 修复了属性中的承诺返回函数（添加了 `void` 运算符）。
+- 将不安全的 `||` 运算符替换为无效合并 `??`。
+- 删除了未使用的导入和变量。
+- 修复了解析错误和 JSX 嵌套问题。
+- **性能**：通过将复杂的 Git 逻辑移出主仪表板渲染路径来优化重新渲染。
+**修改的文件**：
+- `src/renderer/features/projects/components/ProjectDashboard.tsx` - 删除了 Git 逻辑，集成了 `ProjectGitTab`。
+- `src/renderer/features/projects/components/ProjectGitTab.tsx` [新] - 专用 Git 界面组件。
+- `src/renderer/features/projects/hooks/useGitData.ts` [新] - Git 状态管理挂钩。
 
-### Project Settings Panel Enhancement (PROJ-HIGH-005)
+### 项目设置面板增强 (PROJ-HIGH-005)
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Project Settings Panel Enhancement (PROJ-HIGH-005) advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 项目设置面板增强 (PROJ-HIGH-005) 跨规划和 runtime 流程的高级项目代理功能和执行质量。
 
-**Status**: Completed
-**Features**:
-- **Expanded Settings**: Added dedicated sections for Build & Test, Dev Server, and Advanced Options.
-- **Refactored UI**: Improved `ProjectSettingsPanel` by extracting state management into a custom `useProjectSettingsForm` hook and splitting UI into modular section components.
-- **Form Handling**: Implemented robust dirty state checking, form reset, and split-view sections.
-**Files Modified**:
+**状态**：已完成
+**特征**：
+- **扩展设置**：添加了构建和测试、开发服务器和高级选项的专用部分。
+- **重构 UI**：通过将状态管理提取到自定义 `useProjectSettingsForm` 挂钩并将 UI 拆分为模块化部分组件来改进 `ProjectSettingsPanel`。
+- **表单处理**：实现了强大的脏状态检查、表单重置和分割视图部分。
+**修改的文件**：
 - `src/renderer/features/projects/components/ProjectSettingsPanel.tsx`
-- `src/shared/types/project.ts` (extended Project interface)
+- `src/shared/types/project.ts`（扩展项目接口）
 
-### Project State Machine Implementation (PROJ-CRIT-003)
+### 项目状态机实现 (PROJ-CRIT-003)
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Project State Machine Implementation (PROJ-CRIT-003) advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 项目状态机实施 (PROJ-CRIT-003) 跨规划和 runtime 流程提供先进的项目代理功能和执行质量。
 
-**Status**: Completed
-**Problem Solved**:
-- Race conditions in project list operations (edit, delete, archive, bulk operations)
-- Multiple operations could be triggered simultaneously, causing UI inconsistencies
-- State could become out of sync during rapid user interactions
-**Solution**:
-- **New Hook**: Created `useProjectListStateMachine` - a reducer-based state machine for project list operations
-- **Explicit States**: Defined clear states (`idle`, `editing`, `deleting`, `archiving`, `bulk_deleting`, `bulk_archiving`, `loading`, `error`)
-- **Guarded Transitions**: Operations can only start from `idle` state, preventing overlapping actions
-- **Coordinated Async**: All async operations go through a central dispatcher with proper loading/success/error handling
-**Files Added/Modified**:
-- `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [NEW] - State machine implementation
-- `src/renderer/features/projects/ProjectsPage.tsx` - Migrated to use state machine
+**状态**：已完成
+**问题已解决**：
+- 项目列表操作中的竞争条件（编辑、删除、存档、批量操作）
+- 多个操作可能同时触发，导致 UI 不一致
+- 在快速的用户交互过程中状态可能会变得不同步
+**解决方案**：
+- **新钩子**：创建了 `useProjectListStateMachine` - 用于项目列表操作的基于减速器的状态机
+- **显式状态**：定义的清除状态（`idle`、`editing`、`deleting`、`archiving`、`bulk_deleting`、`bulk_archiving`、`loading`、`error`）
+- **受保护的转换**：操作只能从 `idle` 状态开始，防止重叠操作
+- **协调异步**：所有异步操作都通过中央调度程序进行适当的加载/成功/错误处理
+**添加/修改的文件**：
+- `src/renderer/features/projects/hooks/useProjectListStateMachine.ts` [新] - 状态机实现
+- `src/renderer/features/projects/ProjectsPage.tsx` - 迁移为使用状态机
 
-### Project System Bug Fixes
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Project System Bug Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
-
-**Status**: Fixed Critical Issues
-**Issues Resolved**:
-#### **Bug #1: Sidebar Links Disappearing** ✅
-- **Problem**: When user selected a project, entire sidebar disappeared, preventing navigation back to other views
-- **Root Cause**: Conditional rendering in App.tsx completely hid sidebar when `currentView === 'projects' && selectedProject`
-- **Fix**: Removed conditional logic - sidebar now always visible, allowing users to navigate between views even while in project workspace
-- **File**: `src/renderer/App.tsx` - Simplified sidebar rendering logic
-#### **Bug #2: Vector Dimension Error in Code Intelligence** ✅
-- **Problem**: Project analysis failed with "vector must have at least 1 dimension" error during code indexing
-- **Root Cause**: When embedding provider set to 'none', service returned empty array `[]` which database rejected (PostgreSQL vector type requires 1+ dimensions)
-- **Fix**: Return 384-dimensional zero vector `new Array(384).fill(0)` instead of empty array for 'none' provider
-- **File**: `src/main/services/llm/embedding.service.ts` - Replaced empty array with proper default vector
-- **Additional**: Fixed unreachable code (duplicate return statement) in getCurrentProvider()
-**Technical Details**:
-- **Sidebar Fix**: Users can now access all navigation options while viewing projects, maintaining consistent UX
-- **Vector Fix**: Code intelligence indexing will work with 'none' embedding provider using zero vectors, preventing database constraint violations
-- **Database Compatibility**: Zero vectors maintain proper dimensions for PostgreSQL vector operations while indicating no semantic meaning
-**Files Modified**:
-- `src/renderer/App.tsx` - Removed problematic conditional sidebar rendering
-- `src/main/services/llm/embedding.service.ts` - Fixed vector dimension issue and unreachable code
-- `CHANGELOG.md` - Added fix documentation
-**Testing Status**: TypeScript compilation successful, no type errors found
-**User Impact**:
-- Project navigation now works properly without losing sidebar access
-- Code analysis/indexing will complete successfully regardless of embedding provider choice
-- Improved reliability and user experience in project management workflow
-
-### Project System Comprehensive Review & Roadmap
+### 项目系统错误修复
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project System Comprehensive Review & Roadmap advanced Project Agent capabilities and execution quality across planning and runtime flows.
+- **Summary**: 项目系统错误修复通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: Analysis Completed
-**Review Findings**:
-- **Strengths Identified**: Intelligent project analysis (40+ languages), rich scaffolding system (6 categories), advanced workspace integration with multi-mount support, robust PGlite database persistence
-- **Critical Issues Found**: Type safety problems, missing confirmation dialogs, state management race conditions, limited batch operations
-- **Missing Features**: Custom templates, project exports, environment variable management, advanced Git integration
-**Strategic Roadmap Created**:
-- **Phase 1** (Critical): Fix type safety, add confirmations, proper state management
-- **Phase 2** (High Priority): Batch operations, environment manager, project settings panel
-- **Phase 3** (Advanced): Custom templates, export system, AI-driven scaffolding
-- **Phase 4** (Platform): Dependency management, analytics dashboard, Git integration
-**Documentation Added**:
-- `docs/TODO/projects.md` - Comprehensive 50+ item roadmap with priorities and implementation phases
+**状态**：已修复关键问题
+**已解决的问题**：
+#### **错误#1：侧边栏链接消失** ✅
+- **问题**：当用户选择一个项目时，整个侧边栏消失，阻止导航回其他视图
+- **根本原因**：当 `currentView === 'projects' && selectedProject` 时，App.tsx 中的条件渲染完全隐藏侧边栏
+- **修复**：删除了条件逻辑 - 侧边栏现在始终可见，允许用户即使在项目工作区中也可以在视图之间导航
+- **文件**：`src/renderer/App.tsx` - 简化的侧边栏渲染逻辑
+#### **错误 #2：代码智能中的向量维度错误** ✅
+- **问题**：项目分析失败，并在代码索引期间出现“向量必须至少有 1 维”错误
+- **根本原因**：当嵌入提供程序设置为“无”时，服务返回数据库拒绝的空数组 `[]` （PostgreSQL 向量类型需要 1+ 维）
+- **修复**：返回 384 维零向量 `new Array(384).fill(0)` 而不是“无”提供者的空数组
+- **文件**：`src/main/services/llm/embedding.service.ts` - 用正确的默认向量替换空数组
+- **附加**：修复了 getCurrentProvider() 中无法访问的代码（重复的返回语句）
+**技术细节**：
+- **侧边栏修复**：用户现在可以在查看项目时访问所有导航选项，保持一致的 UX
+- **向量修复**：代码智能索引将与使用零向量的“无”嵌入提供程序一起使用，从而防止违反数据库约束
+- **数据库兼容性**：零向量为 PostgreSQL 向量运算保持适当的维度，同时指示没有语义含义
+**修改的文件**：
+- `src/renderer/App.tsx` - 删除了有问题的条件侧边栏渲染
+- `src/main/services/llm/embedding.service.ts` - 修复了向量维度问题和无法访问的代码
+- `CHANGELOG.md` - 添加修复文档
+**测试状态**：TypeScript编译成功，未发现类型错误
+**用户影响**：
+- 项目导航现在可以正常工作，不会失去侧边栏访问权限
+- 无论嵌入提供商选择如何，代码分析/索引都将成功完成
+- 提高了项目管理工作流程的可靠性和用户体验
 
-### Project System Improvements (Batch Operations & Refactoring)
+### 项目系统全面审查和路线图
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Project System Improvements (Batch Operations & Refactoring) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 项目系统综合审查和路线图在规划和runtime流程中提供先进的项目代理能力和执行质量。
 
-**Status**: Completed (Phase 1 & Phase 2 Early Items)
-**New Features**:
-- **Multi-Selection System**: Added checkboxes to project cards for selecting multiple projects.
-- **Bulk Actions**: Implemented "Archive Selected" and "Delete Selected" with batch processing.
-- **Improved Confirmations**: Added specific confirmation modals for single and bulk delete/archive actions, including a "Delete project files" option.
-- **Progress Tracking**: Added loading states and success notifications for batch operations.
-**Technical Changes**:
-- **Component Refactoring**:
-    - Split `ProjectCard.tsx` into smaller, focused sub-components.
-    - Split `ProjectModals.tsx` into specialized modal components to reduce complexity.
-- **Action Decoupling**: Created `useProjectListActions` hook to isolate list-level logic from workspace-level logic.
-- **Type Safety**:
-    - Hardened project-related interfaces and eliminated unsafe type assertions.
-    - Fixed pre-existing type mismatch in `idea-generator.service.ts` where Date objects were incorrectly used as timestamps.
-- **Internationalization**: Added 10+ new translation keys for bulk operations and confirmation dialogs.
-**Files Added/Modified**:
-- `src/renderer/features/projects/ProjectsPage.tsx` - Integrated multi-selection and bulk actions.
-- `src/renderer/features/projects/components/ProjectCard.tsx` - Modularized card UI.
-- `src/renderer/features/projects/components/ProjectModals.tsx` - Modularized modal components.
-- `src/renderer/features/projects/components/ProjectsHeader.tsx` [NEW] - Bulk action controls.
-- `src/renderer/features/projects/hooks/useProjectListActions.ts` [NEW] - List management logic.
-- `src/renderer/features/projects/hooks/useProjectActions.ts` - Restored to original workspace scope.
-- `src/main/services/llm/idea-generator.service.ts` - Fixed type mismatch in project approval.
-- `src/renderer/i18n/en.ts` / `tr.ts` - Added new operation strings.
-**Status**: Completed
-**New Features**:
-- **New Language Support**: Added German (de), French (fr), and Spanish (es) language files
-- **Enhanced Translation Keys**: Added memory, terminal, and auth sections to translation files
-- **CHANGELOG Consolidation**: Merged `docs/CHANGELOG.md` into root `CHANGELOG.md`
-**Technical Changes**:
-- Added `de.ts`, `fr.ts`, `es.ts` language files with comprehensive translations
-- Updated `index.ts` to export new languages and support 5 languages total (en, tr, de, fr, es)
-- Added `memory` section: inspector, facts, episodes, entities translations
-- Added `terminal` section: shell, session status translations
-- Added `auth` section: session key modal, device code modal translations
-- Added missing `mcp` keys: noServers, remove, official, byAuthor
-**Files Added/Modified**:
-- `src/renderer/i18n/de.ts` [NEW] - German translations
-- `src/renderer/i18n/fr.ts` [NEW] - French translations
-- `src/renderer/i18n/es.ts` [NEW] - Spanish translations
-- `src/renderer/i18n/en.ts` - Added memory, terminal, auth sections
-- `src/renderer/i18n/tr.ts` - Added memory, terminal, auth sections
-- `src/renderer/i18n/index.ts` - Export new languages
-- `CHANGELOG.md` - Consolidated from docs/CHANGELOG.md
+**状态**：分析完成
+**审查结果**：
+- **已确定的优势**：智能项目分析（40 多种语言）、丰富的脚手架系统（6 个类别）、具有多安装支持的高级工作区集成、强大的 PGlite 数据库持久性
+- **发现关键问题**：类型安全问题、缺少确认对话框、状态管理竞争条件、有限的批处理操作
+- **缺少功能**：自定义模板、项目导出、环境变量管理、高级 Git 集成
+**创建战略路线图**：
+- **阶段 1**（关键）：修复类型安全、添加确认、适当的状态管理
+- **阶段 2**（高优先级）：批量操作、环境管理器、项目设置面板
+- **第 3 阶段**（高级）：自定义模板、导出系统、人工智能驱动的脚手架
+- **阶段 4**（平台）：依赖管理、分析仪表板、Git 集成
+**添加文档**：
+- `docs/TODO/projects.md` - 包含 50 多个项目的综合路线图，包含优先级和实施阶段
 
-### Security Hardening - Safe JSON Parsing
+### 项目系统改进（批量操作和重构）
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: 项目系统改进（批量操作和重构）在目标范围内提供了计划的重构、结构清理和验证。
+
+**状态**：已完成（第一阶段和第二阶段早期项目）
+**新功能**：
+- **多重选择系统**：在项目卡中添加了复选框以选择多个项目。
+- **批量操作**：通过批处理实现“存档所选内容”和“删除所选内容”。
+- **改进确认**：添加了针对单个和批量删除/存档操作的特定确认模式，包括“删除项目文件”选项。
+- **进度跟踪**：添加了批量操作的加载状态和成功通知。
+**技术变更**：
+- **组件重构**：
+- 将 `ProjectCard.tsx` 拆分为更小的、重点突出的子组件。
+- 将 `ProjectModals.tsx` 拆分为专门的模态组件以降低复杂性。
+- **操作解耦**：创建 `useProjectListActions` 挂钩以将列表级逻辑与工作区级逻辑隔离。
+- **类型安全**：
+- 强化项目相关接口并消除不安全类型断言。
+- 修复了 `idea-generator.service.ts` 中预先存在的类型不匹配问题，其中日期对象被错误地用作时间戳。
+- **国际化**：为批量操作和确认对话框添加了 10 多个新翻译键。
+**添加/修改的文件**：
+- `src/renderer/features/projects/ProjectsPage.tsx` - 集成多选和批量操作。
+- `src/renderer/features/projects/components/ProjectCard.tsx` - 模块化卡UI。
+- `src/renderer/features/projects/components/ProjectModals.tsx` - 模块化模态组件。
+- `src/renderer/features/projects/components/ProjectsHeader.tsx` [新] - 批量操作控件。
+- `src/renderer/features/projects/hooks/useProjectListActions.ts` [新] - 列表管理逻辑。
+- `src/renderer/features/projects/hooks/useProjectActions.ts` - 恢复到原始工作区范围。
+- `src/main/services/llm/idea-generator.service.ts` - 修复了项目审批中的类型不匹配问题。
+- `src/renderer/i18n/en.ts` / `tr.ts` - 添加了新的操作字符串。
+**状态**：已完成
+**新功能**：
+- **新语言支持**：添加了德语 (de)、法语 (fr) 和西班牙语 (es) 语言文件
+- **增强的翻译键**：向翻译文件添加了内存、终端和身份验证部分
+- **CHANGELOG 合并**：将 `docs/CHANGELOG.md` 合并到根 `CHANGELOG.md` 中
+**技术变更**：
+- 添加了 `de.ts`、`fr.ts`、`es.ts` 语言文件，具有全面的翻译
+- 更新了 `index.ts` 以导出新语言并支持总共 5 种语言（en、tr、de、fr、es）
+- 添加了 `memory` 部分：检查员、事实、情节、实体翻译
+- 添加了 `terminal` 部分：shell、会话状态翻译
+- 添加了 `auth` 部分：会话密钥模式、设备代码模式翻译
+- 添加了缺失的 `mcp` 键：noServers、remove、official、byAuthor
+**添加/修改的文件**：
+- `src/renderer/i18n/de.ts` [新] - 德语翻译
+- `src/renderer/i18n/fr.ts` [新] - 法语翻译
+- `src/renderer/i18n/es.ts` [新] - 西班牙语翻译
+- `src/renderer/i18n/en.ts` - 添加了内存、终端、身份验证部分
+- `src/renderer/i18n/tr.ts` - 添加了内存、终端、身份验证部分
+- `src/renderer/i18n/index.ts` - 导出新语言
+- `CHANGELOG.md` - 从 docs/CHANGELOG.md 合并
+
+### 安全强化 - 安全 JSON 解析
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Security Hardening - Safe JSON Parsing strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 安全强化 - 安全 JSON 通过解决已知问题和强化关键路径来解析增强的可靠性和安全性。
 
-**Status**: ✅ Completed (Included in Enterprise Transformation above)
-**Security Impact**:
-- **100% Elimination** of unsafe `JSON.parse()` calls throughout the application
-- **Comprehensive Input Validation** for all external data sources (LLM responses, API calls, database fields)
-- **Graceful Error Handling** with sensible defaults when parsing fails
-- **Type Safety Preservation** while adding security layers
-**Critical Services Hardened**:
-1. **Authentication Service** (`auth-api.service.ts`):
-    - Secured token update endpoint JSON parsing
-    - Added validation for malformed authentication data
-    - Proper type casting for token fields
-2. **AI/LLM Services** (6 services, 13+ instances):
-    - `idea-generator.service.ts`: Secured all LLM response parsing (6 methods)
-    - `idea-scoring.service.ts`: Protected scoring and comparison data (2 methods)
-    - `copilot.service.ts`: Hardened error response parsing
-    - `agent.service.ts`: Secured database field parsing (2 methods)
-    - `deep-research.service.ts`: Protected research data parsing (2 methods)
-3. **Pattern Applied**:
+**状态**： ✅ 已完成（包含在上面的企业转型中）
+**安全影响**：
+- **100% 消除**整个应用程序中不安全的 `JSON.parse()` 调用
+- **针对所有外部数据源的全面输入验证**（LLM 响应、API 调用、数据库字段）
+- **优雅的错误处理**，解析失败时具有合理的默认值
+- **类型安全保护**，同时添加安全层
+**关键服务强化**：
+1. **身份验证服务** (`auth-api.service.ts`):
+- 安全令牌更新端点 JSON 解析
+- 添加了对格式错误的身份验证数据的验证
+- 令牌字段的正确类型转换
+2. **AI/LLM 服务**（6 个服务，13 个以上实例）：
+- `idea-generator.service.ts`：保护所有 LLM 响应解析（6 种方法）
+- `idea-scoring.service.ts`：受保护的评分和比较数据（2 种方法）
+- `copilot.service.ts`：强化错误响应解析
+- `agent.service.ts`：安全数据库字段解析（2种方法）
+- `deep-research.service.ts`：受保护的研究数据解析（2种方法）
+3. **应用模式**：
     ```typescript
-    // Before: Unsafe
-    const data = JSON.parse(untrustedInput);
-    // After: Safe with defaults
-    const data = safeJsonParse(untrustedInput, {
-        sensibleDefaults: 'here',
+// 之前：不安全
+const 数据 = JSON.parse(untrustedInput);
+// 之后：使用默认值是安全的
+const 数据 = safeJsonParse(untrustedInput, {
+sensibleDefaults: '这里',
     });
     ```
-**Benefits**:
-- **Crash Prevention**: Malformed JSON no longer crashes the application
-- **Data Integrity**: All parsing operations have sensible fallbacks
-- **Security Posture**: Eliminates JSON-based attack vectors
-- **User Experience**: Graceful degradation when external services return bad data
-**Build Quality**: ✅ All changes maintain 100% TypeScript compliance and pass strict type checking.
+**好处**：
+- **崩溃预防**：格式错误的 JSON 不再导致应用程序崩溃
+- **数据完整性**：所有解析操作都有合理的回退
+- **安全态势**：消除基于 JSON 的攻击向量
+- **用户体验**：外部服务返回错误数据时优雅降级
+**构建质量**： ✅ 所有更改均保持 100% TypeScript 合规性并通过严格的类型检查。
 
-### Strategic Research System & Local Image Generation
+### 战略研究系统与本地图像生成
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Strategic Research System & Local Image Generation introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: 战略研究系统和本地图像生成引入了相关模块的协调维护和质量改进。
 
-**Status**: Completed
-**New Features**:
-- **Strategic Research Pipeline**: Expanded the `IdeaGeneratorService` with a 12-stage analysis framework, generating Personas, SWOT matrices, GTM plans, and Financial strategies.
-- **Local & Free Image Generation**: Introduced `LocalImageService` supporting Ollama, SD-WebUI (A1111), and Pollinations.ai (Flux) as a no-key fallback.
-- **Research Assistant RAG**: Integrated interactive research chat side-panel for deep-diving into generated project insights.
-- **Roadmap Expansion**: Audited and expanded `docs/TODO.md` with 7 new strategic milestones focusing on local AI maturity and research exports.
-**Technical Changes**:
-- **Services**: Created `LocalImageService`, refactored `LogoService` and `IdeaGeneratorService` to prioritize local hardware and community APIs.
-- **Settings**: Updated `AppSettings` schema to include granular image provider configurations.
-- **Type Safety**: Improved type safety and error boundaries in the 12-stage generation pipeline.
-- **Documentation**: Updated `walkthrough.md`, `i18n.md`, and the entire `docs/TODO/` system.
-**Files Modified**:
+**状态**：已完成
+**新功能**：
+- **战略研究管道**：通过 12 阶段分析框架扩展了 `IdeaGeneratorService`，生成角色、SWOT 矩阵、GTM 计划和财务策略。
+- **本地和免费图像生成**：引入了 `LocalImageService`，支持 Ollama、SD-WebUI (A1111) 和 Pollinations.ai (Flux) 作为无键 fallback。
+- **研究助理 RAG**：集成的交互式研究聊天侧面板，用于深入研究生成的项目见解。
+- **路线图扩展**：审核并扩展了 `docs/TODO.md`，有 7 个新的战略里程碑，重点关注本地人工智能成熟度和研究输出。
+**技术变更**：
+- **服务**：创建 `LocalImageService`，重构 `LogoService` 和 `IdeaGeneratorService` 以优先考虑本地硬件和社区 API。
+- **设置**：更新了 `AppSettings` 架构以包含精细的图像提供程序配置。
+- **类型安全**：改进了 12 阶段生成管道中的类型安全和错误边界。
+- **文档**：更新了 `walkthrough.md`、`i18n.md` 和整个 `docs/TODO/` 系统。
+**修改的文件**：
 - `CHANGELOG.md`
 - `docs/TODO.md`
 - `docs/TODO/ideas.md`
 - `docs/TODO/features.md`
-- `src/main/services/llm/local-image.service.ts` [NEW]
+- `src/main/services/llm/local-image.service.ts` [新]
 - `src/main/services/llm/idea-generator.service.ts`
 - `src/main/services/external/logo.service.ts`
 - `src/shared/types/settings.ts`
 
-### Type Safety Hardening - Elimination of Unsafe Type Casts
+### 类型安全强化 - 消除不安全的类型转换
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Type Safety Hardening - Elimination of Unsafe Type Casts strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 类型安全强化 - 消除不安全类型转换通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: ✅ Completed
-**Code Quality Impact**:
-- **Zero Remaining `as any` Casts**: Eliminated all unsafe type casting in critical services
-- **Proper Type Definitions**: Replaced unsafe casts with correct type imports and interfaces
-- **JSON Serialization Safety**: Improved backup/restore operations with proper type handling
-- **Enhanced Type Safety**: Better LinkedAccount type usage across authentication flows
-**Critical Services Hardened**:
-1. **BackupService** (`backup.service.ts`):
-    - Replaced 5 instances of `as unknown as JsonObject[]` with proper JSON serialization
-    - Used `JSON.parse(JSON.stringify())` pattern for safe type conversion
-    - Proper date handling for database object serialization
-    - Type-safe chat, prompt, and folder backup/restore operations
-2. **SettingsService** (`settings.service.ts`):
-    - Fixed unsafe `as unknown as Record<string, unknown>[]` cast
-    - Added proper `LinkedAccount` type import from database service
-    - Corrected authentication token lookup with proper typing
-    - Improved function signatures for better type safety
-3. **Previous Services** (from earlier phases):
-    - **DatabaseService**: Fixed ~10 instances of unsafe type usage
-    - **LLMService, QuotaService, HealthCheckService**: All type issues resolved
-    - **IdeaGeneratorService**: Secured LLM response parsing with safeJsonParse defaults
-**Benefits**:
-- **Compile-Time Safety**: TypeScript can now catch more errors at build time
-- **Runtime Reliability**: Eliminates potential runtime type errors
-- **Better IDE Support**: Improved IntelliSense and autocomplete accuracy
-- **Maintainability**: Clearer type contracts between services
-**Next Steps Ready**:
-- Enable `noImplicitAny` in `tsconfig.json` (now safe to activate)
-- Enable strict null checks without breaking changes
-- Add additional TypeScript strict mode flags
-**Build Quality**: ✅ All changes maintain 100% TypeScript compliance with zero breaking changes.
+**状态**： ✅ 已完成
+**代码质量影响**：
+- **零剩余 `as any` 转换**：消除了关键服务中的所有不安全类型转换
+- **正确的类型定义**：用正确的类型导入和接口替换不安全的强制转换
+- **JSON 序列化安全**：通过正确的类型处理改进备份/恢复操作
+- **增强类型安全性**：跨身份验证流程更好地使用 LinkedAccount 类型
+**关键服务强化**：
+1. **备份服务** (`backup.service.ts`):
+- 使用正确的 JSON 序列化替换了 5 个 `as unknown as JsonObject[]` 实例
+- 使用 `JSON.parse(JSON.stringify())` 模式进行安全类型转换
+- 数据库对象序列化的正确日期处理
+- 类型安全的聊天、提示和文件夹备份/恢复操作
+2. **设置服务** (`settings.service.ts`):
+- 修复了不安全的 `as unknown as Record<string, unknown>[]` 转换
+- 添加了从数据库服务正确的 `LinkedAccount` 类型导入
+- 通过正确的键入更正了身份验证令牌查找
+- 改进函数签名以获得更好的类型安全性
+3. **之前的服务**（来自早期阶段）：
+- **DatabaseService**：修复了约 10 个不安全类型使用实例
+- **LLMService、QuotaService、HealthCheckService**：所有类型问题均已解决
+- **IdeaGeneratorService**：使用 safeJsonParse 默认值进行安全的 LLM 响应解析
+**好处**：
+- **编译时安全**：TypeScript 现在可以在构建时捕获更多错误
+- **Runtime 可靠性**：消除潜在的 runtime 类型错误
+- **更好的 IDE 支持**：改进的 IntelliSense 和自动完成准确性
+- **可维护性**：服务之间更清晰的类型契约
+**下一步准备就绪**：
+- 在 `tsconfig.json` 中启用 `noImplicitAny` （现在可以安全激活）
+- 启用严格的空检查而不破坏更改
+- 添加额外的 TypeScript 严格模式标志
+**构建质量**： ✅ 所有更改均保持 100% TypeScript 符合零破坏更改。
 
 ## [2026-01-22]
 
-### Idea Generator Refactoring & Type Safety Fixes
+### 想法生成器重构和类型安全修复
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Idea Generator Refactoring & Type Safety Fixes delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 想法生成器重构和类型安全修复在目标范围内提供了计划的重构、结构清理和验证。
 
-**Status**: Completed
-**Features**:
-- **Ideas View Refactoring**: Modularized the complex `IdeasView.tsx` by extracting sub-components: `IdeaList`, `IdeaDetail`, `SessionConfig`, `ResearchVisualizer`, and `GenerationProgress`. Improved readability and maintainability.
-- **Enhanced Type Safety**: Fixed several type mismatches in the Ideas feature and shared Project types.
-- **Sidebar Integration**: Added 'Ideas' view to the Sidebar navigation with proper type support.
-**Technical Changes**:
-- **Refactoring**: Extracted 5 sub-components from `IdeasView.tsx` into `src/renderer/features/ideas/components/`.
-- **Type Fixes**:
-    - Updated `DatabaseService` to use shared `WorkspaceMount` type and provide `updatedAt` field.
-    - Updated shared `Project` type to include `updatedAt: Date`.
-    - Fixed `AppView` and `SidebarProps` to consistently include `'ideas'`.
-    - Added `ideas` mock to `web-bridge.ts` to match `ElectronAPI` interface.
-- **Service Layer**: Fixed type casting in `IdeaGeneratorService` for `ResearchData` parsing.
-**Files Modified**:
+**状态**：已完成
+**特征**：
+- **想法视图重构**：通过提取子组件来模块化复杂的 `IdeasView.tsx`：`IdeaList`、`IdeaDetail`、`SessionConfig`、`ResearchVisualizer` 和 `GenerationProgress`。提高了可读性和可维护性。
+- **增强类型安全**：修复了创意功能和共享项目类型中的多个类型不匹配问题。
+- **侧边栏集成**：向侧边栏导航添加了“想法”视图，并提供适当的类型支持。
+**技术变更**：
+- **重构**：将 `IdeasView.tsx` 中的 5 个子组件提取到 `src/renderer/features/ideas/components/` 中。
+- **类型修复**：
+- 更新了 `DatabaseService` 以使用共享 `WorkspaceMount` 类型并提供 `updatedAt` 字段。
+- 更新了共享 `Project` 类型以包含 `updatedAt: Date`。
+- 修复了 `AppView` 和 `SidebarProps` 以一致地包含 `'ideas'`。
+- 将 `ideas` 模拟添加到 `web-bridge.ts` 以匹配 `ElectronAPI` 接口。
+- **服务层**：修复了 `IdeaGeneratorService` 中用于 `ResearchData` 解析的类型转换。
+**修改的文件**：
 - `src/renderer/features/ideas/IdeasView.tsx`
 - `src/renderer/features/ideas/components/IdeaList.tsx`
 - `src/renderer/features/ideas/components/IdeaDetail.tsx`
@@ -2728,23 +2758,23 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/main/services/llm/idea-generator.service.ts`
 - `src/shared/types/project.ts`
 
-### Multi-Model Response System & Prompt Enhancement
+### 多模型响应系统和及时增强
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Multi-Model Response System & Prompt Enhancement introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: 多模型响应系统和及时增强引入了相关模块的协调维护和质量改进。
 
-**Status**: Completed
-**New Features**:
-- **Multi-Model Response Tabs**: When users select multiple models (up to 4) using Shift+Click, the system now sends requests to ALL selected models in parallel and displays responses in a tabbed interface instead of chevron navigation.
-- **Prompt Enhancement Button**: Added a sparkle button (✨) in the chat input area that enhances user prompts using AI. Automatically selects Ollama models if available, otherwise falls back to Anthropic/Copilot lightweight models.
-- **Improved Chat Titles**: Fixed chat title generation to properly use the assistant's first response line instead of the user's input message.
-**Technical Changes**:
-- `useChatGenerator.ts`: Added `generateMultiModelResponse` function for parallel multi-model responses.
-- `MessageBubble.tsx`: Replaced chevron navigation with styled tab buttons for multi-model variants.
-- `ChatInput.tsx`: Added `handleEnhancePrompt` function and enhance button UI.
-- `process-stream.ts`: Fixed title generation condition from `messages.length <= 1` to `messages.length <= 2`.
-**Files Modified**:
+**状态**：已完成
+**新功能**：
+- **多模型响应选项卡**：当用户使用 Shift+Click 选择多个模型（最多 4 个）时，系统现在会并行向所有选定模型发送请求，并在选项卡式界面中显示响应，而不是 V 形导航。
+- **提示增强按钮**：在聊天输入区域添加了一个闪光按钮（✨），使用 AI 增强用户提示。自动选择 Ollama 模型（如果可用），否则回退到 Anthropic/Copilot 轻量级模型。
+- **改进的聊天标题**：修复了聊天标题的生成，以正确使用助手的第一响应行而不是用户的输入消息。
+**技术变更**：
+- `useChatGenerator.ts`：添加了 `generateMultiModelResponse` 函数用于并行多模型响应。
+- `MessageBubble.tsx`：用用于多模型变体的样式选项卡按钮替换 V 形导航。
+- `ChatInput.tsx`：添加了`handleEnhancePrompt`功能和增强按钮UI。
+- `process-stream.ts`：修复了从 `messages.length <= 1` 到 `messages.length <= 2` 的标题生成条件。
+**修改的文件**：
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/renderer/features/chat/hooks/useChatManager.ts`
 - `src/renderer/features/chat/hooks/process-stream.ts`
@@ -2753,48 +2783,48 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 - `src/renderer/context/ChatContext.tsx`
 - `src/renderer/i18n/en.ts`, `src/renderer/i18n/tr.ts`
 
-### Native Service Stability & Process Recovery
+### 本机服务稳定性和进程恢复
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Native Service Stability & Process Recovery improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: 本机服务稳定性和流程恢复改进了关键工作流程中的 runtime 性能、稳定性和操作一致性。
 
-**Status**: Completed (00:55:00)
-**Fixes**:
-- **Rust token-service**: Fixed a critical panic when printing to `stdout` in a detached state (Windows pipe closing). Replaced `println!` with non-panicking `writeln!`.
-- **ProcessManagerService**:
-    - Implemented **auto-restart logic** for persistent services (token-service, model-service, etc.) if they crash with a non-zero exit code.
-    - Fixed `sendRequest` and `sendGetRequest` to properly use the **timeout parameter** with axios to prevent hanging during service failures.
-- **Authentication Zombie Token Cleanup**:
-    - Fixed an issue where the background `token-service` would continue refreshing "zombie" tokens (old tokens no longer in the Electron database).
-    - `TokenService` now automatically unregisters any monitored tokens found during sync that are not present in the app's database.
-    - Fixed `AuthService.unlinkAllForProvider` to correctly emit unlinking events, ensuring background service cleanup during mass logouts.
-- **Service Stability**: Rebuilt all native binaries to include the Rust stability fix.
-**Files Modified**:
-- `src/services/token-service/src/main.rs`: Replaced panicking `println!` with robust logging.
-- `src/main/services/system/process-manager.service.ts`: Added auto-restart and timeout implementation.
-- `resources/bin/*.exe`: Updated binaries via a clean rebuild.
+**状态**：已完成 (00:55:00)
+**修复**：
+- **Rust token-service**：修复了在分离状态下打印到 `stdout` 时出现的严重恐慌（Windows 管道关闭）。将 `println!` 替换为非恐慌 `writeln!`。
+- **流程管理器服务**：
+- 如果持久性服务（令牌服务、模型服务等）因非零退出代码而崩溃，则为它们实现**自动重启逻辑**。
+- 修复了 `sendRequest` 和 `sendGetRequest` 以正确使用 axios 的 **超时参数**，以防止在服务故障期间挂起。
+- **身份验证僵尸令牌清理**：
+- 修复了后台 `token-service` 会继续刷新“僵尸”令牌（旧令牌不再位于 Electron 数据库中）的问题。
+- `TokenService` 现在会自动取消注册同步期间发现的应用程序数据库中不存在的任何受监控令牌。
+- 修复了 `AuthService.unlinkAllForProvider` 以正确发出取消链接事件，确保大规模注销期间后台服务清理。
+- **服务稳定性**：重建所有本机二进制文件以包含 Rust 稳定性修复。
+**修改的文件**：
+- `src/services/token-service/src/main.rs`：用可靠的日志记录替换了恐慌的 `println!`。
+- `src/main/services/system/process-manager.service.ts`：添加了自动重启和超时实现。
+- `resources/bin/*.exe`：通过干净的重建更新了二进制文件。
 
-### Token Usage Tracking & Account Identification
+### 令牌使用跟踪和帐户识别
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Token Usage Tracking & Account Identification introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: 令牌使用跟踪和帐户识别引入了跨相关模块的协调维护和质量改进。
 
-**Status**: Completed (Phase 1 & 3)
-**New Features**:
-- **Token Usage Database Layer**: Added comprehensive token usage tracking infrastructure including migration #17 with `token_usage` table, `addTokenUsage()` and `getTokenUsageStats()` methods in DatabaseService.
-- **Token Statistics API**: New IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) for frontend access to token usage statistics with aggregation by provider, model, and timeline.
-- **Account Email Visibility**: Updated `AccountRow.tsx` to always display email address prominently for clear account identification.
-**Technical Changes**:
-- `src/main/services/data/migrations.ts`: Added migration #17 with `token_usage` table schema.
-- `src/main/services/data/database.service.ts`: Added `addTokenUsage()`, `getTokenUsageStats()`, and `getPeriodMs()` methods.
-- `src/main/ipc/db.ts`: Added `db:getTokenStats` and `db:addTokenUsage` IPC handlers.
-- `src/main/preload.ts`: Added token stats methods to preload bridge and type definitions.
-- `src/renderer/electron.d.ts`: Added `getTokenStats` and `addTokenUsage` type definitions.
-- `src/renderer/web-bridge.ts`: Added mock implementations for web development.
-- `src/renderer/features/settings/components/accounts/AccountRow.tsx`: Email now always displayed.
-**Files Modified**:
+**状态**：已完成（第一阶段和第三阶段）
+**新功能**：
+- **令牌使用数据库层**：添加了全面的令牌使用跟踪基础设施，包括使用 DatabaseService 中的 `token_usage` 表、`addTokenUsage()` 和 `getTokenUsageStats()` 方法进行迁移 #17。
+- **令牌统计 API**：新的 IPC handlers (`db:getTokenStats`, `db:addTokenUsage`) 用于前端访问令牌使用统计信息，并按提供商、模型和时间线进行聚合。
+- **帐户电子邮件可见性**：更新了 `AccountRow.tsx` 以始终突出显示电子邮件地址，以便清楚地识别帐户。
+**技术变更**：
+- `src/main/services/data/migrations.ts`：使用 `token_usage` 表架构添加了迁移 #17。
+- `src/main/services/data/database.service.ts`：添加了 `addTokenUsage()`、`getTokenUsageStats()` 和 `getPeriodMs()` 方法。
+- `src/main/ipc/db.ts`：添加了 `db:getTokenStats` 和 `db:addTokenUsage` IPC handlers。
+- `src/main/preload.ts`：添加了令牌统计方法来预加载桥和类型定义。
+- `src/renderer/electron.d.ts`：添加了 `getTokenStats` 和 `addTokenUsage` 类型定义。
+- `src/renderer/web-bridge.ts`：添加了用于 Web 开发的模拟实现。
+- `src/renderer/features/settings/components/accounts/AccountRow.tsx`：电子邮件现在始终显示。
+**修改的文件**：
 - `src/main/services/data/migrations.ts`
 - `src/main/services/data/database.service.ts`
 - `src/main/ipc/db.ts`
@@ -2805,182 +2835,182 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 
 ## [2026-01-21]
 
-### Bug Fixes
+### 错误修复
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Bug Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 错误修复通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-- **PromptTemplatesService**: Fixed `TS5076` error where `||` and `??` operations were mixed without parentheses in the `search` method. Improved logic to ensure boolean results for the search filter.
-- **DI Container**: Updated `AuthService` registration to include `EventBusService` dependency.
-**Files Modified**:
-- `src/services/token-service/src/main.rs`: Added `UnregisterRequest` struct and `handle_unregister` handler.
-- `src/shared/types/events.ts`: Added `account:unlinked` event type.
-- `src/main/services/security/auth.service.ts`: Added EventBusService dependency and event emission.
-- `src/main/services/security/token.service.ts`: Added `unregisterToken()` method and event listener.
-- `src/main/startup/services.ts`: Updated AuthService registration.
-- `src/tests/main/services/security/auth.migration.test.ts`: Updated mock for new constructor signature.
-### Batch 10: MCP Plugin Architecture (2026-01-27)
-- **Refactoring**: Implemented modular MCP Plugin Architecture.
-- **Service Layer**: Created `McpPluginService` to manage tool lifecycles.
-- **Plugin System**: Added `IMcpPlugin` interface with `InternalMcpPlugin` and `ExternalMcpPlugin` implementations.
-- **Core Improvements**: Isolated internal tools from the main dispatcher, allowing for future migration to standalone binaries.
-- **Stability**: Fixed missing tool initialization in `main.ts`.
-### Batch 9: Database & Build Stabilization (2026-01-27)
-**Status**: Completed (20:15:00)
-**Core Architectural Changes**:
-- **Bidirectional Persistence** ✅:
-    - Implemented `POST /api/auth/accounts/:id` in `AuthAPIService.ts` to receive token updates from external services.
-    - Updated Go proxy's `HTTPAuthStore.Save` to push refreshed tokens back to Tandem's database immediately upon refresh.
-    - This ensures tokens refreshed in the background (Claude, Antigravity, Codex) are persisted without requiring UI interaction.
-- **Decommissioned File-based Sync** ✅:
-    - Entirely removed `syncAuthFiles()` logic that wrote sensitive tokens to the disk.
-    - Proxy now pulls tokens on-demand from `AuthAPIService` and pushes updates back via HTTP.
-    - Improved security by ensuring zero plain-text/loose JSON credentials reside in the `auth/` directory.
-**Build & Stability Fixes**:
-- **Renderer UI** ✅:
-    - Fixed polymorphic ref type mismatch in `AnimatedCard.tsx` (TS2322).
-    - Implemented a robust callback ref pattern to handle dynamic components (`div`, `button`, `article`) while satisfying strict intersection types.
-- **System Services** ✅:
-    - **EventBus**: Fixed `logDebug` signature mismatch in `event-bus.service.ts`.
-    - **Security**: Fixed `SecurityService` test constructor by properly injecting mocked `DataService`.
-    - **Themes**: Resolved type mismatch in `theme-store.util.ts` by providing a non-null schema to `safeJsonParse`.
-**Verification**:
-- Verified full build chain consistency: `tsc` → `lint` → `vite build` → `native build`.
-- Final build succeeded at 20:12:00.
+- **PromptTemplatesService**：修复了 `TS5076` 错误，其中 `||` 和 `??` 操作在 `search` 方法中混合使用而没有括号。改进了逻辑以确保搜索过滤器的布尔结果。
+- **DI 容器**：更新了 `AuthService` 注册以包含 `EventBusService` 依赖项。
+**修改的文件**：
+- `src/services/token-service/src/main.rs`：添加了 `UnregisterRequest` 结构和 `handle_unregister` handler。
+- `src/shared/types/events.ts`：添加了 `account:unlinked` 事件类型。
+- `src/main/services/security/auth.service.ts`：添加了 EventBusService 依赖项和事件发射。
+- `src/main/services/security/token.service.ts`：添加了 `unregisterToken()` 方法和事件侦听器。
+- `src/main/startup/services.ts`：更新了 AuthService 注册。
+- `src/tests/main/services/security/auth.migration.test.ts`：更新了新构造函数签名的模拟。
+### 第 10 批：MCP 插件架构 (2026-01-27)
+- **重构**：实施模块化 MCP 插件架构。
+- **服务层**：创建 `McpPluginService` 来管理工具生命周期。
+- **插件系统**：添加了 `IMcpPlugin` 接口以及 `InternalMcpPlugin` 和 `ExternalMcpPlugin` 实现。
+- **核心改进**：将内部工具与主调度程序隔离，允许将来迁移到独立的二进制文件。
+- **稳定性**：修复了 `main.ts` 中缺少的工具初始化。
+### 第 9 批：数据库和构建稳定 (2026-01-27)
+**状态**：已完成 (20:15:00)
+**核心架构变化**：
+- **双向持久性** ✅：
+- 在 `AuthAPIService.ts` 中实现 `POST /api/auth/accounts/:id` 以接收来自外部服务的令牌更新。
+- 更新了 Go 代理的 `HTTPAuthStore.Save` 以在刷新后立即将刷新的令牌推送回 Tandem 的数据库。
+- 这确保了在后台刷新的令牌（Claude、Antigravity、Codex）得以保留，而无需 UI 交互。
+- **停用基于文件的同步** ✅：
+- 完全删除了将敏感令牌写入磁盘的 `syncAuthFiles()` 逻辑。
+- 代理现在按需从 `AuthAPIService` 提取令牌并通过 HTTP 推送更新。
+- 通过确保零纯文本/松散 JSON 凭据驻留在 `auth/` 目录中，提高了安全性。
+**构建和稳定性修复**：
+- **渲染器 UI** ✅：
+- 修复了 `AnimatedCard.tsx` (TS2322) 中的多态引用类型不匹配。
+- 实现了一个强大的回调引用模式来处理动态组件（`div`、`button`、`article`），同时满足严格的交集类型。
+- **系统服务** ✅：
+- **EventBus**：修复了 `event-bus.service.ts` 中的 `logDebug` 签名不匹配问题。
+- **安全性**：通过正确注入模拟的 `DataService` 修复了 `SecurityService` 测试构造函数。
+- **主题**：通过向 `safeJsonParse` 提供非空架构解决了 `theme-store.util.ts` 中的类型不匹配问题。
+**确认**：
+- 验证完整构建链一致性：`tsc` → `lint` → `vite build` → `native build`。
+- 最终构建于 20:12:00 成功。
 
-### ESLint Warning Fixes - Session 2
+### ESLint 警告修复 - 第 2 节
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: ESLint Warning Fixes - Session 2 strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: ESLint 警告修复 - 第 2 部分通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: Fixed 113 warnings (1044 → 931)
-**Fixes Applied**:
-- **Nullish Coalescing** (`prefer-nullish-coalescing`): 83 fixes
-    - Converted `||` to `??` across IPC handlers, services, and renderer components
-    - Files: `ipc/chat.ts`, `ipc/git.ts`, `ipc/ollama.ts`, `ipc/process.ts`, `ipc/logging.ts`
-    - Services: `mcp/dispatcher.ts`, `mcp/registry.ts`, repositories
-    - Renderer: `ChatContext.tsx`, `SettingsContext.tsx`, feature components
-- **Explicit Any Types** (`no-explicit-any`): 12 fixes
-    - `event-bus.service.ts`: Changed `any[]` to `unknown[]` for event args
-    - `theme-store.util.ts`: Added proper theme config types
-    - `App.tsx`: Fixed view parameter to use proper union type
-    - `AnimatedCard.tsx`: Added proper motion component types
-    - `ChatContext.tsx`: Typed event handlers properly
-    - `Terminal.tsx`: Used type assertions for xterm internal properties
-- **Unnecessary Conditions** (`no-unnecessary-condition`): 8 fixes
-    - Removed unnecessary nullish coalescing where types guaranteed values
-    - Fixed `ipc/screenshot.ts`: Added undefined check with proper type assertion
-    - Fixed `logging/logger.ts`: Removed dead else branch
-- **Misused Promises** (`no-misused-promises`): 5 fixes
-    - `ipc/settings.ts`: Wrapped async `updateOllamaConnection()` with `void Promise.resolve().catch()`
-    - Various IPC handlers: Added proper void handling
-- **Unused Variables**: 5 fixes
-    - Prefixed unused parameters with underscore (`_processManager`, `_event`)
-    - Removed unused imports (`os` from proxy-process.service.ts)
-**Remaining Warnings (931)**:
+**状态**：修复了 113 个警告（1044 → 931）
+**应用的修复**：
+- **无效合并** (`prefer-nullish-coalescing`)：83 个修复
+- 在 IPC handlers、服务和渲染器组件中将 `||` 转换为 `??`
+- 文件：`ipc/chat.ts`、`ipc/git.ts`、`ipc/ollama.ts`、`ipc/process.ts`、`ipc/logging.ts`
+- 服务：`mcp/dispatcher.ts`、`mcp/registry.ts`、存储库
+- 渲染器：`ChatContext.tsx`、`SettingsContext.tsx`、功能组件
+- **显式任何类型** (`no-explicit-any`)：12 个修复
+- `event-bus.service.ts`：将事件参数的 `any[]` 更改为 `unknown[]`
+- `theme-store.util.ts`：添加了正确的主题配置类型
+- `App.tsx`：修复了视图参数以使用正确的联合类型
+- `AnimatedCard.tsx`：添加自行组件类型
+- `ChatContext.tsx`：正确键入事件 handlers
+- `Terminal.tsx`：用于 xterm 内部属性的类型断言
+- **不必要的条件** (`no-unnecessary-condition`)：8 个修复
+- 删除了类型保证值的不必要的无效合并
+- 修复了 `ipc/screenshot.ts`：添加了带有正确类型断言的未定义检查
+- 修复了 `logging/logger.ts`：删除了其他死的 branch
+- **滥用承诺** (`no-misused-promises`)：5 个修复
+- `ipc/settings.ts`：用 `void Promise.resolve().catch()` 包装异步 `updateOllamaConnection()`
+- 各种 IPC handlers：添加了正确的空处理
+- **未使用的变量**：5 个修复
+- 使用下划线为未使用的参数添加前缀（`_processManager`、`_event`）
+- 删除了未使用的导入（来自 proxy-process.service.ts 的 `os`）
+**剩余警告 (931)**：
 - `no-unnecessary-condition`: 402
-- `complexity`: 238 (requires function refactoring)
-- `prefer-nullish-coalescing`: 218 (complex patterns)
+- `complexity`: 238（需要函数重构）
+- `prefer-nullish-coalescing`：218（复杂模式）
 - `no-misused-promises`: 88
 - `max-lines-per-function`: 42
 - `max-depth`: 18
 - `max-params`: 9
 
-### Fix Token Refresh for Unlinked Accounts
+### 修复未链接帐户的令牌刷新
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Fix Token Refresh for Unlinked Accounts strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 修复未链接帐户的令牌刷新，通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: Completed (20:30:00)
-**Bug Fixed**:
-- When a Claude/Antigravity/Codex account was unlinked (logout), the Rust `token-service` continued attempting to refresh the old account's tokens, causing "invalid_grant" errors.
-**Changes**:
-- **Rust token-service**: Added `/unregister` endpoint to remove tokens from the background refresh queue when accounts are unlinked.
-- **TypeScript AuthService**: Now emits `account:unlinked` event when an account is removed.
-- **TypeScript TokenService**: Listens for `account:unlinked` events and calls `/unregister` on the Rust token-service to stop refreshing deleted accounts.
-- **Event System**: Added new `account:unlinked` event type to `SystemEvents` interface.
+**状态**：已完成 (20:30:00)
+**错误修复**：
+- 当 Claude/Antigravity/Codex 帐户取消链接（注销）时，Rust `token-service` 继续尝试刷新旧帐户的令牌，导致“invalid_grant”错误。
+**变化**：
+- **Rust 令牌服务**：添加了 `/unregister` 端点，以在帐户取消链接时从后台刷新队列中删除令牌。
+- **TypeScript AuthService**：现在在删除帐户时发出 `account:unlinked` 事件。
+- **TypeScript TokenService**：侦听 `account:unlinked` 事件并在 Rust 令牌服务上调用 `/unregister` 以停止刷新已删除的帐户。
+- **事件系统**：向 `SystemEvents` 接口添加了新的 `account:unlinked` 事件类型。
 
 ## [2026-01-19]
 
-### Codebase Audit & Security Review
+### 代码库审计和安全审查
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Codebase Audit & Security Review delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 代码库审计和安全审查在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Audit Report Created**: Generated `docs/AUDIT_REPORT_2026_01_19.md` covering technical debt, type safety, and security.
-- **Security Verification**: Confirmed safety of `dangerouslySetInnerHTML` usage in React components (correctly sanitized).
-- **Compliance Check**: Verified adherence to `AI_RULES.md` (no forbidden patterns found).
+- **创建审计报告**：生成 `docs/AUDIT_REPORT_2026_01_19.md` 涵盖技术债务、类型安全和保障。
+- **安全验证**：确认 React 组件中 `dangerouslySetInnerHTML` 使用的安全性（正确清理）。
+- **合规性检查**：验证是否遵守 `AI_RULES.md`（未发现禁止模式）。
 
-### Critical Security & Architecture Improvements
+### 关键安全性和架构改进
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Critical Security & Architecture Improvements strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 关键安全和架构改进通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-- **Security Enhancements** ✅:
-    - **SSH Path Traversal Protection**: Added `validateRemotePath()` method to `SSHService` to prevent path traversal attacks across 9 file operation methods (listDirectory, readFile, writeFile, deleteFile, deleteDirectory, createDirectory, rename, uploadFile, downloadFile). Paths are now validated against allowed base directories.
-    - **Safe JSON Parsing**: Added `safeJsonParse<T>()` utility to `sanitize.util.ts` with proper error handling and default fallback values.
-    - **Database Service**: Applied safe JSON parsing to 6 instances using existing `parseJsonField()` helper (prompts, templates, audit logs, auth tokens).
-    - **External Services - Safe JSON Parsing Applied**:
-        - `ollama.service.ts`: 5 instances (API responses)
-        - `memory.service.ts`: 4 instances (LLM response parsing)
-        - `agent-council.service.ts`: 3 instances (JSON extraction from LLM output)
-        - `llama.service.ts`: 3 instances (streaming data parsing)
-        - `proxy.service.ts`: 5 instances (HTTP response parsing)
-        - `project.service.ts`: 3 instances (package.json parsing)
-    - **Hardcoded Secrets Audit**: Verified no critical secrets in codebase (OAuth Client IDs are public and acceptable).
-- **Architecture Standardization** ✅:
-    - **Service Naming**: Renamed files to follow `.service.ts` convention:
+- **安全增强** ✅：
+- **SSH路径遍历保护**：在`SSHService`中添加了`validateRemotePath()`方法，以防止跨9种文件操作方法（listDirectory、readFile、writeFile、deleteFile、deleteDirectory、createDirectory、rename、uploadFile、downloadFile）的路径遍历攻击。现在根据允许的基本目录验证路径。
+- **安全 JSON 解析**：向 `sanitize.util.ts` 添加了 `safeJsonParse<T>()` 实用程序，并具有正确的错误处理和默认 fallback 值。
+- **数据库服务**：使用现有的 `parseJsonField()` 帮助程序（提示、模板、审核日志、身份验证令牌）将安全 JSON 解析应用到 6 个实例。
+- **外部服务 - 应用安全 JSON 解析**：
+- `ollama.service.ts`：5 个实例（API 响应）
+- `memory.service.ts`：4 个实例（LLM 响应解析）
+- `agent-council.service.ts`：3 个实例（JSON 从 LLM 输出中提取）
+- `llama.service.ts`：3个实例（流数据解析）
+- `proxy.service.ts`：5 个实例（HTTP 响应解析）
+- `project.service.ts`：3个实例（package.json解析）
+- **硬编码机密审计**：已验证代码库中没有关键机密（OAuth 客户端 ID 是公开且可接受的）。
+- **架构标准化** ✅：
+- **服务命名**：重命名文件以遵循 `.service.ts` 约定：
         - `chat-queue.manager.ts` → `chat-queue.service.ts`
         - `migration-manager.ts` → `db-migration.service.ts`
-    - Updated all imports in `chat.ts`, `migrations.ts`, and `database.service.ts`.
-- **Type Safety Improvements** ✅:
-    - Removed `any` types from 9 instances across:
-        - `llm.service.ts`: Replaced `any` with `unknown` in parseOpenCodeResponse
-        - `quota.service.ts`: Added proper types for Claude usage formatting and Codex usage
-        - `health-check.service.ts`: Changed event listener args from `any[]` to `unknown[]`
-        - `ollama-health.service.ts`: Changed event emitter args from `any[]` to `unknown[]`
-        - `shared/types/events.ts`: Changed config value type from `any` to `JsonValue`
-**Total Files Modified**: 13 services + 2 TODO docs + 1 CHANGELOG
-**Lines of Code Changed**: ~150+ (security-critical fixes)
+- 更新了 `chat.ts`、`migrations.ts` 和 `database.service.ts` 中的所有导入。
+- **类型安全改进** ✅：
+- 从 9 个实例中删除了 `any` 类型：
+- `llm.service.ts`：在 parseOpenCodeResponse 中将 `any` 替换为 `unknown`
+- `quota.service.ts`：为 Claude 使用格式和 Codex 使用添加了正确的类型
+- `health-check.service.ts`：将事件侦听器参数从 `any[]` 更改为 `unknown[]`
+- `ollama-health.service.ts`：将事件发射器参数从 `any[]` 更改为 `unknown[]`
+- `shared/types/events.ts`：将配置值类型从 `any` 更改为 `JsonValue`
+**修改的文件总数**：13 个服务 + 2 个 TODO 文档 + 1 个变更日志
+**更改的代码行**：~150+（安全关键修复）
 
-### ESLint Warning Fixes - Major Progress
+### ESLint 警告修复 - 重大进展
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: ESLint Warning Fixes - Major Progress strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: ESLint 警告修复 - 重大进展通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-**Status**: Fixed 351 warnings per AI_RULES Rule 10 (25% reduction: 1408 → 1057)
-**Phase 1 - Automated Fixes (200 warnings)**:
-- ✅ **Nullish Coalescing**: Replaced 191 instances of `||` with `??` operator (64 files)
-- ✅ **Console Statements**: Converted 42 renderer console.log/info/debug to console.warn (14 files)
-- ✅ **Alert Calls**: Replaced 17 alert() with console.warn() in renderer UI (5 files)
-- ✅ **Non-Null Assertions**: Removed 18 instances of `!` operators (15 files)
-**Phase 2 - Manual Fixes via Task Agents (151 warnings)**:
-- ✅ **Unused Variables** (31 fixed): Removed unused imports (uuidv4, fsPromises, app, useEffect, etc.), prefixed unused parameters with underscore
-- ✅ **Explicit Any Types** (53 fixed): Replaced all `any` with proper types (`unknown`, `Record<string, unknown>`, `JsonValue`, proper interfaces)
-- ✅ **Floating Promises** (81 fixed): Added `void` prefix for fire-and-forget, `await` for critical paths, `.catch()` for error handling
-- ✅ **Non-Null Assertions** (23 fixed): Replaced `!` with proper null checks, optional chaining, type guards
-- ✅ **Console/Alert** (25 fixed): Fixed remaining console statements and replaced alert/confirm/prompt with console.warn
-**Automation Scripts Created**:
-- `scripts/fix-easy-eslint.ps1` - Nullish coalescing operator fixes
-- `scripts/fix-eslint-warnings.ps1` - Console.log to appLogger.info (main process)
-- `scripts/fix-renderer-console.ps1` - Renderer console statement fixes
-- `scripts/fix-non-null-assertion.ps1` - Non-null assertion removal
-- `scripts/fix-floating-promises.ps1` - Add void operator
-- `scripts/fix-manual-warnings.ps1` - Manual warning pattern detection
-**Remaining Warnings (1057)**:
-- 428 no-unnecessary-condition (type system improvements, may require tsconfig changes)
-- 298 prefer-nullish-coalescing (complex patterns requiring manual review)
-- 89 no-misused-promises (async/await context issues)
-- 4 no-explicit-any (edge cases)
-- 3 prefer-optional-chain (minor)
-**Total Files Modified**: 150+ files across automated and manual fixes
-**Total Changes**: 351 warnings eliminated
+**状态**：根据 AI_RULES 规则 10 修复了 351 个警告（减少 25%：1408 → 1057）
+**第 1 阶段 - 自动修复（200 个警告）**：
+- ✅ **无效合并**：用 `??` 运算符替换 191 个 `||` 实例（64 个文件）
+- ✅ **控制台语句**：将 42 个渲染器 console.log/info/debug 转换为 console.warn（14 个文件）
+- ✅ **警报调用**：在渲染器 UI 中用 console.warn() 替换 17alert() （5 个文件）
+- ✅ **非空断言**：删除了 `!` 运算符的 18 个实例（15 个文件）
+**第 2 阶段 - 通过任务代理手动修复（151 个警告）**：
+- ✅ **未使用的变量**（已修复 31 个）：删除了未使用的导入（uuidv4、fsPromises、app、useEffect 等），在未使用的参数前添加下划线前缀
+- ✅ **显式任何类型**（已修复 53 个）：将所有 `any` 替换为正确的类型（`unknown`、`Record<string, unknown>`、`JsonValue`、正确的接口）
+- ✅ **浮动承诺**（已修复 81 个）：添加了 `void` 前缀用于“即发即忘”，`await` 用于关键路径，`.catch()` 用于错误处理
+- ✅ **非空断言**（已修复 23 个）：用适当的空检查、可选链接、类型保护替换 `!`
+- ✅ **控制台/警报**（25 个已修复）：修复了剩余的控制台语句，并用 console.warn 替换了警报/确认/提示
+**创建自动化脚本**：
+- `scripts/fix-easy-eslint.ps1` - 空合并运算符修复
+- `scripts/fix-eslint-warnings.ps1` - Console.log 到 appLogger.info（主进程）
+- `scripts/fix-renderer-console.ps1` - 渲染器控制台语句修复
+- `scripts/fix-non-null-assertion.ps1` - 非空断言删除
+- `scripts/fix-floating-promises.ps1` - 添加 void 运算符
+- `scripts/fix-manual-warnings.ps1` - 手动警告模式检测
+**剩余警告 (1057)**：
+- 428 no-unnecessary-condition（类型系统改进，可能需要 tsconfig 更改）
+- 298个prefer-nullish-coalescing（需要手动审查的复杂模式）
+- 89 个无误用承诺（异步/等待上下文问题）
+- 4 个非显式任意（边缘情况）
+- 3个首选可选链（次要）
+**修改的文件总数**：自动和手动修复了 150 多个文件
+**总变化**：消除了 351 个警告
 
 ### Phase 18 - Internationalization (Completed)
 

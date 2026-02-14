@@ -1,7 +1,7 @@
 import {
-    TERMINAL_MODULE_VERSION,
     isTerminalModuleVersionCompatible,
     serializeTerminalModuleVersion,
+    TERMINAL_MODULE_VERSION,
 } from '@renderer/features/terminal/utils/module-version';
 import { describe, expect, it } from 'vitest';
 

@@ -182,6 +182,7 @@ interface ShardingConfig {
 export class DatabaseService extends BaseService {
     private initPromise: Promise<void> | null = null;
     private initError: Error | null = null;
+    private isInitializing = false;
     private readonly slowQueryThresholdMs = 250;
     private readonly vectorSearchCacheTtlMs = 60_000;
     private readonly maxSlowQueryLogEntries = 200;
@@ -229,6 +230,7 @@ export class DatabaseService extends BaseService {
     }
 
     private async initDatabase() {
+        this.isInitializing = true;
         try {
             appLogger.info('DatabaseService', 'Initializing remote database client...');
 
@@ -246,6 +248,7 @@ export class DatabaseService extends BaseService {
             await this._knowledge.ensureFileDiffTable();
             await this._system.ensureProductionIndexes();
             await this.ensureMigrationInfrastructure();
+            this.clearQueryAnalytics();
 
             appLogger.info('DatabaseService', 'Remote database connection complete!');
             this.eventBus.emit('db:ready', { timestamp: Date.now() });
@@ -254,11 +257,13 @@ export class DatabaseService extends BaseService {
             this.initError = error instanceof Error ? error : new Error(String(error));
             this.eventBus.emit('db:error', { error: this.initError.message });
             throw this.initError;
+        } finally {
+            this.isInitializing = false;
         }
     }
 
     private async ensureDb(): Promise<DatabaseAdapter> {
-        if (this.initPromise) {
+        if (this.initPromise && !this.isInitializing) {
             await this.initPromise;
         }
         if (!this.dbClient.isConnected()) {
@@ -268,33 +273,18 @@ export class DatabaseService extends BaseService {
     }
 
     public async query<T = unknown>(sql: string, params?: SqlParams) {
-        return this.trackQuery(sql, params, async () => {
-            const adapter = await this.ensureDb();
-            return adapter.query<T>(sql, params);
-        });
+        const adapter = await this.ensureDb();
+        return adapter.query<T>(sql, params);
     }
 
     public async exec(sql: string) {
-        await this.trackQuery(sql, undefined, async () => {
-            const adapter = await this.ensureDb();
-            await adapter.exec(sql);
-        });
+        const adapter = await this.ensureDb();
+        await adapter.exec(sql);
     }
 
     public async prepare(sql: string) {
         const adapter = await this.ensureDb();
-        const stmt = adapter.prepare(sql);
-        return {
-            run: async (...params: SqlValue[]) => {
-                return this.trackQuery(sql, params, () => stmt.run(...params));
-            },
-            all: async <T = unknown>(...params: SqlValue[]) => {
-                return this.trackQuery(sql, params, () => stmt.all<T>(...params));
-            },
-            get: async <T = unknown>(...params: SqlValue[]) => {
-                return this.trackQuery(sql, params, () => stmt.get<T>(...params));
-            }
-        };
+        return adapter.prepare(sql);
     }
 
     public getDatabase(): DatabaseAdapter {

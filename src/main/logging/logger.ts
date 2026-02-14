@@ -64,6 +64,29 @@ class AppLogger {
     private config: LoggerConfig = { ...DEFAULT_CONFIG };
     private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
+    private isBrokenPipeError(error: unknown): boolean {
+        if (!error || typeof error !== 'object') {
+            return false;
+        }
+        const maybeCode = 'code' in error ? (error as { code?: string }).code : undefined;
+        const maybeMessage = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+        return maybeCode === 'EPIPE' || maybeMessage.toLowerCase().includes('broken pipe');
+    }
+
+    private safeConsoleCall(method: 'debug' | 'info' | 'log' | 'warn' | 'error', ...args: unknown[]) {
+        const original = this.originalConsole?.[method];
+        if (!original) {
+            return;
+        }
+        try {
+            (original as (...items: unknown[]) => void)(...args);
+        } catch (error) {
+            if (!this.isBrokenPipeError(error)) {
+                // Do not rethrow; logger should never crash the app process.
+            }
+        }
+    }
+
     /**
      * Initializes the logger with a directory and optional configuration.
      * @param logDir - The directory to store log files.
@@ -162,29 +185,29 @@ class AppLogger {
 
         console.debug = (...args: Array<JsonValue | Error | object>) => {
             this.debug('console', formatArgs(args));
-            this.originalConsole?.debug(...args);
+            this.safeConsoleCall('debug', ...args);
         };
         console.log = (...args: Array<JsonValue | Error | object>) => {
             this.info('console', formatArgs(args));
-            this.originalConsole?.log(...args);
+            this.safeConsoleCall('log', ...args);
         };
         console.info = (...args: Array<JsonValue | Error | object>) => {
             this.info('console', formatArgs(args));
-            this.originalConsole?.info(...args);
+            this.safeConsoleCall('info', ...args);
         };
         console.warn = (...args: Array<JsonValue | Error | object>) => {
             this.warn('console', formatArgs(args));
-            this.originalConsole?.warn(...args);
+            this.safeConsoleCall('warn', ...args);
         };
         console.error = (...args: Array<JsonValue | Error | object>) => {
             const message = formatArgs(args);
             if (message.includes('DeprecationWarning')) {
                 this.warn('console', message);
-                this.originalConsole?.warn(...args);
+                this.safeConsoleCall('warn', ...args);
                 return;
             }
             this.error('console', message);
-            this.originalConsole?.error(...args);
+            this.safeConsoleCall('error', ...args);
         };
     }
 
@@ -250,11 +273,11 @@ class AppLogger {
         if (this.originalConsole) {
             const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`;
             if (payload.level === LogLevel.ERROR) {
-                this.originalConsole.error(consoleMsg);
+                this.safeConsoleCall('error', consoleMsg);
             } else if (payload.level === LogLevel.WARN) {
-                this.originalConsole.warn(consoleMsg);
+                this.safeConsoleCall('warn', consoleMsg);
             } else {
-                this.originalConsole.log(consoleMsg);
+                this.safeConsoleCall('log', consoleMsg);
             }
         }
 
@@ -266,7 +289,7 @@ class AppLogger {
             })
             .catch(err => {
                 if (this.originalConsole) {
-                    this.originalConsole.error('Logger write failed', err);
+                    this.safeConsoleCall('error', 'Logger write failed', err);
                 }
             });
     }

@@ -588,9 +588,13 @@ export const webElectronMock: ElectronAPI = {
         exportSearchResults: async (
             _sessionId: string,
             _query: string,
-            _options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
-            _exportPath?: string,
-            _format?: 'json' | 'txt'
+            _options?: {
+                regex?: boolean;
+                caseSensitive?: boolean;
+                limit?: number;
+                exportPath?: string;
+                format?: 'json' | 'txt';
+            }
         ) => ({ success: true, content: '' }),
         addScrollbackMarker: async (_sessionId: string, _label: string, _lineNumber?: number) => ({
             id: 'mock-marker-id',

@@ -6,7 +6,10 @@ import { defineConfig } from 'vite';
 import electron from 'vite-plugin-electron';
 // import { reactGlobalPlugin } from './vite-plugin-react-global' // Removed causing errors
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+    const nodeEnv = process.env.NODE_ENV ?? (mode === 'development' ? 'development' : 'production');
+
+    return {
     plugins: [
         // reactGlobalPlugin(), // Removed
         react({
@@ -136,7 +139,7 @@ export default defineConfig({
         extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']
     },
     define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
+        'process.env.NODE_ENV': JSON.stringify(nodeEnv),
         '__BUILD_TIME__': JSON.stringify(new Date().toISOString())
     },
     build: {
@@ -258,4 +261,5 @@ export default defineConfig({
         include: ['src/tests/main/**/*.{test,spec}.{ts,tsx}'],
         exclude: ['src/tests/e2e/**', 'node_modules', 'dist']
     }
-} as import('vite').UserConfig);
+    } as import('vite').UserConfig;
+});

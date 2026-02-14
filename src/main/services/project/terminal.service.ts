@@ -652,7 +652,7 @@ export class TerminalService extends BaseService {
         options: { overwrite?: boolean; sessionId?: string } = {}
     ): Promise<ImportTerminalSessionResult> {
         const parsed = safeJsonParse<ExportedTerminalSessionPayload | null>(payloadRaw, null);
-        if (!parsed || parsed.kind !== 'terminal-session' || parsed.version !== 1 || !parsed.snapshot) {
+        if (parsed?.kind !== 'terminal-session' || parsed.version !== 1 || !parsed.snapshot) {
             return { success: false, error: 'Invalid terminal session export payload' };
         }
 

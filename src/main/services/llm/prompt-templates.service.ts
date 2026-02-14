@@ -22,7 +22,6 @@ export class PromptTemplatesService extends BaseService {
     ) {
         super('PromptTemplatesService');
         this.templatesPath = path.join(this.dataService.getPath('db'), 'prompt-templates.json');
-        void this.initialize();
     }
 
     public async initialize() {

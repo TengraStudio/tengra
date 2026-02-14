@@ -906,9 +906,13 @@ export interface ElectronAPI {
         exportSearchResults: (
             sessionId: string,
             query: string,
-            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
-            exportPath?: string,
-            format?: 'json' | 'txt'
+            options?: {
+                regex?: boolean;
+                caseSensitive?: boolean;
+                limit?: number;
+                exportPath?: string;
+                format?: 'json' | 'txt';
+            }
         ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
         addScrollbackMarker: (
             sessionId: string,
@@ -2765,14 +2769,12 @@ const api: ElectronAPI = {
         getSearchAnalytics: () => ipcRenderer.invoke('terminal:getSearchAnalytics'),
         getSearchSuggestions: (query, limit) =>
             ipcRenderer.invoke('terminal:getSearchSuggestions', query, limit),
-        exportSearchResults: (sessionId, query, options, exportPath, format) =>
+        exportSearchResults: (sessionId, query, options) =>
             ipcRenderer.invoke(
                 'terminal:exportSearchResults',
                 sessionId,
                 query,
-                options,
-                exportPath,
-                format
+                options
             ),
         addScrollbackMarker: (sessionId, label, lineNumber) =>
             ipcRenderer.invoke('terminal:addScrollbackMarker', sessionId, label, lineNumber),
