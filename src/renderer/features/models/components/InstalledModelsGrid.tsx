@@ -327,8 +327,8 @@ const InstalledModelCard = memo(({
                     <div className={cn(
                         "px-2 py-0.5 rounded text-xxs font-bold",
                         quotaPercent > 50 ? "bg-success/10 text-success" :
-                        quotaPercent > 20 ? "bg-warning/10 text-warning" :
-                        "bg-destructive/10 text-destructive"
+                            quotaPercent > 20 ? "bg-warning/10 text-warning" :
+                                "bg-destructive/10 text-destructive"
                     )}>
                         {quotaPercent}%
                     </div>

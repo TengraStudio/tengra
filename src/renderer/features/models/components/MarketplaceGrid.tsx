@@ -127,7 +127,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
     // Get unique categories
     const categories = useMemo(() => {
         const cats = new Set<string>();
-        models.forEach(m => m.categories.forEach(c => cats.add(c)));
+        models?.forEach(m => m.categories?.forEach?.(c => cats.add(c)));
         return Array.from(cats).sort();
     }, [models]);
 
@@ -137,7 +137,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
 
         // Filter by category
         if (selectedCategory) {
-            result = result.filter(m => m.categories.includes(selectedCategory));
+            result = result.filter(m => m.categories?.includes(selectedCategory));
         }
 
         // Sort
@@ -422,7 +422,7 @@ function MarketplaceModelCard({ model, isSelected, onSelect, t }: MarketplaceMod
             </div>
 
             {/* Categories */}
-            {model.categories.length > 0 && (
+            {model.categories && model.categories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                     {model.categories.slice(0, 3).map(cat => (
                         <span
