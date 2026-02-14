@@ -67,7 +67,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
                 aria-label={props['aria-label'] ?? label}
                 className={getButtonClassName(active, variant, isCollapsed, className)}
             >
-                <div className="relative flex items-center justify-center">
+                <div className="relative flex items-center justify-center min-w-0">
                     <Icon
                         className={cn(
                             'w-4 h-4 shrink-0 transition-transform duration-200 group-hover/item:scale-110',
