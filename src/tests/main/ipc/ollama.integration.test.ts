@@ -19,6 +19,11 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
                 return defaultValue;
             }
         };
+    }),
+    createValidatedIpcHandler: vi.fn((_name, handler, _schema) => {
+        return async (...args: unknown[]) => {
+            return await handler(...args);
+        };
     })
 }));
 
@@ -87,7 +92,28 @@ describe('Ollama IPC Handlers', () => {
         mockOllamaService = {
             pullModel: vi.fn().mockResolvedValue({ success: true }),
             abort: vi.fn(),
-            getLibraryModels: vi.fn().mockResolvedValue([])
+            getLibraryModels: vi.fn().mockResolvedValue([]),
+            chat: vi.fn().mockResolvedValue({ message: { content: 'Response', role: 'assistant' } }),
+            chatStream: vi.fn().mockImplementation(async (_messages, _model, _tools, onChunk) => {
+                if (onChunk) {
+                    onChunk('Response');
+                }
+                return { content: 'Response' };
+            }),
+            onGPUAlert: vi.fn(),
+            onGPUStatus: vi.fn(),
+            startGPUMonitoring: vi.fn(),
+            stopGPUMonitoring: vi.fn(),
+            setGPUAlertThresholds: vi.fn(),
+            getGPUAlertThresholds: vi.fn().mockResolvedValue({ highMemoryPercent: 90, highTemperatureC: 85, lowMemoryMB: 500 }),
+            checkModelHealth: vi.fn(),
+            checkAllModelsHealth: vi.fn(),
+            getModelRecommendations: vi.fn(),
+            getRecommendedModelForTask: vi.fn(),
+            getConnectionStatus: vi.fn(),
+            testConnection: vi.fn(),
+            reconnect: vi.fn(),
+            getGPUInfo: vi.fn()
         } as unknown as OllamaService;
 
         mockOllamaHealthService = {
@@ -264,7 +290,7 @@ describe('Ollama IPC Handlers', () => {
             const result = await handler!(mockEvent, messages, 'llama2');
 
             expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:chat');
-            expect(mockLocalAIService.ollamaChat).toHaveBeenCalledWith('llama2', messages);
+            expect(mockOllamaService.chat).toHaveBeenCalledWith(messages, 'llama2');
             expect(result).toEqual({ message: { content: 'Response', role: 'assistant' } });
         });
 
@@ -281,9 +307,9 @@ describe('Ollama IPC Handlers', () => {
             const result = await handler!(mockEvent, messages, 'llama2');
 
             // Only first message should be valid
-            expect(mockLocalAIService.ollamaChat).toHaveBeenCalledWith('llama2', [
+            expect(mockOllamaService.chat).toHaveBeenCalledWith([
                 { role: 'user', content: 'Valid' }
-            ]);
+            ], 'llama2');
             expect(result).toBeDefined();
         });
 
@@ -305,7 +331,7 @@ describe('Ollama IPC Handlers', () => {
 
         it('should return default value on error', async () => {
             const handler = ipcMainHandlers.get('ollama:chat');
-            vi.mocked(mockLocalAIService.ollamaChat).mockRejectedValue(new Error('Chat failed'));
+            vi.mocked(mockOllamaService.chat).mockRejectedValue(new Error('Chat failed'));
 
             const result = await handler!(mockEvent, [{ role: 'user', content: 'Hi' }], 'llama2');
 
@@ -322,7 +348,7 @@ describe('Ollama IPC Handlers', () => {
             await handler!(mockEvent, messages, 'llama2');
 
             expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:chat');
-            expect(mockLocalAIService.ollamaChat).toHaveBeenCalledWith('llama2', messages);
+            expect(mockOllamaService.chatStream).toHaveBeenCalled();
             expect(mockEvent.sender.send).toHaveBeenCalledWith('ollama:streamChunk', {
                 content: 'Response',
                 reasoning: ''
@@ -331,7 +357,7 @@ describe('Ollama IPC Handlers', () => {
 
         it('should return error on failure', async () => {
             const handler = ipcMainHandlers.get('ollama:chatStream');
-            vi.mocked(mockLocalAIService.ollamaChat).mockRejectedValue(new Error('Stream failed'));
+            vi.mocked(mockOllamaService.chatStream).mockRejectedValue(new Error('Stream failed'));
 
             const result = await handler!(mockEvent, [{ role: 'user', content: 'Hi' }], 'llama2');
 
@@ -393,6 +419,33 @@ describe('Ollama IPC Handlers', () => {
             const result = await newHandler!(mockEvent, 'llama2');
 
             expect(result).toEqual({ success: false, error: 'Service unavailable' });
+        });
+    });
+
+    describe('ollama:abort', () => {
+        it('should abort chat operation', async () => {
+            const handler = ipcMainHandlers.get('ollama:abort');
+            expect(handler).toBeDefined();
+
+            const result = await handler!(mockEvent);
+
+            expect(mockOllamaService.abort).toHaveBeenCalled();
+            expect(result).toEqual({ success: true });
+        });
+
+        it('should return false when service unavailable', async () => {
+            // Re-register without ollama service
+            ipcMainHandlers.clear();
+            registerOllamaIpc({
+                localAIService: mockLocalAIService,
+                settingsService: mockSettingsService,
+                llmService: mockLLMService
+            });
+
+            const newHandler = ipcMainHandlers.get('ollama:abort');
+            const result = await newHandler!(mockEvent);
+
+            expect(result).toEqual({ success: false });
         });
     });
 

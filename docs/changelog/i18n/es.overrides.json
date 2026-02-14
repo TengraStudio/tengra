@@ -1,4 +1,14 @@
 {
+  "2026-02-13-ipc-security-audit-input-validation-sec-003": {
+    "title": "IPC Security Audit: Input Validation (SEC-003)",
+    "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",
+    "items": [
+      "- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.",
+      "- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.",
+      "- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.",
+      "- **Type Safety**: Ensured explicit types for handler arguments and return policies."
+    ]
+  },
   "2026-02-13-drop-validation": {
     "title": "Validación de archivos adjuntos añadida",
     "summary": "Seguridad mejorada para archivos adjuntos con validación de tipo, límites de tamaño y bloqueo de extensiones peligrosas.",
@@ -3284,6 +3294,15 @@
       "- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.",
       "- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.",
       "- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability."
+    ]
+  },
+  "2026-02-13-ollama-abort-fix-and-chat-refactor": {
+    "title": "Ollama Abort Fix & Chat Refactor",
+    "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+    "items": [
+      "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
+      "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
+      "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
     ]
   }
 }

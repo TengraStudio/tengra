@@ -1,4 +1,14 @@
 {
+  "2026-02-13-ipc-security-audit-input-validation-sec-003": {
+    "title": "IPC Security Audit: Input Validation (SEC-003)",
+    "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",
+    "items": [
+      "- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.",
+      "- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.",
+      "- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.",
+      "- **Type Safety**: Ensured explicit types for handler arguments and return policies."
+    ]
+  },
   "2026-02-12-ipc-handler-tests-batch-4": {
     "title": "IPCハンドラーテストの拡張 - バッチ 4",
     "summary": "15個の追加IPCハンドラー（advanced-memory, auth, brain, dialog, extension, file-diff, files, gallery, git, idea-generator, mcp, mcp-marketplace, process, proxy, proxy-embed）の統合テストを作成しました。",
@@ -3233,6 +3243,66 @@
       "- 包括的なパラメータ検証テスト",
       "- 安全な handler デフォルトによるエラー パス カバレッジ",
       "- サービス可用性 fallback テスト"
+    ]
+  },
+  "2026-02-13-drop-validation": {
+    "title": "ドロップ検証が追加されました",
+    "summary": "ファイルタイプ検証、サイズ制限、危険な拡張子ブロックでドラッグ＆ドロップのセキュリティを強化。",
+    "items": [
+      "- ファイルタイプホワイトリスト追加: テキスト、JSON、PDF、画像、一般的なドキュメント形式。",
+      "- 大きなファイルのDoSを防ぐため10MBの最大ファイルサイズ制限を実装。",
+      "- セキュリティのために危険な拡張子(.exe、.bat、.sh、.ps1など)のブロックを追加。",
+      "- 無効なファイルをドロップするとトーストエラー通知が表示されます。"
+    ]
+  },
+  "2026-02-13-token-counting-accuracy": {
+    "title": "Improved Token Counting Accuracy",
+    "summary": "Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.",
+    "items": [
+      "Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.",
+      "Improved context window management with precise model limits for major LLM providers.",
+      "Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.",
+      "Added comprehensive unit tests to verify token counting accuracy for various models."
+    ]
+  },
+  "2026-02-13-llm-service-improvements": {
+    "title": "LLM Service Improvements: Fallback & Caching",
+    "summary": "Enhanced the LLM service with model fallback, response caching, and improved streaming response management.",
+    "items": [
+      "- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.",
+      "- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.",
+      "- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.",
+      "- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management."
+    ]
+  },
+  "2026-02-13-huggingface-integration-core": {
+    "title": "Core HuggingFace Integration & GGUF Support",
+    "summary": "Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.",
+    "items": [
+      "- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.",
+      "- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.",
+      "- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.",
+      "- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.",
+      "- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability."
+    ]
+  },
+  "2026-02-13-ipc-handler-tests-expansion-batch-5-fix-test-01": {
+    "title": "IPC Handler Tests expansion & TEST-01 Fix",
+    "summary": "Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.",
+    "items": [
+      "- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.",
+      "- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.",
+      "- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.",
+      "- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`."
+    ]
+  },
+  "2026-02-13-ollama-abort-fix-and-chat-refactor": {
+    "title": "Ollama Abort Fix & Chat Refactor",
+    "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+    "items": [
+      "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
+      "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
+      "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
     ]
   }
 }

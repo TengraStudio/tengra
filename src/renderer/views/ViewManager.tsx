@@ -128,7 +128,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView, onNavigateToProject } = props;
     const { language } = useAuth();
     const { t } = useTranslation(language);
-    const { stopListening, isListening, isLoading, stopGeneration } = useChat();
+    const { stopListening, isListening, isLoading } = useChat();
     const { setIsModelMenuOpen } = useModel();
     const { handleOpenTerminal } = useProject();
     const prefersReducedMotion = usePrefersReducedMotion();
@@ -205,24 +205,6 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: pagePreset.duration, ease: pagePreset.ease }}
             >
-                {isLoading && (
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[120]">
-                        <LoadingState
-                            size="sm"
-                            compact
-                            message={t('common.loading')}
-                            stage="Streaming response"
-                            operationId="chat-streaming"
-                            analyticsContext="chat-streaming"
-                            startedAt={loadingStartTime ?? Date.now()}
-                            estimatedMs={12000}
-                            onCancel={() => {
-                                void stopGeneration();
-                            }}
-                            cancelLabel={t('common.cancel')}
-                        />
-                    </div>
-                )}
                 <Suspense fallback={renderViewSkeleton(currentView)}>
                     {renderView()}
                 </Suspense>
