@@ -4,6 +4,41 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-14-ui-chat-shimmer-animation",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ui",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Sidebar",
+        "Chat"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Chat Generation Shimmer Animation",
+          "summary": "Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.",
+          "items": [
+            "- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.",
+            "- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true."
+          ]
+        },
+        "tr": {
+          "title": "Sohbet Üretimi Işıltı Animasyonu",
+          "summary": "Yapay zeka yanıt üretirken kenar çubuğundaki sohbet başlığına ince bir ışıltı animasyonu eklendi.",
+          "items": [
+            "- **UI**: Premium bir yükleme efekti için `animate-text-shimmer` sınıfı uygulandı.",
+            "- **Kenar Çubuğu**: `isGenerating` true olduğunda sohbet öğesi etiketine ışıltı efekti uygulandı."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-13-ollama-abort-fix-and-chat-refactor",
       "date": "2026-02-13",
       "channel": "stable",

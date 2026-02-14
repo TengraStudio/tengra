@@ -135,10 +135,12 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
 
     useEffect(() => {
-        if (isLoading && loadingStartTime === null) {
-            setLoadingStartTime(Date.now());
-        } else if (!isLoading && loadingStartTime !== null) {
-            setLoadingStartTime(null);
+        const setStartTime = () => setLoadingStartTime(Date.now());
+        const clearStartTime = () => setLoadingStartTime(null);
+        if (isLoading) {
+            setStartTime();
+        } else {
+            clearStartTime();
         }
     }, [isLoading, loadingStartTime]);
 

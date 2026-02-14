@@ -15,6 +15,7 @@ export interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonE
     actions?: React.ReactNode;
     variant?: 'default' | 'ghost' | 'glass';
     iconClassName?: string;
+    labelClassName?: string;
 }
 
 function getButtonClassName(
@@ -43,6 +44,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
     badge,
     isCollapsed,
     className,
+    labelClassName,
     actions,
     children,
     variant = 'default',
@@ -77,7 +79,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
 
                 {!isCollapsed && (
                     <>
-                        <span className="flex-1 text-left truncate">{label}</span>
+                        <span className={cn("flex-1 text-left truncate", labelClassName)}>{label}</span>
                         {badge !== undefined && (
                             <span
                                 className={cn(
