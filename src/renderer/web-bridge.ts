@@ -249,6 +249,16 @@ export const webElectronMock: ElectronAPI = {
         getStatus: async () => 'ready',
         reinstall: async () => { },
     },
+    clipboard: {
+        writeText: async (text: string) => {
+            await navigator.clipboard.writeText(text);
+            return { success: true };
+        },
+        readText: async () => {
+            const text = await navigator.clipboard.readText();
+            return { success: true, text };
+        },
+    },
 
     getOllamaHealthStatus: async () => ({ status: 'ok' as const }),
     forceOllamaHealthCheck: async () => ({ status: 'ok' as const }),
