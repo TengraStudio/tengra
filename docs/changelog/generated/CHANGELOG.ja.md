@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### IPCイベントループの安全性の向上
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 複数のサービスにわたるIPCイベントハンドラーでの「Object has been destroyed」エラーを修正しました。
+
+- **修正**: レンダラーオブジェクトの有効期間の問題を防ぐため、IPCイベントを送信する前にウィンドウの破棄状態のチェックを追加しました。
+- **IPC**: Auth、SSH、Idea Generatorサービスのイベントブロードキャストを標準化しました。
+- **信頼性**: ウィンドウの閉鎖やセッションのリセット中のシステムの安定性を向上させました。
+
 ### マーケットプレイスのクラッシュとクリップボード権限の修正
 
 - **Type**: fix

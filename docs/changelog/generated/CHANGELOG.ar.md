@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### تحسينات أمان حلقة أحداث IPC
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: تم إصلاح أخطاء 'Object has been destroyed' في معالجات أحداث IPC عبر خدمات متعددة.
+
+- **إصلاح**: تمت إضافة فحوصات تدمير النافذة قبل إرسال أحداث IPC لمنع مشكلات عمر كائنات العرض (renderer).
+- **IPC**: توحيد بث الأحداث في خدمات المصادقة (Auth) و SSH و Idea Generator.
+- **الموثوقية**: تحسين استقرار النظام أثناء إغلاق النوافذ وإعادة تعيين الجلسة.
+
 ### إصلاح تعطل المتجر وأذونات الحافظة
 
 - **Type**: fix

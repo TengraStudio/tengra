@@ -1,4 +1,13 @@
 {
+  "2026-02-14-event-bus-object-destroyed-fix": {
+    "title": "IPC Olay Döngüsü Güvenlik İyileştirmeleri",
+    "summary": "Birden fazla serviste IPC olay dinleyicilerinde oluşan 'Object has been destroyed' hataları düzeltildi.",
+    "items": [
+      "- **Düzeltme**: Renderer nesne ömrü sorunlarını önlemek için IPC olayları gönderilmeden önce pencere imha durumu kontrolleri eklendi.",
+      "- **IPC**: Auth, SSH ve Idea Generator servislerinde olay yayını standartlaştırıldı.",
+      "- **Güvenilirlik**: Pencere kapatma ve oturum sıfırlama sırasında sistem kararlılığı artırıldı."
+    ]
+  },
   "2026-02-14-marketplace-crash-and-clipboard-fix": {
     "title": "Marketplace Çökmesi ve Pano İzin Düzeltmesi",
     "summary": "Model Marketplace'teki kritik bir çökme giderildi ve pano (clipboard) izin sorunları düzeltildi.",

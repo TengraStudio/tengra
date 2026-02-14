@@ -4,6 +4,35 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-14-event-bus-object-destroyed-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ipc",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "EventBus",
+        "Auth"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "IPC Event Loop Safety Improvements",
+          "summary": "Fixed 'Object has been destroyed' errors in IPC event handlers across multiple services.",
+          "items": [
+            "- **Fix**: Added window destruction checks before sending IPC events to prevent renderer object lifetime issues.",
+            "- **IPC**: Standardized event broadcasting in Auth, SSH, and Idea Generator services.",
+            "- **Reliability**: Improved system stability during window closure and session resets."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-14-marketplace-crash-and-clipboard-fix",
       "date": "2026-02-14",
       "channel": "stable",

@@ -1,4 +1,13 @@
 {
+  "2026-02-14-event-bus-object-destroyed-fix": {
+    "title": "Améliorations de la sécurité de la boucle d'événements IPC",
+    "summary": "Correction des erreurs 'Object has been destroyed' dans les gestionnaires d'événements IPC de plusieurs services.",
+    "items": [
+      "- **Correction**: Ajout de vérifications de destruction de fenêtre avant l'envoi d'événements IPC pour éviter les problèmes de durée de vie des objets renderer.",
+      "- **IPC**: Standardisation de la diffusion d'événements dans les services Auth, SSH et Idea Generator.",
+      "- **Fiabilité**: Amélioration de la stabilité du système lors de la fermeture des fenêtres et de la réinitialisation des sessions."
+    ]
+  },
   "2026-02-14-marketplace-crash-and-clipboard-fix": {
     "title": "Correction du crash du Marketplace et des permissions du presse-papiers",
     "summary": "Résolution d'un crash critique dans le Marketplace de modèles et correction des problèmes de permissions du presse-papiers.",

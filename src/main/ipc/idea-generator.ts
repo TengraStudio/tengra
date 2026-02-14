@@ -191,7 +191,9 @@ function setupEventForwarding(eventBus: EventBusService): void {
     eventBus.on('ideas:research-progress', (progress: ResearchProgress) => {
         const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
-            win.webContents.send('ideas:research-progress', progress);
+            if (!win.isDestroyed()) {
+                win.webContents.send('ideas:research-progress', progress);
+            }
         }
     });
 
@@ -199,7 +201,9 @@ function setupEventForwarding(eventBus: EventBusService): void {
     eventBus.on('ideas:idea-progress', (progress: IdeaProgress) => {
         const windows = BrowserWindow.getAllWindows();
         for (const win of windows) {
-            win.webContents.send('ideas:idea-progress', progress);
+            if (!win.isDestroyed()) {
+                win.webContents.send('ideas:idea-progress', progress);
+            }
         }
     });
 }
@@ -490,10 +494,12 @@ function registerDeepResearchHandlers(deepResearchService: DeepResearchService):
                             // Forward progress to renderer
                             const windows = BrowserWindow.getAllWindows();
                             for (const win of windows) {
-                                win.webContents.send('ideas:deep-research-progress', {
-                                    stage,
-                                    progress,
-                                });
+                                if (!win.isDestroyed()) {
+                                    win.webContents.send('ideas:deep-research-progress', {
+                                        stage,
+                                        progress,
+                                    });
+                                }
                             }
                         }
                     )

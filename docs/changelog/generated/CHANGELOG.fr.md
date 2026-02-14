@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Améliorations de la sécurité de la boucle d'événements IPC
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Correction des erreurs 'Object has been destroyed' dans les gestionnaires d'événements IPC de plusieurs services.
+
+- **Correction**: Ajout de vérifications de destruction de fenêtre avant l'envoi d'événements IPC pour éviter les problèmes de durée de vie des objets renderer.
+- **IPC**: Standardisation de la diffusion d'événements dans les services Auth, SSH et Idea Generator.
+- **Fiabilité**: Amélioration de la stabilité du système lors de la fermeture des fenêtres et de la réinitialisation des sessions.
+
 ### Correction du crash du Marketplace et des permissions du presse-papiers
 
 - **Type**: fix

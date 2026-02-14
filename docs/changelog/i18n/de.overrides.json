@@ -1,4 +1,13 @@
 {
+  "2026-02-14-event-bus-object-destroyed-fix": {
+    "title": "IPC-Ereignisschleifen-Sicherheitsverbesserungen",
+    "summary": "'Object has been destroyed'-Fehler in IPC-Ereignis-Handlern über mehrere Dienste hinweg behoben.",
+    "items": [
+      "- **Fix**: Fenster-Zerstörungsprüfungen vor dem Senden von IPC-Ereignissen hinzugefügt, um Renderer-Objektlebensdauerprobleme zu vermeiden.",
+      "- **IPC**: Standardisierte Ereignisübertragung in Auth-, SSH- und Idea Generator-Diensten.",
+      "- **Zuverlässigkeit**: Verbesserte Systemstabilität beim Schließen von Fenstern und Zurücksetzen von Sitzungen."
+    ]
+  },
   "2026-02-14-marketplace-crash-and-clipboard-fix": {
     "title": "Marktplatz-Absturz & Zwischenablage-Berechtigungsfehler behoben",
     "summary": "Ein kritischer Absturz im Modell-Marktplatz wurde behoben und Probleme mit den Berechtigungen der Zwischenablage wurden korrigiert.",

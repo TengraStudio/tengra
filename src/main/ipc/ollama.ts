@@ -137,7 +137,9 @@ export function registerOllamaIpc(options: {
         ollamaHealthService.on('statusChange', (status) => {
             const windows = BrowserWindow.getAllWindows();
             windows.forEach(win => {
-                win.webContents.send('ollama:statusChange', status);
+                if (!win.isDestroyed()) {
+                    win.webContents.send('ollama:statusChange', status);
+                }
             });
         });
     }
@@ -229,10 +231,12 @@ export function registerOllamaIpc(options: {
             const result = await ollamaService.pullModel(modelName, (progress: { status: string; completed?: number; total?: number }) => {
                 const windows = BrowserWindow.getAllWindows();
                 windows.forEach(win => {
-                    win.webContents.send('ollama:pullProgress', {
-                        ...progress,
-                        modelName
-                    });
+                    if (!win.isDestroyed()) {
+                        win.webContents.send('ollama:pullProgress', {
+                            ...progress,
+                            modelName
+                        });
+                    }
                 });
             });
 
@@ -484,14 +488,18 @@ export function registerOllamaIpc(options: {
         ollamaService.onGPUAlert((alert) => {
             const windows = BrowserWindow.getAllWindows();
             windows.forEach(win => {
-                win.webContents.send('ollama:gpuAlert', alert);
+                if (!win.isDestroyed()) {
+                    win.webContents.send('ollama:gpuAlert', alert);
+                }
             });
         });
 
         ollamaService.onGPUStatus((status) => {
             const windows = BrowserWindow.getAllWindows();
             windows.forEach(win => {
-                win.webContents.send('ollama:gpuStatus', status);
+                if (!win.isDestroyed()) {
+                    win.webContents.send('ollama:gpuStatus', status);
+                }
             });
         });
     }
