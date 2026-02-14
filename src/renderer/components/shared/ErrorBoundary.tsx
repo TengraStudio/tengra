@@ -5,10 +5,12 @@ import { useTranslation } from '@/i18n';
 interface Props {
     children: ReactNode;
     fallback?: ReactNode;
+    fallbackRender?: (props: { error: Error; resetErrorBoundary: () => void }) => ReactNode;
 }
 
 interface State {
     hasError: boolean;
+    error: Error | null;
 }
 
 interface ErrorBoundaryBaseProps extends Props {
@@ -17,11 +19,12 @@ interface ErrorBoundaryBaseProps extends Props {
 
 class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
     public state: State = {
-        hasError: false
+        hasError: false,
+        error: null
     };
 
-    public static getDerivedStateFromError(_: Error): State {
-        return { hasError: true };
+    public static getDerivedStateFromError(error: Error): State {
+        return { hasError: true, error };
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -29,8 +32,18 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
         window.electron.log.error('React error info', { componentStack: errorInfo.componentStack });
     }
 
+    public resetErrorBoundary = () => {
+        this.setState({ hasError: false, error: null });
+    };
+
     public render() {
         if (this.state.hasError) {
+            if (this.props.fallbackRender && this.state.error) {
+                return this.props.fallbackRender({
+                    error: this.state.error,
+                    resetErrorBoundary: this.resetErrorBoundary
+                });
+            }
             return this.props.fallback ?? this.props.defaultFallback;
         }
 
@@ -38,14 +51,12 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
     }
 }
 
-export const ErrorBoundary = ({ children, fallback }: Props) => {
+export const ErrorBoundary = (props: Props) => {
     const { t } = useTranslation();
     return (
         <ErrorBoundaryBase
-            fallback={fallback}
+            {...props}
             defaultFallback={<h1>{t('errors.unexpected')}</h1>}
-        >
-            {children}
-        </ErrorBoundaryBase>
+        />
     );
 };

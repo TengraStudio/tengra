@@ -236,7 +236,7 @@ function MainApp() {
 
     return (
         <ErrorBoundary
-            fallback={
+            fallbackRender={({ error, resetErrorBoundary }) => (
                 <div className="app-container h-screen w-full overflow-hidden">
                     <div className="absolute inset-0 flex flex-col overflow-hidden">
                         <LayoutManager
@@ -268,14 +268,17 @@ function MainApp() {
                                         onExtensionClick={() => setShowExtensionModal(true)}
                                     />
                                     <ErrorFallback
-                                        error={new Error(t('errors.unexpected'))}
-                                        resetErrorBoundary={() => window.location.reload()}
+                                        error={error || new Error(t('errors.unexpected'))}
+                                        resetErrorBoundary={() => {
+                                            resetErrorBoundary();
+                                            window.location.reload();
+                                        }}
                                     />
                                 </>
                             } />
                     </div>
-                </ div>
-            }
+                </div>
+            )}
         >
             <div className="app-container h-screen w-full overflow-hidden">
                 {showExtensionModal && (

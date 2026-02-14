@@ -3298,5 +3298,14 @@
       "- **UI**: Display user-friendly error message when model fetching fails.",
       "- **UX**: Added a retry button to recover from transient network or service errors."
     ]
+  },
+  "2026-02-14-error-fallback-enhancement": {
+    "title": "Enhanced Error Display",
+    "summary": "Improved the application error screen to show detailed error messages and stack traces for better debugging.",
+    "items": [
+      "- **Transparency**: Added detailed error message display instead of generic text.",
+      "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
+      "- **Usability**: Added 'Copy Details' button to easily share error information."
+    ]
   }
 }
