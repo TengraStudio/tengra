@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T12:37:29.508Z",
+  "generatedAt": "2026-02-14T13:05:36.634Z",
   "locales": [
     "en",
     "tr",
@@ -106,6 +106,97 @@
             "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
             "- **Usability**: Added 'Copy Details' button to easily share error information.",
             "- **UX**: Automatic error state reset when navigating between different views."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-14-event-bus-object-destroyed-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "EventBus",
+        "Auth"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "IPC Event Loop Safety Improvements",
+          "summary": "Fixed 'Object has been destroyed' errors in IPC event handlers across multiple services.",
+          "items": [
+            "- **Fix**: Added window destruction checks before sending IPC events to prevent renderer object lifetime issues.",
+            "- **IPC**: Standardized event broadcasting in Auth, SSH, and Idea Generator services.",
+            "- **Reliability**: Improved system stability during window closure and session resets."
+          ]
+        },
+        "tr": {
+          "title": "IPC Olay Döngüsü Güvenlik İyileştirmeleri",
+          "summary": "Birden fazla serviste IPC olay dinleyicilerinde oluşan 'Object has been destroyed' hataları düzeltildi.",
+          "items": [
+            "- **Düzeltme**: Renderer nesne ömrü sorunlarını önlemek için IPC olayları gönderilmeden önce pencere imha durumu kontrolleri eklendi.",
+            "- **IPC**: Auth, SSH ve Idea Generator servislerinde olay yayını standartlaştırıldı.",
+            "- **Güvenilirlik**: Pencere kapatma ve oturum sıfırlama sırasında sistem kararlılığı artırıldı."
+          ]
+        },
+        "de": {
+          "title": "IPC-Ereignisschleifen-Sicherheitsverbesserungen",
+          "summary": "'Object has been destroyed'-Fehler in IPC-Ereignis-Handlern über mehrere Dienste hinweg behoben.",
+          "items": [
+            "- **Fix**: Fenster-Zerstörungsprüfungen vor dem Senden von IPC-Ereignissen hinzugefügt, um Renderer-Objektlebensdauerprobleme zu vermeiden.",
+            "- **IPC**: Standardisierte Ereignisübertragung in Auth-, SSH- und Idea Generator-Diensten.",
+            "- **Zuverlässigkeit**: Verbesserte Systemstabilität beim Schließen von Fenstern und Zurücksetzen von Sitzungen."
+          ]
+        },
+        "fr": {
+          "title": "Améliorations de la sécurité de la boucle d'événements IPC",
+          "summary": "Correction des erreurs 'Object has been destroyed' dans les gestionnaires d'événements IPC de plusieurs services.",
+          "items": [
+            "- **Correction**: Ajout de vérifications de destruction de fenêtre avant l'envoi d'événements IPC pour éviter les problèmes de durée de vie des objets renderer.",
+            "- **IPC**: Standardisation de la diffusion d'événements dans les services Auth, SSH et Idea Generator.",
+            "- **Fiabilité**: Amélioration de la stabilité du système lors de la fermeture des fenêtres et de la réinitialisation des sessions."
+          ]
+        },
+        "es": {
+          "title": "Mejoras de seguridad en el bucle de eventos IPC",
+          "summary": "Se corrigieron los errores 'Object has been destroyed' en los manejadores de eventos IPC en varios servicios.",
+          "items": [
+            "- **Corrección**: Se agregaron verificaciones de destrucción de ventanas antes de enviar eventos IPC para evitar problemas con la vida útil de los objetos del renderizador.",
+            "- **IPC**: Estandarización de la difusión de eventos en los servicios de Auth, SSH e Idea Generator.",
+            "- **Fiabilidad**: Estabilidad del sistema mejorada durante el cierre de ventanas y el reinicio de sesiones."
+          ]
+        },
+        "ja": {
+          "title": "IPCイベントループの安全性の向上",
+          "summary": "複数のサービスにわたるIPCイベントハンドラーでの「Object has been destroyed」エラーを修正しました。",
+          "items": [
+            "- **修正**: レンダラーオブジェクトの有効期間の問題を防ぐため、IPCイベントを送信する前にウィンドウの破棄状態のチェックを追加しました。",
+            "- **IPC**: Auth、SSH、Idea Generatorサービスのイベントブロードキャストを標準化しました。",
+            "- **信頼性**: ウィンドウの閉鎖やセッションのリセット中のシステムの安定性を向上させました。"
+          ]
+        },
+        "zh": {
+          "title": "IPC 事件循环安全性改进",
+          "summary": "修复了多个服务中 IPC 事件处理器出现的“Object has been destroyed”错误。",
+          "items": [
+            "- **修复**：在发送 IPC 事件之前添加了窗口销毁状态检查，以防止渲染器对象生命周期问题。",
+            "- **IPC**：标准化了 Auth、SSH 和 Idea Generator 服务中的事件广播。",
+            "- **稳定性**：提高了窗口关闭和会话重置期间的系统稳定性。"
+          ]
+        },
+        "ar": {
+          "title": "تحسينات أمان حلقة أحداث IPC",
+          "summary": "تم إصلاح أخطاء 'Object has been destroyed' في معالجات أحداث IPC عبر خدمات متعددة.",
+          "items": [
+            "- **إصلاح**: تمت إضافة فحوصات تدمير النافذة قبل إرسال أحداث IPC لمنع مشكلات عمر كائنات العرض (renderer).",
+            "- **IPC**: توحيد بث الأحداث في خدمات المصادقة (Auth) و SSH و Idea Generator.",
+            "- **الموثوقية**: تحسين استقرار النظام أثناء إغلاق النوافذ وإعادة تعيين الجلسة."
           ]
         }
       }

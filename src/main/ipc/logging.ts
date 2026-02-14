@@ -35,10 +35,8 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
     // Stream to all windows if enabled
     if (streamingEnabled) {
         for (const win of BrowserWindow.getAllWindows()) {
-            try {
+            if (!win.isDestroyed()) {
                 win.webContents.send('log:entry', entry);
-            } catch {
-                // Window might be destroyed
             }
         }
     }

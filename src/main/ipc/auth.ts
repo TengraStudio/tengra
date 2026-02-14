@@ -280,15 +280,24 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     // --- Event Bridge to Renderer ---
 
     eventBus.on('account:linked', (payload) => {
-        getMainWindow()?.webContents.send('auth:account-changed', { type: 'linked', ...payload });
+        const win = getMainWindow();
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('auth:account-changed', { type: 'linked', ...payload });
+        }
     });
 
     eventBus.on('account:updated', (payload) => {
-        getMainWindow()?.webContents.send('auth:account-changed', { type: 'updated', ...payload });
+        const win = getMainWindow();
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('auth:account-changed', { type: 'updated', ...payload });
+        }
     });
 
     eventBus.on('account:unlinked', (payload) => {
-        getMainWindow()?.webContents.send('auth:account-changed', { type: 'unlinked', ...payload });
+        const win = getMainWindow();
+        if (win && !win.isDestroyed()) {
+            win.webContents.send('auth:account-changed', { type: 'unlinked', ...payload });
+        }
     });
 }
 

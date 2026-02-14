@@ -10,7 +10,7 @@ import { BrowserWindow, ipcMain } from 'electron';
 export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService, rateLimitService: RateLimitService) {
     const send = (channel: string, data: JsonValue) => {
         const win = getMainWindow();
-        if (win) {
+        if (win && !win.isDestroyed()) {
             win.webContents.send(channel, data);
         }
     };

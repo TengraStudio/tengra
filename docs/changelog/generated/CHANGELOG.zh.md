@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### IPC 事件循环安全性改进
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 修复了多个服务中 IPC 事件处理器出现的“Object has been destroyed”错误。
+
+- **修复**：在发送 IPC 事件之前添加了窗口销毁状态检查，以防止渲染器对象生命周期问题。
+- **IPC**：标准化了 Auth、SSH 和 Idea Generator 服务中的事件广播。
+- **稳定性**：提高了窗口关闭和会话重置期间的系统稳定性。
+
 ### 修复市场崩溃和剪贴板权限问题
 
 - **Type**: fix

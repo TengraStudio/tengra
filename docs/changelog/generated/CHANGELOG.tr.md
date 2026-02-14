@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### IPC Olay Döngüsü Güvenlik İyileştirmeleri
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Birden fazla serviste IPC olay dinleyicilerinde oluşan 'Object has been destroyed' hataları düzeltildi.
+
+- **Düzeltme**: Renderer nesne ömrü sorunlarını önlemek için IPC olayları gönderilmeden önce pencere imha durumu kontrolleri eklendi.
+- **IPC**: Auth, SSH ve Idea Generator servislerinde olay yayını standartlaştırıldı.
+- **Güvenilirlik**: Pencere kapatma ve oturum sıfırlama sırasında sistem kararlılığı artırıldı.
+
 ### Marketplace Çökmesi ve Pano İzin Düzeltmesi
 
 - **Type**: fix
