@@ -371,7 +371,7 @@ const InstalledModelCard = memo(({
             </div>
 
             {/* Thinking Levels */}
-            {model.thinkingLevels && model.thinkingLevels.length > 0 && (
+            {Array.isArray(model.thinkingLevels) && model.thinkingLevels.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                     {model.thinkingLevels.slice(0, 3).map(level => (
                         <span key={level} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xxxs font-bold">
@@ -478,11 +478,14 @@ const ProviderSection = memo(({
 
     // Filter models based on showHidden
     const visibleModels = useMemo(() => {
+        if (!providerData || !Array.isArray(providerData.models)) {
+            return [];
+        }
         return providerData.models.filter(m => {
             const modelId = m.id ?? '';
             return showHidden || !hiddenModels.includes(modelId);
         });
-    }, [providerData.models, hiddenModels, showHidden]);
+    }, [providerData, hiddenModels, showHidden]);
 
     if (visibleModels.length === 0) { return null; }
 
@@ -586,12 +589,14 @@ export function InstalledModelsGrid({
     const [showHidden, setShowHidden] = useState(false);
 
     const filteredGroups = useMemo(() => {
+        if (!groupedModels) { return {}; }
         if (!searchQuery.trim()) { return groupedModels; }
 
         const query = searchQuery.toLowerCase();
         const filtered: GroupedModels = {};
 
         Object.entries(groupedModels).forEach(([provider, data]) => {
+            if (!data || !Array.isArray(data.models)) { return; }
             const matchingModels = data.models.filter(model =>
                 (model.name?.toLowerCase().includes(query)) ??
                 (model.id?.toLowerCase().includes(query)) ??

@@ -1595,27 +1595,36 @@ fn parse_library_page(html: &str) -> Vec<OllamaScrapedModel> {
     let document = Html::parse_document(html);
     let mut models = Vec::new();
 
-    // Selector for model items: #repo ul li a
-    let item_selector = Selector::parse("#repo ul li a").unwrap_or_else(|_| {
-        Selector::parse("a").unwrap()
-    });
-
-    // Alternative selectors based on page structure
-    let name_selector = Selector::parse("h2 div span").unwrap_or_else(|_| {
-        Selector::parse("h2 span").unwrap()
-    });
-    let pulls_selector = Selector::parse("[x-test-pull-count], p span span").unwrap_or_else(|_| {
-        Selector::parse("span").unwrap()
-    });
-    let capability_selector = Selector::parse("[x-test-capability]").unwrap_or_else(|_| {
-        Selector::parse("span").unwrap()
-    });
+    // Updated selectors for new Ollama library page structure (2025+)
+    // Each model is in a <li x-test-model> containing an <a> link
+    let item_selector = Selector::parse("li[x-test-model] a").unwrap();
+    
+    // Name is in <div x-test-model-title title="model-name"> OR <h2><div><span>name</span></div></h2>
+    let name_selector = Selector::parse("div[x-test-model-title]").unwrap();
+    let name_span_selector = Selector::parse("h2 span").unwrap();
+    
+    // Pull count uses x-test-pull-count attribute
+    let pulls_selector = Selector::parse("[x-test-pull-count]").unwrap();
+    
+    // Tag count uses x-test-tag-count attribute
+    let tag_count_selector = Selector::parse("[x-test-tag-count]").unwrap();
+    
+    // Updated time uses x-test-updated attribute
+    let updated_selector = Selector::parse("[x-test-updated]").unwrap();
+    
+    // Capabilities use x-test-capability attribute
+    let capability_selector = Selector::parse("[x-test-capability]").unwrap();
 
     for item in document.select(&item_selector) {
-        // Model name
+        // Model name - try title attribute first, then span text
         let name = item.select(&name_selector)
             .next()
-            .map(|el| el.text().collect::<String>().trim().to_string())
+            .and_then(|el| el.value().attr("title").map(|s| s.to_string()))
+            .or_else(|| {
+                item.select(&name_span_selector)
+                    .next()
+                    .map(|el| el.text().collect::<String>().trim().to_string())
+            })
             .unwrap_or_default();
 
         if name.is_empty() {
@@ -1628,30 +1637,23 @@ fn parse_library_page(html: &str) -> Vec<OllamaScrapedModel> {
             .map(|el| el.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
-        // Categories
+        // Tag count
+        let tag_count = item.select(&tag_count_selector)
+            .next()
+            .and_then(|el| el.text().collect::<String>().trim().parse::<i32>().ok())
+            .unwrap_or(0);
+
+        // Last updated
+        let last_updated = item.select(&updated_selector)
+            .next()
+            .map(|el| el.text().collect::<String>().trim().to_string())
+            .unwrap_or_default();
+
+        // Categories/capabilities
         let categories: Vec<String> = item.select(&capability_selector)
             .map(|el| el.text().collect::<String>().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
-
-        // Tag count and last updated - from p span elements
-        let p_selector = Selector::parse("p span").unwrap();
-        let p_spans: Vec<_> = item.select(&p_selector).collect();
-
-        let tag_count = if p_spans.len() > 1 {
-            p_spans[1].text().collect::<String>()
-                .trim()
-                .parse::<i32>()
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        let last_updated = if p_spans.len() > 2 {
-            p_spans[2].text().collect::<String>().trim().to_string()
-        } else {
-            String::new()
-        };
 
         models.push(OllamaScrapedModel {
             name,

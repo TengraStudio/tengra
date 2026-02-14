@@ -139,6 +139,9 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
 
     // Filter and sort models
     const filteredModels = useMemo(() => {
+        if (!Array.isArray(models)) {
+            return [];
+        }
         let result = [...models];
 
         // Filter by category
