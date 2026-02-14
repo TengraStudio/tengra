@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Marketplace Çökmesi ve Pano İzin Düzeltmesi
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Model Marketplace'teki kritik bir çökme giderildi ve pano (clipboard) izin sorunları düzeltildi.
+
+- **Düzeltme**: Marketplace kategori filtrelemesindeki `o?.forEach is not a function` hatası giderildi.
+- **Pano**: Tarayıcı izin kısıtlamalarını aşmak için güvenli bir IPC tabanlı pano servisi uygulandı.
+- **Hata Yönetimi**: Hata detaylarını kopyalamak için Hata Yakalama ekranı yeni güvenli pano servisini kullanacak şekilde güncellendi.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

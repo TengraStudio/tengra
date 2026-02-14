@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Corrección de error en el Marketplace y permisos del portapapeles
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Se resolvió un error crítico en el Marketplace de modelos y se corrigieron los problemas de permisos del portapapeles.
+
+- **Corrección**: Se corrigió el error `o?.forEach is not a function` en el filtrado de categorías del Marketplace.
+- **Portapapeles**: Se implementó un servicio de portapapeles seguro basado en IPC para evitar las restricciones de permisos del navegador.
+- **Manejo de errores**: Se actualizó la pantalla de error para usar el nuevo servicio seguro al copiar los detalles del error.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### マーケットプレイスのクラッシュとクリップボード権限の修正
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: モデルマーケットプレイスの致命的なクラッシュを解決し、クリップボードの権限に関する問題を修正しました。
+
+- **修正**: マーケットプレイスのカテゴリフィルタリングにおける `o?.forEach is not a function` クラッシュを修正しました。
+- **クリップボード**: ブラウザの権限制限を回避するため、安全なIPCベースのクリップボードサービスを実装しました。
+- **エラーハンドリング**: エラー詳細のコピーに新しい安全なサービスを使用するようにエラーフォールバックを更新しました。
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

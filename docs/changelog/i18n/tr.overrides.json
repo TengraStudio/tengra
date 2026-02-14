@@ -1,4 +1,13 @@
 {
+  "2026-02-14-marketplace-crash-and-clipboard-fix": {
+    "title": "Marketplace Çökmesi ve Pano İzin Düzeltmesi",
+    "summary": "Model Marketplace'teki kritik bir çökme giderildi ve pano (clipboard) izin sorunları düzeltildi.",
+    "items": [
+      "- **Düzeltme**: Marketplace kategori filtrelemesindeki `o?.forEach is not a function` hatası giderildi.",
+      "- **Pano**: Tarayıcı izin kısıtlamalarını aşmak için güvenli bir IPC tabanlı pano servisi uygulandı.",
+      "- **Hata Yönetimi**: Hata detaylarını kopyalamak için Hata Yakalama ekranı yeni güvenli pano servisini kullanacak şekilde güncellendi."
+    ]
+  },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
     "title": "IPC Güvenlik Denetimi: Girdi Doğrulama (SEC-003)",
     "summary": "Agent ve Terminal IPC işleyicileri için katı Zod şema doğrulaması uygulandı, enjeksiyon önlendi, tip güvenliği sağlandı.",

@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### إصلاح تعطل المتجر وأذونات الحافظة
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: تم حل تعطل حرج في متجر النماذج وإصلاح مشكلات أذونات الحافظة.
+
+- **إصلاح**: تم حل تعطل `o?.forEach is not a function` في تصفية فئات المتجر.
+- **الحافظة**: تم تنفيذ خدمة حافظة آمنة تعتمد على IPC لتجاوز قيود أذونات المتصفح.
+- **معالجة الأخطاء**: تم تحديث شاشة الخطأ لاستخدام الخدمة الآمنة الجديدة لنسخ تفاصيل الخطأ.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

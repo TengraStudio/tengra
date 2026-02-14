@@ -1,4 +1,13 @@
 {
+  "2026-02-14-marketplace-crash-and-clipboard-fix": {
+    "title": "إصلاح تعطل المتجر وأذونات الحافظة",
+    "summary": "تم حل تعطل حرج في متجر النماذج وإصلاح مشكلات أذونات الحافظة.",
+    "items": [
+      "- **إصلاح**: تم حل تعطل `o?.forEach is not a function` في تصفية فئات المتجر.",
+      "- **الحافظة**: تم تنفيذ خدمة حافظة آمنة تعتمد على IPC لتجاوز قيود أذونات المتصفح.",
+      "- **معالجة الأخطاء**: تم تحديث شاشة الخطأ لاستخدام الخدمة الآمنة الجديدة لنسخ تفاصيل الخطأ."
+    ]
+  },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
     "title": "IPC Security Audit: Input Validation (SEC-003)",
     "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",

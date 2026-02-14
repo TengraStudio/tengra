@@ -4,6 +4,35 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-14-marketplace-crash-and-clipboard-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ui",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Marketplace",
+        "Clipboard",
+        "UI"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Marketplace Crash & Clipboard Permission Fix",
+          "summary": "Resolved a critical crash in the Model Marketplace and fixed clipboard permission issues.",
+          "items": [
+            "- **Fix**: Resolved `o?.forEach is not a function` crash in Marketplace category filtering.",
+            "- **Clipboard**: Implemented a secure IPC-based clipboard service to bypass browser permission restrictions.",
+            "- **Error Handling**: Updated Error Fallback to use the new secure clipboard service for copying error details."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-14-ui-chat-shimmer-animation",
       "date": "2026-02-14",
       "channel": "stable",
