@@ -5,6 +5,7 @@ import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
+import { registerClipboardIpc } from '@main/ipc/clipboard';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerDbIpc } from '@main/ipc/db';
@@ -180,6 +181,7 @@ export function registerIpcHandlers(
 
     registerScreenshotIpc();
     registerLoggingIpc();
+    registerClipboardIpc(services.clipboardService);
 
     // Terminal needs the instance - use getter for deferred access
     registerTerminalIpc(

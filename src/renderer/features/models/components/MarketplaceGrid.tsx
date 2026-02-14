@@ -127,7 +127,13 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
     // Get unique categories
     const categories = useMemo(() => {
         const cats = new Set<string>();
-        models?.forEach(m => m.categories?.forEach?.(c => cats.add(c)));
+        if (Array.isArray(models)) {
+            models.forEach(m => {
+                if (Array.isArray(m.categories)) {
+                    m.categories.forEach(c => cats.add(c));
+                }
+            });
+        }
         return Array.from(cats).sort();
     }, [models]);
 

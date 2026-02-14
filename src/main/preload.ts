@@ -406,6 +406,10 @@ export interface ElectronAPI {
         getStatus: () => Promise<string>;
         reinstall: () => Promise<void>;
     };
+    clipboard: {
+        writeText: (text: string) => Promise<{ success: boolean }>;
+        readText: () => Promise<{ success: boolean; text: string }>;
+    };
 
     // Database
     db: {
@@ -3006,6 +3010,10 @@ const api: ElectronAPI = {
     sdCpp: {
         getStatus: () => ipcRenderer.invoke('sd-cpp:getStatus'),
         reinstall: () => ipcRenderer.invoke('sd-cpp:reinstall'),
+    },
+    clipboard: {
+        writeText: (text: string) => ipcRenderer.invoke('clipboard:writeText', text),
+        readText: () => ipcRenderer.invoke('clipboard:readText'),
     },
 };
 
