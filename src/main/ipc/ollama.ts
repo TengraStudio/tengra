@@ -153,7 +153,14 @@ export function registerOllamaIpc(options: {
             if (rateLimitService) {
                 await rateLimitService.waitForToken('ollama:chat');
             }
-            return await localAIService.ollamaChat(model, messages);
+
+            if (ollamaService) {
+                // Use robust OllamaService with abort support
+                return await ollamaService.chat(messages, model);
+            } else {
+                // Fallback to simple LocalAIService
+                return await localAIService.ollamaChat(model, messages);
+            }
         }, { message: { content: '', role: 'assistant' } }
     ));
 
@@ -169,17 +176,41 @@ export function registerOllamaIpc(options: {
                 await rateLimitService.waitForToken('ollama:chat');
             }
             try {
-                const res = await localAIService.ollamaChat(model, messages);
-                if (res.message.content) {
-                    event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
+                if (ollamaService) {
+                    // Use robust OllamaService with true streaming and abort support
+                    const response = await ollamaService.chatStream(
+                        messages,
+                        model,
+                        undefined, // tools
+                        (chunk) => {
+                            event.sender.send('ollama:streamChunk', { content: chunk, reasoning: '' });
+                        }
+                    );
+                    return { content: response.content, role: 'assistant' };
+                } else {
+                    // Fallback to LocalAIService (fake streaming)
+                    const res = await localAIService.ollamaChat(model, messages);
+                    if (res.message.content) {
+                        event.sender.send('ollama:streamChunk', { content: res.message.content, reasoning: '' });
+                    }
+                    return { content: res.message.content, role: 'assistant' };
                 }
-                return { content: res.message.content, role: 'assistant' };
             } catch (err) {
                 const message = getErrorMessage(err as Error);
                 appLogger.error('OllamaIPC', 'Chat Error', err as Error);
                 return { error: message };
             }
         }, { error: 'Service unavailable' }
+    ));
+
+    ipcMain.handle('ollama:abort', createSafeIpcHandler('ollama:abort',
+        async () => {
+            if (ollamaService) {
+                ollamaService.abort();
+                return { success: true };
+            }
+            return { success: false };
+        }, { success: false }
     ));
 
     ipcMain.handle('ollama:pull', createSafeIpcHandler('ollama:pull',
@@ -293,17 +324,17 @@ export function registerOllamaIpc(options: {
             }
             return await ollamaService.checkModelHealth(modelName);
         }, {
-            argsSchema: z.tuple([z.string().trim().min(1).max(MAX_MODEL_LENGTH)]),
-            responseSchema: z.object({
-                name: z.string(),
-                isHealthy: z.boolean(),
-                lastChecked: z.date(),
-                responseTimeMs: z.number(),
-                error: z.string().optional(),
-                size: z.number(),
-                digest: z.string()
-            })
-        }
+        argsSchema: z.tuple([z.string().trim().min(1).max(MAX_MODEL_LENGTH)]),
+        responseSchema: z.object({
+            name: z.string(),
+            isHealthy: z.boolean(),
+            lastChecked: z.date(),
+            responseTimeMs: z.number(),
+            error: z.string().optional(),
+            size: z.number(),
+            digest: z.string()
+        })
+    }
     ));
 
     ipcMain.handle('ollama:checkAllModelsHealth', createSafeIpcHandler('ollama:checkAllModelsHealth',
@@ -403,9 +434,9 @@ export function registerOllamaIpc(options: {
             ollamaService.startGPUMonitoring(intervalMs);
             return { success: true, intervalMs };
         }, {
-            argsSchema: z.tuple([z.number().int().min(1000).max(60000).optional()]),
-            responseSchema: z.object({ success: z.boolean(), intervalMs: z.number().int() })
-        }
+        argsSchema: z.tuple([z.number().int().min(1000).max(60000).optional()]),
+        responseSchema: z.object({ success: z.boolean(), intervalMs: z.number().int() })
+    }
     ));
 
     ipcMain.handle('ollama:stopGPUMonitoring', createSafeIpcHandler('ollama:stopGPUMonitoring',
@@ -430,13 +461,13 @@ export function registerOllamaIpc(options: {
             ollamaService.setGPUAlertThresholds(thresholds);
             return { success: true };
         }, {
-            argsSchema: z.tuple([z.object({
-                highMemoryPercent: z.number().min(1).max(100).optional(),
-                highTemperatureC: z.number().min(20).max(120).optional(),
-                lowMemoryMB: z.number().min(1).max(1024 * 256).optional()
-            }).default({})]),
-            responseSchema: z.object({ success: z.boolean() })
-        }
+        argsSchema: z.tuple([z.object({
+            highMemoryPercent: z.number().min(1).max(100).optional(),
+            highTemperatureC: z.number().min(20).max(120).optional(),
+            lowMemoryMB: z.number().min(1).max(1024 * 256).optional()
+        }).default({})]),
+        responseSchema: z.object({ success: z.boolean() })
+    }
     ));
 
     ipcMain.handle('ollama:getGPUAlertThresholds', createSafeIpcHandler('ollama:getGPUAlertThresholds',

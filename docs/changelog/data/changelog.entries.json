@@ -4,6 +4,83 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-13-ollama-abort-fix-and-chat-refactor",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "LLM",
+        "Ollama",
+        "IPC"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Ollama Abort Fix & Chat Refactor",
+          "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+          "items": [
+            "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
+            "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
+            "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
+          ]
+        },
+        "tr": {
+          "title": "Ollama İptal Düzeltmesi ve Sohbet İyileştirmesi",
+          "summary": "'ollama:abort' için kayıtlı işleyici yok hatası giderildi ve Ollama sohbet işleyicileri robust OllamaService kullanacak şekilde yeniden düzenlendi.",
+          "items": [
+            "- **IPC**: Sohbet isteklerinin iptalini desteklemek için eksik `ollama:abort` IPC işleyicisi eklendi.",
+            "- **Refaktör**: `ollama:chat` ve `ollama:chatStream`, `LocalAIService` yedeği yerine `OllamaService` kullanacak şekilde güncellendi, gerçek akış ve iptal yetenekleri sağlandı.",
+            "- **Testler**: İptal işlevselliğini doğrulamak ve `OllamaService` yöntemlerini doğru şekilde taklit etmek için entegrasyon testleri güncellendi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-13-ipc-security-audit-input-validation-sec-003",
+      "date": "2026-02-13",
+      "channel": "stable",
+      "type": "security",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "Agent",
+        "Terminal"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "IPC Security Audit: Input Validation (SEC-003)",
+          "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",
+          "items": [
+            "- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.",
+            "- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.",
+            "- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.",
+            "- **Type Safety**: Ensured explicit types for handler arguments and return policies."
+          ]
+        },
+        "tr": {
+          "title": "IPC Güvenlik Denetimi: Girdi Doğrulama (SEC-003)",
+          "summary": "Agent ve Terminal IPC işleyicileri için katı Zod şema doğrulaması uygulandı, enjeksiyon önlendi.",
+          "items": [
+            "- **Agent IPC**: Manuel doğrulama `createValidatedIpcHandler` ile değiştirildi ve 7 işleyici için Zod şemaları eklendi.",
+            "- **Terminal IPC**: `terminal.ts`, profil, oturum ve arama işlemleri için şemalarla `createValidatedIpcHandler` kullanacak şekilde yeniden düzenlendi.",
+            "- **Ortak Araç**: `createValidatedIpcHandler`, güvenli hata işleme geri dönüşü için `defaultValue` desteğiyle geliştirildi.",
+            "- **Tip Güvenliği**: İşleyici argümanları ve dönüş politikaları için açık tipler sağlandı."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-13-drop-validation",
       "date": "2026-02-13",
       "channel": "stable",
@@ -39,35 +116,6 @@
             "Büyük dosya DoS'unu önlemek için 10MB maksimum dosya boyutu sınırı uygulandı.",
             "Güvenlik için tehlikeli uzantı engelleme (.exe, .bat, .sh, .ps1, vb.) eklendi.",
             "Geçersiz dosyalar bırakıldığında toast hata bildirimi gösteriliyor."
-          ]
-        }
-      }
-    },
-    {
-      "id": "2026-02-13-drop-validation",
-      "date": "2026-02-13",
-      "channel": "stable",
-      "type": "feature",
-      "category": "chat",
-      "status": "completed",
-      "audience": [
-        "end-user"
-      ],
-      "components": [
-        "ChatInput",
-        "Attachments"
-      ],
-      "breaking": false,
-      "security": true,
-      "translations": {
-        "en": {
-          "title": "Drag and Drop File Validation",
-          "summary": "Added file validation for drag and drop to improve security and user experience.",
-          "items": [
-            "Added file type whitelist for supported formats (text, images, PDF, JSON, etc.)",
-            "Implemented 10MB file size limit with user-friendly error messages",
-            "Blocked dangerous file extensions (.exe, .bat, .sh, etc.)",
-            "Added toast notifications for validation errors"
           ]
         }
       }

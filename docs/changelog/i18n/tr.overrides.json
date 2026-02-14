@@ -1,4 +1,14 @@
 {
+  "2026-02-13-ipc-security-audit-input-validation-sec-003": {
+    "title": "IPC Güvenlik Denetimi: Girdi Doğrulama (SEC-003)",
+    "summary": "Agent ve Terminal IPC işleyicileri için katı Zod şema doğrulaması uygulandı, enjeksiyon önlendi, tip güvenliği sağlandı.",
+    "items": [
+      "- **Agent IPC**: Manuel doğrulama `createValidatedIpcHandler` ile değiştirildi ve 7 işleyici için Zod şemaları eklendi.",
+      "- **Terminal IPC**: `terminal.ts`, profil, oturum ve arama işlemleri için şemalarla `createValidatedIpcHandler` kullanacak şekilde yeniden düzenlendi.",
+      "- **Ortak Araç**: `createValidatedIpcHandler`, güvenli hata işleme geri dönüşü için `defaultValue` desteğiyle geliştirildi.",
+      "- **Tip Güvenliği**: İşleyici argümanları ve dönüş politikaları için açık tipler sağlandı."
+    ]
+  },
   "2026-02-13-drop-validation": {
     "title": "Dosya Ekleri için Damga Doğrulaması Eklendi",
     "summary": "Dosya türü doğrulama, boyut sınırları ve tehlikeli uzantı engelleme ile sürükle-bırak dosya ekleri için güvenlik artırıldı.",
@@ -3262,6 +3272,15 @@
       "- **IPC Kapsamı**: Sohbet, Proje ve Klasör işleyicilerini kapsayan `db.integration.test.ts` oluşturuldu.",
       "- **IPC Kapsamı**: Başlat, Durdur, Durum ve HIL işleyicilerini kapsayan `project-agent.integration.test.ts` oluşturuldu.",
       "- **Kod Zekası**: `code-intelligence.integration.test.ts` dosyasındaki TypeScript parametre tipi uyuşmazlıkları düzeltildi."
+    ]
+  },
+  "2026-02-13-ollama-abort-fix-and-chat-refactor": {
+    "title": "Ollama Abort Fix & Chat Refactor",
+    "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+    "items": [
+      "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
+      "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
+      "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { Bell, CalendarClock, CheckCheck, Clock3, History, Trash2 } from 'lucide-react';
+import { CalendarClock, CheckCheck, Clock3, History, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { useBreakpoint } from '@/lib/responsive';
@@ -40,10 +40,10 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
     const snapshot = useNotificationCenterStore(state => state);
     const activeNotifications = snapshot.active;
     const history = snapshot.history.slice(0, 50);
-    const unreadCount = useMemo(() => getUnreadNotificationCount(snapshot), [snapshot]);
+    // const unreadCount = useMemo(() => getUnreadNotificationCount(snapshot), [snapshot]);
 
     const visibleToasts = activeNotifications.length > 0 ? activeNotifications : toasts;
-    const scheduledCount = snapshot.scheduled.length;
+    // const scheduledCount = snapshot.scheduled.length;
 
     return (
         <>
@@ -53,26 +53,6 @@ export function ToastsContainer({ toasts, removeToast }: ToastsContainerProps) {
                     breakpoint === 'mobile' ? 'bottom-3 left-3 right-3' : 'bottom-6 right-6'
                 )}
             >
-                <button
-                    onClick={() => {
-                        const next = !isCenterOpen;
-                        setIsCenterOpen(next);
-                        if (next) {
-                            markAllNotificationsRead();
-                        }
-                    }}
-                    className="pointer-events-auto flex items-center gap-2 rounded-xl border border-border/60 bg-card/90 px-3 py-2 text-xs text-foreground shadow-lg hover:bg-card"
-                    title="Notification Center"
-                >
-                    <Bell className="w-4 h-4" />
-                    <span>Notifications</span>
-                    {(unreadCount > 0 || scheduledCount > 0) && (
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                            {unreadCount > 0 ? unreadCount : 0}
-                            {scheduledCount > 0 ? ` +${scheduledCount}` : ''}
-                        </span>
-                    )}
-                </button>
 
                 {visibleToasts.map(toast => {
                     const icon =
