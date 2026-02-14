@@ -412,7 +412,7 @@ type TerminalInstanceProps = {
     resolvedAppearance: ResolvedTerminalAppearance;
 };
 
-export const TerminalInstance = memo(function TerminalInstance({
+export const TerminalInstance = memo(({
     tab,
     isVisible,
     className,
@@ -422,7 +422,7 @@ export const TerminalInstance = memo(function TerminalInstance({
     onTerminalInstanceChange,
     appearance,
     resolvedAppearance,
-}: TerminalInstanceProps) {
+}: TerminalInstanceProps) => {
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const { xtermRef, fitAddonRef, isReady, hasError } = useTerminalSession(

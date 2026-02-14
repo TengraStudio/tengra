@@ -3282,5 +3282,21 @@
       "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
       "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
     ]
+  },
+  "2026-02-14-ui-chat-shimmer-animation": {
+    "title": "Chat Generation Shimmer Animation",
+    "summary": "Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.",
+    "items": [
+      "- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.",
+      "- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true."
+    ]
+  },
+  "2026-02-14-marketplace-ui-error-handling": {
+    "title": "Marketplace UI Error Handling",
+    "summary": "Added proper error handling and retry mechanism to the Model Marketplace grid.",
+    "items": [
+      "- **UI**: Display user-friendly error message when model fetching fails.",
+      "- **UX**: Added a retry button to recover from transient network or service errors."
+    ]
   }
 }

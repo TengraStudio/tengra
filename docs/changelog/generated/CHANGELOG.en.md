@@ -1,5 +1,25 @@
 # Changelog
 
+## [2026-02-14]
+
+### Marketplace UI Error Handling
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
+
+- **UI**: Display user-friendly error message when model fetching fails.
+- **UX**: Added a retry button to recover from transient network or service errors.
+
+### Chat Generation Shimmer Animation
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
+
+- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
+- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+
 ## [2026-02-13]
 
 ### Added Drop Validation for File Attachments
@@ -12,17 +32,6 @@ Added file type whitelist allowing text, JSON, PDF, images, and common document 
 Implemented 10MB maximum file size limit to prevent large file DoS.
 Added dangerous extension blocking (.exe, .bat, .sh, .ps1, etc.) for security.
 Shows toast error notification when invalid files are dropped.
-
-### Drag and Drop File Validation
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Added file validation for drag and drop to improve security and user experience.
-
-Added file type whitelist for supported formats (text, images, PDF, JSON, etc.)
-Implemented 10MB file size limit with user-friendly error messages
-Blocked dangerous file extensions (.exe, .bat, .sh, etc.)
-Added toast notifications for validation errors
 
 ### Core HuggingFace Integration & GGUF Support
 
@@ -47,6 +56,17 @@ Added toast notifications for validation errors
 - **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
 - **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.
 
+### IPC Security Audit: Input Validation (SEC-003)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.
+
+- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.
+- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.
+- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.
+- **Type Safety**: Ensured explicit types for handler arguments and return policies.
+
 ### LLM Service Improvements: Fallback & Caching
 
 - **Type**: feature
@@ -57,6 +77,16 @@ Added toast notifications for validation errors
 - **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
 - **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
 - **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+
+### Ollama Abort Fix & Chat Refactor
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+
+- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
+- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
+- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
 
 ### Improved Token Counting Accuracy
 

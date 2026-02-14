@@ -16,6 +16,14 @@ export function useModelManager(
     const [isLoading, setIsLoading] = useState(false);
 
     const selection = useModelSelection(appSettings, setAppSettings);
+    const {
+        selectedModel,
+        selectedProvider,
+        selectedModels,
+        setSelectedModel,
+        setSelectedProvider,
+        setSelectedModels
+    } = selection;
 
     const refreshModels = useCallback(async (bypassCache = false) => {
         setIsLoading(true);
@@ -53,18 +61,36 @@ export function useModelManager(
     ]);
 
     useEffect(() => {
-        if (appSettings?.general.defaultModel) {
-            selection.setSelectedModel(appSettings.general.defaultModel);
-            selection.setSelectedProvider(appSettings.general.lastProvider ?? '');
-
-            if (selection.selectedModels.length === 0) {
-                selection.setSelectedModels([{
-                    provider: appSettings.general.lastProvider ?? '',
-                    model: appSettings.general.defaultModel
-                }]);
-            }
+        const defaultModel = appSettings?.general.defaultModel;
+        if (!defaultModel) {
+            return;
         }
-    }, [appSettings, selection.selectedModels.length, selection]);
+
+        const lastProvider = appSettings.general.lastProvider ?? '';
+        if (selectedModel !== defaultModel) {
+            setSelectedModel(defaultModel);
+        }
+        if (selectedProvider !== lastProvider) {
+            setSelectedProvider(lastProvider);
+        }
+        if (selectedModels.length === 0) {
+            setSelectedModels([
+                {
+                    provider: lastProvider,
+                    model: defaultModel
+                }
+            ]);
+        }
+    }, [
+        appSettings?.general.defaultModel,
+        appSettings?.general.lastProvider,
+        selectedModel,
+        selectedProvider,
+        selectedModels.length,
+        setSelectedModel,
+        setSelectedProvider,
+        setSelectedModels
+    ]);
 
     const persistLastSelection = useCallback((provider: string, model: string) => {
         if (!appSettings) { return; }

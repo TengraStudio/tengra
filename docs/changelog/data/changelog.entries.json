@@ -39,6 +39,33 @@
       }
     },
     {
+      "id": "2026-02-14-marketplace-ui-error-handling",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ui",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Marketplace",
+        "UI"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Marketplace UI Error Handling",
+          "summary": "Added proper error handling and retry mechanism to the Model Marketplace grid.",
+          "items": [
+            "- **UI**: Display user-friendly error message when model fetching fails.",
+            "- **UX**: Added a retry button to recover from transient network or service errors."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-13-ollama-abort-fix-and-chat-refactor",
       "date": "2026-02-13",
       "channel": "stable",

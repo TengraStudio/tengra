@@ -11,9 +11,9 @@ import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
+import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
-import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
 import { DetachedTerminalWindow } from '@renderer/features/terminal/components/DetachedTerminalWindow';
@@ -104,6 +104,12 @@ function MainApp() {
     const { models, loadModels, selectedModel, setSelectedModel } = useModel();
     const { projects, selectedProject, setSelectedProject } = useProject();
     const appState = useAppState();
+    const {
+        currentView,
+        isSidebarCollapsed,
+        setIsSidebarCollapsed,
+        addToast,
+    } = appState;
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
     const [showExtensionModal, setShowExtensionModal] = useState(false);
@@ -112,10 +118,10 @@ function MainApp() {
 
     // Auto-collapse sidebar when entering projects view or selecting a project
     useEffect(() => {
-        if (appState.currentView === 'projects' || selectedProject) {
-            appState.setIsSidebarCollapsed(true);
+        if (currentView === 'projects' || selectedProject) {
+            setIsSidebarCollapsed(true);
         }
-    }, [appState, appState.currentView, selectedProject]);
+    }, [currentView, selectedProject, setIsSidebarCollapsed]);
 
     useEffect(() => {
         trackResponsiveBreakpoint({
@@ -125,9 +131,9 @@ function MainApp() {
         });
         document.documentElement.setAttribute('data-breakpoint', breakpoint);
         if (breakpoint === 'mobile') {
-            appState.setIsSidebarCollapsed(true);
+            setIsSidebarCollapsed(true);
         }
-    }, [appState, breakpoint]);
+    }, [breakpoint, setIsSidebarCollapsed]);
 
     const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
@@ -165,7 +171,7 @@ function MainApp() {
                 appState.setCurrentView(view);
             },
             onToggleSidebar: () => {
-                appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed);
+                setIsSidebarCollapsed(!isSidebarCollapsed);
             },
             onCloseModals: () => {
                 appState.setShowCommandPalette(false);
@@ -177,7 +183,15 @@ function MainApp() {
             showSSHManager: appState.showSSHManager,
             currentChatId,
         }),
-        [appState, createNewChat, currentChatId, handleClearChat, setSettingsCategory]
+        [
+            appState,
+            createNewChat,
+            currentChatId,
+            handleClearChat,
+            isSidebarCollapsed,
+            setIsSidebarCollapsed,
+            setSettingsCategory
+        ]
     );
 
     useKeyboardShortcuts(keyboardShortcutsConfig);
@@ -195,7 +209,7 @@ function MainApp() {
                 const provider = data.provider ?? 'provider';
                 const remaining = typeof data.remaining === 'number' ? data.remaining : 0;
                 const limit = typeof data.limit === 'number' ? data.limit : 0;
-                appState.addToast({
+                addToast({
                     type: 'warning',
                     message: `Rate limit warning (${provider}): ${remaining}/${limit} remaining`
                 });
@@ -206,7 +220,7 @@ function MainApp() {
                 remove();
             }
         };
-    }, [appState]);
+    }, [addToast]);
 
     useEffect(() => {
         if (selectedModel) {
@@ -223,10 +237,44 @@ function MainApp() {
     return (
         <ErrorBoundary
             fallback={
-                <ErrorFallback
-                    error={new Error(t('errors.unexpected'))}
-                    resetErrorBoundary={() => window.location.reload()}
-                />
+                <div className="app-container h-screen w-full overflow-hidden">
+                    <div className="absolute inset-0 flex flex-col overflow-hidden">
+                        <LayoutManager
+                            isSidebarCollapsed={appState.isSidebarCollapsed}
+                            setIsSidebarCollapsed={appState.setIsSidebarCollapsed}
+                            sidebarContent={
+                                <Sidebar
+                                    currentView={appState.currentView}
+                                    onChangeView={appState.setCurrentView}
+                                    isCollapsed={appState.isSidebarCollapsed}
+                                    toggleSidebar={() => {
+                                        appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed);
+                                    }}
+                                    onOpenSettings={(cat?: SettingsCategory) => {
+                                        appState.setCurrentView('settings');
+                                        if (cat) {
+                                            setSettingsCategory(cat);
+                                        }
+                                    }}
+                                    onSearch={() => { }}
+                                />
+                            }
+                            mainContent={
+                                <>
+                                    <AppHeader
+                                        currentView={appState.currentView}
+                                        settingsSearchQuery={settingsSearchQuery}
+                                        setSettingsSearchQuery={setSettingsSearchQuery}
+                                        onExtensionClick={() => setShowExtensionModal(true)}
+                                    />
+                                    <ErrorFallback
+                                        error={new Error(t('errors.unexpected'))}
+                                        resetErrorBoundary={() => window.location.reload()}
+                                    />
+                                </>
+                            } />
+                    </div>
+                </ div>
             }
         >
             <div className="app-container h-screen w-full overflow-hidden">
@@ -324,7 +372,7 @@ function MainApp() {
                                         setSettingsCategory(cat);
                                     }
                                 }}
-                                onSearch={() => {}}
+                                onSearch={() => { }}
                             />
                         }
                         mainContent={

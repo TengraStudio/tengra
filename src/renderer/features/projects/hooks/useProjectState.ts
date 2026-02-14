@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
     pushNotification,
@@ -29,12 +29,15 @@ export function useProjectState() {
     } | null>(null);
     const [entryName, setEntryName] = useState('');
 
-    const notifications = useNotificationCenterStore(snapshot =>
-        snapshot.active.map(notification => ({
-            id: notification.id,
-            type: notification.type === 'warning' ? 'info' : notification.type,
-            message: notification.message,
-        }))
+    const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
+    const notifications = useMemo(
+        () =>
+            activeNotifications.map(notification => ({
+                id: notification.id,
+                type: notification.type === 'warning' ? 'info' : notification.type,
+                message: notification.message,
+            })),
+        [activeNotifications]
     );
 
     useEffect(() => {

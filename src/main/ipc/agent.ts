@@ -2,105 +2,140 @@
  * IPC handlers for Agent Service
  */
 import { AgentService } from '@main/services/llm/agent.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
+import { z } from 'zod';
+
+const agentSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    systemPrompt: z.string().optional(),
+    tools: z.array(z.string()).optional(),
+    parentModel: z.string().optional(),
+    color: z.string().optional()
+});
+
+const createAgentPayloadSchema = z.object({
+    agent: agentSchema.optional(),
+    options: z.object({
+        cloneFromId: z.string().optional(),
+        createWorkspace: z.boolean().optional()
+    }).optional()
+});
+
+const deleteAgentOptionsSchema = z.object({
+    confirm: z.boolean().optional(),
+    softDelete: z.boolean().optional(),
+    backupBeforeDelete: z.boolean().optional()
+}).optional();
+
+const templateSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    systemPrompt: z.string().optional(),
+    tools: z.array(z.string()).optional(),
+    parentModel: z.string().optional(),
+    color: z.string().optional()
+});
+
+type CreateAgentPayload = z.infer<typeof createAgentPayloadSchema>;
+type DeleteAgentOptions = z.infer<typeof deleteAgentOptionsSchema>;
+type Template = z.infer<typeof templateSchema>;
 
 export function registerAgentIpc(agentService: AgentService) {
     /**
      * Get all agents
      * Returns an empty array on failure
      */
-    ipcMain.handle('agent:get-all', createSafeIpcHandler('agent:get-all', async () => {
-        const agents = await agentService.getAllAgents();
-        return safeJsonParse(JSON.stringify(agents), agents);
-    }, []));
+    ipcMain.handle('agent:get-all', createValidatedIpcHandler('agent:get-all', async () => {
+        return await agentService.getAllAgents();
+    }, { defaultValue: [] }));
 
     /**
      * Get a specific agent by ID
      * Returns null on failure
      */
-    ipcMain.handle('agent:get', createSafeIpcHandler('agent:get', async (_event, id: string) => {
+    ipcMain.handle('agent:get', createValidatedIpcHandler('agent:get', async (_event, id: string) => {
         return await agentService.getAgent(id);
-    }, null));
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([z.string()])
+    }));
 
-    ipcMain.handle('agent:create', createSafeIpcHandler('agent:create', async (_event, payload: unknown) => {
-        const data = safeJsonParse(JSON.stringify(payload), payload) as {
-            agent?: {
-                id?: string;
-                name?: string;
-                description?: string;
-                systemPrompt?: string;
-                tools?: string[];
-                parentModel?: string;
-                color?: string;
-            };
-            options?: { cloneFromId?: string; createWorkspace?: boolean };
-        };
-        if (!data.agent) {
+    ipcMain.handle('agent:create', createValidatedIpcHandler('agent:create', async (_event, payload: CreateAgentPayload) => {
+        const { agent, options } = payload;
+        if (!agent) {
             return { success: false, error: 'Invalid agent payload' };
         }
         return await agentService.createAgent({
-            id: data.agent.id,
-            name: data.agent.name ?? '',
-            description: data.agent.description ?? '',
-            systemPrompt: data.agent.systemPrompt ?? '',
-            tools: Array.isArray(data.agent.tools) ? data.agent.tools : [],
-            parentModel: data.agent.parentModel,
-            color: data.agent.color
-        }, data.options);
-    }, { success: false, error: 'create failed' }));
+            id: agent.id,
+            name: agent.name ?? '',
+            description: agent.description ?? '',
+            systemPrompt: agent.systemPrompt ?? '',
+            tools: agent.tools ?? [],
+            parentModel: agent.parentModel,
+            color: agent.color
+        }, options);
+    }, {
+        defaultValue: { success: false, error: 'create failed' },
+        argsSchema: z.tuple([createAgentPayloadSchema])
+    }));
 
-    ipcMain.handle('agent:delete', createSafeIpcHandler('agent:delete', async (_event, id: string, options: unknown) => {
-        const opts = safeJsonParse(JSON.stringify(options), options) as {
-            confirm?: boolean;
-            softDelete?: boolean;
-            backupBeforeDelete?: boolean;
-        } | undefined;
-        return await agentService.deleteAgent(id, opts ?? { confirm: false });
-    }, { success: false, error: 'delete failed' }));
+    ipcMain.handle('agent:delete', createValidatedIpcHandler('agent:delete', async (_event, id: string, options?: DeleteAgentOptions) => {
+        return await agentService.deleteAgent(id, options ?? { confirm: false });
+    }, {
+        defaultValue: { success: false, error: 'delete failed' },
+        argsSchema: z.tuple([z.string(), deleteAgentOptionsSchema])
+    }));
 
-    ipcMain.handle('agent:clone', createSafeIpcHandler('agent:clone', async (_event, id: string, newName?: string) => {
+    ipcMain.handle('agent:clone', createValidatedIpcHandler('agent:clone', async (_event, id: string, newName?: string) => {
         return await agentService.cloneAgent(id, newName);
-    }, { success: false, error: 'clone failed' }));
+    }, {
+        defaultValue: { success: false, error: 'clone failed' },
+        argsSchema: z.tuple([z.string(), z.string().optional()])
+    }));
 
-    ipcMain.handle('agent:export', createSafeIpcHandler('agent:export', async (_event, id: string) => {
+    ipcMain.handle('agent:export', createValidatedIpcHandler('agent:export', async (_event, id: string) => {
         const agent = await agentService.getAgent(id);
         if (!agent) {
             return null;
         }
         return agentService.exportAgent(agent);
-    }, null));
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([z.string()])
+    }));
 
-    ipcMain.handle('agent:import', createSafeIpcHandler('agent:import', async (_event, payload: string) => {
+    ipcMain.handle('agent:import', createValidatedIpcHandler('agent:import', async (_event, payload: string) => {
         return await agentService.importAgent(payload);
-    }, { success: false, error: 'import failed' }));
+    }, {
+        defaultValue: { success: false, error: 'import failed' },
+        argsSchema: z.tuple([z.string()])
+    }));
 
-    ipcMain.handle('agent:get-templates-library', createSafeIpcHandler('agent:get-templates-library', async () => {
+    ipcMain.handle('agent:get-templates-library', createValidatedIpcHandler('agent:get-templates-library', async () => {
         return await agentService.getAgentTemplatesLibrary();
-    }, []));
+    }, { defaultValue: [] }));
 
-    ipcMain.handle('agent:validate-template', createSafeIpcHandler('agent:validate-template', async (_event, template: unknown) => {
-        const data = safeJsonParse(JSON.stringify(template), template) as {
-            name?: string;
-            description?: string;
-            systemPrompt?: string;
-            tools?: string[];
-            parentModel?: string;
-            color?: string;
-        };
+    ipcMain.handle('agent:validate-template', createValidatedIpcHandler('agent:validate-template', async (_event, template: Template) => {
         return agentService.validateAgentTemplate({
-            name: data.name,
-            description: data.description,
-            systemPrompt: data.systemPrompt,
-            tools: Array.isArray(data.tools) ? data.tools : [],
-            parentModel: data.parentModel,
-            color: data.color
+            name: template.name,
+            description: template.description,
+            systemPrompt: template.systemPrompt,
+            tools: template.tools ?? [],
+            parentModel: template.parentModel,
+            color: template.color
         });
-    }, { valid: false, errors: ['validation failed'] }));
+    }, {
+        defaultValue: { valid: false, errors: ['validation failed'] },
+        argsSchema: z.tuple([templateSchema])
+    }));
 
-    ipcMain.handle('agent:recover', createSafeIpcHandler('agent:recover', async (_event, archiveId: string) => {
+    ipcMain.handle('agent:recover', createValidatedIpcHandler('agent:recover', async (_event, archiveId: string) => {
         return await agentService.recoverAgentFromArchive(archiveId);
-    }, { success: false, error: 'recovery failed' }));
+    }, {
+        defaultValue: { success: false, error: 'recovery failed' },
+        argsSchema: z.tuple([z.string()])
+    }));
 }
-

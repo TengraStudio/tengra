@@ -560,14 +560,16 @@ function registerLLMServices() {
     // Model Registry Bundle
     container.register(
         'modelRegistryDeps',
-        () => ({
+        hfs => ({
             processManager: container.resolve<ProcessManagerService>('processManagerService'),
             jobScheduler: container.resolve<JobSchedulerService>('jobSchedulerService'),
             settingsService: container.resolve<SettingsService>('settingsService'),
             proxyService: container.resolve<ProxyService>('proxyService'),
             eventBus: container.resolve<EventBusService>('eventBusService'),
-            localImageService: container.resolve<LocalImageService>('localImageService')
-        })
+            localImageService: container.resolve<LocalImageService>('localImageService'),
+            huggingFaceService: hfs as HuggingFaceService
+        }),
+        ['huggingFaceService']
     );
     container.register(
         'modelRegistryService',

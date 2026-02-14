@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { resolveWindowsCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 
@@ -303,8 +304,9 @@ function registerShellHandlers() {
 
     ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
         return new Promise(resolve => {
-            appLogger.info('WindowIPC', `Running command: ${command} ${args.join(' ')}`);
-            const child = spawn(command, args, {
+            const resolvedCommand = resolveWindowsCommand(command);
+            appLogger.info('WindowIPC', `Running command: ${resolvedCommand} ${args.join(' ')}`);
+            const child = spawn(resolvedCommand, args, {
                 cwd: cwd ?? process.cwd(),
                 shell: false, // Disable shell for security
             });

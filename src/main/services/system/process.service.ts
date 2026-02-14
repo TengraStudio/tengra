@@ -7,6 +7,7 @@ import * as path from 'path';
 import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
+import { resolveWindowsCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { quoteShellArg, safeJsonParse } from '@shared/utils/sanitize.util';
 import * as pty from 'node-pty';
@@ -40,8 +41,9 @@ export class ProcessService extends EventEmitter {
     // Spawn a process using node-pty for terminal integration
     spawn(command: string, args: string[], cwd: string): string {
         const id = crypto.randomUUID().substring(0, 8);
+        const resolvedCommand = resolveWindowsCommand(command);
 
-        appLogger.info('process.service', `[ProcessService] Spawning: ${command} ${args.join(' ')} in ${cwd} `);
+        appLogger.info('process.service', `[ProcessService] Spawning: ${resolvedCommand} ${args.join(' ')} in ${cwd} `);
 
         // Quote arguments to prevent injection
         const safeArgs = args.map(quoteShellArg);
@@ -54,7 +56,7 @@ export class ProcessService extends EventEmitter {
         // If file is 'powershell.exe', args should be the arguments to powershell.
         // If we want to run a command inside, we usually do: powershell.exe -c "command arg1 arg2"
 
-        const commandLine = `${command} ${safeArgs.join(' ')}`;
+        const commandLine = `${quoteShellArg(resolvedCommand)} ${safeArgs.join(' ')}`;
 
         const ptyProcess = pty.spawn(this.shell, ['-Command', commandLine], {
             name: 'xterm-color',

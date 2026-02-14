@@ -152,7 +152,24 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             });
 
             child.stderr.on('data', (data: Buffer) => {
-                appLogger.error('ProcessManager', `[${options.name}] stderr: ${data.toString()}`);
+                const message = data.toString().trim();
+                const lower = message.toLowerCase();
+                const looksLikeError = /\b(error|failed|fatal|panic|exception)\b/.test(lower);
+                const isKnownProgressLine =
+                    options.name === 'model-service' &&
+                    (lower.includes('scraping page') ||
+                        lower.includes('running initial ollama library scrape') ||
+                        lower.includes('reached page limit') ||
+                        lower.includes('scraped ') ||
+                        lower.includes('using http auth store on port') ||
+                        lower.includes('starting cliproxyapi'));
+
+                if (looksLikeError && !isKnownProgressLine) {
+                    appLogger.error('ProcessManager', `[${options.name}] stderr: ${message}`);
+                    return;
+                }
+
+                appLogger.warn('ProcessManager', `[${options.name}] stderr: ${message}`);
             });
 
             child.on('error', error => {

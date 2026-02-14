@@ -185,36 +185,55 @@ export function subscribeUiLayout(listener: Listener): () => void {
 }
 
 export function setActivityBarState(update: Partial<UiLayoutState['activityBar']>): void {
+    const next = {
+        ...state.activityBar,
+        ...update,
+    };
+    if (
+        next.activeItem === state.activityBar.activeItem &&
+        next.collapsed === state.activityBar.collapsed
+    ) {
+        return;
+    }
     state = {
         ...state,
-        activityBar: {
-            ...state.activityBar,
-            ...update,
-        },
+        activityBar: next,
     };
     persist();
     emit();
 }
 
 export function setAppShellState(update: Partial<UiLayoutState['appShell']>): void {
+    const next = {
+        ...state.appShell,
+        ...update,
+    };
+    if (next.sidebarCollapsed === state.appShell.sidebarCollapsed) {
+        return;
+    }
     state = {
         ...state,
-        appShell: {
-            ...state.appShell,
-            ...update,
-        },
+        appShell: next,
     };
     persist();
     emit();
 }
 
 export function setProjectShellState(update: Partial<UiLayoutState['projectShell']>): void {
+    const next = {
+        ...state.projectShell,
+        ...update,
+    };
+    if (
+        next.sidebarCollapsed === state.projectShell.sidebarCollapsed &&
+        next.agentPanelWidth === state.projectShell.agentPanelWidth &&
+        next.terminalHeight === state.projectShell.terminalHeight
+    ) {
+        return;
+    }
     state = {
         ...state,
-        projectShell: {
-            ...state.projectShell,
-            ...update,
-        },
+        projectShell: next,
     };
     persist();
     emit();

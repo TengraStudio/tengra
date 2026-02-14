@@ -182,6 +182,7 @@ interface ValidatedIpcHandlerOptions<T, Args extends unknown[]> extends IpcHandl
     responseSchema?: ZodType<T>;
     normalizeArgs?: (args: Args) => Args;
     schemaVersion?: number;
+    defaultValue?: T;
     onValidationFailed?: (context: {
         handlerName: string;
         schemaVersion?: number;
@@ -201,7 +202,12 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
     handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
     options: ValidatedIpcHandlerOptions<T, Args> = {}
 ) => {
-    const { argsSchema, responseSchema, normalizeArgs, schemaVersion, onValidationFailed, ...ipcOptions } = options;
+    const { argsSchema, responseSchema, normalizeArgs, schemaVersion, onValidationFailed, defaultValue, ...ipcOptions } = options;
+
+    if (defaultValue !== undefined && !ipcOptions.onError) {
+        ipcOptions.onError = () => defaultValue;
+    }
+
     return createIpcHandler<T, Args>(
         handlerName,
         async (event, ...args) => {

@@ -12,204 +12,110 @@ import {
     TerminalProfile,
     TerminalProfileService,
 } from '@main/services/terminal/terminal-profile.service';
-import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
+import { z } from 'zod';
 
 const MAX_COLS = 500;
 const MAX_ROWS = 200;
 const MAX_WRITE_SIZE = 1024 * 1024; // 1MB
 const MAX_SESSION_ID_LENGTH = 128;
 const SESSION_ID_PATTERN = /^[\w.:-]+$/;
-const MAX_HISTORY_QUERY_LENGTH = 256;
 
-interface TerminalCreateOptions {
-    id?: string;
-    shell?: string;
-    cwd?: string;
-    cols?: number;
-    rows?: number;
-    backendId?: string;
-    workspaceId?: string;
-    title?: string;
-    metadata?: Record<string, unknown>;
-}
+// --- Schemas ---
 
-interface TerminalSearchOptions {
-    regex?: boolean;
-    caseSensitive?: boolean;
-    limit?: number;
-}
+const sessionIdSchema = z.string().trim().min(1).max(MAX_SESSION_ID_LENGTH).regex(SESSION_ID_PATTERN);
 
-interface TerminalScrollbackFilterPayload {
-    query?: string;
-    fromLine?: number;
-    toLine?: number;
-    caseSensitive?: boolean;
-}
+const terminalProfileSchema = z.object({
+    id: z.string().max(128),
+    name: z.string().max(128),
+    shell: z.string(),
+    args: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.string().optional()).optional(),
+    icon: z.string().optional(),
+    isDefault: z.boolean().optional()
+}).passthrough();
 
-interface TerminalImportSessionOptions {
-    overwrite?: boolean;
-    sessionId?: string;
-}
+const createOptionsSchema = z.object({
+    id: sessionIdSchema.optional(),
+    shell: z.string().trim().optional(),
+    cwd: z.string().trim().optional(),
+    cols: z.number().int().min(1).max(MAX_COLS).optional(),
+    rows: z.number().int().min(1).max(MAX_ROWS).optional(),
+    backendId: z.string().trim().optional(),
+    workspaceId: z.string().optional(),
+    title: z.string().trim().max(120).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional()
+}).optional();
 
-interface TerminalTemplateSavePayload {
-    sessionId?: string;
-    templateId?: string;
-    name?: string;
-}
+const searchOptionsSchema = z.object({
+    regex: z.boolean().optional(),
+    caseSensitive: z.boolean().optional(),
+    limit: z.number().int().min(1).max(1000).optional()
+}).optional();
 
-function assertValidDimensions(cols?: number, rows?: number): void {
-    if (cols !== undefined && (!Number.isInteger(cols) || cols < 1 || cols > MAX_COLS)) {
-        throw new Error(`cols must be an integer between 1 and ${MAX_COLS}`);
-    }
-    if (rows !== undefined && (!Number.isInteger(rows) || rows < 1 || rows > MAX_ROWS)) {
-        throw new Error(`rows must be an integer between 1 and ${MAX_ROWS}`);
-    }
-}
+const exportSearchOptionsSchema = z.object({
+    regex: z.boolean().optional(),
+    caseSensitive: z.boolean().optional(),
+    limit: z.number().int().min(1).max(1000).optional(),
+    exportPath: z.string().optional(),
+    format: z.string().optional()
+}).optional();
 
-function assertValidSessionId(value: unknown): string {
-    if (typeof value !== 'string') {
-        throw new Error('sessionId must be a string');
-    }
+const scrollbackFilterSchema = z.object({
+    query: z.string().optional(),
+    fromLine: z.number().int().optional(),
+    toLine: z.number().int().optional(),
+    caseSensitive: z.boolean().optional()
+});
 
-    const sessionId = value.trim();
-    if (!sessionId) {
-        throw new Error('sessionId cannot be empty');
-    }
-    if (sessionId.length > MAX_SESSION_ID_LENGTH) {
-        throw new Error(`sessionId must be at most ${MAX_SESSION_ID_LENGTH} characters`);
-    }
-    if (!SESSION_ID_PATTERN.test(sessionId)) {
-        throw new Error('sessionId contains invalid characters');
-    }
+const importSessionOptionsSchema = z.object({
+    overwrite: z.boolean().optional(),
+    sessionId: sessionIdSchema.optional()
+}).optional();
 
-    return sessionId;
-}
+const templateSavePayloadSchema = z.object({
+    sessionId: sessionIdSchema.optional(),
+    templateId: z.string().trim().optional(),
+    name: z.string().trim().optional()
+});
 
-function parseCreateOptions(value: unknown): TerminalCreateOptions {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
+const suggestionOptionsSchema = z.object({
+    command: z.string(),
+    shell: z.string(),
+    cwd: z.string(),
+    historyLimit: z.number().int().optional()
+});
 
-    const raw = value as Record<string, unknown>;
-    const options: TerminalCreateOptions = {};
+const explainCommandOptionsSchema = z.object({
+    command: z.string(),
+    shell: z.string(),
+    cwd: z.string().optional()
+});
 
-    if (raw.id !== undefined) {
-        options.id = assertValidSessionId(raw.id);
-    }
+const explainErrorOptionsSchema = z.object({
+    errorOutput: z.string(),
+    command: z.string().optional(),
+    shell: z.string(),
+    cwd: z.string().optional()
+});
 
-    if (typeof raw.shell === 'string') {
-        const shell = raw.shell.trim();
-        if (shell) {
-            options.shell = shell;
-        }
-    }
+const fixErrorOptionsSchema = z.object({
+    errorOutput: z.string(),
+    command: z.string(),
+    shell: z.string(),
+    cwd: z.string().optional()
+});
 
-    if (typeof raw.cwd === 'string') {
-        const cwd = raw.cwd.trim();
-        if (cwd) {
-            options.cwd = cwd;
-        }
-    }
-    if (typeof raw.title === 'string') {
-        const title = raw.title.trim();
-        if (title) {
-            options.title = title.slice(0, 120);
-        }
-    }
+// --- Types ---
+type CreateOptions = z.infer<typeof createOptionsSchema>;
+type SearchOptions = z.infer<typeof searchOptionsSchema>;
+type ScrollbackFilter = z.infer<typeof scrollbackFilterSchema>;
+type ImportSessionOptions = z.infer<typeof importSessionOptionsSchema>;
+type TemplateSavePayload = z.infer<typeof templateSavePayloadSchema>;
 
-    if (raw.cols !== undefined) {
-        options.cols = Number(raw.cols);
-    }
-    if (raw.rows !== undefined) {
-        options.rows = Number(raw.rows);
-    }
-
-    if (typeof raw.backendId === 'string') {
-        const backendId = raw.backendId.trim();
-        if (backendId) {
-            options.backendId = backendId;
-        }
-    }
-    if (typeof raw.workspaceId === 'string') {
-        options.workspaceId = raw.workspaceId;
-    }
-    if (raw.metadata !== undefined && typeof raw.metadata === 'object' && raw.metadata !== null) {
-        options.metadata = raw.metadata as Record<string, unknown>;
-    }
-
-    assertValidDimensions(options.cols, options.rows);
-    return options;
-}
-
-function parseHistoryQuery(value: unknown): string {
-    if (typeof value !== 'string') {
-        return '';
-    }
-    return value.trim().slice(0, MAX_HISTORY_QUERY_LENGTH);
-}
-
-function parseHistoryLimit(value: unknown): number {
-    const numeric = Number(value);
-    if (!Number.isInteger(numeric)) {
-        return 100;
-    }
-    return Math.max(1, Math.min(numeric, 500));
-}
-
-function parseSearchOptions(value: unknown): TerminalSearchOptions {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-    const raw = value as Record<string, unknown>;
-    const limitRaw = Number(raw.limit);
-    return {
-        regex: raw.regex === true,
-        caseSensitive: raw.caseSensitive === true,
-        limit: Number.isInteger(limitRaw) ? Math.max(1, Math.min(limitRaw, 1000)) : undefined,
-    };
-}
-
-function parseScrollbackFilterPayload(value: unknown): TerminalScrollbackFilterPayload {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-    const raw = value as Record<string, unknown>;
-    return {
-        query: typeof raw.query === 'string' ? raw.query : undefined,
-        fromLine: Number.isInteger(Number(raw.fromLine)) ? Number(raw.fromLine) : undefined,
-        toLine: Number.isInteger(Number(raw.toLine)) ? Number(raw.toLine) : undefined,
-        caseSensitive: raw.caseSensitive === true,
-    };
-}
-
-function parseImportSessionOptions(value: unknown): TerminalImportSessionOptions {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-    const raw = value as Record<string, unknown>;
-    return {
-        overwrite: raw.overwrite === true,
-        sessionId: typeof raw.sessionId === 'string' ? raw.sessionId.trim() : undefined,
-    };
-}
-
-function parseTemplateSavePayload(value: unknown): TerminalTemplateSavePayload {
-    if (!value || typeof value !== 'object') {
-        return {};
-    }
-    const raw = value as Record<string, unknown>;
-    return {
-        sessionId: typeof raw.sessionId === 'string' ? raw.sessionId.trim() : undefined,
-        templateId: typeof raw.templateId === 'string' ? raw.templateId.trim() : undefined,
-        name: typeof raw.name === 'string' ? raw.name.trim() : undefined,
-    };
-}
-
-function buildSessionId(): string {
-    return `term-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
+// --- Helpers ---
 
 function broadcastTerminalEvent(
     getWindow: () => BrowserWindow | null,
@@ -232,158 +138,145 @@ function broadcastTerminalEvent(
     }
 }
 
-/**
- * Registers all terminal IPC channels with runtime validation and safe fallbacks.
- */
-export function registerTerminalIpc(
-    getWindow: () => BrowserWindow | null,
-    terminalService: TerminalService,
-    profileService: TerminalProfileService,
-    smartService: TerminalSmartService,
-    dockerService: DockerService
-) {
-    ipcMain.setMaxListeners(60);
-    appLogger.info('terminal', '[IPC] Terminal service registered');
+function buildSessionId(): string {
+    return `term-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+}
 
-    // Profile Management
+// --- Registration Functions ---
+
+function registerProfileIpc(profileService: TerminalProfileService) {
     ipcMain.handle(
         'terminal:getProfiles',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getProfiles',
             async () => {
                 return profileService.getProfiles();
             },
-            []
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
         'terminal:saveProfile',
-        createIpcHandler('terminal:saveProfile', async (_event, profile: TerminalProfile) => {
-            return profileService.saveProfile(profile);
-        })
+        createValidatedIpcHandler(
+            'terminal:saveProfile',
+            async (_event, profile: TerminalProfile) => {
+                return profileService.saveProfile(profile);
+            },
+            { 
+                defaultValue: undefined,
+                argsSchema: z.tuple([terminalProfileSchema])
+            }
+        )
     );
 
     ipcMain.handle(
         'terminal:deleteProfile',
-        createIpcHandler('terminal:deleteProfile', async (_event, id: string) => {
-            return profileService.deleteProfile(id);
-        })
+        createValidatedIpcHandler(
+            'terminal:deleteProfile',
+            async (_event, id: string) => {
+                return profileService.deleteProfile(id);
+            },
+            { 
+                defaultValue: undefined,
+                argsSchema: z.tuple([z.string()])
+            }
+        )
     );
 
     ipcMain.handle(
         'terminal:validateProfile',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:validateProfile',
             async (_event, profile: TerminalProfile) => {
                 return profileService.validateProfile(profile);
             },
-            { valid: false, errors: ['validation failed'] }
+            { 
+                defaultValue: { valid: false, errors: ['validation failed'] },
+                argsSchema: z.tuple([terminalProfileSchema])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:getProfileTemplates',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getProfileTemplates',
             async () => {
                 return profileService.getProfileTemplates();
             },
-            []
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
         'terminal:exportProfiles',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:exportProfiles',
             async () => {
                 return profileService.exportProfiles();
             },
-            ''
+            { defaultValue: '' }
         )
     );
 
     ipcMain.handle(
         'terminal:exportProfileShareCode',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:exportProfileShareCode',
-            async (_event, profileIdRaw: unknown) => {
-                if (typeof profileIdRaw !== 'string' || profileIdRaw.trim().length === 0) {
-                    throw new Error('profileId is required');
-                }
-                return profileService.exportProfileShareCode(profileIdRaw.trim());
+            async (_event, profileId: string) => {
+                return profileService.exportProfileShareCode(profileId);
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([z.string().min(1, 'profileId is required')])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:importProfileShareCode',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:importProfileShareCode',
-            async (_event, shareCodeRaw: unknown, optionsRaw?: unknown) => {
-                const shareCode = typeof shareCodeRaw === 'string' ? shareCodeRaw : '';
-                const options =
-                    optionsRaw && typeof optionsRaw === 'object'
-                        ? { overwrite: (optionsRaw as Record<string, unknown>).overwrite === true }
-                        : undefined;
+            async (_event, shareCode: string, options?: { overwrite?: boolean }) => {
                 return profileService.importProfileShareCode(shareCode, options);
             },
-            { success: false, imported: false, error: 'import failed' }
+            { 
+                defaultValue: { success: false, imported: false, error: 'import failed' },
+                argsSchema: z.tuple([
+                    z.string(), 
+                    z.object({ overwrite: z.boolean().optional() }).optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:importProfiles',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:importProfiles',
             async (_event, payload: string, options?: { overwrite?: boolean }) => {
                 return profileService.importProfiles(payload, options);
             },
-            { success: false, imported: 0, skipped: 0, errors: ['import failed'] }
+            { 
+                defaultValue: { success: false, imported: 0, skipped: 0, errors: ['import failed'] },
+                argsSchema: z.tuple([
+                    z.string(), 
+                    z.object({ overwrite: z.boolean().optional() }).optional()
+                ])
+            }
         )
     );
+}
 
-    // Check availability
-    ipcMain.handle(
-        'terminal:isAvailable',
-        createIpcHandler('terminal:isAvailable', async () => {
-            return terminalService.isAvailable();
-        })
-    );
-
-    // Get available shells
-    ipcMain.handle(
-        'terminal:getShells',
-        createSafeIpcHandler(
-            'terminal:getShells',
-            async () => {
-                return terminalService.getAvailableShells();
-            },
-            []
-        )
-    );
-
-    // Get available terminal backends
-    ipcMain.handle(
-        'terminal:getBackends',
-        createSafeIpcHandler(
-            'terminal:getBackends',
-            async () => {
-                return terminalService.getAvailableBackends();
-            },
-            []
-        )
-    );
-
+function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
     // Create session
     ipcMain.handle(
         'terminal:create',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'terminal:create',
-            async (_event: IpcMainInvokeEvent, optionsRaw: unknown) => {
-                const options = parseCreateOptions(optionsRaw);
+            async (_event, optionsRaw?: CreateOptions) => {
+                const options = optionsRaw ?? {};
                 const sessionId = options.id ?? buildSessionId();
 
                 appLogger.info('ipc', `terminal:create called for session ${sessionId}`);
@@ -400,6 +293,10 @@ export function registerTerminalIpc(
                     },
                 });
                 return success ? sessionId : null;
+            },
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([createOptionsSchema])
             }
         )
     );
@@ -407,168 +304,265 @@ export function registerTerminalIpc(
     // Close session
     ipcMain.handle(
         'terminal:close',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:close',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
+            async (_event, sessionId: string) => {
                 return terminalService.kill(sessionId);
             },
-            false
-        )
-    );
-
-    // Write to session
-    ipcMain.handle(
-        'terminal:write',
-        createSafeIpcHandler(
-            'terminal:write',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, data: string) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                if (typeof data !== 'string') {
-                    throw new Error('data must be a string');
-                }
-                if (data.length > MAX_WRITE_SIZE) {
-                    throw new Error('data exceeds maximum size of 1MB');
-                }
-
-                return withRateLimit('terminal', async () =>
-                    terminalService.write(sessionId, data)
-                );
-            },
-            false
-        )
-    );
-
-    // Resize session
-    ipcMain.handle(
-        'terminal:resize',
-        createSafeIpcHandler(
-            'terminal:resize',
-            async (
-                _event: IpcMainInvokeEvent,
-                sessionIdRaw: unknown,
-                cols: number,
-                rows: number
-            ) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                assertValidDimensions(cols, rows);
-                return terminalService.resize(sessionId, cols, rows);
-            },
-            false
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([sessionIdSchema])
+            }
         )
     );
 
     // Kill session
     ipcMain.handle(
         'terminal:kill',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:kill',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
+            async (_event, sessionId: string) => {
                 return terminalService.kill(sessionId);
             },
-            false
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([sessionIdSchema])
+            }
         )
     );
 
     // Get active sessions
     ipcMain.handle(
         'terminal:getSessions',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSessions',
             async () => {
                 return terminalService.getActiveSessions();
             },
-            []
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
         'terminal:getSnapshotSessions',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSnapshotSessions',
             async () => {
                 return terminalService.getSessionSnapshots();
             },
-            []
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
+        'terminal:restoreSnapshotSession',
+        createValidatedIpcHandler(
+            'terminal:restoreSnapshotSession',
+            async (_event, snapshotId: string) => {
+                return terminalService.restoreSnapshotSession({
+                    snapshotId,
+                    onData: (data: string) => {
+                        broadcastTerminalEvent(getWindow, 'terminal:data', { id: snapshotId, data });
+                        broadcastTerminalEvent(getWindow, `terminal:data:${snapshotId}`, data);
+                    },
+                    onExit: (code: number) => {
+                        broadcastTerminalEvent(getWindow, 'terminal:exit', { id: snapshotId, code });
+                    },
+                });
+            },
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([sessionIdSchema])
+            }
+        )
+    );
+}
+
+function registerSessionIOIpc(terminalService: TerminalService) {
+    // Write to session
+    ipcMain.handle(
+        'terminal:write',
+        createValidatedIpcHandler(
+            'terminal:write',
+            async (_event, sessionId: string, data: string) => {
+                return withRateLimit('terminal', async () =>
+                    terminalService.write(sessionId, data)
+                );
+            },
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([
+                    sessionIdSchema, 
+                    z.string().max(MAX_WRITE_SIZE, 'Data exceeds maximum size of 1MB')
+                ])
+            }
+        )
+    );
+
+    // Resize session
+    ipcMain.handle(
+        'terminal:resize',
+        createValidatedIpcHandler(
+            'terminal:resize',
+            async (
+                _event,
+                sessionId: string,
+                cols: number,
+                rows: number
+            ) => {
+                return terminalService.resize(sessionId, cols, rows);
+            },
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.number().int().min(1).max(MAX_COLS),
+                    z.number().int().min(1).max(MAX_ROWS)
+                ])
+            }
+        )
+    );
+
+    // Read session buffer
+    ipcMain.handle(
+        'terminal:readBuffer',
+        createValidatedIpcHandler(
+            'terminal:readBuffer',
+            async (_event, sessionId: string) => {
+                return terminalService.getSessionBuffer(sessionId);
+            },
+            { 
+                defaultValue: '',
+                argsSchema: z.tuple([sessionIdSchema])
+            }
+        )
+    );
+
+    ipcMain.handle(
+        'terminal:setSessionTitle',
+        createValidatedIpcHandler(
+            'terminal:setSessionTitle',
+            async (_event, sessionId: string, title: string) => {
+                return terminalService.setSessionTitle(sessionId, title);
+            },
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([sessionIdSchema, z.string()])
+            }
+        )
+    );
+}
+
+function registerSessionExportIpc(terminalService: TerminalService) {
+    ipcMain.handle(
         'terminal:exportSession',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:exportSession',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, optionsRaw?: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const includeScrollback =
-                    optionsRaw && typeof optionsRaw === 'object'
-                        ? (optionsRaw as Record<string, unknown>).includeScrollback === true
-                        : false;
+            async (_event, sessionId: string, options?: { includeScrollback?: boolean }) => {
+                const includeScrollback = options?.includeScrollback ?? false;
                 return terminalService.exportSession(sessionId, { includeScrollback });
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.object({ includeScrollback: z.boolean().optional() }).optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:importSession',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:importSession',
-            async (_event: IpcMainInvokeEvent, payloadRaw: unknown, optionsRaw?: unknown) => {
-                const payload = typeof payloadRaw === 'string' ? payloadRaw : '';
-                const options = parseImportSessionOptions(optionsRaw);
+            async (_event, payload: string, options?: ImportSessionOptions) => {
                 return terminalService.importSession(payload, options);
             },
-            { success: false, error: 'import failed' }
+            { 
+                defaultValue: { success: false, error: 'import failed' },
+                argsSchema: z.tuple([
+                    z.string(),
+                    importSessionOptionsSchema
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:createSessionShareCode',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:createSessionShareCode',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, optionsRaw?: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const includeScrollback =
-                    optionsRaw && typeof optionsRaw === 'object'
-                        ? (optionsRaw as Record<string, unknown>).includeScrollback === true
-                        : false;
+            async (_event, sessionId: string, options?: { includeScrollback?: boolean }) => {
+                const includeScrollback = options?.includeScrollback ?? false;
                 return terminalService.generateSessionShareCode(sessionId, { includeScrollback });
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.object({ includeScrollback: z.boolean().optional() }).optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:importSessionShareCode',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:importSessionShareCode',
-            async (_event: IpcMainInvokeEvent, shareCodeRaw: unknown, optionsRaw?: unknown) => {
-                const shareCode = typeof shareCodeRaw === 'string' ? shareCodeRaw : '';
-                const options = parseImportSessionOptions(optionsRaw);
+            async (_event, shareCode: string, options?: ImportSessionOptions) => {
                 return terminalService.importSessionShareCode(shareCode, options);
             },
-            { success: false, error: 'import failed' }
+            { 
+                defaultValue: { success: false, error: 'import failed' },
+                argsSchema: z.tuple([
+                    z.string(),
+                    importSessionOptionsSchema
+                ])
+            }
         )
     );
 
     ipcMain.handle(
+        'terminal:exportScrollback',
+        createValidatedIpcHandler(
+            'terminal:exportScrollback',
+            async (
+                _event,
+                sessionId: string,
+                exportPath?: string
+            ) => {
+                return terminalService.exportSessionScrollback(sessionId, exportPath);
+            },
+            { 
+                defaultValue: { success: false, error: 'export failed' },
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.string().optional()
+                ])
+            }
+        )
+    );
+}
+
+function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
+    ipcMain.handle(
         'terminal:getSessionTemplates',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSessionTemplates',
             async () => {
                 return terminalService.getSessionTemplates();
             },
-            []
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
         'terminal:saveSessionTemplate',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:saveSessionTemplate',
-            async (_event: IpcMainInvokeEvent, payloadRaw: unknown) => {
-                const payload = parseTemplateSavePayload(payloadRaw);
+            async (_event, payload: TemplateSavePayload) => {
                 if (!payload.sessionId) {
                     throw new Error('sessionId is required');
                 }
@@ -577,49 +571,45 @@ export function registerTerminalIpc(
                     name: payload.name,
                 });
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([templateSavePayloadSchema])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:deleteSessionTemplate',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:deleteSessionTemplate',
-            async (_event: IpcMainInvokeEvent, templateIdRaw: unknown) => {
-                if (typeof templateIdRaw !== 'string' || templateIdRaw.trim().length === 0) {
-                    throw new Error('templateId is required');
-                }
-                return terminalService.deleteSessionTemplate(templateIdRaw.trim());
+            async (_event, templateId: string) => {
+                return terminalService.deleteSessionTemplate(templateId.trim());
             },
-            false
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([z.string().min(1, 'templateId is required')])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:createFromSessionTemplate',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:createFromSessionTemplate',
             async (
-                _event: IpcMainInvokeEvent,
-                templateIdRaw: unknown,
-                optionsRaw?: unknown
+                _event,
+                templateId: string,
+                optionsRaw?: { sessionId?: string; title?: string }
             ) => {
-                if (typeof templateIdRaw !== 'string' || templateIdRaw.trim().length === 0) {
-                    throw new Error('templateId is required');
-                }
-                const options =
-                    optionsRaw && typeof optionsRaw === 'object'
-                        ? (optionsRaw as Record<string, unknown>)
-                        : {};
-                const requestedSessionIdRaw =
-                    typeof options.sessionId === 'string' ? options.sessionId.trim() : undefined;
+                const options = optionsRaw ?? {};
+                const requestedSessionIdRaw = options.sessionId?.trim();
                 const requestedSessionId =
                     requestedSessionIdRaw && requestedSessionIdRaw.length > 0
                         ? requestedSessionIdRaw
                         : buildSessionId();
-                const title = typeof options.title === 'string' ? options.title.trim() : undefined;
+                const title = options.title?.trim();
                 let activeSessionId = requestedSessionId;
-                const createdSessionId = await terminalService.restoreSessionTemplate(templateIdRaw.trim(), {
+                const createdSessionId = await terminalService.restoreSessionTemplate(templateId.trim(), {
                     sessionId: requestedSessionId,
                     title,
                     onData: (data: string) => {
@@ -639,13 +629,22 @@ export function registerTerminalIpc(
                 activeSessionId = createdSessionId ?? activeSessionId;
                 return createdSessionId;
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([
+                    z.string().min(1, 'templateId is required'),
+                    z.object({
+                        sessionId: z.string().optional(),
+                        title: z.string().optional()
+                    }).passthrough().optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:restoreAllSnapshots',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:restoreAllSnapshots',
             async () => {
                 return terminalService.restoreAllSnapshots({
@@ -658,295 +657,323 @@ export function registerTerminalIpc(
                     },
                 });
             },
-            { restored: 0, failed: 0, sessionIds: [] }
+            { defaultValue: { restored: 0, failed: 0, sessionIds: [] } }
         )
     );
+}
 
-    ipcMain.handle(
-        'terminal:restoreSnapshotSession',
-        createSafeIpcHandler(
-            'terminal:restoreSnapshotSession',
-            async (_event: IpcMainInvokeEvent, snapshotIdRaw: unknown) => {
-                const snapshotId = assertValidSessionId(snapshotIdRaw);
-                return terminalService.restoreSnapshotSession({
-                    snapshotId,
-                    onData: (data: string) => {
-                        broadcastTerminalEvent(getWindow, 'terminal:data', { id: snapshotId, data });
-                        broadcastTerminalEvent(getWindow, `terminal:data:${snapshotId}`, data);
-                    },
-                    onExit: (code: number) => {
-                        broadcastTerminalEvent(getWindow, 'terminal:exit', { id: snapshotId, code });
-                    },
-                });
-            },
-            false
-        )
-    );
-
-    // Read session buffer
-    ipcMain.handle(
-        'terminal:readBuffer',
-        createSafeIpcHandler(
-            'terminal:readBuffer',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                return terminalService.getSessionBuffer(sessionId);
-            },
-            ''
-        )
-    );
-
-    ipcMain.handle(
-        'terminal:setSessionTitle',
-        createSafeIpcHandler(
-            'terminal:setSessionTitle',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, titleRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const title = typeof titleRaw === 'string' ? titleRaw : '';
-                return terminalService.setSessionTitle(sessionId, title);
-            },
-            false
-        )
-    );
-
+function registerSessionSearchIpc(terminalService: TerminalService) {
     ipcMain.handle(
         'terminal:searchScrollback',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:searchScrollback',
             async (
-                _event: IpcMainInvokeEvent,
-                sessionIdRaw: unknown,
-                queryRaw: unknown,
-                optionsRaw: unknown
+                _event,
+                sessionId: string,
+                query: string,
+                options?: SearchOptions
             ) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const query = typeof queryRaw === 'string' ? queryRaw : '';
-                const options = parseSearchOptions(optionsRaw);
                 return terminalService.searchSessionScrollback(sessionId, query, options);
             },
-            []
-        )
-    );
-
-    ipcMain.handle(
-        'terminal:exportScrollback',
-        createSafeIpcHandler(
-            'terminal:exportScrollback',
-            async (
-                _event: IpcMainInvokeEvent,
-                sessionIdRaw: unknown,
-                exportPathRaw?: unknown
-            ) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const exportPath = typeof exportPathRaw === 'string' ? exportPathRaw : undefined;
-                return terminalService.exportSessionScrollback(sessionId, exportPath);
-            },
-            { success: false, error: 'export failed' }
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.string(),
+                    searchOptionsSchema
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:getSessionAnalytics',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSessionAnalytics',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
+            async (_event, sessionId: string) => {
                 return terminalService.getSessionAnalytics(sessionId);
             },
-            { sessionId: '', bytes: 0, lineCount: 0, commandCount: 0, updatedAt: 0 }
+            { 
+                defaultValue: { sessionId: '', bytes: 0, lineCount: 0, commandCount: 0, updatedAt: 0 },
+                argsSchema: z.tuple([sessionIdSchema])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:getSearchAnalytics',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSearchAnalytics',
             async () => {
                 return terminalService.getSearchAnalytics();
             },
-            { totalSearches: 0, regexSearches: 0, plainSearches: 0, lastSearchAt: 0 }
+            { defaultValue: { totalSearches: 0, regexSearches: 0, plainSearches: 0, lastSearchAt: 0 } }
         )
     );
 
     ipcMain.handle(
         'terminal:getSearchSuggestions',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSearchSuggestions',
-            async (_event: IpcMainInvokeEvent, queryRaw?: unknown, limitRaw?: unknown) => {
-                const query = typeof queryRaw === 'string' ? queryRaw : '';
-                const limit = Number.isInteger(Number(limitRaw)) ? Number(limitRaw) : 10;
-                return terminalService.getSearchSuggestions(query, limit);
+            async (_event, query?: string, limit?: number) => {
+                return terminalService.getSearchSuggestions(query ?? '', limit ?? 10);
             },
-            []
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([
+                    z.string().optional(),
+                    z.number().int().optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:exportSearchResults',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:exportSearchResults',
             async (
-                _event: IpcMainInvokeEvent,
-                sessionIdRaw: unknown,
-                queryRaw: unknown,
-                optionsRaw?: unknown,
-                exportPathRaw?: unknown,
-                formatRaw?: unknown
+                _event,
+                sessionId: string,
+                query: string,
+                options: (SearchOptions & { exportPath?: string; format?: string }) | undefined
             ) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const query = typeof queryRaw === 'string' ? queryRaw : '';
-                const options = parseSearchOptions(optionsRaw);
-                const exportPath = typeof exportPathRaw === 'string' ? exportPathRaw : undefined;
-                const format = formatRaw === 'txt' ? 'txt' : 'json';
+                const { exportPath, format, ...searchOptions } = options ?? {};
+                const fmt = format === 'txt' ? 'txt' : 'json';
                 return terminalService.exportSearchResults(
                     sessionId,
                     query,
-                    options,
+                    searchOptions,
                     exportPath,
-                    format
+                    fmt
                 );
             },
-            { success: false, error: 'export failed' }
+            { 
+                defaultValue: { success: false, error: 'export failed' },
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.string(),
+                    exportSearchOptionsSchema
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:addScrollbackMarker',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:addScrollbackMarker',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, labelRaw: unknown, lineNumberRaw?: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const label = typeof labelRaw === 'string' ? labelRaw : '';
-                const lineNumber = Number.isInteger(Number(lineNumberRaw)) ? Number(lineNumberRaw) : undefined;
+            async (_event, sessionId: string, label: string, lineNumber?: number) => {
                 return terminalService.addScrollbackMarker(sessionId, label, lineNumber);
             },
-            null
+            { 
+                defaultValue: null,
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    z.string(),
+                    z.number().int().optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:listScrollbackMarkers',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:listScrollbackMarkers',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw?: unknown) => {
-                const sessionId =
-                    typeof sessionIdRaw === 'string' && sessionIdRaw.trim().length > 0
-                        ? assertValidSessionId(sessionIdRaw)
-                        : undefined;
+            async (_event, sessionId?: string) => {
                 return terminalService.listScrollbackMarkers(sessionId);
             },
-            []
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([sessionIdSchema.optional()])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:deleteScrollbackMarker',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:deleteScrollbackMarker',
-            async (_event: IpcMainInvokeEvent, markerIdRaw: unknown) => {
-                if (typeof markerIdRaw !== 'string' || markerIdRaw.trim().length === 0) {
-                    throw new Error('markerId is required');
-                }
-                return terminalService.deleteScrollbackMarker(markerIdRaw.trim());
+            async (_event, markerId: string) => {
+                return terminalService.deleteScrollbackMarker(markerId.trim());
             },
-            false
+            { 
+                defaultValue: false,
+                argsSchema: z.tuple([z.string().min(1, 'markerId is required')])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:filterScrollback',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:filterScrollback',
-            async (_event: IpcMainInvokeEvent, sessionIdRaw: unknown, optionsRaw: unknown) => {
-                const sessionId = assertValidSessionId(sessionIdRaw);
-                const options = parseScrollbackFilterPayload(optionsRaw);
+            async (_event, sessionId: string, options: ScrollbackFilter) => {
                 return terminalService.filterSessionScrollback(sessionId, options);
             },
-            []
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([
+                    sessionIdSchema,
+                    scrollbackFilterSchema
+                ])
+            }
         )
     );
 
     // Command history
     ipcMain.handle(
         'terminal:getCommandHistory',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getCommandHistory',
-            async (_event: IpcMainInvokeEvent, queryRaw: unknown, limitRaw: unknown) => {
-                const query = parseHistoryQuery(queryRaw);
-                const limit = parseHistoryLimit(limitRaw);
-                return terminalService.getCommandHistory(query, limit);
+            async (_event, query?: string, limit?: number) => {
+                const q = typeof query === 'string' ? query.slice(0, 256) : '';
+                const l = typeof limit === 'number' ? Math.max(1, Math.min(Math.floor(limit), 500)) : 100;
+                return terminalService.getCommandHistory(q, l);
             },
-            []
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([
+                    z.string().optional(),
+                    z.number().optional()
+                ])
+            }
         )
     );
 
     ipcMain.handle(
         'terminal:clearCommandHistory',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:clearCommandHistory',
             async () => {
                 return terminalService.clearCommandHistory();
             },
-            false
+            { defaultValue: false }
         )
     );
+}
 
-    // Smart Suggestions
+function registerSmartIpc(smartService: TerminalSmartService) {
     ipcMain.handle(
         'terminal:getSuggestions',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getSuggestions',
-            async (_event: IpcMainInvokeEvent, options: SuggestionOptions) => {
+            async (_event, options: SuggestionOptions) => {
                 return smartService.getSuggestions(options);
             },
-            []
+            { 
+                defaultValue: [],
+                argsSchema: z.tuple([suggestionOptionsSchema])
+            }
         )
     );
 
-    // AI Command Explanation
     ipcMain.handle(
         'terminal:explainCommand',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:explainCommand',
-            async (_event: IpcMainInvokeEvent, options: ExplainCommandOptions) => {
+            async (_event, options: ExplainCommandOptions) => {
                 return withRateLimit('terminal', async () => smartService.explainCommand(options));
             },
-            { explanation: 'Service unavailable', breakdown: [] }
+            { 
+                defaultValue: { explanation: 'Service unavailable', breakdown: [] },
+                argsSchema: z.tuple([explainCommandOptionsSchema])
+            }
         )
     );
 
-    // AI Error Explanation
     ipcMain.handle(
         'terminal:explainError',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:explainError',
-            async (_event: IpcMainInvokeEvent, options: ExplainErrorOptions) => {
+            async (_event, options: ExplainErrorOptions) => {
                 return withRateLimit('terminal', async () => smartService.explainError(options));
             },
-            { summary: 'Service unavailable', cause: 'Unknown', solution: 'Please try again later' }
+            { 
+                defaultValue: { summary: 'Service unavailable', cause: 'Unknown', solution: 'Please try again later' },
+                argsSchema: z.tuple([explainErrorOptionsSchema])
+            }
         )
     );
 
-    // AI Error Fix Suggestion
     ipcMain.handle(
         'terminal:fixError',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:fixError',
-            async (_event: IpcMainInvokeEvent, options: FixErrorOptions) => {
+            async (_event, options: FixErrorOptions) => {
                 return withRateLimit('terminal', async () => smartService.fixError(options));
             },
-            { suggestedCommand: '', explanation: 'Service unavailable', confidence: 'low' as const }
+            { 
+                defaultValue: { suggestedCommand: '', explanation: 'Service unavailable', confidence: 'low' as const },
+                argsSchema: z.tuple([fixErrorOptionsSchema])
+            }
+        )
+    );
+}
+
+/**
+ * Registers all terminal IPC channels with runtime validation and safe fallbacks.
+ */
+export function registerTerminalIpc(
+    getWindow: () => BrowserWindow | null,
+    terminalService: TerminalService,
+    profileService: TerminalProfileService,
+    smartService: TerminalSmartService,
+    dockerService: DockerService
+) {
+    ipcMain.setMaxListeners(60);
+    appLogger.info('terminal', '[IPC] Terminal service registered');
+
+    // Register Subgroups
+    registerProfileIpc(profileService);
+    registerSessionLifecycleIpc(getWindow, terminalService);
+    registerSessionIOIpc(terminalService);
+    registerSessionExportIpc(terminalService);
+    registerSessionTemplateIpc(getWindow, terminalService);
+    registerSessionSearchIpc(terminalService);
+    registerSmartIpc(smartService);
+
+    // Misc
+    ipcMain.handle(
+        'terminal:isAvailable',
+        createValidatedIpcHandler('terminal:isAvailable', async () => {
+            return terminalService.isAvailable();
+        }, { defaultValue: false })
+    );
+
+    ipcMain.handle(
+        'terminal:getShells',
+        createValidatedIpcHandler(
+            'terminal:getShells',
+            async () => {
+                return terminalService.getAvailableShells();
+            },
+            { defaultValue: [] }
+        )
+    );
+
+    ipcMain.handle(
+        'terminal:getBackends',
+        createValidatedIpcHandler(
+            'terminal:getBackends',
+            async () => {
+                return terminalService.getAvailableBackends();
+            },
+            { defaultValue: [] }
         )
     );
 
     ipcMain.handle(
         'terminal:getDockerContainers',
-        createSafeIpcHandler(
+        createValidatedIpcHandler(
             'terminal:getDockerContainers',
             async () => {
                 return dockerService.listContainers();
             },
-            { success: false, containers: [] }
+            { 
+                defaultValue: { success: false, containers: [] }
+            }
         )
     );
 }

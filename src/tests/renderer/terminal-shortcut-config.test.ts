@@ -1,5 +1,4 @@
 import {
-    TERMINAL_SHORTCUT_PRESETS,
     createShortcutShareCode,
     isTypingElement,
     keyboardEventToShortcut,
@@ -8,6 +7,7 @@ import {
     parseShortcutStorage,
     sanitizeShortcutBindings,
     serializeShortcutStorage,
+    TERMINAL_SHORTCUT_PRESETS,
 } from '@renderer/features/terminal/utils/shortcut-config';
 import { describe, expect, it } from 'vitest';
 

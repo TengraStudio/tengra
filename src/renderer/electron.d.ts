@@ -903,9 +903,13 @@ export interface ElectronAPI {
         exportSearchResults: (
             sessionId: string,
             query: string,
-            options?: { regex?: boolean; caseSensitive?: boolean; limit?: number },
-            exportPath?: string,
-            format?: 'json' | 'txt'
+            options?: {
+                regex?: boolean;
+                caseSensitive?: boolean;
+                limit?: number;
+                exportPath?: string;
+                format?: 'json' | 'txt';
+            }
         ) => Promise<{ success: boolean; path?: string; content?: string; error?: string }>;
         addScrollbackMarker: (
             sessionId: string,

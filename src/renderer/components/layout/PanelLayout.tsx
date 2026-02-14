@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils';
 import {
     PANEL_LAYOUT_STORAGE_KEY,
     parsePersistedPanelLayout,
-    serializePersistedPanelLayout,
     type PersistedPanelLayout,
+    serializePersistedPanelLayout,
 } from './panel-layout-persistence';
 
 // Types
