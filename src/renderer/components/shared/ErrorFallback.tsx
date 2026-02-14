@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronDown, ChevronUp,Copy, RotateCcw } from 'lucide-react';
+import { AlertCircle, ChevronDown, ChevronUp, Copy, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTranslation } from '@/i18n';
@@ -16,7 +16,7 @@ export const ErrorFallback = ({
     const [copied, setCopied] = useState(false);
 
     const copyError = () => {
-        void navigator.clipboard.writeText(`${error.message}\n\n${error.stack}`);
+        void window.electron.clipboard.writeText(`${error.message}\n\n${error.stack}`);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
