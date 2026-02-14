@@ -48,6 +48,7 @@ export const SidebarChatItem = React.memo(
                     onClick={() => onSelect(chat.id)}
                     className="py-1.5"
                     isCollapsed={isCollapsed}
+                    labelClassName={chat.isGenerating ? 'animate-text-shimmer' : undefined}
                 />
 
                 {!isEditing && !isCollapsed && (

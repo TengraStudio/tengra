@@ -1,12 +1,12 @@
 import { CalendarClock, CheckCheck, Clock3, History, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {  useState } from 'react';
 
 import { useBreakpoint } from '@/lib/responsive';
 import { cn } from '@/lib/utils';
 import {
     clearNotificationHistory,
     dismissNotification,
-    getUnreadNotificationCount,
+    // getUnreadNotificationCount,
     markAllNotificationsRead,
     markNotificationRead,
     runNotificationAction,

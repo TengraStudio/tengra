@@ -712,6 +712,20 @@
         animation: slide-shimmer 2s infinite;
     }
 
+    .animate-text-shimmer {
+        background: linear-gradient(
+             90deg,
+             hsl(var(--foreground)) 0%,
+             hsl(var(--primary)) 50%,
+             hsl(var(--foreground)) 100%
+        );
+        background-size: 200% 100%;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 2s linear infinite;
+    }
+
     /* Spring Modal Animation */
     @keyframes spring-scale {
         0% {
