@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### 修复市场崩溃和剪贴板权限问题
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 解决了模型市场中的一个关键崩溃问题，并修复了剪贴板权限问题。
+
+- **修复**: 修复了市场类别过滤中的 `o?.forEach is not a function` 崩溃。
+- **剪贴板**: 实现了基于 IPC 的安全剪贴板服务，以绕过浏览器的权限限制。
+- **错误处理**: 更新了错误回退机制，以使用新的安全剪贴板服务复制错误详情。
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

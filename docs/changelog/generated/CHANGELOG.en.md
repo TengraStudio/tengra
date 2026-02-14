@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Marketplace Crash & Clipboard Permission Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved a critical crash in the Model Marketplace and fixed clipboard permission issues.
+
+- **Fix**: Resolved `o?.forEach is not a function` crash in Marketplace category filtering.
+- **Clipboard**: Implemented a secure IPC-based clipboard service to bypass browser permission restrictions.
+- **Error Handling**: Updated Error Fallback to use the new secure clipboard service for copying error details.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

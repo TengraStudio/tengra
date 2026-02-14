@@ -1,4 +1,13 @@
 {
+  "2026-02-14-marketplace-crash-and-clipboard-fix": {
+    "title": "マーケットプレイスのクラッシュとクリップボード権限の修正",
+    "summary": "モデルマーケットプレイスの致命的なクラッシュを解決し、クリップボードの権限に関する問題を修正しました。",
+    "items": [
+      "- **修正**: マーケットプレイスのカテゴリフィルタリングにおける `o?.forEach is not a function` クラッシュを修正しました。",
+      "- **クリップボード**: ブラウザの権限制限を回避するため、安全なIPCベースのクリップボードサービスを実装しました。",
+      "- **エラーハンドリング**: エラー詳細のコピーに新しい安全なサービスを使用するようにエラーフォールバックを更新しました。"
+    ]
+  },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
     "title": "IPC Security Audit: Input Validation (SEC-003)",
     "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",

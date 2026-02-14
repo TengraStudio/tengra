@@ -1,4 +1,13 @@
 {
+  "2026-02-14-marketplace-crash-and-clipboard-fix": {
+    "title": "Marktplatz-Absturz & Zwischenablage-Berechtigungsfehler behoben",
+    "summary": "Ein kritischer Absturz im Modell-Marktplatz wurde behoben und Probleme mit den Berechtigungen der Zwischenablage wurden korrigiert.",
+    "items": [
+      "- **Fix**: Absturz `o?.forEach is not a function` in der Marktplatz-Kategoriefilterung behoben.",
+      "- **Zwischenablage**: Implementierung eines sicheren IPC-basierten Dienstes für die Zwischenablage, um Browser-Berechtigungseinschränkungen zu umgehen.",
+      "- **Fehlerbehandlung**: Die Fehleranzeige wurde aktualisiert, um den neuen sicheren Dienst für das Kopieren von Fehlerdetails zu nutzen."
+    ]
+  },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
     "title": "IPC Security Audit: Input Validation (SEC-003)",
     "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",

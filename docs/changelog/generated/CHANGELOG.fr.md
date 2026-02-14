@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Correction du crash du Marketplace et des permissions du presse-papiers
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Résolution d'un crash critique dans le Marketplace de modèles et correction des problèmes de permissions du presse-papiers.
+
+- **Correction**: Résolution du crash `o?.forEach is not a function` dans le filtrage des catégories du Marketplace.
+- **Presse-papiers**: Implémentation d'un service de presse-papiers sécurisé basé sur IPC pour contourner les restrictions de permissions du navigateur.
+- **Gestion des erreurs**: Mise à jour de l'affichage des erreurs pour utiliser le nouveau service sécurisé pour copier les détails de l'erreur.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

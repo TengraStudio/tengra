@@ -13,6 +13,16 @@
 - **Usability**: Added 'Copy Details' button to easily share error information.
 - **UX**: Automatic error state reset when navigating between different views.
 
+### Marktplatz-Absturz & Zwischenablage-Berechtigungsfehler behoben
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Ein kritischer Absturz im Modell-Marktplatz wurde behoben und Probleme mit den Berechtigungen der Zwischenablage wurden korrigiert.
+
+- **Fix**: Absturz `o?.forEach is not a function` in der Marktplatz-Kategoriefilterung behoben.
+- **Zwischenablage**: Implementierung eines sicheren IPC-basierten Dienstes für die Zwischenablage, um Browser-Berechtigungseinschränkungen zu umgehen.
+- **Fehlerbehandlung**: Die Fehleranzeige wurde aktualisiert, um den neuen sicheren Dienst für das Kopieren von Fehlerdetails zu nutzen.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

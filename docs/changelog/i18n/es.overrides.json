@@ -1,4 +1,13 @@
 {
+  "2026-02-14-marketplace-crash-and-clipboard-fix": {
+    "title": "Corrección de error en el Marketplace y permisos del portapapeles",
+    "summary": "Se resolvió un error crítico en el Marketplace de modelos y se corrigieron los problemas de permisos del portapapeles.",
+    "items": [
+      "- **Corrección**: Se corrigió el error `o?.forEach is not a function` en el filtrado de categorías del Marketplace.",
+      "- **Portapapeles**: Se implementó un servicio de portapapeles seguro basado en IPC para evitar las restricciones de permisos del navegador.",
+      "- **Manejo de errores**: Se actualizó la pantalla de error para usar el nuevo servicio seguro al copiar los detalles del error."
+    ]
+  },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
     "title": "IPC Security Audit: Input Validation (SEC-003)",
     "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",

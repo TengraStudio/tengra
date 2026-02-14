@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T12:13:35.340Z",
+  "generatedAt": "2026-02-14T12:37:29.508Z",
   "locales": [
     "en",
     "tr",
@@ -106,6 +106,97 @@
             "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
             "- **Usability**: Added 'Copy Details' button to easily share error information.",
             "- **UX**: Automatic error state reset when navigating between different views."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-14-marketplace-crash-and-clipboard-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Marketplace",
+        "Clipboard",
+        "UI"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Marketplace Crash & Clipboard Permission Fix",
+          "summary": "Resolved a critical crash in the Model Marketplace and fixed clipboard permission issues.",
+          "items": [
+            "- **Fix**: Resolved `o?.forEach is not a function` crash in Marketplace category filtering.",
+            "- **Clipboard**: Implemented a secure IPC-based clipboard service to bypass browser permission restrictions.",
+            "- **Error Handling**: Updated Error Fallback to use the new secure clipboard service for copying error details."
+          ]
+        },
+        "tr": {
+          "title": "Marketplace Çökmesi ve Pano İzin Düzeltmesi",
+          "summary": "Model Marketplace'teki kritik bir çökme giderildi ve pano (clipboard) izin sorunları düzeltildi.",
+          "items": [
+            "- **Düzeltme**: Marketplace kategori filtrelemesindeki `o?.forEach is not a function` hatası giderildi.",
+            "- **Pano**: Tarayıcı izin kısıtlamalarını aşmak için güvenli bir IPC tabanlı pano servisi uygulandı.",
+            "- **Hata Yönetimi**: Hata detaylarını kopyalamak için Hata Yakalama ekranı yeni güvenli pano servisini kullanacak şekilde güncellendi."
+          ]
+        },
+        "de": {
+          "title": "Marktplatz-Absturz & Zwischenablage-Berechtigungsfehler behoben",
+          "summary": "Ein kritischer Absturz im Modell-Marktplatz wurde behoben und Probleme mit den Berechtigungen der Zwischenablage wurden korrigiert.",
+          "items": [
+            "- **Fix**: Absturz `o?.forEach is not a function` in der Marktplatz-Kategoriefilterung behoben.",
+            "- **Zwischenablage**: Implementierung eines sicheren IPC-basierten Dienstes für die Zwischenablage, um Browser-Berechtigungseinschränkungen zu umgehen.",
+            "- **Fehlerbehandlung**: Die Fehleranzeige wurde aktualisiert, um den neuen sicheren Dienst für das Kopieren von Fehlerdetails zu nutzen."
+          ]
+        },
+        "fr": {
+          "title": "Correction du crash du Marketplace et des permissions du presse-papiers",
+          "summary": "Résolution d'un crash critique dans le Marketplace de modèles et correction des problèmes de permissions du presse-papiers.",
+          "items": [
+            "- **Correction**: Résolution du crash `o?.forEach is not a function` dans le filtrage des catégories du Marketplace.",
+            "- **Presse-papiers**: Implémentation d'un service de presse-papiers sécurisé basé sur IPC pour contourner les restrictions de permissions du navigateur.",
+            "- **Gestion des erreurs**: Mise à jour de l'affichage des erreurs pour utiliser le nouveau service sécurisé pour copier les détails de l'erreur."
+          ]
+        },
+        "es": {
+          "title": "Corrección de error en el Marketplace y permisos del portapapeles",
+          "summary": "Se resolvió un error crítico en el Marketplace de modelos y se corrigieron los problemas de permisos del portapapeles.",
+          "items": [
+            "- **Corrección**: Se corrigió el error `o?.forEach is not a function` en el filtrado de categorías del Marketplace.",
+            "- **Portapapeles**: Se implementó un servicio de portapapeles seguro basado en IPC para evitar las restricciones de permisos del navegador.",
+            "- **Manejo de errores**: Se actualizó la pantalla de error para usar el nuevo servicio seguro al copiar los detalles del error."
+          ]
+        },
+        "ja": {
+          "title": "マーケットプレイスのクラッシュとクリップボード権限の修正",
+          "summary": "モデルマーケットプレイスの致命的なクラッシュを解決し、クリップボードの権限に関する問題を修正しました。",
+          "items": [
+            "- **修正**: マーケットプレイスのカテゴリフィルタリングにおける `o?.forEach is not a function` クラッシュを修正しました。",
+            "- **クリップボード**: ブラウザの権限制限を回避するため、安全なIPCベースのクリップボードサービスを実装しました。",
+            "- **エラーハンドリング**: エラー詳細のコピーに新しい安全なサービスを使用するようにエラーフォールバックを更新しました。"
+          ]
+        },
+        "zh": {
+          "title": "修复市场崩溃和剪贴板权限问题",
+          "summary": "解决了模型市场中的一个关键崩溃问题，并修复了剪贴板权限问题。",
+          "items": [
+            "- **修复**: 修复了市场类别过滤中的 `o?.forEach is not a function` 崩溃。",
+            "- **剪贴板**: 实现了基于 IPC 的安全剪贴板服务，以绕过浏览器的权限限制。",
+            "- **错误处理**: 更新了错误回退机制，以使用新的安全剪贴板服务复制错误详情。"
+          ]
+        },
+        "ar": {
+          "title": "إصلاح تعطل المتجر وأذونات الحافظة",
+          "summary": "تم حل تعطل حرج في متجر النماذج وإصلاح مشكلات أذونات الحافظة.",
+          "items": [
+            "- **إصلاح**: تم حل تعطل `o?.forEach is not a function` في تصفية فئات المتجر.",
+            "- **الحافظة**: تم تنفيذ خدمة حافظة آمنة تعتمد على IPC لتجاوز قيود أذونات المتصفح.",
+            "- **معالجة الأخطاء**: تم تحديث شاشة الخطأ لاستخدام الخدمة الآمنة الجديدة لنسخ تفاصيل الخطأ."
           ]
         }
       }
