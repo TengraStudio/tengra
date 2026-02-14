@@ -2,6 +2,17 @@
 
 ## [2026-02-14]
 
+### Enhanced Error Display
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Improved the application error screen to show detailed error messages and stack traces for better debugging.
+
+- **Transparency**: Added detailed error message display instead of generic text.
+- **Debugging**: Included collapsible stack trace for technical troubleshooting.
+- **Usability**: Added 'Copy Details' button to easily share error information.
+- **UX**: Automatic error state reset when navigating between different views.
+
 ### Marketplace UI Error Handling
 
 - **Type**: fix

@@ -42,7 +42,7 @@
       "id": "2026-02-14-error-fallback-enhancement",
       "date": "2026-02-14",
       "channel": "stable",
-      "type": "improvement",
+      "type": "feature",
       "category": "ui",
       "status": "completed",
       "audience": [
@@ -61,7 +61,8 @@
           "items": [
             "- **Transparency**: Added detailed error message display instead of generic text.",
             "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
-            "- **Usability**: Added 'Copy Details' button to easily share error information."
+            "- **Usability**: Added 'Copy Details' button to easily share error information.",
+            "- **UX**: Automatic error state reset when navigating between different views."
           ]
         }
       }
