@@ -6,6 +6,7 @@ interface Props {
     children: ReactNode;
     fallback?: ReactNode;
     fallbackRender?: (props: { error: Error; resetErrorBoundary: () => void }) => ReactNode;
+    resetKeys?: unknown[];
 }
 
 interface State {
@@ -30,6 +31,19 @@ class ErrorBoundaryBase extends Component<ErrorBoundaryBaseProps, State> {
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         window.electron.log.error('Uncaught error', error);
         window.electron.log.error('React error info', { componentStack: errorInfo.componentStack });
+    }
+
+    public componentDidUpdate(prevProps: ErrorBoundaryBaseProps) {
+        if (this.state.hasError && this.props.resetKeys && prevProps.resetKeys) {
+            const keysChanged = this.props.resetKeys.some((key, index) => {
+                const prevKey = prevProps.resetKeys?.[index];
+                return key !== prevKey;
+            });
+
+            if (keysChanged) {
+                this.resetErrorBoundary();
+            }
+        }
     }
 
     public resetErrorBoundary = () => {

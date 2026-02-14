@@ -236,6 +236,7 @@ function MainApp() {
 
     return (
         <ErrorBoundary
+            resetKeys={[appState.currentView]}
             fallbackRender={({ error, resetErrorBoundary }) => (
                 <div className="app-container h-screen w-full overflow-hidden">
                     <div className="absolute inset-0 flex flex-col overflow-hidden">
