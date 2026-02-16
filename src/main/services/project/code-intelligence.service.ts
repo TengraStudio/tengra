@@ -25,6 +25,68 @@ export interface IndexingProgress {
     status: string;
 }
 
+export interface SymbolAnalytics {
+    totalSymbols: number;
+    uniqueFiles: number;
+    uniqueKinds: number;
+    byKind: Record<string, number>;
+    byExtension: Record<string, number>;
+    topFiles: Array<{ path: string; count: number }>;
+    topSymbols: Array<{ name: string; count: number }>;
+    generatedAt: string;
+}
+
+export interface RenameLineChange {
+    line: number;
+    occurrences: number;
+    before: string;
+    after: string;
+}
+
+export interface RenameFileChange {
+    file: string;
+    replacements: RenameLineChange[];
+}
+
+export interface RenameSymbolResult {
+    success: boolean;
+    applied: boolean;
+    symbol: string;
+    newSymbol: string;
+    totalFiles: number;
+    totalOccurrences: number;
+    changes: RenameFileChange[];
+    updatedFiles: string[];
+    errors: Array<{ file: string; error: string }>;
+}
+
+export interface DocumentationPreviewResult {
+    success: boolean;
+    filePath: string;
+    format: 'markdown' | 'jsdoc-comments';
+    content: string;
+    symbolCount: number;
+    generatedAt: string;
+    error?: string;
+}
+
+export interface CodeQualityAnalysis {
+    rootPath: string;
+    filesScanned: number;
+    totalLines: number;
+    functionSymbols: number;
+    classSymbols: number;
+    longLineCount: number;
+    todoLikeCount: number;
+    consoleUsageCount: number;
+    averageComplexity: number;
+    securityIssueCount: number;
+    topSecurityFindings: Array<{ file: string; line: number; rule: string; snippet: string }>;
+    highestComplexityFiles: Array<{ file: string; complexity: number }>;
+    qualityScore: number;
+    generatedAt: string;
+}
+
 
 
 export class CodeIntelligenceService {
@@ -67,6 +129,68 @@ export class CodeIntelligenceService {
         })));
 
         return combined;
+    }
+
+    async getSymbolAnalytics(rootPath: string): Promise<SymbolAnalytics> {
+        try {
+            const symbols = await this.db.getCodeSymbolsByProjectPath(rootPath);
+            const byKind: Record<string, number> = {};
+            const byExtension: Record<string, number> = {};
+            const fileCounts: Record<string, number> = {};
+            const symbolCounts: Record<string, number> = {};
+            const fileSet = new Set<string>();
+
+            for (const symbol of symbols) {
+                const kind = symbol.kind.trim() || 'unknown';
+                const filePath = symbol.path.trim();
+                const extension = path.extname(filePath).toLowerCase() || '(none)';
+                const symbolName = symbol.name.trim() || '(anonymous)';
+
+                byKind[kind] = (byKind[kind] ?? 0) + 1;
+                byExtension[extension] = (byExtension[extension] ?? 0) + 1;
+                fileCounts[filePath] = (fileCounts[filePath] ?? 0) + 1;
+                symbolCounts[symbolName] = (symbolCounts[symbolName] ?? 0) + 1;
+                if (filePath.length > 0) {
+                    fileSet.add(filePath);
+                }
+            }
+
+            const topFiles = Object.entries(fileCounts)
+                .map(([file, count]) => ({ path: file, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20);
+            const topSymbols = Object.entries(symbolCounts)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 20);
+
+            return {
+                totalSymbols: symbols.length,
+                uniqueFiles: fileSet.size,
+                uniqueKinds: Object.keys(byKind).length,
+                byKind,
+                byExtension,
+                topFiles,
+                topSymbols,
+                generatedAt: new Date().toISOString(),
+            };
+        } catch (error) {
+            appLogger.error(
+                'CodeIntelligenceService',
+                `Failed to build symbol analytics for ${rootPath}`,
+                error as Error
+            );
+            return {
+                totalSymbols: 0,
+                uniqueFiles: 0,
+                uniqueKinds: 0,
+                byKind: {},
+                byExtension: {},
+                topFiles: [],
+                topSymbols: [],
+                generatedAt: new Date().toISOString(),
+            };
+        }
     }
 
     async indexProject(rootPath: string, projectId: string, force = false): Promise<void> {
@@ -458,11 +582,493 @@ export class CodeIntelligenceService {
         }
     }
 
+    async getFileOutline(filePath: string): Promise<FileSearchResult[]> {
+        return this.getFileDimensions(filePath);
+    }
+
+    async findDefinition(rootPath: string, symbol: string): Promise<FileSearchResult | null> {
+        const trimmed = symbol.trim();
+        if (!trimmed) {
+            return null;
+        }
+
+        try {
+            const candidates = await this.db.findCodeSymbolsByName(rootPath, trimmed);
+            const exact = candidates.find(
+                item => item.name.localeCompare(trimmed, undefined, { sensitivity: 'accent' }) === 0
+            );
+            const selected = exact ?? candidates[0];
+            if (!selected) {
+                return null;
+            }
+            return {
+                file: selected.path,
+                line: selected.line,
+                text: selected.signature || selected.name,
+                name: selected.name,
+                type: selected.kind || 'symbol',
+            };
+        } catch (error) {
+            appLogger.error(
+                'CodeIntelligenceService',
+                `Failed to find definition for ${trimmed}`,
+                error as Error
+            );
+            return null;
+        }
+    }
+
     // 2.5 Advanced Agent Tool: Find Usage
     async findUsage(rootPath: string, symbol: string): Promise<FileSearchResult[]> {
+        const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const results: FileSearchResult[] = [];
-        await this.scanDirForText(rootPath, `\\b${symbol} \\b`, true, results);
+        await this.scanDirForText(rootPath, `\\b${escapedSymbol}\\b`, true, results);
         return results;
+    }
+
+    async findReferences(rootPath: string, symbol: string): Promise<FileSearchResult[]> {
+        return this.findUsage(rootPath, symbol);
+    }
+
+    async findImplementations(rootPath: string, symbol: string): Promise<FileSearchResult[]> {
+        const trimmed = symbol.trim();
+        if (!trimmed) {
+            return [];
+        }
+
+        const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const patterns: Array<{ type: string; regex: RegExp }> = [
+            { type: 'implementation', regex: new RegExp(`\\bimplements\\s+[^\\n{]*\\b${escaped}\\b`, 'i') },
+            { type: 'implementation', regex: new RegExp(`\\bextends\\s+${escaped}\\b`, 'i') },
+            { type: 'implementation', regex: new RegExp(`\\bclass\\s+[A-Za-z0-9_]+\\s*:\\s*${escaped}\\b`, 'i') }, // Python
+            { type: 'implementation', regex: new RegExp(`\\b${escaped}\\s*\\([^)]*\\)\\s*\\{`, 'i') }, // function/method
+        ];
+
+        const files: string[] = [];
+        await this.scanDirRecursively(rootPath, files);
+        const candidates = files.filter(filePath =>
+            /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i.test(filePath)
+        );
+
+        const results: FileSearchResult[] = [];
+        for (const filePath of candidates) {
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                const lines = content.split(/\r?\n/);
+                for (let index = 0; index < lines.length; index++) {
+                    const line = lines[index] ?? '';
+                    for (const pattern of patterns) {
+                        if (pattern.regex.test(line)) {
+                            results.push({
+                                file: filePath,
+                                line: index + 1,
+                                text: line.trim(),
+                                type: pattern.type,
+                                name: trimmed,
+                            });
+                            break;
+                        }
+                    }
+                }
+            } catch {
+                // best-effort scan
+            }
+        }
+
+        const seen = new Set<string>();
+        return results.filter(item => {
+            const key = `${item.file}:${item.line}:${item.text}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        }).slice(0, 500);
+    }
+
+    async getSymbolRelationships(rootPath: string, symbol: string, maxItems: number = 200): Promise<FileSearchResult[]> {
+        const trimmed = symbol.trim();
+        if (!trimmed) {
+            return [];
+        }
+
+        try {
+            const baseSymbols = await this.db.findCodeSymbolsByName(rootPath, trimmed);
+            if (baseSymbols.length === 0) {
+                return [];
+            }
+
+            const allSymbols = await this.db.getCodeSymbolsByProjectPath(rootPath);
+            const results: FileSearchResult[] = [];
+
+            for (const base of baseSymbols) {
+                const sameFile = allSymbols.filter(item => item.path === base.path);
+                for (const rel of sameFile) {
+                    if (rel.name === base.name && rel.line === base.line) {
+                        continue;
+                    }
+                    const distance = Math.abs((rel.line ?? 0) - (base.line ?? 0));
+                    const relation = distance <= 30 ? 'related-nearby' : 'related-same-file';
+                    results.push({
+                        file: rel.path,
+                        line: rel.line,
+                        text: rel.signature || rel.name,
+                        type: relation,
+                        name: rel.name,
+                    });
+                }
+
+                const similar = allSymbols.filter(item => {
+                    const lower = item.name.toLowerCase();
+                    const query = trimmed.toLowerCase();
+                    return lower !== query && (lower.includes(query) || query.includes(lower));
+                });
+                for (const rel of similar) {
+                    results.push({
+                        file: rel.path,
+                        line: rel.line,
+                        text: rel.signature || rel.name,
+                        type: 'related-similar-name',
+                        name: rel.name,
+                    });
+                }
+            }
+
+            const implementations = await this.findImplementations(rootPath, trimmed);
+            results.push(...implementations.map(item => ({ ...item, type: 'related-implementation' })));
+
+            const seen = new Set<string>();
+            return results.filter(item => {
+                const key = `${item.file}:${item.line}:${item.text}:${item.type}`;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            }).slice(0, Math.max(1, Math.min(maxItems, 1000)));
+        } catch (error) {
+            appLogger.error('CodeIntelligenceService', `Failed to resolve relationships for ${trimmed}`, error as Error);
+            return [];
+        }
+    }
+
+    async renameSymbol(
+        rootPath: string,
+        symbol: string,
+        newSymbol: string,
+        apply: boolean = false,
+        maxFiles: number = 500
+    ): Promise<RenameSymbolResult> {
+        const trimmedSymbol = symbol.trim();
+        const trimmedNewSymbol = newSymbol.trim();
+        const safeMaxFiles = Number.isFinite(maxFiles) && maxFiles > 0
+            ? Math.min(Math.trunc(maxFiles), 5000)
+            : 500;
+
+        if (!this.isValidIdentifier(trimmedSymbol) || !this.isValidIdentifier(trimmedNewSymbol)) {
+            return {
+                success: false,
+                applied: apply,
+                symbol: trimmedSymbol,
+                newSymbol: trimmedNewSymbol,
+                totalFiles: 0,
+                totalOccurrences: 0,
+                changes: [],
+                updatedFiles: [],
+                errors: [{ file: '', error: 'Invalid identifier payload for rename operation' }],
+            };
+        }
+
+        const files: string[] = [];
+        await this.scanDirRecursively(rootPath, files);
+        const candidateFiles = files
+            .filter(filePath => /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i.test(filePath))
+            .slice(0, safeMaxFiles);
+
+        const escapedSymbol = trimmedSymbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(`\\b${escapedSymbol}\\b`, 'g');
+        const changes: RenameFileChange[] = [];
+        const updatedFiles: string[] = [];
+        const errors: Array<{ file: string; error: string }> = [];
+        let totalOccurrences = 0;
+
+        for (const filePath of candidateFiles) {
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                const lineEnding = content.includes('\r\n') ? '\r\n' : '\n';
+                const lines = content.split(/\r?\n/);
+                const replacements: RenameLineChange[] = [];
+                let fileChanged = false;
+
+                for (let index = 0; index < lines.length; index++) {
+                    const originalLine = lines[index] ?? '';
+                    const matches = [...originalLine.matchAll(pattern)];
+                    if (matches.length === 0) {
+                        continue;
+                    }
+
+                    const nextLine = originalLine.replace(pattern, trimmedNewSymbol);
+                    lines[index] = nextLine;
+                    totalOccurrences += matches.length;
+                    fileChanged = true;
+                    replacements.push({
+                        line: index + 1,
+                        occurrences: matches.length,
+                        before: originalLine,
+                        after: nextLine,
+                    });
+                }
+
+                if (!fileChanged) {
+                    continue;
+                }
+
+                changes.push({ file: filePath, replacements });
+
+                if (apply) {
+                    await fs.writeFile(filePath, lines.join(lineEnding), 'utf-8');
+                    updatedFiles.push(filePath);
+                }
+            } catch (error) {
+                errors.push({
+                    file: filePath,
+                    error: getErrorMessage(error as Error),
+                });
+            }
+        }
+
+        return {
+            success: errors.length === 0,
+            applied: apply,
+            symbol: trimmedSymbol,
+            newSymbol: trimmedNewSymbol,
+            totalFiles: changes.length,
+            totalOccurrences,
+            changes,
+            updatedFiles,
+            errors,
+        };
+    }
+
+    async generateFileDocumentation(
+        filePath: string,
+        format: 'markdown' | 'jsdoc-comments' = 'markdown'
+    ): Promise<DocumentationPreviewResult> {
+        try {
+            const outline = await this.getFileOutline(filePath);
+            const basename = path.basename(filePath);
+            let content = '';
+
+            if (format === 'jsdoc-comments') {
+                const functionSymbols = outline.filter(item => item.type === 'function');
+                const sections = functionSymbols.map(item => {
+                    const name = item.name ?? 'anonymous';
+                    return [
+                        '/**',
+                        ` * ${name}`,
+                        ' *',
+                        ' * @returns {unknown}',
+                        ' */',
+                    ].join('\n');
+                });
+                content = sections.join('\n\n');
+            } else {
+                const symbolLines = outline.map(item => {
+                    const symbolName = item.name ?? '(anonymous)';
+                    const symbolType = item.type ?? 'symbol';
+                    return `- \`${symbolName}\` (${symbolType}) at line ${item.line}`;
+                });
+
+                content = [
+                    `# Documentation: ${basename}`,
+                    '',
+                    `- File: \`${filePath}\``,
+                    `- Generated: ${new Date().toISOString()}`,
+                    '',
+                    '## Symbols',
+                    ...(symbolLines.length > 0 ? symbolLines : ['- No symbols found']),
+                ].join('\n');
+            }
+
+            return {
+                success: true,
+                filePath,
+                format,
+                content,
+                symbolCount: outline.length,
+                generatedAt: new Date().toISOString(),
+            };
+        } catch (error) {
+            return {
+                success: false,
+                filePath,
+                format,
+                content: '',
+                symbolCount: 0,
+                generatedAt: new Date().toISOString(),
+                error: getErrorMessage(error as Error),
+            };
+        }
+    }
+
+    async generateProjectDocumentation(
+        rootPath: string,
+        maxFiles: number = 30
+    ): Promise<DocumentationPreviewResult> {
+        const safeMaxFiles = Number.isFinite(maxFiles) && maxFiles > 0
+            ? Math.min(Math.trunc(maxFiles), 200)
+            : 30;
+
+        try {
+            const files: string[] = [];
+            await this.scanDirRecursively(rootPath, files);
+            const targetFiles = files
+                .filter(filePath => /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i.test(filePath))
+                .slice(0, safeMaxFiles);
+
+            const sections: string[] = [];
+            let totalSymbols = 0;
+            for (const filePath of targetFiles) {
+                const outline = await this.getFileOutline(filePath);
+                totalSymbols += outline.length;
+                const relativePath = path.relative(rootPath, filePath).replace(/\\/g, '/');
+                const lines = outline.map(item => `- \`${item.name ?? '(anonymous)'}\` (${item.type}) @${item.line}`);
+                sections.push(
+                    [
+                        `### ${relativePath}`,
+                        '',
+                        ...(lines.length > 0 ? lines : ['- No symbols found']),
+                    ].join('\n')
+                );
+            }
+
+            const content = [
+                '# Project Documentation Summary',
+                '',
+                `- Root: \`${rootPath}\``,
+                `- Files covered: ${targetFiles.length}`,
+                `- Symbols found: ${totalSymbols}`,
+                `- Generated: ${new Date().toISOString()}`,
+                '',
+                '## File Outlines',
+                '',
+                ...(sections.length > 0 ? sections : ['No files were scanned.']),
+            ].join('\n');
+
+            return {
+                success: true,
+                filePath: rootPath,
+                format: 'markdown',
+                content,
+                symbolCount: totalSymbols,
+                generatedAt: new Date().toISOString(),
+            };
+        } catch (error) {
+            return {
+                success: false,
+                filePath: rootPath,
+                format: 'markdown',
+                content: '',
+                symbolCount: 0,
+                generatedAt: new Date().toISOString(),
+                error: getErrorMessage(error as Error),
+            };
+        }
+    }
+
+    async analyzeCodeQuality(rootPath: string, maxFiles: number = 300): Promise<CodeQualityAnalysis> {
+        const safeMaxFiles = Number.isFinite(maxFiles) && maxFiles > 0
+            ? Math.min(Math.trunc(maxFiles), 3000)
+            : 300;
+
+        const files: string[] = [];
+        await this.scanDirRecursively(rootPath, files);
+        const candidateFiles = files
+            .filter(filePath => /\.(ts|tsx|js|jsx|py|go|rs|java|kt|kts|cpp|c|h|hpp|cs)$/i.test(filePath))
+            .slice(0, safeMaxFiles);
+
+        let totalLines = 0;
+        let functionSymbols = 0;
+        let classSymbols = 0;
+        let longLineCount = 0;
+        let todoLikeCount = 0;
+        let consoleUsageCount = 0;
+        let securityIssueCount = 0;
+        let complexityTotal = 0;
+        const complexityByFile: Array<{ file: string; complexity: number }> = [];
+        const securityFindings: Array<{ file: string; line: number; rule: string; snippet: string }> = [];
+
+        for (const filePath of candidateFiles) {
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                const lines = content.split(/\r?\n/);
+                const symbols = this.parseFileSymbols(filePath, content);
+                const complexity = this.estimateFileComplexity(content);
+
+                totalLines += lines.length;
+                functionSymbols += symbols.filter(item => item.kind === 'function').length;
+                classSymbols += symbols.filter(item => item.kind === 'class').length;
+                longLineCount += lines.filter(line => line.length > 120).length;
+                todoLikeCount += lines.filter(line => /(TODO|FIXME|HACK|XXX)/i.test(line)).length;
+                consoleUsageCount += lines.filter(line => /console\.(log|warn|error|debug)\s*\(/.test(line)).length;
+                const securityRules: Array<{ rule: string; pattern: RegExp }> = [
+                    { rule: 'unsafe-eval', pattern: /\beval\s*\(/ },
+                    { rule: 'unsafe-new-function', pattern: /\bnew\s+Function\s*\(/ },
+                    { rule: 'unsafe-inner-html', pattern: /\.innerHTML\s*=/ },
+                    { rule: 'unsafe-child-process-exec', pattern: /\bexec\s*\(/ },
+                    { rule: 'unsafe-shell-true', pattern: /shell\s*:\s*true/ },
+                ];
+                for (let index = 0; index < lines.length; index++) {
+                    const line = lines[index] ?? '';
+                    for (const rule of securityRules) {
+                        if (rule.pattern.test(line)) {
+                            securityIssueCount += 1;
+                            if (securityFindings.length < 200) {
+                                securityFindings.push({
+                                    file: filePath,
+                                    line: index + 1,
+                                    rule: rule.rule,
+                                    snippet: line.trim().slice(0, 200),
+                                });
+                            }
+                        }
+                    }
+                }
+                complexityTotal += complexity;
+                complexityByFile.push({ file: filePath, complexity });
+            } catch {
+                // Best-effort quality scan; skip unreadable files.
+            }
+        }
+
+        const filesScanned = candidateFiles.length;
+        const averageComplexity = filesScanned > 0 ? complexityTotal / filesScanned : 0;
+        const penalties =
+            Math.min(longLineCount * 0.15, 20) +
+            Math.min(todoLikeCount * 0.5, 15) +
+            Math.min(consoleUsageCount * 0.2, 10) +
+            Math.min(securityIssueCount * 0.8, 25) +
+            Math.min(averageComplexity * 2.5, 35);
+        const qualityScore = Math.max(0, Math.round(100 - penalties));
+
+        return {
+            rootPath,
+            filesScanned,
+            totalLines,
+            functionSymbols,
+            classSymbols,
+            longLineCount,
+            todoLikeCount,
+            consoleUsageCount,
+            averageComplexity: Number(averageComplexity.toFixed(2)),
+            securityIssueCount,
+            topSecurityFindings: securityFindings.slice(0, 50),
+            highestComplexityFiles: complexityByFile
+                .sort((a, b) => b.complexity - a.complexity)
+                .slice(0, 20),
+            qualityScore,
+            generatedAt: new Date().toISOString(),
+        };
     }
 
     private async scanDirForTodos(dir: string, results: FileSearchResult[]) {
@@ -571,5 +1177,16 @@ export class CodeIntelligenceService {
         } catch (error) {
             appLogger.error('CodeIntelligenceService', `Failed to scan text in ${dir}`, error as Error);
         }
+    }
+
+    private isValidIdentifier(value: string): boolean {
+        return /^[A-Za-z_][A-Za-z0-9_]*$/.test(value);
+    }
+
+    private estimateFileComplexity(content: string): number {
+        const branchKeywords = content.match(/\b(if|else\s+if|for|while|case|catch)\b/g)?.length ?? 0;
+        const logicalOperators = content.match(/&&|\|\|/g)?.length ?? 0;
+        const ternaryOperators = content.match(/\?/g)?.length ?? 0;
+        return 1 + branchKeywords + logicalOperators + Math.floor(ternaryOperators / 2);
     }
 }

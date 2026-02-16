@@ -1,5 +1,40 @@
 # 更新日志
 
+## [2026-02-16]
+
+### 代理系统改进：工具执行与上下文管理
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 通过稳健的工具执行、自动上下文窗口管理和智能错误恢复增强了代理系统。
+
+- **工具执行**：增加了工具超时、幂等工具的结果缓存以及半并行执行以提高性能。
+- **上下文管理**：实现了自动历史修剪和基于 LLM 的摘要，以在长会话中维护代理上下文。
+- **错误恢复**：增加了多类别错误分类和智能重试策略，并为代理提供恢复建议。
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### IPC 输入验证增强
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: 为关键 IPC 处理器添加了 Zod 模式验证，以防止注入攻击和格式错误的数据问题。
+
+- **安全性**：为工具、使用跟踪、窗口/shell 和代理 IPC 处理器添加了验证模式。
+- **验证**：使用 Zod 模式为工具执行、使用记录、shell 命令和代理操作实现了严格的输入验证。
+- **保护**：通过在执行前验证 URL、命令、会话密钥和参数，增强了对注入攻击的安全防护。
+- **类型安全**：通过为提供商名称、模型名称、命令参数和速率限制配置提供明确的模式定义，提高了类型安全性。
+- **错误处理**：为所有代理处理器添加了安全的回退值，以确保在验证失败时优雅降级。
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

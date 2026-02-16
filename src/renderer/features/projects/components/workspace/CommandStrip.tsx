@@ -82,7 +82,7 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
     activeFilePath,
     activeFileContent,
     activeFileType = 'code',
-    onCommandClick: _onCommandClick,
+    onCommandClick,
     onMouseDown,
 }) => {
     const { t } = useTranslation(language);
@@ -131,6 +131,21 @@ export const CommandStrip: React.FC<CommandStripProps> = ({
                         {status.toUpperCase()}
                     </span>
                 </div>
+                {onCommandClick && (
+                    <button
+                        onMouseDown={e => {
+                            e.stopPropagation();
+                        }}
+                        onClick={e => {
+                            e.stopPropagation();
+                            onCommandClick();
+                        }}
+                        className="px-2 py-0.5 rounded-md border border-border/40 bg-muted/20 hover:bg-muted/40 text-xxs font-semibold text-foreground/80 transition-colors"
+                        title={t('shortcuts.commandPalette')}
+                    >
+                        Ctrl/Cmd+K
+                    </button>
+                )}
             </div>
 
             {/* Right: System Stats */}

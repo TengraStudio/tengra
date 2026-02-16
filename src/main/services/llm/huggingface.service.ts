@@ -24,6 +24,8 @@ interface HFFileInfo {
     lfs?: { oid?: string };
 }
 
+const SUPPORTED_MARKETPLACE_FILE_EXTENSIONS = ['.gguf', '.safetensors', '.ckpt'];
+
 interface HFModelApiDetails {
     id: string;
     author?: string;
@@ -287,7 +289,7 @@ export class HuggingFaceService extends BaseService {
      */
     async getModelFiles(modelId: string): Promise<HFModelFile[]> {
         try {
-            const url = `https://huggingface.co/api/models/${modelId}/tree/main`;
+            const url = `https://huggingface.co/api/models/${modelId}/tree/main?recursive=true`;
             const response = await this.httpService.fetch(url, {
                 retryCount: 2,
                 timeoutMs: 10000
@@ -299,7 +301,10 @@ export class HuggingFaceService extends BaseService {
 
             const data = await response.json() as HFFileInfo[];
             return data
-                .filter((f) => f.path.endsWith('.gguf'))
+                .filter((f) => {
+                    const lower = f.path.toLowerCase();
+                    return SUPPORTED_MARKETPLACE_FILE_EXTENSIONS.some(ext => lower.endsWith(ext));
+                })
                 .map((f) => ({
                     path: f.path,
                     size: f.size,
@@ -1161,8 +1166,15 @@ export class HuggingFaceService extends BaseService {
     }
 
     private extractQuantization(filename: string): string {
+        const lower = filename.toLowerCase();
+        if (lower.endsWith('.safetensors')) {
+            return 'SAFETENSORS';
+        }
+        if (lower.endsWith('.ckpt')) {
+            return 'CKPT';
+        }
         const match = filename.match(/(Q[0-9]+_[A-Z0-9_]+|f16|f32)/i);
-        return match ? match[0].toUpperCase() : 'UNKNOWN';
+        return match ? match[0].toUpperCase() : 'MODEL';
     }
 
     private categorizeModel(tags: string[], description: string, modelId: string): HFModelCategory {

@@ -68,29 +68,6 @@ interface ModelDefinition {
     [key: string]: IpcValue | undefined;
 }
 
-// Ollama scraper types
-interface OllamaScrapedModel {
-    name: string;
-    pulls: string;
-    tagCount: number;
-    lastUpdated: string;
-    categories: string[];
-}
-
-interface OllamaModelVersion {
-    name: string;
-    size: string;
-    context: string;
-    inputTypes: string[];
-}
-
-interface OllamaModelDetails {
-    name: string;
-    shortDescription: string;
-    longDescriptionHtml: string;
-    versions: OllamaModelVersion[];
-}
-
 // Marketplace model from database
 interface DbMarketplaceModel {
     id: string;
@@ -107,6 +84,27 @@ interface DbMarketplaceModel {
     createdAt: number;
     updatedAt: number;
 }
+
+interface OllamaMarketplaceModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionHtml: string;
+    versions: Array<{
+        version: string;
+        size: string;
+        maxContext: string;
+        inputType: string;
+        digest: string;
+    }>;
+}
+
+interface HuggingFaceMarketplaceModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionMarkdown: string;
+}
+
+type MarketplaceModelDetails = OllamaMarketplaceModelDetails | HuggingFaceMarketplaceModelDetails;
 
 interface ProxyModelResponse {
     data: ModelDefinition[];
@@ -175,6 +173,93 @@ export interface ElectronAPI {
     code: {
         scanTodos: (rootPath: string) => Promise<TodoItem[]>;
         findSymbols: (rootPath: string, query: string) => Promise<FileSearchResult[]>;
+        findDefinition: (rootPath: string, symbol: string) => Promise<FileSearchResult | null>;
+        findReferences: (rootPath: string, symbol: string) => Promise<FileSearchResult[]>;
+        findImplementations: (rootPath: string, symbol: string) => Promise<FileSearchResult[]>;
+        getSymbolRelationships: (
+            rootPath: string,
+            symbol: string,
+            maxItems?: number
+        ) => Promise<FileSearchResult[]>;
+        getFileOutline: (filePath: string) => Promise<FileSearchResult[]>;
+        previewRenameSymbol: (
+            rootPath: string,
+            symbol: string,
+            newSymbol: string,
+            maxFiles?: number
+        ) => Promise<{
+            success: boolean;
+            applied: boolean;
+            symbol: string;
+            newSymbol: string;
+            totalFiles: number;
+            totalOccurrences: number;
+            changes: Array<{
+                file: string;
+                replacements: Array<{ line: number; occurrences: number; before: string; after: string }>;
+            }>;
+            updatedFiles: string[];
+            errors: Array<{ file: string; error: string }>;
+        }>;
+        applyRenameSymbol: (
+            rootPath: string,
+            symbol: string,
+            newSymbol: string,
+            maxFiles?: number
+        ) => Promise<{
+            success: boolean;
+            applied: boolean;
+            symbol: string;
+            newSymbol: string;
+            totalFiles: number;
+            totalOccurrences: number;
+            changes: Array<{
+                file: string;
+                replacements: Array<{ line: number; occurrences: number; before: string; after: string }>;
+            }>;
+            updatedFiles: string[];
+            errors: Array<{ file: string; error: string }>;
+        }>;
+        generateFileDocumentation: (
+            filePath: string,
+            format?: 'markdown' | 'jsdoc-comments'
+        ) => Promise<{
+            success: boolean;
+            filePath: string;
+            format: 'markdown' | 'jsdoc-comments';
+            content: string;
+            symbolCount: number;
+            generatedAt: string;
+            error?: string;
+        }>;
+        generateProjectDocumentation: (
+            rootPath: string,
+            maxFiles?: number
+        ) => Promise<{
+            success: boolean;
+            filePath: string;
+            format: 'markdown' | 'jsdoc-comments';
+            content: string;
+            symbolCount: number;
+            generatedAt: string;
+            error?: string;
+        }>;
+        analyzeQuality: (rootPath: string, maxFiles?: number) => Promise<{
+            rootPath: string;
+            filesScanned: number;
+            totalLines: number;
+            functionSymbols: number;
+            classSymbols: number;
+            longLineCount: number;
+            todoLikeCount: number;
+            consoleUsageCount: number;
+            averageComplexity: number;
+            securityIssueCount: number;
+            topSecurityFindings: Array<{ file: string; line: number; rule: string; snippet: string }>;
+            highestComplexityFiles: Array<{ file: string; complexity: number }>;
+            qualityScore: number;
+            generatedAt: string;
+        }>;
         searchFiles: (
             rootPath: string,
             query: string,
@@ -185,6 +270,16 @@ export interface ElectronAPI {
         queryIndexedSymbols: (
             query: string
         ) => Promise<{ name: string; path: string; line: number }[]>;
+        getSymbolAnalytics: (rootPath: string) => Promise<{
+            totalSymbols: number;
+            uniqueFiles: number;
+            uniqueKinds: number;
+            byKind: Record<string, number>;
+            byExtension: Record<string, number>;
+            topFiles: Array<{ path: string; count: number }>;
+            topSymbols: Array<{ name: string; count: number }>;
+            generatedAt: string;
+        }>;
     };
 
     // Proxy
@@ -359,17 +454,11 @@ export interface ElectronAPI {
     onOllamaGPUAlert: (callback: (alert: IpcValue) => void) => () => void;
     onOllamaGPUStatus: (callback: (status: IpcValue) => void) => () => void;
 
-    // Ollama scraper for marketplace (deprecated - use marketplace API instead)
-    scrapeOllamaLibrary: (bypassCache?: boolean) => Promise<OllamaScrapedModel[]>;
-    scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) => Promise<OllamaModelDetails | null>;
-    clearOllamaScraperCache: () => Promise<{ success: boolean }>;
-
     // Marketplace API (models from database)
     marketplace: {
         getModels: (provider?: 'ollama' | 'huggingface', limit?: number, offset?: number) => Promise<DbMarketplaceModel[]>;
         searchModels: (query: string, provider?: 'ollama' | 'huggingface', limit?: number) => Promise<DbMarketplaceModel[]>;
-        refresh: () => Promise<{ success: boolean; count: number; error?: string }>;
-        getModelDetails: (modelName: string) => Promise<OllamaModelDetails | null>;
+        getModelDetails: (modelName: string, provider?: 'ollama' | 'huggingface') => Promise<MarketplaceModelDetails | null>;
         getStatus: () => Promise<{ lastScrapeTime: number; isScraping: boolean }>;
     };
 
@@ -1903,11 +1992,31 @@ const api: ElectronAPI = {
     code: {
         scanTodos: rootPath => ipcRenderer.invoke('code:scanTodos', rootPath),
         findSymbols: (rootPath, query) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
+        findDefinition: (rootPath, symbol) =>
+            ipcRenderer.invoke('code:findDefinition', rootPath, symbol),
+        findReferences: (rootPath, symbol) =>
+            ipcRenderer.invoke('code:findReferences', rootPath, symbol),
+        findImplementations: (rootPath, symbol) =>
+            ipcRenderer.invoke('code:findImplementations', rootPath, symbol),
+        getSymbolRelationships: (rootPath, symbol, maxItems) =>
+            ipcRenderer.invoke('code:getSymbolRelationships', rootPath, symbol, maxItems),
+        getFileOutline: filePath => ipcRenderer.invoke('code:getFileOutline', filePath),
+        previewRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
+            ipcRenderer.invoke('code:previewRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
+        applyRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
+            ipcRenderer.invoke('code:applyRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
+        generateFileDocumentation: (filePath, format) =>
+            ipcRenderer.invoke('code:generateFileDocumentation', filePath, format),
+        generateProjectDocumentation: (rootPath, maxFiles) =>
+            ipcRenderer.invoke('code:generateProjectDocumentation', rootPath, maxFiles),
+        analyzeQuality: (rootPath, maxFiles) =>
+            ipcRenderer.invoke('code:analyzeQuality', rootPath, maxFiles),
         searchFiles: (rootPath, query, projectId, isRegex) =>
             ipcRenderer.invoke('code:searchFiles', rootPath, query, projectId, isRegex),
         indexProject: (rootPath, projectId) =>
             ipcRenderer.invoke('code:indexProject', rootPath, projectId),
         queryIndexedSymbols: query => ipcRenderer.invoke('code:queryIndexedSymbols', query),
+        getSymbolAnalytics: rootPath => ipcRenderer.invoke('code:getSymbolAnalytics', rootPath),
     },
 
     getProxyModels: () => ipcRenderer.invoke('proxy:getModels'),
@@ -2021,12 +2130,6 @@ const api: ElectronAPI = {
             callback(value as 'ok' | 'error' | 'stopped')
         ),
 
-    // Ollama scraper endpoints (deprecated - use marketplace API instead)
-    scrapeOllamaLibrary: (bypassCache?: boolean) => ipcRenderer.invoke('ollama:scrapeLibrary', bypassCache),
-    scrapeOllamaModelDetails: (modelName: string, bypassCache?: boolean) =>
-        ipcRenderer.invoke('ollama:scrapeModelDetails', modelName, bypassCache),
-    clearOllamaScraperCache: () => ipcRenderer.invoke('ollama:clearScraperCache'),
-
     // OLLAMA-01: Model Health & Recommendations
     checkOllamaModelHealth: (modelName: string) => ipcRenderer.invoke('ollama:checkModelHealth', modelName),
     checkAllOllamaModelsHealth: () => ipcRenderer.invoke('ollama:checkAllModelsHealth'),
@@ -2063,9 +2166,8 @@ const api: ElectronAPI = {
             ipcRenderer.invoke('marketplace:getModels', provider, limit, offset),
         searchModels: (query: string, provider?: 'ollama' | 'huggingface', limit?: number) =>
             ipcRenderer.invoke('marketplace:searchModels', query, provider, limit),
-        getModelDetails: (modelName: string) =>
-            ipcRenderer.invoke('marketplace:getModelDetails', modelName),
-        refresh: () => ipcRenderer.invoke('marketplace:refresh'),
+        getModelDetails: (modelName: string, provider: 'ollama' | 'huggingface' = 'ollama') =>
+            ipcRenderer.invoke('marketplace:getModelDetails', modelName, provider),
         getStatus: () => ipcRenderer.invoke('marketplace:getStatus'),
     },
 

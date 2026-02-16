@@ -1,5 +1,40 @@
 # Registro de cambios
 
+## [2026-02-16]
+
+### Mejoras del sistema de agentes: ejecución de herramientas y gestión del contexto
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Sistema de agentes mejorado con ejecución robusta de herramientas, gestión automática de la ventana de contexto y recuperación inteligente de errores.
+
+- **Ejecución de herramientas**: Se agregaron tiempos de espera de herramientas, almacenamiento en caché de resultados para herramientas idempotentes y ejecución semiparalela para mejorar el rendimiento.
+- **Gestión del contexto**: Implementación de poda automática del historial y resumen basado en LLM para mantener el contexto del agente en sesiones largas.
+- **Recuperación de errores**: Se agregó clasificación de errores en múltiples categorías y estrategias de reintento inteligentes con consejos de recuperación para el agente.
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### Mejora de validación de entrada IPC
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Se agregó validación de esquema Zod a los manejadores IPC críticos para prevenir ataques de inyección y problemas de datos malformados.
+
+- **Seguridad**: Se agregaron esquemas de validación para herramientas, seguimiento de uso, manejadores IPC de ventana/shell y proxy.
+- **Validación**: Se implementó validación estricta de entrada usando esquemas Zod para ejecución de herramientas, registro de uso, comandos shell y operaciones proxy.
+- **Protección**: Seguridad mejorada contra ataques de inyección al validar URLs, comandos, claves de sesión y argumentos antes de la ejecución.
+- **Seguridad de tipos**: Seguridad de tipos mejorada con definiciones de esquema explícitas para nombres de proveedores, nombres de modelos, parámetros de comando y configuraciones de límite de velocidad.
+- **Manejo de errores**: Se agregaron valores de respaldo seguros para todos los manejadores proxy para garantizar una degradación elegante en caso de fallas de validación.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

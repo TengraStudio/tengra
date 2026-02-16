@@ -1,4 +1,34 @@
 {
+  "2026-02-16-i18n-core-rtl-onboarding": {
+    "title": "Internationalization Core & RTL Support",
+    "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+    "items": [
+      "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+      "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+      "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+      "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+    ]
+  },
+  "2026-02-16-ipc-validation-schemas": {
+    "title": "Amélioration de la validation des entrées IPC",
+    "summary": "Ajout de la validation de schéma Zod aux gestionnaires IPC critiques pour prévenir les attaques par injection et les problèmes de données malformées.",
+    "items": [
+      "- **Sécurité**: Ajout de schémas de validation pour les outils, le suivi d'utilisation, les gestionnaires IPC de fenêtre/shell et proxy.",
+      "- **Validation**: Implémentation d'une validation stricte des entrées avec des schémas Zod pour l'exécution d'outils, l'enregistrement d'utilisation, les commandes shell et les opérations proxy.",
+      "- **Protection**: Sécurité renforcée contre les attaques par injection en validant les URL, commandes, clés de session et arguments avant l'exécution.",
+      "- **Sécurité des types**: Amélioration de la sécurité des types avec des définitions de schéma explicites pour les noms de fournisseurs, les noms de modèles, les paramètres de commande et les configurations de limite de débit.",
+      "- **Gestion des erreurs**: Ajout de valeurs de secours sûres pour tous les gestionnaires proxy afin d'assurer une dégradation gracieuse en cas d'échec de validation."
+    ]
+  },
+  "2026-02-16-agent-system-improvements": {
+    "title": "Améliorations du système d'agent : exécution des outils et gestion du contexte",
+    "summary": "Système d'agent amélioré avec une exécution robuste des outils, une gestion automatique de la fenêtre de contexte et une récupération intelligente des erreurs.",
+    "items": [
+      "- **Exécution des outils** : Ajout de délais d'attente pour les outils, mise en cache des résultats pour les outils idempotents et exécution semi-parallèle pour des performances améliorées.",
+      "- **Gestion du contexte** : Mise en œuvre de l'élagage automatique de l'historique et de la résumer par LLM pour maintenir le contexte de l'agent lors de sessions longues.",
+      "- **Récupération d'erreurs** : Ajout d'une classification d'erreurs multi-catégories et de stratégies de réessai intelligentes avec des conseils de récupération pour l'agent."
+    ]
+  },
   "2026-02-14-event-bus-object-destroyed-fix": {
     "title": "Améliorations de la sécurité de la boucle d'événements IPC",
     "summary": "Correction des erreurs 'Object has been destroyed' dans les gestionnaires d'événements IPC de plusieurs services.",
@@ -3339,6 +3369,15 @@
       "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
       "- **Usability**: Added 'Copy Details' button to easily share error information.",
       "- **UX**: Automatic error state reset when navigating between different views."
+    ]
+  },
+  "2026-02-14-sd-cpp-binary-discovery-fix": {
+    "title": "SD-CPP Binary Discovery Fix",
+    "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+    "items": [
+      "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+      "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+      "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
     ]
   }
 }

@@ -11,6 +11,7 @@ import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
 import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
+import { LanguageSelectionPrompt } from '@renderer/components/shared/LanguageSelectionPrompt';
 import { validateDroppedFile } from '@renderer/features/chat/hooks/useAttachments';
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
@@ -113,6 +114,10 @@ function MainApp() {
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
     const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
+        // Show prompt only on first run if language wasn't explicitly selected
+        return !localStorage.getItem('app.languageSelected');
+    });
 
     useAppInitialization(); // Keep initialization but don't use auto-warning
 
@@ -196,6 +201,16 @@ function MainApp() {
 
     useKeyboardShortcuts(keyboardShortcutsConfig);
     const chatTemplates = useMemo(() => getChatTemplates(t), [t]);
+
+    useEffect(() => {
+        const openPalette = () => {
+            appState.setShowCommandPalette(true);
+        };
+        window.addEventListener('app:open-command-palette', openPalette as EventListener);
+        return () => {
+            window.removeEventListener('app:open-command-palette', openPalette as EventListener);
+        };
+    }, [appState.setShowCommandPalette]);
 
     useEffect(() => {
         const remove = window.electron.ipcRenderer.on(
@@ -282,6 +297,15 @@ function MainApp() {
             )}
         >
             <div className="app-container h-screen w-full overflow-hidden">
+                {showLanguagePrompt && (
+                    <LanguageSelectionPrompt
+                        onClose={() => {
+                            localStorage.setItem('app.languageSelected', 'true');
+                            setShowLanguagePrompt(false);
+                        }}
+                    />
+                )}
+
                 {showExtensionModal && (
                     <ExtensionInstallPrompt
                         onClose={() => setShowExtensionModal(false)}

@@ -193,6 +193,9 @@ export class ProxyService extends BaseService {
   }
 
   private getProviderConfig(provider: string): ProviderRateLimitConfig {
+    if (this.providerRateConfigs.size === 0) {
+      this.initializeProviderRateLimits();
+    }
     return this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default')!;
   }
 

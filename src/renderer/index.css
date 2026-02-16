@@ -1934,3 +1934,56 @@
         outline: 2px solid Highlight !important;
     }
 }
+
+/* --- RTL (Right-to-Left) UTILITIES --- */
+[dir='rtl'] {
+    text-align: right;
+}
+
+/* Flip animations for RTL */
+[dir='rtl'] .animate-slide-in {
+    animation: slide-in-rtl 0.15s ease-out;
+}
+
+@keyframes slide-in-rtl {
+    from {
+        opacity: 0;
+        transform: translateX(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Flip icons that are direction-sensitive */
+[dir='rtl'] .rtl-flip {
+    transform: scaleX(-1);
+}
+
+/* Logical properties fallback for older browsers or explicit overrides */
+@layer utilities {
+    .ms-0 { margin-inline-start: 0; }
+    .me-0 { margin-inline-end: 0; }
+    .ps-0 { padding-inline-start: 0; }
+    .pe-0 { padding-inline-end: 0; }
+    
+    .ms-1 { margin-inline-start: 0.25rem; }
+    .me-1 { margin-inline-end: 0.25rem; }
+    .ps-1 { padding-inline-start: 0.25rem; }
+    .pe-1 { padding-inline-end: 0.25rem; }
+
+    .ms-2 { margin-inline-start: 0.5rem; }
+    .me-2 { margin-inline-end: 0.5rem; }
+    .ps-2 { padding-inline-start: 0.5rem; }
+    .pe-2 { padding-inline-end: 0.5rem; }
+
+    .ms-4 { margin-inline-start: 1rem; }
+    .me-4 { margin-inline-end: 1rem; }
+    .ps-4 { padding-inline-start: 1rem; }
+    .pe-4 { padding-inline-end: 1rem; }
+    
+    .start-0 { inset-inline-start: 0; }
+    .end-0 { inset-inline-end: 0; }
+}

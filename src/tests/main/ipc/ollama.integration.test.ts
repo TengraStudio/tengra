@@ -46,7 +46,6 @@ import type { LLMService } from '@main/services/llm/llm.service';
 import type { LocalAIService } from '@main/services/llm/local-ai.service';
 import type { OllamaService } from '@main/services/llm/ollama.service';
 import type { OllamaHealthService } from '@main/services/llm/ollama-health.service';
-import type { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import type { ProxyService } from '@main/services/proxy/proxy.service';
 import type { RateLimitService } from '@main/services/security/rate-limit.service';
 import type { SettingsService } from '@main/services/system/settings.service';
@@ -56,7 +55,6 @@ describe('Ollama IPC Handlers', () => {
     let mockLocalAIService: LocalAIService;
     let mockOllamaService: OllamaService;
     let mockOllamaHealthService: OllamaHealthService;
-    let mockOllamaScraperService: OllamaScraperService;
     let mockRateLimitService: RateLimitService;
     let mockSettingsService: SettingsService;
     let mockLLMService: LLMService;
@@ -76,6 +74,7 @@ describe('Ollama IPC Handlers', () => {
 
         // Mock window
         mockWindow = {
+            isDestroyed: vi.fn().mockReturnValue(false),
             webContents: {
                 send: vi.fn()
             }
@@ -122,12 +121,6 @@ describe('Ollama IPC Handlers', () => {
             on: vi.fn()
         } as unknown as OllamaHealthService;
 
-        mockOllamaScraperService = {
-            getLibraryModels: vi.fn().mockResolvedValue([]),
-            getModelDetails: vi.fn().mockResolvedValue(null),
-            clearCache: vi.fn()
-        } as unknown as OllamaScraperService;
-
         mockRateLimitService = {
             waitForToken: vi.fn().mockResolvedValue(undefined)
         } as unknown as RateLimitService;
@@ -148,7 +141,6 @@ describe('Ollama IPC Handlers', () => {
             llmService: mockLLMService,
             ollamaService: mockOllamaService,
             ollamaHealthService: mockOllamaHealthService,
-            ollamaScraperService: mockOllamaScraperService,
             proxyService: mockProxyService,
             rateLimitService: mockRateLimitService
         });
@@ -507,87 +499,4 @@ describe('Ollama IPC Handlers', () => {
         });
     });
 
-    describe('ollama:scrapeLibrary', () => {
-        it('should scrape library models', async () => {
-            const handler = ipcMainHandlers.get('ollama:scrapeLibrary');
-            expect(handler).toBeDefined();
-
-            vi.mocked(mockOllamaScraperService.getLibraryModels).mockResolvedValue([
-                { name: 'llama2', pulls: '1000', tagCount: 5, lastUpdated: '2024-01-01', categories: ['general'] }
-            ]);
-
-            const result = await handler!(mockEvent, false);
-
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:operation');
-            expect(mockOllamaScraperService.getLibraryModels).toHaveBeenCalledWith(false);
-            expect(result).toEqual([{ name: 'llama2', pulls: '1000', tagCount: 5, lastUpdated: '2024-01-01', categories: ['general'] }]);
-        });
-
-        it('should bypass cache when requested', async () => {
-            const handler = ipcMainHandlers.get('ollama:scrapeLibrary');
-
-            await handler!(mockEvent, true);
-
-            expect(mockOllamaScraperService.getLibraryModels).toHaveBeenCalledWith(true);
-        });
-
-        it('should return empty array when service unavailable', async () => {
-            // Re-register without scraper service
-            ipcMainHandlers.clear();
-            registerOllamaIpc({
-                localAIService: mockLocalAIService,
-                settingsService: mockSettingsService,
-                llmService: mockLLMService
-            });
-
-            const newHandler = ipcMainHandlers.get('ollama:scrapeLibrary');
-            const result = await newHandler!(mockEvent, false);
-
-            expect(result).toEqual([]);
-        });
-    });
-
-    describe('ollama:scrapeModelDetails', () => {
-        it('should scrape model details', async () => {
-            const handler = ipcMainHandlers.get('ollama:scrapeModelDetails');
-            expect(handler).toBeDefined();
-
-            const details = { name: 'llama2', shortDescription: 'A great model', longDescriptionHtml: '<p>Details</p>', versions: [] };
-            vi.mocked(mockOllamaScraperService.getModelDetails).mockResolvedValue(details);
-
-            const result = await handler!(mockEvent, 'llama2', false);
-
-            expect(mockRateLimitService.waitForToken).toHaveBeenCalledWith('ollama:operation');
-            expect(mockOllamaScraperService.getModelDetails).toHaveBeenCalledWith('llama2', false);
-            expect(result).toEqual(details);
-        });
-
-        it('should reject invalid model names', async () => {
-            const handler = ipcMainHandlers.get('ollama:scrapeModelDetails');
-
-            const result = await handler!(mockEvent, '', false);
-
-            expect(result).toBeNull();
-        });
-    });
-
-    describe('ollama:clearScraperCache', () => {
-        it('should clear scraper cache', async () => {
-            const handler = ipcMainHandlers.get('ollama:clearScraperCache');
-            expect(handler).toBeDefined();
-
-            const result = await handler!(mockEvent);
-
-            expect(mockOllamaScraperService.clearCache).toHaveBeenCalled();
-            expect(result).toEqual({ success: true });
-        });
-
-        it('should return success when cache cleared', async () => {
-            const handler = ipcMainHandlers.get('ollama:clearScraperCache');
-
-            const result = await handler!(mockEvent);
-
-            expect(result.success).toBe(true);
-        });
-    });
 });

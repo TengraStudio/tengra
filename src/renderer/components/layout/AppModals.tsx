@@ -52,7 +52,7 @@ export function AppModals({
             <div className="space-y-4"><p className="text-sm text-muted-foreground">{t('auth.connectionFailed')}</p></div>
         </Modal>
         <AnimatePresence>
-            {showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} />}
+            {showShortcuts && <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => { setShowShortcuts(false); }} language={language} />}
         </AnimatePresence>
         <AnimatePresence>
             {isAudioOverlayOpen && (

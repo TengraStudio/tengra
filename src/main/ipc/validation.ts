@@ -83,3 +83,45 @@ export const authTokenDataSchema = z.object({
 
 export const sessionIdSchema = z.string().uuid();
 export const sessionLimitSchema = z.number().int().min(1).max(100);
+
+// --- Tools Schemas ---
+
+export const toolNameSchema = z.string().min(1).max(256);
+export const toolArgsSchema = z.record(z.string(), z.unknown());
+export const toolCallIdSchema = z.string().min(1).max(256);
+
+// --- Usage Tracking Schemas ---
+
+export const providerNameSchema = z.string().min(1).max(64);
+export const modelNameSchema = z.string().min(1).max(256);
+export const usagePeriodSchema = z.enum(['hourly', 'daily', 'weekly']);
+
+// --- Window/Shell Schemas ---
+
+export const urlSchema = z.string().min(1).max(2048).refine(
+    (url) => {
+        try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:' || url.startsWith('safe-file://');
+        } catch {
+            return url.startsWith('safe-file://');
+        }
+    },
+    { message: 'Invalid URL or unsupported protocol' }
+);
+
+export const commandSchema = z.string().min(1).max(1024);
+export const commandArgsSchema = z.array(z.string()).optional();
+export const cwdSchema = z.string().optional();
+
+// --- Proxy Schemas ---
+
+export const sessionKeySchema = z.string().min(1).max(512);
+export const proxyAccountIdSchema = z.string().min(1).max(128).optional();
+export const rateLimitConfigSchema = z.object({
+    windowMs: z.number().int().positive().optional(),
+    maxRequests: z.number().int().positive().optional(),
+    warningThreshold: z.number().min(0).max(1).optional(),
+    maxQueueSize: z.number().int().nonnegative().optional(),
+    allowPremiumBypass: z.boolean().optional()
+}).optional();

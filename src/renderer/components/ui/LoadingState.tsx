@@ -1,5 +1,5 @@
 import { Loader2, X } from 'lucide-react';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -100,6 +100,18 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
     compact = false
 }) => {
     const hasRegisteredRef = useRef(false);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+    // Update current time periodically for progress calculation
+    useEffect(() => {
+        if (typeof startedAt === 'number' && typeof estimatedMs === 'number' && estimatedMs > 0) {
+            const interval = setInterval(() => {
+                setCurrentTime(Date.now());
+            }, 100); // Update every 100ms for smooth progress
+            return () => clearInterval(interval);
+        }
+        return undefined;
+    }, [startedAt, estimatedMs]);
 
     const sizeClasses = {
         sm: 'w-4 h-4',
@@ -124,11 +136,11 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
             Number.isFinite(estimatedMs) &&
             estimatedMs > 0
         ) {
-            const elapsed = Math.max(0, Date.now() - startedAt);
+            const elapsed = Math.max(0, currentTime - startedAt);
             return Math.max(0, Math.min(98, (elapsed / estimatedMs) * 100));
         }
         return undefined;
-    }, [estimatedMs, progress, startedAt]);
+    }, [currentTime, estimatedMs, progress, startedAt]);
 
     const estimateLabel = useMemo(() => {
         if (
@@ -140,10 +152,10 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         ) {
             return null;
         }
-        const remaining = Math.max(0, estimatedMs - (Date.now() - startedAt));
+        const remaining = Math.max(0, estimatedMs - (currentTime - startedAt));
         const seconds = Math.ceil(remaining / 1000);
         return seconds > 0 ? `~${seconds}s remaining` : 'Finalizing...';
-    }, [estimatedMs, startedAt]);
+    }, [currentTime, estimatedMs, startedAt]);
 
     useEffect(() => {
         if (!operationId || hasRegisteredRef.current) {
@@ -161,7 +173,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
             completeLoadingOperation(operationId, 'completed');
             hasRegisteredRef.current = false;
         };
-    }, [operationId]);
+    }, [analyticsContext, clampedProgress, estimatedMs, onCancel, operationId]);
 
     useEffect(() => {
         if (!operationId || clampedProgress === undefined) {

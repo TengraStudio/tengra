@@ -32,7 +32,22 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
         } catch {
             return defaultValue;
         }
-    }
+    },
+    createValidatedIpcHandler: (
+        _name: string,
+        handler: (...args: any[]) => any,
+        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
+    ) => async (event: unknown, ...args: unknown[]) => {
+        try {
+            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
+            return await handler(event, ...(parsedArgs as unknown[]));
+        } catch {
+            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
+                return options.defaultValue;
+            }
+            throw new Error('Validation failed');
+        }
+    },
 }));
 
 vi.mock('@main/utils/rate-limiter.util', () => ({
@@ -232,7 +247,8 @@ describe('Terminal IPC Integration', () => {
 
     it('rejects invalid dimensions on create', async () => {
         const handler = ipcMainHandlers.get('terminal:create')!;
-        await expect(handler({} as IpcMainInvokeEvent, { cols: 0, rows: 24 })).rejects.toThrow('cols must be an integer between 1 and 500');
+        const result = await handler({} as IpcMainInvokeEvent, { cols: 0, rows: 24 });
+        expect(result).toBeNull();
     });
 
     it('returns false for invalid session id on write', async () => {

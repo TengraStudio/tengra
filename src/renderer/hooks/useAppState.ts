@@ -140,6 +140,15 @@ export function useAppState(): AppState {
         isAudioOverlayOpen,
         toasts,
         addToast,
-        removeToast
+        removeToast,
+        setIsSidebarCollapsed,
+        setCurrentView,
+        setIsDragging,
+        setShowCommandPalette,
+        setShowSSHManager,
+        setShowShortcuts,
+        setShowFileMenu,
+        setShowScrollButton,
+        setIsAudioOverlayOpen
     ]);
 }

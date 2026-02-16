@@ -545,7 +545,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 activeFilePath={wm.activeTab?.path}
                 activeFileContent={wm.activeTab?.content}
                 activeFileType={wm.activeTab?.type}
-                onCommandClick={() => ps.notify('info', 'Command Palette coming soon')}
+                onCommandClick={() => {
+                    window.dispatchEvent(new CustomEvent('app:open-command-palette'));
+                }}
                 onMouseDown={handleCommandStripResizeStart}
             />
         </div>

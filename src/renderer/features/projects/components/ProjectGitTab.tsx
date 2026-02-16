@@ -3,6 +3,7 @@ import { Project } from '@shared/types/project';
 import { FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
 import React, { useEffect } from 'react';
 
+import { GitAdvancedPanel } from './git/GitAdvancedPanel';
 import { GitChangeStats } from './git/GitChangeStats';
 import { GitCommitHistory } from './git/GitCommitHistory';
 import { GitCommitSection } from './git/GitCommitSection';
@@ -131,6 +132,8 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                             t={t}
                         />
                     )}
+
+                    <GitAdvancedPanel projectPath={project.path} />
                 </>
             )}
         </div>

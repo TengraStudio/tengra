@@ -118,35 +118,20 @@ export function registerMarketplaceIpc(options: MarketplaceIpcOptions): void {
         )
     );
 
-    // Force refresh - scrape and store new data
-    ipcMain.handle(
-        'marketplace:refresh',
-        createSafeIpcHandler(
-            'marketplace:refresh',
-            async () => {
-                if (rateLimitService) {
-                    await rateLimitService.waitForToken('mcp:internet');
-                }
-                return await marketplaceService.refresh();
-            },
-            { success: false, count: 0, error: 'Service unavailable' }
-        )
-    );
-
-    // Get model details from scraper
     ipcMain.handle(
         'marketplace:getModelDetails',
         createSafeIpcHandler(
             'marketplace:getModelDetails',
-            async (_event: IpcMainInvokeEvent, modelNameRaw: unknown) => {
+            async (_event: IpcMainInvokeEvent, modelNameRaw: unknown, providerRaw: unknown) => {
                 if (rateLimitService) {
                     await rateLimitService.waitForToken('mcp:internet');
                 }
                 const modelName = validateQuery(modelNameRaw);
                 if (!modelName) {
-                    throw new Error('Invalid model name');
+                    return null;
                 }
-                return await marketplaceService.getModelDetails(modelName);
+                const provider = validateProvider(providerRaw) ?? 'ollama';
+                return await marketplaceService.getModelDetails(modelName, provider);
             },
             null
         )

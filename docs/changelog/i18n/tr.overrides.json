@@ -1,4 +1,34 @@
 {
+  "2026-02-16-i18n-core-rtl-onboarding": {
+    "title": "Uluslararasılaştırma Çekirdeği ve RTL Desteği",
+    "summary": "RTL desteği, çoğullaştırma ve ilk çalıştırma dil seçim istemi ile sağlam bir I18N altyapısı uygulandı.",
+    "items": [
+      "- **I18N Çekirdek**: Otomatik dil algılama, `Intl` biçimlendirme araçları ve çoğullaştırma desteği eklendi.",
+      "- **RTL Desteği**: RTL dilleri (Arapça, İbranice) için CSS mantıksal özellikleri, yöne duyarlı simge çevirme ve dinamik düzen ayarlaması uygulandı.",
+      "- **Onboarding**: Kullanıcıların ilk açılışta tercih ettikleri dili seçmelerine olanak tanıyan `LanguageSelectionPrompt` eklendi.",
+      "- **Doğrulama**: `ProjectsHeader` bileşenine çoğullaştırma entegre edildi ve çeviri anahtarları için denetim betikleri eklendi."
+    ]
+  },
+  "2026-02-16-ipc-validation-schemas": {
+    "title": "IPC Girdi Doğrulama Geliştirmesi",
+    "summary": "Enjeksiyon saldırılarını ve hatalı veri sorunlarını önlemek için kritik IPC işleyicilerine Zod şema doğrulaması eklendi.",
+    "items": [
+      "- **Güvenlik**: Araçlar, kullanım takibi, pencere/kabuk ve proxy IPC işleyicileri için doğrulama şemaları eklendi.",
+      "- **Doğrulama**: Araç yürütme, kullanım kaydı, kabuk komutları ve proxy işlemleri için Zod şemaları kullanılarak katı girdi doğrulaması uygulandı.",
+      "- **Koruma**: URL'ler, komutlar, oturum anahtarları ve argümanlar yürütülmeden önce doğrulanarak enjeksiyon saldırılarına karşı güvenlik artırıldı.",
+      "- **Tip Güvenliği**: Sağlayıcı adları, model adları, komut parametreleri ve hız sınırı yapılandırmaları için açık şema tanımlarıyla tip güvenliği iyileştirildi.",
+      "- **Hata Yönetimi**: Doğrulama hatalarında zarif bozulma sağlamak için tüm proxy işleyicilerine güvenli yedek değerler eklendi."
+    ]
+  },
+  "2026-02-16-agent-system-improvements": {
+    "title": "Ajan Sistemi İyileştirmeleri: Araç Yürütme ve Bağlam Yönetimi",
+    "summary": "Dayanıklı araç yürütme, otomatik bağlam penceresi yönetimi ve akıllı hata kurtarma ile ajan sistemi geliştirildi.",
+    "items": [
+      "- **Araç Yürütme**: Araç zaman aşımları, idempotent araçlar için sonuç önbelleğe alma ve iyileştirilmiş performans için yarı paralel yürütme eklendi.",
+      "- **Bağlam Yönetimi**: Uzun oturumlarda ajan bağlamını korumak için otomatik geçmiş budama ve LLM tabanlı özetleme uygulandı.",
+      "- **Hata Kurtarma**: Çok kategorili hata sınıflandırması ve ajan için kurtarma taviyeli akıllı yeniden deneme stratejileri eklendi."
+    ]
+  },
   "2026-02-14-event-bus-object-destroyed-fix": {
     "title": "IPC Olay Döngüsü Güvenlik İyileştirmeleri",
     "summary": "Birden fazla serviste IPC olay dinleyicilerinde oluşan 'Object has been destroyed' hataları düzeltildi.",
@@ -3325,6 +3355,15 @@
       "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
       "- **Usability**: Added 'Copy Details' button to easily share error information.",
       "- **UX**: Automatic error state reset when navigating between different views."
+    ]
+  },
+  "2026-02-14-sd-cpp-binary-discovery-fix": {
+    "title": "SD-CPP Binary Discovery Fix",
+    "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+    "items": [
+      "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+      "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+      "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
     ]
   }
 }

@@ -114,6 +114,22 @@ export function registerFilesIpc(
     appLogger.info('FilesIPC', 'Registering files IPC handlers');
 
     ipcMain.handle(
+        'files:exists',
+        createSafeIpcHandler(
+            'files:exists',
+            async (_event: IpcMainInvokeEvent, filePathRaw: unknown) => {
+                const filePath = validatePath(filePathRaw);
+                if (!filePath) {
+                    throw new Error('Invalid file path');
+                }
+                const result = await fileSystemService.fileExists(filePath);
+                return { success: true, data: result.exists };
+            },
+            { success: true, data: false }
+        )
+    );
+
+    ipcMain.handle(
         'files:selectDirectory',
         createSafeIpcHandler(
             'files:selectDirectory',

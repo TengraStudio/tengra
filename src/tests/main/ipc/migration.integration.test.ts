@@ -104,8 +104,10 @@ describe('Migration IPC Handlers', () => {
             const handler = ipcMainHandlers.get('migration:status');
             vi.mocked(mockDatabaseService.getMigrationStatus).mockResolvedValue({
                 version: 0,
-                lastMigration: 0
-            });
+                lastMigration: 0,
+                appliedMigrations: [],
+                pendingMigrations: ['001_init']
+            } as any);
 
             const result = await handler!(mockEvent);
 

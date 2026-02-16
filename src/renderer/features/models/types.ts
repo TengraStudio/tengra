@@ -37,6 +37,7 @@ export interface HFModel {
     lastModified: string
     category?: 'coding' | 'chat' | 'multimodal' | 'embedding' | 'reasoning' | 'general'
     recommendationScore?: number
+    longDescriptionMarkdown?: string
     provider: 'huggingface'
 }
 
@@ -46,6 +47,15 @@ export interface OllamaLibraryModel {
     tags: string[]
     provider: 'ollama'
     pulls?: string
+    lastUpdated?: string
+    longDescriptionHtml?: string
+    versions?: Array<{
+        version: string
+        size: string
+        maxContext: string
+        inputType: string
+        digest: string
+    }>
 }
 
 export type UnifiedModel = HFModel | OllamaLibraryModel

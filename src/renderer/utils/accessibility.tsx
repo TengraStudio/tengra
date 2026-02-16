@@ -364,12 +364,13 @@ export function useRovingTabIndex<T extends HTMLElement = HTMLElement>(): {
                 setFocusedIndex(0);
                 items[0]?.focus();
                 break;
-            case 'End':
+            case 'End': {
                 e.preventDefault();
                 const lastIndex = items.length - 1;
                 setFocusedIndex(lastIndex);
                 items[lastIndex]?.focus();
                 break;
+            }
         }
     }, []);
 

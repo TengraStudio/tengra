@@ -1,0 +1,191 @@
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
+import { RefObject } from 'react';
+
+import { cn } from '@/lib/utils';
+
+import type { TerminalSearchMatch } from '../utils/terminal-search';
+
+interface TerminalSearchOverlayProps {
+    t: (key: string) => string;
+    searchInputRef: RefObject<HTMLInputElement>;
+    searchQuery: string;
+    searchUseRegex: boolean;
+    searchStatus: 'idle' | 'found' | 'not-found' | 'invalid-regex';
+    searchMatches: TerminalSearchMatch[];
+    searchActiveMatchIndex: number;
+    searchHistory: string[];
+    setSearchQuery: (value: string) => void;
+    setSearchUseRegex: (value: boolean | ((prev: boolean) => boolean)) => void;
+    setSearchStatus: (value: 'idle' | 'found' | 'not-found' | 'invalid-regex') => void;
+    setSearchMatches: (value: TerminalSearchMatch[]) => void;
+    setSearchActiveMatchIndex: (value: number) => void;
+    setSearchHistoryIndex: (value: number) => void;
+    resetActiveSearchCursor: () => void;
+    runTerminalSearch: (direction: 'next' | 'prev') => void;
+    closeTerminalSearch: () => void;
+    stepSearchHistory: (direction: 'older' | 'newer') => void;
+    jumpToSearchMatch: (index: number) => void;
+    getSearchMatchLabel: (match: TerminalSearchMatch) => string;
+}
+
+export function TerminalSearchOverlay({
+    t,
+    searchInputRef,
+    searchQuery,
+    searchUseRegex,
+    searchStatus,
+    searchMatches,
+    searchActiveMatchIndex,
+    searchHistory,
+    setSearchQuery,
+    setSearchUseRegex,
+    setSearchStatus,
+    setSearchMatches,
+    setSearchActiveMatchIndex,
+    setSearchHistoryIndex,
+    resetActiveSearchCursor,
+    runTerminalSearch,
+    closeTerminalSearch,
+    stepSearchHistory,
+    jumpToSearchMatch,
+    getSearchMatchLabel,
+}: TerminalSearchOverlayProps) {
+    return (
+        <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-1 min-w-[300px]">
+            <div className="flex items-center gap-1">
+                <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                    ref={searchInputRef}
+                    value={searchQuery}
+                    onChange={event => {
+                        setSearchQuery(event.target.value);
+                        setSearchStatus('idle');
+                        setSearchMatches([]);
+                        setSearchActiveMatchIndex(-1);
+                        setSearchHistoryIndex(-1);
+                        resetActiveSearchCursor();
+                    }}
+                    onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            runTerminalSearch(event.shiftKey ? 'prev' : 'next');
+                        } else if (event.key === 'Escape') {
+                            event.preventDefault();
+                            closeTerminalSearch();
+                        } else if (event.key === 'ArrowUp') {
+                            event.preventDefault();
+                            stepSearchHistory('older');
+                        } else if (event.key === 'ArrowDown') {
+                            event.preventDefault();
+                            stepSearchHistory('newer');
+                        }
+                    }}
+                    placeholder={t('common.search')}
+                    className="h-6 w-44 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"
+                />
+                <button
+                    onClick={() => {
+                        setSearchUseRegex(prev => !prev);
+                        setSearchStatus('idle');
+                        setSearchActiveMatchIndex(-1);
+                    }}
+                    className={cn(
+                        'h-6 px-1.5 text-[10px] rounded border transition-colors',
+                        searchUseRegex
+                            ? 'border-primary/70 text-primary bg-primary/10'
+                            : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
+                    )}
+                    aria-label={t('terminal.searchRegex')}
+                    title={t('terminal.searchRegex')}
+                >
+                    .*
+                </button>
+                <button
+                    onClick={() => {
+                        runTerminalSearch('prev');
+                    }}
+                    className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Find previous"
+                >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    onClick={() => {
+                        runTerminalSearch('next');
+                    }}
+                    className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Find next"
+                >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    onClick={closeTerminalSearch}
+                    className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={t('common.close')}
+                >
+                    <X className="w-3.5 h-3.5" />
+                </button>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2">
+                <span
+                    className={cn(
+                        'text-[10px]',
+                        searchStatus === 'invalid-regex' || searchStatus === 'not-found'
+                            ? 'text-destructive'
+                            : 'text-muted-foreground'
+                    )}
+                >
+                    {searchStatus === 'invalid-regex'
+                        ? t('terminal.invalidRegex')
+                        : searchMatches.length > 0
+                            ? `${searchActiveMatchIndex >= 0 ? searchActiveMatchIndex + 1 : 0}/${searchMatches.length}`
+                            : searchStatus === 'not-found'
+                                ? '0/0'
+                                : ''}
+                </span>
+                {searchHistory.length > 0 && (
+                    <div className="flex items-center gap-1 max-w-[180px] overflow-hidden">
+                        {searchHistory.slice(0, 3).map(entry => (
+                            <button
+                                key={entry}
+                                onClick={() => {
+                                    setSearchQuery(entry);
+                                    setSearchStatus('idle');
+                                    setSearchMatches([]);
+                                    setSearchActiveMatchIndex(-1);
+                                    setSearchHistoryIndex(-1);
+                                    resetActiveSearchCursor();
+                                }}
+                                className="px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate max-w-[56px]"
+                                title={entry}
+                            >
+                                {entry}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {searchMatches.length > 0 && (
+                <div className="mt-1 max-h-24 overflow-y-auto custom-scrollbar space-y-1 border-t border-border/50 pt-1">
+                    {searchMatches.slice(0, 6).map((match, index) => (
+                        <button
+                            key={`${match.row}-${match.col}-${index}`}
+                            onClick={() => {
+                                jumpToSearchMatch(index);
+                            }}
+                            className={cn(
+                                'w-full text-left px-1.5 py-1 rounded text-[10px] transition-colors',
+                                index === searchActiveMatchIndex
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'
+                            )}
+                            title={`${match.row + 1}:${match.col + 1}`}
+                        >
+                            {match.row + 1}:{match.col + 1} {getSearchMatchLabel(match)}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

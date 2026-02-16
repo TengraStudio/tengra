@@ -33,15 +33,35 @@ export function getAnimationDurationMs(
 }
 
 export function usePrefersReducedMotion(): boolean {
-    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+        const forced = window.localStorage.getItem('tandem.motion.force-reduced') === 'true';
+        const query = '(prefers-reduced-motion: reduce)';
+        const mediaQuery = typeof window.matchMedia === 'function' ? window.matchMedia(query) : null;
+        return Boolean(mediaQuery?.matches) || forced;
+    });
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const query = '(prefers-reduced-motion: reduce)';
+        const mediaQuery = typeof window.matchMedia === 'function'
+            ? window.matchMedia(query)
+            : null;
+
+        if (!mediaQuery) {
+            return;
+        }
+
         const update = () => {
-            const forced = window.localStorage.getItem('tandem.motion.force-reduced') === 'true';
-            setPrefersReducedMotion(mediaQuery.matches || forced);
+            const forceReduced = window.localStorage.getItem('tandem.motion.force-reduced') === 'true';
+            setPrefersReducedMotion(Boolean(mediaQuery.matches) || forceReduced);
         };
-        update();
+
         mediaQuery.addEventListener('change', update);
         return () => {
             mediaQuery.removeEventListener('change', update);

@@ -2,7 +2,7 @@ import { ProjectWizardModal } from '@renderer/features/projects/components/Proje
 import { ProjectWorkspace } from '@renderer/features/projects/components/ProjectWorkspace';
 import { AppSettings } from '@shared/types';
 import { CodexUsage, QuotaResponse } from '@shared/types/quota';
-import { Monitor } from 'lucide-react';
+import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-react';
 import React, { memo, useState } from 'react';
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
@@ -42,14 +42,119 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     sendMessage, messages, isLoading
 }) => {
     const { t } = useTranslation(language);
+    const LIST_SETTINGS_STORAGE_KEY = 'projects.listView.settings.v1';
     const [searchQuery, setSearchQuery] = useState('');
     const [showWizard, setShowWizard] = useState(false);
     const [showProjectMenu, setShowProjectMenu] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt'>('updatedAt');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [listPreset, setListPreset] = useState<'recent' | 'oldest' | 'name-az' | 'name-za'>('recent');
+
+    React.useEffect(() => {
+        try {
+            const raw = localStorage.getItem(LIST_SETTINGS_STORAGE_KEY);
+            if (!raw) {
+                return;
+            }
+            const parsed = JSON.parse(raw) as {
+                viewMode?: 'grid' | 'list';
+                sortBy?: 'title' | 'updatedAt' | 'createdAt';
+                sortDirection?: 'asc' | 'desc';
+                listPreset?: 'recent' | 'oldest' | 'name-az' | 'name-za';
+            };
+            if (parsed.viewMode) {
+                setViewMode(parsed.viewMode);
+            }
+            if (parsed.sortBy) {
+                setSortBy(parsed.sortBy);
+            }
+            if (parsed.sortDirection) {
+                setSortDirection(parsed.sortDirection);
+            }
+            if (parsed.listPreset) {
+                setListPreset(parsed.listPreset);
+            }
+        } catch {
+            // Ignore malformed list settings.
+        }
+    }, []);
+
+    React.useEffect(() => {
+        localStorage.setItem(
+            LIST_SETTINGS_STORAGE_KEY,
+            JSON.stringify({ viewMode, sortBy, sortDirection, listPreset })
+        );
+    }, [viewMode, sortBy, sortDirection, listPreset]);
 
     const filteredProjects = React.useMemo(() => projects.filter(p =>
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase())
     ), [projects, searchQuery]);
+    const sortedProjects = React.useMemo(() => {
+        const direction = sortDirection === 'asc' ? 1 : -1;
+        return [...filteredProjects].sort((a, b) => {
+            if (sortBy === 'title') {
+                return a.title.localeCompare(b.title) * direction;
+            }
+            return (a[sortBy] - b[sortBy]) * direction;
+        });
+    }, [filteredProjects, sortBy, sortDirection]);
+
+    const toggleSort = (nextSortBy: 'title' | 'updatedAt' | 'createdAt') => {
+        if (sortBy === nextSortBy) {
+            setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+            return;
+        }
+        setSortBy(nextSortBy);
+        setSortDirection(nextSortBy === 'title' ? 'asc' : 'desc');
+    };
+
+    const applyListPreset = (preset: 'recent' | 'oldest' | 'name-az' | 'name-za') => {
+        setListPreset(preset);
+        switch (preset) {
+            case 'oldest':
+                setSortBy('updatedAt');
+                setSortDirection('asc');
+                break;
+            case 'name-az':
+                setSortBy('title');
+                setSortDirection('asc');
+                break;
+            case 'name-za':
+                setSortBy('title');
+                setSortDirection('desc');
+                break;
+            default:
+                setSortBy('updatedAt');
+                setSortDirection('desc');
+                break;
+        }
+    };
+
+    const exportProjectsList = () => {
+        const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+        const lines = [
+            ['title', 'description', 'path', 'status', 'updatedAt', 'createdAt'].join(','),
+            ...sortedProjects.map(project => [
+                escapeCsv(project.title),
+                escapeCsv(project.description ?? ''),
+                escapeCsv(project.path),
+                escapeCsv(project.status ?? ''),
+                new Date(project.updatedAt).toISOString(),
+                new Date(project.createdAt).toISOString(),
+            ].join(',')),
+        ];
+
+        const csv = lines.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `projects-${new Date().toISOString().slice(0, 10)}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    };
 
     // Use state machine for coordinated state management
     const sm = useProjectListStateMachine({
@@ -127,76 +232,139 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     onNewProject={() => setShowWizard(true)}
                     // Selection props
                     selectedCount={sm.state.selectedProjectIds.size}
-                    totalCount={filteredProjects.length}
+                    totalCount={sortedProjects.length}
                     onToggleSelectAll={sm.toggleSelectAll}
                     onBulkDelete={sm.startBulkDelete}
                     onBulkArchive={sm.startBulkArchive}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    listPreset={listPreset}
+                    onListPresetChange={(preset) =>
+                        applyListPreset(preset as 'recent' | 'oldest' | 'name-az' | 'name-za')
+                    }
+                    onExportList={exportProjectsList}
                     t={t}
                 />
 
-                {/* Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredProjects.map((project, i) => (
-                        <ProjectCard
-                            key={project.id}
-                            project={project}
-                            index={i}
-                            onSelect={(p) => onSelectProject?.(p)}
-                            showMenu={showProjectMenu === project.id}
-                            setShowMenu={setShowProjectMenu}
-                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
-                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
-                            onArchive={(p) => sm.startArchive(p)}
-                            // Selection
-                            isSelected={sm.state.selectedProjectIds.has(project.id)}
-                            onToggleSelection={() => sm.toggleSelection(project.id)}
-                            t={t}
-                        />
-                    ))}
-
-                    <ProjectModals
-                        editingProject={editingProject}
-                        setEditingProject={(p) => p ? sm.startEdit(p) : sm.cancelEdit()}
-                        deletingProject={deletingProject}
-                        setDeletingProject={(p) => p ? sm.startDelete(p) : sm.cancelDelete()}
-                        isArchiving={isArchiving}
-                        setIsArchiving={(p) => p ? sm.startArchive(p) : sm.cancelArchive()}
-                        isBulkDeleting={isBulkDeleting}
-                        setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
-                        isBulkArchiving={isBulkArchiving}
-                        setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
-                        selectedCount={sm.state.selectedProjectIds.size}
-                        editForm={sm.state.editForm}
-                        setEditForm={sm.updateEditForm}
-                        handleUpdateProject={sm.executeUpdate}
-                        handleDeleteProject={sm.executeDelete}
-                        handleArchiveProject={sm.executeArchive}
-                        handleBulkDelete={sm.executeBulkDelete}
-                        handleBulkArchive={sm.executeBulkArchive}
-                        t={t}
-                    />
-
-                    {/* Project Wizard */}
-                    <ProjectWizardModal
-                        isOpen={showWizard}
-                        onClose={() => setShowWizard(false)}
-                        onProjectCreated={(...args) => {
-                            void sm.executeCreate(...args).then((success: boolean) => {
-                                if (success) { setShowWizard(false); }
-                            });
-                        }}
-                        language={language}
-                    />
-
-
-                    {filteredProjects.length === 0 && (
-                        <div className="col-span-full py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
-                            <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                            <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
-                            <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>
+                {viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {sortedProjects.map((project, i) => (
+                            <ProjectCard
+                                key={project.id}
+                                project={project}
+                                index={i}
+                                onSelect={(p) => onSelectProject?.(p)}
+                                showMenu={showProjectMenu === project.id}
+                                setShowMenu={setShowProjectMenu}
+                                onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
+                                onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
+                                onArchive={(p) => sm.startArchive(p)}
+                                isSelected={sm.state.selectedProjectIds.has(project.id)}
+                                onToggleSelection={() => sm.toggleSelection(project.id)}
+                                t={t}
+                            />
+                        ))}
+                        {sortedProjects.length === 0 && (
+                            <div className="col-span-full py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
+                                <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                                <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
+                                <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="rounded-xl border border-border/40 overflow-hidden">
+                        <div className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 bg-muted/20 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <div />
+                            <button onClick={() => toggleSort('title')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
+                                Name <ArrowDownUp className="w-3 h-3" />
+                            </button>
+                            <div>Path</div>
+                            <button onClick={() => toggleSort('updatedAt')} className="flex items-center gap-1 text-left hover:text-foreground transition-colors">
+                                Updated <ArrowDownUp className="w-3 h-3" />
+                            </button>
+                            <div className="text-right">Actions</div>
                         </div>
-                    )}
-                </div>
+                        {sortedProjects.map((project) => (
+                            <div key={project.id} className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
+                                <div>
+                                    <input
+                                        type="checkbox"
+                                        checked={sm.state.selectedProjectIds.has(project.id)}
+                                        onChange={() => sm.toggleSelection(project.id)}
+                                        className="w-4 h-4 rounded border-border/40 bg-muted/30 text-foreground focus:ring-foreground/20 cursor-pointer"
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => onSelectProject?.(project)}
+                                    className="text-left min-w-0"
+                                    title={project.description || t('projects.noDescription')}
+                                >
+                                    <div className="font-medium truncate">{project.title}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{project.description || t('projects.noDescription')}</div>
+                                </button>
+                                <div className="text-xs text-muted-foreground truncate font-mono">{project.path}</div>
+                                <div className="text-xs text-muted-foreground">
+                                    {new Date(project.updatedAt).toLocaleDateString()}
+                                </div>
+                                <div className="flex items-center justify-end gap-1">
+                                    <button onClick={() => onSelectProject?.(project)} className="p-2 rounded-md hover:bg-muted/30" title="Open">
+                                        <FolderOpen className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => sm.startArchive(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('projects.archiveProject')}>
+                                        <Archive className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => sm.startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {sortedProjects.length === 0 && (
+                            <div className="py-12 text-center border-t border-border/20">
+                                <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                                <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
+                                <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <ProjectModals
+                    editingProject={editingProject}
+                    setEditingProject={(p) => p ? sm.startEdit(p) : sm.cancelEdit()}
+                    deletingProject={deletingProject}
+                    setDeletingProject={(p) => p ? sm.startDelete(p) : sm.cancelDelete()}
+                    isArchiving={isArchiving}
+                    setIsArchiving={(p) => p ? sm.startArchive(p) : sm.cancelArchive()}
+                    isBulkDeleting={isBulkDeleting}
+                    setIsBulkDeleting={(v) => v ? sm.startBulkDelete() : sm.cancelBulkDelete()}
+                    isBulkArchiving={isBulkArchiving}
+                    setIsBulkArchiving={(v) => v ? sm.startBulkArchive() : sm.cancelBulkArchive()}
+                    selectedCount={sm.state.selectedProjectIds.size}
+                    editForm={sm.state.editForm}
+                    setEditForm={sm.updateEditForm}
+                    handleUpdateProject={sm.executeUpdate}
+                    handleDeleteProject={sm.executeDelete}
+                    handleArchiveProject={sm.executeArchive}
+                    handleBulkDelete={sm.executeBulkDelete}
+                    handleBulkArchive={sm.executeBulkArchive}
+                    t={t}
+                />
+
+                <ProjectWizardModal
+                    isOpen={showWizard}
+                    onClose={() => setShowWizard(false)}
+                    onProjectCreated={(...args) => {
+                        void sm.executeCreate(...args).then((success: boolean) => {
+                            if (success) { setShowWizard(false); }
+                        });
+                    }}
+                    language={language}
+                />
             </div>
         </div >
     );

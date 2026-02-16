@@ -7,6 +7,7 @@ import type {
     UacStepRecord,
     UacTaskRecord,
 } from '@main/services/data/repositories/uac.repository';
+import { getContextWindowService } from '@main/services/llm/context-window.service';
 import { getCostEstimationService } from '@main/services/llm/cost-estimation.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
@@ -16,7 +17,7 @@ import { createInitialAgentState } from '@main/services/project/agent/agent-stat
 import { AgentTestRunnerService, getAgentTestRunnerService } from '@main/services/project/agent/agent-test-runner.service';
 import { GitService } from '@main/services/project/git.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { ToolExecutor } from '@main/tools/tool-executor';
+import { InternalToolResult, ToolExecutor } from '@main/tools/tool-executor';
 import { StateMachine } from '@main/utils/state-machine.util';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { Message, ToolCall, ToolDefinition } from '@shared/types/chat';
@@ -64,6 +65,13 @@ export class AgentTaskExecutor {
     private currentStepTokens = { prompt: 0, completion: 0 };
     private shouldStop: boolean = false;
     private gitContext: GitExecutionContext | null = null;
+    private readonly errorRecoveryTemplates: Record<string, string> = {
+        timeout: 'The tool timed out. I will try again with a longer timeout or a smaller scope.',
+        permission: "I encountered a permission error. I'll check if there are alternative ways to achieve the goal or ask the user for help.",
+        notFound: "The specified path or resource was not found. I'll search for it or check if I made a typo.",
+        limit: "I've hit a rate limit. I'll wait for a while before retrying or reduce the frequency of requests.",
+        unknown: 'An unexpected error occurred. I will re-examine the situation and try to recover.',
+    };
 
     /** AGT-TST: Test runner service */
     private testRunner: AgentTestRunnerService;
@@ -1214,7 +1222,10 @@ export class AgentTaskExecutor {
                     } as Message,
                 ];
 
-                const msg = await this.executeStreamingStep(toolDefs, currentHistory);
+                const { modelId } = this.getModelConfig();
+                const optimizedHistory = await this.optimizeContext(currentHistory, modelId);
+
+                const msg = await this.executeStreamingStep(toolDefs, optimizedHistory);
                 this.emitUpdate();
 
                 if ((!msg.toolCalls || msg.toolCalls.length === 0) && !msg.content) {
@@ -1246,7 +1257,9 @@ export class AgentTaskExecutor {
                 const toolDefs = allTools.filter(t => PLANNING_TOOLS.includes(t.function.name));
                 const { modelId, providerId } = this.getModelConfig();
 
-                const shouldBreak = await this.executePlanningStep(toolDefs, modelId, providerId);
+                const optimizedHistory = await this.optimizeContext(this.state.history.slice(0, -1), modelId);
+
+                const shouldBreak = await this.executePlanningStep(toolDefs, modelId, providerId, optimizedHistory);
                 if (shouldBreak) {
                     this.logInfo('Planning loop breaking...');
                     break;
@@ -1280,7 +1293,7 @@ export class AgentTaskExecutor {
         return msg;
     }
 
-    private async executePlanningStep(toolDefs: ToolDefinition[], modelId: string, providerId: string): Promise<boolean> {
+    private async executePlanningStep(toolDefs: ToolDefinition[], modelId: string, providerId: string, history?: Message[]): Promise<boolean> {
         const { systemMode } = this.getModelConfig();
         const msg = this.createAssistantMessage();
         this.pushToHistory(msg);
@@ -1288,7 +1301,7 @@ export class AgentTaskExecutor {
         await this.processMessageStream(
             msg,
             this.services.llm.chatStream(
-                this.state.history.slice(0, -1),
+                history ?? this.state.history.slice(0, -1),
                 modelId,
                 toolDefs,
                 providerId,
@@ -1297,6 +1310,102 @@ export class AgentTaskExecutor {
         );
 
         return this.handlePlanningResponse(msg);
+    }
+
+    /**
+     * AGT-11: Optimize context window by truncating or summarizing history
+     */
+    private async optimizeContext(messages: Message[], model: string): Promise<Message[]> {
+        try {
+            const contextService = getContextWindowService();
+            const reservedTokens = 4000; // Reserved for completion
+
+            if (!contextService.needsTruncation(messages, model, reservedTokens)) {
+                return messages;
+            }
+
+            this.logInfo(`Context window optimization triggered for model ${model}`);
+
+            const result = contextService.truncateMessages(messages, model, {
+                reservedTokens,
+                keepSystemMessages: true,
+                keepRecentMessages: 10,
+                strategy: 'recent-first',
+            });
+
+            this.logInfo(`Truncated ${result.removedCount} messages. Utilization: ${result.info.utilizationPercent.toFixed(1)}%`);
+
+            const optimizedMessages = result.truncated;
+
+            // AGT-11: Summarize removed messages if they are significant
+            if (result.removedCount > 5) {
+                const removedMessages = messages.filter(m => !result.truncated.some(tm => tm.id === m.id));
+                const summary = await this.summarizeRemovedMessages(removedMessages);
+
+                // Insert summary after first system message
+                const systemMsgIndex = optimizedMessages.findIndex(m => m.role === 'system');
+                if (systemMsgIndex !== -1) {
+                    optimizedMessages.splice(systemMsgIndex + 1, 0, {
+                        id: randomUUID(),
+                        role: 'system',
+                        content: summary,
+                        timestamp: new Date()
+                    } as Message);
+                } else {
+                    optimizedMessages.unshift({
+                        id: randomUUID(),
+                        role: 'system',
+                        content: summary,
+                        timestamp: new Date()
+                    } as Message);
+                }
+
+                await this.addSystemLog(`Optimized context by truncating ${result.removedCount} older messages and adding a summary.`);
+            }
+
+            return optimizedMessages;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logWarn(`Context optimization failed: ${message}`);
+            return messages;
+        }
+    }
+
+    /**
+     * AGT-11: Summarize removed messages to maintain context
+     */
+    private async summarizeRemovedMessages(removedMessages: Message[]): Promise<string> {
+        try {
+            const content = removedMessages
+                .filter(m => m.role !== 'system')
+                .map(m => `${m.role}: ${typeof m.content === 'string' ? m.content : '[Object content]'}`)
+                .join('\n')
+                .slice(0, 10000); // Limit input to summary LLM
+
+            if (!content) { return 'History truncated.'; }
+
+            const prompt = `You are a context management assistant. Summarize the following previous interaction between an AI agent and the system/user. Focus on:
+1. What the user asked for.
+2. What key information was discovered.
+3. What files were modified or created.
+4. Current state of the plan.
+
+Keep the summary concise (max 200 words).
+
+Interaction to summarize:
+${content}`;
+
+            const { modelId, providerId } = this.getModelConfig();
+            const response = await this.services.llm.chat([
+                { id: randomUUID(), role: 'system', content: 'You summarize technical agent logs.', timestamp: new Date() },
+                { id: randomUUID(), role: 'user', content: prompt, timestamp: new Date() }
+            ], modelId, undefined, providerId);
+
+            return `[RECAP OF TRUNCATED HISTORY]:\n${response.content}`;
+        } catch (error) {
+            this.logWarn(`Summarization failed: ${(error as Error).message}`);
+            return `[History truncated: ${removedMessages.length} messages removed]`;
+        }
     }
 
     // --- Message Helpers ---
@@ -1436,30 +1545,95 @@ export class AgentTaskExecutor {
     private async executeToolCalls(toolCalls: ToolCall[]) {
         if (!this.toolExecutor) { return; }
 
-        for (const toolCall of toolCalls) {
-            // Pass this.taskId in context so events are correctly tagged
-            const result = await this.toolExecutor.execute(
-                toolCall.function.name,
-                safeJsonParse(toolCall.function.arguments, {}),
-                { taskId: this.taskId }
-            );
-            const msg = {
-                id: randomUUID(),
-                role: 'tool',
-                content: JSON.stringify(result),
-                toolCallId: toolCall.id,
-                timestamp: new Date(),
-            } as Message;
-            this.pushToHistory(msg);
+        this.logInfo(`Executing ${toolCalls.length} tool calls (AGT-10)`);
 
+        // AGT-10: Parallel tool execution with concurrency limit
+        const maxParallel = 3;
+        const results: Array<{ msg: Message; toolCallId: string }> = [];
+
+        for (let i = 0; i < toolCalls.length; i += maxParallel) {
+            const chunk = toolCalls.slice(i, i + maxParallel);
+            const chunkPromises = chunk.map(async (toolCall) => {
+                const result = await this.executeToolWithRetry(toolCall);
+                const msg = {
+                    id: randomUUID(),
+                    role: 'tool',
+                    content: JSON.stringify(result),
+                    toolCallId: toolCall.id,
+                    timestamp: new Date(),
+                } as Message;
+
+                return { msg, toolCallId: toolCall.id };
+            });
+
+            const chunkResults = await Promise.all(chunkPromises);
+            results.push(...chunkResults);
+        }
+
+        for (const { msg, toolCallId } of results) {
+            this.pushToHistory(msg);
             await this.services.database.uac.addLog(
                 this.taskId,
                 msg.role,
                 String(msg.content),
                 undefined,
-                toolCall.id
+                toolCallId
             );
         }
+    }
+
+    /**
+     * AGT-10 / AGT-12: Execute a single tool with retry logic
+     */
+    private async executeToolWithRetry(toolCall: ToolCall, maxRetries = 2): Promise<InternalToolResult> {
+        let lastResult: InternalToolResult = { success: false, error: 'Not started' };
+
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            if (this.shouldStop) { break; }
+
+            const timeoutMs = attempt > 0 ? 60000 : (this.state.config?.budgetLimitUsd ? 45000 : 30000);
+
+            try {
+                if (!this.toolExecutor) {
+                    this.logError('ToolExecutor is missing during retry', new Error('ToolExecutor not initialized'));
+                    break;
+                }
+                lastResult = await this.toolExecutor.execute(
+                    toolCall.function.name,
+                    safeJsonParse(toolCall.function.arguments, {}),
+                    { taskId: this.taskId, timeoutMs }
+                );
+
+                if (lastResult.success) {
+                    return lastResult;
+                }
+
+                // AGT-12: Add recovery context to the result for the agent
+                if (attempt === 0 && lastResult.errorType) {
+                    const advice = this.errorRecoveryTemplates[lastResult.errorType || 'unknown'];
+                    lastResult.error = `${lastResult.error}\n\nRecovery Advice: ${advice}`;
+                }
+
+                // Only retry on timeout or unknown errors
+                if (lastResult.errorType !== 'timeout' && lastResult.errorType !== 'unknown') {
+                    this.logWarn(`Tool ${toolCall.function.name} failed with non-retryable error: ${lastResult.errorType}`);
+                    break;
+                }
+
+                if (attempt < maxRetries) {
+                    const delay = Math.pow(2, attempt) * 1000;
+                    this.logWarn(`Tool ${toolCall.function.name} failed (${lastResult.errorType}, attempt ${attempt + 1}), retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            } catch (error) {
+                this.logError(`Unexpected error in executeToolWithRetry for ${toolCall.function.name}`, error as Error);
+                lastResult = { success: false, error: (error as Error).message, errorType: 'unknown' };
+                if (attempt >= maxRetries) { break; }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        return lastResult;
     }
 
     private getLogContent(content: string | Array<{ type: string; text?: string }>): string {

@@ -1,5 +1,40 @@
 # Changelog
 
+## [2026-02-16]
+
+### Agent System Improvements: Tool Execution & Context Management
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the agent system with robust tool execution, automated context window management, and intelligent error recovery.
+
+- **Tool Execution**: Added tool timeouts, result caching for idempotent tools, and semi-parallel execution for improved performance.
+- **Context Management**: Implemented automated history pruning and LLM-based summarization to maintain agent context in long sessions.
+- **Error Recovery**: Added multi-category error classification and intelligent retry strategies with recovery advice for the agent.
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### IPC Input Validation Enhancement
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Added Zod schema validation to critical IPC handlers to prevent injection attacks and malformed data issues.
+
+- **Security**: Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers.
+- **Validation**: Implemented strict input validation using Zod schemas for tool execution, usage recording, shell commands, and proxy operations.
+- **Protection**: Enhanced security against injection attacks by validating URLs, commands, session keys, and arguments before execution.
+- **Type Safety**: Improved type safety with explicit schema definitions for provider names, model names, command parameters, and rate limit configurations.
+- **Error Handling**: Added safe fallback values for all proxy handlers to ensure graceful degradation on validation failures.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -42,6 +77,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

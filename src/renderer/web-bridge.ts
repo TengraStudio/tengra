@@ -71,6 +71,82 @@ export const webElectronMock: ElectronAPI = {
     code: {
         scanTodos: async (_rootPath: string) => [],
         findSymbols: async (_rootPath: string, _query: string) => [],
+        findDefinition: async (_rootPath: string, _symbol: string) => null,
+        findReferences: async (_rootPath: string, _symbol: string) => [],
+        findImplementations: async (_rootPath: string, _symbol: string) => [],
+        getSymbolRelationships: async (
+            _rootPath: string,
+            _symbol: string,
+            _maxItems?: number
+        ) => [],
+        getFileOutline: async (_filePath: string) => [],
+        previewRenameSymbol: async (
+            _rootPath: string,
+            _symbol: string,
+            _newSymbol: string,
+            _maxFiles?: number
+        ) => ({
+            success: true,
+            applied: false,
+            symbol: _symbol,
+            newSymbol: _newSymbol,
+            totalFiles: 0,
+            totalOccurrences: 0,
+            changes: [],
+            updatedFiles: [],
+            errors: [],
+        }),
+        applyRenameSymbol: async (
+            _rootPath: string,
+            _symbol: string,
+            _newSymbol: string,
+            _maxFiles?: number
+        ) => ({
+            success: true,
+            applied: true,
+            symbol: _symbol,
+            newSymbol: _newSymbol,
+            totalFiles: 0,
+            totalOccurrences: 0,
+            changes: [],
+            updatedFiles: [],
+            errors: [],
+        }),
+        generateFileDocumentation: async (
+            _filePath: string,
+            _format: 'markdown' | 'jsdoc-comments' = 'markdown'
+        ) => ({
+            success: true,
+            filePath: _filePath,
+            format: _format,
+            content: '',
+            symbolCount: 0,
+            generatedAt: new Date().toISOString(),
+        }),
+        generateProjectDocumentation: async (_rootPath: string, _maxFiles?: number) => ({
+            success: true,
+            filePath: _rootPath,
+            format: 'markdown' as const,
+            content: '',
+            symbolCount: 0,
+            generatedAt: new Date().toISOString(),
+        }),
+        analyzeQuality: async (_rootPath: string, _maxFiles?: number) => ({
+            rootPath: _rootPath,
+            filesScanned: 0,
+            totalLines: 0,
+            functionSymbols: 0,
+            classSymbols: 0,
+            longLineCount: 0,
+            todoLikeCount: 0,
+            consoleUsageCount: 0,
+            averageComplexity: 0,
+            securityIssueCount: 0,
+            topSecurityFindings: [],
+            highestComplexityFiles: [],
+            qualityScore: 0,
+            generatedAt: new Date().toISOString(),
+        }),
         searchFiles: async (
             _rootPath: string,
             _query: string,
@@ -79,6 +155,16 @@ export const webElectronMock: ElectronAPI = {
         ) => [],
         indexProject: async (_rootPath: string, _projectId: string) => { },
         queryIndexedSymbols: async (_query: string) => [],
+        getSymbolAnalytics: async (_rootPath: string) => ({
+            totalSymbols: 0,
+            uniqueFiles: 0,
+            uniqueKinds: 0,
+            byKind: {},
+            byExtension: {},
+            topFiles: [],
+            topSymbols: [],
+            generatedAt: new Date().toISOString(),
+        }),
     },
 
     project: {
@@ -265,11 +351,6 @@ export const webElectronMock: ElectronAPI = {
     checkCuda: async () => ({ hasCuda: true }),
     onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
 
-    // Ollama scraper stubs (deprecated - use marketplace API)
-    scrapeOllamaLibrary: async (_bypassCache?: boolean) => [],
-    scrapeOllamaModelDetails: async (_modelName: string, _bypassCache?: boolean) => null,
-    clearOllamaScraperCache: async () => ({ success: true }),
-
     // Marketplace API stubs
     marketplace: {
         getModels: async (
@@ -283,7 +364,6 @@ export const webElectronMock: ElectronAPI = {
             _limit?: number
         ) => [],
         getModelDetails: async (_modelName: string) => null,
-        refresh: async () => ({ success: false, count: 0, error: 'Not available in web mode' }),
         getStatus: async () => ({ lastScrapeTime: 0, isScraping: false }),
     },
 

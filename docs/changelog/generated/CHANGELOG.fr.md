@@ -1,5 +1,40 @@
 # Journal des modifications
 
+## [2026-02-16]
+
+### Améliorations du système d'agent : exécution des outils et gestion du contexte
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Système d'agent amélioré avec une exécution robuste des outils, une gestion automatique de la fenêtre de contexte et une récupération intelligente des erreurs.
+
+- **Exécution des outils** : Ajout de délais d'attente pour les outils, mise en cache des résultats pour les outils idempotents et exécution semi-parallèle pour des performances améliorées.
+- **Gestion du contexte** : Mise en œuvre de l'élagage automatique de l'historique et de la résumer par LLM pour maintenir le contexte de l'agent lors de sessions longues.
+- **Récupération d'erreurs** : Ajout d'une classification d'erreurs multi-catégories et de stratégies de réessai intelligentes avec des conseils de récupération pour l'agent.
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### Amélioration de la validation des entrées IPC
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Ajout de la validation de schéma Zod aux gestionnaires IPC critiques pour prévenir les attaques par injection et les problèmes de données malformées.
+
+- **Sécurité**: Ajout de schémas de validation pour les outils, le suivi d'utilisation, les gestionnaires IPC de fenêtre/shell et proxy.
+- **Validation**: Implémentation d'une validation stricte des entrées avec des schémas Zod pour l'exécution d'outils, l'enregistrement d'utilisation, les commandes shell et les opérations proxy.
+- **Protection**: Sécurité renforcée contre les attaques par injection en validant les URL, commandes, clés de session et arguments avant l'exécution.
+- **Sécurité des types**: Amélioration de la sécurité des types avec des définitions de schéma explicites pour les noms de fournisseurs, les noms de modèles, les paramètres de commande et les configurations de limite de débit.
+- **Gestion des erreurs**: Ajout de valeurs de secours sûres pour tous les gestionnaires proxy afin d'assurer une dégradation gracieuse en cas d'échec de validation.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

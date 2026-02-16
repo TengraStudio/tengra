@@ -1,5 +1,40 @@
 # سجل التغييرات
 
+## [2026-02-16]
+
+### تحسينات نظام الوكيل: تنفيذ الأدوات وإدارة السياق
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تحسين نظام الوكيل من خلال تنفيذ قوي للأدوات وإدارة تلقائية لنافذة السياق واسترداد ذكي للأخطاء.
+
+- **تنفيذ الأدوات**: إضافة مهلات للأدوات وتخزين النتائج للأدوات غير المتغيرة والتنفيذ شبه المتوازي لتحسين الأداء.
+- **إدارة السياق**: تنفيذ التقليم التلقائي للسجل والتلخيص القائم على LLM للحفاظ على سياق الوكيل في الجلسات الطويلة.
+- **استرداد الأخطاء**: إضافة تصنيفات أخطاء متعددة الفئات واستراتيجيات إعادة محاولة ذكية مع نصائح استرداد للوكيل.
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### تحسين التحقق من مدخلات IPC
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: تمت إضافة التحقق من مخطط Zod إلى معالجات IPC الحرجة لمنع هجمات الحقن ومشكلات البيانات المشوهة.
+
+- **الأمان**: تمت إضافة مخططات التحقق للأدوات وتتبع الاستخدام ومعالجات IPC للنافذة/الصدفة والوكيل.
+- **التحقق**: تم تنفيذ التحقق الصارم من المدخلات باستخدام مخططات Zod لتنفيذ الأدوات وتسجيل الاستخدام وأوامر الصدفة وعمليات الوكيل.
+- **الحماية**: تم تعزيز الأمان ضد هجمات الحقن من خلال التحقق من عناوين URL والأوامر ومفاتيح الجلسة والمعاملات قبل التنفيذ.
+- **أمان الأنواع**: تحسين أمان الأنواع مع تعريفات مخطط صريحة لأسماء الموفرين وأسماء النماذج ومعاملات الأوامر وتكوينات حد المعدل.
+- **معالجة الأخطاء**: تمت إضافة قيم احتياطية آمنة لجميع معالجات الوكيل لضمان التدهور الرشيق عند فشل التحقق.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

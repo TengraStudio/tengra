@@ -608,8 +608,8 @@ export class DatabaseClientService extends BaseService {
 
         const queryString = params.toString();
         const path = `/api/v1/marketplace/models${queryString ? `?${queryString}` : ''}`;
-        const response = await this.apiCall<DbMarketplaceModel[]>('GET', path);
-        return response.data ?? [];
+        const response = await this.apiCall<{ models: DbMarketplaceModel[]; total: number }>('GET', path);
+        return response.data?.models ?? [];
     }
 
     async upsertMarketplaceModels(
@@ -630,12 +630,12 @@ export class DatabaseClientService extends BaseService {
     async searchMarketplaceModels(
         req: DbSearchMarketplaceModelsRequest
     ): Promise<DbMarketplaceModel[]> {
-        const response = await this.apiCall<DbMarketplaceModel[]>(
+        const response = await this.apiCall<{ models: DbMarketplaceModel[]; total: number }>(
             'POST',
             '/api/v1/marketplace/models/search',
             req
         );
-        return response.data ?? [];
+        return response.data?.models ?? [];
     }
 
     async clearMarketplaceModels(provider?: 'ollama' | 'huggingface'): Promise<boolean> {

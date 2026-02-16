@@ -246,8 +246,10 @@ export class LocalImageService extends BaseService {
 
     private async fetchImageQuota(account: LinkedAccount): Promise<{ remainingFraction?: number; remainingQuota?: number; totalQuota?: number } | null> {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const response = await this.quotaService!.fetchAntigravityUpstreamForToken(account) as AntigravityUpstreamQuotaResponse;
+            if (!this.quotaService) {
+                throw new Error('QuotaService not available');
+            }
+            const response = await this.quotaService.fetchAntigravityUpstreamForToken(account) as AntigravityUpstreamQuotaResponse;
 
             if (!response?.models) {
                 this.logDebug(`No quota data for account ${account.email ?? account.id}`);
@@ -589,35 +591,49 @@ export class LocalImageService extends BaseService {
     }
 
     private async resolveOrInstallSDCppBinary(binDir: string): Promise<string> {
-        const directCandidate = path.join(binDir, this.getDefaultSDCppBinaryName());
-        if (await this.pathExists(directCandidate)) {
-            return directCandidate;
+        const candidates = this.getSDCppBinaryCandidates();
+
+        // 1. Try direct candidates
+        for (const name of candidates) {
+            const pathCandidate = path.join(binDir, name);
+            if (await this.pathExists(pathCandidate)) {
+                return pathCandidate;
+            }
         }
 
-        const nestedCandidate = await this.findExecutableRecursively(binDir, this.getDefaultSDCppBinaryName());
-        if (nestedCandidate) {
-            return nestedCandidate;
+        // 2. Try recursive search for candidates
+        for (const name of candidates) {
+            const nestedCandidate = await this.findExecutableRecursively(binDir, name);
+            if (nestedCandidate) {
+                return nestedCandidate;
+            }
         }
 
         await this.installSDCppBinary(binDir);
 
-        if (await this.pathExists(directCandidate)) {
-            return directCandidate;
+        // 3. Check again after installation
+        for (const name of candidates) {
+            const pathCandidate = path.join(binDir, name);
+            if (await this.pathExists(pathCandidate)) {
+                return pathCandidate;
+            }
         }
 
-        const installedNested = await this.findExecutableRecursively(binDir, this.getDefaultSDCppBinaryName());
-        if (installedNested) {
-            return installedNested;
+        for (const name of candidates) {
+            const nestedCandidate = await this.findExecutableRecursively(binDir, name);
+            if (nestedCandidate) {
+                return nestedCandidate;
+            }
         }
 
         throw new Error('stable-diffusion.cpp was downloaded but executable could not be located.');
     }
 
-    private getDefaultSDCppBinaryName(): string {
+    private getSDCppBinaryCandidates(): string[] {
         if (process.platform === 'win32') {
-            return 'sd.exe';
+            return ['sd.exe', 'sd-cli.exe', 'stable-diffusion.exe'];
         }
-        return 'sd';
+        return ['sd', 'sd-cli', 'stable-diffusion'];
     }
 
     private async installSDCppBinary(binDir: string): Promise<void> {

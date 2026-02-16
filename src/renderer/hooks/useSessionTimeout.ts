@@ -23,8 +23,13 @@ export function useSessionTimeout(): SessionTimeoutState & SessionTimeoutActions
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [canUseBiometric, setCanUseBiometric] = useState(false);
 
-    const lastActivityRef = useRef(Date.now());
+    const lastActivityRef = useRef(0);
     const lastTouchRef = useRef(0);
+
+    // Initialize lastActivityRef after mount
+    useEffect(() => {
+        lastActivityRef.current = Date.now();
+    }, []);
 
     useEffect(() => {
         const init = async () => {

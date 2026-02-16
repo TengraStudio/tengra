@@ -267,6 +267,18 @@ export const useChatGenerator = (
         } catch (e) {
             window.electron.log.error('[generateResponse] Error', e as Error);
             const errText = formatChatError(e as CatchError);
+            const partialContent = await new Promise<string>(resolve => {
+                setChats(prev => {
+                    const existingMessage = prev
+                        .find(c => c.id === chatId)
+                        ?.messages.find(m => m.id === assistantId);
+                    resolve(typeof existingMessage?.content === 'string' ? existingMessage.content : '');
+                    return prev;
+                });
+            });
+            const finalErrorText = partialContent.trim().length > 0
+                ? `${partialContent}\n\n[Generation interrupted: ${errText}]`
+                : `${t('chat.error')}: ${errText}`;
             setChats(prev =>
                 prev.map(c =>
                     c.id === chatId
@@ -274,7 +286,7 @@ export const useChatGenerator = (
                               ...c,
                               messages: c.messages.map(m =>
                                   m.id === assistantId
-                                      ? { ...m, content: `${t('chat.error')}: ${errText}` }
+                                      ? { ...m, content: finalErrorText }
                                       : m
                               ),
                               isGenerating: false,
@@ -283,7 +295,7 @@ export const useChatGenerator = (
                 )
             );
             void window.electron.db.updateMessage(assistantId, {
-                content: `${t('chat.error')}: ${errText}`,
+                content: finalErrorText,
             });
         } finally {
             setStreamingStates(prev => {

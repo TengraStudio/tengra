@@ -7,12 +7,12 @@ import { ja } from '@renderer/i18n/ja';
 import { tr } from '@renderer/i18n/tr';
 import { zh } from '@renderer/i18n/zh';
 import { JsonValue } from '@shared/types/common';
-import React, { createContext, ReactNode,useCallback, useContext, useMemo } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
 
-export type Language = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar'
-export type TranslationKeys = typeof tr
+export type Language = 'tr' | 'en' | 'de' | 'fr' | 'es' | 'ja' | 'zh' | 'ar';
+export type TranslationKeys = typeof tr;
 
 const translations: Partial<Record<Language, TranslationKeys>> = {
     tr,
@@ -26,10 +26,13 @@ const translations: Partial<Record<Language, TranslationKeys>> = {
 };
 
 interface LanguageContextType {
-    language: Language
-    setLanguage: (lang: Language) => Promise<void>
-    t: (path: string, options?: Record<string, string | number>) => string
-    isRTL: boolean
+    language: Language;
+    setLanguage: (lang: Language) => Promise<void>;
+    t: (path: string, options?: Record<string, string | number>) => string;
+    isRTL: boolean;
+    formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
+    formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
+    formatCurrency: (value: number, currency?: string, options?: Intl.NumberFormatOptions) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
@@ -40,7 +43,19 @@ const LanguageContext = createContext<LanguageContextType | null>(null);
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const { settings, updateSettings } = useSettings();
 
-    const language = (settings?.general.language ?? 'en') as Language;
+    // Detect system language on first run if not set
+    const getInitialLanguage = useCallback((): Language => {
+        if (settings?.general.language) {
+            return settings.general.language as Language;
+        }
+
+        const browserLang = navigator.language.split('-')[0] as Language;
+        const supportedLanguages: Language[] = ['en', 'tr', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
+
+        return supportedLanguages.includes(browserLang) ? browserLang : 'en';
+    }, [settings]);
+
+    const language = useMemo(() => getInitialLanguage(), [getInitialLanguage]);
 
     const setLanguage = useCallback(async (lang: Language) => {
         if (!settings) { return; }
@@ -48,7 +63,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         await updateSettings(updated, true);
     }, [settings, updateSettings]);
 
-    const isRTL = language === 'ar';
+    const isRTL = useMemo(() => language === 'ar', [language]);
+
+    // Sync HTML attributes
+    useEffect(() => {
+        document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+        document.documentElement.lang = language;
+    }, [language, isRTL]);
 
     const t = useMemo(() => {
         const activeTranslations = (translations[language] ?? translations.en) as JsonValue;
@@ -66,24 +87,66 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             }
 
             if (typeof current === 'string') {
+                let text = current;
+
+                // Handle Pluralization (if count is provided)
+                if (options && typeof options.count === 'number') {
+                    const pluralRules = new Intl.PluralRules(language);
+                    const rule = pluralRules.select(options.count);
+                    const pluralKey = `${path}_${rule}`;
+
+                    // Try to find specific plural translation
+                    let pluralCurrent: JsonValue = activeTranslations;
+                    for (const p of pluralKey.split('.')) {
+                        if (pluralCurrent && typeof pluralCurrent === 'object' && p in pluralCurrent) {
+                            pluralCurrent = (pluralCurrent as Record<string, JsonValue>)[p];
+                        } else {
+                            pluralCurrent = null;
+                            break;
+                        }
+                    }
+                    if (typeof pluralCurrent === 'string') {
+                        text = pluralCurrent;
+                    }
+                }
+
                 if (options) {
                     return Object.keys(options).reduce((acc, key) => {
                         return acc.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
-                    }, current);
+                    }, text);
                 }
-                return current;
+                return text;
             }
 
             return path;
         };
     }, [language]);
 
+    const formatDate = useCallback((date: Date | number, options?: Intl.DateTimeFormatOptions) => {
+        return new Intl.DateTimeFormat(language, options).format(date);
+    }, [language]);
+
+    const formatNumber = useCallback((value: number, options?: Intl.NumberFormatOptions) => {
+        return new Intl.NumberFormat(language, options).format(value);
+    }, [language]);
+
+    const formatCurrency = useCallback((value: number, currency = 'USD', options?: Intl.NumberFormatOptions) => {
+        return new Intl.NumberFormat(language, {
+            style: 'currency',
+            currency,
+            ...options
+        }).format(value);
+    }, [language]);
+
     const value = useMemo(() => ({
         language,
         setLanguage,
         t,
-        isRTL
-    }), [language, setLanguage, t, isRTL]);
+        isRTL,
+        formatDate,
+        formatNumber,
+        formatCurrency
+    }), [language, setLanguage, t, isRTL, formatDate, formatNumber, formatCurrency]);
 
     return React.createElement(LanguageContext.Provider, { value }, children);
 }
@@ -131,7 +194,12 @@ export function useTranslation(lang?: Language) {
 
             return path;
         };
-        return { t: get, translations: activeTranslations };
+        return {
+            t: get,
+            translations: activeTranslations,
+            formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(lang, options).format(date),
+            formatNumber: (value: number, options?: Intl.NumberFormatOptions) => new Intl.NumberFormat(lang, options).format(value)
+        };
     }
 
     // Default to context if available
@@ -140,7 +208,10 @@ export function useTranslation(lang?: Language) {
             t: context.t,
             language: context.language,
             setLanguage: context.setLanguage,
-            isRTL: context.isRTL
+            isRTL: context.isRTL,
+            formatDate: context.formatDate,
+            formatNumber: context.formatNumber,
+            formatCurrency: context.formatCurrency
         };
     }
 
@@ -150,6 +221,10 @@ export function useTranslation(lang?: Language) {
         t: (path: string) => path,
         language: fallbackLang as Language,
         setLanguage: async () => { },
-        isRTL: false
+        isRTL: false,
+        formatDate: (date: Date | number) => String(date),
+        formatNumber: (value: number) => String(value),
+        formatCurrency: (value: number) => String(value)
     };
 }
+

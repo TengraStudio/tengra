@@ -1,4 +1,4 @@
-import { Archive, Plus, Search, Trash2 } from 'lucide-react';
+import { Archive, Download, LayoutGrid, List, Plus, Search, Trash2 } from 'lucide-react';
 import React from 'react';
 
 interface ProjectsHeaderProps {
@@ -15,12 +15,18 @@ interface ProjectsHeaderProps {
     onToggleSelectAll: () => void
     onBulkDelete: () => void
     onBulkArchive: () => void
-    t: (key: string) => string
+    viewMode: 'grid' | 'list'
+    onViewModeChange: (mode: 'grid' | 'list') => void
+    listPreset: string
+    onListPresetChange: (preset: string) => void
+    onExportList: () => void
+    t: (key: string, options?: Record<string, string | number>) => string
 }
 
 export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
     title, subtitle, newProjectLabel, searchPlaceholder, searchQuery, setSearchQuery, onNewProject,
-    selectedCount, totalCount, onToggleSelectAll, onBulkDelete, onBulkArchive, t
+    selectedCount, totalCount, onToggleSelectAll, onBulkDelete, onBulkArchive,
+    viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t
 }) => {
     return (
         <>
@@ -37,7 +43,7 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                 {selectedCount > 0 && (
                     <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
                         <span className="text-sm text-muted-foreground mr-2 font-light">
-                            {t('common.itemsSelected').replace('{{count}}', selectedCount.toString())}
+                            {t('common.itemsSelected', { count: selectedCount })}
                         </span>
                         <button
                             onClick={onBulkArchive}
@@ -89,6 +95,44 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-muted/30 border-none rounded-lg h-12 pl-11 pr-4 text-foreground focus:ring-1 focus:ring-foreground/20 transition-all placeholder:text-muted-foreground/40"
                     />
+                </div>
+
+                <div className="flex items-center gap-1 p-1 rounded-lg border border-border/40 bg-muted/20">
+                    <select
+                        value={listPreset}
+                        onChange={e => onListPresetChange(e.target.value)}
+                        className="h-9 rounded-md border border-border/40 bg-background/70 px-2 text-xs text-muted-foreground outline-none focus:border-primary/50"
+                        title="List preset"
+                    >
+                        <option value="recent">Recent first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="name-az">Name A-Z</option>
+                        <option value="name-za">Name Z-A</option>
+                    </select>
+                    <button
+                        onClick={onExportList}
+                        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                        title="Export list"
+                        aria-label="Export list"
+                    >
+                        <Download className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onViewModeChange('grid')}
+                        className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        title="Grid view"
+                        aria-label="Grid view"
+                    >
+                        <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onViewModeChange('list')}
+                        className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                        title="List view"
+                        aria-label="List view"
+                    >
+                        <List className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
         </>

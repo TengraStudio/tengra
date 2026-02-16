@@ -1,5 +1,6 @@
 import path from 'path';
 
+import { registerGitAdvancedIpc } from '@main/ipc/git-advanced';
 import { appLogger } from '@main/logging/logger';
 import { GitService } from '@main/services/project/git.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
@@ -105,6 +106,7 @@ export function registerGitIpc(gitService: GitService) {
     registerDiffHandlers(gitService);
     registerActionHandlers(gitService);
     registerGitBatchHandlers(gitService);
+    registerGitAdvancedIpc(gitService);
 }
 
 /**

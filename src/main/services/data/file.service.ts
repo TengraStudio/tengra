@@ -1,17 +1,14 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { watch } from 'fs';
 import { createWriteStream } from 'fs';
 import * as fs from 'fs/promises';
 import * as https from 'https';
 import * as path from 'path';
-import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app } from 'electron';
-
-const execAsync = promisify(exec);
 
 export class FileManagementService {
     private readonly maxReadBytes = 10 * 1024 * 1024;
@@ -98,9 +95,19 @@ export class FileManagementService {
             const safeZipPath = this.sanitizePath(zipPath);
             const safeDestPath = this.sanitizePath(destPath);
             if (process.platform === 'win32') {
-                await execAsync(`powershell -Command "Expand-Archive -Path '${safeZipPath}' -DestinationPath '${safeDestPath}' -Force"`);
+                await this.runProcess('powershell', [
+                    '-NoProfile',
+                    '-NonInteractive',
+                    '-Command',
+                    'Expand-Archive',
+                    '-LiteralPath',
+                    safeZipPath,
+                    '-DestinationPath',
+                    safeDestPath,
+                    '-Force',
+                ]);
             } else {
-                await execAsync(`unzip -o "${safeZipPath}" -d "${safeDestPath}"`);
+                await this.runProcess('unzip', ['-o', safeZipPath, '-d', safeDestPath]);
             }
             return { success: true, message: `Extracted to ${safeDestPath}` };
         } catch (e) {
@@ -212,5 +219,24 @@ export class FileManagementService {
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
+    }
+
+    private async runProcess(command: string, args: string[]): Promise<void> {
+        await new Promise<void>((resolve, reject) => {
+            const proc = spawn(command, args, { shell: false });
+            let stderr = '';
+
+            proc.stderr.on('data', (chunk: Buffer | string) => {
+                stderr += chunk.toString();
+            });
+            proc.on('error', reject);
+            proc.on('close', code => {
+                if (code === 0) {
+                    resolve();
+                    return;
+                }
+                reject(new Error(stderr.trim() || `${command} exited with code ${code ?? 'unknown'}`));
+            });
+        });
     }
 }

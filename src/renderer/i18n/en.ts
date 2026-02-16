@@ -24,6 +24,9 @@ export const en = {
         hide: 'Hide',
         showMore: 'Show more...',
         kb: 'KB',
+        kb_one: 'KB',
+        kb_other: 'KBs',
+
         add: 'Add',
         done: 'Done',
         close: 'Close',
@@ -32,6 +35,9 @@ export const en = {
         processing: 'Processing...',
         selectAll: 'Select All',
         itemsSelected: '{{count}} items selected',
+        itemsSelected_one: '{{count}} item selected',
+        itemsSelected_other: '{{count}} items selected',
+
         // Error messages
         unknownError: 'Unknown error occurred',
         operationFailed: 'Operation failed',
@@ -73,8 +79,10 @@ export const en = {
         manual: 'Manual',
         generating: 'Generating...',
         generateLogos: 'Generate Logos',
+        continue: 'Continue',
     },
     loading: {
+
         codeEditor: 'Loading code editor',
         chart: 'Loading chart',
     },
@@ -2106,6 +2114,10 @@ export const en = {
         stats: 'Stats',
     },
     onboarding: {
+        language: {
+            title: 'Choose your language',
+            description: 'Select your preferred language to get started with Tandem.'
+        },
         // OnboardingFlow steps (4-step wizard) - flat keys for i18n compatibility
         welcomeTitle: 'Welcome to Tandem',
         welcomeDescription:

@@ -36,6 +36,9 @@ const createMockDatabaseService = () => ({
     addAuditLog: vi.fn().mockResolvedValue(undefined),
     getAuditLogs: vi.fn().mockResolvedValue([]),
     clearAuditLogs: vi.fn().mockResolvedValue(undefined),
+    pruneAuditLogsOlderThan: vi.fn().mockResolvedValue(0),
+    pruneAuditLogsToMaxEntries: vi.fn().mockResolvedValue(undefined),
+    countAuditLogs: vi.fn().mockResolvedValue(0),
 } as unknown as DatabaseService);
 
 describe('AuditLogService', () => {

@@ -147,7 +147,6 @@ export function registerAllIpc(
         llmService: services.llmService,
         ollamaService: services.ollamaService,
         ollamaHealthService: services.ollamaHealthService,
-        ollamaScraperService: services.ollamaScraperService,
         proxyService: services.proxyService,
         rateLimitService: services.rateLimitService,
     });

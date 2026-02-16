@@ -2,9 +2,13 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { z } from 'zod';
+
+import { commandSchema, cwdSchema,urlSchema } from './validation';
 
 const COMPACT_WIDTH = 400;
 const COMPACT_HEIGHT = 600;
@@ -232,7 +236,7 @@ function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOpt
  * Registers IPC handlers for shell operations (open external URLs, open terminal, run commands).
  */
 function registerShellHandlers() {
-    ipcMain.handle('shell:openExternal', async (_event, url) => {
+    ipcMain.handle('shell:openExternal', createValidatedIpcHandler('shell:openExternal', async (_event, url: string) => {
         appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${url}`);
 
         // Handle safe-file:// protocol for local images
@@ -275,9 +279,12 @@ function registerShellHandlers() {
             appLogger.error('WindowIPC', `openExternal catch: ${e}`);
             return { success: false, error: String(e) };
         }
-    });
+    }, {
+        argsSchema: z.tuple([urlSchema]),
+        defaultValue: { success: false, error: 'Validation failed' }
+    }));
 
-    ipcMain.handle('shell:openTerminal', async (_event, command) => {
+    ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (_event, command: string) => {
         if (process.platform === 'win32') {
             // Sanitize command - remove shell metacharacters to prevent injection
             // Block: pipes, redirects, semicolons, backticks, $(), newlines
@@ -300,9 +307,12 @@ function registerShellHandlers() {
             );
         }
         return true;
-    });
+    }, {
+        argsSchema: z.tuple([commandSchema]),
+        defaultValue: false
+    }));
 
-    ipcMain.handle('shell:runCommand', async (_event, command, args, cwd) => {
+    ipcMain.handle('shell:runCommand', createValidatedIpcHandler('shell:runCommand', async (_event, command: string, args: string[], cwd?: string) => {
         return new Promise(resolve => {
             const resolvedCommand = resolveWindowsCommand(command);
             appLogger.info('WindowIPC', `Running command: ${resolvedCommand} ${args.join(' ')}`);
@@ -323,14 +333,17 @@ function registerShellHandlers() {
             });
 
             child.on('close', (code: number | null) => {
-                resolve({ stdout, stderr, code: code ?? 0 });
+                resolve({ stdout, stderr, code: code ?? 0, error: '' });
             });
 
             child.on('error', (err: Error) => {
                 resolve({ stdout, stderr, code: 1, error: err.message });
             });
         });
-    });
+    }, {
+        argsSchema: z.tuple([commandSchema, z.array(z.string()), cwdSchema]),
+        defaultValue: { stdout: '', stderr: '', code: 1, error: 'Validation failed' }
+    }));
 }
 
 /**
