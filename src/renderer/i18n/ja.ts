@@ -24,6 +24,7 @@ export const ja = {
         hide: '非表示',
         showMore: 'もっと見る...',
         kb: 'KB',
+        kb_other: '{{count}} KB',
         add: '追加',
         done: '完了',
         close: '閉じる',
@@ -32,6 +33,7 @@ export const ja = {
         processing: '処理中...',
         selectAll: 'すべて選択',
         itemsSelected: '{{count}} 個選択済み',
+        itemsSelected_other: '{{count}} 個選択済み',
         // Error messages
         unknownError: '不明なエラーが発生しました',
         operationFailed: '操作に失敗しました',

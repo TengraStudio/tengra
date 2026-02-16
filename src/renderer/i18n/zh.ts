@@ -24,6 +24,7 @@ export const zh = {
         hide: '隐藏',
         showMore: '显示更多...',
         kb: 'KB',
+        kb_other: '{{count}} KB',
         add: '添加',
         done: '完成',
         close: '关闭',
@@ -32,6 +33,7 @@ export const zh = {
         processing: '处理中...',
         selectAll: '全选',
         itemsSelected: '已选择 {{count}} 项',
+        itemsSelected_other: '已选择 {{count}} 项',
         // Error messages
         unknownError: '发生未知错误',
         operationFailed: '操作失败',

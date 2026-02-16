@@ -24,6 +24,7 @@ export const tr = {
         hide: 'Gizle',
         showMore: 'Daha fazla göster...',
         kb: 'KB',
+        kb_other: '{{count}} KB',
         add: 'Ekle',
         done: 'Tamamlandı',
         close: 'Kapat',
@@ -32,6 +33,8 @@ export const tr = {
         processing: 'İşleniyor...',
         selectAll: 'Tümünü Seç',
         itemsSelected: '{{count}} öğe seçildi',
+        itemsSelected_one: '1 öğe seçildi',
+        itemsSelected_other: '{{count}} öğe seçildi',
         // Hata mesajları
         unknownError: 'Bilinmeyen hata oluştu',
         operationFailed: 'İşlem başarısız',
