@@ -27,6 +27,8 @@ export const es = {
         hide: 'Ocultar',
         showMore: 'Mostrar más...',
         kb: 'KB',
+        kb_one: '{{count}} KB',
+        kb_other: '{{count}} KB',
         add: 'Añadir',
         done: 'Hecho',
         close: 'Cerrar',
@@ -35,6 +37,8 @@ export const es = {
         processing: 'Procesando...',
         selectAll: 'Seleccionar todo',
         itemsSelected: '{{count}} elementos seleccionados',
+        itemsSelected_one: '1 elemento seleccionado',
+        itemsSelected_other: '{{count}} elementos seleccionados',
         // Error messages
         unknownError: 'Error desconocido',
         operationFailed: 'Operación fallida',

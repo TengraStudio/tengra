@@ -1,14 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 
-const i18nDir = path.join(__dirname, '../src/renderer/i18n');
-const locales = ['tr', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
-const sourceFile = path.join(i18nDir, 'en.ts');
+// Path to compiled JS files
+const compiledDir = path.join(__dirname, 'temp-i18n');
+// const locales = ['tr', 'de', 'fr', 'es', 'ja', 'zh', 'ar'];
+// Read locales from the directory itself to be sure
+const files = fs.readdirSync(compiledDir).filter(f => f.endsWith('.js') && f !== 'en.js' && f !== 'index.js');
+const locales = files.map(f => f.replace('.js', ''));
 
+// Recursive function to flatten keys
 function extractKeys(obj, prefix = '') {
     let keys = [];
     for (const key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
             keys = keys.concat(extractKeys(obj[key], `${prefix}${key}.`));
         } else {
             keys.push(`${prefix}${key}`);
@@ -17,50 +21,54 @@ function extractKeys(obj, prefix = '') {
     return keys;
 }
 
-// Simple parser for TS files (since we can't easily run them as JS here without ts-node)
-function parseTsObject(filePath) {
-    const content = fs.readFileSync(filePath, 'utf8');
-    // Extract the export const ... = { ... } part
-    const match = content.match(/export const \w+ = (\{[\s\S]+\});/);
-    if (!match) return {};
-
-    // Convert to JS object (crude way, but should work for plain translation objects)
-    try {
-        // Remove trailing commas which might break JSON.parse if we were using it
-        // This is risky but let's try a safer regex for simple objects
-        let jsonStr = match[1]
-            .replace(/(\w+):/g, '"$1":') // Quote keys
-            .replace(/'/g, '"') // Replace single quotes with double quotes
-            .replace(/,\s*}/g, '}') // Remove trailing commas
-            .replace(/,\s*\]/g, ']');
-
-        return JSON.parse(jsonStr);
-    } catch (e) {
-        console.error(`Failed to parse ${filePath}: ${e.message}`);
-        return {};
+try {
+    if (!fs.existsSync(compiledDir)) {
+        console.error('Error: Compiled translations not found. Run "npx tsc src/renderer/i18n/*.ts --outDir scripts/temp-i18n ..." first.');
+        process.exit(1);
     }
+
+    console.log('--- Translation Audit Report ---');
+
+    // Load source (en)
+    const sourcePath = path.join(compiledDir, 'en.js');
+    if (!fs.existsSync(sourcePath)) {
+        console.error('Error: en.js not found in temp-i18n.');
+        process.exit(1);
+    }
+
+    const sourceModule = require(sourcePath);
+    const sourceData = sourceModule.en;
+    const sourceKeys = extractKeys(sourceData);
+    console.log(`Source language (en) has ${sourceKeys.length} keys.\n`);
+
+    locales.forEach(locale => {
+        const localeFile = path.join(compiledDir, `${locale}.js`);
+
+        try {
+            const localeModule = require(localeFile);
+            // Export name is usually the locale code, but let's check keys
+            // The compiled JS usually looks like exports.ar = { ... }
+            const localeData = localeModule[locale] || localeModule.default;
+
+            if (!localeData) {
+                console.log(`[${locale}] Failed to find export '${locale}' in module.`);
+                return;
+            }
+
+            const localeKeys = new Set(extractKeys(localeData));
+
+            const missing = sourceKeys.filter(key => !localeKeys.has(key));
+            const coverage = ((sourceKeys.length - missing.length) / sourceKeys.length * 100).toFixed(1);
+
+            console.log(`[${locale}] Coverage: ${coverage}% (${sourceKeys.length - missing.length}/${sourceKeys.length})`);
+            if (missing.length > 0) {
+                console.log(` Missing (${missing.length}): ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ` (+${missing.length - 5} more)` : ''}`);
+            }
+        } catch (err) {
+            console.error(`[${locale}] Failed to load: ${err.message}`);
+        }
+    });
+
+} catch (e) {
+    console.error(`Fatal error: ${e.message}`);
 }
-
-console.log('--- Translation Audit Report ---');
-const sourceData = parseTsObject(sourceFile);
-const sourceKeys = extractKeys(sourceData);
-console.log(`Source language (en) has ${sourceKeys.length} keys.\n`);
-
-locales.forEach(locale => {
-    const localeFile = path.join(i18nDir, `${locale}.ts`);
-    if (!fs.existsSync(localeFile)) {
-        console.log(`[${locale}] File missing!`);
-        return;
-    }
-
-    const localeData = parseTsObject(localeFile);
-    const localeKeys = new Set(extractKeys(localeData));
-
-    const missing = sourceKeys.filter(key => !localeKeys.has(key));
-    const coverage = ((sourceKeys.length - missing.length) / sourceKeys.length * 100).toFixed(1);
-
-    console.log(`[${locale}] Coverage: ${coverage}% (${sourceKeys.length - missing.length}/${sourceKeys.length})`);
-    if (missing.length > 0) {
-        console.log(` Missing: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? ` (+${missing.length - 5} more)` : ''}`);
-    }
-});
