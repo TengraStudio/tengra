@@ -150,6 +150,8 @@ export interface AgentStartOptions {
     systemMode?: 'fast' | 'thinking' | 'architect';
     /** AGT-TOK-04: Maximum budget in USD. Execution stops if exceeded. */
     budgetLimitUsd?: number;
+    /** I18N-05: User's preferred locale for agent responses */
+    locale?: string;
 }
 
 export interface OrchestratorState extends ProjectState {

@@ -110,7 +110,7 @@ const useTaskNodeActions = ({
     currentModelId,
     selectedProjectId,
 }: TaskNodeActionProps) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const planInFlightRef = useRef(false);
     const executeInFlightRef = useRef(false);
 
@@ -137,6 +137,7 @@ const useTaskNodeActions = ({
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
+                locale: language,
             };
             await window.electron.projectAgent.generatePlan(options);
         } catch (error) {
@@ -166,6 +167,7 @@ const useTaskNodeActions = ({
         id,
         updateNodeData,
         t,
+        language,
         planInFlightRef,
     ]);
 
@@ -218,6 +220,7 @@ const useTaskNodeActions = ({
                 attachments: data.attachments,
                 systemMode: data.systemMode,
                 agentProfileId: data.agentProfileId,
+                locale: language,
             };
             await window.electron.projectAgent.start(options);
         } catch (error) {
@@ -240,6 +243,7 @@ const useTaskNodeActions = ({
         id,
         updateNodeData,
         t,
+        language,
         executeInFlightRef,
     ]);
 
