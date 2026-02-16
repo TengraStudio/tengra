@@ -20,12 +20,20 @@ import {
 } from '@shared/types/project-agent';
 
 /** Default test configurations by framework */
-const FRAMEWORK_CONFIGS: Record<string, { command: string; coverageFlag: string }> = {
-    vitest: { command: 'npx vitest run', coverageFlag: '--coverage' },
-    jest: { command: 'npx jest', coverageFlag: '--coverage' },
-    mocha: { command: 'npx mocha', coverageFlag: '' },
-    playwright: { command: 'npx playwright test', coverageFlag: '' },
+const FRAMEWORK_CONFIGS: Record<
+    string,
+    { command: string; args: string[]; coverageFlag: string }
+> = {
+    vitest: { command: 'npx', args: ['vitest', 'run'], coverageFlag: '--coverage' },
+    jest: { command: 'npx', args: ['jest'], coverageFlag: '--coverage' },
+    mocha: { command: 'npx', args: ['mocha'], coverageFlag: '' },
+    playwright: { command: 'npx', args: ['playwright', 'test'], coverageFlag: '' },
 };
+
+interface BuiltTestCommand {
+    command: string;
+    args: string[];
+}
 
 /** Default timeout for test runs (5 minutes) */
 const DEFAULT_TEST_TIMEOUT = 5 * 60 * 1000;
@@ -92,32 +100,35 @@ export class AgentTestRunnerService extends BaseService {
     /**
      * Build the test command based on configuration
      */
-    private buildTestCommand(config: TestRunConfig): string {
-        let command = config.command;
+    private buildTestCommand(config: TestRunConfig): BuiltTestCommand {
+        let built = this.parseCommand(config.command);
 
         // Use framework-specific command if available
         if (config.framework !== 'custom' && FRAMEWORK_CONFIGS[config.framework]) {
             const frameworkConfig = FRAMEWORK_CONFIGS[config.framework];
-            command = frameworkConfig.command;
+            built = {
+                command: frameworkConfig.command,
+                args: [...frameworkConfig.args],
+            };
 
             if (config.coverageEnabled && frameworkConfig.coverageFlag) {
-                command += ` ${frameworkConfig.coverageFlag}`;
+                built.args.push(frameworkConfig.coverageFlag);
             }
         }
 
         // Add filter if specified
         if (config.filter) {
-            command += ` --grep "${config.filter}"`;
+            built.args.push('--grep', config.filter);
         }
 
         // Add JSON output for better parsing (framework-specific)
         if (config.framework === 'vitest') {
-            command += ' --reporter=json';
+            built.args.push('--reporter=json');
         } else if (config.framework === 'jest') {
-            command += ' --json';
+            built.args.push('--json');
         }
 
-        return command;
+        return built;
     }
 
     /**
@@ -125,20 +136,16 @@ export class AgentTestRunnerService extends BaseService {
      */
     private executeTestCommand(
         projectPath: string,
-        command: string,
+        builtCommand: BuiltTestCommand,
         timeout: number = DEFAULT_TEST_TIMEOUT
     ): Promise<string> {
         return new Promise((resolve, reject) => {
-            const parts = command.split(' ');
-            const cmd = parts[0];
-            const args = parts.slice(1);
-
             let output = '';
             let errorOutput = '';
 
-            const proc = spawn(cmd, args, {
+            const proc = spawn(builtCommand.command, builtCommand.args, {
                 cwd: projectPath,
-                shell: true,
+                shell: false,
                 env: { ...process.env, CI: 'true', FORCE_COLOR: '0' },
             });
 
@@ -172,6 +179,21 @@ export class AgentTestRunnerService extends BaseService {
                 reject(error);
             });
         });
+    }
+
+    private parseCommand(command: string): BuiltTestCommand {
+        const tokens = command.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+        if (tokens.length === 0) {
+            throw new Error('Invalid test command: empty command');
+        }
+        const [cmd, ...rawArgs] = tokens;
+        if (!cmd) {
+            throw new Error('Invalid test command: no command found');
+        }
+        return {
+            command: cmd.replace(/^"(.*)"$/u, '$1'),
+            args: rawArgs.map(arg => arg.replace(/^"(.*)"$/u, '$1')),
+        };
     }
 
     // ===== AGT-TST-02: Test Result Parsing =====

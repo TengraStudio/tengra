@@ -18,6 +18,7 @@ export interface StreamChunkResult {
     newSources?: string[]
     newImages?: string[]
     newToolCalls?: ToolCall[]
+    streamError?: string
     speed?: number | null
 }
 
@@ -51,7 +52,7 @@ const handleMetadataChunk = (chunk: StreamChunk): StreamChunkResult => {
 };
 
 const handleErrorChunk = (chunk: StreamChunk): StreamChunkResult => {
-    throw new Error(chunk.content);
+    return { updated: true, streamError: chunk.content ?? 'Stream error' };
 };
 
 const handleReasoningChunk = (chunk: StreamChunk, current: { content: string, reasoning: string, sources: string[], images?: string[] }): StreamChunkResult => {

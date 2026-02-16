@@ -1,4 +1,5 @@
 import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal';
+import { ProjectCodeTab } from '@renderer/features/projects/components/ProjectCodeTab';
 import { ProjectEnvironmentTab } from '@renderer/features/projects/components/ProjectEnvironmentTab';
 import { ProjectFilesTab } from '@renderer/features/projects/components/ProjectFilesTab';
 import { ProjectGitTab } from '@renderer/features/projects/components/ProjectGitTab';
@@ -112,6 +113,15 @@ export const ProjectDashboard = ({
                 searchResults={state.searchResults}
                 projectRoot={state.projectRoot}
                 handleFileSelect={(path, line) => {
+                    void actions.handleFileSelect(path, line);
+                }}
+                t={t}
+            />
+        ),
+        code: (
+            <ProjectCodeTab
+                projectRoot={state.projectRoot}
+                onOpenFile={(path, line) => {
                     void actions.handleFileSelect(path, line);
                 }}
                 t={t}

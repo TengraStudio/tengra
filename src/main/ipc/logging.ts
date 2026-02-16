@@ -35,8 +35,14 @@ export function pushLogEntry(level: 'debug' | 'info' | 'warn' | 'error', source:
     // Stream to all windows if enabled
     if (streamingEnabled) {
         for (const win of BrowserWindow.getAllWindows()) {
-            if (!win.isDestroyed()) {
+            const isDestroyed = typeof (win as { isDestroyed?: () => boolean }).isDestroyed === 'function'
+                ? (win as { isDestroyed: () => boolean }).isDestroyed()
+                : false;
+            if (isDestroyed) { continue; }
+            try {
                 win.webContents.send('log:entry', entry);
+            } catch {
+                // Ignore transient renderer/window teardown races
             }
         }
     }

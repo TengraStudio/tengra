@@ -37,6 +37,24 @@ export class KnowledgeRepository extends BaseRepository {
         }));
     }
 
+    async getCodeSymbolsByProjectPath(projectPath: string): Promise<CodeSymbolSearchResult[]> {
+        const rows = await this.adapter
+            .prepare(
+                'SELECT id, name, file_path, line, kind, signature, docstring FROM code_symbols WHERE project_path = ?'
+            )
+            .all<JsonObject>(projectPath);
+        return rows.map(r => ({
+            id: String(r.id),
+            name: String(r.name),
+            path: String(r.file_path ?? ''),
+            line: Number(r.line ?? 0),
+            kind: String(r.kind ?? ''),
+            signature: String(r.signature ?? ''),
+            docstring: String(r.docstring ?? ''),
+            score: 0.9,
+        }));
+    }
+
     async searchCodeSymbols(vector: number[]): Promise<CodeSymbolSearchResult[]> {
         const k = 10;
         const vecStr = `[${vector.join(',')}]`;

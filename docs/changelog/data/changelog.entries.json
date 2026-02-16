@@ -4,6 +4,137 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-16-i18n-core-rtl-onboarding",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "feature",
+      "category": "i18n",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "I18N",
+        "Renderer",
+        "RTL",
+        "Onboarding"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-16-agent-system-improvements",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Agent",
+        "ToolExecutor",
+        "ContextWindow"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Agent System Improvements: Tool Execution & Context Management",
+          "summary": "Enhanced the agent system with robust tool execution, automated context window management, and intelligent error recovery.",
+          "items": [
+            "- **Tool Execution**: Added tool timeouts, result caching for idempotent tools, and semi-parallel execution for improved performance.",
+            "- **Context Management**: Implemented automated history pruning and LLM-based summarization to maintain agent context in long sessions.",
+            "- **Error Recovery**: Added multi-category error classification and intelligent retry strategies with recovery advice for the agent."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-16-ipc-validation-schemas",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "security",
+      "category": "ipc",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "Security",
+        "Validation"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "IPC Input Validation Enhancement",
+          "summary": "Added Zod schema validation to critical IPC handlers to prevent injection attacks and malformed data issues.",
+          "items": [
+            "- **Security**: Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers.",
+            "- **Validation**: Implemented strict input validation using Zod schemas for tool execution, usage recording, shell commands, and proxy operations.",
+            "- **Protection**: Enhanced security against injection attacks by validating URLs, commands, session keys, and arguments before execution.",
+            "- **Type Safety**: Improved type safety with explicit schema definitions for provider names, model names, command parameters, and rate limit configurations.",
+            "- **Error Handling**: Added safe fallback values for all proxy handlers to ensure graceful degradation on validation failures."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-14-sd-cpp-binary-discovery-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "LocalImageService",
+        "SD-CPP"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "tr": {
+          "title": "SD-CPP İkili Dosya Keşif Düzeltmesi",
+          "summary": "stable-diffusion.cpp indirildikten sonra isimlendirme farklılıkları nedeniyle yürütülebilir dosyanın bulunamaması sorunu giderildi.",
+          "items": [
+            "- **Düzeltme**: `sd.exe`'ye ek olarak `sd-cli.exe` ve `stable-diffusion.exe` dosyalarını algılama desteği eklendi.",
+            "- **Dayanıklılık**: Çeşitli yayın yapılarını işlemek için özyinelemeli ikili dosya keşfi iyileştirildi.",
+            "- **Kod Kalitesi**: Yasaklanmış `eslint-disable` yorumları kaldırıldı ve katı servis bağımlılık kontrolleri eklendi."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-14-event-bus-object-destroyed-fix",
       "date": "2026-02-14",
       "channel": "stable",

@@ -4,10 +4,6 @@ import {
     Bot,
     Check,
     ChevronDown,
-    ChevronUp,
-    Columns2,
-    Download,
-    History,
     LayoutGrid,
     Loader2,
     Maximize2,
@@ -16,7 +12,6 @@ import {
     Play,
     Plus,
     Rows2,
-    Search,
     Sparkles,
     Square,
     TerminalSquare,
@@ -36,9 +31,15 @@ import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { TerminalContextMenu } from './components/TerminalContextMenu';
+import { TerminalCommandPanels } from './components/TerminalCommandPanels';
 import { TerminalEmptyState } from './components/TerminalEmptyState';
 import { TerminalInstance } from './components/TerminalInstance';
+import { TerminalMultiplexerPanel } from './components/TerminalMultiplexerPanel';
+import { TerminalRecordingPanel } from './components/TerminalRecordingPanel';
+import { TerminalSearchOverlay } from './components/TerminalSearchOverlay';
+import { TerminalSplitControls } from './components/TerminalSplitControls';
 import { TerminalTabsBar } from './components/TerminalTabsBar';
+import { useTerminalCommandTools } from './hooks/useTerminalCommandTools';
 import type {
     ResolvedTerminalAppearance,
     TerminalAppearancePreferences,
@@ -114,36 +115,6 @@ const TERMINAL_SEMANTIC_WARNING_PATTERNS = [
     /\bdeprecated\b/i,
     /\bcaution\b/i,
 ];
-
-function joinProjectPath(basePath: string, child: string): string {
-    const normalizedBase = basePath.replace(/[\\/]+$/, '');
-    if (!normalizedBase) {
-        return child;
-    }
-    return `${normalizedBase}/${child}`;
-}
-
-function extractMakeTargets(content: string): string[] {
-    const targetPattern = /^([A-Za-z0-9_.-]+)\s*:(?![=])/;
-    const ignored = new Set(['.PHONY']);
-    const targets = new Set<string>();
-    content.split(/\r?\n/).forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) {
-            return;
-        }
-        const match = targetPattern.exec(trimmed);
-        if (!match) {
-            return;
-        }
-        const target = match[1] ?? '';
-        if (!target || ignored.has(target) || target.startsWith('.')) {
-            return;
-        }
-        targets.add(target);
-    });
-    return Array.from(targets);
-}
 
 function toDisplayString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
@@ -301,21 +272,6 @@ interface TerminalPanelProps {
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
     setActiveTabId: (id: string | null) => void;
 }
-
-type TerminalHistoryEntry = {
-    command: string;
-    shell?: string;
-    cwd?: string;
-    timestamp: number;
-    sessionId: string;
-};
-
-type TaskRunnerEntry = {
-    id: string;
-    label: string;
-    command: string;
-    source: 'npm' | 'make' | 'cargo';
-};
 
 type RemoteSshProfile = {
     id: string;
@@ -603,14 +559,6 @@ export function TerminalPanel({
     const [semanticIssuesByTab, setSemanticIssuesByTab] = useState<
         Record<string, TerminalSemanticIssue[]>
     >({});
-    const [isCommandHistoryOpen, setIsCommandHistoryOpen] = useState(false);
-    const [isCommandHistoryLoading, setIsCommandHistoryLoading] = useState(false);
-    const [commandHistoryQuery, setCommandHistoryQuery] = useState('');
-    const [commandHistoryItems, setCommandHistoryItems] = useState<TerminalHistoryEntry[]>([]);
-    const [isTaskRunnerOpen, setIsTaskRunnerOpen] = useState(false);
-    const [isTaskRunnerLoading, setIsTaskRunnerLoading] = useState(false);
-    const [taskRunnerQuery, setTaskRunnerQuery] = useState('');
-    const [taskRunnerItems, setTaskRunnerItems] = useState<TaskRunnerEntry[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchUseRegex, setSearchUseRegex] = useState(false);
     const [searchStatus, setSearchStatus] = useState<
@@ -667,7 +615,7 @@ export function TerminalPanel({
     const tabsRef = useRef<TerminalTab[]>(tabs);
     const activeTabIdRef = useRef<string | null>(activeTabId);
     const terminalInstancesRef = useRef<Record<string, XTerm | null>>({});
-    const searchInputRef = useRef<HTMLInputElement | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const appearanceImportInputRef = useRef<HTMLInputElement | null>(null);
     const shortcutImportInputRef = useRef<HTMLInputElement | null>(null);
     const searchCursorRef = useRef<Record<string, { row: number; col: number }>>({});
@@ -2082,7 +2030,10 @@ export function TerminalPanel({
             // Show paste test modal with preview
             const lineCount = text.split(/\r?\n/).length;
             const charCount = text.length;
-            const hasSpecialChars = /[\x00-\x1F\x7F]/.test(text);
+            const hasSpecialChars = Array.from(text).some(c => {
+                const code = c.charCodeAt(0);
+                return (code >= 0 && code <= 31) || code === 127;
+            });
             const hasAnsi = ANSI_ESCAPE_SEQUENCE_REGEX.test(text);
             const preview = text.slice(0, 500);
 
@@ -2521,226 +2472,40 @@ export function TerminalPanel({
         clearSemanticIssuesForTab(activeTabIdRef.current);
     }, [clearSemanticIssuesForTab]);
 
-    const openCommandHistory = useCallback(() => {
-        if (!hasActiveSession) {
-            return;
-        }
-        setTerminalContextMenu(null);
-        setIsSearchOpen(false);
-        setIsGalleryView(false);
-        setIsSemanticPanelOpen(false);
-        setIsTaskRunnerOpen(false);
-        setIsMultiplexerOpen(false);
-        setIsRecordingPanelOpen(false);
-        setIsCommandHistoryOpen(true);
-    }, [hasActiveSession]);
-
-    const closeCommandHistory = useCallback(() => {
-        setIsCommandHistoryOpen(false);
-        setCommandHistoryQuery('');
-        setIsCommandHistoryLoading(false);
-    }, []);
-
-    const executeHistoryCommand = useCallback(async (entry: TerminalHistoryEntry) => {
-        if (!activeTabIdRef.current) {
-            return;
-        }
-        try {
-            await writeCommandToActiveTerminal(entry.command);
-        } catch (error) {
-            appLogger.error(
-                'TerminalPanel',
-                'Failed to execute command history entry',
-                error as Error
-            );
-        }
-    }, [writeCommandToActiveTerminal]);
-
-    const clearCommandHistory = useCallback(async () => {
-        try {
-            const success = await window.electron.terminal.clearCommandHistory();
-            if (success) {
-                setCommandHistoryItems([]);
-            }
-        } catch (error) {
-            appLogger.error('TerminalPanel', 'Failed to clear command history', error as Error);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!isCommandHistoryOpen) {
-            return;
-        }
-
-        let cancelled = false;
-        const timer = window.setTimeout(() => {
-            void (async () => {
-                try {
-                    setIsCommandHistoryLoading(true);
-                    const entries = await window.electron.terminal.getCommandHistory(
-                        commandHistoryQuery,
-                        80
-                    );
-                    if (!cancelled) {
-                        setCommandHistoryItems(entries);
-                    }
-                } catch (error) {
-                    if (!cancelled) {
-                        setCommandHistoryItems([]);
-                    }
-                    appLogger.error(
-                        'TerminalPanel',
-                        'Failed to load command history',
-                        error as Error
-                    );
-                } finally {
-                    if (!cancelled) {
-                        setIsCommandHistoryLoading(false);
-                    }
-                }
-            })();
-        }, 120);
-
-        return () => {
-            cancelled = true;
-            window.clearTimeout(timer);
-        };
-    }, [commandHistoryQuery, isCommandHistoryOpen]);
-
-    const openTaskRunner = useCallback(() => {
-        if (!hasActiveSession) {
-            return;
-        }
-        setTerminalContextMenu(null);
-        setIsSearchOpen(false);
-        setIsGalleryView(false);
-        setIsSemanticPanelOpen(false);
-        setIsCommandHistoryOpen(false);
-        setIsMultiplexerOpen(false);
-        setIsRecordingPanelOpen(false);
-        setIsTaskRunnerOpen(true);
-    }, [hasActiveSession]);
-
-    const closeTaskRunner = useCallback(() => {
-        setIsTaskRunnerOpen(false);
-        setTaskRunnerQuery('');
-        setTaskRunnerItems([]);
-        setIsTaskRunnerLoading(false);
-    }, []);
-
-    const executeTaskRunnerEntry = useCallback(async (entry: TaskRunnerEntry) => {
-        if (!activeTabIdRef.current) {
-            return;
-        }
-        try {
-            await writeCommandToActiveTerminal(entry.command);
-            setIsTaskRunnerOpen(false);
-        } catch (error) {
-            appLogger.error(
-                'TerminalPanel',
-                'Failed to execute task runner command',
-                error as Error
-            );
-        }
-    }, [writeCommandToActiveTerminal]);
-
-    useEffect(() => {
-        if (!isTaskRunnerOpen) {
-            return;
-        }
-
-        let cancelled = false;
-        const timer = window.setTimeout(() => {
-            void (async () => {
-                if (!projectPath) {
-                    setTaskRunnerItems([]);
-                    return;
-                }
-
-                try {
-                    setIsTaskRunnerLoading(true);
-                    const items: TaskRunnerEntry[] = [];
-
-                    const packageJsonPath = joinProjectPath(projectPath, 'package.json');
-                    if (await window.electron.files.exists(packageJsonPath)) {
-                        const packageRaw = await window.electron.files.readFile(packageJsonPath);
-                        const parsed = JSON.parse(packageRaw) as {
-                            scripts?: Record<string, string>;
-                        };
-                        Object.entries(parsed.scripts ?? {}).forEach(([name, command]) => {
-                            if (!name || !command) {
-                                return;
-                            }
-                            items.push({
-                                id: `npm:${name}`,
-                                label: name,
-                                command: `npm run ${name}`,
-                                source: 'npm',
-                            });
-                        });
-                    }
-
-                    const makefilePath = joinProjectPath(projectPath, 'Makefile');
-                    if (await window.electron.files.exists(makefilePath)) {
-                        const makefileRaw = await window.electron.files.readFile(makefilePath);
-                        extractMakeTargets(makefileRaw).forEach(target => {
-                            items.push({
-                                id: `make:${target}`,
-                                label: target,
-                                command: `make ${target}`,
-                                source: 'make',
-                            });
-                        });
-                    }
-
-                    const cargoTomlPath = joinProjectPath(projectPath, 'Cargo.toml');
-                    if (await window.electron.files.exists(cargoTomlPath)) {
-                        const cargoDefaults = ['build', 'run', 'test', 'check', 'clippy'];
-                        cargoDefaults.forEach(command => {
-                            items.push({
-                                id: `cargo:${command}`,
-                                label: command,
-                                command: `cargo ${command}`,
-                                source: 'cargo',
-                            });
-                        });
-                    }
-
-                    const normalizedQuery = taskRunnerQuery.trim().toLowerCase();
-                    const filtered = normalizedQuery
-                        ? items.filter(
-                            item =>
-                                item.label.toLowerCase().includes(normalizedQuery) ||
-                                item.command.toLowerCase().includes(normalizedQuery) ||
-                                item.source.toLowerCase().includes(normalizedQuery)
-                        )
-                        : items;
-
-                    if (!cancelled) {
-                        setTaskRunnerItems(filtered);
-                    }
-                } catch (error) {
-                    if (!cancelled) {
-                        setTaskRunnerItems([]);
-                    }
-                    appLogger.error(
-                        'TerminalPanel',
-                        'Failed to load task runner entries',
-                        error as Error
-                    );
-                } finally {
-                    if (!cancelled) {
-                        setIsTaskRunnerLoading(false);
-                    }
-                }
-            })();
-        }, 120);
-
-        return () => {
-            cancelled = true;
-            window.clearTimeout(timer);
-        };
-    }, [isTaskRunnerOpen, projectPath, taskRunnerQuery]);
+    const {
+        isCommandHistoryOpen,
+        setIsCommandHistoryOpen,
+        isCommandHistoryLoading,
+        commandHistoryQuery,
+        setCommandHistoryQuery,
+        commandHistoryItems,
+        openCommandHistory,
+        closeCommandHistory,
+        executeHistoryCommand,
+        clearCommandHistory,
+        isTaskRunnerOpen,
+        setIsTaskRunnerOpen,
+        isTaskRunnerLoading,
+        taskRunnerQuery,
+        setTaskRunnerQuery,
+        taskRunnerItems,
+        openTaskRunner,
+        closeTaskRunner,
+        executeTaskRunnerEntry,
+    } = useTerminalCommandTools({
+        hasActiveSession,
+        activeTabIdRef,
+        projectPath,
+        writeCommandToActiveTerminal,
+        onBeforeOpen: () => {
+            setTerminalContextMenu(null);
+            setIsSearchOpen(false);
+            setIsGalleryView(false);
+            setIsSemanticPanelOpen(false);
+            setIsMultiplexerOpen(false);
+            setIsRecordingPanelOpen(false);
+        },
+    });
 
     const resetActiveSearchCursor = useCallback(() => {
         if (!activeTabIdRef.current) {
@@ -4000,138 +3765,25 @@ export function TerminalPanel({
                                 </div>
                             </PopoverContent>
                         </Popover>
-                        <Popover open={isSplitPresetMenuOpen} onOpenChange={setIsSplitPresetMenuOpen}>
-                            <PopoverTrigger asChild>
-                                <button
-                                    className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Split presets"
-                                >
-                                    <Rows2 className="w-3.5 h-3.5" />
-                                </button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                side="top"
-                                align="end"
-                                sideOffset={8}
-                                className="w-[260px] p-2 bg-popover border border-border rounded-lg space-y-2"
-                            >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                                        Split Presets
-                                    </div>
-                                    <button
-                                        onClick={saveCurrentSplitAsPreset}
-                                        disabled={!splitView}
-                                        className="px-2 py-1 rounded border border-border text-[11px] hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Save Current
-                                    </button>
-                                </div>
-                                <div className="max-h-32 overflow-y-auto space-y-1">
-                                    {splitPresetOptions.map(preset => (
-                                        <div
-                                            key={preset.id}
-                                            className="w-full rounded-sm border border-border/50 bg-background/30 px-1 py-1 flex items-center gap-1"
-                                        >
-                                            <button
-                                                onClick={() => {
-                                                    applySplitPreset(preset);
-                                                }}
-                                                className="flex-1 px-1.5 py-0.5 rounded-sm text-left text-xs hover:bg-accent/50 transition-colors flex items-center justify-between gap-2"
-                                            >
-                                                <span className="truncate">{preset.name}</span>
-                                                <span className="text-[10px] text-muted-foreground capitalize">
-                                                    {preset.orientation}
-                                                </span>
-                                            </button>
-                                            {preset.source === 'custom' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => {
-                                                            renameSplitPreset(preset.id);
-                                                        }}
-                                                        className="px-1.5 py-0.5 rounded text-[10px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                                                        title="Rename preset"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            deleteSplitPreset(preset.id);
-                                                        }}
-                                                        className="px-1.5 py-0.5 rounded text-[10px] border border-border/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                        title="Delete preset"
-                                                    >
-                                                        Del
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="pt-1 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
-                                    <div>Created: {splitAnalytics.splitCreatedCount}</div>
-                                    <div>Closed: {splitAnalytics.splitClosedCount}</div>
-                                    <div>
-                                        Orientation toggles:{' '}
-                                        {splitAnalytics.splitOrientationToggleCount}
-                                    </div>
-                                    <div>Presets applied: {splitAnalytics.splitPresetApplyCount}</div>
-                                    <div className="pt-1 flex items-center justify-between gap-2">
-                                        <span>
-                                            Last action:{' '}
-                                            {splitAnalytics.lastSplitActionAt
-                                                ? new Date(
-                                                    splitAnalytics.lastSplitActionAt
-                                                ).toLocaleTimeString()
-                                                : 'n/a'}
-                                        </span>
-                                        <button
-                                            onClick={() => {
-                                                setSplitAnalytics(DEFAULT_SPLIT_ANALYTICS);
-                                            }}
-                                            className="px-1.5 py-0.5 rounded border border-border/60 text-[10px] hover:bg-accent/40"
-                                        >
-                                            Reset
-                                        </button>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                        {splitView && (
-                            <>
-                                <button
-                                    onClick={toggleSynchronizedInput}
-                                    className={cn(
-                                        'px-1.5 py-1 text-[10px] font-semibold rounded border transition-colors',
-                                        isSynchronizedInputEnabled
-                                            ? 'border-primary/60 text-primary bg-primary/10'
-                                            : 'border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                                    )}
-                                    title="Synchronized input for split panes"
-                                >
-                                    SYNC
-                                </button>
-                                <button
-                                    onClick={toggleSplitOrientation}
-                                    className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                                    title={t('terminal.toggleSplitOrientation')}
-                                >
-                                    {splitView.orientation === 'vertical' ? (
-                                        <Rows2 className="w-3.5 h-3.5" />
-                                    ) : (
-                                        <Columns2 className="w-3.5 h-3.5" />
-                                    )}
-                                </button>
-                                <button
-                                    onClick={closeSplitView}
-                                    className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                                    title={t('terminal.closeSplit')}
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
-                            </>
-                        )}
+                        <TerminalSplitControls
+                            t={t}
+                            isSplitPresetMenuOpen={isSplitPresetMenuOpen}
+                            setIsSplitPresetMenuOpen={setIsSplitPresetMenuOpen}
+                            splitView={splitView}
+                            splitPresetOptions={splitPresetOptions}
+                            splitAnalytics={splitAnalytics}
+                            isSynchronizedInputEnabled={isSynchronizedInputEnabled}
+                            saveCurrentSplitAsPreset={saveCurrentSplitAsPreset}
+                            applySplitPreset={applySplitPreset}
+                            renameSplitPreset={renameSplitPreset}
+                            deleteSplitPreset={deleteSplitPreset}
+                            resetSplitAnalytics={() => {
+                                setSplitAnalytics(DEFAULT_SPLIT_ANALYTICS);
+                            }}
+                            toggleSynchronizedInput={toggleSynchronizedInput}
+                            toggleSplitOrientation={toggleSplitOrientation}
+                            closeSplitView={closeSplitView}
+                        />
                         <button
                             onClick={toggleGalleryView}
                             disabled={tabs.length <= 1}
@@ -4680,488 +4332,90 @@ export function TerminalPanel({
                 </div>
             )}
             {isMultiplexerOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="text-xs font-semibold text-foreground">
-                            Multiplexer (tmux/screen)
-                        </div>
-                        <button
-                            onClick={closeMultiplexerPanel}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={t('common.close')}
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                        <button
-                            onClick={() => {
-                                setMultiplexerMode('tmux');
-                                void refreshMultiplexerSessions('tmux');
-                            }}
-                            className={cn(
-                                'h-7 px-2 rounded text-xs border transition-colors',
-                                multiplexerMode === 'tmux'
-                                    ? 'border-primary/60 bg-primary/10 text-primary'
-                                    : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                            )}
-                        >
-                            tmux
-                        </button>
-                        <button
-                            onClick={() => {
-                                setMultiplexerMode('screen');
-                                void refreshMultiplexerSessions('screen');
-                            }}
-                            className={cn(
-                                'h-7 px-2 rounded text-xs border transition-colors',
-                                multiplexerMode === 'screen'
-                                    ? 'border-primary/60 bg-primary/10 text-primary'
-                                    : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                            )}
-                        >
-                            screen
-                        </button>
-                        <button
-                            onClick={() => {
-                                void refreshMultiplexerSessions();
-                            }}
-                            className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                        >
-                            Refresh
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                        <input
-                            value={multiplexerSessionName}
-                            onChange={event => {
-                                setMultiplexerSessionName(event.target.value);
-                            }}
-                            placeholder="session name"
-                            className="h-7 flex-1 px-2 rounded border border-border bg-background/60 text-xs outline-none"
-                        />
-                        <button
-                            onClick={() => {
-                                void createMultiplexerSession();
-                            }}
-                            disabled={!hasActiveSession}
-                            className="h-7 px-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            Create/Attach
-                        </button>
-                    </div>
-                    <div className="max-h-56 overflow-y-auto custom-scrollbar space-y-1">
-                        {isMultiplexerLoading && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                {t('common.loading')}
-                            </div>
-                        )}
-                        {!isMultiplexerLoading && multiplexerError && (
-                            <div className="px-2 py-2 text-xs text-destructive whitespace-pre-wrap">
-                                {multiplexerError}
-                            </div>
-                        )}
-                        {!isMultiplexerLoading &&
-                            !multiplexerError &&
-                            multiplexerSessions.length === 0 && (
-                                <div className="px-2 py-2 text-xs text-muted-foreground">
-                                    No active sessions found.
-                                </div>
-                            )}
-                        {!isMultiplexerLoading &&
-                            !multiplexerError &&
-                            multiplexerSessions.map(session => (
-                                <button
-                                    key={`${multiplexerMode}:${session.id}`}
-                                    onClick={() => {
-                                        void attachMultiplexerSession(session);
-                                    }}
-                                    className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/40 transition-colors border border-transparent hover:border-border/70"
-                                >
-                                    <div className="text-xs text-foreground truncate">
-                                        {session.label}
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
-                                        {session.details ?? session.id}
-                                    </div>
-                                </button>
-                            ))}
-                    </div>
-                </div>
+                <TerminalMultiplexerPanel
+                    t={t}
+                    hasActiveSession={hasActiveSession}
+                    multiplexerMode={multiplexerMode}
+                    multiplexerSessionName={multiplexerSessionName}
+                    multiplexerSessions={multiplexerSessions}
+                    isMultiplexerLoading={isMultiplexerLoading}
+                    multiplexerError={multiplexerError}
+                    closeMultiplexerPanel={closeMultiplexerPanel}
+                    setMultiplexerMode={setMultiplexerMode}
+                    refreshMultiplexerSessions={refreshMultiplexerSessions}
+                    setMultiplexerSessionName={setMultiplexerSessionName}
+                    createMultiplexerSession={createMultiplexerSession}
+                    attachMultiplexerSession={attachMultiplexerSession}
+                />
             )}
             {isRecordingPanelOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[460px] max-w-[95vw]">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="text-xs font-semibold text-foreground">
-                            Session Recordings
-                        </div>
-                        <button
-                            onClick={() => {
-                                setIsRecordingPanelOpen(false);
-                                stopReplay();
-                            }}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={t('common.close')}
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                        <button
-                            onClick={toggleRecording}
-                            disabled={!hasActiveSession && !activeRecordingTabId}
-                            className={cn(
-                                'h-7 px-2 rounded text-xs border transition-colors',
-                                activeRecordingTabId
-                                    ? 'border-destructive/50 bg-destructive/10 text-destructive'
-                                    : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                            )}
-                        >
-                            {activeRecordingTabId ? 'Stop Recording' : 'Start Recording'}
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (selectedRecording) {
-                                    startReplay(selectedRecording);
-                                }
-                            }}
-                            disabled={!selectedRecording || isReplayRunning}
-                            className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                        >
-                            <Play className="w-3 h-3" />
-                            Replay
-                        </button>
-                        <button
-                            onClick={stopReplay}
-                            disabled={!isReplayRunning}
-                            className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                        >
-                            <Square className="w-3 h-3" />
-                            Stop
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (selectedRecording) {
-                                    exportRecording(selectedRecording);
-                                }
-                            }}
-                            disabled={!selectedRecording}
-                            className="h-7 px-2 rounded text-xs border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                        >
-                            <Download className="w-3 h-3" />
-                            Export
-                        </button>
-                    </div>
-                    {activeRecordingTabId && (
-                        <div className="mb-2 px-2 py-1 rounded border border-destructive/30 bg-destructive/5 text-[10px] text-destructive">
-                            Recording active:{' '}
-                            {tabs.find(tab => tab.id === activeRecordingTabId)?.name ??
-                                activeRecordingTabId}
-                        </div>
-                    )}
-                    <div className="max-h-32 overflow-y-auto custom-scrollbar space-y-1 mb-2">
-                        {recordings.length === 0 && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                No recordings yet.
-                            </div>
-                        )}
-                        {recordings.map(recording => (
-                            <button
-                                key={recording.id}
-                                onClick={() => {
-                                    setSelectedRecordingId(recording.id);
-                                    setReplayText('');
-                                    stopReplay();
-                                }}
-                                className={cn(
-                                    'w-full text-left px-2 py-1.5 rounded border transition-colors',
-                                    selectedRecordingId === recording.id
-                                        ? 'border-primary/60 bg-primary/10'
-                                        : 'border-border/60 hover:bg-accent/40'
-                                )}
-                            >
-                                <div className="text-xs text-foreground truncate">
-                                    {recording.tabName}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground truncate">
-                                    {new Date(recording.startedAt).toLocaleString()} -{' '}
-                                    {(recording.durationMs / 1000).toFixed(1)}s -{' '}
-                                    {recording.events.length} events
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                    {selectedRecording && (
-                        <div className="rounded border border-border/60 bg-background/70">
-                            <div className="px-2 py-1 border-b border-border/60 text-[10px] text-muted-foreground">
-                                Replay Preview
-                            </div>
-                            <pre className="p-2 text-[11px] leading-4 text-foreground max-h-44 overflow-auto whitespace-pre-wrap break-words">
-                                {isReplayRunning || replayText ? replayText : selectedRecordingText}
-                            </pre>
-                        </div>
-                    )}
-                </div>
+                <TerminalRecordingPanel
+                    t={t}
+                    hasActiveSession={hasActiveSession}
+                    activeRecordingTabId={activeRecordingTabId}
+                    activeRecordingLabel={
+                        activeRecordingTabId
+                            ? (tabs.find(tab => tab.id === activeRecordingTabId)?.name ??
+                                activeRecordingTabId)
+                            : null
+                    }
+                    recordings={recordings}
+                    selectedRecordingId={selectedRecordingId}
+                    selectedRecording={selectedRecording}
+                    selectedRecordingText={selectedRecordingText}
+                    replayText={replayText}
+                    isReplayRunning={isReplayRunning}
+                    setIsRecordingPanelOpen={setIsRecordingPanelOpen}
+                    toggleRecording={toggleRecording}
+                    startReplay={startReplay}
+                    stopReplay={stopReplay}
+                    exportRecording={exportRecording}
+                    setSelectedRecordingId={setSelectedRecordingId}
+                    setReplayText={setReplayText}
+                />
             )}
             {isSearchOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-1 min-w-[300px]">
-                    <div className="flex items-center gap-1">
-                        <Search className="w-3.5 h-3.5 text-muted-foreground" />
-                        <input
-                            ref={searchInputRef}
-                            value={searchQuery}
-                            onChange={event => {
-                                setSearchQuery(event.target.value);
-                                setSearchStatus('idle');
-                                setSearchMatches([]);
-                                setSearchActiveMatchIndex(-1);
-                                setSearchHistoryIndex(-1);
-                                resetActiveSearchCursor();
-                            }}
-                            onKeyDown={event => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    runTerminalSearch(event.shiftKey ? 'prev' : 'next');
-                                } else if (event.key === 'Escape') {
-                                    event.preventDefault();
-                                    closeTerminalSearch();
-                                } else if (event.key === 'ArrowUp') {
-                                    event.preventDefault();
-                                    stepSearchHistory('older');
-                                } else if (event.key === 'ArrowDown') {
-                                    event.preventDefault();
-                                    stepSearchHistory('newer');
-                                }
-                            }}
-                            placeholder={t('common.search')}
-                            className="h-6 w-44 bg-transparent text-xs outline-none text-foreground placeholder:text-muted-foreground"
-                        />
-                        <button
-                            onClick={() => {
-                                setSearchUseRegex(prev => !prev);
-                                setSearchStatus('idle');
-                                setSearchActiveMatchIndex(-1);
-                            }}
-                            className={cn(
-                                'h-6 px-1.5 text-[10px] rounded border transition-colors',
-                                searchUseRegex
-                                    ? 'border-primary/70 text-primary bg-primary/10'
-                                    : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                            )}
-                            aria-label={t('terminal.searchRegex')}
-                            title={t('terminal.searchRegex')}
-                        >
-                            .*
-                        </button>
-                        <button
-                            onClick={() => {
-                                runTerminalSearch('prev');
-                            }}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label="Find previous"
-                        >
-                            <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                            onClick={() => {
-                                runTerminalSearch('next');
-                            }}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label="Find next"
-                        >
-                            <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                            onClick={closeTerminalSearch}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={t('common.close')}
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-2">
-                        <span
-                            className={cn(
-                                'text-[10px]',
-                                searchStatus === 'invalid-regex' || searchStatus === 'not-found'
-                                    ? 'text-destructive'
-                                    : 'text-muted-foreground'
-                            )}
-                        >
-                            {searchStatus === 'invalid-regex'
-                                ? t('terminal.invalidRegex')
-                                : searchMatches.length > 0
-                                    ? `${searchActiveMatchIndex >= 0 ? searchActiveMatchIndex + 1 : 0}/${searchMatches.length}`
-                                    : searchStatus === 'not-found'
-                                        ? '0/0'
-                                        : ''}
-                        </span>
-                        {searchHistory.length > 0 && (
-                            <div className="flex items-center gap-1 max-w-[180px] overflow-hidden">
-                                {searchHistory.slice(0, 3).map(entry => (
-                                    <button
-                                        key={entry}
-                                        onClick={() => {
-                                            setSearchQuery(entry);
-                                            setSearchStatus('idle');
-                                            setSearchMatches([]);
-                                            setSearchActiveMatchIndex(-1);
-                                            setSearchHistoryIndex(-1);
-                                            resetActiveSearchCursor();
-                                        }}
-                                        className="px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/40 truncate max-w-[56px]"
-                                        title={entry}
-                                    >
-                                        {entry}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {searchMatches.length > 0 && (
-                        <div className="mt-1 max-h-24 overflow-y-auto custom-scrollbar space-y-1 border-t border-border/50 pt-1">
-                            {searchMatches.slice(0, 6).map((match, index) => (
-                                <button
-                                    key={`${match.row}-${match.col}-${index}`}
-                                    onClick={() => {
-                                        jumpToSearchMatch(index);
-                                    }}
-                                    className={cn(
-                                        'w-full text-left px-1.5 py-1 rounded text-[10px] transition-colors',
-                                        index === searchActiveMatchIndex
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/40'
-                                    )}
-                                    title={`${match.row + 1}:${match.col + 1}`}
-                                >
-                                    {match.row + 1}:{match.col + 1} {getSearchMatchLabel(match)}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <TerminalSearchOverlay
+                    t={t}
+                    searchInputRef={searchInputRef}
+                    searchQuery={searchQuery}
+                    searchUseRegex={searchUseRegex}
+                    searchStatus={searchStatus}
+                    searchMatches={searchMatches}
+                    searchActiveMatchIndex={searchActiveMatchIndex}
+                    searchHistory={searchHistory}
+                    setSearchQuery={setSearchQuery}
+                    setSearchUseRegex={setSearchUseRegex}
+                    setSearchStatus={setSearchStatus}
+                    setSearchMatches={setSearchMatches}
+                    setSearchActiveMatchIndex={setSearchActiveMatchIndex}
+                    setSearchHistoryIndex={setSearchHistoryIndex}
+                    resetActiveSearchCursor={resetActiveSearchCursor}
+                    runTerminalSearch={runTerminalSearch}
+                    closeTerminalSearch={closeTerminalSearch}
+                    stepSearchHistory={stepSearchHistory}
+                    jumpToSearchMatch={jumpToSearchMatch}
+                    getSearchMatchLabel={getSearchMatchLabel}
+                />
             )}
-            {isCommandHistoryOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-                            <History className="w-3.5 h-3.5 text-muted-foreground" />
-                            {t('terminal.commandHistory')}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => {
-                                    void clearCommandHistory();
-                                }}
-                                className="h-6 px-2 text-[10px] rounded border border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                            >
-                                {t('terminal.clearHistory')}
-                            </button>
-                            <button
-                                onClick={closeCommandHistory}
-                                className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                                aria-label={t('common.close')}
-                            >
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    </div>
-                    <input
-                        value={commandHistoryQuery}
-                        onChange={event => {
-                            setCommandHistoryQuery(event.target.value);
-                        }}
-                        placeholder={t('terminal.historySearchPlaceholder')}
-                        className="w-full h-7 px-2 rounded border border-border bg-background/60 text-xs outline-none mb-2"
-                    />
-                    <div className="max-h-56 overflow-y-auto custom-scrollbar">
-                        {isCommandHistoryLoading && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                {t('common.loading')}
-                            </div>
-                        )}
-                        {!isCommandHistoryLoading && commandHistoryItems.length === 0 && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                {t('terminal.noHistory')}
-                            </div>
-                        )}
-                        {!isCommandHistoryLoading &&
-                            commandHistoryItems.map(entry => (
-                                <button
-                                    key={`${entry.timestamp}-${entry.command}`}
-                                    onClick={() => {
-                                        void executeHistoryCommand(entry);
-                                    }}
-                                    className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/40 transition-colors"
-                                    title={entry.command}
-                                >
-                                    <div className="text-xs text-foreground truncate">
-                                        {entry.command}
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
-                                        {new Date(entry.timestamp).toLocaleString()}
-                                        {entry.cwd ? ` - ${entry.cwd}` : ''}
-                                    </div>
-                                </button>
-                            ))}
-                    </div>
-                </div>
-            )}
-            {isTaskRunnerOpen && (
-                <div className="absolute top-2 right-2 z-20 rounded-md border border-border/70 bg-popover/95 backdrop-blur px-2 py-2 w-[420px] max-w-[95vw]">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-                            <TerminalSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                            {t('terminal.taskRunner')}
-                        </div>
-                        <button
-                            onClick={closeTaskRunner}
-                            className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
-                            aria-label={t('common.close')}
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                    <input
-                        value={taskRunnerQuery}
-                        onChange={event => {
-                            setTaskRunnerQuery(event.target.value);
-                        }}
-                        placeholder={t('terminal.tasksSearchPlaceholder')}
-                        className="w-full h-7 px-2 rounded border border-border bg-background/60 text-xs outline-none mb-2"
-                    />
-                    <div className="max-h-56 overflow-y-auto custom-scrollbar">
-                        {isTaskRunnerLoading && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                {t('common.loading')}
-                            </div>
-                        )}
-                        {!isTaskRunnerLoading && taskRunnerItems.length === 0 && (
-                            <div className="px-2 py-2 text-xs text-muted-foreground">
-                                {t('terminal.noTasksFound')}
-                            </div>
-                        )}
-                        {!isTaskRunnerLoading &&
-                            taskRunnerItems.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        void executeTaskRunnerEntry(item);
-                                    }}
-                                    className="w-full text-left px-2 py-1.5 rounded hover:bg-accent/40 transition-colors"
-                                    title={item.command}
-                                >
-                                    <div className="text-xs text-foreground truncate">
-                                        {item.command}
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground truncate">
-                                        {item.source} - {item.label}
-                                    </div>
-                                </button>
-                            ))}
-                    </div>
-                </div>
-            )}
+            <TerminalCommandPanels
+                t={t}
+                isCommandHistoryOpen={isCommandHistoryOpen}
+                isCommandHistoryLoading={isCommandHistoryLoading}
+                commandHistoryQuery={commandHistoryQuery}
+                commandHistoryItems={commandHistoryItems}
+                setCommandHistoryQuery={setCommandHistoryQuery}
+                closeCommandHistory={closeCommandHistory}
+                clearCommandHistory={clearCommandHistory}
+                executeHistoryCommand={executeHistoryCommand}
+                isTaskRunnerOpen={isTaskRunnerOpen}
+                isTaskRunnerLoading={isTaskRunnerLoading}
+                taskRunnerQuery={taskRunnerQuery}
+                taskRunnerItems={taskRunnerItems}
+                setTaskRunnerQuery={setTaskRunnerQuery}
+                closeTaskRunner={closeTaskRunner}
+                executeTaskRunnerEntry={executeTaskRunnerEntry}
+            />
         </motion.div>
     );
 }

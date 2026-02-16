@@ -16,6 +16,10 @@ export class AuthAPIService extends BaseService {
     private server: http.Server | null = null;
     private port: number = 0;
     private apiKey: string = '';
+    private accountsCache: { expiresAt: number; payload: string } | null = null;
+    private readonly accountsCacheTtlMs = 1500;
+    private accountsInFlight: Promise<string> | null = null;
+    private readonly updateInFlightByAccount = new Map<string, Promise<void>>();
 
     constructor(private authService: AuthService) {
         super('AuthAPIService');
@@ -104,12 +108,9 @@ export class AuthAPIService extends BaseService {
 
     private async handleGetAccounts(_req: http.IncomingMessage, res: http.ServerResponse) {
         try {
-            const accounts = await this.authService.getAllAccountsFull();
-            // Transform to format expected by Go proxy
-            const authData = accounts.map(acc => this.mapAccountToAuthData(acc));
-
+            const payload = await this.getAccountsPayloadCached();
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ accounts: authData }));
+            res.end(payload);
         } catch (error) {
             appLogger.error('AuthAPIService', `Failed to get accounts: ${error}`);
             res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -134,20 +135,63 @@ export class AuthAPIService extends BaseService {
             }
 
             const tokenData = this.mapToTokenData(data);
-            const provider = this.normalizeProviderName(accountId.split('-')[0]);
+            const providerHint = this.getString(data, 'provider', 'type') ?? accountId.split('-')[0] ?? 'unknown';
+            const provider = this.normalizeProviderName(providerHint);
 
-            // linkAccount handles both updating existing accounts (by email) and creating new ones
-            await this.authService.linkAccount(provider, {
-                ...tokenData,
-                // Ensure accessToken is present as it's required for linkAccount type
-                accessToken: tokenData.accessToken ?? '',
+            await this.runAccountUpdateExclusive(accountId, async () => {
+                await this.authService.linkAccountWithId(provider, accountId, {
+                    ...tokenData,
+                    accessToken: tokenData.accessToken ?? '',
+                });
             });
+            this.accountsCache = null;
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));
         } catch (error) {
             appLogger.error('AuthAPIService', `Failed to update account: ${error}`);
             this.sendError(res, 500, 'Internal server error');
+        }
+    }
+
+    private async getAccountsPayloadCached(): Promise<string> {
+        const now = Date.now();
+        if (this.accountsCache && this.accountsCache.expiresAt > now) {
+            return this.accountsCache.payload;
+        }
+
+        if (this.accountsInFlight) {
+            return this.accountsInFlight;
+        }
+
+        this.accountsInFlight = (async () => {
+            const accounts = await this.authService.getAllAccountsFull();
+            const authData = accounts.map(acc => this.mapAccountToAuthData(acc));
+            const payload = JSON.stringify({ accounts: authData });
+            this.accountsCache = {
+                expiresAt: Date.now() + this.accountsCacheTtlMs,
+                payload
+            };
+            return payload;
+        })();
+
+        try {
+            return await this.accountsInFlight;
+        } finally {
+            this.accountsInFlight = null;
+        }
+    }
+
+    private async runAccountUpdateExclusive(accountId: string, fn: () => Promise<void>): Promise<void> {
+        const prev = this.updateInFlightByAccount.get(accountId) ?? Promise.resolve();
+        const next = prev.catch(() => undefined).then(fn);
+        this.updateInFlightByAccount.set(accountId, next);
+        try {
+            await next;
+        } finally {
+            if (this.updateInFlightByAccount.get(accountId) === next) {
+                this.updateInFlightByAccount.delete(accountId);
+            }
         }
     }
 

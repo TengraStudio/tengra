@@ -41,7 +41,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
     const {
         displayMessages, searchTerm, setSearchTerm, setInput,
         streamingReasoning, streamingSpeed, isLoading,
-        speakingMessageId, handleSpeak, handleStopSpeak
+        speakingMessageId, handleSpeak, handleStopSpeak, regenerateMessage
     } = useChat();
 
     const { language } = useAuth();
@@ -102,6 +102,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({
                         onSpeak={(text, id) => handleSpeak(id, text)}
                         onStopSpeak={handleStopSpeak}
                         speakingMessageId={speakingMessageId}
+                        onRegenerate={regenerateMessage}
                         onAtBottomStateChange={(atBottom) => {
                             if (setShowScrollButton) {
                                 setShowScrollButton(!atBottom);

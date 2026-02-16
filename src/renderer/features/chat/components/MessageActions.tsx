@@ -167,6 +167,7 @@ interface MessageActionsGroupProps {
     onSpeak?: (text: string) => void;
     onStop?: () => void;
     onReact?: (emoji: string) => void;
+    onRegenerate?: () => void;
 }
 
 const EMOJI_REACTIONS = [
@@ -188,6 +189,7 @@ export const MessageActionsGroup = ({
     onSpeak,
     onStop,
     onReact,
+    onRegenerate,
 }: MessageActionsGroupProps) => {
     const { t } = useTranslation();
 
@@ -246,7 +248,7 @@ export const MessageActionsGroup = ({
             {role === 'assistant' && (
                 <ActionButton
                     label={t('messageBubble.regenerate')}
-                    onClick={() => window.electron.log.warn('Regenerate feature coming soon!')}
+                    onClick={() => onRegenerate?.()}
                 >
                     <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                 </ActionButton>

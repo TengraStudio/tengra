@@ -1,5 +1,40 @@
 # Değişiklik Günlüğü
 
+## [2026-02-16]
+
+### Ajan Sistemi İyileştirmeleri: Araç Yürütme ve Bağlam Yönetimi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Dayanıklı araç yürütme, otomatik bağlam penceresi yönetimi ve akıllı hata kurtarma ile ajan sistemi geliştirildi.
+
+- **Araç Yürütme**: Araç zaman aşımları, idempotent araçlar için sonuç önbelleğe alma ve iyileştirilmiş performans için yarı paralel yürütme eklendi.
+- **Bağlam Yönetimi**: Uzun oturumlarda ajan bağlamını korumak için otomatik geçmiş budama ve LLM tabanlı özetleme uygulandı.
+- **Hata Kurtarma**: Çok kategorili hata sınıflandırması ve ajan için kurtarma taviyeli akıllı yeniden deneme stratejileri eklendi.
+
+### Uluslararasılaştırma Çekirdeği ve RTL Desteği
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: RTL desteği, çoğullaştırma ve ilk çalıştırma dil seçim istemi ile sağlam bir I18N altyapısı uygulandı.
+
+- **I18N Çekirdek**: Otomatik dil algılama, `Intl` biçimlendirme araçları ve çoğullaştırma desteği eklendi.
+- **RTL Desteği**: RTL dilleri (Arapça, İbranice) için CSS mantıksal özellikleri, yöne duyarlı simge çevirme ve dinamik düzen ayarlaması uygulandı.
+- **Onboarding**: Kullanıcıların ilk açılışta tercih ettikleri dili seçmelerine olanak tanıyan `LanguageSelectionPrompt` eklendi.
+- **Doğrulama**: `ProjectsHeader` bileşenine çoğullaştırma entegre edildi ve çeviri anahtarları için denetim betikleri eklendi.
+
+### IPC Girdi Doğrulama Geliştirmesi
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Enjeksiyon saldırılarını ve hatalı veri sorunlarını önlemek için kritik IPC işleyicilerine Zod şema doğrulaması eklendi.
+
+- **Güvenlik**: Araçlar, kullanım takibi, pencere/kabuk ve proxy IPC işleyicileri için doğrulama şemaları eklendi.
+- **Doğrulama**: Araç yürütme, kullanım kaydı, kabuk komutları ve proxy işlemleri için Zod şemaları kullanılarak katı girdi doğrulaması uygulandı.
+- **Koruma**: URL'ler, komutlar, oturum anahtarları ve argümanlar yürütülmeden önce doğrulanarak enjeksiyon saldırılarına karşı güvenlik artırıldı.
+- **Tip Güvenliği**: Sağlayıcı adları, model adları, komut parametreleri ve hız sınırı yapılandırmaları için açık şema tanımlarıyla tip güvenliği iyileştirildi.
+- **Hata Yönetimi**: Doğrulama hatalarında zarif bozulma sağlamak için tüm proxy işleyicilerine güvenli yedek değerler eklendi.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

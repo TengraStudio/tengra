@@ -31,7 +31,7 @@ export interface ProviderQuotas {
 export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactElement {
     const { t } = useTranslation(language);
     const [activeTab, setActiveTab] = useState<TabType>('installed');
-    const [models, setModels] = useState<ModelInfo[]>([]);
+    const [_models, setModels] = useState<ModelInfo[]>([]);
     const [groupedModels, setGroupedModels] = useState<GroupedModels>({});
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<ProviderAccounts>({});
@@ -202,12 +202,7 @@ export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactEle
                         <div>
                             <h1 className="text-2xl font-black tracking-tight">{t('modelsPage.title')}</h1>
                             <p className="text-sm text-muted-foreground mt-1">{t('modelsPage.subtitle')}</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 font-bold text-primary">
-                                {(Array.isArray(models) ? models.length : 0)} {t('modelsPage.modelsAvailable')}
-                            </span>
-                        </div>
+                        </div> 
                     </div>
 
                     {/* Tabs */}

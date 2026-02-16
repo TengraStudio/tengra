@@ -43,7 +43,7 @@
         "changelog:sync": "npm run changelog:build && npm run changelog:validate",
         "lint:fix": "eslint . --fix",
         "lint:boundaries": "node src/scripts/check-boundaries.js",
-        "secrets:scan": "secretlint \"**/*\"",
+        "secrets:scan": "secretlint --secretlintignore .secretlintignore \"**/*\"",
         "secrets:detect": "detect-secrets scan --baseline .secrets.baseline",
         "secrets:audit": "detect-secrets audit .secrets.baseline",
         "secrets:update": "detect-secrets scan --baseline .secrets.baseline --update .secrets.baseline",
@@ -266,6 +266,9 @@
             "owner": "TengraStudio",
             "repo": "tandem"
         }
+    },
+    "overrides": {
+        "axios": "^1.13.5"
     },
     "optionalDependencies": {
         "bufferutil": "*",

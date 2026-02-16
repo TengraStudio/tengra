@@ -3,8 +3,13 @@
  * Centralizes keyboard shortcut handling
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
+import {
+    loadShortcutBindings,
+    matchesShortcut,
+    ShortcutActionId,
+} from './shortcutBindings';
 import { AppView } from './useAppState';
 
 export interface KeyboardShortcutsConfig {
@@ -22,58 +27,21 @@ export interface KeyboardShortcutsConfig {
     currentChatId: string | null
 }
 
-interface ShortcutHandler {
-    key: string
-    modKey?: boolean
-    handler: () => void
-    requiresChatId?: boolean
-}
-
 function isInputElement(target: HTMLElement): boolean {
     return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 }
 
-function handleViewShortcuts(e: KeyboardEvent, onSwitchView: (view: AppView) => void): boolean {
-    const viewMap: Record<string, AppView> = { '1': 'chat', '2': 'projects', '4': 'settings' };
-    if (!(e.key in viewMap)) {
-        return false;
-    }
-    e.preventDefault();
-    onSwitchView(viewMap[e.key]);
-    return true;
-}
-
-function handleStandardShortcuts(e: KeyboardEvent, shortcuts: ShortcutHandler[], modKey: boolean, currentChatId: string | null): boolean {
-    for (const shortcut of shortcuts) {
-        const modMatch = shortcut.modKey ? modKey : (!e.ctrlKey && !e.metaKey);
-        if (e.key === shortcut.key && modMatch && !e.shiftKey && !e.altKey) {
-            if (shortcut.requiresChatId && !currentChatId) {
-                continue;
-            }
-            e.preventDefault();
-            shortcut.handler();
-            return true;
-        }
-    }
-    return false;
-}
-
-function handleEscape(e: KeyboardEvent, state: { showCommandPalette: boolean; showShortcuts: boolean; showSSHManager: boolean }, onCloseModals: () => void) {
+function handleEscape(
+    e: KeyboardEvent,
+    state: { showCommandPalette: boolean; showShortcuts: boolean; showSSHManager: boolean },
+    onCloseModals: () => void
+) {
     if (e.key === 'Escape' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
         if (state.showCommandPalette || state.showShortcuts || state.showSSHManager) {
             e.preventDefault();
             onCloseModals();
         }
     }
-}
-
-function handleInputKeys(e: KeyboardEvent, onShowShortcuts: () => void): boolean {
-    if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-        e.preventDefault();
-        onShowShortcuts();
-        return true;
-    }
-    return false;
 }
 
 /**
@@ -95,40 +63,72 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         currentChatId
     } = config;
 
-    useEffect(() => {
-        const shortcuts: ShortcutHandler[] = [
-            { key: 'k', modKey: true, handler: onCommandPalette },
-            { key: 'n', modKey: true, handler: onNewChat },
-            { key: ',', modKey: true, handler: onOpenSettings },
-            { key: 'l', modKey: true, handler: onClearChat, requiresChatId: true },
-            { key: 'b', modKey: true, handler: onToggleSidebar },
-            { key: '?', handler: onShowShortcuts },
-        ];
+    const [bindings, setBindings] = useState(loadShortcutBindings);
 
+    useEffect(() => {
+        const syncBindings = () => {
+            setBindings(loadShortcutBindings());
+        };
+        window.addEventListener('storage', syncBindings);
+        window.addEventListener('app:shortcuts-updated', syncBindings as EventListener);
+        return () => {
+            window.removeEventListener('storage', syncBindings);
+            window.removeEventListener('app:shortcuts-updated', syncBindings as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
+        const actionHandlers: Record<ShortcutActionId, () => void> = {
+            commandPalette: onCommandPalette,
+            newChat: onNewChat,
+            openSettings: onOpenSettings,
+            clearChat: onClearChat,
+            toggleSidebar: onToggleSidebar,
+            showShortcuts: onShowShortcuts,
+            goToChat: () => onSwitchView('chat'),
+            goToProjects: () => onSwitchView('projects'),
+            goToSettings: () => onSwitchView('settings'),
+        };
+
+        const orderedActions: ShortcutActionId[] = [
+            'goToChat',
+            'goToProjects',
+            'goToSettings',
+            'commandPalette',
+            'newChat',
+            'openSettings',
+            'clearChat',
+            'toggleSidebar',
+            'showShortcuts',
+        ];
 
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
-
-            // 1. Handle Input Elements
-            if (isInputElement(target)) {
-                handleInputKeys(e, onShowShortcuts);
-                return;
-            }
-
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const modKey = isMac ? e.metaKey : e.ctrlKey;
 
-            // 2. Handle View Switching
-            if (modKey && !e.shiftKey && !e.altKey && handleViewShortcuts(e, onSwitchView)) {
+            // Allow only "show shortcuts" while typing.
+            if (isInputElement(target)) {
+                if (matchesShortcut(e, bindings.showShortcuts, isMac)) {
+                    e.preventDefault();
+                    onShowShortcuts();
+                }
                 return;
             }
 
-            // 3. Handle Standard Shortcuts
-            if (handleStandardShortcuts(e, shortcuts, modKey, currentChatId)) {
+            for (const actionId of orderedActions) {
+                const binding = bindings[actionId];
+                if (!matchesShortcut(e, binding, isMac)) {
+                    continue;
+                }
+                if (actionId === 'clearChat' && !currentChatId) {
+                    continue;
+                }
+
+                e.preventDefault();
+                actionHandlers[actionId]();
                 return;
             }
 
-            // 4. Handle Escape
             handleEscape(e, { showCommandPalette, showShortcuts, showSSHManager }, onCloseModals);
         };
 
@@ -148,6 +148,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         showCommandPalette,
         showShortcuts,
         showSSHManager,
-        currentChatId
+        currentChatId,
+        bindings,
     ]);
 }

@@ -309,12 +309,7 @@ If NO user facts found, return: []`;
             /\bio sono\b/, /\bmi chiamo\b/, /\bpreferisco\b/, /\bmi piace\b/,
             // Dutch
             /\bik ben\b/, /\bik gebruik\b/, /\bik wil\b/, /\bmijn naam\b/,
-            // Arabic
-            /\b....\b/, /\b....\b/, /\b....\b/, /\b....\b/, /\b....\b/,
-            // Chinese
-            /\b..\b/, /\b..\b/, /\b...\b/, /\b...\b/, /\b...\b/,
-            // Japanese
-            /\b...\b/, /\b...\b/, /\b..\b/, /\b.\b/, /\b...\b/
+            // Additional explicit patterns can be added per language as needed.
         ];
 
         // Must NOT contain project/conversation/temporal indicators
@@ -333,13 +328,7 @@ If NO user facts found, return: []`;
             /\bprojekt\b/, /\bfeature\b/, /\bchat\b/, /\bdatei\b/, /\bcode\b/, /\bfehler\b/,
             /\bprojet\b/, /\bfonctionnalit.\b/, /\bdiscussion\b/, /\bfichier\b/, /\berreur\b/,
             /\bproyecto\b/, /\bfuncionalidad\b/, /\bconversaci.n\b/, /\barchivo\b/, /\bc.digo\b/,
-            /\berror\b/,
-            // Arabic
-            /\b.....\b/, /\b....\b/, /\b......\b/, /\b...\b/, /\b...\b/, /\b....\b/,
-            // Chinese
-            /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/, /\b..\b/,
-            // Japanese
-            /\b........\b/, /\b.\b/, /\b..\b/, /\b......\b/, /\b...\b/, /\b....\b/
+            /\berror\b/
         ];
 
         // Check for exclusion patterns first

@@ -3,7 +3,6 @@ import { LLMService } from '@main/services/llm/llm.service';
 import { LocalAIService } from '@main/services/llm/local-ai.service';
 import { OllamaService } from '@main/services/llm/ollama.service';
 import { OllamaHealthService } from '@main/services/llm/ollama-health.service';
-import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
@@ -77,12 +76,11 @@ export function registerOllamaIpc(options: {
     llmService: LLMService
     ollamaService?: OllamaService
     ollamaHealthService?: OllamaHealthService
-    ollamaScraperService?: OllamaScraperService
     proxyService?: ProxyService
     rateLimitService?: RateLimitService
 }) {
     appLogger.info('OllamaIPC', 'Registering Ollama IPC handlers');
-    const { localAIService, ollamaService, ollamaHealthService, ollamaScraperService, rateLimitService } = options;
+    const { localAIService, ollamaService, ollamaHealthService, rateLimitService } = options;
 
     ipcMain.handle('ollama:tags', createSafeIpcHandler('ollama:tags',
         async () => [], []
@@ -275,46 +273,6 @@ export function registerOllamaIpc(options: {
             const getWin = () => win as (BrowserWindow | null);
             return await startOllama(getWin, true);
         }, { success: false, message: 'Service unavailable' }
-    ));
-
-    // Scraper endpoints for marketplace
-    ipcMain.handle('ollama:scrapeLibrary', createSafeIpcHandler('ollama:scrapeLibrary',
-        async (_event: IpcMainInvokeEvent, bypassCacheRaw: unknown) => {
-            if (!ollamaScraperService) {
-                return [];
-            }
-            const bypassCache = bypassCacheRaw === true;
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:operation');
-            }
-            return await ollamaScraperService.getLibraryModels(bypassCache);
-        }, []
-    ));
-
-    ipcMain.handle('ollama:scrapeModelDetails', createSafeIpcHandler('ollama:scrapeModelDetails',
-        async (_event: IpcMainInvokeEvent, modelNameRaw: unknown, bypassCacheRaw: unknown) => {
-            if (!ollamaScraperService) {
-                return null;
-            }
-            const modelName = validateModel(modelNameRaw);
-            if (!modelName) {
-                throw new Error('Invalid model name');
-            }
-            const bypassCache = bypassCacheRaw === true;
-            if (rateLimitService) {
-                await rateLimitService.waitForToken('ollama:operation');
-            }
-            return await ollamaScraperService.getModelDetails(modelName, bypassCache);
-        }, null
-    ));
-
-    ipcMain.handle('ollama:clearScraperCache', createSafeIpcHandler('ollama:clearScraperCache',
-        async () => {
-            if (ollamaScraperService) {
-                ollamaScraperService.clearCache();
-            }
-            return { success: true };
-        }, { success: false }
     ));
 
     // ========================================

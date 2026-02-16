@@ -285,8 +285,34 @@ function checkForPageActions(message) {
     // In production, this would use structured tool calls
 
     if (message.includes('click') && message.includes('button')) {
-        addMessage('system', 'AI wants to click a button. This feature is coming soon!');
+        const selector = inferButtonSelectorFromMessage(message);
+        chrome.runtime.sendMessage(
+            {
+                type: 'PAGE_ACTION',
+                action: 'click',
+                params: { selector },
+            },
+            (response) => {
+                if (response?.success) {
+                    addMessage('system', `Clicked button via selector: ${selector}`);
+                } else {
+                    addMessage(
+                        'system',
+                        `AI suggested clicking a button, but it failed (${response?.error || 'no matching element'}).`
+                    );
+                }
+            }
+        );
     }
+}
+
+function inferButtonSelectorFromMessage(message) {
+    const quoted = message.match(/["']([^"']{2,80})["']/);
+    if (quoted && quoted[1]) {
+        const text = quoted[1].trim().replace(/\s+/g, ' ');
+        return `button[aria-label*="${text}" i], button[title*="${text}" i], [role="button"][aria-label*="${text}" i], input[type="submit"][value*="${text}" i], input[type="button"][value*="${text}" i]`;
+    }
+    return 'button, [role="button"], input[type="submit"], input[type="button"]';
 }
 
 /**

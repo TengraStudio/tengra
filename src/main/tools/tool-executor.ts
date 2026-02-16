@@ -32,6 +32,7 @@ export interface InternalToolResult {
     success: boolean;
     result?: JsonValue;
     error?: string;
+    errorType?: 'timeout' | 'limit' | 'permission' | 'notFound' | 'unknown';
 }
 
 export interface ToolExecutorOptions {
@@ -64,9 +65,23 @@ export interface ToolExecutorOptions {
 export interface ToolExecutionContext {
     taskId?: string;
     projectId?: string;
+    timeoutMs?: number;
 }
 
 export class ToolExecutor {
+    private idempotentTools = new Set([
+        'read_file',
+        'list_directory',
+        'list_dir',
+        'file_exists',
+        'get_file_info',
+        'get_system_info',
+        'search_web'
+    ]);
+
+    private toolCache = new Map<string, { result: InternalToolResult; timestamp: number }>();
+    private readonly CACHE_TTL = 30000; // 30 seconds
+
     constructor(private options: ToolExecutorOptions) { }
 
     async getToolDefinitions() {
@@ -82,45 +97,120 @@ export class ToolExecutor {
     }
 
     async execute(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
+        const timeoutMs = context?.timeoutMs ?? 30000; // Default 30s timeout
+
+        // AGT-10: Caching for idempotent tools
+        if (this.idempotentTools.has(name)) {
+            const cacheKey = `${name}:${JSON.stringify(args)}`;
+            const cached = this.toolCache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+                appLogger.info('ToolExecutor', `Cache hit for tool: ${name}`);
+                return cached.result;
+            }
+        }
+
         try {
-            appLogger.info('ToolExecutor', `Executing tool: ${name} (taskId: ${context?.taskId ?? 'none'})`);
-            return await this.routeToolCall(name, args, context);
+            appLogger.info('ToolExecutor', `Executing tool: ${name} (taskId: ${context?.taskId ?? 'none'}, timeout: ${timeoutMs}ms)`);
+
+            const executionPromise = this.routeToolCall(name, args, context);
+
+            if (timeoutMs <= 0) {
+                return await executionPromise;
+            }
+
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                const timer = setTimeout(() => {
+                    reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
+                }, timeoutMs);
+                // Unref the timer to allow the process to exit if needed
+                if (timer.unref) { timer.unref(); }
+            });
+
+            const result = await Promise.race([executionPromise, timeoutPromise]) as InternalToolResult;
+
+            // AGT-10: Update cache for idempotent tools
+            if (result.success && this.idempotentTools.has(name)) {
+                const cacheKey = `${name}:${JSON.stringify(args)}`;
+                this.toolCache.set(cacheKey, { result, timestamp: Date.now() });
+            }
+
+            return result;
         } catch (error) {
+            const errorMessage = (error as Error).message;
+            const isTimeout = errorMessage.includes('timed out');
+
             appLogger.error('ToolExecutor', `Error executing tool ${name}`, error as Error);
+
             return {
                 success: false,
-                error: (error as Error).message
+                error: errorMessage,
+                errorType: isTimeout ? 'timeout' : 'unknown'
             };
         }
     }
 
     private async routeToolCall(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {
-        if (name === 'update_plan_step' || name === 'propose_plan' || name === 'revise_plan') {
-            return this.handleProjectTool(name, args, context);
+        try {
+            if (name === 'update_plan_step' || name === 'propose_plan' || name === 'revise_plan') {
+                return await this.handleProjectTool(name, args, context);
+            }
+
+            const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
+                read_file: (toolArgs) => this.handleFileRead(toolArgs),
+                write_file: (toolArgs) => this.handleFileWrite(toolArgs),
+                list_directory: (toolArgs) => this.handleListDir(toolArgs),
+                list_dir: (toolArgs) => this.handleListDir(toolArgs),
+                file_exists: (toolArgs) => this.handleFileExists(toolArgs),
+                get_file_info: (toolArgs) => this.handleGetFileInfo(toolArgs),
+                create_directory: (toolArgs) => this.handleCreateDirectory(toolArgs),
+                delete_file: (toolArgs) => this.handleDeleteFile(toolArgs),
+                copy_file: (toolArgs) => this.handleCopyFile(toolArgs),
+                move_file: (toolArgs) => this.handleMoveFile(toolArgs),
+                execute_command: (toolArgs) => this.handleCommand(toolArgs),
+                search_web: (toolArgs) => this.handleWebSearch(toolArgs),
+                get_system_info: () => this.handleSystemInfo()
+            };
+
+            const handler = handlers[name];
+            let result: InternalToolResult;
+
+            if (handler) {
+                result = await handler(args);
+            } else {
+                result = await this.handleMcpTool(name, args);
+            }
+
+            // Categorize errors if result failed but didn't throw
+            if (!result.success && result.error && !result.errorType) {
+                result.errorType = this.categorizeError(result.error);
+            }
+
+            return result;
+        } catch (error) {
+            const errorMessage = (error as Error).message;
+            return {
+                success: false,
+                error: errorMessage,
+                errorType: this.categorizeError(errorMessage)
+            };
         }
+    }
 
-        const handlers: Partial<Record<string, (toolArgs: JsonObject) => Promise<InternalToolResult>>> = {
-            read_file: (toolArgs) => this.handleFileRead(toolArgs),
-            write_file: (toolArgs) => this.handleFileWrite(toolArgs),
-            list_directory: (toolArgs) => this.handleListDir(toolArgs),
-            list_dir: (toolArgs) => this.handleListDir(toolArgs),
-            file_exists: (toolArgs) => this.handleFileExists(toolArgs),
-            get_file_info: (toolArgs) => this.handleGetFileInfo(toolArgs),
-            create_directory: (toolArgs) => this.handleCreateDirectory(toolArgs),
-            delete_file: (toolArgs) => this.handleDeleteFile(toolArgs),
-            copy_file: (toolArgs) => this.handleCopyFile(toolArgs),
-            move_file: (toolArgs) => this.handleMoveFile(toolArgs),
-            execute_command: (toolArgs) => this.handleCommand(toolArgs),
-            search_web: (toolArgs) => this.handleWebSearch(toolArgs),
-            get_system_info: () => this.handleSystemInfo()
-        };
-
-        const handler = handlers[name];
-        if (handler) {
-            return handler(args);
+    private categorizeError(message: string): InternalToolResult['errorType'] {
+        const msg = message.toLowerCase();
+        if (msg.includes('permission') || msg.includes('access denied') || msg.includes('eacces')) {
+            return 'permission';
         }
-
-        return this.handleMcpTool(name, args);
+        if (msg.includes('not found') || msg.includes('enoent') || msg.includes('does not exist')) {
+            return 'notFound';
+        }
+        if (msg.includes('rate limit') || msg.includes('too many requests') || msg.includes('429')) {
+            return 'limit';
+        }
+        if (msg.includes('timeout') || msg.includes('timed out')) {
+            return 'timeout';
+        }
+        return 'unknown';
     }
 
     private async handleProjectTool(name: string, args: JsonObject, context?: ToolExecutionContext): Promise<InternalToolResult> {

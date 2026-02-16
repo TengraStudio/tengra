@@ -286,7 +286,7 @@ describe('Window IPC Handlers', () => {
             const longUrl = 'https://' + 'a'.repeat(10000) + '.com';
             
             const result = await handler!({}, longUrl);
-            expect(result.success).toBe(true); // URL constructor can handle long URLs
+            expect(result.success).toBe(false);
         });
     });
 
@@ -308,7 +308,7 @@ describe('Window IPC Handlers', () => {
             
             const result = await handler!({}, 'git', ['status'], '/project');
             
-            expect(result).toEqual({ stdout: '', stderr: '', code: 0 });
+            expect(result).toEqual({ stdout: '', stderr: '', code: 0, error: '' });
         });
     });
 

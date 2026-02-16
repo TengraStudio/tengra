@@ -97,7 +97,10 @@ export class CopilotService extends BaseService {
     private tokenPromise: Promise<string> | null = null;
     private rateLimitInterval: NodeJS.Timeout | null = null;
     private hasNotifiedExhaustion: boolean = false;
+    private hasNotifiedLowRemaining: boolean = false;
     private remainingCalls: number = 5000; // Default to assumed available
+    private requestQueue: Promise<void> = Promise.resolve();
+    private pendingQueueSize = 0;
 
     // Rate limiting and caching
     protected modelsCache: { data: JsonValue[] } | null = null;
@@ -105,6 +108,8 @@ export class CopilotService extends BaseService {
     public static readonly MODELS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     private lastApiCall: number = 0;
     private static readonly MIN_API_INTERVAL = 1000; // 1 second between API calls
+    private static readonly MAX_QUEUED_REQUESTS = 30;
+    private static readonly LOW_REMAINING_WARNING_THRESHOLD = 25;
 
     constructor(
         private authService?: AuthService,
@@ -203,6 +208,7 @@ export class CopilotService extends BaseService {
             this.notifyRateLimitExhausted(core.reset);
         } else {
             this.hasNotifiedExhaustion = false;
+            this.notifyRateLimitLow(core.remaining, core.reset);
         }
     }
 
@@ -217,17 +223,34 @@ export class CopilotService extends BaseService {
         }
     }
 
+    private notifyRateLimitLow(remaining: number, resetTime: number) {
+        if (remaining > CopilotService.LOW_REMAINING_WARNING_THRESHOLD) {
+            this.hasNotifiedLowRemaining = false;
+            return;
+        }
+        if (!this.hasNotifiedLowRemaining) {
+            this.hasNotifiedLowRemaining = true;
+            this.notificationService?.showNotification(
+                'Copilot Rate Limit Warning',
+                `${remaining} requests remaining. Reset at ${new Date(resetTime * 1000).toLocaleTimeString()}`,
+                false
+            );
+        }
+    }
+
     setGithubToken(token: string) {
         this.githubToken = token;
         // Don't clear session token here, as github_token might be unrelated to copilot session
         this.modelsCache = null;
         this.modelsCacheExpiry = 0;
+        this.hasNotifiedLowRemaining = false;
     }
 
     setCopilotToken(token: string) {
         this.copilotAuthToken = token;
         this.copilotSessionToken = null; // Clear session if auth token changes
         this.hasNotifiedExhaustion = false;
+        this.hasNotifiedLowRemaining = false;
     }
 
     private startRateLimitMonitoring() {
@@ -247,6 +270,43 @@ export class CopilotService extends BaseService {
             await new Promise(resolve => setTimeout(resolve, CopilotService.MIN_API_INTERVAL - timeSinceLastCall));
         }
         this.lastApiCall = Date.now();
+    }
+
+    private async enqueueRequest<T>(operation: string, task: () => Promise<T>): Promise<T> {
+        if (this.pendingQueueSize >= CopilotService.MAX_QUEUED_REQUESTS) {
+            this.notificationService?.showNotification(
+                'Copilot Queue Full',
+                'Too many pending Copilot requests. Please wait a moment and retry.',
+                false
+            );
+            throw new Error('Copilot request queue full');
+        }
+
+        this.pendingQueueSize += 1;
+        const queuedAhead = this.pendingQueueSize - 1;
+        if (queuedAhead > 0) {
+            this.notificationService?.showNotification(
+                'Copilot Request Queued',
+                `Request queued (${queuedAhead} ahead).`,
+                true
+            );
+        }
+
+        let release!: () => void;
+        const gate = new Promise<void>(resolve => {
+            release = resolve;
+        });
+        const previous = this.requestQueue;
+        this.requestQueue = previous.then(() => gate).catch(() => gate);
+
+        await previous;
+        try {
+            this.logInfo(`Executing queued Copilot ${operation} request. Pending: ${this.pendingQueueSize}`);
+            return await task();
+        } finally {
+            this.pendingQueueSize = Math.max(0, this.pendingQueueSize - 1);
+            release();
+        }
     }
 
     private async fetchVsCodeVersion() {
@@ -848,34 +908,36 @@ export class CopilotService extends BaseService {
         tools: ToolDefinition[] | undefined,
         stream: boolean
     ): Promise<Message | ReadableStream<Uint8Array> | null> {
-        await this.checkRateLimit(true);
-        if (this.remainingCalls <= 0) {
-            this.notificationService?.showNotification(
-                'Copilot Request Blocked',
-                'GitHub API rate limit is exhausted. Please wait for reset.',
-                false
-            );
-            throw new Error('GitHub API rate limit exhausted');
-        }
+        return this.enqueueRequest(stream ? 'stream' : 'chat', async () => {
+            await this.checkRateLimit(true);
+            if (this.remainingCalls <= 0) {
+                this.notificationService?.showNotification(
+                    'Copilot Request Blocked',
+                    'GitHub API rate limit is exhausted. Please wait for reset.',
+                    false
+                );
+                throw new Error('GitHub API rate limit exhausted');
+            }
 
-        const { headers, payload, finalModel } = await this.prepareChatRequest(messages, model, stream, tools);
+            const { headers, payload, finalModel } = await this.prepareChatRequest(messages, model, stream, tools);
 
-        const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload)
+            const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                return this.handleCopilotError({ response, finalModel, messages, headers, payload, stream, tools });
+            }
+
+            if (stream) {
+                return response.body;
+            }
+
+            const json = await response.json() as CopilotChatResponse;
+            return this.parseChatResponse(json);
         });
-
-        if (!response.ok) {
-            return this.handleCopilotError({ response, finalModel, messages, headers, payload, stream, tools });
-        }
-
-        if (stream) {
-            return response.body;
-        }
-
-        const json = await response.json() as CopilotChatResponse;
-        return this.parseChatResponse(json);
     }
 
     async chat(messages: Message[], model: string = 'gpt-4o', tools?: ToolDefinition[]): Promise<Message | null> {

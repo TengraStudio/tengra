@@ -1,56 +1,61 @@
 /**
  * Marketplace Service
- * Coordinates scraping models from Ollama/HuggingFace and storing in database
+ * Reads marketplace models from database. Data sync is handled by model-service.
  */
 
-import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
-import { OllamaModelDetails, OllamaScrapedModel,OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { DbMarketplaceModel } from '@shared/types/db-api';
-import { getErrorMessage } from '@shared/utils/error.util';
 
 export interface MarketplaceServiceDeps {
     databaseClient: DatabaseClientService;
-    ollamaScraper: OllamaScraperService;
     jobScheduler: JobSchedulerService;
+    processManager: ProcessManagerService;
 }
+
+export interface MarketplaceRefreshResult {
+    success: boolean;
+    count: number;
+    error?: string;
+}
+
+export interface OllamaMarketplaceModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionHtml: string;
+    versions: Array<{
+        version: string;
+        size: string;
+        maxContext: string;
+        inputType: string;
+        digest: string;
+    }>;
+}
+
+export interface HuggingFaceMarketplaceModelDetails {
+    name: string;
+    shortDescription: string;
+    longDescriptionMarkdown: string;
+}
+
+export type MarketplaceModelDetails =
+    | OllamaMarketplaceModelDetails
+    | HuggingFaceMarketplaceModelDetails;
 
 export class MarketplaceService extends BaseService {
     private lastScrapeTime: number = 0;
-    private isScraping = false;
 
     constructor(private deps: MarketplaceServiceDeps) {
         super('MarketplaceService');
     }
 
     override async initialize(): Promise<void> {
-        this.logInfo('Initializing marketplace service...');
-
-        // Schedule weekly scrape (Sundays at 03:00)
-        this.deps.jobScheduler.registerRecurringJob(
-            'marketplace-scrape',
-            async () => {
-                await this.scrapeAndStore();
-            },
-            () => 7 * 24 * 60 * 60 * 1000 // 7 days
-        );
-
-        // Do initial scrape if database is empty
-        const existingModels = await this.deps.databaseClient.getMarketplaceModels({ limit: 1 });
-        if (existingModels.length === 0) {
-            this.logInfo('Database empty, triggering initial scrape');
-            // Run async to not block initialization
-            this.scrapeAndStore().catch(err => {
-                this.logError('Initial scrape failed', err);
-            });
-        }
+        this.logInfo('Initializing marketplace service (DB-backed mode)...');
+        void this.deps.jobScheduler;
     }
 
-    /**
-     * Get marketplace models from database
-     */
     async getModels(options?: {
         provider?: 'ollama' | 'huggingface';
         limit?: number;
@@ -59,16 +64,6 @@ export class MarketplaceService extends BaseService {
         return this.deps.databaseClient.getMarketplaceModels(options);
     }
 
-    /**
-     * Get detailed information for a specific model from scavenger/scraper
-     */
-    async getModelDetails(modelName: string): Promise<OllamaModelDetails | null> {
-        return this.deps.ollamaScraper.getModelDetails(modelName);
-    }
-
-    /**
-     * Search marketplace models in database
-     */
     async searchModels(
         query: string,
         provider?: 'ollama' | 'huggingface',
@@ -81,82 +76,49 @@ export class MarketplaceService extends BaseService {
         });
     }
 
-    /**
-     * Force refresh - scrape and store new data
-     */
-    async refresh(): Promise<{ success: boolean; count: number; error?: string }> {
-        return this.scrapeAndStore();
+    async getModelDetails(
+        modelName: string,
+        provider: 'ollama' | 'huggingface' = 'ollama'
+    ): Promise<MarketplaceModelDetails | null> {
+        try {
+            const response = provider === 'huggingface'
+                ? await this.deps.processManager.sendGetRequest<{
+                    success: boolean;
+                    data?: HuggingFaceMarketplaceModelDetails;
+                    error?: string;
+                }>(
+                    'model-service',
+                    `/marketplace/huggingface?modelId=${encodeURIComponent(modelName)}`
+                )
+                : await this.deps.processManager.sendGetRequest<{
+                    success: boolean;
+                    data?: OllamaMarketplaceModelDetails;
+                    error?: string;
+                }>('model-service', `/marketplace/ollama/${encodeURIComponent(modelName)}`);
+
+            if (!response.success || !response.data) {
+                return null;
+            }
+
+            return response.data;
+        } catch {
+            return null;
+        }
     }
 
-    /**
-     * Get the last scrape timestamp
-     */
+    async refresh(): Promise<MarketplaceRefreshResult> {
+        return {
+            success: false,
+            count: 0,
+            error: 'Manual marketplace refresh is disabled; model-service syncs automatically.',
+        };
+    }
+
     getLastScrapeTime(): number {
         return this.lastScrapeTime;
     }
 
-    /**
-     * Check if a scrape is in progress
-     */
     isScrapeInProgress(): boolean {
-        return this.isScraping;
-    }
-
-    /**
-     * Scrape models and store in database
-     */
-    private async scrapeAndStore(): Promise<{ success: boolean; count: number; error?: string }> {
-        if (this.isScraping) {
-            return { success: false, count: 0, error: 'Scrape already in progress' };
-        }
-
-        this.isScraping = true;
-        try {
-            this.logInfo('Starting marketplace scrape...');
-
-            // Scrape Ollama models
-            const ollamaModels = await this.deps.ollamaScraper.getLibraryModels(true);
-            this.logInfo(`Scraped ${ollamaModels.length} Ollama models`);
-
-            // Convert to database format
-            const dbModels = ollamaModels.map(model => this.convertOllamaModel(model));
-
-            // Store in database
-            const result = await this.deps.databaseClient.upsertMarketplaceModels({
-                models: dbModels,
-            });
-
-            if (result.success) {
-                this.lastScrapeTime = Date.now();
-                this.logInfo(`Stored ${result.count} models in database`);
-            } else {
-                this.logError('Failed to store models', result.error);
-            }
-
-            return result;
-        } catch (error) {
-            const errorMsg = getErrorMessage(error);
-            appLogger.error('MarketplaceService', `Scrape failed: ${errorMsg}`);
-            return { success: false, count: 0, error: errorMsg };
-        } finally {
-            this.isScraping = false;
-        }
-    }
-
-    /**
-     * Convert scraped Ollama model to database format
-     */
-    private convertOllamaModel(
-        model: OllamaScrapedModel
-    ): Omit<DbMarketplaceModel, 'createdAt' | 'updatedAt'> {
-        return {
-            id: `ollama:${model.name}`,
-            name: model.name,
-            provider: 'ollama',
-            pulls: model.pulls,
-            tagCount: model.tagCount,
-            lastUpdated: model.lastUpdated,
-            categories: model.categories,
-        };
+        return false;
     }
 }

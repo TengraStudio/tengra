@@ -1,4 +1,4 @@
-import { FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Download, FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 interface LogEntry {
     timestamp: string;
     level: 'info' | 'warn' | 'error' | 'debug';
+    source: string;
     message: string;
 }
 
@@ -19,6 +20,8 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
     const { t } = useTranslation(language);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [filter, setFilter] = useState('');
+    const [levelFilter, setLevelFilter] = useState<'all' | LogEntry['level']>('all');
+    const [sourceFilter, setSourceFilter] = useState('all');
     const [autoScroll, setAutoScroll] = useState(true);
     const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +42,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                 return {
                     timestamp: new Date().toISOString(),
                     level,
+                    source: data.sessionId || 'terminal',
                     message: line,
                 };
             });
@@ -63,9 +67,60 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
         setLogs([]);
     }, []);
 
-    const filteredLogs = logs.filter(log =>
-        log.message.toLowerCase().includes(filter.toLowerCase())
+    const filteredLogs = logs.filter(log => {
+        const matchesText = log.message.toLowerCase().includes(filter.toLowerCase());
+        const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
+        const matchesSource = sourceFilter === 'all' || log.source === sourceFilter;
+        return matchesText && matchesLevel && matchesSource;
+    });
+
+    const availableSources = React.useMemo(
+        () => Array.from(new Set(logs.map(log => log.source))).sort(),
+        [logs]
     );
+
+    const levelStats = React.useMemo(() => ({
+        total: filteredLogs.length,
+        error: filteredLogs.filter(log => log.level === 'error').length,
+        warn: filteredLogs.filter(log => log.level === 'warn').length,
+        info: filteredLogs.filter(log => log.level === 'info').length,
+        debug: filteredLogs.filter(log => log.level === 'debug').length,
+    }), [filteredLogs]);
+
+    const exportLogs = useCallback(() => {
+        const content = filteredLogs
+            .map(
+                entry =>
+                    `[${new Date(entry.timestamp).toISOString()}] [${entry.level.toUpperCase()}] ${entry.message}`
+            )
+            .join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `project-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [filteredLogs]);
+
+    const highlightMatch = (text: string) => {
+        if (!filter.trim()) {
+            return text;
+        }
+        const escaped = filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escaped})`, 'gi');
+        const parts = text.split(regex);
+        const normalizedFilter = filter.toLowerCase();
+        return parts.map((part, idx) =>
+            part.toLowerCase() === normalizedFilter ? (
+                <mark key={`${part}-${idx}`} className="bg-warning/25 text-foreground px-0.5 rounded-sm">
+                    {part}
+                </mark>
+            ) : (
+                <React.Fragment key={`${part}-${idx}`}>{part}</React.Fragment>
+            )
+        );
+    };
 
     const getLevelColor = (level: LogEntry['level']) => {
         switch (level) {
@@ -117,6 +172,29 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                             className="pl-10 pr-4 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50 w-64"
                         />
                     </div>
+                    <select
+                        value={levelFilter}
+                        onChange={e => setLevelFilter(e.target.value as 'all' | LogEntry['level'])}
+                        className="px-3 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50"
+                    >
+                        <option value="all">{t('logging.allLevels')}</option>
+                        <option value="info">{t('logging.info')}</option>
+                        <option value="warn">{t('logging.warn')}</option>
+                        <option value="error">{t('logging.error')}</option>
+                        <option value="debug">{t('logging.debug')}</option>
+                    </select>
+                    <select
+                        value={sourceFilter}
+                        onChange={e => setSourceFilter(e.target.value)}
+                        className="px-3 py-2 bg-muted/30 border border-border/50 rounded-lg text-sm outline-none focus:border-primary/50"
+                    >
+                        <option value="all">All sources</option>
+                        {availableSources.map(source => (
+                            <option key={source} value={source}>
+                                {source}
+                            </option>
+                        ))}
+                    </select>
                     <button
                         onClick={() => setAutoScroll(!autoScroll)}
                         className={cn(
@@ -130,6 +208,13 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                         <RefreshCw className="w-4 h-4" />
                     </button>
                     <button
+                        onClick={exportLogs}
+                        className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors"
+                    >
+                        <Download className="w-4 h-4" />
+                        {t('logging.export')}
+                    </button>
+                    <button
                         onClick={clearLogs}
                         className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-muted/50 border border-border/50 rounded-lg text-sm font-medium transition-colors"
                     >
@@ -141,6 +226,13 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
 
             {/* Logs Container */}
             <div className="flex-1 min-h-0 bg-black/60 backdrop-blur-md rounded-2xl border border-border/50 overflow-hidden flex flex-col font-mono text-xs">
+                <div className="px-4 py-2 border-b border-border/40 flex items-center gap-2 text-xxs text-muted-foreground">
+                    <span>Total: {levelStats.total}</span>
+                    <span>Info: {levelStats.info}</span>
+                    <span>Warn: {levelStats.warn}</span>
+                    <span>Error: {levelStats.error}</span>
+                    <span>Debug: {levelStats.debug}</span>
+                </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-border/50">
                     {filteredLogs.length > 0 ? (
                         <>
@@ -155,6 +247,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                                     <span className="text-neutral mr-2">
                                         {new Date(log.timestamp).toLocaleTimeString()}
                                     </span>
+                                    <span className="text-muted-foreground/70 mr-2">[{log.source}]</span>
                                     <span
                                         className={cn(
                                             'uppercase font-bold mr-2',
@@ -163,7 +256,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
                                     >
                                         [{log.level}]
                                     </span>
-                                    <span className={getLevelColor(log.level)}>{log.message}</span>
+                                    <span className={getLevelColor(log.level)}>{highlightMatch(log.message)}</span>
                                 </div>
                             ))}
                             <div ref={logsEndRef} />

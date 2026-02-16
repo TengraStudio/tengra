@@ -46,6 +46,7 @@ import { LocalImageService } from '@main/services/llm/local-image.service';
 import { MarketplaceService } from '@main/services/llm/marketplace.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
+import { ModelDownloaderService } from '@main/services/llm/model-downloader.service';
 import { ModelFallbackService,modelFallbackService } from '@main/services/llm/model-fallback.service';
 import {
     ModelRegistryDependencies,
@@ -58,7 +59,6 @@ import {
     getOllamaHealthService,
     OllamaHealthService,
 } from '@main/services/llm/ollama-health.service';
-import { OllamaScraperService } from '@main/services/llm/ollama-scraper.service';
 import { PromptTemplatesService } from '@main/services/llm/prompt-templates.service';
 import { ResponseCacheService } from '@main/services/llm/response-cache.service';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
@@ -202,8 +202,8 @@ export interface Services {
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
     terminalSmartService: TerminalSmartService;
-    ollamaScraperService: OllamaScraperService;
     marketplaceService: MarketplaceService;
+    modelDownloaderService: ModelDownloaderService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -537,6 +537,16 @@ function registerLLMServices() {
         ['httpService']
     );
     container.register(
+        'modelDownloaderService',
+        (os, hs, ls) =>
+            new ModelDownloaderService({
+                ollamaService: os as OllamaService,
+                huggingFaceService: hs as HuggingFaceService,
+                llamaService: ls as LlamaService,
+            }),
+        ['ollamaService', 'huggingFaceService', 'llamaService']
+    );
+    container.register(
         'contextRetrievalService',
         (dbs, es) => new ContextRetrievalService(dbs as DatabaseService, es as EmbeddingService),
         ['databaseService', 'embeddingService']
@@ -632,20 +642,15 @@ function registerLazyServices() {
         return new PageSpeedService();
     });
 
-    lazyServiceRegistry.register('ollamaScraperService', async () => {
-        const { OllamaScraperService } = await import('@main/services/llm/ollama-scraper.service');
-        return new OllamaScraperService();
-    });
-
     lazyServiceRegistry.register('marketplaceService', async () => {
         const databaseClient = container.resolve<DatabaseClientService>('databaseClientService');
-        const ollamaScraper = await lazyServiceRegistry.get<OllamaScraperService>('ollamaScraperService');
         const jobScheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
+        const processManager = container.resolve<ProcessManagerService>('processManagerService');
         const { MarketplaceService } = await import('@main/services/llm/marketplace.service');
         return new MarketplaceService({
             databaseClient,
-            ollamaScraper,
             jobScheduler,
+            processManager,
         });
     });
 }
@@ -661,9 +666,6 @@ function registerLazyProxies() {
     );
     container.register('pageSpeedService', () =>
         createLazyServiceProxy<PageSpeedService>('pageSpeedService')
-    );
-    container.register('ollamaScraperService', () =>
-        createLazyServiceProxy<OllamaScraperService>('ollamaScraperService')
     );
     container.register('marketplaceService', () =>
         createLazyServiceProxy<MarketplaceService>('marketplaceService')
@@ -1051,8 +1053,8 @@ function buildServicesMap(
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
-        ollamaScraperService: createLazyServiceProxy<OllamaScraperService>('ollamaScraperService'),
         marketplaceService: createLazyServiceProxy<MarketplaceService>('marketplaceService'),
+        modelDownloaderService: container.resolve<ModelDownloaderService>('modelDownloaderService'),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

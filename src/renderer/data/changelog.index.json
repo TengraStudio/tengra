@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-14T13:29:18.488Z",
+  "generatedAt": "2026-02-16T02:45:44.654Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,306 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-16-agent-system-improvements",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Agent",
+        "ToolExecutor",
+        "ContextWindow"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Agent System Improvements: Tool Execution & Context Management",
+          "summary": "Enhanced the agent system with robust tool execution, automated context window management, and intelligent error recovery.",
+          "items": [
+            "- **Tool Execution**: Added tool timeouts, result caching for idempotent tools, and semi-parallel execution for improved performance.",
+            "- **Context Management**: Implemented automated history pruning and LLM-based summarization to maintain agent context in long sessions.",
+            "- **Error Recovery**: Added multi-category error classification and intelligent retry strategies with recovery advice for the agent."
+          ]
+        },
+        "tr": {
+          "title": "Ajan Sistemi İyileştirmeleri: Araç Yürütme ve Bağlam Yönetimi",
+          "summary": "Dayanıklı araç yürütme, otomatik bağlam penceresi yönetimi ve akıllı hata kurtarma ile ajan sistemi geliştirildi.",
+          "items": [
+            "- **Araç Yürütme**: Araç zaman aşımları, idempotent araçlar için sonuç önbelleğe alma ve iyileştirilmiş performans için yarı paralel yürütme eklendi.",
+            "- **Bağlam Yönetimi**: Uzun oturumlarda ajan bağlamını korumak için otomatik geçmiş budama ve LLM tabanlı özetleme uygulandı.",
+            "- **Hata Kurtarma**: Çok kategorili hata sınıflandırması ve ajan için kurtarma taviyeli akıllı yeniden deneme stratejileri eklendi."
+          ]
+        },
+        "de": {
+          "title": "Verbesserungen am Agentensystem: Tool-Ausführung & Kontextmanagement",
+          "summary": "Verbessertes Agentensystem mit robuster Tool-Ausführung, automatischer Verwaltung des Kontextfensters und intelligenter Fehlerbehebung.",
+          "items": [
+            "- **Tool-Ausführung**: Tool-Timeouts, Ergebniscaching für idempotente Tools und semi-parallele Ausführung für verbesserte Leistung hinzugefügt.",
+            "- **Kontextmanagement**: Automatisches Bereinigen des Verlaufs und LLM-basierte Zusammenfassung implementiert, um den Agentenkontext in langen Sitzungen zu erhalten.",
+            "- **Fehlerbehebung**: Multi-Kategorie-Fehlerklassifizierung und intelligente Wiederholungsstrategien mit Wiederherstellungshinweisen für den Agenten hinzugefügt."
+          ]
+        },
+        "fr": {
+          "title": "Améliorations du système d'agent : exécution des outils et gestion du contexte",
+          "summary": "Système d'agent amélioré avec une exécution robuste des outils, une gestion automatique de la fenêtre de contexte et une récupération intelligente des erreurs.",
+          "items": [
+            "- **Exécution des outils** : Ajout de délais d'attente pour les outils, mise en cache des résultats pour les outils idempotents et exécution semi-parallèle pour des performances améliorées.",
+            "- **Gestion du contexte** : Mise en œuvre de l'élagage automatique de l'historique et de la résumer par LLM pour maintenir le contexte de l'agent lors de sessions longues.",
+            "- **Récupération d'erreurs** : Ajout d'une classification d'erreurs multi-catégories et de stratégies de réessai intelligentes avec des conseils de récupération pour l'agent."
+          ]
+        },
+        "es": {
+          "title": "Mejoras del sistema de agentes: ejecución de herramientas y gestión del contexto",
+          "summary": "Sistema de agentes mejorado con ejecución robusta de herramientas, gestión automática de la ventana de contexto y recuperación inteligente de errores.",
+          "items": [
+            "- **Ejecución de herramientas**: Se agregaron tiempos de espera de herramientas, almacenamiento en caché de resultados para herramientas idempotentes y ejecución semiparalela para mejorar el rendimiento.",
+            "- **Gestión del contexto**: Implementación de poda automática del historial y resumen basado en LLM para mantener el contexto del agente en sesiones largas.",
+            "- **Recuperación de errores**: Se agregó clasificación de errores en múltiples categorías y estrategias de reintento inteligentes con consejos de recuperación para el agente."
+          ]
+        },
+        "ja": {
+          "title": "エージェントシステムの改善：ツールの実行とコンテキスト管理",
+          "summary": "堅牢なツール実行、コンテキスト ウィンドウの自動管理、インテリジェントなエラー回復によりエージェント システムが強化されました。",
+          "items": [
+            "- **ツールの実行**: ツールのタイムアウト、べき等ツールの結果キャッシュ、パフォーマンス向上のための準並列実行が追加されました。",
+            "- **コンテキスト管理**: 長いセッションでもエージェントのコンテキストを維持するために、履歴の自動プルーニングと LLM ベースの要約を実装しました。",
+            "- **エラー回復**: マルチカテゴリのエラー分類と、エージェント向けの回復アドバイスを含むインテリジェントな再試行戦略を追加しました。"
+          ]
+        },
+        "zh": {
+          "title": "代理系统改进：工具执行与上下文管理",
+          "summary": "通过稳健的工具执行、自动上下文窗口管理和智能错误恢复增强了代理系统。",
+          "items": [
+            "- **工具执行**：增加了工具超时、幂等工具的结果缓存以及半并行执行以提高性能。",
+            "- **上下文管理**：实现了自动历史修剪和基于 LLM 的摘要，以在长会话中维护代理上下文。",
+            "- **错误恢复**：增加了多类别错误分类和智能重试策略，并为代理提供恢复建议。"
+          ]
+        },
+        "ar": {
+          "title": "تحسينات نظام الوكيل: تنفيذ الأدوات وإدارة السياق",
+          "summary": "تحسين نظام الوكيل من خلال تنفيذ قوي للأدوات وإدارة تلقائية لنافذة السياق واسترداد ذكي للأخطاء.",
+          "items": [
+            "- **تنفيذ الأدوات**: إضافة مهلات للأدوات وتخزين النتائج للأدوات غير المتغيرة والتنفيذ شبه المتوازي لتحسين الأداء.",
+            "- **إدارة السياق**: تنفيذ التقليم التلقائي للسجل والتلخيص القائم على LLM للحفاظ على سياق الوكيل في الجلسات الطويلة.",
+            "- **استرداد الأخطاء**: إضافة تصنيفات أخطاء متعددة الفئات واستراتيجيات إعادة محاولة ذكية مع نصائح استرداد للوكيل."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-16-i18n-core-rtl-onboarding",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "I18N",
+        "Renderer",
+        "RTL",
+        "Onboarding"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "tr": {
+          "title": "Uluslararasılaştırma Çekirdeği ve RTL Desteği",
+          "summary": "RTL desteği, çoğullaştırma ve ilk çalıştırma dil seçim istemi ile sağlam bir I18N altyapısı uygulandı.",
+          "items": [
+            "- **I18N Çekirdek**: Otomatik dil algılama, `Intl` biçimlendirme araçları ve çoğullaştırma desteği eklendi.",
+            "- **RTL Desteği**: RTL dilleri (Arapça, İbranice) için CSS mantıksal özellikleri, yöne duyarlı simge çevirme ve dinamik düzen ayarlaması uygulandı.",
+            "- **Onboarding**: Kullanıcıların ilk açılışta tercih ettikleri dili seçmelerine olanak tanıyan `LanguageSelectionPrompt` eklendi.",
+            "- **Doğrulama**: `ProjectsHeader` bileşenine çoğullaştırma entegre edildi ve çeviri anahtarları için denetim betikleri eklendi."
+          ]
+        },
+        "de": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "fr": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "es": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "ja": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "zh": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        },
+        "ar": {
+          "title": "Internationalization Core & RTL Support",
+          "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+          "items": [
+            "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
+            "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
+            "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
+            "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-16-ipc-validation-schemas",
+      "date": "2026-02-16",
+      "channel": "stable",
+      "type": "security",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "Security",
+        "Validation"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "IPC Input Validation Enhancement",
+          "summary": "Added Zod schema validation to critical IPC handlers to prevent injection attacks and malformed data issues.",
+          "items": [
+            "- **Security**: Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers.",
+            "- **Validation**: Implemented strict input validation using Zod schemas for tool execution, usage recording, shell commands, and proxy operations.",
+            "- **Protection**: Enhanced security against injection attacks by validating URLs, commands, session keys, and arguments before execution.",
+            "- **Type Safety**: Improved type safety with explicit schema definitions for provider names, model names, command parameters, and rate limit configurations.",
+            "- **Error Handling**: Added safe fallback values for all proxy handlers to ensure graceful degradation on validation failures."
+          ]
+        },
+        "tr": {
+          "title": "IPC Girdi Doğrulama Geliştirmesi",
+          "summary": "Enjeksiyon saldırılarını ve hatalı veri sorunlarını önlemek için kritik IPC işleyicilerine Zod şema doğrulaması eklendi.",
+          "items": [
+            "- **Güvenlik**: Araçlar, kullanım takibi, pencere/kabuk ve proxy IPC işleyicileri için doğrulama şemaları eklendi.",
+            "- **Doğrulama**: Araç yürütme, kullanım kaydı, kabuk komutları ve proxy işlemleri için Zod şemaları kullanılarak katı girdi doğrulaması uygulandı.",
+            "- **Koruma**: URL'ler, komutlar, oturum anahtarları ve argümanlar yürütülmeden önce doğrulanarak enjeksiyon saldırılarına karşı güvenlik artırıldı.",
+            "- **Tip Güvenliği**: Sağlayıcı adları, model adları, komut parametreleri ve hız sınırı yapılandırmaları için açık şema tanımlarıyla tip güvenliği iyileştirildi.",
+            "- **Hata Yönetimi**: Doğrulama hatalarında zarif bozulma sağlamak için tüm proxy işleyicilerine güvenli yedek değerler eklendi."
+          ]
+        },
+        "de": {
+          "title": "IPC-Eingabevalidierungsverbesserung",
+          "summary": "Zod-Schema-Validierung zu kritischen IPC-Handlern hinzugefügt, um Injection-Angriffe und fehlerhafte Datenprobleme zu verhindern.",
+          "items": [
+            "- **Sicherheit**: Validierungsschemas für Tools, Nutzungsverfolgung, Fenster-/Shell- und Proxy-IPC-Handler hinzugefügt.",
+            "- **Validierung**: Strikte Eingabevalidierung mit Zod-Schemas für Tool-Ausführung, Nutzungsaufzeichnung, Shell-Befehle und Proxy-Operationen implementiert.",
+            "- **Schutz**: Verbesserte Sicherheit gegen Injection-Angriffe durch Validierung von URLs, Befehlen, Sitzungsschlüsseln und Argumenten vor der Ausführung.",
+            "- **Typsicherheit**: Verbesserte Typsicherheit mit expliziten Schema-Definitionen für Anbieternamen, Modellnamen, Befehlsparameter und Rate-Limit-Konfigurationen.",
+            "- **Fehlerbehandlung**: Sichere Fallback-Werte für alle Proxy-Handler hinzugefügt, um eine elegante Degradation bei Validierungsfehlern zu gewährleisten."
+          ]
+        },
+        "fr": {
+          "title": "Amélioration de la validation des entrées IPC",
+          "summary": "Ajout de la validation de schéma Zod aux gestionnaires IPC critiques pour prévenir les attaques par injection et les problèmes de données malformées.",
+          "items": [
+            "- **Sécurité**: Ajout de schémas de validation pour les outils, le suivi d'utilisation, les gestionnaires IPC de fenêtre/shell et proxy.",
+            "- **Validation**: Implémentation d'une validation stricte des entrées avec des schémas Zod pour l'exécution d'outils, l'enregistrement d'utilisation, les commandes shell et les opérations proxy.",
+            "- **Protection**: Sécurité renforcée contre les attaques par injection en validant les URL, commandes, clés de session et arguments avant l'exécution.",
+            "- **Sécurité des types**: Amélioration de la sécurité des types avec des définitions de schéma explicites pour les noms de fournisseurs, les noms de modèles, les paramètres de commande et les configurations de limite de débit.",
+            "- **Gestion des erreurs**: Ajout de valeurs de secours sûres pour tous les gestionnaires proxy afin d'assurer une dégradation gracieuse en cas d'échec de validation."
+          ]
+        },
+        "es": {
+          "title": "Mejora de validación de entrada IPC",
+          "summary": "Se agregó validación de esquema Zod a los manejadores IPC críticos para prevenir ataques de inyección y problemas de datos malformados.",
+          "items": [
+            "- **Seguridad**: Se agregaron esquemas de validación para herramientas, seguimiento de uso, manejadores IPC de ventana/shell y proxy.",
+            "- **Validación**: Se implementó validación estricta de entrada usando esquemas Zod para ejecución de herramientas, registro de uso, comandos shell y operaciones proxy.",
+            "- **Protección**: Seguridad mejorada contra ataques de inyección al validar URLs, comandos, claves de sesión y argumentos antes de la ejecución.",
+            "- **Seguridad de tipos**: Seguridad de tipos mejorada con definiciones de esquema explícitas para nombres de proveedores, nombres de modelos, parámetros de comando y configuraciones de límite de velocidad.",
+            "- **Manejo de errores**: Se agregaron valores de respaldo seguros para todos los manejadores proxy para garantizar una degradación elegante en caso de fallas de validación."
+          ]
+        },
+        "ja": {
+          "title": "IPC入力検証の強化",
+          "summary": "インジェクション攻撃と不正なデータの問題を防ぐため、重要なIPCハンドラーにZodスキーマ検証を追加しました。",
+          "items": [
+            "- **セキュリティ**: ツール、使用状況追跡、ウィンドウ/シェル、プロキシIPCハンドラーの検証スキーマを追加しました。",
+            "- **検証**: ツール実行、使用状況記録、シェルコマンド、プロキシ操作にZodスキーマを使用した厳格な入力検証を実装しました。",
+            "- **保護**: 実行前にURL、コマンド、セッションキー、引数を検証することで、インジェクション攻撃に対するセキュリティを強化しました。",
+            "- **型安全性**: プロバイダー名、モデル名、コマンドパラメーター、レート制限設定の明示的なスキーマ定義により型安全性を向上させました。",
+            "- **エラー処理**: 検証失敗時の優雅な劣化を保証するため、すべてのプロキシハンドラーに安全なフォールバック値を追加しました。"
+          ]
+        },
+        "zh": {
+          "title": "IPC 输入验证增强",
+          "summary": "为关键 IPC 处理器添加了 Zod 模式验证，以防止注入攻击和格式错误的数据问题。",
+          "items": [
+            "- **安全性**：为工具、使用跟踪、窗口/shell 和代理 IPC 处理器添加了验证模式。",
+            "- **验证**：使用 Zod 模式为工具执行、使用记录、shell 命令和代理操作实现了严格的输入验证。",
+            "- **保护**：通过在执行前验证 URL、命令、会话密钥和参数，增强了对注入攻击的安全防护。",
+            "- **类型安全**：通过为提供商名称、模型名称、命令参数和速率限制配置提供明确的模式定义，提高了类型安全性。",
+            "- **错误处理**：为所有代理处理器添加了安全的回退值，以确保在验证失败时优雅降级。"
+          ]
+        },
+        "ar": {
+          "title": "تحسين التحقق من مدخلات IPC",
+          "summary": "تمت إضافة التحقق من مخطط Zod إلى معالجات IPC الحرجة لمنع هجمات الحقن ومشكلات البيانات المشوهة.",
+          "items": [
+            "- **الأمان**: تمت إضافة مخططات التحقق للأدوات وتتبع الاستخدام ومعالجات IPC للنافذة/الصدفة والوكيل.",
+            "- **التحقق**: تم تنفيذ التحقق الصارم من المدخلات باستخدام مخططات Zod لتنفيذ الأدوات وتسجيل الاستخدام وأوامر الصدفة وعمليات الوكيل.",
+            "- **الحماية**: تم تعزيز الأمان ضد هجمات الحقن من خلال التحقق من عناوين URL والأوامر ومفاتيح الجلسة والمعاملات قبل التنفيذ.",
+            "- **أمان الأنواع**: تحسين أمان الأنواع مع تعريفات مخطط صريحة لأسماء الموفرين وأسماء النماذج ومعاملات الأوامر وتكوينات حد المعدل.",
+            "- **معالجة الأخطاء**: تمت إضافة قيم احتياطية آمنة لجميع معالجات الوكيل لضمان التدهور الرشيق عند فشل التحقق."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-14-error-fallback-enhancement",
       "date": "2026-02-14",
@@ -371,6 +671,97 @@
           "items": [
             "- **UI**: Display user-friendly error message when model fetching fails.",
             "- **UX**: Added a retry button to recover from transient network or service errors."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-14-sd-cpp-binary-discovery-fix",
+      "date": "2026-02-14",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "LocalImageService",
+        "SD-CPP"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "tr": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "de": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "fr": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "es": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "ja": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "zh": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+          ]
+        },
+        "ar": {
+          "title": "SD-CPP Binary Discovery Fix",
+          "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+          "items": [
+            "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
+            "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
+            "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
           ]
         }
       }

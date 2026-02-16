@@ -32,6 +32,21 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
             return fallback;
         }
     },
+    createValidatedIpcHandler: (
+        _name: string,
+        handler: (...args: any[]) => any,
+        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
+    ) => async (event: unknown, ...args: unknown[]) => {
+        try {
+            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
+            return await handler(event, ...(parsedArgs as unknown[]));
+        } catch {
+            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
+                return options.defaultValue;
+            }
+            throw new Error('Validation failed');
+        }
+    },
 }));
 
 // Mock sanitize util

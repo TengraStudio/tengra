@@ -1,5 +1,40 @@
 # Änderungsprotokoll
 
+## [2026-02-16]
+
+### Verbesserungen am Agentensystem: Tool-Ausführung & Kontextmanagement
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Verbessertes Agentensystem mit robuster Tool-Ausführung, automatischer Verwaltung des Kontextfensters und intelligenter Fehlerbehebung.
+
+- **Tool-Ausführung**: Tool-Timeouts, Ergebniscaching für idempotente Tools und semi-parallele Ausführung für verbesserte Leistung hinzugefügt.
+- **Kontextmanagement**: Automatisches Bereinigen des Verlaufs und LLM-basierte Zusammenfassung implementiert, um den Agentenkontext in langen Sitzungen zu erhalten.
+- **Fehlerbehebung**: Multi-Kategorie-Fehlerklassifizierung und intelligente Wiederholungsstrategien mit Wiederherstellungshinweisen für den Agenten hinzugefügt.
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### IPC-Eingabevalidierungsverbesserung
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Zod-Schema-Validierung zu kritischen IPC-Handlern hinzugefügt, um Injection-Angriffe und fehlerhafte Datenprobleme zu verhindern.
+
+- **Sicherheit**: Validierungsschemas für Tools, Nutzungsverfolgung, Fenster-/Shell- und Proxy-IPC-Handler hinzugefügt.
+- **Validierung**: Strikte Eingabevalidierung mit Zod-Schemas für Tool-Ausführung, Nutzungsaufzeichnung, Shell-Befehle und Proxy-Operationen implementiert.
+- **Schutz**: Verbesserte Sicherheit gegen Injection-Angriffe durch Validierung von URLs, Befehlen, Sitzungsschlüsseln und Argumenten vor der Ausführung.
+- **Typsicherheit**: Verbesserte Typsicherheit mit expliziten Schema-Definitionen für Anbieternamen, Modellnamen, Befehlsparameter und Rate-Limit-Konfigurationen.
+- **Fehlerbehandlung**: Sichere Fallback-Werte für alle Proxy-Handler hinzugefügt, um eine elegante Degradation bei Validierungsfehlern zu gewährleisten.
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

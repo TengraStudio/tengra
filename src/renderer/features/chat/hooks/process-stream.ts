@@ -24,7 +24,7 @@ export interface StreamResult {
 interface StreamingStateUpdate {
     index: number
     chatId: string
-    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; updated: boolean }
+    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; streamError?: string; updated: boolean }
     finalSources: string[]
     finalReasoning: string
     finalContent: string
@@ -35,7 +35,7 @@ interface StreamingStateUpdate {
 interface StateUpdateContext {
     index: number;
     chatId: string;
-    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; updated: boolean };
+    result: { newSources?: string[]; newReasoning?: string; newContent?: string; speed?: number | null; newToolCalls?: ToolCall[]; streamError?: string; updated: boolean };
     finalSources: string[];
     finalReasoning: string;
     finalContent: string;
@@ -222,6 +222,12 @@ const updateFinalValues = (
     return updates;
 };
 
+const buildStreamInterruptedSuffix = (errorMessage: string): string => {
+    const trimmed = errorMessage.trim();
+    const safe = trimmed.length > 180 ? `${trimmed.slice(0, 180)}...` : trimmed;
+    return `\n\n[Stream interrupted: ${safe}]`;
+};
+
 const handleChunkUpdate = (params: {
     index: number;
     result: StreamChunkResult;
@@ -302,6 +308,16 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
         // Update state if chunk produced changes
         if (result.updated) {
+            if (result.streamError) {
+                if (index === 0) {
+                    const suffix = buildStreamInterruptedSuffix(result.streamError);
+                    if (!finalContent.includes(suffix)) {
+                        finalContent = `${finalContent}${suffix}`.trim();
+                    }
+                }
+                break;
+            }
+
             const updates = updateFinalValues(index, result);
             if (updates.finalSources) {
                 finalSources = updates.finalSources;

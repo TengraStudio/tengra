@@ -4,8 +4,12 @@ import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service'
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { createSafeIpcHandler,createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { BrowserWindow, ipcMain } from 'electron';
+import { z } from 'zod';
+
+import { providerNameSchema, proxyAccountIdSchema, rateLimitConfigSchema,sessionKeySchema } from './validation';
 
 /**
  * Registers IPC handlers for proxy operations including quota retrieval, authentication, and model listing.
@@ -37,67 +41,70 @@ export function registerProxyIpc(
         return (await proxyService.getClaudeQuota()) as unknown as IpcValue;
     });
 
-    ipcMain.handle('proxy:antigravityLogin', async () => {
+    ipcMain.handle('proxy:antigravityLogin', createSafeIpcHandler('proxy:antigravityLogin', async () => {
         return await proxyService.getAntigravityAuthUrl();
-    });
+    }, { url: '', state: '' }));
 
-    ipcMain.handle('proxy:claudeLogin', async () => {
+    ipcMain.handle('proxy:claudeLogin', createSafeIpcHandler('proxy:claudeLogin', async () => {
         // Try to get OAuth URL (same as anthropicLogin)
         // This will open the browser for OAuth flow
         return await proxyService.getAnthropicAuthUrl();
-    });
+    }, { url: '', state: '' }));
 
 
 
-    ipcMain.handle('proxy:saveClaudeSession', async (_event, sessionKey: string, accountId?: string) => {
+    ipcMain.handle('proxy:saveClaudeSession', createValidatedIpcHandler('proxy:saveClaudeSession', async (_event, sessionKey: string, accountId?: string) => {
         try {
             return await proxyService.quotaService.saveClaudeSession(sessionKey, accountId);
         } catch (error) {
             appLogger.error('proxy', 'Failed to save manual session:', error as Error);
             return { success: false, error: (error as Error).message };
         }
-    });
+    }, {
+        argsSchema: z.tuple([sessionKeySchema, proxyAccountIdSchema]),
+        defaultValue: { success: false, error: 'Validation failed' }
+    }));
 
 
 
-    ipcMain.handle('proxy:anthropicLogin', async () => {
+    ipcMain.handle('proxy:anthropicLogin', createSafeIpcHandler('proxy:anthropicLogin', async () => {
         // Legacy OAuth flow - still available but doesn't capture sessionKey
         return await proxyService.getAnthropicAuthUrl();
-    });
+    }, { url: '', state: '' }));
 
-    ipcMain.handle('proxy:codexLogin', async () => {
+    ipcMain.handle('proxy:codexLogin', createSafeIpcHandler('proxy:codexLogin', async () => {
         return await proxyService.getCodexAuthUrl();
-    });
+    }, { url: '', state: '' }));
 
-    ipcMain.handle('proxy:getModels', async () => {
+    ipcMain.handle('proxy:getModels', createSafeIpcHandler('proxy:getModels', async () => {
         return await proxyService.getModels();
-    });
+    }, { data: [] }));
 
-    ipcMain.handle('proxy:getQuota', async () => {
+    ipcMain.handle('proxy:getQuota', createSafeIpcHandler('proxy:getQuota', async () => {
         return await proxyService.getQuota();
-    });
+    }, { accounts: [] }));
 
-    ipcMain.handle('proxy:getCopilotQuota', async () => {
+    ipcMain.handle('proxy:getCopilotQuota', createSafeIpcHandler('proxy:getCopilotQuota', async () => {
         return await proxyService.getCopilotQuota();
-    });
+    }, { accounts: [] }));
 
-    ipcMain.handle('proxy:getCodexUsage', async () => {
+    ipcMain.handle('proxy:getCodexUsage', createSafeIpcHandler('proxy:getCodexUsage', async () => {
         return await proxyService.getCodexUsage();
-    });
+    }, { accounts: [] }));
 
-    ipcMain.handle('proxy:getClaudeQuota', async () => {
+    ipcMain.handle('proxy:getClaudeQuota', createSafeIpcHandler('proxy:getClaudeQuota', async () => {
         return await proxyService.getClaudeQuota();
-    });
+    }, { accounts: [] }));
 
-    ipcMain.handle('proxy:get-rate-limit-metrics', async () => {
+    ipcMain.handle('proxy:get-rate-limit-metrics', createSafeIpcHandler('proxy:get-rate-limit-metrics', async () => {
         return proxyService.getProviderRateLimitMetrics();
-    });
+    }, { generatedAt: 0, providers: [] }));
 
-    ipcMain.handle('proxy:get-rate-limit-config', async () => {
+    ipcMain.handle('proxy:get-rate-limit-config', createSafeIpcHandler('proxy:get-rate-limit-config', async () => {
         return proxyService.getProviderRateLimitConfig();
-    });
+    }, {}));
 
-    ipcMain.handle('proxy:set-rate-limit-config', async (_event, provider: string, config: {
+    ipcMain.handle('proxy:set-rate-limit-config', createValidatedIpcHandler('proxy:set-rate-limit-config', async (_event, provider: string, config: {
         windowMs?: number;
         maxRequests?: number;
         warningThreshold?: number;
@@ -105,23 +112,25 @@ export function registerProxyIpc(
         allowPremiumBypass?: boolean;
     }) => {
         return proxyService.setProviderRateLimitConfig(provider, config);
-    });
+    }, {
+        argsSchema: z.tuple([providerNameSchema, rateLimitConfigSchema])
+    }));
 
-    ipcMain.handle('proxy:deleteAuthFile', async () => {
+    ipcMain.handle('proxy:deleteAuthFile', createSafeIpcHandler('proxy:deleteAuthFile', async () => {
         // Legacy file-based auth is now handled via HTTP API
         return { success: true };
-    });
+    }, { success: true }));
 
     // Sync auth files - now handled automatically by HTTP auth API
-    ipcMain.handle('proxy:syncAuthFiles', async () => {
+    ipcMain.handle('proxy:syncAuthFiles', createSafeIpcHandler('proxy:syncAuthFiles', async () => {
         // Auth sync is now automatic via HTTP API - no manual sync needed
         return { success: true };
-    });
+    }, { success: true }));
 
-    ipcMain.handle('proxy:downloadAuthFile', async () => {
+    ipcMain.handle('proxy:downloadAuthFile', createSafeIpcHandler('proxy:downloadAuthFile', async () => {
         // Legacy file-based auth is now handled via HTTP API
         return { success: false, error: 'Not supported' };
-    });
+    }, { success: false, error: 'Not supported' }));
 
     if (eventBus && getMainWindow) {
         eventBus.onCustom('proxy:rate-limit-warning', (payload) => {

@@ -1,5 +1,40 @@
 # 変更履歴
 
+## [2026-02-16]
+
+### エージェントシステムの改善：ツールの実行とコンテキスト管理
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 堅牢なツール実行、コンテキスト ウィンドウの自動管理、インテリジェントなエラー回復によりエージェント システムが強化されました。
+
+- **ツールの実行**: ツールのタイムアウト、べき等ツールの結果キャッシュ、パフォーマンス向上のための準並列実行が追加されました。
+- **コンテキスト管理**: 長いセッションでもエージェントのコンテキストを維持するために、履歴の自動プルーニングと LLM ベースの要約を実装しました。
+- **エラー回復**: マルチカテゴリのエラー分類と、エージェント向けの回復アドバイスを含むインテリジェントな再試行戦略を追加しました。
+
+### Internationalization Core & RTL Support
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+
+- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
+- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
+- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
+- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+
+### IPC入力検証の強化
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: インジェクション攻撃と不正なデータの問題を防ぐため、重要なIPCハンドラーにZodスキーマ検証を追加しました。
+
+- **セキュリティ**: ツール、使用状況追跡、ウィンドウ/シェル、プロキシIPCハンドラーの検証スキーマを追加しました。
+- **検証**: ツール実行、使用状況記録、シェルコマンド、プロキシ操作にZodスキーマを使用した厳格な入力検証を実装しました。
+- **保護**: 実行前にURL、コマンド、セッションキー、引数を検証することで、インジェクション攻撃に対するセキュリティを強化しました。
+- **型安全性**: プロバイダー名、モデル名、コマンドパラメーター、レート制限設定の明示的なスキーマ定義により型安全性を向上させました。
+- **エラー処理**: 検証失敗時の優雅な劣化を保証するため、すべてのプロキシハンドラーに安全なフォールバック値を追加しました。
+
 ## [2026-02-14]
 
 ### Enhanced Error Display
@@ -41,6 +76,16 @@
 
 - **UI**: Display user-friendly error message when model fetching fails.
 - **UX**: Added a retry button to recover from transient network or service errors.
+
+### SD-CPP Binary Discovery Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+
+- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
+- **Robustness**: Improved recursive binary discovery to handle various release structures.
+- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
 
 ### Chat Generation Shimmer Animation
 

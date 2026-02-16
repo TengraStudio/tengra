@@ -58,6 +58,27 @@ function trimChats(chats: Chat[]): Chat[] {
         .slice(0, MAX_CHATS_IN_MEMORY);
 }
 
+function toTextContent(content: Message['content']): string {
+    if (typeof content === 'string') {
+        return content;
+    }
+    if (!Array.isArray(content)) {
+        return '';
+    }
+    return content
+        .map(part => {
+            if (typeof part === 'string') {
+                return part;
+            }
+            if (part?.type === 'text') {
+                return part.text ?? '';
+            }
+            return '';
+        })
+        .join('')
+        .trim();
+}
+
 function useChatInitialization(loadFolders: () => Promise<void>, setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
     useEffect(() => {
         const load = async () => {
@@ -179,14 +200,44 @@ export function useChatManager(options: UseChatManagerOptions) {
         void generateResponse(chatId, userMessage);
     }, [input, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, setChats]);
 
+    const regenerateMessage = useCallback(
+        async (assistantMessageId: string) => {
+            if (!currentChatId || isLoading) {
+                return;
+            }
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) {
+                return;
+            }
+
+            const assistantIndex = chat.messages.findIndex(
+                m => m.id === assistantMessageId && m.role === 'assistant'
+            );
+            if (assistantIndex <= 0) {
+                return;
+            }
+
+            const previousUserMessage = [...chat.messages.slice(0, assistantIndex)]
+                .reverse()
+                .find(m => m.role === 'user');
+            const prompt = previousUserMessage ? toTextContent(previousUserMessage.content) : '';
+            if (!prompt) {
+                return;
+            }
+
+            await handleSend(prompt);
+        },
+        [currentChatId, isLoading, chats, handleSend]
+    );
+
     return useMemo(() => ({
         chats, setChats, currentChatId, setCurrentChatId, messages, displayMessages, searchTerm, setSearchTerm, input, setInput, isLoading,
         streamingReasoning, streamingSpeed, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak, systemMode, setSystemMode
+        t, handleSpeak, systemMode, setSystemMode, regenerateMessage
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode]);
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, regenerateMessage]);
 }

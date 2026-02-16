@@ -13,6 +13,7 @@ import {
     Eye,
     FileCode,
     ListTodo,
+    RotateCcw,
     Smile,
     Sparkles,
     ThumbsDown,
@@ -58,6 +59,7 @@ interface MessageProps {
     onReact?: (emoji: string) => void;
     onBookmark?: (isBookmarked: boolean) => void;
     onRate?: (rating: 1 | -1 | 0) => void;
+    onRegenerate?: () => void;
     onApprovePlan?: () => void;
     streamingSpeed?: number | null;
     streamingReasoning?: string;
@@ -870,6 +872,7 @@ const MessageActions = memo(
         onBookmark,
         onReact,
         onRate,
+        onRegenerate,
         t,
     }: {
         displayContent: string;
@@ -880,6 +883,7 @@ const MessageActions = memo(
         onBookmark?: (isBookmarked: boolean) => void;
         onReact?: (emoji: string) => void;
         onRate?: (rating: 1 | -1 | 0) => void;
+        onRegenerate?: () => void;
         t: TranslationFn;
     }) => (
         <div className="absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
@@ -906,6 +910,15 @@ const MessageActions = memo(
                 onClick={() => onBookmark?.(!message.isBookmarked)}
                 t={t}
             />
+            {onRegenerate && (
+                <button
+                    onClick={onRegenerate}
+                    className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
+                    title={t('messageBubble.regenerate')}
+                >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+            )}
             <div className="relative group/react">
                 <button
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
@@ -1107,6 +1120,7 @@ interface MessageActionsContextProps {
     onBookmark?: (isBookmarked: boolean) => void;
     onReact?: (emoji: string) => void;
     onRate?: (rating: 1 | -1 | 0) => void;
+    onRegenerate?: () => void;
     onSourceClick?: (path: string) => void;
     showRawMarkdown: boolean;
     setShowRawMarkdown: (val: boolean) => void;
@@ -1212,6 +1226,7 @@ const MessageBubbleInner = memo(
                         onBookmark={actionsContextProps.onBookmark}
                         onReact={actionsContextProps.onReact}
                         onRate={actionsContextProps.onRate}
+                        onRegenerate={actionsContextProps.onRegenerate}
                         t={actionsContextProps.t}
                     />
                 )}
@@ -1579,6 +1594,7 @@ interface SingleMessageViewProps {
     onReact?: (emoji: string) => void;
     onBookmark?: (isBookmarked: boolean) => void;
     onRate?: (rating: 1 | -1 | 0) => void;
+    onRegenerate?: () => void;
     onApprovePlan?: () => void;
     streamingSpeed?: number | null;
     streamingReasoning?: string;
@@ -1613,6 +1629,7 @@ interface ActionsContext {
         onBookmark?: (isBookmarked: boolean) => void;
         onReact?: (emoji: string) => void;
         onRate?: (rating: 1 | -1 | 0) => void;
+        onRegenerate?: () => void;
         onSourceClick?: (path: string) => void;
     };
     state: {
@@ -1645,6 +1662,7 @@ const buildActionsContextProps = (ctx: ActionsContext): MessageActionsContextPro
     onBookmark: ctx.callbacks.onBookmark,
     onReact: ctx.callbacks.onReact,
     onRate: ctx.callbacks.onRate,
+    onRegenerate: ctx.callbacks.onRegenerate,
     onSourceClick: ctx.callbacks.onSourceClick,
     showRawMarkdown: ctx.state.showRawMarkdown,
     setShowRawMarkdown: ctx.state.setShowRawMarkdown,
@@ -1796,6 +1814,7 @@ const SingleMessageView = memo(
         onReact,
         onBookmark,
         onRate,
+        onRegenerate,
         onApprovePlan,
         streamingSpeed,
         streamingReasoning,
@@ -1866,7 +1885,7 @@ const SingleMessageView = memo(
         const actionsCtx: ActionsContext = {
             message,
             displayContent,
-            callbacks: { isSpeaking, onStop, onSpeak, onBookmark, onReact, onRate, onSourceClick },
+            callbacks: { isSpeaking, onStop, onSpeak, onBookmark, onReact, onRate, onRegenerate, onSourceClick },
             state: { showRawMarkdown, setShowRawMarkdown },
             t,
         };
@@ -1971,6 +1990,7 @@ export const MessageBubble = memo(
         onReact,
         onBookmark,
         onRate,
+        onRegenerate,
         onApprovePlan,
         streamingSpeed,
         streamingReasoning,
@@ -2020,6 +2040,7 @@ export const MessageBubble = memo(
                 onReact={onReact}
                 onBookmark={onBookmark}
                 onRate={onRate}
+                onRegenerate={onRegenerate}
                 onApprovePlan={onApprovePlan}
                 streamingSpeed={streamingSpeed}
                 streamingReasoning={streamingReasoning}

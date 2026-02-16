@@ -890,6 +890,7 @@ export class DatabaseService extends BaseService {
 
     // Knowledge & Memories
     async findCodeSymbolsByName(projectPath: string, name: string) { return this._knowledge.findCodeSymbolsByName(projectPath, name); }
+    async getCodeSymbolsByProjectPath(projectPath: string) { return this._knowledge.getCodeSymbolsByProjectPath(projectPath); }
     async searchCodeSymbols(vec: number[], projectPath?: string, options: VectorSearchOptions = {}): Promise<CodeSymbolSearchResult[]> {
         const limit = 10;
         const useCache = options.useCache !== false;

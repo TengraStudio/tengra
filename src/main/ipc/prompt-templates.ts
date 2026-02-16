@@ -51,7 +51,8 @@ export function registerPromptTemplatesIpc(promptTemplatesService: PromptTemplat
         if (typeof id !== 'string') {
             throw new Error('ID must be a string');
         }
-        return promptTemplatesService.getTemplate(id);
+        const template = promptTemplatesService.getTemplate(id);
+        return template ?? null;
     }, null));
 
     /**

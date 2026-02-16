@@ -41,3 +41,82 @@ export interface DiffStats {
     unstaged: { added: number; deleted: number; files: number };
     total: { added: number; deleted: number; files: number };
 }
+
+export interface GitConflict {
+    path: string;
+    status: string;
+    explanation: string;
+}
+
+export interface GitStash {
+    ref: string;
+    hash: string;
+    author: string;
+    date: string;
+    subject: string;
+}
+
+export interface GitBlameLine {
+    lineNumber: number;
+    commit: string;
+    author: string;
+    authorTime: string;
+    summary: string;
+    content: string;
+}
+
+export interface GitCommitDetails {
+    hash: string;
+    author: string;
+    email: string;
+    date: string;
+    subject: string;
+    body: string;
+    files: string[];
+}
+
+export interface GitRebasePlanCommit {
+    hash: string;
+    subject: string;
+    author: string;
+    date: string;
+    action: 'pick';
+}
+
+export interface GitSubmodule {
+    path: string;
+    hash: string;
+    state: string;
+    descriptor: string;
+    url: string;
+    branch: string;
+}
+
+export interface GitFlowStatus {
+    currentBranch: string;
+    byType: {
+        feature: string[];
+        release: string[];
+        hotfix: string[];
+        support: string[];
+    };
+    branches: string[];
+}
+
+export interface GitHookInfo {
+    name: string;
+    path: string;
+    executable: boolean;
+    hasShebang: boolean;
+    size: number;
+    updatedAt: string;
+}
+
+export interface GitRepositoryStats {
+    totalCommits: number;
+    authorStats: Array<{ commits: number; author: string }>;
+    fileStats: Array<{ file: string; commits: number }>;
+    activity: Record<string, number>;
+    generatedAt: string;
+    days: number;
+}
