@@ -579,9 +579,14 @@ export class AgentTaskExecutor {
         try {
             const config = this.state.config;
             if (!config) { throw new Error('Agent config not initialized'); }
-            const { task, projectId, attachments, agentProfileId } = config;
+            const { task, projectId, attachments, agentProfileId, locale } = config;
             const profile = this.services.registry.getProfile(agentProfileId ?? 'default');
-            const systemPrompt = profile.systemPrompt;
+            let systemPrompt = profile.systemPrompt;
+            if (locale && locale !== 'en') {
+                systemPrompt = systemPrompt.replace('**Language**: ALWAYS English.', `**Language**: Response in ${locale}.`);
+                systemPrompt = systemPrompt.replace('Even if the user speaks another language, reply in English unless explicitly asked to translate.', '');
+                systemPrompt += `\n\nIMPORTANT: You must output your responses in the user's preferred language (` + locale + `).`;
+            }
             await this.ensureFeatureBranchReady();
 
             await this.stateMachine.transitionTo('running');
@@ -629,9 +634,14 @@ export class AgentTaskExecutor {
         try {
             const config = this.state.config;
             if (!config) { throw new Error('Agent config not initialized'); }
-            const { task, projectId, agentProfileId } = config;
+            const { task, projectId, agentProfileId, locale } = config;
             const profile = this.services.registry.getProfile(agentProfileId ?? 'default');
-            const systemPrompt = profile.systemPrompt;
+            let systemPrompt = profile.systemPrompt;
+            if (locale && locale !== 'en') {
+                systemPrompt = systemPrompt.replace('**Language**: ALWAYS English.', `**Language**: Response in ${locale}.`);
+                systemPrompt = systemPrompt.replace('Even if the user speaks another language, reply in English unless explicitly asked to translate.', '');
+                systemPrompt += `\n\nIMPORTANT: You must output your responses in the user's preferred language (` + locale + `).`;
+            }
 
             await this.stateMachine.transitionTo('planning');
             this.shouldStop = false;
