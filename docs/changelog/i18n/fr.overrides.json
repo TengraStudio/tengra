@@ -3379,5 +3379,16 @@
       "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
       "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
     ]
+  },
+  "2026-02-17-token-rotation-hardening-sec-001": {
+    "title": "Token Rotation Hardening (SEC-001)",
+    "summary": "Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.",
+    "items": [
+      "- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.",
+      "- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
+      "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
+      "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
+      "- **Verification**: Verified clean build, lint, and type-check across both components."
+    ]
   }
 }

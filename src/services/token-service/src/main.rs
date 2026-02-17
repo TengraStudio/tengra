@@ -109,7 +109,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
         .route("/refresh", post(handle_refresh)) // Legacy/Direct refresh
         .route("/monitor", post(handle_monitor)) // Register for background monitoring
         .route("/unregister", post(handle_unregister)) // Remove token from monitoring
-        .route("/sync", get(handle_sync))       // New: Sync tokens from memory
+        .route("/sync", get(handle_sync))
+		.route("/health", get(handle_health))       // New: Sync tokens from memory
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);
 
@@ -236,12 +237,25 @@ async fn handle_unregister(
 }
 
 
+
+async fn handle_health(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let tokens = state.tokens.read().await;
+    Json(serde_json::json!({
+        "healthy": true,
+        "monitored_count": tokens.len(),
+        "uptime_secs": 0, // Simplified for now
+    }))
+}
+
 // --- Logic ---
+
 
 async fn background_refresh_loop(state: Arc<AppState>) {
     log("Background refresh loop started");
     loop {
-        // Sleep first or last? Sleep first to avoid tight loop on error
+        // Sleep first to avoid tight loop on error
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
 
         let mut tokens_to_refresh = Vec::new();
@@ -282,20 +296,31 @@ async fn background_refresh_loop(state: Arc<AppState>) {
             };
 
             log(&format!("Refreshing token for {}", id));
-            let response = execute_refresh(&state.client, token, client_id.clone(), client_secret.clone()).await;
-
-            if response.success {
-                if let Some(new_token) = response.token {
-                    let mut tokens = state.tokens.write().await;
-                    if let Some(m_token) = tokens.get_mut(&id) {
-                        m_token.token = new_token;
-                        m_token.updated_at = chrono::Utc::now().timestamp_millis();
-                        changes_made = true;
-                        log(&format!("Successfully refreshed token for {}", id));
+            
+            let mut success = false;
+            let mut retry_count = 0;
+            let max_retries = 3;
+            
+            while !success && retry_count < max_retries {
+                let response = execute_refresh(&state.client, token.clone(), client_id.clone(), client_secret.clone()).await;
+                if response.success {
+                    if let Some(new_token) = response.token {
+                        let mut tokens = state.tokens.write().await;
+                        if let Some(m_token) = tokens.get_mut(&id) {
+                            m_token.token = new_token;
+                            m_token.updated_at = chrono::Utc::now().timestamp_millis();
+                            changes_made = true;
+                            success = true;
+                            log(&format!("Successfully refreshed token for {}", id));
+                        }
+                    }
+                } else {
+                    retry_count += 1;
+                    log(&format!("Failed to refresh {} (attempt {}/{}): {:?}", id, retry_count, max_retries, response.error));
+                    if retry_count < max_retries {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5 * retry_count)).await;
                     }
                 }
-            } else {
-                log(&format!("Failed to refresh {}: {:?}", id, response.error));
             }
         }
 
@@ -308,6 +333,7 @@ async fn background_refresh_loop(state: Arc<AppState>) {
         }
     }
 }
+
 
 async fn execute_refresh(
     client: &Client, 

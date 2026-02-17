@@ -4,10 +4,23 @@ import { CopilotService } from '@main/services/llm/copilot.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
 import { AppSettings } from '@shared/types/settings';
-import { app, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { app, ipcMain } from 'electron';
+import { z } from 'zod';
+
+// Define a rigorous schema for AppSettings to prevent injection or invalid state
+const AppSettingsSchema = z.object({
+    general: z.object({
+        language: z.enum(['tr', 'en', 'de', 'fr', 'es', 'ja', 'zh', 'ar']).optional(),
+    }).passthrough().optional(),
+    openai: z.object({ apiKey: z.string().optional() }).passthrough().optional(),
+    anthropic: z.object({ apiKey: z.string().optional() }).passthrough().optional(),
+    groq: z.object({ apiKey: z.string().optional() }).passthrough().optional(),
+    github: z.object({ token: z.string().optional() }).passthrough().optional(),
+    // Allow other top-level keys loosely for now, but ensure they are objects or primitives
+}).passthrough();
 
 /**
  * Synchronizes the OS login item settings based on application startup preferences.
@@ -41,27 +54,8 @@ export function registerSettingsIpc(options: {
 }) {
     const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
 
-    // Register batchable settings handlers
-    registerBatchableHandler('getSettings', async (): Promise<IpcValue> => {
-        return settingsService.getSettings();
-    });
-
-    registerBatchableHandler('saveSettings', async (_event, ...args): Promise<IpcValue> => {
-        const settings = args[0] as AppSettings;
-        await settingsService.saveSettings(settings);
-        return { success: true };
-    });
-
-    ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
-        const settings = settingsService.getSettings();
-        return settings;
-    }));
-
     /**
      * Logs audit entries when sensitive settings fields (API keys) are modified.
-     * @param newSettings - The updated application settings
-     * @param oldSettings - The previous application settings
-     * @param auditService - Optional audit log service for recording changes
      */
     async function auditSensitiveChanges(newSettings: AppSettings, oldSettings: AppSettings, auditService: AuditLogService | undefined) {
         if (!auditService) { return; }
@@ -87,13 +81,6 @@ export function registerSettingsIpc(options: {
         }
     }
 
-    /**
-     * Checks if a sensitive settings field has changed and records it.
-     * @param field - The field descriptor with key and label
-     * @param newSettings - The updated application settings
-     * @param oldSettings - The previous application settings
-     * @param changes - Array to push change descriptions into
-     */
     function checkSensitiveField(field: { key: 'openai' | 'anthropic' | 'groq' | 'proxy'; label: string }, newSettings: AppSettings, oldSettings: AppSettings, changes: string[]) {
         const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key;
         const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key;
@@ -103,45 +90,20 @@ export function registerSettingsIpc(options: {
         }
     }
 
-    /**
-     * Updates LLM and Copilot service credentials from the saved settings.
-     * @param finalSettings - The final merged application settings
-     * @param newSettings - The raw new settings from the renderer
-     */
     function updateServices(finalSettings: AppSettings, newSettings: AppSettings) {
-        updateLlmCredentials(finalSettings, newSettings);
-        updateCopilotCredentials(finalSettings);
-    }
-
-    /**
-     * Sets API keys on the LLM service from the provided settings.
-     * @param finalSettings - The final merged settings containing API keys
-     * @param newSettings - The raw new settings for Groq key updates
-     */
-    function updateLlmCredentials(finalSettings: AppSettings, newSettings: AppSettings) {
         if (finalSettings.openai?.apiKey) { llmService.setOpenAIApiKey(finalSettings.openai.apiKey); }
         if (finalSettings.anthropic?.apiKey) { llmService.setAnthropicApiKey(finalSettings.anthropic.apiKey); }
         if (newSettings.groq) { llmService.setGroqApiKey(newSettings.groq.apiKey); }
-    }
-
-    /**
-     * Sets Copilot and GitHub tokens on the Copilot service.
-     * @param finalSettings - The final merged settings containing tokens
-     */
-    function updateCopilotCredentials(finalSettings: AppSettings) {
         if (finalSettings.copilot?.token) { copilotService.setCopilotToken(finalSettings.copilot.token); }
         if (finalSettings.github?.token) { copilotService.setGithubToken(finalSettings.github.token); }
     }
 
-
-
-    ipcMain.handle('settings:save', createIpcHandler('settings:save', async (_event: IpcMainInvokeEvent, newSettings: AppSettings) => {
+    // Shared logic for saving settings (used by both batch and direct IPC)
+    async function handleSaveSettingsImplementation(newSettings: AppSettings) {
         const oldSettings = settingsService.getSettings();
-        // Await the save to get the final merged settings (with preserved secrets)
         const finalSettings = await settingsService.saveSettings(newSettings);
         syncStartupBehavior(finalSettings);
 
-        // Audit log for sensitive settings changes
         await auditSensitiveChanges(newSettings, oldSettings, auditLogService);
 
         void (async () => {
@@ -156,5 +118,37 @@ export function registerSettingsIpc(options: {
         updateOpenAIConnection();
 
         return finalSettings;
+    }
+
+    // Register batchable settings handlers
+    registerBatchableHandler('getSettings', async (): Promise<IpcValue> => {
+        return settingsService.getSettings();
+    });
+
+    // Validated batch handler
+    const validatedSaveHandler = createValidatedIpcHandler(
+        'saveSettings',
+        async (_event, settings) => {
+            await handleSaveSettingsImplementation(settings as AppSettings);
+            return { success: true };
+        },
+        { argsSchema: z.tuple([AppSettingsSchema]) }
+    );
+
+    registerBatchableHandler('saveSettings', validatedSaveHandler);
+
+    ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
+        return settingsService.getSettings();
     }));
+
+    ipcMain.handle('settings:save', createValidatedIpcHandler(
+        'settings:save',
+        async (_event, settings) => {
+            return await handleSaveSettingsImplementation(settings as AppSettings);
+        },
+        {
+            argsSchema: z.tuple([AppSettingsSchema]),
+            wrapResponse: true
+        }
+    ));
 }

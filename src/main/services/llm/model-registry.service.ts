@@ -8,6 +8,7 @@ import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 
@@ -222,7 +223,11 @@ export class ModelRegistryService extends BaseService {
             tags: ['local', 'image-gen', 'sd-cpp']
         });
 
-        return Array.from(unique.values());
+        const allModels = Array.from(unique.values());
+        const settings = this.deps.settingsService.getSettings();
+        const locale = settings.general?.language ?? 'en';
+
+        return RegionalPreferenceService.applyPreferences(allModels, locale);
     }
 
     private async fetchModelProvider(

@@ -1,14 +1,11 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import * as os from 'os';
-import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ISystemService } from '@main/types/services';
 import { ServiceResponse, SystemInfo } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
-
-const execAsync = promisify(exec);
 
 export class SystemService extends BaseService implements ISystemService {
     private systemInfo?: SystemInfo;
@@ -22,7 +19,7 @@ export class SystemService extends BaseService implements ISystemService {
      */
     async initialize(): Promise<void> {
         appLogger.info(this.name, 'Initializing system service...');
-        
+
         // Cache system info at startup
         try {
             this.systemInfo = await this.getSystemInfo();
@@ -30,7 +27,7 @@ export class SystemService extends BaseService implements ISystemService {
         } catch (error) {
             appLogger.error(this.name, 'Failed to cache system info', error as Error);
         }
-        
+
         appLogger.info(this.name, 'System service initialized');
     }
 
@@ -43,43 +40,73 @@ export class SystemService extends BaseService implements ISystemService {
         appLogger.info(this.name, 'System service cleaned up');
     }
 
+    /**
+     * Internal helper for safe process execution via spawn
+     */
+    private async runCommand(command: string, args: string[]): Promise<{ stdout: string; stderr: string; status: number | null }> {
+        return new Promise((resolve, reject) => {
+            const child = spawn(command, args, { shell: false });
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout?.on('data', (data) => { stdout += data.toString(); });
+            child.stderr?.on('data', (data) => { stderr += data.toString(); });
+
+            child.on('error', (err) => {
+                reject(err);
+            });
+
+            child.on('close', (code) => {
+                resolve({ stdout, stderr, status: code });
+            });
+        });
+    }
+
     async setVolume(percent: number): Promise<ServiceResponse> {
+        // Validate input range
+        const vol = Math.max(0, Math.min(100, percent));
         try {
             if (process.platform === 'win32') {
-                await execAsync(`powershell -Command "$obj = new-object -com wscript.shell; foreach($i in 1..50) { $obj.SendKeys([char]174) }; foreach($i in 1..${Math.floor(percent / 2)}) { $obj.SendKeys([char]175) }"`);
+                const keys = Math.floor(vol / 2);
+                const script = `$obj = new-object -com wscript.shell; foreach($i in 1..50) { $obj.SendKeys([char]174) }; foreach($i in 1..${keys}) { $obj.SendKeys([char]175) }`;
+                await this.runCommand('powershell', ['-Command', script]);
             } else if (process.platform === 'linux') {
-                await execAsync(`amixer sset 'Master' ${percent}%`);
+                await this.runCommand('amixer', ['sset', 'Master', `${vol}%`]);
             } else if (process.platform === 'darwin') {
-                await execAsync(`osascript -e "set volume output volume ${percent}"`);
+                await this.runCommand('osascript', ['-e', `set volume output volume ${vol}`]);
             }
-            return { success: true, message: `Volume adjusted to approx ${percent}%` };
+            return { success: true, message: `Volume adjusted to approx ${vol}%` };
         } catch (e) {
-            this.logError(`Failed to set volume to ${percent}%`, e);
+            this.logError(`Failed to set volume to ${vol}%`, e);
             return { success: false, error: getErrorMessage(e as Error) };
         }
     }
 
     async setBrightness(percent: number): Promise<ServiceResponse<{ brightness: number }>> {
+        const bright = Math.max(0, Math.min(100, percent));
         try {
             if (process.platform === 'win32') {
-                const cmd = `powershell -Command "(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1,${percent})"`;
-                await execAsync(cmd);
+                const script = `(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1,${bright})`;
+                await this.runCommand('powershell', ['-Command', script]);
             } else if (process.platform === 'linux') {
-                // Requires xbacklight or similar
-                await execAsync(`xbacklight -set ${percent}`);
+                await this.runCommand('xbacklight', ['-set', `${bright}`]);
             }
-            return { success: true, result: { brightness: percent } };
+            return { success: true, result: { brightness: bright } };
         } catch (e) {
-            this.logError(`Failed to set brightness to ${percent}%`, e);
+            this.logError(`Failed to set brightness to ${bright}%`, e);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
         }
     }
 
     async getDiskSpace(): Promise<ServiceResponse<{ output: string }>> {
         try {
-            const cmd = process.platform === 'win32' ? 'wmic logicaldisk get size,freespace,caption' : 'df -h';
-            const { stdout } = await execAsync(cmd);
-            return { success: true, result: { output: stdout } };
+            let result;
+            if (process.platform === 'win32') {
+                result = await this.runCommand('wmic', ['logicaldisk', 'get', 'size,freespace,caption']);
+            } else {
+                result = await this.runCommand('df', ['-h']);
+            }
+            return { success: true, result: { output: result.stdout } };
         } catch (e) {
             this.logError(`Failed to get disk space`, e);
             return { success: false, error: e instanceof Error ? e.message : String(e) };
@@ -87,10 +114,20 @@ export class SystemService extends BaseService implements ISystemService {
     }
 
     async getProcessOnPort(port: number): Promise<ServiceResponse<{ output: string }>> {
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+            return { success: false, error: 'Invalid port number' };
+        }
         try {
-            const cmd = process.platform === 'win32' ? `netstat -ano | findstr :${port}` : `lsof -i :${port}`;
-            const { stdout } = await execAsync(cmd);
-            return { success: true, result: { output: stdout } };
+            let result;
+            if (process.platform === 'win32') {
+                // netstat doesn't support direct port filtering well without findstr, but we can't use pipes with shell:false easily
+                // We'll use powershell for better filtering without pipes
+                const script = `Get-NetTCPConnection -LocalPort ${port} | Select-Object -Property OwningProcess, State | Format-Table -HideTableHeaders`;
+                result = await this.runCommand('powershell', ['-Command', script]);
+            } else {
+                result = await this.runCommand('lsof', ['-i', `:${port}`]);
+            }
+            return { success: true, result: { output: result.stdout } };
         } catch (e) {
             this.logError(`Failed to get process on port ${port}`, e);
             return { success: false, error: getErrorMessage(e as Error) || 'No process found on this port' };
@@ -98,20 +135,24 @@ export class SystemService extends BaseService implements ISystemService {
     }
 
     async setWallpaper(imagePath: string): Promise<ServiceResponse> {
+        // Basic path validation - prevent some obvious injection attempts
+        if (imagePath.includes('"') || imagePath.includes(';') || imagePath.includes('$')) {
+            return { success: false, error: 'Invalid image path' };
+        }
         try {
             if (process.platform === 'win32') {
                 const code = `
-                    $code = @'
-                    using System.Runtime.InteropServices;
-                    public class Win32 {
-                        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-                        public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-                    }
+$code = @'
+using System.Runtime.InteropServices;
+public class Win32 {
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+}
 '@
-                    Add-Type -TypeDefinition $code
-                    [Win32]::SystemParametersInfo(0x0014, 0, "${imagePath}", 0x01 -bor 0x02)
-                `;
-                await execAsync(`powershell -Command "${code.replace(/\n/g, ' ')}"`);
+Add-Type -TypeDefinition $code
+[Win32]::SystemParametersInfo(0x0014, 0, "${imagePath}", 0x01 -bor 0x02)
+`.replace(/\n/g, ' ');
+                await this.runCommand('powershell', ['-Command', code]);
             }
             return { success: true, message: 'Wallpaper changed' };
         } catch (e) {
@@ -127,10 +168,14 @@ export class SystemService extends BaseService implements ISystemService {
             'prev': 177,
             'stop': 178
         };
+        const keyCode = keys[action];
+        if (!keyCode) {
+            return { success: false, error: 'Invalid media action' };
+        }
         try {
             if (process.platform === 'win32') {
-                const keyCode = keys[action];
-                await execAsync(`powershell -Command "$obj = new-object -com wscript.shell; $obj.SendKeys([char]${keyCode})"`);
+                const script = `$obj = new-object -com wscript.shell; $obj.SendKeys([char]${keyCode})`;
+                await this.runCommand('powershell', ['-Command', script]);
             }
             return { success: true, result: { action } };
         } catch (e) {
@@ -139,19 +184,31 @@ export class SystemService extends BaseService implements ISystemService {
         }
     }
 
+    private isValidAppName(name: string): boolean {
+        // App names should be alphanumeric with spaces and some basic symbols
+        return /^[a-zA-Z0-9\s\-_.]+$/.test(name);
+    }
+
     async launchApp(appName: string): Promise<ServiceResponse> {
+        if (!this.isValidAppName(appName)) {
+            return { success: false, error: 'Invalid app name' };
+        }
         try {
             if (process.platform === 'win32') {
-                const findCmd = `powershell -Command "Get-StartApps | Where-Object { $_.Name -like '*${appName}*' } | Select-Object -First 1 -ExpandProperty AppID"`;
-                const { stdout } = await execAsync(findCmd);
+                const script = `Get-StartApps | Where-Object { $_.Name -like "*${appName}*" } | Select-Object -First 1 -ExpandProperty AppID`;
+                const { stdout } = await this.runCommand('powershell', ['-Command', script]);
                 const appId = stdout.trim();
                 if (appId) {
-                    await execAsync(`powershell -Command "explorer.exe shell:appsFolder\\${appId}"`);
+                    // shell:appsFolder\... is handled by explorer.exe
+                    await this.runCommand('explorer.exe', [`shell:appsFolder\\${appId}`]);
                     return { success: true, message: `Launched ${appName}` };
                 }
-                await execAsync(`start "" "${appName}"`);
+                // Fallback to start command for general executables/files
+                // 'start' is a shell builtin, but explorer.exe can also handle generic paths safely
+                await this.runCommand('explorer.exe', [appName]);
             } else if (process.platform === 'linux') {
-                await execAsync(`${appName} &`);
+                // On linux, we just try to run it. No shell needed for simple app launch.
+                spawn(appName, [], { detached: true, stdio: 'ignore' }).unref();
             }
             return { success: true, message: `Started ${appName}` };
         } catch (e) {
@@ -176,8 +233,9 @@ export class SystemService extends BaseService implements ISystemService {
 
     async getProcessList(): Promise<ServiceResponse<{ output: string }>> {
         try {
-            const cmd = process.platform === 'win32' ? 'tasklist' : 'ps aux';
-            const { stdout } = await execAsync(cmd);
+            const command = process.platform === 'win32' ? 'tasklist' : 'ps';
+            const args = process.platform === 'win32' ? [] : ['aux'];
+            const { stdout } = await this.runCommand(command, args);
             return { success: true, result: { output: stdout } };
         } catch (e) {
             this.logError(`Failed to get process list`, e);

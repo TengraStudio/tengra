@@ -1,7 +1,26 @@
 import { ThemeManifest } from '@shared/types/theme';
 import { z } from 'zod';
 
-import { invokeIpc } from '@/lib/ipc-client';
+import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
+
+type ThemeIpcContract = IpcContractMap & {
+    'theme:runtime:getAll': {
+        args: [];
+        response: ThemeManifest[];
+    };
+    'theme:runtime:install': {
+        args: [string];
+        response: void;
+    };
+    'theme:runtime:uninstall': {
+        args: [string];
+        response: void;
+    };
+    'theme:runtime:openDirectory': {
+        args: [];
+        response: void;
+    };
+};
 
 const themeColorsSchema = z.object({
     background: z.string(),
@@ -60,7 +79,7 @@ export const themeIpc = {
      * Get all themes from runtime directory
      */
     async getAllThemes(): Promise<ThemeManifest[]> {
-        return invokeIpc('theme:runtime:getAll', [], {
+        return invokeTypedIpc<ThemeIpcContract, 'theme:runtime:getAll'>('theme:runtime:getAll', [], {
             responseSchema: themeManifestListSchema
         });
     },
@@ -69,28 +88,40 @@ export const themeIpc = {
      * Install a theme from a JSON file path
      */
     async installTheme(themePath: string): Promise<void> {
-        await invokeIpc('theme:runtime:install', [themePath], {
+        await invokeTypedIpc<ThemeIpcContract, 'theme:runtime:install'>(
+            'theme:runtime:install',
+            [themePath],
+            {
             argsSchema: z.tuple([z.string().min(1)]),
             responseSchema: z.void()
-        });
+            }
+        );
     },
 
     /**
      * Uninstall a theme by ID
      */
     async uninstallTheme(themeId: string): Promise<void> {
-        await invokeIpc('theme:runtime:uninstall', [themeId], {
+        await invokeTypedIpc<ThemeIpcContract, 'theme:runtime:uninstall'>(
+            'theme:runtime:uninstall',
+            [themeId],
+            {
             argsSchema: z.tuple([z.string().min(1)]),
             responseSchema: z.void()
-        });
+            }
+        );
     },
 
     /**
      * Open the runtime themes directory in file explorer
      */
     async openThemesDirectory(): Promise<void> {
-        await invokeIpc('theme:runtime:openDirectory', [], {
+        await invokeTypedIpc<ThemeIpcContract, 'theme:runtime:openDirectory'>(
+            'theme:runtime:openDirectory',
+            [],
+            {
             responseSchema: z.void()
-        });
+            }
+        );
     }
 };

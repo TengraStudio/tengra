@@ -29,6 +29,7 @@ export interface SystemEvents {
     'proxy:sync-end': { provider: string; success: boolean }
     'token:refreshed': { provider: string; accountId?: string }
     'token:error': { provider: string; error: string }
+    'token:permanent_failure': { provider: string; accountId: string; error: string }
     'account:unlinked': { accountId: string; provider: string }
     'account:linked': { accountId: string; provider: string }
     'account:updated': { accountId: string; provider: string }

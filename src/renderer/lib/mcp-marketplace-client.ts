@@ -1,7 +1,7 @@
 import { IpcValue } from '@shared/types/common';
 import { z } from 'zod';
 
-import { invokeIpc } from '@/lib/ipc-client';
+import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
 const ServerSchema = z.object({
     id: z.string(),
@@ -37,39 +37,91 @@ const IpcValueSchema = z.custom<IpcValue>();
 
 export type McpServerLike = z.infer<typeof ServerSchema>;
 
+type McpMarketplaceIpcContract = IpcContractMap & {
+    'mcp:marketplace:list': { args: []; response: z.infer<typeof ServerListResponseSchema> };
+    'mcp:marketplace:installed': { args: []; response: z.infer<typeof ServerListResponseSchema> };
+    'mcp:marketplace:install': { args: [string]; response: z.infer<typeof SuccessResponseSchema> };
+    'mcp:marketplace:uninstall': { args: [string]; response: z.infer<typeof SuccessResponseSchema> };
+    'mcp:marketplace:toggle': { args: [string, boolean]; response: z.infer<typeof SuccessResponseSchema> };
+    'mcp:marketplace:update-config': {
+        args: [string, Record<string, IpcValue>];
+        response: z.infer<typeof SuccessResponseSchema>;
+    };
+    'mcp:marketplace:version-history': {
+        args: [string];
+        response: z.infer<typeof HistoryResponseSchema>;
+    };
+    'mcp:marketplace:rollback-version': {
+        args: [string, string];
+        response: z.infer<typeof SuccessResponseSchema>;
+    };
+};
+
 export const mcpMarketplaceClient = {
     list: () =>
-        invokeIpc('mcp:marketplace:list', [], { responseSchema: ServerListResponseSchema }),
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:list'>(
+            'mcp:marketplace:list',
+            [],
+            { responseSchema: ServerListResponseSchema }
+        ),
     installed: () =>
-        invokeIpc('mcp:marketplace:installed', [], { responseSchema: ServerListResponseSchema }),
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:installed'>(
+            'mcp:marketplace:installed',
+            [],
+            { responseSchema: ServerListResponseSchema }
+        ),
     install: (serverId: string) =>
-        invokeIpc('mcp:marketplace:install', [serverId], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:install'>(
+            'mcp:marketplace:install',
+            [serverId],
+            {
             argsSchema: z.tuple([z.string().min(1)]),
             responseSchema: SuccessResponseSchema
-        }),
+            }
+        ),
     uninstall: (serverId: string) =>
-        invokeIpc('mcp:marketplace:uninstall', [serverId], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:uninstall'>(
+            'mcp:marketplace:uninstall',
+            [serverId],
+            {
             argsSchema: z.tuple([z.string().min(1)]),
             responseSchema: SuccessResponseSchema
-        }),
+            }
+        ),
     toggle: (serverId: string, enabled: boolean) =>
-        invokeIpc('mcp:marketplace:toggle', [serverId, enabled], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:toggle'>(
+            'mcp:marketplace:toggle',
+            [serverId, enabled],
+            {
             argsSchema: z.tuple([z.string().min(1), z.boolean()]),
             responseSchema: SuccessResponseSchema
-        }),
+            }
+        ),
     updateConfig: (serverId: string, patch: Record<string, IpcValue>) =>
-        invokeIpc('mcp:marketplace:update-config', [serverId, patch], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:update-config'>(
+            'mcp:marketplace:update-config',
+            [serverId, patch],
+            {
             argsSchema: z.tuple([z.string().min(1), z.record(z.string(), IpcValueSchema)]),
             responseSchema: SuccessResponseSchema
-        }),
+            }
+        ),
     versionHistory: (serverId: string) =>
-        invokeIpc('mcp:marketplace:version-history', [serverId], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:version-history'>(
+            'mcp:marketplace:version-history',
+            [serverId],
+            {
             argsSchema: z.tuple([z.string().min(1)]),
             responseSchema: HistoryResponseSchema
-        }),
+            }
+        ),
     rollbackVersion: (serverId: string, targetVersion: string) =>
-        invokeIpc('mcp:marketplace:rollback-version', [serverId, targetVersion], {
+        invokeTypedIpc<McpMarketplaceIpcContract, 'mcp:marketplace:rollback-version'>(
+            'mcp:marketplace:rollback-version',
+            [serverId, targetVersion],
+            {
             argsSchema: z.tuple([z.string().min(1), z.string().min(1)]),
             responseSchema: SuccessResponseSchema
-        })
+            }
+        )
 };

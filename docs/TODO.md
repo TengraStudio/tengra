@@ -30,28 +30,28 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ### Security & Authentication
 
-- [ ] **SEC-001**: Implement token rotation mechanism for all OAuth providers
+- [x] **SEC-001**: Implement token rotation mechanism for all OAuth providers
   - Location: `src/main/services/security/token.service.ts`
   - Description: Add automatic token refresh before expiration for GitHub, Google, and Anthropic
   - Impact: Prevents session timeouts during long-running agent tasks
   - Sub-tasks:
-    - [ ] Add token expiration monitoring
-    - [ ] Implement proactive refresh (5 minutes before expiry)
-    - [ ] Handle refresh failures gracefully
-    - [ ] Add event bus notifications for token state changes
-    - [ ] Add per-provider refresh strategies
-    - [ ] Implement exponential backoff for failed refreshes
-    - [ ] Add token health check endpoint
-  - Progress: Unified `TokenService` now performs proactive refresh checks (`ensureFreshToken`), provider-specific refresh flows, scheduler-based refresh/sync jobs, and emits token refresh/error events.
+    - [x] Add token expiration monitoring
+    - [x] Implement proactive refresh (5 minutes before expiry)
+    - [x] Handle refresh failures gracefully
+    - [x] Add event bus notifications for token state changes
+    - [x] Add per-provider refresh strategies
+    - [x] Implement exponential backoff for failed refreshes
+    - [x] Add token health check endpoint
+  - Progress: Unified `TokenService` now performs proactive refresh checks (`ensureFreshToken`) with a 5-minute buffer, provider-specific refresh flows with exponential backoff, and emits `token:permanent_failure` events. The Rust `tandem-token-service` was hardened with a background retry loop and a `/health` endpoint. All changes verified with clean build, lint, and type-check.
 
 
-- [ ] **SEC-003**: Audit IPC handlers for input validation
+- [x] **SEC-003**: Audit IPC handlers for input validation
   - Location: `src/main/ipc/*.ts`
   - Description: Ensure all IPC handlers validate input using Zod schemas
   - Impact: Prevents injection attacks and malformed data issues
   - Sub-tasks:
     - [x] Create Zod schemas for all IPC payloads (tools, usage, window/shell, proxy handlers)
-  - Progress: Added versioned `createValidatedIpcHandler` pipeline with validation-failure logging/callbacks, auth IPC schema coverage, schema docs generator (`npm run docs:ipc:schemas`), migration guide, and validation tests. Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers.
+  - Progress: Added versioned `createValidatedIpcHandler` pipeline with validation-failure logging/callbacks, auth IPC schema coverage, schema docs generator (`npm run docs:ipc:schemas`), migration guide, and validation tests. Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers. Completed audit and refactoring of all database IPC handlers with standardized security validation and type alignment.
 
 - [ ] **SEC-004**: Implement secure credential export
   - Description: Allow users to export their API keys securely
@@ -96,14 +96,14 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
     - [x] Add unit test for script/event-handler payload stripping
   - Progress: `ModelDetailsPanel` now sanitizes `longDescriptionHtml` with DOMPurify and URI protocol allowlist before `dangerouslySetInnerHTML`, and renderer test coverage validates script/event-handler stripping (`src/tests/renderer/ModelDetailsPanel.test.tsx`).
 
-- [ ] **SEC-011**: Harden SystemService shell command construction
+- [x] **SEC-011**: Harden SystemService shell command construction
   - Location: `src/main/services/system/system.service.ts`
   - Description: Several methods interpolate user-provided values into shell command strings (`launchApp`, `setWallpaper`, etc.).
   - Impact: Prevents command injection and shell escape vulnerabilities.
   - Sub-tasks:
-    - [ ] Replace string-based `exec` calls with `spawn/execFile` argument arrays where possible
-    - [ ] Add strict input allowlist/escaping for app names and file paths
-    - [ ] Add security tests for command injection payloads
+    - [x] Replace string-based `exec` calls with `spawn/execFile` argument arrays where possible
+    - [x] Add strict input allowlist/escaping for app names and file paths
+    - [x] Add security tests for command injection payloads
 
 - [x] **SEC-012**: Remove `shell: true` command execution in AgentTestRunner
   - Location: `src/main/services/project/agent/agent-test-runner.service.ts:141`
@@ -130,10 +130,10 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Description: `npm audit` currently reports high-severity vulnerability in transitive `axios` via `bundlewatch`.
   - Impact: Reduces supply-chain security risk from vulnerable transitive packages.
   - Sub-tasks:
-    - [ ] Add explicit policy for dev-dependency CVE triage and acceptance
+    - [x] Add explicit policy for dev-dependency CVE triage and acceptance
     - [x] Pin/override or replace vulnerable dependency path where possible
-    - [ ] Add CI gate with documented exceptions list
-  - Progress: Added dependency override for `axios` in `package.json` to force patched transitive resolution path.
+    - [x] Add CI gate with documented exceptions list
+  - Progress: Added dependency overrides, implemented `vuln-gate.cjs` enforcement script with `audit-exceptions.json` filtering, and integrated into CI pipeline.
 
 - [x] **SEC-015**: Make secret scanning resilient to large binary artifacts
   - Location: `package.json` (`secrets:scan`) + scan config
@@ -142,8 +142,8 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Sub-tasks:
     - [x] Exclude release artifacts/binaries from secret scan globs
     - [x] Add `.secretlintignore` (or equivalent) with rationale
-    - [ ] Add CI step to enforce scan passes on clean checkout
-  - Progress: `secrets:scan` now uses `.secretlintignore`, with release artifacts and large binaries excluded.
+    - [x] Add CI step to enforce scan passes on clean checkout
+  - Progress: `secrets:scan` now uses `.secretlintignore`, with release artifacts and large binaries excluded. Integrated into CI pipeline.
 
 ### Database & Persistence
 - [x] **BUG-MODELS-01**: Fix "o is not iterable" crash in Marketplace and Model features
@@ -1244,6 +1244,7 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Create type-safe IPC client
   - Add request/response validation
   - Implement retry logic
+  - Progress: Extended renderer IPC client with contract-based typed invocation (`invokeTypedIpc` in `src/renderer/lib/ipc-client.ts`), strengthened retry policy with exponential backoff + jitter and non-retryable validation/auth classifications, migrated theme + MCP marketplace typed clients (`src/renderer/utils/theme-ipc.util.ts`, `src/renderer/lib/mcp-marketplace-client.ts`) to the typed path, and migrated project-agent/project renderer callsites from raw invoke to schema-validated typed IPC (`src/renderer/features/projects/hooks/converters/asyncHandlers.ts`, `src/renderer/features/projects/hooks/converters/startTaskHandler.ts`, `src/renderer/features/projects/hooks/useAgentEvents.ts`, `src/renderer/features/projects/components/ProjectEnvironmentTab.tsx`). Added renderer tests in `src/tests/renderer/ipc-client.test.ts`.
 
 ### Infrastructure
 
@@ -1263,7 +1264,7 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Split view/layout sections into subcomponents
   - Remove temporary max-lines suppression after modularization
   - Add regression tests for terminal interactions
-  - Progress: Extracted command history/task-runner state, loading effects, and execution flows into `useTerminalCommandTools` (`src/renderer/features/terminal/hooks/useTerminalCommandTools.ts`), moved command-history/task-runner UI into `src/renderer/features/terminal/components/TerminalCommandPanels.tsx`, moved search overlay into `src/renderer/features/terminal/components/TerminalSearchOverlay.tsx`, moved recordings overlay into `src/renderer/features/terminal/components/TerminalRecordingPanel.tsx`, moved multiplexer overlay into `src/renderer/features/terminal/components/TerminalMultiplexerPanel.tsx`, and moved split presets/controls into `src/renderer/features/terminal/components/TerminalSplitControls.tsx`.
+  - Progress: Extracted command history/task-runner state, loading effects, and execution flows into `useTerminalCommandTools` (`src/renderer/features/terminal/hooks/useTerminalCommandTools.ts`), moved command-history/task-runner UI into `src/renderer/features/terminal/components/TerminalCommandPanels.tsx`, moved search overlay into `src/renderer/features/terminal/components/TerminalSearchOverlay.tsx`, moved recordings overlay into `src/renderer/features/terminal/components/TerminalRecordingPanel.tsx`, moved multiplexer overlay into `src/renderer/features/terminal/components/TerminalMultiplexerPanel.tsx`, moved split presets/controls into `src/renderer/features/terminal/components/TerminalSplitControls.tsx`, and moved semantic issues overlay into `src/renderer/features/terminal/components/TerminalSemanticPanel.tsx`.
 
 ---
 
@@ -1406,6 +1407,213 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Automatic rollback if quality/security regress
   - Human approval checkpoints for high-impact updates
   - Drift monitoring and proactive retrain recommendations
+
+---
+
+## 🚀 Extended AI Systems (New Ideas Added 2026-02-17)
+
+### Voice & Speech AI
+
+- [ ] **VOICE-01**: Add voice command wake-word detection
+  - Implement local wake-word model (Porcupine/precise)
+  - Background listening when app minimized
+  - Custom wake-word training option
+  - Add voice command quick actions
+  - Implement voice activity detection
+  - Add continuous voice mode for extended conversation
+  - Create voice settings calibration UI
+  - Add multi-language wake-word support
+
+- [ ] **VOICE-02**: Implement real-time speech-to-speech conversation
+  - Low-latency voice input processing
+  - Real-time voice synthesis with voice cloning
+  - Conversation turn-taking detection
+  - Add interrupt handling during speech
+  - Implement voice emotion detection
+  - Add custom voice profile selection
+  - Create voice quality settings
+  - Add ambient noise cancellation
+
+- [ ] **VOICE-03**: Add AI voice note transcription and summarization
+  - Automatic transcription of voice memos
+  - Key point extraction from recordings
+  - Meeting notes AI assistant
+  - Add speaker diarization
+  - Implement timestamped highlights
+  - Create voice memo search
+  - Add automatic follow-up task creation
+
+### Advanced Agent Capabilities
+
+- [ ] **AGENT-13**: Implement multi-agent debate system
+  - Multiple AI agents debating topics
+  - Arguments pro/con visualization
+  - Consensus detection algorithm
+  - Add human moderator role
+  - Debate history and replay
+  - Argument quality scoring
+  - Create debate summary generator
+  - Add source citation tracking
+
+- [ ] **AGENT-14**: Add cross-project agent memory sharing
+  - Shared memory namespace for related projects
+  - Memory access control per project
+  - Selective memory sync options
+  - Add memory merge conflict resolution
+  - Implement memory versioning
+  - Create memory analytics dashboard
+  - Add memory search across projects
+
+- [ ] **AGENT-15**: Implement agent teamwork analytics
+  - Task completion metrics per agent
+  - Collaboration pattern analysis
+  - Agent efficiency scoring
+  - Add team resource allocation insights
+  - Implement agent health monitoring
+  - Create agent comparison reports
+  - Add productivity recommendations
+
+### Development Tools AI
+
+- [ ] **DEV-01**: Add AI-powered code review system
+  - Pre-commit code analysis
+  - Style violation detection
+  - Security vulnerability identification
+  - Add performance regression warnings
+  - Implement architectural suggestions
+  - Create review comment generation
+  - Add custom rule configuration
+  - Integrate with git workflow
+
+- [ ] **DEV-02**: Implement automated bug detection and fixing
+  - Static analysis bug patterns
+  - Runtime error prediction
+  - Auto-generate fix suggestions
+  - Add test case generation
+  - Implement fix confidence scoring
+  - Create bug classification system
+  - Add regression test suggestions
+  - Integrate with debugging workflow
+
+- [ ] **DEV-03**: Add performance optimization AI suggestions
+  - CPU/memory profiling analysis
+  - Database query optimization
+  - Bundle size analysis
+  - Add caching recommendations
+  - Implement lazy loading suggestions
+  - Create performance budgets
+  - Add build time optimization
+  - Monitor runtime performance
+
+### Cloud & Infrastructure
+
+- [ ] **CLOUD-01**: Add multi-cloud AI assistant
+  - AWS service integration
+  - Azure service integration
+  - GCP service integration
+  - Add cloud cost optimization
+  - Implement resource monitoring
+  - Create deployment automation
+  - Add security compliance checks
+  - Multi-cloud comparison insights
+
+- [ ] **CLOUD-02**: Implement database AI assistant
+  - Natural language query generation
+  - Query performance analysis
+  - Schema optimization suggestions
+  - Add data anomaly detection
+  - Implement predictive indexing
+  - Create data migration assistant
+  - Add backup strategy recommendations
+  - Database health monitoring
+
+### Collaboration Features
+
+- [ ] **COLLAB-01**: Add shared AI sessions
+  - Real-time collaborative AI chats
+  - Shared context and memory
+  - Presence indicators
+  - Add cursor-based highlighting
+  - Implement change annotations
+  - Create session recording
+  - Add session sharing links
+  - Guest access controls
+
+- [ ] **COLLAB-02**: Implement team knowledge base
+  - AI-powered documentation search
+  - Auto-generated summaries
+  - Knowledge graph creation
+  - Add Q&A from documentation
+  - Implement team learning system
+  - Create knowledge suggestions
+  - Add content recommendations
+  - Version-controlled wiki
+
+### UI/UX Enhancements
+
+- [ ] **UI-10**: Add AI-generated custom themes
+  - Describe theme in natural language
+  - Color palette generation
+  - Dark/light mode adaptation
+  - Add theme preview
+  - Implement theme export
+  - Create theme sharing
+  - Add accessibility validation
+  - Brand color integration
+
+- [ ] **UI-11**: Implement voice-first interface option
+  - Hands-free navigation
+  - Voice shortcuts for common actions
+  - Audio feedback for all actions
+  - Add visual backup for voice
+  - Implement gesture controls
+  - Create custom voice commands
+  - Add wake-word customization
+  - Accessibility voice mode
+
+### Data & Analytics
+
+- [ ] **DATA-01**: Add AI-powered analytics dashboard
+  - Usage pattern learning
+  - Predictive resource allocation
+  - Anomaly detection
+  - Add trend visualization
+  - Implement forecasting
+  - Create custom metrics
+  - Add alert automation
+  - Export capabilities
+
+- [ ] **DATA-02**: Implement user behavior learning
+  - Learn from repeated actions
+  - Predict next actions
+  - Personalize AI responses
+  - Add preference inference
+  - Implement adaptive UI
+  - Create smart defaults
+  - Add learning transparency
+  - Privacy controls
+
+### Local AI Enhancements
+
+- [ ] **LOCAL-01**: Add model fine-tuning interface
+  - Upload training data
+  - Configure training parameters
+  - Progress monitoring
+  - Add model evaluation
+  - Implement model versioning
+  - Create fine-tuned model registry
+  - Add inference testing
+  - Export fine-tuned models
+
+- [ ] **LOCAL-02**: Implement custom embedding training
+  - Domain-specific embeddings
+  - Training data selection
+  - Similarity search optimization
+  - Add embedding comparison
+  - Implement dimension reduction
+  - Create embedding visualization
+  - Add batch processing
+  - Performance benchmarking
 
 ---
 

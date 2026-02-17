@@ -52,7 +52,8 @@
       "Bash(git commit -m \"test\\(ipc\\): add integration tests for 15 IPC handlers\n\nCreated test files for IPC handlers from docs/TODO.md lines 84-102:\n- advanced-memory.ts, auth.ts, brain.ts, dialog.ts, extension.ts\n- file-diff.ts, files.ts, gallery.ts, git.ts, idea-generator.ts\n- mcp.ts, mcp-marketplace.ts, process.ts, proxy.ts, proxy-embed.ts\n\nUpdated changelog entries and locale overrides \\(tr, de, fr, es, ja, ar\\).\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\")",
       "Bash(git push)",
       "Bash(git checkout docs/changelog/i18n/ja.overrides.json)",
-      "Bash(git checkout HEAD -- docs/changelog/i18n/ja.overrides.json)"
+      "Bash(git checkout HEAD -- docs/changelog/i18n/ja.overrides.json)",
+      "Bash(git -C /c/Users/agnes/Desktop/projects/orbit diff --name-only)"
     ]
   },
   "mcpServers": {

@@ -25,6 +25,7 @@ export class TokenService extends BaseService {
     private readonly DEFAULT_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
     private readonly DEFAULT_COPILOT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
     private readonly REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+    private readonly PROACTIVE_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
     private legacyIntervals: NodeJS.Timeout[] = [];
     private eventUnsubscribers: Array<() => void> = [];
 
@@ -215,6 +216,49 @@ export class TokenService extends BaseService {
         }
     }
 
+
+    /**
+     * Retries an async operation with exponential backoff.
+     */
+    private async withRetry<T>(
+        operation: () => Promise<T>,
+        label: string,
+        maxRetries: number = 3
+    ): Promise<T> {
+        let lastError;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error;
+                const isFinal = attempt === maxRetries;
+                const delay = Math.pow(2, attempt) * 1000;
+                appLogger.warn('TokenService', `${label} attempt ${attempt} failed: ${getErrorMessage(error)}. ${isFinal ? 'Max retries reached.' : `Retrying in ${delay}ms...`}`);
+                if (!isFinal) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    /**
+     * Returns the health status of all monitored tokens.
+     */
+    async getTokenHealth(): Promise<Record<string, { healthy: boolean; expiresAt?: number; error?: string }>> {
+        const accounts = await this.authService.getAllAccountsFull();
+        const health: Record<string, { healthy: boolean; expiresAt?: number; error?: string }> = {};
+        for (const account of accounts) {
+            const isExpired = account.expiresAt && account.expiresAt < Date.now();
+            health[account.id] = {
+                healthy: !!account.accessToken && !isExpired,
+                expiresAt: account.expiresAt,
+                error: isExpired ? 'Token expired' : (!account.accessToken ? 'No access token' : undefined)
+            };
+        }
+        return health;
+    }
+
     async refreshAllTokens() {
         const accounts = await this.authService.getAllAccountsFull();
 
@@ -289,11 +333,17 @@ export class TokenService extends BaseService {
         if (accounts.length === 0) { return; }
 
         for (const account of accounts) {
-            // Refresh if expired or expiring within threshold
-            const isExpiring = account.expiresAt && (account.expiresAt - Date.now()) < this.REFRESH_THRESHOLD_MS;
+            // Refresh if:
+            // 1. Forced
+            // 2. No access token
+            // 3. Expiring within normal threshold (30m)
+            // 4. Critically close to expiry (5m buffer)
+            const now = Date.now();
+            const isExpiring = account.expiresAt && (account.expiresAt - now) < this.REFRESH_THRESHOLD_MS;
+            const isCritical = account.expiresAt && (account.expiresAt - now) < this.PROACTIVE_REFRESH_BUFFER_MS;
 
-            if (!account.accessToken || isExpiring || force) {
-                appLogger.info('TokenService', `Proactively refreshing token for ${provider}:${account.id} (expiring: ${isExpiring}, forced: ${force})`);
+            if (!account.accessToken || isExpiring || isCritical || force) {
+                appLogger.info('TokenService', `Proactively refreshing token for ${provider}:${account.id} (expiring: ${isExpiring}, critical: ${isCritical}, forced: ${force})`);
                 await this.refreshSingleToken(account, force);
             }
         }
@@ -301,14 +351,28 @@ export class TokenService extends BaseService {
 
     async refreshSingleToken(account: LinkedAccount, force: boolean = false) {
         try {
-            if (this.isNativeProvider(account)) {
-                await this.refreshNativeToken(account, force);
-            } else if (this.isGithubProvider(account)) {
-                await this.refreshGithubToken(account);
-            }
+            await this.withRetry(async () => {
+                if (this.isNativeProvider(account)) {
+                    await this.refreshNativeToken(account, force);
+                } else if (this.isGithubProvider(account)) {
+                    await this.refreshGithubToken(account);
+                }
+            }, `Refresh ${account.provider}:${account.id}`);
         } catch (error) {
             const errorMsg = getErrorMessage(error);
-            appLogger.error('TokenService', `Failed to refresh token for ${account.provider}: ${errorMsg}`);
+            appLogger.error('TokenService', `Failed to refresh token for ${account.provider} after retries: ${errorMsg}`);
+
+            // Permanent failure handling
+            const lowerMsg = errorMsg.toLowerCase();
+            if (lowerMsg.includes('invalid_grant') || lowerMsg.includes('revoked') || lowerMsg.includes('expired')) {
+                appLogger.warn('TokenService', `Permanent refresh failure for ${account.provider} ${account.id}. User re-auth required.`);
+                this.eventBus.emit('token:permanent_failure', {
+                    provider: account.provider,
+                    accountId: account.id,
+                    error: errorMsg
+                });
+            }
+
             this.eventBus.emit('token:error', { provider: account.provider, error: errorMsg });
         }
     }

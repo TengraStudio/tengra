@@ -1,7 +1,6 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import * as net from 'net';
 import * as os from 'os';
-import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 import { INetworkService } from '@main/types/services';
@@ -10,13 +9,41 @@ import { JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
 
-const execAsync = promisify(exec);
-
 export class NetworkService implements INetworkService {
+    /**
+     * Internal helper for safe process execution via spawn
+     */
+    private async runCommand(command: string, args: string[]): Promise<{ stdout: string; stderr: string; status: number | null }> {
+        return new Promise((resolve, reject) => {
+            const child = spawn(command, args, { shell: false });
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout?.on('data', (data) => { stdout += data.toString(); });
+            child.stderr?.on('data', (data) => { stderr += data.toString(); });
+
+            child.on('error', (err) => {
+                reject(err);
+            });
+
+            child.on('close', (code) => {
+                resolve({ stdout, stderr, status: code });
+            });
+        });
+    }
+
+    private isValidHost(host: string): boolean {
+        // Basic hostname/IP validation regex
+        return /^[a-zA-Z0-9][-a-zA-Z0-9.]+[a-zA-Z0-9]$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+    }
+
     async ping(host: string): Promise<ServiceResponse<{ output: string }>> {
+        if (!this.isValidHost(host)) {
+            return { success: false, error: 'Invalid hostname or IP address' };
+        }
         try {
-            const cmd = process.platform === 'win32' ? `ping -n 4 ${host}` : `ping -c 4 ${host}`;
-            const { stdout } = await execAsync(cmd);
+            const args = process.platform === 'win32' ? ['-n', '4', host] : ['-c', '4', host];
+            const { stdout } = await this.runCommand('ping', args);
             return { success: true, result: { output: stdout } };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
@@ -24,8 +51,11 @@ export class NetworkService implements INetworkService {
     }
 
     async whois(domain: string): Promise<ServiceResponse<{ output: string }>> {
+        if (!this.isValidHost(domain)) {
+            return { success: false, error: 'Invalid domain name' };
+        }
         try {
-            const { stdout } = await execAsync(`whois ${domain}`);
+            const { stdout } = await this.runCommand('whois', [domain]);
             return { success: true, result: { output: stdout } };
         } catch {
             return { success: false, error: 'WHOIS command failed. Is it installed?' };
@@ -37,6 +67,9 @@ export class NetworkService implements INetworkService {
         port: number,
         timeout: number = 2000
     ): Promise<ServiceResponse<{ port: number; status: string }>> {
+        if (!this.isValidHost(host)) {
+            return { success: false, error: 'Invalid host' };
+        }
         return new Promise(resolve => {
             const socket = new net.Socket();
             socket.setTimeout(timeout);
@@ -57,9 +90,12 @@ export class NetworkService implements INetworkService {
     }
 
     async traceroute(host: string): Promise<ServiceResponse<{ output: string }>> {
+        if (!this.isValidHost(host)) {
+            return { success: false, error: 'Invalid hostname or IP address' };
+        }
         try {
-            const cmd = process.platform === 'win32' ? `tracert ${host}` : `traceroute ${host}`;
-            const { stdout } = await execAsync(cmd);
+            const command = process.platform === 'win32' ? 'tracert' : 'traceroute';
+            const { stdout } = await this.runCommand(command, [host]);
             return { success: true, result: { output: stdout } };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };

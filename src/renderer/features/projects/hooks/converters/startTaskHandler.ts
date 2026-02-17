@@ -1,4 +1,6 @@
 import { Project } from '@/types';
+import { invokeTypedIpc, type IpcContractMap } from '@renderer/lib/ipc-client';
+import { z } from 'zod';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
 
@@ -20,6 +22,34 @@ interface StartTaskResult {
     taskId?: string;
     error?: string;
 }
+
+type StartTaskIpcContract = IpcContractMap & {
+    'project-agent:start-task': {
+        args: [StartTaskPayload];
+        response: StartTaskResult;
+    };
+};
+
+const startTaskPayloadSchema: z.ZodType<StartTaskPayload> = z.object({
+    projectId: z.string().min(1),
+    description: z.string().min(1),
+    files: z.array(
+        z.object({
+            path: z.string(),
+            name: z.string(),
+            type: z.string(),
+            content: z.string()
+        })
+    ),
+    provider: z.string().min(1),
+    model: z.string().min(1)
+});
+
+const startTaskResultSchema: z.ZodType<StartTaskResult> = z.object({
+    success: z.boolean(),
+    taskId: z.string().optional(),
+    error: z.string().optional()
+});
 
 /**
  * Validate user input for starting a task
@@ -68,13 +98,22 @@ export const invokeStartTask = async (
 
         window.electron.log.info('[useAgentTask] Invoking project-agent:start-task');
 
-        const result = (await window.electron.ipcRenderer.invoke('project-agent:start-task', {
+        const payload: StartTaskPayload = {
             projectId: project.id,
             description: userPrompt,
             files,
             provider: selectedModel.provider,
             model: selectedModel.model
-        })) as StartTaskResult;
+        };
+
+        const result = await invokeTypedIpc<StartTaskIpcContract, 'project-agent:start-task'>(
+            'project-agent:start-task',
+            [payload],
+            {
+                argsSchema: z.tuple([startTaskPayloadSchema]),
+                responseSchema: startTaskResultSchema
+            }
+        );
 
         return result;
     } catch (error) {

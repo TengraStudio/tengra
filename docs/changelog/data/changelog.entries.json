@@ -4,6 +4,37 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-17-token-rotation-hardening-sec-001",
+      "date": "2026-02-17",
+      "channel": "stable",
+      "type": "security",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "TokenService",
+        "tandem-token-service",
+        "Security"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Token Rotation Hardening (SEC-001)",
+          "summary": "Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.",
+          "items": [
+            "- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.",
+            "- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
+            "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
+            "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
+            "- **Verification**: Verified clean build, lint, and type-check across both components."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-16-i18n-core-rtl-onboarding",
       "date": "2026-02-16",
       "channel": "stable",
