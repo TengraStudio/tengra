@@ -11,17 +11,59 @@ export enum AppErrorCode {
     NOT_FOUND = 'NOT_FOUND',
     UNAUTHORIZED = 'UNAUTHORIZED',
     INTERNAL_ERROR = 'INTERNAL_ERROR',
-    NETWORK_ERROR = 'NETWORK_ERROR'
+    NETWORK_ERROR = 'NETWORK_ERROR',
+    API_ERROR = 'API_ERROR',
+    AUTH_ERROR = 'AUTH_ERROR',
+    TIMEOUT = 'TIMEOUT',
+    RATE_LIMIT = 'RATE_LIMIT',
+    PERMISSION_DENIED = 'PERMISSION_DENIED'
 }
 
 export class TandemError extends Error {
+    public readonly timestamp: string;
+    public readonly code: string;
+    public readonly context?: Record<string, unknown>;
+
     constructor(
         message: string,
-        public code: string = AppErrorCode.UNKNOWN,
-        public context?: Record<string, unknown>
+        code: string = AppErrorCode.UNKNOWN,
+        context?: Record<string, unknown>
     ) {
         super(message);
-        this.name = 'TandemError';
+        this.name = this.constructor.name;
+        this.code = code;
+        this.timestamp = new Date().toISOString();
+        this.context = context;
+
+        // Restore prototype chain for proper instanceof checks
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+
+    public toJSON() {
+        return {
+            name: this.name,
+            message: this.message,
+            code: this.code,
+            timestamp: this.timestamp,
+            context: this.context,
+            stack: this.stack
+        };
+    }
+}
+
+/**
+ * Thrown when an external API call fails (e.g., OpenAI, GitHub).
+ */
+export class ApiError extends TandemError {
+    public readonly statusCode?: number;
+    public readonly provider: string;
+    public readonly retryable: boolean;
+
+    constructor(message: string, provider: string, statusCode?: number, retryable: boolean = true, context?: Record<string, unknown>) {
+        super(message, AppErrorCode.API_ERROR, context);
+        this.provider = provider;
+        this.statusCode = statusCode;
+        this.retryable = retryable;
     }
 }
 
@@ -31,11 +73,17 @@ export class ValidationTandemError extends TandemError {
     }
 }
 
+// Alias for compatibility with main process code
+export class ValidationError extends ValidationTandemError { }
+
 export class NetworkTandemError extends TandemError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.NETWORK_ERROR, context);
     }
 }
+
+// Alias for compatibility with main process code
+export class NetworkError extends NetworkTandemError { }
 
 export class NotFoundTandemError extends TandemError {
     constructor(message: string, context?: Record<string, unknown>) {
@@ -46,6 +94,15 @@ export class NotFoundTandemError extends TandemError {
 export class UnauthorizedTandemError extends TandemError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.UNAUTHORIZED, context);
+    }
+}
+
+// Alias for compatibility with main process code
+export class AuthenticationError extends UnauthorizedTandemError {
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, context);
+        // Ensure code is AUTH_ERROR if preferred, or generic UNAUTHORIZED
+        // For now, mapping to UNAUTHORIZED via super call is safer for existing logic
     }
 }
 
@@ -171,6 +228,13 @@ export function isError(error: CatchError): error is Error {
  */
 export function isNodeError(error: CatchError): error is NodeJS.ErrnoException {
     return error instanceof Error && 'code' in error;
+}
+
+/**
+ * Helper to check if an error is a TandemError.
+ */
+export function isTandemError(error: CatchError): error is TandemError {
+    return error instanceof TandemError;
 }
 
 /**

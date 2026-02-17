@@ -24,6 +24,14 @@ interface MessageListProps {
     virtuosoRef?: React.RefObject<VirtuosoHandle>;
 }
 
+interface MessageActionHandlers {
+    onSpeak: (text: string) => void;
+    onReact: (emoji: string) => void;
+    onBookmark: (isBookmarked: boolean) => void;
+    onRate: (rating: number) => void;
+    onRegenerate?: () => void;
+}
+
 export const MessageList = memo(({
     messages,
     streamingReasoning,
@@ -73,6 +81,31 @@ export const MessageList = memo(({
             behavior: 'smooth',
         });
     }, [effectiveFocusedIndex, messages, virtuosoRef]);
+
+    const messageActionHandlers = useMemo(() => {
+        const handlers = new Map<string, MessageActionHandlers>();
+        for (const message of messages) {
+            const messageId = message.id;
+            handlers.set(messageId, {
+                onSpeak: (text) => onSpeak(text, messageId),
+                onReact: (emoji) => {
+                    void window.electron.db.updateMessage(messageId, { reactions: [emoji] });
+                },
+                onBookmark: (isBookmarked) => {
+                    void window.electron.db.updateMessage(messageId, { isBookmarked });
+                },
+                onRate: (rating) => {
+                    void window.electron.db.updateMessage(messageId, { rating });
+                },
+                onRegenerate: message.role === 'assistant'
+                    ? () => {
+                        void onRegenerate?.(messageId);
+                    }
+                    : undefined,
+            });
+        }
+        return handlers;
+    }, [messages, onRegenerate, onSpeak]);
 
     const handleKeyboardNavigation = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -133,6 +166,59 @@ export const MessageList = memo(({
         );
     }
 
+    const renderMessageItem = useCallback((index: number, message: Message) => {
+        const isStreamingCurrent =
+            isLoading && index === messages.length - 1 && message.role === 'assistant';
+        const isLast = index === messages.length - 1;
+        const isFocused =
+            index === effectiveFocusedIndex ||
+            (selectedMessageId !== null && message.id === selectedMessageId);
+        const handlers = messageActionHandlers.get(message.id);
+        if (!handlers) {
+            return null;
+        }
+
+        return (
+            <div className="px-4 pb-4" aria-selected={isFocused}>
+                <MessageBubble
+                    id={`message-bubble-${message.id}`}
+                    message={message}
+                    isLast={isLast}
+                    isFocused={isFocused}
+                    isStreaming={isStreamingCurrent}
+                    language={language}
+                    backend={selectedProvider}
+                    onSpeak={handlers.onSpeak}
+                    onStop={onStopSpeak}
+                    isSpeaking={speakingMessageId === message.id}
+                    onCodeConvert={() => { }}
+                    onReact={handlers.onReact}
+                    onBookmark={handlers.onBookmark}
+                    onRate={handlers.onRate}
+                    onRegenerate={handlers.onRegenerate}
+                    onApprovePlan={() => { }}
+                    streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
+                    streamingReasoning={
+                        isStreamingCurrent ? streamingReasoning : undefined
+                    }
+                />
+                {isLast && <div className="h-4" />}
+            </div>
+        );
+    }, [
+        isLoading,
+        messages.length,
+        effectiveFocusedIndex,
+        selectedMessageId,
+        messageActionHandlers,
+        language,
+        selectedProvider,
+        onStopSpeak,
+        speakingMessageId,
+        streamingSpeed,
+        streamingReasoning,
+    ]);
+
     return (
         <div
             className="h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg"
@@ -149,56 +235,7 @@ export const MessageList = memo(({
                 atBottomStateChange={onAtBottomStateChange}
                 initialTopMostItemIndex={messages.length - 1}
                 alignToBottom={true} // Start at bottom for chat feel
-                itemContent={(index, message) => {
-                    const isStreamingCurrent =
-                        isLoading && index === messages.length - 1 && message.role === 'assistant';
-
-                    // Add some padding to the last item
-                    const isLast = index === messages.length - 1;
-                    const isFocused =
-                        index === effectiveFocusedIndex ||
-                        (selectedMessageId !== null && message.id === selectedMessageId);
-
-                    return (
-                        <div className="px-4 pb-4" aria-selected={isFocused}>
-                            <MessageBubble
-                                id={`message-bubble-${message.id}`}
-                                message={message}
-                                isLast={isLast}
-                                isFocused={isFocused}
-                                isStreaming={isStreamingCurrent}
-                                language={language}
-                                backend={selectedProvider}
-                                onSpeak={(text) => onSpeak(text, message.id)}
-                                onStop={onStopSpeak}
-                                isSpeaking={speakingMessageId === message.id}
-                                onCodeConvert={() => { }}
-                                onReact={(e) =>
-                                    void window.electron.db.updateMessage(message.id, { reactions: [e] })
-                                }
-                                onBookmark={(b) =>
-                                    void window.electron.db.updateMessage(message.id, { isBookmarked: b })
-                                }
-                                onRate={(r) =>
-                                    void window.electron.db.updateMessage(message.id, { rating: r })
-                                }
-                                onRegenerate={
-                                    message.role === 'assistant'
-                                        ? () => {
-                                            void onRegenerate?.(message.id);
-                                        }
-                                        : undefined
-                                }
-                                onApprovePlan={() => { }}
-                                streamingSpeed={isStreamingCurrent ? streamingSpeed : null}
-                                streamingReasoning={
-                                    isStreamingCurrent ? streamingReasoning : undefined
-                                }
-                            />
-                            {isLast && <div className="h-4" />}
-                        </div>
-                    );
-                }}
+                itemContent={renderMessageItem}
             />
         </div>
     );

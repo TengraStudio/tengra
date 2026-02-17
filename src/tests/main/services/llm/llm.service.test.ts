@@ -1,6 +1,6 @@
 import { LLMService } from '@main/services/llm/llm.service';
 import { ChatMessage } from '@main/types/llm.types';
-import { ApiError, AuthenticationError } from '@main/utils/error.util';
+import { ApiError, AuthenticationError } from '@shared/utils/error.util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockImagePersistence = {

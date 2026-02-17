@@ -2000,7 +2000,7 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
         if (left === right) {
             return true;
         }
-        if (!left || !right || left.length !== right.length) {
+        if (!left || left.length !== right?.length) {
             return false;
         }
         for (let i = 0; i < left.length; i++) {

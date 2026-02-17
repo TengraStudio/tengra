@@ -1,6 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { ValidationError } from '@main/utils/error.util';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { getErrorMessage, ValidationError } from '@shared/utils/error.util';
 
 
 
