@@ -1,4 +1,4 @@
-import { Bot, Boxes, Brain, Lightbulb, MessageSquare, Rocket } from 'lucide-react';
+import { Bot, Boxes, Brain, Lightbulb, MessageSquare, Rocket, Zap } from 'lucide-react';
 import React from 'react';
 
 import { AppView } from '@/hooks/useAppState';
@@ -63,6 +63,13 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 label={t('sidebar.agent')}
                 active={currentView === 'project-agent'}
                 onClick={() => onChangeView('project-agent')}
+                isCollapsed={isCollapsed}
+            />
+            <SidebarItem
+                icon={Zap}
+                label={t('sidebar.workflows')}
+                active={currentView === 'workflows'}
+                onClick={() => onChangeView('workflows')}
                 isCollapsed={isCollapsed}
             />
         </nav>

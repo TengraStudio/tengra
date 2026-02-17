@@ -31,6 +31,7 @@ import { AppView } from '@renderer/hooks/useAppState';
 const ChatViewWrapper = lazy(() => import('./view-manager/ChatViewWrapper').then(m => ({ default: m.ChatViewWrapper })));
 const ProjectsView = lazy(() => import('./view-manager/ProjectsView').then(m => ({ default: m.ProjectsView })));
 const SettingsView = lazy(() => import('./view-manager/SettingsView').then(m => ({ default: m.SettingsView })));
+const WorkflowsPage = lazy(() => import('@/features/workflows/WorkflowsPage').then(m => ({ default: m.WorkflowsPage })));
 
 interface ViewManagerProps {
     currentView: AppView
@@ -193,6 +194,7 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
                     </div>
                 </div>
             );
+            case 'workflows': return <Suspense fallback={<LoadingState size="md" />}><WorkflowsPage /></Suspense>;
             default: return null;
         }
     };

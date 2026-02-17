@@ -55,15 +55,39 @@ export function useGitAdvancedOperations(
     );
 
     const runRebaseAction = useCallback(
-        async (action: 'continue' | 'abort' | 'skip') => {
+        async (action: 'continue' | 'abort' | 'skip' | 'start', ontoBranch?: string) => {
             if (!canRun || !projectPath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:runRebaseAction',
-                projectPath,
-                action
-            );
+
+            let channel = '';
+            const args: (string | number | boolean)[] = [projectPath];
+
+            switch (action) {
+                case 'start':
+                    channel = 'git:startRebase';
+                    if (ontoBranch) {
+                        args.push(ontoBranch);
+                    }
+                    break;
+                case 'continue':
+                    channel = 'git:continueRebase';
+                    break;
+                case 'abort':
+                    channel = 'git:abortRebase';
+                    break;
+                case 'skip': {
+                    // If git:skipRebase doesn't exist, we might need to use rev-parse or similar,
+                    // but usually it's rebase --skip.
+                    channel = 'git:runRebaseAction';
+                    args.push('skip');
+                    break;
+                }
+                default:
+                    return false;
+            }
+
+            const response = await invokeGit<{ success: boolean }>(channel, ...args);
             return response.success;
         },
         [canRun, projectPath, invokeGit]
@@ -84,18 +108,38 @@ export function useGitAdvancedOperations(
 
     const runSubmoduleAction = useCallback(
         async (
-            action: 'init' | 'update' | 'sync' | 'deinit',
-            modulePath?: string
+            action: 'init' | 'update' | 'sync' | 'deinit' | 'add' | 'remove',
+            options?: string | { recursive?: boolean; remote?: boolean; url?: string; path?: string; branch?: string }
         ) => {
             if (!canRun || !projectPath) {
                 return false;
             }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:runSubmoduleAction',
-                projectPath,
-                action,
-                modulePath ?? ''
-            );
+
+            let channel = '';
+            const args: (string | number | boolean)[] = [projectPath];
+
+            if (action === 'init') {
+                channel = 'git:initSubmodules';
+                args.push(typeof options === 'object' ? !!options.recursive : false);
+            } else if (action === 'update') {
+                channel = 'git:updateSubmodules';
+                args.push(typeof options === 'object' ? !!options.remote : false);
+            } else if (action === 'sync') {
+                channel = 'git:syncSubmodules';
+            } else if (action === 'add' && typeof options === 'object') {
+                channel = 'git:addSubmodule';
+                args.push(options.url ?? '', options.path ?? '', options.branch ?? '');
+            } else if (action === 'remove' && typeof options === 'object') {
+                channel = 'git:removeSubmodule';
+                args.push(options.path ?? '');
+            } else if (typeof options === 'string') {
+                channel = 'git:runSubmoduleAction';
+                args.push(action, options);
+            } else {
+                return false;
+            }
+
+            const response = await invokeGit<{ success: boolean }>(channel, ...args);
             await fetchSubmodules();
             return response.success;
         },
@@ -116,7 +160,7 @@ export function useGitAdvancedOperations(
     }, [canRun, projectPath, invokeGit]);
 
     const startFlowBranch = useCallback(
-        async (branchType: 'feature' | 'release' | 'hotfix', branchName: string) => {
+        async (branchType: 'feature' | 'release' | 'hotfix' | 'support', branchName: string, baseBranch?: string) => {
             if (!canRun || !projectPath || !branchName.trim()) {
                 return false;
             }
@@ -124,7 +168,8 @@ export function useGitAdvancedOperations(
                 'git:startFlowBranch',
                 projectPath,
                 branchType,
-                branchName
+                branchName,
+                baseBranch || ''
             );
             await fetchFlowStatus();
             return response.success;
@@ -133,15 +178,16 @@ export function useGitAdvancedOperations(
     );
 
     const finishFlowBranch = useCallback(
-        async (branchType: 'feature' | 'release' | 'hotfix', branchName: string) => {
+        async (branchName: string, targetBranch?: string, shouldDelete?: boolean) => {
             if (!canRun || !projectPath || !branchName.trim()) {
                 return false;
             }
             const response = await invokeGit<{ success: boolean }>(
                 'git:finishFlowBranch',
                 projectPath,
-                branchType,
-                branchName
+                branchName,
+                targetBranch || '',
+                !!shouldDelete
             );
             await fetchFlowStatus();
             return response.success;
@@ -214,7 +260,7 @@ export function useGitAdvancedOperations(
     );
 
     const exportHooks = useCallback(async () => {
-        const zipData = hooks.map(h => ({ name: h.name, installed: h.installed }));
+        const zipData = hooks.map(h => ({ name: h.name, path: h.path }));
         const blob = new Blob([JSON.stringify({ hooks: zipData }, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -225,15 +271,14 @@ export function useGitAdvancedOperations(
     }, [hooks]);
 
     const fetchStats = useCallback(
-        async (fromDate?: string, toDate?: string) => {
+        async (days?: number) => {
             if (!canRun || !projectPath) {
                 return;
             }
             const response = await invokeGit<{ success: boolean; stats?: GitRepositoryStats }>(
-                'git:getStats',
+                'git:getRepositoryStats',
                 projectPath,
-                fromDate ?? '',
-                toDate ?? ''
+                days || 365
             );
             if (response.success && response.stats) {
                 setStats(response.stats);
@@ -242,18 +287,25 @@ export function useGitAdvancedOperations(
         [canRun, projectPath, invokeGit]
     );
 
-    const exportStats = useCallback(() => {
-        if (!stats) {
+    const exportStats = useCallback(async (days?: number) => {
+        if (!canRun || !projectPath) {
             return;
         }
-        const blob = new Blob([JSON.stringify(stats, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = 'git-stats.json';
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }, [stats]);
+        const response = await invokeGit<{ success: boolean; export?: { authorsCsv: string } }>(
+            'git:exportRepositoryStats',
+            projectPath,
+            days || 365
+        );
+        if (response.success && response.export) {
+            const blob = new Blob([response.export.authorsCsv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'git-stats.csv';
+            anchor.click();
+            URL.revokeObjectURL(url);
+        }
+    }, [canRun, projectPath, invokeGit]);
 
     return {
         rebasePlan,

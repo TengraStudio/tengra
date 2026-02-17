@@ -95,7 +95,7 @@ export function useModelOperations(loadInstalledOllamaModels: () => Promise<void
             await window.electron.invoke('model-downloader:start', {
                 provider: 'huggingface',
                 modelId,
-                fileName: file.name,
+                fileName: file.path,
             });
         } catch (err) {
             window.electron.log.error('Failed to download HF file:', err);

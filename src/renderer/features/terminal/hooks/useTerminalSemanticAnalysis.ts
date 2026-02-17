@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import type { TerminalTab } from '@/types';
 
 /**
@@ -103,13 +104,17 @@ export function useTerminalSemanticAnalysis({ tabs }: UseTerminalSemanticAnalysi
                 delete semanticRecentBySignatureRef.current[signature];
             }
         });
-        setSemanticIssuesByTab(prev => {
-            const nextEntries = Object.entries(prev).filter(([tabId]) => validTabIds.has(tabId));
-            if (nextEntries.length === Object.keys(prev).length) {
-                return prev;
-            }
-            return Object.fromEntries(nextEntries);
-        });
+        // Wrap state update in setTimeout to avoid cascading render warning in effect
+        setTimeout(() => {
+            setSemanticIssuesByTab(prev => {
+                const entries = Object.entries(prev);
+                const nextEntries = entries.filter(([tabId]) => validTabIds.has(tabId));
+                if (nextEntries.length === entries.length) {
+                    return prev;
+                }
+                return Object.fromEntries(nextEntries);
+            });
+        }, 0);
     }, [tabs]);
 
     /**
@@ -204,8 +209,12 @@ export function useTerminalSemanticAnalysis({ tabs }: UseTerminalSemanticAnalysi
      */
     const clearSemanticIssues = useCallback((tabId: string) => {
         setSemanticIssuesByTab(prev => {
-            const { [tabId]: _, ...rest } = prev;
-            return rest;
+            if (!(tabId in prev)) {
+                return prev;
+            }
+            const next = { ...prev };
+            delete next[tabId];
+            return next;
         });
         delete semanticCarryByTabRef.current[tabId];
     }, []);

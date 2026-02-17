@@ -1897,6 +1897,15 @@ export interface ElectronAPI {
         /** Mark extension as installed/uninstalled */
         setInstalled: (installed: boolean) => Promise<{ success: boolean }>;
     };
+    workflow: {
+        getAll: () => Promise<import('@shared/types/workflow.types').Workflow[]>;
+        get: (id: string) => Promise<import('@shared/types/workflow.types').Workflow | null>;
+        create: (workflow: Omit<import('@shared/types/workflow.types').Workflow, 'id' | 'createdAt' | 'updatedAt'>) => Promise<import('@shared/types/workflow.types').Workflow>;
+        update: (id: string, updates: Partial<import('@shared/types/workflow.types').Workflow>) => Promise<import('@shared/types/workflow.types').Workflow>;
+        delete: (id: string) => Promise<void>;
+        execute: (id: string, context?: Record<string, unknown>) => Promise<import('@shared/types/workflow.types').WorkflowExecutionResult>;
+        triggerManual: (triggerId: string, context?: Record<string, unknown>) => Promise<void>;
+    };
 }
 
 declare global {

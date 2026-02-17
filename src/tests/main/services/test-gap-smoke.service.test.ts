@@ -62,6 +62,7 @@ describe('Missing service TODO coverage (smoke)', () => {
             gitService: {} as any,
             agentCollaborationService: {} as any,
             agentTemplateService: {} as any,
+            agentPerformanceService: {} as any,
         });
 
         svc.setToolExecutor({} as any);

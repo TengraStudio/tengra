@@ -55,19 +55,19 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [x] **LLM-09.2**: Add HTML/JS sanitization for AI prompts
   - [x] Added `prompt-sanitizer.util.ts`
   - [x] Integrated `sanitizeMessages` into `LLMService`
-- [ ] **LLM-09.3**: Implement prompt length limits
-- [ ] **LLM-09.4**: Add suspicious pattern detection
+- [x] **LLM-09.3**: Implement prompt length limits
+- [x] **LLM-09.4**: Add suspicious pattern detection
 - [x] **LLM-05.4**: Add file type detection
   - [x] Added `file-type.util.ts` with magic number checks
   - [x] Updated `useAttachments` to use robust detection
 - [x] **LLM-05.5**: Implement size optimization for image inputs
 - [ ] **MKT-UI-03.6**: Implement search history for marketplace
-- [ ] **DEBT-01**: Clean up old feature flags
-- [ ] **DEBT-02**: Improve test coverage for core services
+- [x] **DEBT-01**: Clean up old feature flags
+- [x] **DEBT-02**: Improve test coverage for core services
 - [x] **DEBT-03**: Audit and remove unused dependencies
   - [x] Removed `cheerio`
   - [x] Consolidated error utilities
-- [ ] **DEBT-06**: Reduce bundle size by lazy loading heavy components
+- [x] **DEBT-06**: Reduce bundle size by lazy loading heavy components
 - [x] **DEBT-07**: Standardize error handling patterns
   - [x] Merged `src/main/utils/error.util.ts` into shared utility
   - [x] Updated all imports to use `@shared/utils/error.util`

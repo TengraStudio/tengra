@@ -13,12 +13,12 @@ import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
-import { sanitizePrompt } from '@main/utils/prompt-sanitizer.util';
+import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
 import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
 import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
-import { ApiError, AuthenticationError, NetworkError } from '@shared/utils/error.util';
+import { ApiError, AuthenticationError, NetworkError, ValidationError } from '@shared/utils/error.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Agent } from 'undici';
@@ -156,23 +156,33 @@ export class LLMService {
     /**
      * Sanitizes user input messages to prevent injection/XSS.
      * Preserves code formatting through escaping.
+     * Throws ValidationError if content is fundamentally unsafe or too long.
      */
     private sanitizeMessages(messages: Array<Message | ChatMessage>): Array<Message | ChatMessage> {
         return messages.map(msg => {
             if (msg.role === 'user') {
+                const checkContent = (content: string) => {
+                    const validation = validatePromptSafety(content);
+                    if (!validation.safe) {
+                        appLogger.warn('LLMService', `Prompt safety check failed: ${validation.reason}`);
+                        throw new ValidationError(validation.reason ?? 'Unsafe content detected', { field: 'prompt' });
+                    }
+                    return sanitizePrompt(content);
+                };
+
                 if (typeof msg.content === 'string') {
-                    return { ...msg, content: sanitizePrompt(msg.content) };
+                    return { ...msg, content: checkContent(msg.content) };
                 }
+
                 // Handle multimodal content
                 if (Array.isArray(msg.content)) {
-                    // Cast to any to handle the union type complexity during map
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const content = msg.content as any[];
 
                     const sanitizedContent = content.map(part => {
-                        if (typeof part === 'string') { return sanitizePrompt(part); }
+                        if (typeof part === 'string') { return checkContent(part); }
                         if (typeof part === 'object' && part && 'type' in part && part.type === 'text' && 'text' in part) {
-                            return { ...part, text: sanitizePrompt(part.text as string) };
+                            return { ...part, text: checkContent(part.text as string) };
                         }
                         return part;
                     });

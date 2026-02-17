@@ -1,14 +1,10 @@
-import { ExtensionInstallPrompt } from '@renderer/components/ExtensionInstallPrompt';
 import { AppHeader } from '@renderer/components/layout/AppHeader';
 import { AppModals } from '@renderer/components/layout/AppModals';
-import { CommandPalette } from '@renderer/components/layout/CommandPalette';
 import { DragDropWrapper } from '@renderer/components/layout/DragDropWrapper';
 import { LayoutManager } from '@renderer/components/layout/LayoutManager';
-import { QuickActionBar } from '@renderer/components/layout/QuickActionBar';
 import { SessionLockOverlay } from '@renderer/components/layout/SessionLockOverlay';
 import { Sidebar } from '@renderer/components/layout/Sidebar';
 import { ToastsContainer } from '@renderer/components/layout/ToastsContainer';
-import { UpdateNotification } from '@renderer/components/layout/UpdateNotification';
 import { ErrorBoundary } from '@renderer/components/shared/ErrorBoundary';
 import { ErrorFallback } from '@renderer/components/shared/ErrorFallback';
 import { LanguageSelectionPrompt } from '@renderer/components/shared/LanguageSelectionPrompt';
@@ -26,7 +22,7 @@ import { useLanguage, useTranslation } from '@renderer/i18n';
 import { useBreakpoint } from '@renderer/lib/responsive';
 import { trackResponsiveBreakpoint } from '@renderer/store/responsive-analytics.store';
 import { ViewManager } from '@renderer/views/ViewManager';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
@@ -34,6 +30,12 @@ import { useModel } from '@/context/ModelContext';
 import { useProject } from '@/context/ProjectContext';
 
 import '@renderer/App.css';
+
+// Lazy load heavy layout components
+const ExtensionInstallPrompt = lazy(() => import('@renderer/components/ExtensionInstallPrompt').then(m => ({ default: m.ExtensionInstallPrompt })));
+const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
+const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
@@ -314,10 +316,12 @@ function MainApp() {
                 )}
 
                 {showExtensionModal && (
-                    <ExtensionInstallPrompt
-                        onClose={() => setShowExtensionModal(false)}
-                        onDismiss={() => setShowExtensionModal(false)}
-                    />
+                    <Suspense fallback={null}>
+                        <ExtensionInstallPrompt
+                            onClose={() => setShowExtensionModal(false)}
+                            onDismiss={() => setShowExtensionModal(false)}
+                        />
+                    </Suspense>
                 )}
 
                 <AppModals
@@ -340,50 +344,56 @@ function MainApp() {
                     showSSHManager={appState.showSSHManager}
                     setShowSSHManager={appState.setShowSSHManager}
                 />
-                <QuickActionBar
-                    onExplain={text => {
-                        setInput(`${t('quickAction.explainPrefix')}${text}`);
-                        void handleSend();
-                    }}
-                    onTranslate={text => {
-                        setInput(`${t('quickAction.translatePrefix')}${text}`);
-                        void handleSend();
-                    }}
-                    language={language}
-                />
-                <UpdateNotification />
+                <Suspense fallback={null}>
+                    <QuickActionBar
+                        onExplain={text => {
+                            setInput(`${t('quickAction.explainPrefix')}${text}`);
+                            void handleSend();
+                        }}
+                        onTranslate={text => {
+                            setInput(`${t('quickAction.translatePrefix')}${text}`);
+                            void handleSend();
+                        }}
+                        language={language}
+                    />
+                </Suspense>
+                <Suspense fallback={null}>
+                    <UpdateNotification />
+                </Suspense>
                 <ToastsContainer toasts={appState.toasts} removeToast={appState.removeToast} />
-                <CommandPalette
-                    isOpen={appState.showCommandPalette}
-                    onClose={() => {
-                        appState.setShowCommandPalette(false);
-                    }}
-                    chats={chats}
-                    onSelectChat={setCurrentChatId}
-                    onNewChat={createNewChat}
-                    projects={projects}
-                    onSelectProject={(id: string) => {
-                        const p = projects.find(pro => pro.id === id);
-                        if (p) {
-                            setSelectedProject(p);
-                            setCurrentView('projects');
-                        }
-                    }}
-                    onOpenSettings={handleOpenSettings}
-                    onOpenSSHManager={() => {
-                        appState.setShowSSHManager(true);
-                    }}
-                    onRefreshModels={bypassCache => {
-                        void loadModels(bypassCache);
-                    }}
-                    models={models}
-                    onSelectModel={m => {
-                        setSelectedModel(m);
-                    }}
-                    selectedModel={selectedModel}
-                    onClearChat={handleClearChat}
-                    t={t}
-                />
+                <Suspense fallback={null}>
+                    <CommandPalette
+                        isOpen={appState.showCommandPalette}
+                        onClose={() => {
+                            appState.setShowCommandPalette(false);
+                        }}
+                        chats={chats}
+                        onSelectChat={setCurrentChatId}
+                        onNewChat={createNewChat}
+                        projects={projects}
+                        onSelectProject={(id: string) => {
+                            const p = projects.find(pro => pro.id === id);
+                            if (p) {
+                                setSelectedProject(p);
+                                setCurrentView('projects');
+                            }
+                        }}
+                        onOpenSettings={handleOpenSettings}
+                        onOpenSSHManager={() => {
+                            appState.setShowSSHManager(true);
+                        }}
+                        onRefreshModels={bypassCache => {
+                            void loadModels(bypassCache);
+                        }}
+                        models={models}
+                        onSelectModel={m => {
+                            setSelectedModel(m);
+                        }}
+                        selectedModel={selectedModel}
+                        onClearChat={handleClearChat}
+                        t={t}
+                    />
+                </Suspense>
                 <div className="absolute inset-0 flex flex-col overflow-hidden">
                     <LayoutManager
                         isSidebarCollapsed={appState.isSidebarCollapsed}

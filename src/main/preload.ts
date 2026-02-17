@@ -499,6 +499,15 @@ export interface ElectronAPI {
         writeText: (text: string) => Promise<{ success: boolean }>;
         readText: () => Promise<{ success: boolean; text: string }>;
     };
+    workflow: {
+        getAll: () => Promise<import('@shared/types/workflow.types').Workflow[]>;
+        get: (id: string) => Promise<import('@shared/types/workflow.types').Workflow | null>;
+        create: (workflow: Omit<import('@shared/types/workflow.types').Workflow, 'id' | 'createdAt' | 'updatedAt'>) => Promise<import('@shared/types/workflow.types').Workflow>;
+        update: (id: string, updates: Partial<import('@shared/types/workflow.types').Workflow>) => Promise<import('@shared/types/workflow.types').Workflow>;
+        delete: (id: string) => Promise<void>;
+        execute: (id: string, context?: Record<string, unknown>) => Promise<import('@shared/types/workflow.types').WorkflowExecutionResult>;
+        triggerManual: (triggerId: string, context?: Record<string, unknown>) => Promise<void>;
+    };
 
     // Database
     db: {
@@ -3116,6 +3125,19 @@ const api: ElectronAPI = {
     clipboard: {
         writeText: (text: string) => ipcRenderer.invoke('clipboard:writeText', text),
         readText: () => ipcRenderer.invoke('clipboard:readText'),
+    },
+    workflow: {
+        getAll: () => ipcRenderer.invoke('workflow:getAll'),
+        get: (id: string) => ipcRenderer.invoke('workflow:get', id),
+        create: (workflow: Omit<import('@shared/types/workflow.types').Workflow, 'id' | 'createdAt' | 'updatedAt'>) =>
+            ipcRenderer.invoke('workflow:create', workflow),
+        update: (id: string, updates: Partial<import('@shared/types/workflow.types').Workflow>) =>
+            ipcRenderer.invoke('workflow:update', id, updates),
+        delete: (id: string) => ipcRenderer.invoke('workflow:delete', id),
+        execute: (id: string, context?: Record<string, unknown>) =>
+            ipcRenderer.invoke('workflow:execute', id, context),
+        triggerManual: (triggerId: string, context?: Record<string, unknown>) =>
+            ipcRenderer.invoke('workflow:triggerManual', triggerId, context),
     },
 };
 

@@ -1,5 +1,5 @@
 import { useTranslation } from '@renderer/i18n';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type ITheme, Terminal as XTerm } from 'xterm';
 
 import { useTheme } from '@/hooks/useTheme';
@@ -9,11 +9,17 @@ import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { useTerminalAI } from '../hooks/useTerminalAI';
 import { useTerminalAppearance } from '../hooks/useTerminalAppearance';
+import { useTerminalBackendsAndRemote } from '../hooks/useTerminalBackendsAndRemote';
+import { useTerminalBootstrapEffects } from '../hooks/useTerminalBootstrapEffects';
 import { useTerminalCommandTools } from '../hooks/useTerminalCommandTools';
 import { useTerminalLifecycle } from '../hooks/useTerminalLifecycle';
+import { useTerminalMultiplexer } from '../hooks/useTerminalMultiplexer';
 import { useTerminalPasteHistory } from '../hooks/useTerminalPasteHistory';
+import { useTerminalRecording } from '../hooks/useTerminalRecording';
 import { useTerminalSearch } from '../hooks/useTerminalSearch';
+import { useTerminalSemanticAnalysis } from '../hooks/useTerminalSemanticAnalysis';
 import { useTerminalShortcuts } from '../hooks/useTerminalShortcuts';
 import { useTerminalSplitLayout } from '../hooks/useTerminalSplitLayout';
 import { useTerminalState } from '../hooks/useTerminalState';
@@ -45,7 +51,15 @@ import {
     TERMINAL_SPLIT_PRESET_LIMIT,
 } from '../utils/split-config';
 import { createTerminalShortcutEventHandler } from '../utils/terminal-event-handlers';
-import { buildFormattedClipboardHtml, summarizePasteText } from '../utils/terminal-panel-helpers';
+import {
+    buildDockerBootstrapCommand,
+    buildFormattedClipboardHtml,
+    buildSshBootstrapCommand,
+    resolveSecondarySplitTabId,
+    summarizePasteText,
+    validateTerminalAppearanceImport,
+} from '../utils/terminal-panel-helpers';
+import { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 import {
     collectTerminalSearchMatches,
     type TerminalSearchMatch,
@@ -76,166 +90,6 @@ const ANSI_ESCAPE_SEQUENCE_REGEX = new RegExp(
     String.raw`\x1B(?:\[[0-?]*[ -/]*[@-~]|[@-Z\\-_]|\][^\x07]*(?:\x07|\x1B\\))`,
     'g'
 );
-const TERMINAL_SEMANTIC_MAX_ISSUES_PER_TAB = 80;
-const TERMINAL_SEMANTIC_DEDUPE_WINDOW_MS = 1500;
-const TERMINAL_SEMANTIC_ERROR_PATTERNS = [
-    /\berror\b/i,
-    /\bfailed\b/i,
-    /\bexception\b/i,
-    /\btraceback\b/i,
-    /\bpanic\b/i,
-    /\bnpm ERR!/i,
-    /\berr:?\b/i,
-];
-const TERMINAL_SEMANTIC_WARNING_PATTERNS = [
-    /\bwarning\b/i,
-    /\bwarn\b/i,
-    /\bdeprecated\b/i,
-    /\bcaution\b/i,
-];
-
-function toDisplayString(value: unknown): string {
-    return typeof value === 'string' ? value.trim() : '';
-}
-
-function quoteCommandValue(value: string): string {
-    if (!value) {
-        return '""';
-    }
-    if (/^[A-Za-z0-9_./:@+-]+$/.test(value)) {
-        return value;
-    }
-    return `"${value.replace(/(["\\$`])/g, '\\$1')}"`;
-}
-
-function normalizeSshProfiles(raw: unknown): RemoteSshProfile[] {
-    if (!Array.isArray(raw)) {
-        return [];
-    }
-
-    const profiles: RemoteSshProfile[] = [];
-    raw.forEach((item, index) => {
-        if (!item || typeof item !== 'object') {
-            return;
-        }
-        const record = item as Record<string, unknown>;
-        const host = toDisplayString(record.host);
-        const username = toDisplayString(record.username);
-        if (!host || !username) {
-            return;
-        }
-        const port = Number(record.port) > 0 ? Number(record.port) : 22;
-        const profileId = toDisplayString(record.id) || `${username}@${host}:${port}:${index}`;
-        const fallbackName = `${username}@${host}`;
-        profiles.push({
-            id: profileId,
-            name: toDisplayString(record.name) || fallbackName,
-            host,
-            port,
-            username,
-            privateKey: toDisplayString(record.privateKey) || undefined,
-            jumpHost: toDisplayString(record.jumpHost) || undefined,
-        });
-    });
-    return profiles;
-}
-
-function parseDockerContainerRecord(
-    record: Record<string, unknown>,
-    index: number
-): RemoteDockerContainer | null {
-    const id =
-        toDisplayString(record.id) ||
-        toDisplayString(record.ID) ||
-        toDisplayString(record.Id) ||
-        toDisplayString(record.ContainerID);
-    if (!id) {
-        return null;
-    }
-
-    const name =
-        toDisplayString(record.name) ||
-        toDisplayString(record.Names) ||
-        toDisplayString(record.Name) ||
-        `container-${index + 1}`;
-
-    const status = toDisplayString(record.status) || toDisplayString(record.Status) || 'unknown';
-
-    const shell = toDisplayString(record.shell) || '/bin/sh';
-    return { id, name, status, shell };
-}
-
-function normalizeDockerContainers(raw: unknown): RemoteDockerContainer[] {
-    let rows: unknown[] = [];
-    if (Array.isArray(raw)) {
-        rows = raw;
-    } else if (raw && typeof raw === 'object') {
-        const containerRows = (raw as Record<string, unknown>).containers;
-        if (Array.isArray(containerRows)) {
-            rows = containerRows;
-        }
-    }
-
-    const containers: RemoteDockerContainer[] = [];
-    rows.forEach((item, index) => {
-        if (!item || typeof item !== 'object') {
-            return;
-        }
-        const parsed = parseDockerContainerRecord(item as Record<string, unknown>, index);
-        if (parsed) {
-            containers.push(parsed);
-        }
-    });
-    return containers;
-}
-
-function parseTmuxSessions(raw: string): MultiplexerSession[] {
-    const sessions: MultiplexerSession[] = [];
-    raw.split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean)
-        .forEach((line, index) => {
-            const [id, windows, attached] = line.split('|');
-            const sessionId = (id ?? '').trim();
-            if (!sessionId) {
-                return;
-            }
-            const details: string[] = [];
-            if (windows?.trim()) {
-                details.push(`${windows.trim()} windows`);
-            }
-            if (attached?.trim()) {
-                details.push(attached.trim() === '1' ? 'attached' : 'detached');
-            }
-            sessions.push({
-                id: sessionId,
-                label: sessionId,
-                details: details.length > 0 ? details.join(' - ') : `session ${index + 1}`,
-            });
-        });
-    return sessions;
-}
-
-function parseScreenSessions(raw: string): MultiplexerSession[] {
-    const sessions: MultiplexerSession[] = [];
-    raw.split(/\r?\n/)
-        .map(line => line.trim())
-        .forEach(line => {
-            const match = line.match(/^(\d+\.[^\s]+)\s+\((Attached|Detached)\)$/i);
-            if (!match) {
-                return;
-            }
-            const rawId = match[1] ?? '';
-            const status = (match[2] ?? '').toLowerCase();
-            const sessionName = rawId.split('.').slice(1).join('.') || rawId;
-            sessions.push({
-                id: rawId,
-                label: sessionName,
-                details: status,
-            });
-        });
-    return sessions;
-}
 
 export interface TerminalPanelProps {
     isOpen: boolean;
@@ -251,70 +105,15 @@ export interface TerminalPanelProps {
     setActiveTabId: (id: string | null) => void;
 }
 
-type RemoteSshProfile = {
-    id: string;
-    name: string;
-    host: string;
-    port: number;
-    username: string;
-    privateKey?: string;
-    jumpHost?: string;
-};
-
-type RemoteDockerContainer = {
-    id: string;
-    name: string;
-    status: string;
-    shell: string;
-};
-
 type RemoteConnectionTarget =
     | {
         kind: 'ssh';
-        profile: RemoteSshProfile;
+        profile: import('../utils/terminal-panel-types').RemoteSshProfile;
     }
     | {
         kind: 'docker';
-        container: RemoteDockerContainer;
+        container: import('../utils/terminal-panel-types').RemoteDockerContainer;
     };
-
-type MultiplexerMode = 'tmux' | 'screen';
-
-type MultiplexerSession = {
-    id: string;
-    label: string;
-    details?: string;
-};
-
-type TerminalRecordingEvent = {
-    at: number;
-    type: 'data' | 'exit';
-    data: string;
-};
-
-type TerminalRecording = {
-    id: string;
-    tabId: string;
-    tabName: string;
-    startedAt: number;
-    endedAt: number;
-    durationMs: number;
-    events: TerminalRecordingEvent[];
-};
-
-type TerminalSemanticIssue = {
-    id: string;
-    tabId: string;
-    severity: 'error' | 'warning';
-    message: string;
-    timestamp: number;
-};
-
-type TerminalBackendInfo = {
-    id: string;
-    name: string;
-    available: boolean;
-};
 
 type TerminalAppearancePreset = {
     id: string;
@@ -455,16 +254,6 @@ function stripAnsiControlSequences(value: string): string {
     return value.replace(ANSI_ESCAPE_SEQUENCE_REGEX, '').replace(/\r/g, '');
 }
 
-function detectSemanticSeverity(line: string): 'error' | 'warning' | null {
-    if (TERMINAL_SEMANTIC_ERROR_PATTERNS.some(pattern => pattern.test(line))) {
-        return 'error';
-    }
-    if (TERMINAL_SEMANTIC_WARNING_PATTERNS.some(pattern => pattern.test(line))) {
-        return 'warning';
-    }
-    return null;
-}
-
 function clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
 }
@@ -497,7 +286,7 @@ function resolveTerminalAppearance(
     };
 }
 
-function TerminalPanelContent({
+function TerminalPanelContentImpl({
     isOpen,
     onToggle,
     isMaximized: isMaximizedProp = false,
@@ -562,9 +351,11 @@ function TerminalPanelContent({
         splitAnalyticsStorageKey: TERMINAL_SPLIT_ANALYTICS_STORAGE_KEY,
         splitPresetLimit: TERMINAL_SPLIT_PRESET_LIMIT,
     });
-    const [semanticIssuesByTab, setSemanticIssuesByTab] = useState<
-        Record<string, TerminalSemanticIssue[]>
-    >({});
+
+    // Semantic analysis hook
+    const { semanticIssuesByTab, parseSemanticChunk, clearSemanticIssues } =
+        useTerminalSemanticAnalysis({ tabs });
+
     const {
         searchQuery,
         setSearchQuery,
@@ -586,31 +377,30 @@ function TerminalPanelContent({
         storageKey: TERMINAL_SEARCH_HISTORY_STORAGE_KEY,
         historyLimit: TERMINAL_SEARCH_HISTORY_LIMIT,
     });
-    const [isLoadingShells, setIsLoadingShells] = useState(false);
-    const [isLoadingBackends, setIsLoadingBackends] = useState(false);
-    const [availableShells, setAvailableShells] = useState<
-        { id: string; name: string; path: string }[]
-    >([]);
-    const [availableBackends, setAvailableBackends] = useState<TerminalBackendInfo[]>([]);
-    const [isLoadingRemoteConnections, setIsLoadingRemoteConnections] = useState(false);
-    const [remoteSshProfiles, setRemoteSshProfiles] = useState<RemoteSshProfile[]>([]);
-    const [remoteDockerContainers, setRemoteDockerContainers] = useState<RemoteDockerContainer[]>(
-        []
-    );
-    const [preferredBackendId, setPreferredBackendId] = useState<string | null>(null);
+
+    // Backend and remote connections hook
+    const {
+        isLoadingShells,
+        isLoadingBackends,
+        availableShells,
+        availableBackends,
+        isLoadingRemoteConnections,
+        remoteSshProfiles,
+        remoteDockerContainers,
+        fetchAvailableShells,
+        fetchAvailableBackends,
+        fetchRemoteConnections,
+        resolveDefaultBackendId,
+        persistPreferredBackendId,
+    } = useTerminalBackendsAndRemote({
+        preferredBackendStorageKey: TERMINAL_PREFERRED_BACKEND_STORAGE_KEY,
+    });
+
     const { terminalAppearance, setTerminalAppearance } = useTerminalAppearance({
         storageKey: TERMINAL_APPEARANCE_STORAGE_KEY,
         defaultAppearance: DEFAULT_TERMINAL_APPEARANCE,
     });
-    const [multiplexerMode, setMultiplexerMode] = useState<MultiplexerMode>('tmux');
-    const [multiplexerSessionName, setMultiplexerSessionName] = useState('main');
-    const [isMultiplexerLoading, setIsMultiplexerLoading] = useState(false);
-    const [multiplexerSessions, setMultiplexerSessions] = useState<MultiplexerSession[]>([]);
-    const [multiplexerError, setMultiplexerError] = useState<string | null>(null);
-    const [recordings, setRecordings] = useState<TerminalRecording[]>([]);
-    const [activeRecordingTabId, setActiveRecordingTabId] = useState<string | null>(null);
-    const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
-    const [isReplayRunning, setIsReplayRunning] = useState(false);
+
     const { pasteHistory, setPasteHistory } = useTerminalPasteHistory({
         storageKey: TERMINAL_PASTE_HISTORY_STORAGE_KEY,
         historyLimit: TERMINAL_PASTE_HISTORY_LIMIT,
@@ -618,72 +408,52 @@ function TerminalPanelContent({
     const { shortcutPreset, setShortcutPreset, shortcutBindings, setShortcutBindings } =
         useTerminalShortcuts({ storageKey: TERMINAL_SHORTCUTS_STORAGE_KEY });
 
-    // AI Assistant state
-    const [aiPanelMode, setAiPanelMode] = useState<
-        'explain-error' | 'fix-error' | 'explain-command'
-    >('explain-error');
-    const [aiSelectedIssue, setAiSelectedIssue] = useState<TerminalSemanticIssue | null>(null);
-    const [aiIsLoading, setAiIsLoading] = useState(false);
-    const [aiResult, setAiResult] = useState<{
-        type: 'explain-error' | 'fix-error' | 'explain-command';
-        data: Record<string, unknown>;
-    } | null>(null);
-    const [replayText, setReplayText] = useState('');
+    // AI assistant hook
+    const {
+        aiPanelMode,
+        setAiPanelMode,
+        aiSelectedIssue,
+        setAiSelectedIssue,
+        aiIsLoading,
+        setAiIsLoading,
+        aiResult,
+        setAiResult,
+    } = useTerminalAI();
+
     const tabsRef = useRef<TerminalTab[]>(tabs);
     const activeTabIdRef = useRef<string | null>(activeTabId);
     const terminalInstancesRef = useRef<Record<string, XTerm | null>>({});
     const appearanceImportInputRef = useRef<HTMLInputElement | null>(null);
     const shortcutImportInputRef = useRef<HTMLInputElement | null>(null);
-    const semanticCarryByTabRef = useRef<Record<string, string>>({});
-    const semanticRecentBySignatureRef = useRef<Record<string, number>>({});
-    const recordingCaptureRef = useRef<{
-        tabId: string;
-        tabName: string;
-        startedAt: number;
-        events: TerminalRecordingEvent[];
-    } | null>(null);
-    const replayTimeoutsRef = useRef<number[]>([]);
     const hasActiveSession = Boolean(activeTabId);
+    const {
+        recordings,
+        activeRecordingTabId,
+        selectedRecordingId,
+        selectedRecording,
+        isReplayRunning,
+        replayText,
+        recordingCaptureRef,
+        completeRecording,
+        setSelectedRecordingId,
+        setReplayText,
+        toggleRecording,
+        startReplay,
+        stopReplay,
+        exportRecording,
+    } = useTerminalRecording({
+        tabs,
+        activeTabId,
+        setIsRecordingPanelOpen,
+    });
 
     useTrackedEffect(() => {
         tabsRef.current = tabs;
     }, [tabs]);
 
     useTrackedEffect(() => {
-        const validTabIds = new Set(tabs.map(tab => tab.id));
-        Object.keys(semanticCarryByTabRef.current).forEach(tabId => {
-            if (!validTabIds.has(tabId)) {
-                delete semanticCarryByTabRef.current[tabId];
-            }
-        });
-        Object.keys(semanticRecentBySignatureRef.current).forEach(signature => {
-            const [tabId] = signature.split(':');
-            if (tabId && !validTabIds.has(tabId)) {
-                delete semanticRecentBySignatureRef.current[signature];
-            }
-        });
-        setSemanticIssuesByTab(prev => {
-            const nextEntries = Object.entries(prev).filter(([tabId]) => validTabIds.has(tabId));
-            if (nextEntries.length === Object.keys(prev).length) {
-                return prev;
-            }
-            return Object.fromEntries(nextEntries);
-        });
-    }, [tabs]);
-
-    useTrackedEffect(() => {
         activeTabIdRef.current = activeTabId;
     }, [activeTabId]);
-
-    useTrackedEffect(() => {
-        if (!selectedRecordingId) {
-            return;
-        }
-        if (recordings.some(recording => recording.id === selectedRecordingId)) {
-            return;
-        }
-        setSelectedRecordingId(recordings[0]?.id ?? null);
-    }, [recordings, selectedRecordingId]);
 
     const setTerminalInstance = useTrackedCallback((id: string, terminal: XTerm | null) => {
         if (terminal) {
@@ -699,382 +469,6 @@ function TerminalPanelContent({
         }
         return terminalInstancesRef.current[activeTabIdRef.current] ?? null;
     }, []);
-
-    const clearReplayTimers = useTrackedCallback(() => {
-        replayTimeoutsRef.current.forEach(timerId => {
-            window.clearTimeout(timerId);
-        });
-        replayTimeoutsRef.current = [];
-    }, []);
-
-    const stopReplay = useTrackedCallback(() => {
-        clearReplayTimers();
-        setIsReplayRunning(false);
-    }, [clearReplayTimers]);
-
-    useTrackedEffect(() => {
-        return () => {
-            clearReplayTimers();
-        };
-    }, [clearReplayTimers]);
-
-    const completeRecording = useTrackedCallback(() => {
-        const active = recordingCaptureRef.current;
-        if (!active) {
-            return;
-        }
-
-        const endedAt = Date.now();
-        const recording: TerminalRecording = {
-            id: `rec-${endedAt}-${Math.random().toString(36).slice(2, 7)}`,
-            tabId: active.tabId,
-            tabName: active.tabName,
-            startedAt: active.startedAt,
-            endedAt,
-            durationMs: Math.max(0, endedAt - active.startedAt),
-            events: active.events.slice(),
-        };
-
-        recordingCaptureRef.current = null;
-        setActiveRecordingTabId(null);
-        setRecordings(prev => [recording, ...prev].slice(0, 50));
-        setSelectedRecordingId(recording.id);
-    }, []);
-
-    const startRecording = useTrackedCallback(() => {
-        const tabId = activeTabIdRef.current;
-        if (!tabId) {
-            return;
-        }
-        const tab = tabsRef.current.find(item => item.id === tabId);
-        if (!tab) {
-            return;
-        }
-
-        if (recordingCaptureRef.current) {
-            completeRecording();
-        }
-
-        recordingCaptureRef.current = {
-            tabId,
-            tabName: tab.name,
-            startedAt: Date.now(),
-            events: [],
-        };
-        setActiveRecordingTabId(tabId);
-        setIsRecordingPanelOpen(true);
-        setReplayText('');
-        stopReplay();
-    }, [completeRecording, stopReplay]);
-
-    const stopRecording = useTrackedCallback(() => {
-        completeRecording();
-    }, [completeRecording]);
-
-    const toggleRecording = useTrackedCallback(() => {
-        if (activeRecordingTabId) {
-            stopRecording();
-            return;
-        }
-        startRecording();
-    }, [activeRecordingTabId, startRecording, stopRecording]);
-
-    const exportRecording = useTrackedCallback((recording: TerminalRecording) => {
-        const payload = JSON.stringify(recording, null, 2);
-        const blob = new Blob([payload], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `terminal-recording-${recording.tabName.replace(/\s+/g, '-').toLowerCase()}-${new Date(recording.endedAt).toISOString().replace(/[:.]/g, '-')}.json`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
-    }, []);
-
-    const selectedRecording = selectedRecordingId
-        ? (recordings.find(recording => recording.id === selectedRecordingId) ?? null)
-        : null;
-
-    const startReplay = useTrackedCallback(
-        (recording: TerminalRecording) => {
-            stopReplay();
-            setReplayText('');
-
-            const playbackEvents = recording.events.filter(event => event.type === 'data');
-            if (playbackEvents.length === 0) {
-                setIsReplayRunning(false);
-                return;
-            }
-
-            setIsReplayRunning(true);
-            let elapsed = 0;
-            let previousAt = 0;
-
-            playbackEvents.forEach((event, index) => {
-                const stepDelta = Math.max(0, event.at - previousAt);
-                previousAt = event.at;
-                elapsed += Math.min(stepDelta, 80);
-
-                const timerId = window.setTimeout(() => {
-                    setReplayText(prev => prev + event.data);
-                    if (index === playbackEvents.length - 1) {
-                        setIsReplayRunning(false);
-                    }
-                }, elapsed);
-
-                replayTimeoutsRef.current.push(timerId);
-            });
-        },
-        [stopReplay]
-    );
-
-    const pushSemanticIssue = useTrackedCallback(
-        (tabId: string, severity: 'error' | 'warning', rawMessage: string) => {
-            const message = rawMessage.replace(/\s+/g, ' ').trim();
-            if (!message || message.length < 3) {
-                return;
-            }
-
-            const signature = `${tabId}:${severity}:${message.toLowerCase()}`;
-            const now = Date.now();
-            const lastTimestamp = semanticRecentBySignatureRef.current[signature] ?? 0;
-            if (now - lastTimestamp < TERMINAL_SEMANTIC_DEDUPE_WINDOW_MS) {
-                return;
-            }
-            semanticRecentBySignatureRef.current[signature] = now;
-
-            const issue: TerminalSemanticIssue = {
-                id: `${tabId}-${now}-${Math.random().toString(36).slice(2, 8)}`,
-                tabId,
-                severity,
-                message,
-                timestamp: now,
-            };
-
-            setSemanticIssuesByTab(prev => {
-                const nextForTab = [issue, ...(prev[tabId] ?? [])].slice(
-                    0,
-                    TERMINAL_SEMANTIC_MAX_ISSUES_PER_TAB
-                );
-                return {
-                    ...prev,
-                    [tabId]: nextForTab,
-                };
-            });
-        },
-        []
-    );
-
-    const parseSemanticChunk = useTrackedCallback(
-        (tabId: string, chunk: string, flushRemainder = false) => {
-            const stripped = stripAnsiControlSequences(chunk);
-            const carried = semanticCarryByTabRef.current[tabId] ?? '';
-            const combined = `${carried}${stripped}`;
-            const lines = combined.split('\n');
-            semanticCarryByTabRef.current[tabId] = lines.pop() ?? '';
-
-            for (const line of lines) {
-                const normalized = line.trim();
-                if (!normalized) {
-                    continue;
-                }
-                const severity = detectSemanticSeverity(normalized);
-                if (!severity) {
-                    continue;
-                }
-                pushSemanticIssue(tabId, severity, normalized);
-            }
-
-            if (flushRemainder) {
-                const remainder = semanticCarryByTabRef.current[tabId]?.trim();
-                if (remainder) {
-                    const severity = detectSemanticSeverity(remainder);
-                    if (severity) {
-                        pushSemanticIssue(tabId, severity, remainder);
-                    }
-                }
-                semanticCarryByTabRef.current[tabId] = '';
-            }
-        },
-        [pushSemanticIssue]
-    );
-
-    const clearSemanticIssuesForTab = useTrackedCallback((tabId: string) => {
-        setSemanticIssuesByTab(prev => {
-            if (!(tabId in prev)) {
-                return prev;
-            }
-            const next = { ...prev };
-            delete next[tabId];
-            return next;
-        });
-        delete semanticCarryByTabRef.current[tabId];
-        Object.keys(semanticRecentBySignatureRef.current).forEach(signature => {
-            if (signature.startsWith(`${tabId}:`)) {
-                delete semanticRecentBySignatureRef.current[signature];
-            }
-        });
-    }, []);
-
-    const loadPreferredBackendPreference = useTrackedCallback(async () => {
-        try {
-            const settings = await window.electron.getSettings();
-            const configuredBackend = settings?.general?.defaultTerminalBackend?.trim();
-            if (configuredBackend) {
-                setPreferredBackendId(configuredBackend);
-                try {
-                    window.localStorage.setItem(
-                        TERMINAL_PREFERRED_BACKEND_STORAGE_KEY,
-                        configuredBackend
-                    );
-                } catch {
-                    // Ignore localStorage failures in restricted environments.
-                }
-                return configuredBackend;
-            }
-        } catch {
-            // Ignore settings read failures and fallback to localStorage.
-        }
-
-        try {
-            const stored = window.localStorage.getItem(TERMINAL_PREFERRED_BACKEND_STORAGE_KEY);
-            if (stored?.trim()) {
-                const fallbackBackend = stored.trim();
-                setPreferredBackendId(fallbackBackend);
-                return fallbackBackend;
-            }
-        } catch {
-            // Ignore localStorage failures in restricted environments.
-        }
-
-        return null;
-    }, []);
-
-    useTrackedEffect(() => {
-        void loadPreferredBackendPreference();
-    }, [loadPreferredBackendPreference]);
-
-    const fetchAvailableShells = useTrackedCallback(async () => {
-        try {
-            setIsLoadingShells(true);
-            if (!(await window.electron.terminal.isAvailable())) {
-                return [];
-            }
-            const shells = await window.electron.terminal.getShells();
-            setAvailableShells(shells);
-            return shells;
-        } catch (error) {
-            appLogger.error('TerminalPanel', 'Failed to load shells', error as Error);
-            return [];
-        } finally {
-            setIsLoadingShells(false);
-        }
-    }, []);
-
-    const fetchAvailableBackends = useTrackedCallback(async () => {
-        try {
-            setIsLoadingBackends(true);
-            if (!(await window.electron.terminal.isAvailable())) {
-                return [];
-            }
-            const backends = await window.electron.terminal.getBackends();
-            setAvailableBackends(backends);
-            return backends;
-        } catch (error) {
-            appLogger.error('TerminalPanel', 'Failed to load terminal backends', error as Error);
-            return [];
-        } finally {
-            setIsLoadingBackends(false);
-        }
-    }, []);
-
-    const fetchRemoteConnections = useTrackedCallback(async () => {
-        try {
-            setIsLoadingRemoteConnections(true);
-
-            const [profilesRaw, dockerRaw] = await Promise.all([
-                window.electron.ssh.getProfiles().catch(() => []),
-                window.electron.terminal.getDockerContainers().catch(() => []),
-            ]);
-
-            setRemoteSshProfiles(normalizeSshProfiles(profilesRaw));
-            setRemoteDockerContainers(normalizeDockerContainers(dockerRaw as unknown));
-        } catch (error) {
-            appLogger.error(
-                'TerminalPanel',
-                'Failed to load remote terminal connections',
-                error as Error
-            );
-            setRemoteSshProfiles([]);
-            setRemoteDockerContainers([]);
-        } finally {
-            setIsLoadingRemoteConnections(false);
-        }
-    }, []);
-
-    const resolveDefaultBackendId = useTrackedCallback(
-        (backends: TerminalBackendInfo[], preferredId?: string | null) => {
-            const preferred = (preferredId ?? preferredBackendId)?.trim();
-            if (preferred) {
-                const preferredBackend = backends.find(
-                    backend => backend.id === preferred && backend.available
-                );
-                if (preferredBackend) {
-                    return preferredBackend.id;
-                }
-            }
-
-            return (
-                backends.find(backend => backend.id === 'node-pty' && backend.available)?.id ??
-                backends.find(backend => backend.available)?.id
-            );
-        },
-        [preferredBackendId]
-    );
-
-    const persistPreferredBackendId = useTrackedCallback(async (backendId: string) => {
-        setPreferredBackendId(backendId);
-        try {
-            window.localStorage.setItem(TERMINAL_PREFERRED_BACKEND_STORAGE_KEY, backendId);
-        } catch {
-            // Ignore localStorage failures in restricted environments.
-        }
-        try {
-            const settings = await window.electron.getSettings();
-            const currentBackend = settings?.general?.defaultTerminalBackend;
-            if (!settings?.general || currentBackend === backendId) {
-                return;
-            }
-
-            await window.electron.saveSettings({
-                ...settings,
-                general: {
-                    ...settings.general,
-                    defaultTerminalBackend: backendId,
-                },
-            });
-        } catch (error) {
-            appLogger.error(
-                'TerminalPanel',
-                'Failed to persist preferred terminal backend',
-                error as Error
-            );
-        }
-    }, []);
-
-    useTrackedEffect(() => {
-        if (availableBackends.length === 0) {
-            return;
-        }
-
-        const resolved = resolveDefaultBackendId(availableBackends);
-        if (!resolved || resolved === preferredBackendId) {
-            return;
-        }
-
-        void persistPreferredBackendId(resolved);
-    }, [availableBackends, preferredBackendId, resolveDefaultBackendId, persistPreferredBackendId]);
 
     const createTerminal = useTrackedCallback(
         (
@@ -1179,18 +573,7 @@ function TerminalPanelContent({
 
             if (target.kind === 'ssh') {
                 const { profile } = target;
-                const commandParts: string[] = ['ssh'];
-                if (profile.privateKey) {
-                    commandParts.push('-i', quoteCommandValue(profile.privateKey));
-                }
-                if (profile.jumpHost) {
-                    commandParts.push('-J', quoteCommandValue(profile.jumpHost));
-                }
-                if (profile.port > 0) {
-                    commandParts.push('-p', String(profile.port));
-                }
-                commandParts.push(`${profile.username}@${profile.host}`);
-                const bootstrapCommand = commandParts.join(' ');
+                const bootstrapCommand = buildSshBootstrapCommand(profile);
 
                 createTerminal(shellId, backendId, {
                     name: `SSH ${profile.username}@${profile.host}`,
@@ -1209,11 +592,7 @@ function TerminalPanelContent({
             }
 
             const { container } = target;
-            const bootstrapCommand = [
-                'docker exec -it',
-                quoteCommandValue(container.id),
-                quoteCommandValue(container.shell || '/bin/sh'),
-            ].join(' ');
+            const bootstrapCommand = buildDockerBootstrapCommand(container);
 
             createTerminal(shellId, backendId, {
                 name: `Docker ${container.name}`,
@@ -1279,6 +658,23 @@ function TerminalPanelContent({
     );
 
     const {
+        multiplexerMode,
+        setMultiplexerMode,
+        multiplexerSessionName,
+        setMultiplexerSessionName,
+        isMultiplexerLoading,
+        multiplexerSessions,
+        multiplexerError,
+        refreshMultiplexerSessions,
+        attachMultiplexerSession: attachMultiplexerSessionCommand,
+        createMultiplexerSession: createMultiplexerSessionCommand,
+    } = useTerminalMultiplexer({
+        projectPath,
+        activeTabIdRef,
+        writeCommandToActiveTerminal,
+    });
+
+    const {
         isCommandHistoryOpen,
         setIsCommandHistoryOpen,
         isCommandHistoryLoading,
@@ -1313,62 +709,6 @@ function TerminalPanelContent({
         },
     });
 
-    const refreshMultiplexerSessions = useTrackedCallback(
-        async (mode: MultiplexerMode = multiplexerMode) => {
-            try {
-                setIsMultiplexerLoading(true);
-                setMultiplexerError(null);
-                setMultiplexerSessions([]);
-
-                if (mode === 'tmux') {
-                    const result = await window.electron.runCommand(
-                        'tmux',
-                        ['list-sessions', '-F', '#S|#{session_windows}|#{session_attached}'],
-                        projectPath
-                    );
-                    if (result.code !== 0) {
-                        const stderr = (result.stderr || '').toLowerCase();
-                        if (
-                            stderr.includes('failed to connect') ||
-                            stderr.includes('no server running')
-                        ) {
-                            setMultiplexerSessions([]);
-                            return;
-                        }
-                        setMultiplexerError(result.stderr || 'Failed to list tmux sessions');
-                        return;
-                    }
-                    setMultiplexerSessions(parseTmuxSessions(result.stdout));
-                    return;
-                }
-
-                const result = await window.electron.runCommand('screen', ['-ls'], projectPath);
-                if (result.code !== 0) {
-                    const stderr = (result.stderr || '').toLowerCase();
-                    if (stderr.includes('no sockets found')) {
-                        setMultiplexerSessions([]);
-                        return;
-                    }
-                    setMultiplexerError(result.stderr || 'Failed to list screen sessions');
-                    return;
-                }
-                setMultiplexerSessions(parseScreenSessions(result.stdout));
-            } catch (error) {
-                appLogger.error(
-                    'TerminalPanel',
-                    'Failed to query multiplexer sessions',
-                    error as Error
-                );
-                setMultiplexerError(
-                    error instanceof Error ? error.message : 'Multiplexer query failed'
-                );
-            } finally {
-                setIsMultiplexerLoading(false);
-            }
-        },
-        [multiplexerMode, projectPath]
-    );
-
     const openMultiplexerPanel = useTrackedCallback(() => {
         if (!activeTabIdRef.current) {
             return;
@@ -1386,30 +726,20 @@ function TerminalPanelContent({
 
     const closeMultiplexerPanel = useTrackedCallback(() => {
         setIsMultiplexerOpen(false);
-        setMultiplexerError(null);
     }, []);
 
     const attachMultiplexerSession = useTrackedCallback(
-        async (session: MultiplexerSession) => {
-            const command =
-                multiplexerMode === 'tmux'
-                    ? `tmux attach -t ${quoteCommandValue(session.id)}`
-                    : `screen -r ${quoteCommandValue(session.id)}`;
-            await writeCommandToActiveTerminal(command);
+        async (session: Parameters<typeof attachMultiplexerSessionCommand>[0]) => {
+            await attachMultiplexerSessionCommand(session);
             setIsMultiplexerOpen(false);
         },
-        [multiplexerMode, writeCommandToActiveTerminal]
+        [attachMultiplexerSessionCommand]
     );
 
     const createMultiplexerSession = useTrackedCallback(async () => {
-        const safeName = multiplexerSessionName.trim() || 'main';
-        const command =
-            multiplexerMode === 'tmux'
-                ? `tmux new -As ${quoteCommandValue(safeName)}`
-                : `screen -S ${quoteCommandValue(safeName)}`;
-        await writeCommandToActiveTerminal(command);
+        await createMultiplexerSessionCommand();
         setIsMultiplexerOpen(false);
-    }, [multiplexerMode, multiplexerSessionName, writeCommandToActiveTerminal]);
+    }, [createMultiplexerSessionCommand]);
 
     const isCreatingRef = useRef(false);
     const hasAutoCreatedRef = useRef(false);
@@ -1433,76 +763,24 @@ function TerminalPanelContent({
         }
     }, [completeRecording, isOpen, stopReplay, setIsCommandHistoryOpen, setIsTaskRunnerOpen]);
 
-    useTrackedEffect(() => {
-        if (!isOpen) {
-            return;
-        }
-
-        let cancelled = false;
-        const loadShellsAndMaybeCreate = async () => {
-            const shells =
-                availableShells.length > 0 ? availableShells : await fetchAvailableShells();
-            const backends =
-                availableBackends.length > 0 ? availableBackends : await fetchAvailableBackends();
-            if (cancelled || isCreatingRef.current || hasAutoCreatedRef.current) {
-                return;
-            }
-            if (tabs.length === 0) {
-                isCreatingRef.current = true;
-                hasAutoCreatedRef.current = true;
-                if (!cancelled && tabsRef.current.length === 0) {
-                    const shellId =
-                        shells[0]?.id ??
-                        availableShells[0]?.id ??
-                        tabsRef.current[0]?.type ??
-                        'powershell';
-                    createTerminal(shellId, resolveDefaultBackendId(backends));
-                }
-                isCreatingRef.current = false;
-            }
-        };
-
-        void loadShellsAndMaybeCreate();
-        return () => {
-            cancelled = true;
-        };
-    }, [
+    useTerminalBootstrapEffects({
         isOpen,
-        tabs.length,
-        availableBackends,
+        tabsLength: tabs.length,
+        tabsRef,
         availableShells,
-        fetchAvailableBackends,
-        fetchAvailableShells,
-        createTerminal,
-        resolveDefaultBackendId,
-    ]);
-
-    useTrackedEffect(() => {
-        if (isOpen && isNewTerminalMenuOpen) {
-            void loadPreferredBackendPreference();
-            if (availableShells.length === 0 && !isLoadingShells) {
-                void fetchAvailableShells();
-            }
-            if (availableBackends.length === 0 && !isLoadingBackends) {
-                void fetchAvailableBackends();
-            }
-            if (!isLoadingRemoteConnections) {
-                void fetchRemoteConnections();
-            }
-        }
-    }, [
-        isOpen,
-        isNewTerminalMenuOpen,
-        availableShells.length,
-        availableBackends.length,
+        availableBackends,
         isLoadingShells,
         isLoadingBackends,
         isLoadingRemoteConnections,
-        loadPreferredBackendPreference,
+        isNewTerminalMenuOpen,
+        isCreatingRef,
+        hasAutoCreatedRef,
         fetchAvailableShells,
         fetchAvailableBackends,
         fetchRemoteConnections,
-    ]);
+        resolveDefaultBackendId,
+        createTerminal,
+    });
 
     const closeTab = useTrackedCallback(
         (id: string) => {
@@ -1527,7 +805,7 @@ function TerminalPanelContent({
                         : currentActiveTabId;
 
             clearTerminalSessionFlags(id);
-            clearSemanticIssuesForTab(id);
+            clearSemanticIssues(id);
             if (recordingCaptureRef.current?.tabId === id) {
                 completeRecording();
             }
@@ -1542,7 +820,7 @@ function TerminalPanelContent({
                 onToggle();
             }
         },
-        [clearSemanticIssuesForTab, completeRecording, onToggle, setTabs, setActiveTabId]
+        [clearSemanticIssues, completeRecording, onToggle, setTabs, setActiveTabId]
     );
 
     useTrackedEffect(() => {
@@ -1810,7 +1088,7 @@ function TerminalPanelContent({
                 return;
             }
 
-            let secondaryId = currentTabs.find(tab => tab.id !== activeId)?.id;
+            let secondaryId = resolveSecondarySplitTabId(currentTabs, activeId);
             if (!secondaryId) {
                 const activeTab = currentTabs.find(tab => tab.id === activeId);
                 const shellId = activeTab?.type ?? availableShells[0]?.id;
@@ -1891,7 +1169,7 @@ function TerminalPanelContent({
             return;
         }
 
-        let secondaryId = currentTabs.find(tab => tab.id !== activeId)?.id;
+        let secondaryId = resolveSecondarySplitTabId(currentTabs, activeId);
         if (!secondaryId) {
             const activeTab = currentTabs.find(tab => tab.id === activeId);
             const shellId = activeTab?.type ?? availableShells[0]?.id;
@@ -2031,96 +1309,6 @@ function TerminalPanelContent({
         URL.revokeObjectURL(url);
     }, [terminalAppearance]);
 
-    const validateThemeImport = useTrackedCallback((data: unknown): { valid: boolean; errors: string[] } => {
-        const errors: string[] = [];
-
-        if (!data || typeof data !== 'object') {
-            return { valid: false, errors: ['Invalid theme file: must be a JSON object'] };
-        }
-
-        const theme = data as Record<string, unknown>;
-
-        // Validate themePresetId if present
-        if ('themePresetId' in theme && typeof theme.themePresetId !== 'string') {
-            errors.push('themePresetId must be a string');
-        }
-
-        // Validate fontPresetId if present
-        if ('fontPresetId' in theme && typeof theme.fontPresetId !== 'string') {
-            errors.push('fontPresetId must be a string');
-        }
-
-        // Validate ligatures if present
-        if ('ligatures' in theme && typeof theme.ligatures !== 'boolean') {
-            errors.push('ligatures must be a boolean');
-        }
-
-        // Validate surfaceOpacity if present
-        if ('surfaceOpacity' in theme) {
-            if (typeof theme.surfaceOpacity !== 'number' || theme.surfaceOpacity < 0.6 || theme.surfaceOpacity > 1) {
-                errors.push('surfaceOpacity must be a number between 0.6 and 1');
-            }
-        }
-
-        // Validate surfaceBlur if present
-        if ('surfaceBlur' in theme) {
-            if (typeof theme.surfaceBlur !== 'number' || theme.surfaceBlur < 0 || theme.surfaceBlur > 24) {
-                errors.push('surfaceBlur must be a number between 0 and 24');
-            }
-        }
-
-        // Validate cursorStyle if present
-        if ('cursorStyle' in theme) {
-            if (!['block', 'underline', 'bar'].includes(theme.cursorStyle as string)) {
-                errors.push('cursorStyle must be one of: block, underline, bar');
-            }
-        }
-
-        // Validate cursorBlink if present
-        if ('cursorBlink' in theme && typeof theme.cursorBlink !== 'boolean') {
-            errors.push('cursorBlink must be a boolean');
-        }
-
-        // Validate fontSize if present
-        if ('fontSize' in theme) {
-            if (typeof theme.fontSize !== 'number' || theme.fontSize < 8 || theme.fontSize > 32) {
-                errors.push('fontSize must be a number between 8 and 32');
-            }
-        }
-
-        // Validate lineHeight if present
-        if ('lineHeight' in theme) {
-            if (typeof theme.lineHeight !== 'number' || theme.lineHeight < 1 || theme.lineHeight > 2) {
-                errors.push('lineHeight must be a number between 1 and 2');
-            }
-        }
-
-        // Validate customTheme if present
-        if ('customTheme' in theme && theme.customTheme !== null) {
-            if (typeof theme.customTheme !== 'object') {
-                errors.push('customTheme must be an object or null');
-            } else {
-                const customTheme = theme.customTheme as Record<string, unknown>;
-                const validColorKeys = [
-                    'background', 'foreground', 'cursor', 'cursorAccent', 'selectionBackground',
-                    'selectionForeground', 'selectionInactiveBackground', 'black', 'red', 'green',
-                    'yellow', 'blue', 'magenta', 'cyan', 'white', 'brightBlack', 'brightRed',
-                    'brightGreen', 'brightYellow', 'brightBlue', 'brightMagenta', 'brightCyan', 'brightWhite'
-                ];
-
-                for (const key of Object.keys(customTheme)) {
-                    if (!validColorKeys.includes(key)) {
-                        errors.push(`customTheme has unknown property: ${key}`);
-                    } else if (typeof customTheme[key] !== 'string') {
-                        errors.push(`customTheme.${key} must be a string (color value)`);
-                    }
-                }
-            }
-        }
-
-        return { valid: errors.length === 0, errors };
-    }, []);
-
     const importAppearancePreferences = useTrackedCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
             const file = event.target.files?.[0];
@@ -2133,7 +1321,7 @@ function TerminalPanelContent({
                 const parsed = JSON.parse(raw);
 
                 // Validate the imported theme
-                const validation = validateThemeImport(parsed);
+                const validation = validateTerminalAppearanceImport(parsed);
                 if (!validation.valid) {
                     appLogger.error(
                         'TerminalPanel',
@@ -2153,7 +1341,7 @@ function TerminalPanelContent({
                 alertDialog('Failed to import theme: Invalid JSON file');
             }
         },
-        [applyAppearancePatch, validateThemeImport]
+        [applyAppearancePatch]
     );
 
     const toggleGalleryView = useTrackedCallback(() => {
@@ -2191,8 +1379,8 @@ function TerminalPanelContent({
         if (!activeTabIdRef.current) {
             return;
         }
-        clearSemanticIssuesForTab(activeTabIdRef.current);
-    }, [clearSemanticIssuesForTab]);
+        clearSemanticIssues(activeTabIdRef.current);
+    }, [clearSemanticIssues]);
 
     const resetActiveSearchCursor = useTrackedCallback(() => {
         if (!activeTabIdRef.current) {
@@ -3019,9 +2207,9 @@ function TerminalPanelContent({
                     onGalleryToggle: toggleGalleryView,
                     onFloatingToggle: onFloatingChange
                         ? () => {
-                              toggleFloatingMode();
-                              setTerminalContextMenu(null);
-                          }
+                            toggleFloatingMode();
+                            setTerminalContextMenu(null);
+                        }
                         : undefined,
                     onHistoryToggle: openCommandHistory,
                     onTaskRunnerToggle: openTaskRunner,
@@ -3099,15 +2287,15 @@ function TerminalPanelContent({
                 semanticPanelProps={
                     isSemanticPanelOpen
                         ? {
-                              t,
-                              activeSemanticIssues,
-                              activeSemanticErrorCount,
-                              activeSemanticWarningCount,
-                              clearActiveSemanticIssues,
-                              revealSemanticIssue,
-                              handleAiExplainError,
-                              handleAiFixError,
-                          }
+                            t,
+                            activeSemanticIssues,
+                            activeSemanticErrorCount,
+                            activeSemanticWarningCount,
+                            clearActiveSemanticIssues,
+                            revealSemanticIssue,
+                            handleAiExplainError,
+                            handleAiFixError,
+                        }
                         : null
                 }
                 t={t}
@@ -3121,72 +2309,72 @@ function TerminalPanelContent({
                 multiplexerPanelProps={
                     isMultiplexerOpen
                         ? {
-                              t,
-                              hasActiveSession,
-                              multiplexerMode,
-                              multiplexerSessionName,
-                              multiplexerSessions,
-                              isMultiplexerLoading,
-                              multiplexerError,
-                              closeMultiplexerPanel,
-                              setMultiplexerMode,
-                              refreshMultiplexerSessions,
-                              setMultiplexerSessionName,
-                              createMultiplexerSession,
-                              attachMultiplexerSession,
-                          }
+                            t,
+                            hasActiveSession,
+                            multiplexerMode,
+                            multiplexerSessionName,
+                            multiplexerSessions,
+                            isMultiplexerLoading,
+                            multiplexerError,
+                            closeMultiplexerPanel,
+                            setMultiplexerMode,
+                            refreshMultiplexerSessions,
+                            setMultiplexerSessionName,
+                            createMultiplexerSession,
+                            attachMultiplexerSession,
+                        }
                         : null
                 }
                 recordingPanelProps={
                     isRecordingPanelOpen
                         ? {
-                              t,
-                              hasActiveSession,
-                              activeRecordingTabId,
-                              activeRecordingLabel: activeRecordingTabId
-                                  ? tabs.find(tab => tab.id === activeRecordingTabId)?.name ??
-                                    activeRecordingTabId
-                                  : null,
-                              recordings,
-                              selectedRecordingId,
-                              selectedRecording,
-                              selectedRecordingText,
-                              replayText,
-                              isReplayRunning,
-                              setIsRecordingPanelOpen,
-                              toggleRecording,
-                              startReplay,
-                              stopReplay,
-                              exportRecording,
-                              setSelectedRecordingId,
-                              setReplayText,
-                          }
+                            t,
+                            hasActiveSession,
+                            activeRecordingTabId,
+                            activeRecordingLabel: activeRecordingTabId
+                                ? tabs.find(tab => tab.id === activeRecordingTabId)?.name ??
+                                activeRecordingTabId
+                                : null,
+                            recordings,
+                            selectedRecordingId,
+                            selectedRecording,
+                            selectedRecordingText,
+                            replayText,
+                            isReplayRunning,
+                            setIsRecordingPanelOpen,
+                            toggleRecording,
+                            startReplay,
+                            stopReplay,
+                            exportRecording,
+                            setSelectedRecordingId,
+                            setReplayText,
+                        }
                         : null
                 }
                 searchOverlayProps={
                     isSearchOpen
                         ? {
-                              t,
-                              searchInputRef,
-                              searchQuery,
-                              searchUseRegex,
-                              searchStatus,
-                              searchMatches,
-                              searchActiveMatchIndex,
-                              searchHistory,
-                              setSearchQuery,
-                              setSearchUseRegex,
-                              setSearchStatus,
-                              setSearchMatches,
-                              setSearchActiveMatchIndex,
-                              setSearchHistoryIndex,
-                              resetActiveSearchCursor,
-                              runTerminalSearch,
-                              closeTerminalSearch,
-                              stepSearchHistory,
-                              jumpToSearchMatch,
-                              getSearchMatchLabel,
-                          }
+                            t,
+                            searchInputRef,
+                            searchQuery,
+                            searchUseRegex,
+                            searchStatus,
+                            searchMatches,
+                            searchActiveMatchIndex,
+                            searchHistory,
+                            setSearchQuery,
+                            setSearchUseRegex,
+                            setSearchStatus,
+                            setSearchMatches,
+                            setSearchActiveMatchIndex,
+                            setSearchHistoryIndex,
+                            resetActiveSearchCursor,
+                            runTerminalSearch,
+                            closeTerminalSearch,
+                            stepSearchHistory,
+                            jumpToSearchMatch,
+                            getSearchMatchLabel,
+                        }
                         : null
                 }
                 commandPanelsProps={{
@@ -3216,6 +2404,10 @@ function TerminalPanelContent({
             />
         </motion.div>
     );
+}
+
+function TerminalPanelContent(props: TerminalPanelProps) {
+    return <TerminalPanelContentImpl {...props} />;
 }
 
 export function TerminalPanel(props: TerminalPanelProps) {

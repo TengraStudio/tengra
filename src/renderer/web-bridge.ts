@@ -4,6 +4,7 @@ import type { IpcValue } from '@shared/types/common';
 import type { Project, ProjectAnalysis } from '@shared/types/project';
 import type { ClaudeQuota, CodexUsage } from '@shared/types/quota';
 import type { AppSettings } from '@shared/types/settings';
+import type { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import type { IpcRendererEvent } from 'electron';
 
 import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh';
@@ -1263,6 +1264,35 @@ export const webElectronMock: ElectronAPI = {
         dismissWarning: async () => ({ success: true }),
         getStatus: async () => ({ installed: false, shouldShowWarning: false }),
         setInstalled: async (_installed: boolean) => ({ success: true }),
+    },
+    workflow: {
+        getAll: async () => [],
+        get: async (_id: string) => null,
+        create: async (workflow: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt'>) => ({
+            ...workflow,
+            id: 'mock-workflow-id',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        } as Workflow),
+        update: async (id: string, updates: Partial<Workflow>) => ({
+            id,
+            name: 'Mock Workflow',
+            enabled: true,
+            triggers: [],
+            steps: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            ...updates,
+        } as Workflow),
+        delete: async (_id: string) => { },
+        execute: async (id: string, _context?: Record<string, unknown>) => ({
+            workflowId: id,
+            status: 'success',
+            startTime: Date.now(),
+            endTime: Date.now(),
+            logs: ['Mock execution started', 'Mock step 1 completed', 'Workflow finished successfully'],
+        } as WorkflowExecutionResult),
+        triggerManual: async (_triggerId: string, _context?: Record<string, unknown>) => { },
     },
 };
 

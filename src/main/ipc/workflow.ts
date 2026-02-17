@@ -1,5 +1,6 @@
 import { WorkflowService } from '@main/services/workflow/workflow.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { JsonValue } from '@shared/types/common';
 import { Workflow } from '@shared/types/workflow.types';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
@@ -75,14 +76,14 @@ export function registerWorkflowIpc(workflowService: WorkflowService): void {
         async (_event, id: string, context?: Record<string, unknown>) => {
             return await workflowService.executeWorkflow(id, context);
         },
-        { argsSchema: z.tuple([z.string(), z.record(z.unknown()).optional()]) }
+        { argsSchema: z.tuple([z.string(), z.any().optional()]) }
     ));
 
     ipcMain.handle('workflow:triggerManual', createValidatedIpcHandler(
         'workflow:triggerManual',
         async (_event, triggerId: string, context?: Record<string, unknown>) => {
-            workflowService.triggerManualWorkflow(triggerId, context);
+            workflowService.triggerManualWorkflow(triggerId, context as JsonValue);
         },
-        { argsSchema: z.tuple([z.string(), z.record(z.unknown()).optional()]) }
+        { argsSchema: z.tuple([z.string(), z.any().optional()]) }
     ));
 }

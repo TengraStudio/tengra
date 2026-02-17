@@ -15,7 +15,7 @@ import { setAppShellState, useUiLayoutStore } from '@/store/ui-layout.store';
 import { Toast } from '@/types';
 // SettingsCategory type is used by dependent modules via AppState interface
 
-export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent' | 'docker' | 'terminal' | 'models'
+export type AppView = 'chat' | 'projects' | 'settings' | 'mcp' | 'memory' | 'ideas' | 'project-agent' | 'docker' | 'terminal' | 'models' | 'workflows'
 
 export interface AppState {
     // View state

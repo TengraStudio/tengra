@@ -19,10 +19,9 @@ export class FeatureFlagService extends BaseService {
 
     // Default flags
     private defaults: FeatureFlag[] = [
-        { id: 'new_agent_engine', enabled: false, description: 'Enable the new autonomous agent engine' },
-        { id: 'event_sourcing_ui', enabled: false, description: 'Show event sourcing debug UI' },
-        { id: 'experimental_models', enabled: true, description: 'Show experimental models in selection' }
+        // Flags removed (DEBT-01): new_agent_engine, event_sourcing_ui, experimental_models
     ];
+
 
     constructor(private dataService: DataService) {
         super('FeatureFlagService');

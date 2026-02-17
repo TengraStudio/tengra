@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import type { TerminalTab } from '@/types';
 
 /**
@@ -6,7 +7,7 @@ import type { TerminalTab } from '@/types';
  */
 export interface TerminalRecordingEvent {
     /** Event type */
-    type: 'data' | 'resize' | 'marker';
+    type: 'data' | 'exit';
     /** Event data payload */
     data: string;
     /** Relative timestamp in milliseconds from recording start */
@@ -80,17 +81,6 @@ export function useTerminalRecording({
     useEffect(() => {
         activeTabIdRef.current = activeTabId;
     }, [activeTabId]);
-
-    // Auto-select first recording when selected recording is deleted
-    useEffect(() => {
-        if (!selectedRecordingId) {
-            return;
-        }
-        if (recordings.some(recording => recording.id === selectedRecordingId)) {
-            return;
-        }
-        setSelectedRecordingId(recordings[0]?.id ?? null);
-    }, [recordings, selectedRecordingId]);
 
     /**
      * Clear all pending replay timers
@@ -293,8 +283,12 @@ export function useTerminalRecording({
         selectedRecordingText,
         isReplayRunning,
         replayText,
+        recordingCaptureRef,
+        completeRecording,
         setSelectedRecordingId,
         setReplayText,
+        startRecording,
+        stopRecording,
         toggleRecording,
         startReplay,
         stopReplay,

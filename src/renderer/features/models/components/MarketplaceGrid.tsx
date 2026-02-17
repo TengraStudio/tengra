@@ -5,7 +5,7 @@ import type { DbMarketplaceModel } from '@/electron';
 import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
-import { UnifiedModel } from '../types';
+import { HFFile, UnifiedModel } from '../types';
 
 import { ModelDetailsPanel } from './ModelDetailsPanel';
 import { useMarketplaceModels, useModelDownloadProgress } from './useMarketplaceModels';
@@ -93,7 +93,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
         }
     }, [pullOllama, setPullingModel]);
 
-    const handleDownloadHF = useCallback(async (file: { name: string }) => {
+    const handleDownloadHF = useCallback(async (file: HFFile) => {
         if (selectedHfModelId) {
             await downloadHF(file, selectedHfModelId);
         }
@@ -392,8 +392,8 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
                             modelsDir={modelsDir}
                             downloading={{
                                 ...Object.entries(pullProgress).reduce((acc, [k, v]) => {
-                                acc[k] = { received: v.completed || 0, total: v.total || 0 };
-                                return acc;
+                                    acc[k] = { received: v.completed || 0, total: v.total || 0 };
+                                    return acc;
                                 }, {} as Record<string, { received: number; total: number }>),
                                 ...hfDownloading
                             }}
