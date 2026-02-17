@@ -107,24 +107,24 @@ function useHistorySync(
     isRestoringRef: React.MutableRefObject<boolean>
 ): void {
     const saveTimeoutRef = useRef<NodeJS.Timeout>();
-    
+
     useEffect(() => {
         if (isRestoringRef.current) {
             isRestoringRef.current = false;
             return;
         }
-        
+
         // Debounce history saves (500ms)
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-        
+
         if (chats.length > 0) {
             saveTimeoutRef.current = setTimeout(() => {
                 historyManager.saveState(chats, currentChatId);
             }, 500);
         }
-        
+
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
@@ -199,7 +199,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         undo,
         redo,
         systemMode: chatManager.systemMode,
-        setSystemMode: chatManager.setSystemMode
+        setSystemMode: chatManager.setSystemMode,
+        bulkDeleteChats: chatManager.bulkDeleteChats
     }), [
         chatManager, handleSpeak, handleStopSpeak, isSpeaking, speakingMessageId,
         projects, selectedProject, setSelectedProject, loadProjects,

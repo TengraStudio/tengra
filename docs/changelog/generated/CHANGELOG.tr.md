@@ -1,6 +1,30 @@
 # Değişiklik Günlüğü
 
+## [2026-02-18]
+
+### Kenar Çubuğu İyileştirmeleri: Erişilebilirlik ve Geçmişi Temizle
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Kenar çubuğu erişilebilirliği başlık nitelikleriyle iyileştirildi ve sohbet geçmişi için 'Tümünü Temizle' özelliği eklendi.
+
+- **Geçmişi Temizle**: Güvenli bir onay modalı ile son sohbetler bölümüne 'Geçmişi Temizle' düğmesi eklendi.
+- **Erişilebilirlik**: Daha iyi Ekran Okuyucu desteği için tüm kenar çubuğu navigasyon ve menü öğelerine `title` ve `aria-label` nitelikleri eklendi.
+- **Bakım**: Tamamlanan görevler kaldırılarak ve bir sonraki geliştirme aşaması için 10 öncelikli öğe seçilerek proje TODO listesi temizlendi.
+- **Kod Kalitesi**: Merkezi geçmiş yönetimi için `bulkDeleteChats` özelliği `ChatContext` ve `useChatManager` içine entegre edildi.
+
 ## [2026-02-17]
+
+### Kapsamlı TODO Listesi Yeniden Düzenlemesi
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Okunabilirliği artırmak için proje TODO listesi yeniden düzenlendi, bir İçindekiler tablosu eklendi ve tamamlanan tüm görevler özel bir arşiv bölümüne taşındı.
+
+- **Yapı**: Daha iyi proje görünürlüğü için tıklanabilir bir İçindekiler tablosu eklendi ve Yayın Kilometre Taşları en üste taşındı.
+- **Netlik**: Hızlı Kazanımlar durumlarına göre (Beklemede/Tamamlandı) gruplandırıldı ve boş kategori bölümleri temizlendi.
+- **Arşiv**: Tamamlanan tüm görevler (`[x]`) tam ilerleme ayrıntılarıyla birlikte dosyanın sonundaki yeni bir `Completed Tasks` bölümüne taşındı.
+- **Bakım**: Biçimlendirme standartlaştırıldı ve gelecekteki özellik istekleri mantıksal alt kategorilerde birleştirildi.
 
 ### Token Rotation Hardening (SEC-001)
 

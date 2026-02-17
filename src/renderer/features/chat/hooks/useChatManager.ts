@@ -79,6 +79,20 @@ function toTextContent(content: Message['content']): string {
         .trim();
 }
 
+function buildAttachmentPromptContext(attachments: ReturnType<typeof useAttachments>['attachments']): string {
+    const nonImageAttachments = attachments.filter(att => att.type !== 'image');
+    if (nonImageAttachments.length === 0) {
+        return '';
+    }
+    return nonImageAttachments
+        .map(att => {
+            const summary = (att.content ?? '').trim();
+            const safeSummary = summary.length > 5000 ? `${summary.slice(0, 5000)}...` : summary;
+            return `\n[Attachment: ${att.name}]\n${safeSummary}`;
+        })
+        .join('\n');
+}
+
 function useChatInitialization(loadFolders: () => Promise<void>, setChats: React.Dispatch<React.SetStateAction<Chat[]>>): void {
     useEffect(() => {
         const load = async () => {
@@ -143,7 +157,7 @@ export function useChatManager(options: UseChatManagerOptions) {
     });
     const { folders, loadFolders, createFolder, updateFolder, deleteFolder: baseDeleteFolder } = useFolderManager();
     const { isListening, startListening, stopListening } = useSpeechRecognition(language, (text) => { setInput(prev => (prev.trim() ? `${prev} ${text} ` : text)); });
-    const { createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, addMessage, updateChat, togglePin, toggleFavorite } = useChatCRUD({ currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder });
+    const { createNewChat, deleteChat, clearMessages, deleteFolder, moveChatToFolder, addMessage, updateChat, togglePin, toggleFavorite, bulkDeleteChats } = useChatCRUD({ currentChatId, setCurrentChatId, setChats, setInput, baseDeleteFolder });
     const { attachments, setAttachments, processFile, removeAttachment } = useAttachments();
 
     useChatInitialization(loadFolders, setChats);
@@ -172,7 +186,10 @@ export function useChatManager(options: UseChatManagerOptions) {
 
     const handleSend = useCallback(async (customInput?: string) => {
         const content = customInput ?? input;
-        if (!content.trim() || !selectedModel || isLoading) { return; }
+        const readyAttachments = attachments.filter(att => att.status === 'ready');
+        const hasInputText = content.trim() !== '';
+        const hasReadyAttachments = readyAttachments.length > 0;
+        if ((!hasInputText && !hasReadyAttachments) || !selectedModel || isLoading) { return; }
 
         setChats(prev => prev.map(c => c.id === currentChatId ? { ...c, isGenerating: true } : c));
         setInput('');
@@ -193,12 +210,36 @@ export function useChatManager(options: UseChatManagerOptions) {
         }
 
         const timestamp = Date.now();
-        const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date(timestamp) };
+        const imageInputs = readyAttachments
+            .filter(att => att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/'))
+            .map(att => att.content as string);
+        const attachmentContext = buildAttachmentPromptContext(readyAttachments);
+        const mergedContent = hasInputText
+            ? `${content}${attachmentContext}`
+            : `${attachmentContext}\n[Analyze attached media.]`.trim();
+        const userMessage: Message = {
+            id: generateId(),
+            role: 'user',
+            content: mergedContent,
+            timestamp: new Date(timestamp),
+            images: imageInputs.length > 0 ? imageInputs : undefined
+        };
         if (!chatId) { throw new Error('Chat ID creation failed'); }
         await window.electron.db.addMessage({ ...userMessage, chatId, timestamp, provider: selectedProvider, model: selectedModel });
-        setChats(prev => prev.map((c: Chat) => c.id === chatId ? { ...c, messages: [...c.messages, userMessage], title: c.messages.length === 0 ? content.slice(0, 50) : c.title } : c));
+        setChats(prev =>
+            prev.map((c: Chat) =>
+                c.id === chatId
+                    ? {
+                        ...c,
+                        messages: [...c.messages, userMessage],
+                        title: c.messages.length === 0 ? mergedContent.slice(0, 50) : c.title
+                    }
+                    : c
+            )
+        );
+        setAttachments([]);
         void generateResponse(chatId, userMessage);
-    }, [input, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, setChats]);
+    }, [input, attachments, selectedModel, isLoading, currentChatId, selectedProvider, generateResponse, setChats, setAttachments]);
 
     const regenerateMessage = useCallback(
         async (assistantMessageId: string) => {
@@ -235,9 +276,9 @@ export function useChatManager(options: UseChatManagerOptions) {
         streamingReasoning, streamingSpeed, contextTokens, handleSend, stopGeneration, createNewChat, deleteChat, clearMessages,
         folders, createFolder, updateFolder, deleteFolder, moveChatToFolder, addMessage, prompts, createPrompt, deletePrompt, updatePrompt,
         isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite, attachments, setAttachments, processFile, removeAttachment,
-        t, handleSpeak, systemMode, setSystemMode, regenerateMessage
+        t, handleSpeak, systemMode, setSystemMode, regenerateMessage, bulkDeleteChats
     }), [chats, currentChatId, messages, displayMessages, searchTerm, input, isLoading, streamingReasoning, streamingSpeed, contextTokens,
         handleSend, stopGeneration, createNewChat, deleteChat, clearMessages, folders, createFolder, updateFolder, deleteFolder, moveChatToFolder,
         addMessage, prompts, createPrompt, deletePrompt, updatePrompt, isListening, startListening, stopListening, updateChat, togglePin, toggleFavorite,
-        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, regenerateMessage]);
+        attachments, setAttachments, processFile, removeAttachment, t, handleSpeak, systemMode, regenerateMessage, bulkDeleteChats]);
 }

@@ -2,6 +2,7 @@
 import { AgentProviderRotationService } from '@main/services/project/agent/agent-provider-rotation.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
@@ -103,6 +104,34 @@ describe('AgentProviderRotationService', () => {
             // Next in chain after openai is anthropic
             expect(result?.provider).toBe('anthropic');
             expect(result?.accountIndex).toBe(0);
+        });
+    });
+
+    describe('rotation settings persistence', () => {
+        it('should persist fallback chain per project', async () => {
+            const settingsService = new SettingsService();
+            const saveSettings = vi
+                .spyOn(settingsService, 'saveSettings')
+                .mockResolvedValue(settingsService.getSettings());
+            vi.spyOn(settingsService, 'getSettings').mockReturnValue({
+                ...settingsService.getSettings(),
+                ai: {}
+            });
+
+            service = new AgentProviderRotationService(
+                mockKeyRotationService,
+                mockAuthService,
+                settingsService
+            );
+
+            await service.updateFallbackChain(
+                { cloud: ['anthropic', 'openai'], local: ['ollama'] },
+                'project-alpha',
+                'balanced'
+            );
+
+            expect(saveSettings).toHaveBeenCalledTimes(1);
+            expect(service.getFallbackChain('project-alpha').cloud).toEqual(['anthropic', 'openai']);
         });
     });
 });

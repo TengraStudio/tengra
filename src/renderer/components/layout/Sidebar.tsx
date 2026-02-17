@@ -3,6 +3,7 @@ import { SidebarChatList } from '@renderer/components/layout/sidebar/SidebarChat
 import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter';
 import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader';
 import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
+import { Modal } from '@renderer/components/ui/modal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useChat } from '@/context/ChatContext';
@@ -37,7 +38,7 @@ export const Sidebar = React.memo(({
     const {
         chats, currentChatId, setCurrentChatId, createNewChat, deleteChat, updateChat,
         folders, createFolder, deleteFolder,
-        prompts, createPrompt, updatePrompt, deletePrompt, togglePin
+        prompts, createPrompt, updatePrompt, deletePrompt, togglePin, bulkDeleteChats
     } = useChat();
 
     // const { language: authLanguage } = useAuth() // Removed unused
@@ -51,6 +52,7 @@ export const Sidebar = React.memo(({
     // editValue state removed for performance (uncontrolled input)
     const editRef = useRef<HTMLInputElement>(null);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     const activeFolders = useMemo(() => folders, [folders]);
 
@@ -106,6 +108,18 @@ export const Sidebar = React.memo(({
         />
     ), [currentView, currentChatId, isCollapsed, editingId, saveEdit, startEdit, togglePin, deleteChat, onChangeView, setCurrentChatId]);
 
+    const handleClearAll = useCallback(() => {
+        if (chats.length > 0) {
+            setShowClearConfirm(true);
+        }
+    }, [chats]);
+
+    const confirmClearAll = useCallback(() => {
+        const ids = chats.map(c => c.id);
+        void bulkDeleteChats(ids);
+        setShowClearConfirm(false);
+    }, [chats, bulkDeleteChats]);
+
     return (
         <>
             <aside
@@ -151,6 +165,7 @@ export const Sidebar = React.memo(({
                     deleteFolder={(id) => { void deleteFolder(id); }}
                     createFolder={(name) => { void createFolder(name); }}
                     renderChatItem={renderChatItem}
+                    onClearAll={handleClearAll}
                 />
 
                 <SidebarFooter
@@ -174,6 +189,32 @@ export const Sidebar = React.memo(({
                 onUpdatePrompt={(id, p) => { void updatePrompt(id, p); }}
                 onDeletePrompt={(id) => { void deletePrompt(id); }}
             />
+
+            <Modal
+                isOpen={showClearConfirm}
+                onClose={() => setShowClearConfirm(false)}
+                title={t('sidebar.clearHistory')}
+                footer={
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowClearConfirm(false)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+                        >
+                            {t('common.cancel')}
+                        </button>
+                        <button
+                            onClick={confirmClearAll}
+                            className="bg-destructive text-destructive-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                        >
+                            {t('common.delete')}
+                        </button>
+                    </div>
+                }
+            >
+                <p className="text-sm text-muted-foreground">
+                    {t('sidebar.confirmClearAll')}
+                </p>
+            </Modal>
         </>
     );
 });

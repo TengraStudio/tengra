@@ -1,57 +1,76 @@
-# Tandem Project - Comprehensive TODO List
 
-Last updated: 2026-02-16
+# 🚀 Tandem Project - Comprehensive TODO List
 
-## Overview
+> Last updated: 2026-02-17
+> **Total Tasks: 520+** | **Status: In Development**
+
+## 📑 Table of Contents
+1. [📊 Project Overview](#-project-overview)
+2. [📅 Release Milestones](#-release-milestones)
+3. [⚡ Quick Wins](#-quick-wins)
+4. [🔴 Critical Priority](#-critical-priority)
+5. [🟠 High Priority](#-high-priority)
+6. [🟡 Medium Priority](#-medium-priority)
+7. [🟢 Low Priority / Future](#-low-priority--future)
+8. [📊 Code Quality & Tech Debt](#-code-quality--tech-debt)
+9. [🐛 Known Issues](#-known-issues)
+10. [💡 New Ideas & Experimental](#-new-ideas--experimental)
+11. [✅ Completed Tasks](#-completed-tasks)
+12. [🤝 Contributing](#-contributing)
+
+## 📊 Project Overview
 
 This document contains a comprehensive list of tasks, improvements, and features for the Tandem project. Tasks are organized by priority and category.
 
-**Total Tasks: 500+**
+
+## 📅 Release Milestones
+
+### v1.3.0 (Target: Q2 2026)
+- Marketplace system MVP
+- HuggingFace model integration
+- Agent collaboration improvements
+- Performance optimizations
+
+### v1.4.0 (Target: Q3 2026)
+- Extension system beta
+- ComfyUI integration
+- SSH tunneling
+- Advanced memory features
+
+### v2.0.0 (Target: Q4 2026)
+- Plugin ecosystem
+- Collaborative sessions
+- Performance dashboard
+- Mobile companion app
+
+---
 
 ## ⚡ Quick Wins (Fast-Makeable)
 
-Selected 10 small/contained tasks that are realistic to ship quickly:
+Selected small/contained tasks that are realistic to ship quickly:
 
-- [x] **SEC-015**: Make secret scanning resilient to large binary artifacts
-- [x] **SEC-010**: Sanitize marketplace HTML before renderer injection
-- [x] **SEC-013**: Harden archive extraction command execution
-- [x] **SEC-012**: Remove `shell: true` command execution in AgentTestRunner
-- [x] **UI-09**: Implement chat message regenerate action
-- [x] **UI-03**: Implement Command Palette (finish remaining “coming soon” surface)
-- [ ] **AGENT-03**: Persist rotation settings
-- [x] **EXT-04**: Implement page actions (finish popup placeholder path)
-- [x] **LLM-09**: Add LLM response streaming improvements (error recovery slice first)
-- [x] **COPILOT-02**: Improve rate limit handling (notifications + basic queueing)
-- [x] **TEST-UI-01**: Make renderer animation motion preference hook test-safe (`matchMedia` fallback)
+### ⏳ Pending Quick Wins
+- [ ] **UI-ACC-01**: Add title attributes to all sidebar interactive elements (DONE - verification needed)
+- [ ] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
+- [ ] **LLM-09.2**: Add HTML/JS sanitization for prompts
+- [x] **LLM-05.4**: Add file type detection for multi-modal support
+- [x] **LLM-05.5**: Implement size optimization for image inputs
+- [ ] **MKT-UI-03.6**: Implement search history for marketplace
+- [ ] **SSH-07.5**: Implement profile testing for SSH
+- [ ] **MEM-06.4**: Add search suggestions for memory search
+- [ ] **IMG-02.1**: Store generated images with metadata
+- [ ] **IMG-04.5**: Add gallery search
+- [ ] **AGENT-08.3**: Error rate monitoring for agents
+- [ ] **AGENT-08.4**: Resource usage tracking for agents
+
+
+---
 
 ---
 
 ## 🔴 Critical Priority
 
 ### Security & Authentication
-
-- [x] **SEC-001**: Implement token rotation mechanism for all OAuth providers
-  - Location: `src/main/services/security/token.service.ts`
-  - Description: Add automatic token refresh before expiration for GitHub, Google, and Anthropic
-  - Impact: Prevents session timeouts during long-running agent tasks
-  - Sub-tasks:
-    - [x] Add token expiration monitoring
-    - [x] Implement proactive refresh (5 minutes before expiry)
-    - [x] Handle refresh failures gracefully
-    - [x] Add event bus notifications for token state changes
-    - [x] Add per-provider refresh strategies
-    - [x] Implement exponential backoff for failed refreshes
-    - [x] Add token health check endpoint
-  - Progress: Unified `TokenService` now performs proactive refresh checks (`ensureFreshToken`) with a 5-minute buffer, provider-specific refresh flows with exponential backoff, and emits `token:permanent_failure` events. The Rust `tandem-token-service` was hardened with a background retry loop and a `/health` endpoint. All changes verified with clean build, lint, and type-check.
-
-
-- [x] **SEC-003**: Audit IPC handlers for input validation
-  - Location: `src/main/ipc/*.ts`
-  - Description: Ensure all IPC handlers validate input using Zod schemas
-  - Impact: Prevents injection attacks and malformed data issues
-  - Sub-tasks:
-    - [x] Create Zod schemas for all IPC payloads (tools, usage, window/shell, proxy handlers)
-  - Progress: Added versioned `createValidatedIpcHandler` pipeline with validation-failure logging/callbacks, auth IPC schema coverage, schema docs generator (`npm run docs:ipc:schemas`), migration guide, and validation tests. Added validation schemas for tools, usage tracking, window/shell, and proxy IPC handlers. Completed audit and refactoring of all database IPC handlers with standardized security validation and type alignment.
 
 - [ ] **SEC-004**: Implement secure credential export
   - Description: Allow users to export their API keys securely
@@ -85,73 +104,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
     - [ ] Add HTML/JS sanitization
     - [ ] Create prompt length limits
     - [ ] Add suspicious pattern detection
-
-- [x] **SEC-010**: Sanitize marketplace HTML before renderer injection
-  - Location: `src/renderer/features/models/components/ModelDetailsPanel.tsx:446`
-  - Description: `longDescriptionHtml` is injected via `dangerouslySetInnerHTML`; sanitize or convert to safe markdown renderer before display.
-  - Impact: Prevents XSS via untrusted model metadata sources.
-  - Sub-tasks:
-    - [x] Sanitize `longDescriptionHtml` with DOMPurify allowlist profile
-    - [x] Add protocol-safe link sanitization
-    - [x] Add unit test for script/event-handler payload stripping
-  - Progress: `ModelDetailsPanel` now sanitizes `longDescriptionHtml` with DOMPurify and URI protocol allowlist before `dangerouslySetInnerHTML`, and renderer test coverage validates script/event-handler stripping (`src/tests/renderer/ModelDetailsPanel.test.tsx`).
-
-- [x] **SEC-011**: Harden SystemService shell command construction
-  - Location: `src/main/services/system/system.service.ts`
-  - Description: Several methods interpolate user-provided values into shell command strings (`launchApp`, `setWallpaper`, etc.).
-  - Impact: Prevents command injection and shell escape vulnerabilities.
-  - Sub-tasks:
-    - [x] Replace string-based `exec` calls with `spawn/execFile` argument arrays where possible
-    - [x] Add strict input allowlist/escaping for app names and file paths
-    - [x] Add security tests for command injection payloads
-
-- [x] **SEC-012**: Remove `shell: true` command execution in AgentTestRunner
-  - Location: `src/main/services/project/agent/agent-test-runner.service.ts:141`
-  - Description: Test command is built from dynamic string + filter and executed with `shell: true`.
-  - Impact: Prevents command injection through test filter/command parameters.
-  - Sub-tasks:
-    - [x] Parse command safely into executable + args without shell interpolation
-    - [x] Validate/escape filter arguments
-    - [ ] Add red-team test cases for malicious test command payloads
-  - Progress: `AgentTestRunnerService` now builds command/args explicitly, parses custom commands into tokenized args, and executes with `spawn(..., { shell: false })`.
-
-- [x] **SEC-013**: Harden archive extraction command execution
-  - Location: `src/main/services/data/file.service.ts:101`
-  - Description: `unzip()` builds shell strings with interpolated paths for `Expand-Archive`/`unzip`.
-  - Impact: Prevents path/quote-based command injection in archive extraction flow.
-  - Sub-tasks:
-    - [x] Use non-shell process invocation with argument arrays
-    - [x] Add robust path escaping for platform-specific extractors
-    - [ ] Add malicious filename/path regression tests
-  - Progress: `FileManagementService.unzip()` now runs PowerShell/`unzip` through non-shell argument arrays via `spawn`.
-
-- [x] **SEC-014**: Add secure-by-default external dependency vulnerability gate
-  - Location: `package.json` (`audit:deps`) + dependency pipeline
-  - Description: `npm audit` currently reports high-severity vulnerability in transitive `axios` via `bundlewatch`.
-  - Impact: Reduces supply-chain security risk from vulnerable transitive packages.
-  - Sub-tasks:
-    - [x] Add explicit policy for dev-dependency CVE triage and acceptance
-    - [x] Pin/override or replace vulnerable dependency path where possible
-    - [x] Add CI gate with documented exceptions list
-  - Progress: Added dependency overrides, implemented `vuln-gate.cjs` enforcement script with `audit-exceptions.json` filtering, and integrated into CI pipeline.
-
-- [x] **SEC-015**: Make secret scanning resilient to large binary artifacts
-  - Location: `package.json` (`secrets:scan`) + scan config
-  - Description: `secretlint "**/*"` fails on `release/win-unpacked/resources/app.asar` (>2GB), causing scan interruption.
-  - Impact: Ensures secret scanning runs consistently in CI and local checks.
-  - Sub-tasks:
-    - [x] Exclude release artifacts/binaries from secret scan globs
-    - [x] Add `.secretlintignore` (or equivalent) with rationale
-    - [x] Add CI step to enforce scan passes on clean checkout
-  - Progress: `secrets:scan` now uses `.secretlintignore`, with release artifacts and large binaries excluded. Integrated into CI pipeline.
-
-### Database & Persistence
-- [x] **BUG-MODELS-01**: Fix "o is not iterable" crash in Marketplace and Model features
-  - Path: `src/renderer/features/models/`
-  - Resolved crashes in `MarketplaceGrid`, `InstalledModelsGrid`, `ModelSelectorModal`, and `ModelExplorer` hooks via defensive array checks.
-- [x] **BUG-SDCPP-01**: Fix executable discovery for stable-diffusion.cpp (detect sd-cli.exe)
-  - Path: `src/main/services/llm/local-image.service.ts`
-  - Added support for multiple binary names (`sd.exe`, `sd-cli.exe`, `stable-diffusion.exe`) and improved recursive discovery logic.
 
 ---
 
@@ -453,7 +405,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ### Agent System Enhancements
 
-- [ ] **AGENT-03**: Persist rotation settings
   - Location: `src/main/services/project/agent/agent-provider-rotation.service.ts:526`
   - Save model rotation preferences per project
   - Restore settings on app restart
@@ -517,121 +468,21 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Add state rollback
   - Create state export
 
-- [x] **AGENT-10**: Add agent tool execution improvements
-  - Implement tool timeout handling
-  - Add tool retry logic
-  - Create tool execution queue
-  - Add tool dependency resolution
-  - Implement tool parallelization
-  - Add tool result caching
-  - Create tool execution logs
-  - Completed: Added tool timeouts, caching for idempotent tools, semi-parallel tool execution (3 concurrent calls), and retry logic in `ToolExecutor` and `AgentTaskExecutor`.
-
-- [x] **AGENT-11**: Implement agent context management
-  - Add context window optimization
-  - Implement context summarization
-  - Add context prioritization
-  - Create context visualization
-  - Add context export
-  - Implement context comparison
-  - Add context templates
-  - Completed: Integrated `ContextWindowService` for real-time monitoring, implemented automated history pruning/optimization, and added LLM-based summarization of truncated history.
-
-- [x] **AGENT-12**: Add agent error recovery improvements
-  - Implement automatic retry strategies
-  - Add error classification
-  - Create error recovery templates
-  - Add error notification
-  - Implement error analytics
-  - Add error prediction
-  - Create error documentation
-  - Completed: Added error categorization (timeout, rate-limit, permissions, etc.) in `ToolExecutor`, implemented exponential backoff retries, and added specific recovery advice injection for agents.
 
 ### LLM Service Improvements
 
-- [x] **LLM-02**: Implement model fallback chain
-  - Location: `src/main/services/llm/model-fallback.service.ts`
-  - Configure fallback models per provider
-  - Automatic failover on errors
-  - Circuit breaker pattern
-  - Add fallback analytics
-  - Implement fallback testing
-  - Add fallback configuration UI
-  - Create fallback recommendations
-  - Completed: `ModelFallbackService` implemented and wired into `LLMService` (`executeWithFallback`), including failover attempts, retry/backoff, circuit breaker state, attempt history/analytics, and unit tests (`src/tests/main/services/llm/model-fallback.service.test.ts`).
-
-- [x] **LLM-03**: Add response caching
-  - Cache identical requests
-  - Configurable cache TTL
-  - Cache invalidation on model change
-  - Add cache statistics
-  - Implement cache warming
-  - Add cache sharing
-  - Create cache management UI
-  - Completed: `ResponseCacheService` integrated in `LLMService.chat` with request-hash keys, TTL support, model-aware keys, and cache stats APIs.
 
 - [ ] **LLM-05**: Add multi-modal support improvements
   - Image input preprocessing
   - Audio transcription integration
   - Video frame extraction
-  - Add file type detection
-  - Implement size optimization
+  - Add file type detection ✅
+  - Implement size optimization ✅
   - Add format conversion
   - Create multi-modal preview
 
-- [x] **LLM-06**: Implement context window optimization
-  - Location: `src/main/services/llm/context-window.service.ts`
-  - Smart context truncation
-  - Important message preservation
-  - Context compression
-  - Add context preview
-  - Implement context testing
-  - Add context recommendations
-  - Create context analytics
-  - Completed: `ContextWindowService` provides token-fit checks, utilization metrics, truncation strategies, system/recent message preservation, and recommendation settings; used by LLM request flow.
 
-- [x] **LLM-07**: Add LLM provider health monitoring
-  - Location: `src/main/services/llm/ollama-health.service.ts`
-  - Implement health check scheduling
-  - Add provider status dashboard
-  - Create health alerts
-  - Add health history
-  - Implement auto-recovery
-  - Add health analytics
-  - Create health reports
-  - Completed: `OllamaHealthService` includes scheduled checks, online/offline status transitions, emitted health events/alerts, force-check support, and IPC integration for provider status.
 
-- [x] **LLM-08**: Implement LLM request queuing
-  - Location: `src/main/services/llm/multi-llm-orchestrator.service.ts`
-  - Add priority queue
-  - Implement request scheduling
-  - Add queue management UI
-  - Create queue analytics
-  - Add queue alerts
-  - Implement queue optimization
-  - Add queue testing
-  - Completed: `MultiLLMOrchestrator` implements provider queues, priority sorting, concurrency scheduling, cancellation paths, and provider queue/latency/error stats.
-
-- [x] **LLM-09**: Add LLM response streaming improvements
-  - Implement chunk buffering
-  - Add streaming error recovery
-  - Create streaming analytics
-  - Add streaming preview
-  - Implement streaming pause/resume
-  - Add streaming throttling
-  - Create streaming testing
-  - Progress: Stream error chunks now preserve partial output and append a recovery suffix instead of hard-failing; generator error fallback also preserves partial assistant content before interruption text.
-
-- [x] **LLM-10**: Implement LLM model registry improvements
-  - Location: `src/main/services/llm/model-registry.service.ts`
-  - Add model capability detection
-  - Implement model comparison
-  - Add model recommendations
-  - Create model analytics
-  - Add model alerts
-  - Implement model testing
-  - Add model documentation
-  - Completed: `ModelRegistryService` aggregates providers, infers/normalizes model capabilities, refreshes cache on schedule, emits registry update events, and has service tests.
 
 ---
 
@@ -644,85 +495,12 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ### UI/UX Improvements
 
-- [x] **UI-01**: Reimplement keyboard focus in MessageList
-  - Location: `src/renderer/features/chat/components/MessageList.tsx:73`
-  - Add arrow key navigation between messages
-  - Implement focus indicators
-  - Add message selection for actions
-  - Create focus persistence
-  - Add focus analytics
-  - Implement focus testing
-  - Add focus documentation
-  - Progress: `MessageList` now supports keyboard navigation (`ArrowUp/ArrowDown/Home/End`), focus indicators, Enter-based message selection, session focus persistence by message id, and keyboard regenerate (`R`) for focused assistant messages.
 
-- [x] **UI-02**: Split ModelSelectorModal into smaller subcomponents
-  - Location: `src/renderer/features/models/components/ModelSelectorModal.tsx:56`
-  - Create: ModelList, ModelFilters, ModelDetails
-  - Improve performance with virtualization
-  - Add component documentation
-  - Create component tests
-  - Add component examples
-  - Implement component versioning
-  - Progress: `ModelSelectorModal` has been split into dedicated subcomponents (`ModelSelectorHeader`, `ModelSelectorModeTabs`, `ModelSelectorSearch`, `ModelSelectorCategoryList`) under `components/model-selector/`, and category rendering now supports virtualization via `react-virtuoso`.
 
-- [x] **UI-03**: Implement Command Palette
-  - Currently shows "coming soon"
-  - Add keyboard shortcut (Ctrl+Shift+P)
-  - Index all available commands
-  - Add recent commands history
-  - Implement command search
-  - Add command categories
-  - Create command favorites
-  - Progress: Global Command Palette is implemented (`src/renderer/components/layout/CommandPalette.tsx`) and wired in `App.tsx` with keyboard shortcut handling (`Ctrl/Cmd+K`). Project workspace `CommandStrip` now opens it via `app:open-command-palette` event.
 
-- [x] **UI-04**: Implement list view for projects
-  - Currently shows "coming soon"
-  - Add toggle between grid and list views
-  - Include sortable columns
-  - Add bulk selection
-  - Implement list filtering
-  - Add list export
-  - Create list presets
-  - Progress: Projects page now supports real grid/list toggle with list-mode sortable columns (name/updated), existing bulk selection controls, shared search filtering, CSV export, and persistent list presets/sort/view settings.
 
-- [x] **UI-05**: Implement logs viewer
-  - Currently shows "coming soon"
-  - Real-time log streaming
-  - Filter by log level and source
-  - Export logs feature
-  - Add log search
-  - Implement log highlighting
-  - Add log analytics
-  - Progress: Project logs tab now includes live terminal-backed logs, text + level + source filtering, export to `.txt`, term highlighting, clear, auto-scroll, and level analytics counters (`ProjectLogsTab`).
 
-- [x] **UI-06**: Add keyboard shortcuts panel
-  - Display all available shortcuts
-  - Allow customization of shortcuts
-  - Import/export shortcut configurations
-  - Add shortcut categories
-  - Implement shortcut search
-  - Add shortcut testing
-  - Create shortcut documentation
-  - Progress: Keyboard shortcuts modal is fully wired and now supports searchable shortcut catalog, per-action remapping, per-action reset, full reset, JSON import/export, and runtime propagation of updated bindings through `useKeyboardShortcuts` + localStorage sync.
 
-- [x] **UI-09**: Implement chat message regenerate action
-  - Location: `src/renderer/features/chat/components/MessageActions.tsx:249`
-  - Wire regenerate button to actual retry/regenerate flow
-  - Preserve message context and selected model/provider
-  - Add loading/error state for regenerate action
-  - Add analytics event for regenerate usage
-  - Remove "coming soon" placeholder logger call
-  - Progress: Message bubble actions now include regenerate in active chat UI path, wired through `useChatManager.regenerateMessage` to resend the prior user prompt with current chat context.
-
-- [x] **UI-08**: Add drag and drop file support
-  - Drag files into chat input
-  - Drag projects to folders
-  - Drag images for multi-modal input
-  - Add drop preview
-  - Implement drop validation
-  - Add drop analytics
-  - Create drop testing
-  - Completed: Chat input drag/drop with visual drop preview (`ChatInput` + `useChatInputController` + `useAttachments`), project tree drag-to-folder move in workspace explorer (`ProjectWorkspace`), and file validation (type/size + dangerous extension checks).
 
 ### Image Generation
 
@@ -953,141 +731,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Add version sharing
   - Create version documentation
 
-### Git Integration
-
-- [x] **GIT-01**: Add git conflict resolution UI
-  - Location: `src/main/services/project/git.service.ts`
-  - Visual diff for conflicts
-  - Merge tool integration
-  - Conflict markers explanation
-  - Add conflict analytics
-  - Implement conflict testing
-  - Add conflict sharing
-  - Create conflict documentation
-  - Progress: Added advanced conflict resolution panel in `ProjectGitTab` with conflict list, status explanations, analytics summary, resolve actions (`ours`/`theirs`/manual), merge-tool launch, and JSON export path via new advanced git IPC handlers.
-
-- [x] **GIT-02**: Implement git stash management
-  - Stash list view
-  - Stash apply/pop/drop
-  - Stash with custom message
-  - Add stash search
-  - Implement stash export
-  - Add stash analytics
-  - Create stash testing
-  - Progress: Implemented stash management UI + IPC for list/create/apply/pop/drop operations, stash search, and patch export from stash refs.
-
-- [x] **GIT-03**: Add git blame integration
-  - Inline blame information
-  - Blame sidebar panel
-  - Commit details on hover
-  - Add blame analytics
-  - Implement blame testing
-  - Add blame sharing
-  - Create blame documentation
-  - Progress: Added blame tooling with file-path loading, inline line-level blame view, commit hover/details sidebar behavior, and commit detail fetch channel in advanced git panel.
-
-- [x] **GIT-04**: Implement git rebase support
-  - Interactive rebase UI
-  - Rebase conflict resolution
-  - Rebase abort/continue
-  - Add rebase analytics
-  - Implement rebase testing
-  - Add rebase sharing
-  - Create rebase documentation
-  - Progress: Added rebase status/plan/start/continue/abort IPC + UI controls, including conflict-aware rebase status and commit-plan preview in the advanced git panel.
-
-- [x] **GIT-05**: Add git submodule support
-  - Submodule status display
-  - Submodule update/init
-  - Submodule management UI
-  - Add submodule analytics
-  - Implement submodule testing
-  - Add submodule sharing
-  - Create submodule documentation
-  - Progress: Added submodule status display and management actions (init/update/update-remote/sync/add/remove) with `.gitmodules` metadata wiring.
-
-- [x] **GIT-06**: Implement git flow support
-  - Git flow templates
-  - Branch management
-  - Release management
-  - Add flow analytics
-  - Implement flow testing
-  - Add flow sharing
-  - Create flow documentation
-  - Progress: Added git-flow style helpers (status by branch type, start flow branch, finish flow branch) with template-driven branch naming in the advanced panel.
-
-- [x] **GIT-07**: Add git hooks management
-  - Hook templates
-  - Hook installation
-  - Hook testing
-  - Add hook analytics
-  - Implement hook sharing
-  - Add hook validation
-  - Create hook documentation
-  - Progress: Added hook management APIs/UI for listing installed hooks, installing templates/custom scripts, validation (shebang + executable), test execution, and hook export payload generation.
-
-- [x] **GIT-08**: Implement git statistics
-  - Commit statistics
-  - Author statistics
-  - File statistics
-  - Add statistics export
-  - Implement statistics sharing
-  - Add statistics analytics
-  - Create statistics testing
-  - Progress: Added repository statistics APIs/UI (total commits, author stats, file stats, activity map) plus CSV export for author statistics.
-
-### Code Intelligence
-
-- [x] **CODE-01**: Improve code symbol parsing
-  - Location: `src/main/services/project/code-intelligence.service.ts`
-  - Add more language support
-  - Improve parsing accuracy
-  - Add symbol relationships
-  - Implement symbol testing
-  - Add symbol analytics
-  - Create symbol documentation
-  - Add symbol visualization
-  - Progress: `CodeIntelligenceService` indexes symbols/chunks, supports TS/JS, Python, and Go parsing, and now exposes symbol analytics + relationship graph primitives (`code:getSymbolAnalytics`, `code:getSymbolRelationships`) for richer symbol intelligence.
-
-- [x] **CODE-02**: Implement code navigation
-  - Go to definition
-  - Find references
-  - Go to implementation
-  - Add navigation history
-  - Implement navigation testing
-  - Add navigation analytics
-  - Create navigation documentation
-  - Progress: Added `code:findDefinition`, `code:findReferences`, `code:findImplementations`, `code:getFileOutline`, plus navigation history controls (back/forward) in `ProjectCodeTab`.
-
-- [x] **CODE-03**: Add code refactoring support
-  - Rename symbol
-  - Extract method
-  - Move symbol
-  - Add refactoring preview
-  - Implement refactoring testing
-  - Add refactoring analytics
-  - Create refactoring documentation
-  - Progress: Added concrete rename-symbol refactor primitives with preview/apply flows (`code:previewRenameSymbol`, `code:applyRenameSymbol`) plus dashboard UI actions for safe preview-before-apply workflow.
-
-- [x] **CODE-04**: Implement code documentation generation
-  - JSDoc generation
-  - README generation
-  - API documentation
-  - Add documentation templates
-  - Implement documentation testing
-  - Add documentation analytics
-  - Create documentation sharing
-  - Progress: Added `code:generateFileDocumentation` and project-level docs summary generation (`code:generateProjectDocumentation`) with dashboard UI actions for both file and project docs previews.
-
-- [x] **CODE-05**: Add code quality analysis
-  - Complexity analysis
-  - Code smell detection
-  - Security analysis
-  - Add quality scoring
-  - Implement quality testing
-  - Add quality analytics
-  - Create quality documentation
-  - Progress: Added `code:analyzeQuality` metrics with complexity, long lines, TODO-like markers, console usage, plus security-smell detection (`eval`, `new Function`, `innerHTML`, `exec`, `shell: true`) and surfaced core metrics in the dashboard `code` tab.
 
 ---
 
@@ -1104,30 +747,10 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Add context comments for translators
   - Implement translation memory
 
-- [x] **I18N-02**: Add RTL support
-  - Implement CSS logical properties
-  - Test Arabic and Hebrew layouts
-  - Add RTL-specific icons
-
-- [x] **I18N-03**: Add locale-specific formatting
-  - Date/time formatting
-  - Number formatting
-  - Currency display
-
-- [x] **I18N-04**: Add language detection
-  - Detect system language on first run
-  - Prompt for language selection
-  - Remember language preference
-
 - [ ] **I18N-05**: Add locale-specific AI behavior
   - Model prompts in user's language
   - Locale-aware responses
   - Regional model preferences
-
-- [x] **I18N-07**: Implement pluralization
-  - Add plural rules for all languages
-  - Test plural forms
-  - Add plural documentation
 
 - [ ] **I18N-08**: Add locale-specific validation
   - Phone number validation
@@ -1148,24 +771,8 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Cache summaries per URL
   - Progress: Popup suggestion flow can trigger page-content extraction and AI summary prompts (`extension/popup/popup.js`, `extension/content/content-script.js`); URL-level summary caching is not implemented yet.
 
-- [x] **EXT-03**: Add form auto-fill
-  - Detect form fields
-  - AI-powered form filling
-  - Form data templates
-  - Completed: `FormIntelligence` implements field detection/classification, form analysis, profile-based autofill, validation extraction, and profile template storage in extension local storage.
 
-- [x] **EXT-04**: Implement page actions
-  - Quick actions menu
-  - Custom action recording
-  - Action sharing
-  - Progress: Core page actions are implemented in the content script (`extract`, `click`, `fill`, `navigate`, `findElements`, highlighting, screenshot helpers), and popup `checkForPageActions` now dispatches real `PAGE_ACTION` click requests instead of placeholder messaging.
 
-- [x] **EXT-05**: Add multi-tab operations
-  - Location: `extension/features/multi-tab.js`
-  - Batch operations across tabs
-  - Tab group management
-  - Cross-tab search
-  - Completed: `MultiTabManager` implements batch open/execute flows, tab grouping lifecycle, cross-tab searching/filtering, shared context, and multi-tab aggregation utilities.
 
 - [ ] **EXT-06**: Add extension synchronization
   - Sync settings across devices
@@ -1209,27 +816,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ---
 
-## 📅 Release Milestones
-
-### v1.3.0 (Target: Q2 2026)
-- Marketplace system MVP
-- HuggingFace model integration
-- Agent collaboration improvements
-- Performance optimizations
-
-### v1.4.0 (Target: Q3 2026)
-- Extension system beta
-- ComfyUI integration
-- SSH tunneling
-- Advanced memory features
-
-### v2.0.0 (Target: Q4 2026)
-- Plugin ecosystem
-- Collaborative sessions
-- Performance dashboard
-- Mobile companion app
-
----
 
 ## 🔧 Technical Debt
 
@@ -1277,11 +863,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
   - Keep Electron side as bridge (status/trigger)
   - Add compatibility checks for existing auth/settings flow
 
-- [x] **COPILOT-02**: Improve rate limit handling
-  - Add rate limit prediction
-  - Implement request queuing
-  - Add rate limit notifications
-  - Progress: Added bounded in-service Copilot request queue with queued notifications and queue-full protection, plus low-remaining and exhausted rate-limit notifications.
 
 ---
 
@@ -1551,16 +1132,6 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ### UI/UX Enhancements
 
-- [ ] **UI-10**: Add AI-generated custom themes
-  - Describe theme in natural language
-  - Color palette generation
-  - Dark/light mode adaptation
-  - Add theme preview
-  - Implement theme export
-  - Create theme sharing
-  - Add accessibility validation
-  - Brand color integration
-
 - [ ] **UI-11**: Implement voice-first interface option
   - Hands-free navigation
   - Voice shortcuts for common actions
@@ -1617,7 +1188,80 @@ Selected 10 small/contained tasks that are realistic to ship quickly:
 
 ---
 
-## Contributing
+## ✅ Completed Tasks
+
+Work that has been successfully implemented and verified.
+
+### 🛡️ Security & Infrastructure
+  - Progress: Unified `TokenService` performs proactive refresh checks with exponential backoff. Rust service hardened.
+  - Progress: Added Zod validation pipeline for all IPC handlers; completed database/auth/shell audits.
+  - Progress: `ModelDetailsPanel` now uses DOMPurify for `longDescriptionHtml`.
+  - Progress: Replaced string-based `exec` with `spawn/execFile` argument arrays.
+  - Progress: Command parsing now tokenizes args and uses `shell: false`.
+  - Progress: PowerShell/`unzip` now run via non-shell argument arrays.
+  - Progress: Integrated `vuln-gate.cjs` into CI pipeline.
+  - Progress: Added `.secretlintignore` for release artifacts.
+
+### 🤖 Agent & LLM Systems
+  - Progress: Added timeouts, caching, semi-parallel execution, and retry logic.
+  - Progress: Integrated `ContextWindowService` and LLM-based summarization.
+  - Progress: Added error categorization and exponential backoff retries.
+  - Progress: `ModelFallbackService` implements failover, retry/backoff, and circuit breakers.
+  - Progress: `ResponseCacheService` integrated in `LLMService.chat`.
+  - Progress: `ContextWindowService` provides smart truncation and preservation.
+  - Progress: `OllamaHealthService` implements scheduled checks and auto-recovery.
+  - Progress: `MultiLLMOrchestrator` manages priority queues and concurrency.
+  - Progress: Partial output preservation on stream errors.
+  - Progress: `ModelRegistryService` normalizes model capabilities and refreshes cache.
+
+### 🎨 UI & UX
+  - Progress: Added arrow key navigation, focus indicators, and regenerate shortcut.
+  - Progress: Modularized into `model-selector/` subcomponents with virtualization.
+  - Progress: Fully implemented and accessible via `Ctrl/Cmd+K`.
+  - Progress: Added grid/list toggle with sortable columns and CSV export.
+  - Progress: Added live terminal-backed logs with filtering and analytics.
+  - Progress: Fully interactive remap/import/export system implemented.
+  - Progress: Implemented chat input attachments and project folder moves.
+  - Progress: Wired through `useChatManager.regenerateMessage`.
+
+### 📂 Git & Source Control
+  - Progress: Advanced resolution panel with `ours`/`theirs`/manual actions.
+  - Progress: Full stash lifecycle (create/apply/pop/drop) with search.
+  - Progress: Inline and sidebar blame information implemented.
+  - Progress: Interactive rebase UI with conflict awareness.
+  - Progress: Full management (init/update/sync) actions added.
+  - Progress: Added git-flow helpers and branch type templates.
+  - Progress: Management APIs for hook templates and custom scripts.
+  - Progress: Repository-level analytics (commits/author/file) with CSV export.
+
+### 🧠 Code Intelligence
+  - Progress: Added TS/JS, Python, and Go support with relationship graphs.
+  - Progress: Definition, references, and implementions navigation added.
+  - Progress: Rename symbol primitives with preview/apply workflow.
+  - Progress: JSDoc and README generation for files and projects.
+  - Progress: Complexity, code smell, and security-smell detection implemented.
+
+### 🐛 Bugs & Resolved Issues
+  - Progress: Resolved crashes in Marketplace and Model hooks via defensive array checks.
+  - Progress: Added support for multiple binary names and improved recursive discovery.
+
+### 🌐 Internationalization & Browser Extension
+  - Progress: Implemented CSS logical properties and tested RTL layouts.
+  - Progress: Date/time, number, and currency formatting added.
+  - Progress: Detects system language and prompts user on first run.
+  - Progress: Added plural rules and forms for all supported languages.
+  - Progress: `FormIntelligence` implements field detection and profile-based autofill.
+  - Progress: `MultiTabManager` handles batch operations and cross-tab search.
+
+### � Documentation
+  - Progress: Added Table of Contents, restructured Quick Wins, and archived completed tasks.
+
+### �🛠️ Service-Specific & Other
+  - Progress: Added bounded request queue with notifications and queue-full protection.
+
+---
+
+## 🤝 Contributing
 
 When picking up a task from this list:
 1. Create a branch with the task ID (e.g., `feature/MKT-INFRA-01`)
@@ -1628,3 +1272,4 @@ When picking up a task from this list:
 ---
 
 *This document is automatically updated. Do not edit manually without updating the tracking system.*
+

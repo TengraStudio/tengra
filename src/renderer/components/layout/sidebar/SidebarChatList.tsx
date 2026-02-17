@@ -1,5 +1,5 @@
 import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
-import React, { useLayoutEffect,useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 
 import { Chat, Folder } from '@/types';
 
@@ -20,6 +20,7 @@ interface SidebarChatListProps {
     deleteFolder: (id: string) => void;
     createFolder: (name: string) => void;
     renderChatItem: (chat: Chat) => React.ReactNode;
+    onClearAll?: () => void;
 }
 
 export const SidebarChatList = React.memo(
@@ -38,6 +39,7 @@ export const SidebarChatList = React.memo(
         deleteFolder,
         createFolder,
         renderChatItem,
+        onClearAll,
     }: SidebarChatListProps) => {
         // Preserve scroll position across re-renders
         const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -143,9 +145,20 @@ export const SidebarChatList = React.memo(
                     {recentChats.length > 0 && (
                         <div>
                             {!isCollapsed && (
-                                <p className="px-2 py-1 text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider">
-                                    {t('sidebar.recent')}
-                                </p>
+                                <div className="flex items-center justify-between px-2 py-1">
+                                    <p className="text-xxs font-semibold text-muted-foreground/50 uppercase tracking-wider">
+                                        {t('sidebar.recent')}
+                                    </p>
+                                    {onClearAll && (
+                                        <button
+                                            onClick={onClearAll}
+                                            className="text-xxs text-muted-foreground/40 hover:text-destructive transition-colors"
+                                            title={t('sidebar.clearHistory')}
+                                        >
+                                            {t('sidebar.clearHistory')}
+                                        </button>
+                                    )}
+                                </div>
                             )}
                             <div className="space-y-0.5">
                                 {recentChats.map(chat => (

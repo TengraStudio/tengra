@@ -1,6 +1,30 @@
 # 更新日志
 
+## [2026-02-18]
+
+### Sidebar Enhancements: Accessibility and Clear History
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.
+
+- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.
+- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.
+- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.
+- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management.
+
 ## [2026-02-17]
+
+### Comprehensive TODO List Reorganization
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.
+
+- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.
+- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.
+- **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.
+- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories.
 
 ### Token Rotation Hardening (SEC-001)
 
