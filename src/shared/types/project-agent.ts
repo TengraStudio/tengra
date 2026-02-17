@@ -106,6 +106,66 @@ export interface PlanCostBreakdown {
     provider: string;
 }
 
+// ===== AGENT-08: Performance Metrics Types =====
+
+/** AGENT-08.3: Error rate monitoring */
+export interface AgentErrorMetrics {
+    totalErrors: number;
+    errorRate: number; // Percentage (0-100)
+    errorsByType: Record<string, number>;
+    recentErrors: Array<{
+        timestamp: number;
+        type: string;
+        message: string;
+        stepId?: string;
+    }>;
+    lastErrorAt?: number;
+}
+
+/** AGENT-08.4: Resource usage tracking */
+export interface AgentResourceMetrics {
+    /** Memory usage in MB */
+    memoryUsageMb: number;
+    /** Peak memory usage in MB */
+    peakMemoryMb: number;
+    /** CPU usage percentage (0-100) */
+    cpuUsagePercent: number;
+    /** Total execution time in ms */
+    totalExecutionTimeMs: number;
+    /** Number of API calls made */
+    apiCallCount: number;
+    /** Total tokens consumed */
+    totalTokensUsed: number;
+    /** Total cost in USD */
+    totalCostUsd: number;
+}
+
+/** AGENT-08: Complete performance metrics */
+export interface AgentPerformanceMetrics {
+    taskId: string;
+    /** Task completion rate (0-100) */
+    completionRate: number;
+    /** Average step execution time in ms */
+    avgStepExecutionTimeMs: number;
+    /** Total steps completed */
+    stepsCompleted: number;
+    /** Total steps failed */
+    stepsFailed: number;
+    /** Error metrics */
+    errors: AgentErrorMetrics;
+    /** Resource usage metrics */
+    resources: AgentResourceMetrics;
+    /** Performance alerts */
+    alerts: Array<{
+        type: 'error_rate' | 'resource_usage' | 'slow_execution' | 'cost_threshold';
+        severity: 'low' | 'medium' | 'high' | 'critical';
+        message: string;
+        timestamp: number;
+    }>;
+    /** Last updated timestamp */
+    lastUpdatedAt: number;
+}
+
 export interface ProjectState {
     status:
     | 'idle'
@@ -137,6 +197,8 @@ export interface ProjectState {
     estimatedPlanCost?: PlanCostBreakdown;
     /** Actual cost after plan execution */
     actualPlanCost?: PlanCostBreakdown;
+    /** AGENT-08: Performance metrics */
+    performanceMetrics?: AgentPerformanceMetrics;
 }
 
 export interface AgentStartOptions {
@@ -176,6 +238,8 @@ export interface AgentTaskHistoryItem {
     createdAt: number;
     updatedAt: number;
     latestCheckpointId?: string;
+    /** AGENT-08: Performance metrics summary */
+    performanceMetrics?: AgentPerformanceMetrics;
 }
 
 export type AgentCheckpointTrigger =

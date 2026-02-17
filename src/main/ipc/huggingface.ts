@@ -198,16 +198,23 @@ export function registerHFModelIpc(llmService: LLMService, hfService: HuggingFac
     ));
 
     ipcMain.handle('hf:download-file', createIpcHandler('hf:download-file',
-        async (event: IpcMainInvokeEvent, urlRaw: unknown, outputPathRaw: unknown, expectedSizeRaw: unknown, expectedSha256Raw: unknown, scheduleAtRaw: unknown) => {
-            const url = validateUrl(urlRaw);
-            const outputPath = validatePath(outputPathRaw);
+        async (event: IpcMainInvokeEvent, paramsRaw: unknown) => {
+            const params = paramsRaw as {
+                url: unknown;
+                outputPath: unknown;
+                expectedSize: unknown;
+                expectedSha256: unknown;
+                scheduleAt: unknown;
+            };
+            const url = validateUrl(params.url);
+            const outputPath = validatePath(params.outputPath);
             if (!url || !outputPath) {
                 throw new Error('Invalid URL or output path');
             }
-            const expectedSize = validateFileSize(expectedSizeRaw);
-            const expectedSha256 = validateSha256(expectedSha256Raw);
-            const scheduleAtMs = typeof scheduleAtRaw === 'number' && Number.isFinite(scheduleAtRaw)
-                ? scheduleAtRaw
+            const expectedSize = validateFileSize(params.expectedSize);
+            const expectedSha256 = validateSha256(params.expectedSha256);
+            const scheduleAtMs = typeof params.scheduleAt === 'number' && Number.isFinite(params.scheduleAt)
+                ? params.scheduleAt
                 : undefined;
             appLogger.info('HuggingFaceIPC', `Downloading file to ${outputPath}`);
             return await hfService.downloadFile(url, outputPath, {

@@ -49,6 +49,7 @@ import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
 import { registerWindowIpc } from '@main/ipc/window';
+import { registerWorkflowIpc } from '@main/ipc/workflow';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
 import { Services } from '@main/startup/services';
@@ -230,6 +231,9 @@ export function registerIpcHandlers(
         marketplaceService: services.marketplaceService,
         rateLimitService: services.rateLimitService,
     });
+
+    // Workflow Automation
+    registerWorkflowIpc(services.workflowService);
 
     // Register Batch IPC
     registerBatchIpc();

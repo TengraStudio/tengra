@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-17T18:33:36.856Z",
+  "generatedAt": "2026-02-17T20:26:56.683Z",
   "locales": [
     "en",
     "tr",
@@ -107,6 +107,113 @@
             "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
             "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
             "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-17-agent-performance-metrics",
+      "date": "2026-02-17",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Agent",
+        "Performance",
+        "Monitoring"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "tr": {
+          "title": "Otonom Ajan Performans Metrikleri (AGENT-08)",
+          "summary": "Hata oranı izleme ve kaynak kullanım metrikleri ile otonom ajanlar için kapsamlı performans izleme uygulandı.",
+          "items": [
+            "- **AGENT-08.3**: Yüksek hata eşikleri için otomatik uyarı ile hata oranı izleme eklendi (>%25 uyarı, >%50 kritik).",
+            "- **AGENT-08.4**: Bellek, CPU, API çağrıları, token'lar ve maliyetler için yapılandırılabilir uyarılarla kaynak kullanım takibi uygulandı.",
+            "- **Metrik Servisi**: Tamamlanma oranlarını, yürütme sürelerini izlemek ve performans uyarıları oluşturmak için `AgentPerformanceService` oluşturuldu.",
+            "- **Entegrasyon**: Geçmiş analiz için performans metrikleri `ProjectState` ve `AgentTaskHistoryItem` içine entegre edildi.",
+            "- **Otomatik İzleme**: Aktif ajan görevleri için her 5 saniyede bir arka plan kaynak izleme eklendi."
+          ]
+        },
+        "de": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "fr": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "es": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "ja": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "zh": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
+          ]
+        },
+        "ar": {
+          "title": "Agent Performance Metrics (AGENT-08)",
+          "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+          "items": [
+            "- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).",
+            "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+            "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+            "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.",
+            "- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks."
           ]
         }
       }

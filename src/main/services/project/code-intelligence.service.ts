@@ -630,6 +630,43 @@ export class CodeIntelligenceService {
         return this.findUsage(rootPath, symbol);
     }
 
+    /**
+     * Scans a single file for implementation patterns
+     * @param filePath Path to the file to scan
+     * @param patterns Patterns to search for
+     * @param symbolName Name of the symbol being searched
+     * @returns Array of search results found in this file
+     */
+    private async scanFileForImplementations(
+        filePath: string,
+        patterns: Array<{ type: string; regex: RegExp }>,
+        symbolName: string
+    ): Promise<FileSearchResult[]> {
+        const results: FileSearchResult[] = [];
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const lines = content.split(/\r?\n/);
+            for (let index = 0; index < lines.length; index++) {
+                const line = lines[index] ?? '';
+                for (const pattern of patterns) {
+                    if (pattern.regex.test(line)) {
+                        results.push({
+                            file: filePath,
+                            line: index + 1,
+                            text: line.trim(),
+                            type: pattern.type,
+                            name: symbolName,
+                        });
+                        break;
+                    }
+                }
+            }
+        } catch {
+            // best-effort scan
+        }
+        return results;
+    }
+
     async findImplementations(rootPath: string, symbol: string): Promise<FileSearchResult[]> {
         const trimmed = symbol.trim();
         if (!trimmed) {
@@ -652,27 +689,8 @@ export class CodeIntelligenceService {
 
         const results: FileSearchResult[] = [];
         for (const filePath of candidates) {
-            try {
-                const content = await fs.readFile(filePath, 'utf-8');
-                const lines = content.split(/\r?\n/);
-                for (let index = 0; index < lines.length; index++) {
-                    const line = lines[index] ?? '';
-                    for (const pattern of patterns) {
-                        if (pattern.regex.test(line)) {
-                            results.push({
-                                file: filePath,
-                                line: index + 1,
-                                text: line.trim(),
-                                type: pattern.type,
-                                name: trimmed,
-                            });
-                            break;
-                        }
-                    }
-                }
-            } catch {
-                // best-effort scan
-            }
+            const fileResults = await this.scanFileForImplementations(filePath, patterns, trimmed);
+            results.push(...fileResults);
         }
 
         const seen = new Set<string>();
@@ -976,6 +994,45 @@ export class CodeIntelligenceService {
         }
     }
 
+    /**
+     * Scans a file for security issues
+     * @param filePath Path to the file being scanned
+     * @param lines Array of lines from the file
+     * @returns Object containing issue count and findings
+     */
+    private scanFileForSecurityIssues(
+        filePath: string,
+        lines: string[]
+    ): { issueCount: number; findings: Array<{ file: string; line: number; rule: string; snippet: string }> } {
+        const securityRules: Array<{ rule: string; pattern: RegExp }> = [
+            { rule: 'unsafe-eval', pattern: /\beval\s*\(/ },
+            { rule: 'unsafe-new-function', pattern: /\bnew\s+Function\s*\(/ },
+            { rule: 'unsafe-inner-html', pattern: /\.innerHTML\s*=/ },
+            { rule: 'unsafe-child-process-exec', pattern: /\bexec\s*\(/ },
+            { rule: 'unsafe-shell-true', pattern: /shell\s*:\s*true/ },
+        ];
+
+        let issueCount = 0;
+        const findings: Array<{ file: string; line: number; rule: string; snippet: string }> = [];
+
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index] ?? '';
+            for (const rule of securityRules) {
+                if (rule.pattern.test(line)) {
+                    issueCount += 1;
+                    findings.push({
+                        file: filePath,
+                        line: index + 1,
+                        rule: rule.rule,
+                        snippet: line.trim().slice(0, 200),
+                    });
+                }
+            }
+        }
+
+        return { issueCount, findings };
+    }
+
     async analyzeCodeQuality(rootPath: string, maxFiles: number = 300): Promise<CodeQualityAnalysis> {
         const safeMaxFiles = Number.isFinite(maxFiles) && maxFiles > 0
             ? Math.min(Math.trunc(maxFiles), 3000)
@@ -1011,29 +1068,9 @@ export class CodeIntelligenceService {
                 longLineCount += lines.filter(line => line.length > 120).length;
                 todoLikeCount += lines.filter(line => /(TODO|FIXME|HACK|XXX)/i.test(line)).length;
                 consoleUsageCount += lines.filter(line => /console\.(log|warn|error|debug)\s*\(/.test(line)).length;
-                const securityRules: Array<{ rule: string; pattern: RegExp }> = [
-                    { rule: 'unsafe-eval', pattern: /\beval\s*\(/ },
-                    { rule: 'unsafe-new-function', pattern: /\bnew\s+Function\s*\(/ },
-                    { rule: 'unsafe-inner-html', pattern: /\.innerHTML\s*=/ },
-                    { rule: 'unsafe-child-process-exec', pattern: /\bexec\s*\(/ },
-                    { rule: 'unsafe-shell-true', pattern: /shell\s*:\s*true/ },
-                ];
-                for (let index = 0; index < lines.length; index++) {
-                    const line = lines[index] ?? '';
-                    for (const rule of securityRules) {
-                        if (rule.pattern.test(line)) {
-                            securityIssueCount += 1;
-                            if (securityFindings.length < 200) {
-                                securityFindings.push({
-                                    file: filePath,
-                                    line: index + 1,
-                                    rule: rule.rule,
-                                    snippet: line.trim().slice(0, 200),
-                                });
-                            }
-                        }
-                    }
-                }
+                const fileSecurityResults = this.scanFileForSecurityIssues(filePath, lines);
+                securityIssueCount += fileSecurityResults.issueCount;
+                securityFindings.push(...fileSecurityResults.findings.slice(0, 200 - securityFindings.length));
                 complexityTotal += complexity;
                 complexityByFile.push({ file: filePath, complexity });
             } catch {

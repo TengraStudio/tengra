@@ -160,7 +160,7 @@ function checkTaskTimeout(state: AgentTaskState): AgentState {
     // Check for recovery state timeout - prevent stuck in recovering
     if (state.state === 'recovering') {
         const lastEvent = state.eventHistory[state.eventHistory.length - 1];
-        if (lastEvent && lastEvent.timestamp) {
+        if (lastEvent?.timestamp) {
             const timeInRecovery = new Date().getTime() - lastEvent.timestamp.getTime();
             if (timeInRecovery > RECOVERY_TIMEOUT_MS) {
                 appLogger.warn('AgentStateMachine', `Recovery timeout for task ${state.taskId} after ${RECOVERY_TIMEOUT_MS}ms`);

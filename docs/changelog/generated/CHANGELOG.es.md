@@ -15,6 +15,18 @@
 
 ## [2026-02-17]
 
+### Agent Performance Metrics (AGENT-08)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.
+
+- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).
+- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.
+- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.
+- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.
+- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks.
+
 ### Copilot Token Refresh Refactor
 
 - **Type**: refactor

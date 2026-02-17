@@ -458,7 +458,7 @@ export class HuggingFaceService extends BaseService {
                 resolve,
                 run: async () => this.executeDownload(url, outputPath, options)
             });
-            this.processDownloadQueue();
+            void this.processDownloadQueue();
         });
     }
 
@@ -976,7 +976,12 @@ export class HuggingFaceService extends BaseService {
 
             const canParallel = expectedSize > 10 * 1024 * 1024 && parallelChunks > 1;
             if (canParallel) {
-                const parallelRes = await this.downloadFileParallel(url, outputPath, expectedSize, parallelChunks, onProgress, signal);
+                const parallelRes = await this.downloadFileParallel(url, outputPath, {
+                    expectedSize,
+                    chunkCount: parallelChunks,
+                    onProgress,
+                    signal
+                });
                 if (!parallelRes.success) {
                     return parallelRes;
                 }
@@ -1070,11 +1075,14 @@ export class HuggingFaceService extends BaseService {
     private async downloadFileParallel(
         url: string,
         outputPath: string,
-        expectedSize: number,
-        chunkCount: number,
-        onProgress?: (received: number, total: number) => void,
-        signal?: AbortSignal
+        options: {
+            expectedSize: number;
+            chunkCount: number;
+            onProgress?: (received: number, total: number) => void;
+            signal?: AbortSignal;
+        }
     ): Promise<{ success: boolean; error?: string }> {
+        const { expectedSize, chunkCount, onProgress, signal } = options;
         const fs = await import('fs/promises');
         const streamFs = await import('fs');
         const path = await import('path');
@@ -1094,14 +1102,20 @@ export class HuggingFaceService extends BaseService {
                     continue;
                 }
                 const partPath = path.join(tempDir, `${i}.part`);
-                tasks.push(this.downloadChunk(url, start, end, partPath, (chunkReceived) => {
-                    progressByChunk.set(i, chunkReceived);
-                    completedBytes = 0;
-                    for (const value of progressByChunk.values()) {
-                        completedBytes += value;
-                    }
-                    onProgress?.(completedBytes, expectedSize);
-                }, signal));
+                tasks.push(this.downloadChunk(url, {
+                    start,
+                    end,
+                    outputPath: partPath,
+                    onProgress: (chunkReceived) => {
+                        progressByChunk.set(i, chunkReceived);
+                        completedBytes = 0;
+                        for (const value of progressByChunk.values()) {
+                            completedBytes += value;
+                        }
+                        onProgress?.(completedBytes, expectedSize);
+                    },
+                    signal
+                }));
             }
 
             await Promise.all(tasks);
@@ -1132,12 +1146,15 @@ export class HuggingFaceService extends BaseService {
 
     private async downloadChunk(
         url: string,
-        start: number,
-        end: number,
-        outputPath: string,
-        onProgress: (received: number) => void,
-        signal?: AbortSignal
+        options: {
+            start: number;
+            end: number;
+            outputPath: string;
+            onProgress: (received: number) => void;
+            signal?: AbortSignal;
+        }
     ): Promise<void> {
+        const { start, end, outputPath, onProgress, signal } = options;
         const fs = await import('fs');
         const response = await fetch(url, {
             headers: { Range: `bytes=${start}-${end}` },

@@ -12,6 +12,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
 
+import { promptDialog } from '../utils/dialog';
+
 import { TerminalConnectionSelector } from './TerminalConnectionSelector';
 
 import './TerminalPanel.css';
@@ -154,7 +156,7 @@ export const TerminalPanel: React.FC = () => {
         if (!current) {
             return;
         }
-        const next = window.prompt(t('terminal.renamePrompt') || 'New terminal name', current.title);
+        const next = promptDialog(t('terminal.renamePrompt') || 'New terminal name', current.title);
         if (!next?.trim() || next.trim() === current.title) {
             return;
         }

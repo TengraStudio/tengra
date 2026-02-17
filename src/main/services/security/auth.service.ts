@@ -745,7 +745,7 @@ export class AuthService extends BaseService {
             withSessionToken: accounts.filter(a => !!a.sessionToken).length,
             expiringWithin30m: accounts.filter(a => !!a.expiresAt && a.expiresAt > now && (a.expiresAt - now) < 30 * 60 * 1000).length,
             expired: accounts.filter(a => this.isExpired(a)).length,
-            revoked: accounts.filter(a => Boolean((a.metadata ?? {}).revokedAt)).length
+            revoked: accounts.filter(a => Boolean(a.metadata?.revokedAt)).length
         };
     }
 

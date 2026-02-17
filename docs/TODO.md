@@ -75,8 +75,8 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [ ] **MEM-06.4**: Add search suggestions for memory search
 - [ ] **IMG-02.1**: Store generated images with metadata
 - [ ] **IMG-04.5**: Add gallery search
-- [ ] **AGENT-08.3**: Error rate monitoring for agents
-- [ ] **AGENT-08.4**: Resource usage tracking for agents
+- [x] **AGENT-08.3**: Error rate monitoring for agents
+- [x] **AGENT-08.4**: Resource usage tracking for agents
 
 
 ---
@@ -482,6 +482,113 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement state debugging
   - Add state rollback
   - Create state export
+
+### MCP Tools (Model Context Protocol)
+
+- [ ] **MCP-WORKFLOW-01**: Workflow automation tools (6 tools)
+  - workflow_create - Create workflows with triggers/actions
+  - workflow_execute - Execute workflows with context
+  - workflow_list - List all workflows with filtering
+  - workflow_get - Get workflow details by ID
+  - workflow_update - Update existing workflows
+  - workflow_delete - Delete workflows
+
+- [ ] **MCP-AI-01**: AI/ML operations tools (8 tools)
+  - model_benchmark - Benchmark models on tasks
+  - model_compare - Compare model outputs
+  - embedding_generate - Generate text/code embeddings
+  - embedding_search - Search using embeddings
+  - prompt_optimize - Optimize prompts
+  - context_compress - Compress long context
+  - token_estimate - Estimate token counts
+  - model_fallback - Auto-fallback on failure
+
+- [ ] **MCP-DEV-01**: Development & code tools (10 tools)
+  - code_refactor - Suggest refactoring
+  - code_review - Automated code review
+  - dependency_analyze - Analyze dependencies
+  - test_generate - Generate unit tests
+  - docs_generate - Generate documentation
+  - api_scaffold - Scaffold API endpoints
+  - migration_create - Create DB migrations
+  - lint_fix - Auto-fix linting errors
+  - type_infer - Infer TypeScript types
+  - dead_code_detect - Find unused code
+
+- [ ] **MCP-MONITOR-01**: System monitoring tools (7 tools)
+  - performance_profile - Profile performance
+  - memory_analyze - Analyze memory usage
+  - cpu_monitor - Monitor CPU usage
+  - network_trace - Trace network requests
+  - log_analyze - Analyze logs
+  - health_check - Run health checks
+  - resource_alert - Set resource alerts
+
+- [ ] **MCP-SECURITY-01**: Security & audit tools (6 tools)
+  - security_scan - Scan for vulnerabilities
+  - secret_detect - Detect hardcoded secrets
+  - permission_audit - Audit permissions
+  - dependency_audit - Audit dependencies
+  - compliance_check - Check compliance
+  - encryption_manage - Manage encryption
+
+- [ ] **MCP-DATA-01**: Data processing tools (8 tools)
+  - csv_parse - Parse CSV files
+  - json_transform - Transform JSON data
+  - xml_convert - Convert XML/JSON
+  - data_validate - Validate against schema
+  - data_merge - Merge data sources
+  - data_deduplicate - Remove duplicates
+  - data_export - Export in formats
+  - regex_test - Test regex patterns
+
+- [ ] **MCP-COLLAB-01**: Collaboration tools (5 tools)
+  - issue_create - Create issues
+  - pr_create - Create pull requests
+  - comment_add - Add comments
+  - notification_send - Send notifications
+  - meeting_schedule - Schedule meetings
+
+- [ ] **MCP-DB-01**: Database & storage tools (6 tools)
+  - db_query - Execute queries safely
+  - db_backup - Backup database
+  - db_restore - Restore from backup
+  - db_migrate - Run migrations
+  - cache_clear - Clear caches
+  - storage_optimize - Optimize storage
+
+- [ ] **MCP-DEVOPS-01**: DevOps & deployment tools (7 tools)
+  - docker_build - Build Docker images
+  - docker_deploy - Deploy containers
+  - k8s_deploy - Deploy to Kubernetes
+  - env_manage - Manage env variables
+  - secret_rotate - Rotate secrets
+  - rollback_execute - Rollback deployment
+  - pipeline_trigger - Trigger CI/CD
+
+- [ ] **MCP-MEDIA-01**: Content & media tools (5 tools)
+  - image_optimize - Optimize images
+  - image_resize - Batch resize images
+  - pdf_generate - Generate PDFs
+  - markdown_convert - Convert markdown
+  - screenshot_capture - Capture screenshots
+
+- [ ] **MCP-DOMAIN-01**: Specialized domain tools (8 tools)
+  - blockchain_query - Query blockchain
+  - crypto_price - Get crypto prices
+  - weather_get - Get weather info
+  - translate_text - Translate text
+  - sentiment_analyze - Analyze sentiment
+  - ocr_extract - Extract text from images
+  - speech_to_text - Convert speech
+  - text_to_speech - Convert text
+
+- [ ] **MCP-AGENT-01**: Agent & workflow integration (5 tools)
+  - agent_create - Create agent profile
+  - agent_execute - Execute agent task
+  - agent_status - Get task status
+  - workflow_from_task - Convert task to workflow
+  - workflow_schedule - Schedule workflow
 
 
 ### LLM Service Improvements

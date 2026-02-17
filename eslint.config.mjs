@@ -107,5 +107,12 @@ export default tseslint.config(
             '@typescript-eslint/no-non-null-assertion': 'off',
             'no-empty': 'off'
         }
+    },
+
+    {
+        files: ['**/utils/dialog.ts'],
+        rules: {
+            'no-alert': 'off'
+        }
     }
 );

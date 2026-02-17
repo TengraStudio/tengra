@@ -47,7 +47,7 @@ import { MarketplaceService } from '@main/services/llm/marketplace.service';
 import { MemoryService } from '@main/services/llm/memory.service';
 import { ModelCollaborationService } from '@main/services/llm/model-collaboration.service';
 import { ModelDownloaderService } from '@main/services/llm/model-downloader.service';
-import { ModelFallbackService,modelFallbackService } from '@main/services/llm/model-fallback.service';
+import { ModelFallbackService, modelFallbackService } from '@main/services/llm/model-fallback.service';
 import {
     ModelRegistryDependencies,
     ModelRegistryService,
@@ -65,6 +65,7 @@ import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.servic
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
 import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
+import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
 import { AgentPersistenceService } from '@main/services/project/agent/agent-persistence.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
@@ -109,6 +110,7 @@ import { ThemeService } from '@main/services/theme/theme.service';
 import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
+import { WorkflowService } from '@main/services/workflow/workflow.service';
 import { JsonObject } from '@shared/types/common';
 
 // Export the container instance so it can be accessed if needed
@@ -193,6 +195,7 @@ export interface Services {
     agentRegistryService: AgentRegistryService;
     agentPersistenceService: AgentPersistenceService;
     agentCheckpointService: AgentCheckpointService;
+    agentPerformanceService: AgentPerformanceService;
     exportService: ExportService;
     mcpPluginService: McpPluginService;
     mcpMarketplaceService: McpMarketplaceService;
@@ -204,6 +207,7 @@ export interface Services {
     terminalSmartService: TerminalSmartService;
     marketplaceService: MarketplaceService;
     modelDownloaderService: ModelDownloaderService;
+    workflowService: WorkflowService;
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
@@ -756,10 +760,11 @@ function registerProjectServices() {
         dbs => new AgentTemplateService({ database: dbs as DatabaseService }),
         ['databaseService']
     );
+    container.register('agentPerformanceService', () => new AgentPerformanceService());
     container.register(
         'projectAgentService',
         (...deps) => {
-            const [dbs, ls, ebs, ars, acs, gs, col, tpl] = deps;
+            const [dbs, ls, ebs, ars, acs, gs, col, tpl, perf] = deps;
             return new ProjectAgentService({
                 databaseService: dbs as DatabaseService,
                 llmService: ls as LLMService,
@@ -769,6 +774,7 @@ function registerProjectServices() {
                 gitService: gs as GitService,
                 agentCollaborationService: col as AgentCollaborationService,
                 agentTemplateService: tpl as AgentTemplateService,
+                agentPerformanceService: perf as AgentPerformanceService,
             });
         },
         [
@@ -780,6 +786,7 @@ function registerProjectServices() {
             'gitService',
             'agentCollaborationService',
             'agentTemplateService',
+            'agentPerformanceService',
         ]
     );
     container.register(
@@ -877,6 +884,15 @@ function registerAnalysisServices() {
     ]);
     container.register('collaborationService', () => new CollaborationService());
     container.register('exportService', () => new ExportService());
+    container.register(
+        'workflowService',
+        (llmService, projectAgentService) =>
+            new WorkflowService({
+                llmService: llmService as LLMService,
+                projectAgentService: projectAgentService as ProjectAgentService,
+            }),
+        ['llmService', 'projectAgentService']
+    );
 }
 
 function registerMcpServices() {
@@ -1038,6 +1054,8 @@ function buildServicesMap(
         agentPersistenceService:
             container.resolve<AgentPersistenceService>('agentPersistenceService'),
         agentCheckpointService: container.resolve<AgentCheckpointService>('agentCheckpointService'),
+        agentPerformanceService:
+            container.resolve<AgentPerformanceService>('agentPerformanceService'),
         projectAgentService: container.resolve<ProjectAgentService>('projectAgentService'),
         multiAgentOrchestratorService: container.resolve<MultiAgentOrchestratorService>(
             'multiAgentOrchestratorService'
@@ -1055,6 +1073,7 @@ function buildServicesMap(
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
         marketplaceService: createLazyServiceProxy<MarketplaceService>('marketplaceService'),
         modelDownloaderService: container.resolve<ModelDownloaderService>('modelDownloaderService'),
+        workflowService: container.resolve<WorkflowService>('workflowService'),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor
     };
 }

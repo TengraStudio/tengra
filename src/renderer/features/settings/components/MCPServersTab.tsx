@@ -23,8 +23,8 @@ interface MCPServer {
 interface ServerItemProps {
     server: MCPServer
     t: (key: string, options?: Record<string, string | number>) => string
-    handleToggle: (serverId: string, currentEnabled: boolean, isInternal: boolean) => Promise<void>
-    handleDelete: (serverId: string, isInternal: boolean) => Promise<void>
+    handleToggle: (serverId: string, currentEnabled: boolean, isInternal: boolean) => void
+    handleDelete: (serverId: string, isInternal: boolean) => void
     handleEdit: (server: MCPServer) => void
 }
 
@@ -91,7 +91,7 @@ const ServerItem: React.FC<ServerItemProps> = ({ server, t, handleToggle, handle
 
             <div className="flex items-center gap-3">
                 <button
-                    onClick={() => { void handleToggle(server.id, server.enabled ?? false, isInternal); }}
+                    onClick={() => { handleToggle(server.id, server.enabled ?? false, isInternal); }}
                     disabled={isInternal}
                     className={cn(
                         'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all',
@@ -128,7 +128,7 @@ const ServerItem: React.FC<ServerItemProps> = ({ server, t, handleToggle, handle
                             <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                            onClick={() => { void handleDelete(server.id, isInternal); }}
+                            onClick={() => { handleDelete(server.id, isInternal); }}
                             className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
                             title={t('common.delete')}
                         >
@@ -331,9 +331,9 @@ export const MCPServersTab = () => {
                             key={server.id}
                             server={server}
                             t={t}
-                            handleToggle={handleToggle}
-                            handleDelete={handleDelete}
-                            handleEdit={handleEdit}
+                            handleToggle={(serverId, currentEnabled, isInternal) => { void handleToggle(serverId, currentEnabled, isInternal); }}
+                            handleDelete={(serverId, isInternal) => { void handleDelete(serverId, isInternal); }}
+                            handleEdit={(server) => { void handleEdit(server); }}
                         />
                     ))}
 

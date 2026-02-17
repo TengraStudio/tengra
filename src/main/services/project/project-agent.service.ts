@@ -3,6 +3,7 @@ import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { AgentCollaborationService } from '@main/services/project/agent/agent-collaboration.service';
+import { AgentPerformanceService } from '@main/services/project/agent/agent-performance.service';
 import { AgentRegistryService } from '@main/services/project/agent/agent-registry.service';
 import { AgentTemplateService } from '@main/services/project/agent/agent-template.service';
 import { GitService } from '@main/services/project/git.service';
@@ -44,6 +45,7 @@ interface ProjectAgentServiceDependencies {
     gitService: GitService;
     agentCollaborationService: AgentCollaborationService;
     agentTemplateService: AgentTemplateService;
+    agentPerformanceService: AgentPerformanceService;
 }
 
 const TASK_PRIORITY_SCORE: Record<TaskPriority, number> = {
@@ -65,6 +67,7 @@ export class ProjectAgentService extends BaseService {
     private readonly gitService: GitService;
     private readonly agentCollaborationService: AgentCollaborationService;
     private readonly agentTemplateService: AgentTemplateService;
+    private readonly agentPerformanceService: AgentPerformanceService;
     private readonly activeExecutionTaskIds = new Set<string>();
     private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
     private readonly maxConcurrentExecutionTasks = 3;
@@ -80,6 +83,7 @@ export class ProjectAgentService extends BaseService {
         this.gitService = deps.gitService;
         this.agentCollaborationService = deps.agentCollaborationService;
         this.agentTemplateService = deps.agentTemplateService;
+        this.agentPerformanceService = deps.agentPerformanceService;
     }
 
     setToolExecutor(toolExecutor: ToolExecutor) {
@@ -256,6 +260,11 @@ export class ProjectAgentService extends BaseService {
             } catch (error) {
                 this.activeExecutionTaskIds.delete(nextTask.taskId);
                 this.logError(`Failed to start queued task ${nextTask.taskId}`, error as Error);
+                // Record error in performance metrics
+                this.agentPerformanceService.recordError(nextTask.taskId, {
+                    type: 'execution_start_failed',
+                    message: (error as Error).message || 'Unknown error'
+                });
             }
         }
     }
@@ -264,6 +273,10 @@ export class ProjectAgentService extends BaseService {
 
     public getCurrentTaskId(): string | null {
         return this.currentTaskId;
+    }
+
+    public getPerformanceService(): AgentPerformanceService {
+        return this.agentPerformanceService;
     }
 
     async start(options: AgentStartOptions): Promise<void> {
@@ -281,6 +294,8 @@ export class ProjectAgentService extends BaseService {
 
         this.currentTaskId = taskId;
 
+        // Initialize performance metrics for the new task
+        this.agentPerformanceService.initializeMetrics(taskId);
         const executor = await this.getOrCreateExecutor(taskId, options);
         const canStartNow = await this.scheduleExecutionStart(taskId, options.priority);
         if (canStartNow) {
@@ -288,6 +303,11 @@ export class ProjectAgentService extends BaseService {
                 await executor.start();
             } catch (error) {
                 this.activeExecutionTaskIds.delete(taskId);
+                // Record error in performance metrics
+                this.agentPerformanceService.recordError(taskId, {
+                    type: 'task_start_failed',
+                    message: (error as Error).message || 'Unknown error'
+                });
                 throw error;
             }
         }
@@ -307,6 +327,8 @@ export class ProjectAgentService extends BaseService {
 
         this.currentTaskId = taskId;
 
+        // Initialize performance metrics for the new task
+        this.agentPerformanceService.initializeMetrics(taskId);
         const executor = await this.getOrCreateExecutor(taskId, options);
         await executor.generatePlan();
     }

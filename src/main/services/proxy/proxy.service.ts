@@ -196,21 +196,33 @@ export class ProxyService extends BaseService {
     if (this.providerRateConfigs.size === 0) {
       this.initializeProviderRateLimits();
     }
-    return this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default')!;
+    const config = this.providerRateConfigs.get(provider) ?? this.providerRateConfigs.get('default');
+    if (!config) {
+      throw new Error('Default provider rate limit config not found');
+    }
+    return config;
   }
 
   private getProviderWindow(provider: string): number[] {
     if (!this.providerWindows.has(provider)) {
       this.providerWindows.set(provider, []);
     }
-    return this.providerWindows.get(provider)!;
+    const window = this.providerWindows.get(provider);
+    if (!window) {
+      throw new Error(`Provider window not found for ${provider}`);
+    }
+    return window;
   }
 
   private getProviderQueue(provider: string): QueuedRateLimitRequest[] {
     if (!this.providerQueues.has(provider)) {
       this.providerQueues.set(provider, []);
     }
-    return this.providerQueues.get(provider)!;
+    const queue = this.providerQueues.get(provider);
+    if (!queue) {
+      throw new Error(`Provider queue not found for ${provider}`);
+    }
+    return queue;
   }
 
   private getProviderStats(provider: string) {

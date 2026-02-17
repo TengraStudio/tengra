@@ -31,7 +31,7 @@ export interface ProviderQuotas {
 export function ModelsPage({ language = 'en' }: ModelsPageProps): React.ReactElement {
     const { t } = useTranslation(language);
     const [activeTab, setActiveTab] = useState<TabType>('installed');
-    const [_models, setModels] = useState<ModelInfo[]>([]);
+    const [, setModels] = useState<ModelInfo[]>([]);
     const [groupedModels, setGroupedModels] = useState<GroupedModels>({});
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState<ProviderAccounts>({});

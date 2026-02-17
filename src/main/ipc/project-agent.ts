@@ -341,6 +341,13 @@ export function registerProjectAgentIpc(
         }, null)
     );
 
+    // AGENT-08: Performance Metrics
+    ipcMain.handle('project:get-performance-metrics', createSafeIpcHandler('project:get-performance-metrics', async (_, taskId: string) => {
+        validateString(taskId, 'taskId');
+        const metrics = projectAgentService.getPerformanceService().getMetrics(taskId);
+        return metrics ?? null;
+    }, null));
+
     registerLegacyProjectAgentCompatibilityHandlers(projectAgentService);
     registerCanvasPersistenceHandlers(databaseService, projectAgentService);
 }

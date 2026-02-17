@@ -4,13 +4,11 @@ import {
     GitBlameLine,
     GitCommitDetails,
     GitConflict,
-    GitFlowStatus,
-    GitHookInfo,
-    GitRebasePlanCommit,
-    GitRepositoryStats,
-    GitStash,
-    GitSubmodule,
 } from '../components/git/types';
+
+import { useGitAdvancedOperations } from './useGitAdvancedOperations';
+import { useGitConflicts } from './useGitConflicts';
+import { useGitStashes } from './useGitStashes';
 
 interface RebaseStatus {
     inRebase: boolean;
@@ -18,17 +16,6 @@ interface RebaseStatus {
     conflictCount: number;
     conflicts: GitConflict[];
 }
-
-const DEFAULT_FLOW_STATUS: GitFlowStatus = {
-    currentBranch: '',
-    byType: {
-        feature: [],
-        release: [],
-        hotfix: [],
-        support: [],
-    },
-    branches: [],
-};
 
 const DEFAULT_REBASE_STATUS: RebaseStatus = {
     inRebase: false,
@@ -47,27 +34,14 @@ const downloadText = (filename: string, content: string, mimeType = 'text/plain'
     URL.revokeObjectURL(url);
 };
 
+/**
+ * Advanced Git operations hook that composes multiple specialized git hooks
+ */
 export function useGitAdvanced(projectPath?: string) {
     const [isLoading, setIsLoading] = useState(false);
-    const [conflicts, setConflicts] = useState<GitConflict[]>([]);
-    const [conflictAnalytics, setConflictAnalytics] = useState<Record<string, number>>({});
-    const [stashes, setStashes] = useState<GitStash[]>([]);
     const [blameLines, setBlameLines] = useState<GitBlameLine[]>([]);
     const [commitDetails, setCommitDetails] = useState<GitCommitDetails | null>(null);
     const [rebaseStatus, setRebaseStatus] = useState<RebaseStatus>(DEFAULT_REBASE_STATUS);
-    const [rebasePlan, setRebasePlan] = useState<GitRebasePlanCommit[]>([]);
-    const [submodules, setSubmodules] = useState<GitSubmodule[]>([]);
-    const [flowStatus, setFlowStatus] = useState<GitFlowStatus>(DEFAULT_FLOW_STATUS);
-    const [hooks, setHooks] = useState<GitHookInfo[]>([]);
-    const [hookTemplates, setHookTemplates] = useState<string[]>([]);
-    const [hookValidation, setHookValidation] = useState<{
-        hookName: string;
-        hasShebang: boolean;
-        executable: boolean;
-        valid: boolean;
-    } | null>(null);
-    const [hookTestOutput, setHookTestOutput] = useState<{ stdout: string; stderr: string } | null>(null);
-    const [stats, setStats] = useState<GitRepositoryStats | null>(null);
 
     const canRun = useMemo(() => !!projectPath && projectPath.trim().length > 0, [projectPath]);
 
@@ -78,141 +52,19 @@ export function useGitAdvanced(projectPath?: string) {
         []
     );
 
-    const fetchConflicts = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; conflicts?: GitConflict[]; analytics?: Record<string, number> }>(
-            'git:getConflicts',
-            projectPath
-        );
-        if (response.success) {
-            setConflicts(response.conflicts ?? []);
-            setConflictAnalytics(response.analytics ?? {});
-        }
-    }, [canRun, projectPath, invokeGit]);
-
-    const resolveConflict = useCallback(
-        async (filePath: string, strategy: 'ours' | 'theirs' | 'manual') => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:resolveConflict',
-                projectPath,
-                filePath,
-                strategy
-            );
-            await fetchConflicts();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchConflicts]
-    );
-
-    const openMergeTool = useCallback(
-        async (filePath?: string) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:openMergeTool',
-                projectPath,
-                filePath ?? ''
-            );
-            await fetchConflicts();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchConflicts]
-    );
+    // Compose sub-hooks
+    const conflictsHook = useGitConflicts(canRun, projectPath, invokeGit);
+    const stashesHook = useGitStashes(canRun, projectPath, invokeGit);
+    const advancedOpsHook = useGitAdvancedOperations(canRun, projectPath, invokeGit);
 
     const exportConflictReport = useCallback(() => {
         const payload = {
             generatedAt: new Date().toISOString(),
-            analytics: conflictAnalytics,
-            conflicts,
+            analytics: conflictsHook.conflictAnalytics,
+            conflicts: conflictsHook.conflicts,
         };
         downloadText('git-conflicts.json', JSON.stringify(payload, null, 2), 'application/json');
-    }, [conflicts, conflictAnalytics]);
-
-    const fetchStashes = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; stashes?: GitStash[] }>(
-            'git:getStashes',
-            projectPath
-        );
-        if (response.success) {
-            setStashes(response.stashes ?? []);
-        }
-    }, [canRun, projectPath, invokeGit]);
-
-    const createStash = useCallback(
-        async (message: string, includeUntracked = true) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:createStash',
-                projectPath,
-                message,
-                includeUntracked
-            );
-            await fetchStashes();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchStashes]
-    );
-
-    const applyStash = useCallback(
-        async (stashRef: string, pop: boolean) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:applyStash',
-                projectPath,
-                stashRef,
-                pop
-            );
-            await Promise.all([fetchStashes(), fetchConflicts()]);
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchStashes, fetchConflicts]
-    );
-
-    const dropStash = useCallback(
-        async (stashRef: string) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>('git:dropStash', projectPath, stashRef);
-            await fetchStashes();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchStashes]
-    );
-
-    const exportStash = useCallback(
-        async (stashRef: string) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{ success: boolean; patch?: string }>(
-                'git:exportStash',
-                projectPath,
-                stashRef
-            );
-            if (!response.success) {
-                return;
-            }
-            downloadText(
-                `${stashRef.replace(/[{}@]/g, '_')}.patch`,
-                response.patch ?? ''
-            );
-        },
-        [canRun, projectPath, invokeGit]
-    );
+    }, [conflictsHook.conflicts, conflictsHook.conflictAnalytics]);
 
     const loadBlame = useCallback(
         async (filePath: string) => {
@@ -255,7 +107,7 @@ export function useGitAdvanced(projectPath?: string) {
         const response = await invokeGit<{
             success: boolean;
             inRebase?: boolean;
-            currentBranch?: string | null;
+            currentBranch?: string;
             conflictCount?: number;
             conflicts?: GitConflict[];
         }>('git:getRebaseStatus', projectPath);
@@ -269,334 +121,74 @@ export function useGitAdvanced(projectPath?: string) {
         }
     }, [canRun, projectPath, invokeGit]);
 
-    const fetchRebasePlan = useCallback(
-        async (baseBranch: string) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{ success: boolean; commits?: GitRebasePlanCommit[] }>(
-                'git:getRebasePlan',
-                projectPath,
-                baseBranch
-            );
-            if (response.success) {
-                setRebasePlan(response.commits ?? []);
-            }
-        },
-        [canRun, projectPath, invokeGit]
-    );
-
-    const runRebaseAction = useCallback(
-        async (action: 'start' | 'continue' | 'abort', baseBranch?: string) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-
-            const channelMap = {
-                start: 'git:startRebase',
-                continue: 'git:continueRebase',
-                abort: 'git:abortRebase',
-            } as const;
-
-            const response = action === 'start'
-                ? await invokeGit<{ success: boolean }>(channelMap[action], projectPath, baseBranch ?? 'develop')
-                : await invokeGit<{ success: boolean }>(channelMap[action], projectPath);
-
-            await Promise.all([fetchRebaseStatus(), fetchConflicts()]);
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchRebaseStatus, fetchConflicts]
-    );
-
-    const fetchSubmodules = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; submodules?: GitSubmodule[] }>(
-            'git:getSubmodules',
-            projectPath
-        );
-        if (response.success) {
-            setSubmodules(response.submodules ?? []);
-        }
-    }, [canRun, projectPath, invokeGit]);
-
-    const runSubmoduleAction = useCallback(
-        async (
-            action: 'init' | 'update' | 'sync' | 'add' | 'remove',
-            payload?: { recursive?: boolean; remote?: boolean; url?: string; path?: string; branch?: string }
-        ) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-
-            let response: { success: boolean };
-            switch (action) {
-                case 'init':
-                    response = await invokeGit('git:initSubmodules', projectPath, payload?.recursive === true);
-                    break;
-                case 'update':
-                    response = await invokeGit('git:updateSubmodules', projectPath, payload?.remote === true);
-                    break;
-                case 'sync':
-                    response = await invokeGit('git:syncSubmodules', projectPath);
-                    break;
-                case 'add':
-                    response = await invokeGit(
-                        'git:addSubmodule',
-                        projectPath,
-                        payload?.url ?? '',
-                        payload?.path ?? '',
-                        payload?.branch ?? ''
-                    );
-                    break;
-                default:
-                    response = await invokeGit('git:removeSubmodule', projectPath, payload?.path ?? '');
-                    break;
-            }
-
-            await fetchSubmodules();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchSubmodules]
-    );
-
-    const fetchFlowStatus = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; currentBranch?: string; byType?: GitFlowStatus['byType']; branches?: string[] }>(
-            'git:getFlowStatus',
-            projectPath
-        );
-        if (response.success) {
-            setFlowStatus({
-                currentBranch: response.currentBranch ?? '',
-                byType: response.byType ?? DEFAULT_FLOW_STATUS.byType,
-                branches: response.branches ?? [],
-            });
-        }
-    }, [canRun, projectPath, invokeGit]);
-
-    const startFlowBranch = useCallback(
-        async (type: 'feature' | 'release' | 'hotfix' | 'support', name: string, base: string) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:startFlowBranch',
-                projectPath,
-                type,
-                name,
-                base
-            );
-            await fetchFlowStatus();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchFlowStatus]
-    );
-
-    const finishFlowBranch = useCallback(
-        async (branch: string, target: string, shouldDelete = true) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:finishFlowBranch',
-                projectPath,
-                branch,
-                target,
-                shouldDelete
-            );
-            await Promise.all([fetchFlowStatus(), fetchConflicts()]);
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchFlowStatus, fetchConflicts]
-    );
-
-    const fetchHooks = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; hooks?: GitHookInfo[]; templates?: string[] }>(
-            'git:getHooks',
-            projectPath
-        );
-        if (response.success) {
-            setHooks(response.hooks ?? []);
-            setHookTemplates(response.templates ?? []);
-        }
-    }, [canRun, projectPath, invokeGit]);
-
-    const installHook = useCallback(
-        async (hookName: string, template?: string) => {
-            if (!canRun || !projectPath) {
-                return false;
-            }
-            const response = await invokeGit<{ success: boolean }>(
-                'git:installHook',
-                projectPath,
-                hookName,
-                template ?? ''
-            );
-            await fetchHooks();
-            return response.success;
-        },
-        [canRun, projectPath, invokeGit, fetchHooks]
-    );
-
-    const validateHook = useCallback(
-        async (hookName: string) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{
-                success: boolean;
-                validation?: {
-                    hookName: string;
-                    hasShebang: boolean;
-                    executable: boolean;
-                    valid: boolean;
-                };
-            }>('git:validateHook', projectPath, hookName);
-            if (response.success && response.validation) {
-                setHookValidation(response.validation);
-            }
-        },
-        [canRun, projectPath, invokeGit]
-    );
-
-    const testHook = useCallback(
-        async (hookName: string) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{ success: boolean; stdout?: string; stderr?: string }>(
-                'git:testHook',
-                projectPath,
-                hookName
-            );
-            setHookTestOutput({ stdout: response.stdout ?? '', stderr: response.stderr ?? '' });
-        },
-        [canRun, projectPath, invokeGit]
-    );
-
-    const exportHooks = useCallback(async () => {
-        if (!canRun || !projectPath) {
-            return;
-        }
-        const response = await invokeGit<{ success: boolean; payload?: unknown }>('git:exportHooks', projectPath);
-        if (!response.success) {
-            return;
-        }
-        downloadText('git-hooks.json', JSON.stringify(response.payload ?? {}, null, 2), 'application/json');
-    }, [canRun, projectPath, invokeGit]);
-
-    const fetchStats = useCallback(
-        async (days = 365) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{ success: boolean; stats?: GitRepositoryStats }>(
-                'git:getRepositoryStats',
-                projectPath,
-                days
-            );
-            if (response.success && response.stats) {
-                setStats(response.stats);
-            }
-        },
-        [canRun, projectPath, invokeGit]
-    );
-
-    const exportStats = useCallback(
-        async (days = 365) => {
-            if (!canRun || !projectPath) {
-                return;
-            }
-            const response = await invokeGit<{
-                success: boolean;
-                export?: { authorsCsv: string; generatedAt: string; days: number };
-            }>('git:exportRepositoryStats', projectPath, days);
-            if (!response.success || !response.export) {
-                return;
-            }
-            downloadText('git-author-stats.csv', response.export.authorsCsv, 'text/csv');
-        },
-        [canRun, projectPath, invokeGit]
-    );
-
     const refreshAll = useCallback(async () => {
         if (!canRun) {
             return;
         }
-        setIsLoading(true);
         try {
+            setIsLoading(true);
             await Promise.all([
-                fetchConflicts(),
-                fetchStashes(),
+                conflictsHook.fetchConflicts(),
+                stashesHook.fetchStashes(),
                 fetchRebaseStatus(),
-                fetchSubmodules(),
-                fetchFlowStatus(),
-                fetchHooks(),
-                fetchStats(),
+                advancedOpsHook.fetchSubmodules(),
+                advancedOpsHook.fetchFlowStatus(),
+                advancedOpsHook.fetchHooks(),
+                advancedOpsHook.fetchStats(),
             ]);
         } finally {
             setIsLoading(false);
         }
     }, [
         canRun,
-        fetchConflicts,
-        fetchStashes,
+        conflictsHook,
+        stashesHook,
         fetchRebaseStatus,
-        fetchSubmodules,
-        fetchFlowStatus,
-        fetchHooks,
-        fetchStats,
+        advancedOpsHook,
     ]);
 
     return {
         isLoading,
-        conflicts,
-        conflictAnalytics,
-        stashes,
+        conflicts: conflictsHook.conflicts,
+        conflictAnalytics: conflictsHook.conflictAnalytics,
+        stashes: stashesHook.stashes,
         blameLines,
         commitDetails,
         rebaseStatus,
-        rebasePlan,
-        submodules,
-        flowStatus,
-        hooks,
-        hookTemplates,
-        hookValidation,
-        hookTestOutput,
-        stats,
+        rebasePlan: advancedOpsHook.rebasePlan,
+        submodules: advancedOpsHook.submodules,
+        flowStatus: advancedOpsHook.flowStatus,
+        hooks: advancedOpsHook.hooks,
+        hookTemplates: advancedOpsHook.hookTemplates,
+        hookValidation: advancedOpsHook.hookValidation,
+        hookTestOutput: advancedOpsHook.hookTestOutput,
+        stats: advancedOpsHook.stats,
         refreshAll,
-        fetchConflicts,
-        resolveConflict,
-        openMergeTool,
+        fetchConflicts: conflictsHook.fetchConflicts,
+        resolveConflict: conflictsHook.resolveConflict,
+        openMergeTool: conflictsHook.openMergeTool,
         exportConflictReport,
-        fetchStashes,
-        createStash,
-        applyStash,
-        dropStash,
-        exportStash,
+        fetchStashes: stashesHook.fetchStashes,
+        createStash: stashesHook.createStash,
+        applyStash: stashesHook.applyStash,
+        dropStash: stashesHook.dropStash,
+        exportStash: stashesHook.exportStash,
         loadBlame,
         loadCommitDetails,
         fetchRebaseStatus,
-        fetchRebasePlan,
-        runRebaseAction,
-        fetchSubmodules,
-        runSubmoduleAction,
-        fetchFlowStatus,
-        startFlowBranch,
-        finishFlowBranch,
-        fetchHooks,
-        installHook,
-        validateHook,
-        testHook,
-        exportHooks,
-        fetchStats,
-        exportStats,
+        fetchRebasePlan: advancedOpsHook.fetchRebasePlan,
+        runRebaseAction: advancedOpsHook.runRebaseAction,
+        fetchSubmodules: advancedOpsHook.fetchSubmodules,
+        runSubmoduleAction: advancedOpsHook.runSubmoduleAction,
+        fetchFlowStatus: advancedOpsHook.fetchFlowStatus,
+        startFlowBranch: advancedOpsHook.startFlowBranch,
+        finishFlowBranch: advancedOpsHook.finishFlowBranch,
+        fetchHooks: advancedOpsHook.fetchHooks,
+        installHook: advancedOpsHook.installHook,
+        validateHook: advancedOpsHook.validateHook,
+        testHook: advancedOpsHook.testHook,
+        exportHooks: advancedOpsHook.exportHooks,
+        fetchStats: advancedOpsHook.fetchStats,
+        exportStats: advancedOpsHook.exportStats,
     };
 }

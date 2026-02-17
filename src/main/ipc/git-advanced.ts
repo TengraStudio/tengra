@@ -209,9 +209,9 @@ function parseAuthorsCsv(shortlogOutput: string): string {
 }
 
 /**
- * Registers advanced git IPC handlers including conflicts, stashing, blame, rebase, and submodules.
+ * Registers conflict-related IPC handlers.
  */
-export function registerGitAdvancedIpc(gitService: GitService) {
+function registerConflictHandlers(gitService: GitService) {
     ipcMain.handle('git:getConflicts', createValidatedIpcHandler('git:getConflicts', async (_event, cwd: string) => {
         const conflicts = await parseConflicts(gitService, cwd);
         const analytics = conflicts.reduce<Record<string, number>>((acc, item) => {
@@ -266,7 +266,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         },
         argsSchema: z.tuple([PathSchema, FilePathArgSchema.optional()])
     }));
+}
 
+/**
+ * Registers stash-related IPC handlers.
+ */
+function registerStashHandlers(gitService: GitService) {
     ipcMain.handle('git:getStashes', createValidatedIpcHandler('git:getStashes', async (_event, cwd: string) => {
         const result = await gitService.executeRaw(
             cwd,
@@ -345,7 +350,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, patch: '', error: 'Failed to export stash' },
         argsSchema: z.tuple([PathSchema, StashRefSchema])
     }));
+}
 
+/**
+ * Registers blame and commit detail IPC handlers.
+ */
+function registerBlameAndCommitHandlers(gitService: GitService) {
     ipcMain.handle('git:getBlame', createValidatedIpcHandler('git:getBlame', async (_event, cwd: string, filePath: string) => {
         const result = await gitService.executeRaw(
             cwd,
@@ -455,7 +465,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, error: 'Failed to fetch commit details' },
         argsSchema: z.tuple([PathSchema, SimpleArgSchema])
     }));
+}
 
+/**
+ * Registers rebase-related IPC handlers.
+ */
+function registerRebaseHandlers(gitService: GitService) {
     ipcMain.handle('git:getRebaseStatus', createValidatedIpcHandler('git:getRebaseStatus', async (_event, cwd: string) => {
         return getRebaseStatus(gitService, cwd);
     }, {
@@ -552,7 +567,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         },
         argsSchema: z.tuple([PathSchema])
     }));
+}
 
+/**
+ * Registers submodule-related IPC handlers.
+ */
+function registerSubmoduleHandlers(gitService: GitService) {
     ipcMain.handle('git:getSubmodules', createValidatedIpcHandler('git:getSubmodules', async (_event, cwd: string) => {
         const statusResult = await gitService.executeRaw(cwd, 'submodule status --recursive');
         const configResult = await gitService.executeRaw(
@@ -658,7 +678,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, error: 'Failed to remove submodule' },
         argsSchema: z.tuple([PathSchema, FilePathArgSchema])
     }));
+}
 
+/**
+ * Registers git flow-related IPC handlers.
+ */
+function registerFlowHandlers(gitService: GitService) {
     ipcMain.handle('git:getFlowStatus', createValidatedIpcHandler('git:getFlowStatus', async (_event, cwd: string) => {
         const currentBranchResult = await gitService.executeRaw(cwd, 'rev-parse --abbrev-ref HEAD');
         const branchListResult = await gitService.executeRaw(
@@ -739,7 +764,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, error: 'Failed to finish flow branch' },
         argsSchema: z.tuple([PathSchema, SimpleArgSchema, SimpleArgSchema.optional(), z.boolean().optional()])
     }));
+}
 
+/**
+ * Registers git hook-related IPC handlers.
+ */
+function registerHookHandlers(gitService: GitService) {
     ipcMain.handle('git:getHooks', createValidatedIpcHandler('git:getHooks', async (_event, cwd: string) => {
         const hooks = await listHooks(gitService, cwd);
         return {
@@ -839,7 +869,12 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, payload: { exportedAt: '', hooks: [] } },
         argsSchema: z.tuple([PathSchema])
     }));
+}
 
+/**
+ * Registers repository stats IPC handlers.
+ */
+function registerStatsHandlers(gitService: GitService) {
     ipcMain.handle('git:getRepositoryStats', createValidatedIpcHandler('git:getRepositoryStats', async (_event, cwd: string, daysRaw?: number) => {
         const days = Number(daysRaw);
         const safeDays =
@@ -940,4 +975,18 @@ export function registerGitAdvancedIpc(gitService: GitService) {
         defaultValue: { success: false, export: { generatedAt: '', days: 0, authorsCsv: '' } },
         argsSchema: z.tuple([PathSchema, z.number().optional()])
     }));
+}
+
+/**
+ * Registers advanced git IPC handlers including conflicts, stashing, blame, rebase, and submodules.
+ */
+export function registerGitAdvancedIpc(gitService: GitService) {
+    registerConflictHandlers(gitService);
+    registerStashHandlers(gitService);
+    registerBlameAndCommitHandlers(gitService);
+    registerRebaseHandlers(gitService);
+    registerSubmoduleHandlers(gitService);
+    registerFlowHandlers(gitService);
+    registerHookHandlers(gitService);
+    registerStatsHandlers(gitService);
 }

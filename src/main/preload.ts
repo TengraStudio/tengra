@@ -2784,7 +2784,7 @@ const api: ElectronAPI = {
             expectedSize: number,
             expectedSha256: string,
             scheduleAtMs?: number
-        ) => ipcRenderer.invoke('hf:download-file', url, outputPath, expectedSize, expectedSha256, scheduleAtMs),
+        ) => ipcRenderer.invoke('hf:download-file', { url, outputPath, expectedSize, expectedSha256, scheduleAt: scheduleAtMs }),
         onDownloadProgress: callback =>
             ipcRenderer.on('hf:download-progress', (_event, progress) => callback(progress)),
         cancelDownload: () => {

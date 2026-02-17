@@ -388,7 +388,7 @@ export class CopilotService extends BaseService {
                 // 1. Try to get valid session token from AuthService (synced from Rust)
                 if (this.authService) {
                     const account = await this.authService.getActiveAccountFull('copilot');
-                    if (account && account.sessionToken && account.expiresAt && account.expiresAt > Date.now()) {
+                    if (account?.sessionToken && account?.expiresAt && account.expiresAt > Date.now()) {
                         this.logInfo('Using proactive Copilot session token from AuthService');
                         this.copilotSessionToken = account.sessionToken;
                         this.tokenExpiresAt = account.expiresAt;

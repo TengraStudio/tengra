@@ -15,6 +15,18 @@
 
 ## [2026-02-17]
 
+### Otonom Ajan Performans Metrikleri (AGENT-08)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Hata oranı izleme ve kaynak kullanım metrikleri ile otonom ajanlar için kapsamlı performans izleme uygulandı.
+
+- **AGENT-08.3**: Yüksek hata eşikleri için otomatik uyarı ile hata oranı izleme eklendi (>%25 uyarı, >%50 kritik).
+- **AGENT-08.4**: Bellek, CPU, API çağrıları, token'lar ve maliyetler için yapılandırılabilir uyarılarla kaynak kullanım takibi uygulandı.
+- **Metrik Servisi**: Tamamlanma oranlarını, yürütme sürelerini izlemek ve performans uyarıları oluşturmak için `AgentPerformanceService` oluşturuldu.
+- **Entegrasyon**: Geçmiş analiz için performans metrikleri `ProjectState` ve `AgentTaskHistoryItem` içine entegre edildi.
+- **Otomatik İzleme**: Aktif ajan görevleri için her 5 saniyede bir arka plan kaynak izleme eklendi.
+
 ### Copilot Token Refresh Refactor
 
 - **Type**: refactor

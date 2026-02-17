@@ -93,7 +93,7 @@ export interface CreateUacTaskInput {
 }
 
 export class UacRepository {
-    constructor(private db: DatabaseAdapter) {}
+    constructor(private db: DatabaseAdapter) { }
 
     async ensureTables(): Promise<void> {
         // Enable foreign key constraints for CASCADE deletes
@@ -216,6 +216,17 @@ export class UacRepository {
             );
         `);
 
+        // AGENT-08: Performance metrics table for tracking agent performance
+        await this.db.exec(`
+            CREATE TABLE IF NOT EXISTS uac_performance_metrics (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                metrics_json TEXT NOT NULL,
+                created_at BIGINT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES uac_tasks(id) ON DELETE CASCADE
+            );
+        `);
+
         await this.db.exec(
             `CREATE INDEX IF NOT EXISTS idx_uac_plan_patterns_keywords ON uac_plan_patterns(task_keywords);`
         );
@@ -246,6 +257,9 @@ export class UacRepository {
         );
         await this.db.exec(
             `CREATE INDEX IF NOT EXISTS idx_uac_canvas_edges_source_target ON uac_canvas_edges(source, target);`
+        );
+        await this.db.exec(
+            `CREATE INDEX IF NOT EXISTS idx_uac_performance_metrics_task_created ON uac_performance_metrics(task_id, created_at DESC);`
         );
     }
 

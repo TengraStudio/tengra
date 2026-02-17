@@ -581,3 +581,5 @@ export const TerminalInstance = memo(({
         </div>
     );
 });
+
+TerminalInstance.displayName = 'TerminalInstance';

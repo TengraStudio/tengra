@@ -956,13 +956,14 @@ export class OllamaService {
             this.stopGPUMonitoring();
         }
 
-        this.gpuMonitoringInterval = setInterval(async () => {
-            try {
-                const status = await this.getGPUInfo();
+        this.gpuMonitoringInterval = setInterval(() => {
+            void (async () => {
+                try {
+                    const status = await this.getGPUInfo();
 
-                // Emit alerts for any warnings
-                for (const warning of status.warnings) {
-                    const alert: GPUAlert = {
+                    // Emit alerts for any warnings
+                    for (const warning of status.warnings) {
+                        const alert: GPUAlert = {
                         type: warning.includes('temperature') ? 'high_temperature' :
                             warning.includes('low') ? 'low_memory' : 'high_memory',
                         severity: warning.includes('critical') ? 'critical' : 'warning',
@@ -975,10 +976,11 @@ export class OllamaService {
                     this.gpuEventEmitter.emit('alert', alert);
                 }
 
-                this.gpuEventEmitter.emit('status', status);
-            } catch (error) {
-                appLogger.error('OllamaService', 'GPU monitoring error', error as Error);
-            }
+                    this.gpuEventEmitter.emit('status', status);
+                } catch (error) {
+                    appLogger.error('OllamaService', 'GPU monitoring error', error as Error);
+                }
+            })();
         }, intervalMs);
 
         appLogger.info('OllamaService', `GPU monitoring started with ${intervalMs}ms interval`);

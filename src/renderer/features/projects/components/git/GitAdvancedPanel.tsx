@@ -74,7 +74,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
     useEffect(() => {
         void git.refreshAll();
-    }, []);
+    }, [git]);
 
     const filteredStashes = useMemo(() => {
         const query = stashQuery.trim().toLowerCase();
