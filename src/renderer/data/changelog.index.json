@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-17T17:20:23.320Z",
+  "generatedAt": "2026-02-17T17:56:44.082Z",
   "locales": [
     "en",
     "tr",
@@ -107,6 +107,200 @@
             "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
             "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
             "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-17-llm-05-attachments-and-audit-backlog",
+      "date": "2026-02-17",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "ChatInput",
+        "useAttachments",
+        "useChatManager",
+        "Documentation"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "tr": {
+          "title": "LLM-05 İlerlemesi: Çok Modlu Ekler ve Denetim İş Listesi Genişletmesi",
+          "summary": "Sohbet ekleri için dosya türü algılama ve görsel boyut optimizasyonu uygulandı; ardından güvenlik, performans, UX ve mimari alanlarında 100+ maddelik uygulanabilir bir denetim iş listesi eklendi.",
+          "items": [
+            "- **LLM-05.4**: MIME + uzantı yedeğiyle daha güçlü dosya türü algılama ve güvenli ek türü eşleme eklendi.",
+            "- **LLM-05.5**: Büyük görsel eklerde model gönderimi öncesi istemci tarafı ön işleme ve boyut optimizasyonu eklendi.",
+            "- **Sohbet Akışı**: Hazır görsel ekler çok modlu giriş olarak iletiliyor; görsel olmayan ekler istem bağlamına dahil ediliyor.",
+            "- **İş Listesi Genişlemesi**: Depo genelindeki denetimler sonucu `docs/TODO.md` dosyasına 100+ uygulanabilir TODO maddesi eklendi."
+          ]
+        },
+        "de": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "fr": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "es": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "ja": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "zh": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        },
+        "ar": {
+          "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
+          "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+          "items": [
+            "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
+            "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
+            "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
+            "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-17-llm-security-and-attachments",
+      "date": "2026-02-17",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "LLMService",
+        "useAttachments",
+        "Security",
+        "Chat"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "tr": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "de": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "fr": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "es": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "ja": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "zh": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+          ]
+        },
+        "ar": {
+          "title": "LLM Security & Robust Attachments",
+          "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+          "items": [
+            "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+            "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+            "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
           ]
         }
       }

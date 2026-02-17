@@ -15,6 +15,27 @@
 
 ## [2026-02-17]
 
+### LLM-05 İlerlemesi: Çok Modlu Ekler ve Denetim İş Listesi Genişletmesi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Sohbet ekleri için dosya türü algılama ve görsel boyut optimizasyonu uygulandı; ardından güvenlik, performans, UX ve mimari alanlarında 100+ maddelik uygulanabilir bir denetim iş listesi eklendi.
+
+- **LLM-05.4**: MIME + uzantı yedeğiyle daha güçlü dosya türü algılama ve güvenli ek türü eşleme eklendi.
+- **LLM-05.5**: Büyük görsel eklerde model gönderimi öncesi istemci tarafı ön işleme ve boyut optimizasyonu eklendi.
+- **Sohbet Akışı**: Hazır görsel ekler çok modlu giriş olarak iletiliyor; görsel olmayan ekler istem bağlamına dahil ediliyor.
+- **İş Listesi Genişlemesi**: Depo genelindeki denetimler sonucu `docs/TODO.md` dosyasına 100+ uygulanabilir TODO maddesi eklendi.
+
+### LLM Security & Robust Attachments
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.
+
+- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
+- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
+
 ### Kapsamlı TODO Listesi Yeniden Düzenlemesi
 
 - **Type**: docs

@@ -1,5 +1,5 @@
 import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 
 import { Chat, Folder } from '@/types';
 
@@ -41,25 +41,21 @@ export const SidebarChatList = React.memo(
         renderChatItem,
         onClearAll,
     }: SidebarChatListProps) => {
-        // Preserve scroll position across re-renders
-        const scrollContainerRef = useRef<HTMLDivElement>(null);
-        const scrollPositionRef = useRef<number>(0);
-
-        // Save scroll position before render
-        useLayoutEffect(() => {
-            const container = scrollContainerRef.current;
-            if (container) {
-                scrollPositionRef.current = container.scrollTop;
+        const folderChatsById = useMemo(() => {
+            const mapping = new Map<string, Chat[]>();
+            for (const chat of filteredChats) {
+                if (!chat.folderId) {
+                    continue;
+                }
+                const existing = mapping.get(chat.folderId);
+                if (existing) {
+                    existing.push(chat);
+                } else {
+                    mapping.set(chat.folderId, [chat]);
+                }
             }
-        });
-
-        // Restore scroll position after render
-        useLayoutEffect(() => {
-            const container = scrollContainerRef.current;
-            if (container && scrollPositionRef.current > 0) {
-                container.scrollTop = scrollPositionRef.current;
-            }
-        }, [pinnedChats, activeFolders, recentChats, expandedFolders]);
+            return mapping;
+        }, [filteredChats]);
 
         return (
             <>
@@ -81,7 +77,6 @@ export const SidebarChatList = React.memo(
 
                 {/* Chat List */}
                 <div
-                    ref={scrollContainerRef}
                     className="flex-1 overflow-y-auto px-2 space-y-3 scrollbar-thin scrollbar-thumb-border/30"
                 >
                     {/* Pinned */}
@@ -127,10 +122,7 @@ export const SidebarChatList = React.memo(
                                         key={folder.id}
                                         folder={folder}
                                         isExpanded={expandedFolders.has(folder.id)}
-                                        // Filter chats for this folder specifically
-                                        folderChats={filteredChats.filter(
-                                            c => c.folderId === folder.id
-                                        )}
+                                        folderChats={folderChatsById.get(folder.id) ?? []}
                                         isCollapsed={isCollapsed}
                                         toggleFolder={toggleFolder}
                                         deleteFolder={deleteFolder}

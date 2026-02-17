@@ -1967,13 +1967,83 @@ const areMessagePropsEqual = (prev: MessageProps, next: MessageProps) => {
         if (pm.content !== nm.content) {
             return false;
         }
-    } else if (JSON.stringify(pm.content) !== JSON.stringify(nm.content)) {
+    } else if (Array.isArray(pm.content) && Array.isArray(nm.content)) {
+        if (pm.content.length !== nm.content.length) {
+            return false;
+        }
+        for (let i = 0; i < pm.content.length; i++) {
+            const left = pm.content[i];
+            const right = nm.content[i];
+            if (left.type !== right.type) {
+                return false;
+            }
+            if (left.type === 'text' && right.type === 'text' && left.text !== right.text) {
+                return false;
+            }
+            if (
+                left.type === 'image_url' &&
+                right.type === 'image_url' &&
+                (left.image_url.url !== right.image_url.url ||
+                    left.image_url.detail !== right.image_url.detail)
+            ) {
+                return false;
+            }
+        }
+    } else {
         return false;
     }
 
-    // Deep check for arrays
-    const deepFields: (keyof Message)[] = ['images', 'sources', 'reactions', 'variants'];
-    return deepFields.every(key => JSON.stringify(pm[key]) === JSON.stringify(nm[key]));
+    const areStringArraysEqual = (
+        left: string[] | undefined,
+        right: string[] | undefined
+    ): boolean => {
+        if (left === right) {
+            return true;
+        }
+        if (!left || !right || left.length !== right.length) {
+            return false;
+        }
+        for (let i = 0; i < left.length; i++) {
+            if (left[i] !== right[i]) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (
+        !areStringArraysEqual(pm.images, nm.images) ||
+        !areStringArraysEqual(pm.sources, nm.sources) ||
+        !areStringArraysEqual(pm.reactions, nm.reactions)
+    ) {
+        return false;
+    }
+
+    if (pm.variants === nm.variants) {
+        return true;
+    }
+    if ((pm.variants?.length ?? -1) !== (nm.variants?.length ?? -1)) {
+        return false;
+    }
+    if (!pm.variants || !nm.variants) {
+        return false;
+    }
+    for (let i = 0; i < pm.variants.length; i++) {
+        const left = pm.variants[i];
+        const right = nm.variants[i];
+        if (
+            left.id !== right.id ||
+            left.content !== right.content ||
+            left.model !== right.model ||
+            left.provider !== right.provider ||
+            left.label !== right.label ||
+            left.isSelected !== right.isSelected ||
+            left.timestamp.getTime() !== right.timestamp.getTime()
+        ) {
+            return false;
+        }
+    }
+    return true;
 };
 
 export const MessageBubble = memo(

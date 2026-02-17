@@ -15,6 +15,27 @@
 
 ## [2026-02-17]
 
+### LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.
+
+- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.
+- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.
+- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.
+- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).
+
+### LLM Security & Robust Attachments
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.
+
+- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
+- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
+
 ### Comprehensive TODO List Reorganization
 
 - **Type**: docs

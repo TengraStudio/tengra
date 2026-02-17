@@ -3,8 +3,9 @@
  * Each handler encapsulates a single async operation to manage complexity
  */
 
-import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 import { z } from 'zod';
+
+import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
 import { EventResponse, MessageResponse, StatusResponse, TelemetryResponse } from './taskDetailsProcessor';
 

@@ -1,6 +1,7 @@
-import { Project } from '@/types';
 import { invokeTypedIpc, type IpcContractMap } from '@renderer/lib/ipc-client';
 import { z } from 'zod';
+
+import { Project } from '@/types';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
 

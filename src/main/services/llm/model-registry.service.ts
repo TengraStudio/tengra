@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { HFModel, HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService } from '@main/services/security/auth.service';
@@ -8,7 +9,6 @@ import { TokenService } from '@main/services/security/token.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 

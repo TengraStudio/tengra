@@ -182,7 +182,18 @@ export function useChatManager(options: UseChatManagerOptions) {
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
     const isLoading = useMemo(() => currentChatId ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) : false, [currentChatId, currentChat?.isGenerating, currentStreamState]);
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat]);
-    const displayMessages = useMemo(() => searchTerm ? messages.filter(m => (typeof m.content === 'string' ? m.content : '').toLowerCase().includes(searchTerm.toLowerCase())) : messages, [messages, searchTerm]);
+    const normalizedSearchTerm = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
+    const displayMessages = useMemo(
+        () =>
+            normalizedSearchTerm === ''
+                ? messages
+                : messages.filter(message =>
+                    (typeof message.content === 'string' ? message.content : '')
+                        .toLowerCase()
+                        .includes(normalizedSearchTerm)
+                ),
+        [messages, normalizedSearchTerm]
+    );
 
     const handleSend = useCallback(async (customInput?: string) => {
         const content = customInput ?? input;

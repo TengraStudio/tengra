@@ -1,6 +1,7 @@
-import { ChildProcess, execSync, spawn } from 'child_process';
+import { ChildProcess, execFile, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 
 import { appLogger } from '@main/logging/logger';
 
@@ -15,6 +16,7 @@ export class WindowsTerminalBackend implements ITerminalBackend {
     public readonly id = 'windows-terminal';
     private windowsTerminalPath: string | null = null;
     private isDiscoveryDone = false;
+    private discoveryPromise: Promise<string | null> | null = null;
 
     public async isAvailable(): Promise<boolean> {
         if (process.platform !== 'win32') {
@@ -22,8 +24,12 @@ export class WindowsTerminalBackend implements ITerminalBackend {
         }
 
         if (!this.isDiscoveryDone) {
-            this.windowsTerminalPath = await this.discoverWindowsTerminalPath();
+            if (!this.discoveryPromise) {
+                this.discoveryPromise = this.discoverWindowsTerminalPath();
+            }
+            this.windowsTerminalPath = await this.discoveryPromise;
             this.isDiscoveryDone = true;
+            this.discoveryPromise = null;
         }
         return this.windowsTerminalPath !== null;
     }
@@ -86,9 +92,11 @@ export class WindowsTerminalBackend implements ITerminalBackend {
         }
 
         try {
-            const result = execSync('where wt', { encoding: 'utf8' }).trim();
+            const execFileAsync = promisify(execFile);
+            const { stdout } = await execFileAsync('where', ['wt'], { encoding: 'utf8' });
+            const result = stdout.trim();
             if (result) {
-                const first = result.split('\n')[0].trim();
+                const first = result.split(/\r?\n/)[0].trim();
                 appLogger.info('WindowsTerminalBackend', `Found wt.exe at: ${first}`);
                 return first;
             }
@@ -103,10 +111,9 @@ export class WindowsTerminalBackend implements ITerminalBackend {
 
         for (const candidate of commonPaths) {
             try {
-                if (fs.existsSync(candidate)) {
-                    appLogger.info('WindowsTerminalBackend', `Found wt.exe at common location: ${candidate}`);
-                    return candidate;
-                }
+                await fs.promises.access(candidate, fs.constants.F_OK);
+                appLogger.info('WindowsTerminalBackend', `Found wt.exe at common location: ${candidate}`);
+                return candidate;
             } catch {
                 // Ignore failed path checks.
             }

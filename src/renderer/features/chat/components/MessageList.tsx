@@ -1,6 +1,6 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
 import { MessageSkeleton } from '@renderer/features/chat/components/MessageSkeleton';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { Language } from '@/i18n';
@@ -42,35 +42,37 @@ export const MessageList = memo(({
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
-    const [prevMessages, setPrevMessages] = useState(messages);
-
-    if (messages !== prevMessages) {
-        setPrevMessages(messages);
+    const persistedFocusedIndex = useMemo(() => {
         if (messages.length === 0) {
-            setFocusedIndex(-1);
-            setSelectedMessageId(null);
-        } else {
-            const persistedMessageId = sessionStorage.getItem('chat.messageList.focusedMessageId');
-            const persistedIndex = persistedMessageId
-                ? messages.findIndex(message => message.id === persistedMessageId)
-                : -1;
-
-            setFocusedIndex(persistedIndex >= 0 ? persistedIndex : messages.length - 1);
+            return -1;
         }
-    }
+        const persistedMessageId = sessionStorage.getItem('chat.messageList.focusedMessageId');
+        return persistedMessageId
+            ? messages.findIndex(message => message.id === persistedMessageId)
+            : -1;
+    }, [messages]);
+
+    const effectiveFocusedIndex =
+        messages.length === 0
+            ? -1
+            : focusedIndex >= 0 && focusedIndex < messages.length
+                ? focusedIndex
+                : persistedFocusedIndex >= 0
+                    ? persistedFocusedIndex
+                    : messages.length - 1;
 
     useEffect(() => {
-        if (focusedIndex < 0 || focusedIndex >= messages.length) {
+        if (effectiveFocusedIndex < 0 || effectiveFocusedIndex >= messages.length) {
             return;
         }
-        const focusedMessage = messages[focusedIndex];
+        const focusedMessage = messages[effectiveFocusedIndex];
         sessionStorage.setItem('chat.messageList.focusedMessageId', focusedMessage.id);
         virtuosoRef?.current?.scrollToIndex({
-            index: focusedIndex,
+            index: effectiveFocusedIndex,
             align: 'center',
             behavior: 'smooth',
         });
-    }, [focusedIndex, messages, virtuosoRef]);
+    }, [effectiveFocusedIndex, messages, virtuosoRef]);
 
     const handleKeyboardNavigation = useCallback(
         (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -102,22 +104,22 @@ export const MessageList = memo(({
                 return;
             }
 
-            if (event.key === 'Enter' && focusedIndex >= 0) {
+            if (event.key === 'Enter' && effectiveFocusedIndex >= 0) {
                 event.preventDefault();
-                const focusedMessage = messages[focusedIndex];
+                const focusedMessage = messages[effectiveFocusedIndex];
                 setSelectedMessageId(prev => (prev === focusedMessage.id ? null : focusedMessage.id));
                 return;
             }
 
-            if (event.key.toLowerCase() === 'r' && focusedIndex >= 0) {
-                const focusedMessage = messages[focusedIndex];
+            if (event.key.toLowerCase() === 'r' && effectiveFocusedIndex >= 0) {
+                const focusedMessage = messages[effectiveFocusedIndex];
                 if (focusedMessage.role === 'assistant') {
                     event.preventDefault();
                     void onRegenerate?.(focusedMessage.id);
                 }
             }
         },
-        [focusedIndex, messages, onRegenerate]
+        [effectiveFocusedIndex, messages, onRegenerate]
     );
 
     // Determine if we should follow the output (stick to bottom)
@@ -154,7 +156,8 @@ export const MessageList = memo(({
                     // Add some padding to the last item
                     const isLast = index === messages.length - 1;
                     const isFocused =
-                        index === focusedIndex || (selectedMessageId !== null && message.id === selectedMessageId);
+                        index === effectiveFocusedIndex ||
+                        (selectedMessageId !== null && message.id === selectedMessageId);
 
                     return (
                         <div className="px-4 pb-4" aria-selected={isFocused}>
