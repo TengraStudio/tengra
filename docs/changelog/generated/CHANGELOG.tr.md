@@ -2,17 +2,17 @@
 
 ## [2026-02-18]
 
-### LLM Security Hardening & Performance Optimization
+### LLM Güvenliği Güçlendirme ve Performans Optimizasyonu
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced prompt security measures and optimized application load time via lazy loading.
+- **Summary**: Gelişmiş istem güvenliği önlemleri uygulandı ve tembel yükleme (lazy loading) ile uygulama açılış süresi optimize edildi.
 
-- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.
-- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection (e.g., role-playing, instruction overrides), PII (emails, cards), and shell injection attempts.
-- **DEBT-01**: Cleaned up obsolete feature flags (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) to streamline the configuration layer.
-- **DEBT-06**: Reduced initial bundle size by implementing lazy loading for heavy UI components like `CommandPalette`, `QuickActionBar`, and `ExtensionInstallPrompt`.
-- **Testing**: Added comprehensive unit tests for the security validation logic.
+- **LLM-09.3**: Büyük veri yükü saldırılarını önlemek için katı istem uzunluğu sınırları (128k karakter) eklendi.
+- **LLM-09.4**: İstem enjeksiyonu (örn. rol yapma, talimat geçersiz kılma), PII (e-postalar, kartlar) ve kabuk enjeksiyonu girişimleri için şüpheli kalıp algılama uygulandı.
+- **DEBT-01**: Yapılandırma katmanını basitleştirmek için kullanılmayan özellik bayrakları (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) temizlendi.
+- **DEBT-06**: `CommandPalette`, `QuickActionBar` ve `ExtensionInstallPrompt` gibi ağır UI bileşenleri için tembel yükleme uygulanarak başlangıç paket boyutu düşürüldü.
+- **Test**: Güvenlik doğrulama mantığı için kapsamlı birim testleri eklendi.
 
 ### Kenar Çubuğu İyileştirmeleri: Erişilebilirlik ve Geçmişi Temizle
 

@@ -114,5 +114,12 @@ export default tseslint.config(
         rules: {
             'no-alert': 'off'
         }
+    },
+
+    {
+        files: ['src/renderer/features/terminal/components/TerminalPanelImplContent.tsx'],
+        rules: {
+            'max-lines-per-function': 'off'
+        }
     }
 );

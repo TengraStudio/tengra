@@ -9,10 +9,10 @@
 - **Summary**: Implemented advanced prompt security measures and optimized application load time via lazy loading.
 
 - **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.
-- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection (e.g., role-playing, instruction overrides), PII (emails, cards), and shell injection attempts.
-- **DEBT-01**: Cleaned up obsolete feature flags (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) to streamline the configuration layer.
-- **DEBT-06**: Reduced initial bundle size by implementing lazy loading for heavy UI components like `CommandPalette`, `QuickActionBar`, and `ExtensionInstallPrompt`.
-- **Testing**: Added comprehensive unit tests for the security validation logic.
+- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.
+- **DEBT-01**: Cleaned up obsolete feature flags.
+- **DEBT-06**: Reduced bundle size via lazy loading.
+- **Testing**: Added unit tests for security validation.
 
 ### Sidebar Enhancements: Accessibility and Clear History
 
@@ -27,17 +27,16 @@
 
 ## [2026-02-17]
 
-### Agent Performance Metrics (AGENT-08)
+### Autonomous Agent Performance Metrics (AGENT-08)
 
 - **Type**: feature
 - **Status**: completed
 - **Summary**: Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.
 
-- **AGENT-08.3**: Added error rate monitoring with automatic alerting for high error thresholds (>25% warning, >50% critical).
+- **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).
 - **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.
 - **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.
 - **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.
-- **Automated Monitoring**: Added background resource monitoring every 5 seconds for active agent tasks.
 
 ### Copilot Token Refresh Refactor
 

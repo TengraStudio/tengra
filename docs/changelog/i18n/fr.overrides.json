@@ -1,4 +1,25 @@
 {
+  "2026-02-18-llm-security-v2": {
+    "title": "LLM Security Hardening & Performance Optimization",
+    "summary": "Implemented advanced prompt security measures and optimized application load time via lazy loading.",
+    "items": [
+      "- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.",
+      "- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.",
+      "- **DEBT-01**: Cleaned up obsolete feature flags.",
+      "- **DEBT-06**: Reduced bundle size via lazy loading.",
+      "- **Testing**: Added unit tests for security validation."
+    ]
+  },
+  "2026-02-17-agent-performance-metrics": {
+    "title": "Autonomous Agent Performance Metrics (AGENT-08)",
+    "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+    "items": [
+      "- **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).",
+      "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
+      "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
+      "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis."
+    ]
+  },
   "2026-02-18-sidebar-accessibility-and-clear-history": {
     "title": "Sidebar Enhancements: Accessibility and Clear History",
     "summary": "Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.",

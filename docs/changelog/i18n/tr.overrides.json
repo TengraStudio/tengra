@@ -1,4 +1,15 @@
 {
+  "2026-02-18-llm-security-v2": {
+    "title": "LLM Güvenliği Güçlendirme ve Performans Optimizasyonu",
+    "summary": "Gelişmiş istem güvenliği önlemleri uygulandı ve tembel yükleme (lazy loading) ile uygulama açılış süresi optimize edildi.",
+    "items": [
+      "- **LLM-09.3**: Büyük veri yükü saldırılarını önlemek için katı istem uzunluğu sınırları (128k karakter) eklendi.",
+      "- **LLM-09.4**: İstem enjeksiyonu (örn. rol yapma, talimat geçersiz kılma), PII (e-postalar, kartlar) ve kabuk enjeksiyonu girişimleri için şüpheli kalıp algılama uygulandı.",
+      "- **DEBT-01**: Yapılandırma katmanını basitleştirmek için kullanılmayan özellik bayrakları (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) temizlendi.",
+      "- **DEBT-06**: `CommandPalette`, `QuickActionBar` ve `ExtensionInstallPrompt` gibi ağır UI bileşenleri için tembel yükleme uygulanarak başlangıç paket boyutu düşürüldü.",
+      "- **Test**: Güvenlik doğrulama mantığı için kapsamlı birim testleri eklendi."
+    ]
+  },
   "2026-02-17-agent-performance-metrics": {
     "title": "Otonom Ajan Performans Metrikleri (AGENT-08)",
     "summary": "Hata oranı izleme ve kaynak kullanım metrikleri ile otonom ajanlar için kapsamlı performans izleme uygulandı.",

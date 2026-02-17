@@ -54,20 +54,19 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [ ] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
 - [x] **LLM-09.2**: Add HTML/JS sanitization for AI prompts
   - [x] Added `prompt-sanitizer.util.ts`
-  - [x] Integrated `sanitizeMessages` into `LLMService`
-- [x] **LLM-09.3**: Implement prompt length limits
-- [x] **LLM-09.4**: Add suspicious pattern detection
+- [x] **LLM-09.3**: Implement strict prompt length limits (128,000 characters) to prevent large payload attacks.
+- [x] **LLM-09.4**: Implement suspicious pattern detection (roleplay, instruction overrides, PII, shell prompts).
 - [x] **LLM-05.4**: Add file type detection
   - [x] Added `file-type.util.ts` with magic number checks
-  - [x] Updated `useAttachments` to use robust detection
+  [x] Updated `useAttachments` to use robust detection
 - [x] **LLM-05.5**: Implement size optimization for image inputs
 - [ ] **MKT-UI-03.6**: Implement search history for marketplace
-- [x] **DEBT-01**: Clean up old feature flags
+- [x] **DEBT-01**: Clean up obsolete feature flags from `feature-flag.service.ts`.
 - [x] **DEBT-02**: Improve test coverage for core services
 - [x] **DEBT-03**: Audit and remove unused dependencies
   - [x] Removed `cheerio`
   - [x] Consolidated error utilities
-- [x] **DEBT-06**: Reduce bundle size by lazy loading heavy components
+- [x] **DEBT-06**: Implement lazy loading for identified heavy UI components in `App.tsx`.
 - [x] **DEBT-07**: Standardize error handling patterns
   - [x] Merged `src/main/utils/error.util.ts` into shared utility
   - [x] Updated all imports to use `@shared/utils/error.util`
