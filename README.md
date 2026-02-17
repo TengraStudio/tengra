@@ -23,16 +23,21 @@ Tandem is a powerful, open-source AI assistant designed to streamline your devel
 git clone https://github.com/TengraStudio/tandem.git
 cd tandem
 npm install
+npm run setup-build-env
 ```
 
 ### Running the App
 ```bash
 # Development mode
-npm run electron:dev
+npm run dev
 
 # Build for production
-npm run electron:build
+npm run build
 ```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](docs/CONTRIBUTING.md) for detailed guidelines and our code of conduct.
 
 ## Browser Extension
 

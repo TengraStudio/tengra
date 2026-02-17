@@ -33,6 +33,8 @@ export interface SidebarMenuItemProps {
     shortcut?: string
     /** Custom class name */
     className?: string
+    /** HTML title attribute for accessibility */
+    title?: string
 }
 
 type IndentLevel = 0 | 1 | 2 | 3;
@@ -171,7 +173,8 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
     indent = 0,
     actions,
     shortcut,
-    className
+    className,
+    title
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const hoverProps = getHoverProps(isDisabled);
@@ -183,6 +186,7 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = React.memo(({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={getMenuItemClassName(indent, isActive, isDisabled, className)}
+            title={title || label}
             {...hoverProps}
         >
             <MenuItemIcon icon={icon} isActive={isActive} />

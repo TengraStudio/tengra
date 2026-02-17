@@ -64,6 +64,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
             <button
                 {...props}
                 onClick={onClick}
+                title={label}
                 aria-label={props['aria-label'] ?? label}
                 className={getButtonClassName(active, variant, isCollapsed, className)}
             >

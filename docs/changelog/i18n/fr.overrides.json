@@ -1,4 +1,24 @@
 {
+  "2026-02-18-sidebar-accessibility-and-clear-history": {
+    "title": "Sidebar Enhancements: Accessibility and Clear History",
+    "summary": "Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.",
+    "items": [
+      "- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.",
+      "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
+      "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
+      "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
+    ]
+  },
+  "2026-02-17-todo-organization-v2": {
+    "title": "Comprehensive TODO List Reorganization",
+    "summary": "Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.",
+    "items": [
+      "- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.",
+      "- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.",
+      "- **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.",
+      "- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories."
+    ]
+  },
   "2026-02-16-i18n-core-rtl-onboarding": {
     "title": "Internationalization Core & RTL Support",
     "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",

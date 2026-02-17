@@ -8,7 +8,9 @@
 import { BaseService } from '@main/services/base.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { KeyRotationService } from '@main/services/security/key-rotation.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { ModelOption, ProviderConfig } from '@shared/types/agent-state';
+import { AppSettings } from '@shared/types/settings';
 
 /**
  * Provider fallback chain configuration
@@ -17,6 +19,17 @@ interface FallbackChain {
     cloud: string[];  // e.g., ['openai', 'anthropic', 'google']
     local: string[];  // e.g., ['ollama', 'llamacpp']
 }
+
+type RotationStrategy = 'provider_priority' | 'balanced' | 'local_first';
+
+interface RotationPreference {
+    chain: FallbackChain;
+    strategy: RotationStrategy;
+    updatedAt: number;
+}
+
+const DEFAULT_PROJECT_ID = '__default__';
+const DEFAULT_ROTATION_STRATEGY: RotationStrategy = 'provider_priority';
 
 /**
  * TODO-001-4: Quota provider callback type for cross-domain access
@@ -43,10 +56,12 @@ export class AgentProviderRotationService extends BaseService {
 
     /** TODO-001-4: Optional quota provider callback for cross-domain quota access */
     private quotaProvider: QuotaProvider | null = null;
+    private projectRotationPreferences: Map<string, RotationPreference> = new Map();
 
     constructor(
         private keyRotationService: KeyRotationService,
-        private authService: AuthService
+        private authService: AuthService,
+        private settingsService?: SettingsService
     ) {
         super('AgentProviderRotationService');
     }
@@ -69,6 +84,7 @@ export class AgentProviderRotationService extends BaseService {
 
         // Load available providers from auth service
         await this.loadConfiguredProviders();
+        await this.loadPersistedRotationSettings();
 
         this.logInfo('Provider rotation service initialized');
     }
@@ -133,8 +149,9 @@ export class AgentProviderRotationService extends BaseService {
      * Get initial provider configuration based on user selection
      * NASA Rule #7: Check return values
      */
-    async getInitialProvider(userSelectedProvider?: string): Promise<ProviderConfig> {
-        const provider = userSelectedProvider ?? this.fallbackChain.cloud[0];
+    async getInitialProvider(userSelectedProvider?: string, projectId: string = DEFAULT_PROJECT_ID): Promise<ProviderConfig> {
+        const chain = this.getFallbackChain(projectId);
+        const provider = userSelectedProvider ?? chain.cloud[0];
 
         // SEC-013-2: Verify access
         const isAuthorized = await this.verifyProviderAccess(provider);
@@ -161,8 +178,9 @@ export class AgentProviderRotationService extends BaseService {
      * Get next provider in fallback chain
      * Returns null if chain exhausted
      */
-    async getNextProvider(currentProvider: ProviderConfig): Promise<ProviderConfig | null> {
+    async getNextProvider(currentProvider: ProviderConfig, projectId: string = DEFAULT_PROJECT_ID): Promise<ProviderConfig | null> {
         this.logInfo(`Finding next provider after ${currentProvider.provider}`);
+        const chain = this.getFallbackChain(projectId);
 
         // Step 1: Try rotating account for same provider
         const rotated = await this.tryRotateAccount(currentProvider);
@@ -172,7 +190,7 @@ export class AgentProviderRotationService extends BaseService {
         }
 
         // Step 2: Try next cloud provider
-        const nextCloud = this.getNextCloudProvider(currentProvider.provider);
+        const nextCloud = this.getNextCloudProvider(currentProvider.provider, chain);
         if (nextCloud) {
             this.logInfo(`Falling back to cloud provider: ${nextCloud}`);
             const model = await this.getDefaultModelForProvider(nextCloud);
@@ -261,14 +279,14 @@ export class AgentProviderRotationService extends BaseService {
     /**
      * Get next cloud provider in fallback chain
      */
-    private getNextCloudProvider(currentProvider: string): string | null {
-        const currentIndex = this.fallbackChain.cloud.indexOf(currentProvider);
+    private getNextCloudProvider(currentProvider: string, chain: FallbackChain): string | null {
+        const currentIndex = chain.cloud.indexOf(currentProvider);
 
-        if (currentIndex === -1 || currentIndex === this.fallbackChain.cloud.length - 1) {
+        if (currentIndex === -1 || currentIndex === chain.cloud.length - 1) {
             return null;
         }
 
-        return this.fallbackChain.cloud[currentIndex + 1];
+        return chain.cloud[currentIndex + 1];
     }
 
     /**
@@ -513,23 +531,122 @@ export class AgentProviderRotationService extends BaseService {
     /**
      * Update fallback chain configuration
      */
-    async updateFallbackChain(chain: Partial<FallbackChain>): Promise<void> {
-        if (chain.cloud) {
-            this.fallbackChain.cloud = chain.cloud;
-        }
-        if (chain.local) {
-            this.fallbackChain.local = chain.local;
+    async updateFallbackChain(
+        chain: Partial<FallbackChain>,
+        projectId: string = DEFAULT_PROJECT_ID,
+        strategy?: RotationStrategy
+    ): Promise<void> {
+        const currentPreference = this.getOrCreateProjectPreference(projectId);
+        const updatedPreference: RotationPreference = {
+            chain: {
+                cloud: chain.cloud ?? currentPreference.chain.cloud,
+                local: chain.local ?? currentPreference.chain.local
+            },
+            strategy: strategy ?? currentPreference.strategy,
+            updatedAt: Date.now()
+        };
+
+        this.projectRotationPreferences.set(projectId, updatedPreference);
+        if (projectId === DEFAULT_PROJECT_ID) {
+            this.fallbackChain = {
+                cloud: [...updatedPreference.chain.cloud],
+                local: [...updatedPreference.chain.local]
+            };
         }
 
         this.logInfo('Fallback chain updated');
-
-        // TODO: Persist to settings
+        await this.persistRotationSettings();
     }
 
     /**
      * Get current fallback chain
      */
-    getFallbackChain(): FallbackChain {
-        return { ...this.fallbackChain };
+    getFallbackChain(projectId: string = DEFAULT_PROJECT_ID): FallbackChain {
+        const preference = this.getOrCreateProjectPreference(projectId);
+        return {
+            cloud: [...preference.chain.cloud],
+            local: [...preference.chain.local]
+        };
+    }
+
+    private getOrCreateProjectPreference(projectId: string): RotationPreference {
+        const existing = this.projectRotationPreferences.get(projectId);
+        if (existing) {
+            return existing;
+        }
+
+        return {
+            chain: {
+                cloud: [...this.fallbackChain.cloud],
+                local: [...this.fallbackChain.local]
+            },
+            strategy: DEFAULT_ROTATION_STRATEGY,
+            updatedAt: Date.now()
+        };
+    }
+
+    private async loadPersistedRotationSettings(): Promise<void> {
+        if (!this.settingsService) {
+            return;
+        }
+
+        const persisted = this.settingsService.getSettings().ai?.agentProviderRotation;
+        if (!persisted?.byProject) {
+            return;
+        }
+
+        this.projectRotationPreferences.clear();
+        for (const [projectId, preference] of Object.entries(persisted.byProject)) {
+            if (!Array.isArray(preference.chain?.cloud) || !Array.isArray(preference.chain?.local)) {
+                continue;
+            }
+            this.projectRotationPreferences.set(projectId, {
+                chain: {
+                    cloud: preference.chain.cloud,
+                    local: preference.chain.local
+                },
+                strategy: preference.strategy ?? DEFAULT_ROTATION_STRATEGY,
+                updatedAt: preference.updatedAt ?? Date.now()
+            });
+        }
+
+        const defaultProjectId = persisted.defaultProjectId ?? DEFAULT_PROJECT_ID;
+        const defaultPreference = this.projectRotationPreferences.get(defaultProjectId);
+        if (defaultPreference) {
+            this.fallbackChain = {
+                cloud: [...defaultPreference.chain.cloud],
+                local: [...defaultPreference.chain.local]
+            };
+        }
+    }
+
+    private async persistRotationSettings(): Promise<void> {
+        if (!this.settingsService) {
+            return;
+        }
+
+        const byProject: Record<string, RotationPreference> = {};
+        for (const [projectId, preference] of this.projectRotationPreferences.entries()) {
+            byProject[projectId] = {
+                chain: {
+                    cloud: [...preference.chain.cloud],
+                    local: [...preference.chain.local]
+                },
+                strategy: preference.strategy,
+                updatedAt: preference.updatedAt
+            };
+        }
+
+        const currentAiSettings = this.settingsService.getSettings().ai;
+        const agentProviderRotation = {
+            defaultProjectId: DEFAULT_PROJECT_ID,
+            byProject
+        } as NonNullable<NonNullable<AppSettings['ai']>['agentProviderRotation']>;
+        await this.settingsService.saveSettings({
+            ai: {
+                ...currentAiSettings,
+                agentProviderRotation
+            }
+        });
     }
 }

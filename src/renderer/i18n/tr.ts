@@ -953,6 +953,8 @@ export const tr = {
         emptyFolder: 'Boş klasör',
         pinned: 'İğnelenmiş',
         recent: 'Yakın Zamanda',
+        clearHistory: 'Geçmişi Temizle',
+        confirmClearAll: 'Tüm sohbetleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
         settings: 'Ayarlar',
         history: 'Geçmiş',
         workspace: 'Çalışma Alanı',

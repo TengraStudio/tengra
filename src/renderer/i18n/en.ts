@@ -1001,6 +1001,8 @@ export const en = {
         emptyFolder: 'Empty folder',
         pinned: 'Pinned',
         recent: 'Recent',
+        clearHistory: 'Clear History',
+        confirmClearAll: 'Are you sure you want to delete all chats? This cannot be undone.',
         settings: 'Settings',
         history: 'History',
         workspace: 'Workspace',

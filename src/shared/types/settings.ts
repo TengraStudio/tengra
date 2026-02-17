@@ -212,6 +212,17 @@ export type AppSettings = {
         modelUpdateInterval?: number; // ms, default 1 hour
         tokenRefreshInterval?: number; // ms, default 5 minutes
         copilotRefreshInterval?: number; // ms, default 15 minutes
+        agentProviderRotation?: {
+            defaultProjectId?: string;
+            byProject?: Record<string, {
+                chain: {
+                    cloud: string[];
+                    local: string[];
+                };
+                strategy?: 'provider_priority' | 'balanced' | 'local_first';
+                updatedAt?: number;
+            }>;
+        };
     };
     terminal?: {
         fontSize?: number;
