@@ -21,11 +21,11 @@ import {
   X,
 } from 'lucide-react';
 import React from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -107,34 +107,37 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
       )}
 
       {/* List */}
-      <ScrollArea className="flex-1">
-        <div className="grid grid-cols-1 gap-4 pb-6">
-          {memories.length === 0 ? (
-            <EmptyState
-              icon={isArchiveTab ? Archive : CheckCircle}
-              title={isArchiveTab ? t('memory.noArchivedTitle') : t('memory.noConfirmedTitle')}
-              description={
-                isArchiveTab
-                  ? t('memory.noArchivedDesc')
-                  : t('memory.noConfirmedDesc')
-              }
-            />
-          ) : (
-            memories.map((memory) => (
-              <ConfirmedMemoryCard
-                key={memory.id}
-                memory={memory}
-                isSelected={selectedIds.has(memory.id)}
-                onToggleSelect={() => onToggleSelect(memory.id)}
-                onEdit={() => onEdit(memory)}
-                onDelete={() => onDelete(memory.id)}
-                onArchive={() => onArchive(memory.id)}
-                onRestore={() => onRestore(memory.id)}
-              />
-            ))
-          )}
-        </div>
-      </ScrollArea>
+      <div className="flex-1">
+        {memories.length === 0 ? (
+          <EmptyState
+            icon={isArchiveTab ? Archive : CheckCircle}
+            title={isArchiveTab ? t('memory.noArchivedTitle') : t('memory.noConfirmedTitle')}
+            description={
+              isArchiveTab
+                ? t('memory.noArchivedDesc')
+                : t('memory.noConfirmedDesc')
+            }
+          />
+        ) : (
+          <Virtuoso
+            style={{ height: '100%' }}
+            data={memories}
+            itemContent={(_index, memory) => (
+              <div className="pb-4">
+                <ConfirmedMemoryCard
+                  memory={memory}
+                  isSelected={selectedIds.has(memory.id)}
+                  onToggleSelect={() => onToggleSelect(memory.id)}
+                  onEdit={() => onEdit(memory)}
+                  onDelete={() => onDelete(memory.id)}
+                  onArchive={() => onArchive(memory.id)}
+                  onRestore={() => onRestore(memory.id)}
+                />
+              </div>
+            )}
+          />
+        )}
+      </div>
     </div>
   );
 };

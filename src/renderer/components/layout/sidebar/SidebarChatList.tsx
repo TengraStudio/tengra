@@ -1,5 +1,6 @@
 import { FolderPlus, MessageSquare, Pin, Search } from 'lucide-react';
 import React, { useMemo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 import { Chat, Folder } from '@/types';
 
@@ -56,6 +57,14 @@ export const SidebarChatList = React.memo(
             }
             return mapping;
         }, [filteredChats]);
+        const pinnedListHeight = useMemo(
+            () => Math.min(Math.max(pinnedChats.length * 42, 84), 320),
+            [pinnedChats.length]
+        );
+        const recentListHeight = useMemo(
+            () => Math.min(Math.max(recentChats.length * 42, 84), 320),
+            [recentChats.length]
+        );
 
         return (
             <>
@@ -87,15 +96,16 @@ export const SidebarChatList = React.memo(
                                     <Pin className="w-3 h-3" /> {t('sidebar.pinned')}
                                 </p>
                             )}
-                            <div className="space-y-0.5">
-                                {pinnedChats.map(chat => (
-                                    <div
-                                        key={chat.id}
-                                        className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards"
-                                    >
-                                        {renderChatItem(chat)}
-                                    </div>
-                                ))}
+                            <div>
+                                <Virtuoso
+                                    style={{ height: pinnedListHeight }}
+                                    data={pinnedChats}
+                                    itemContent={(_index, chat) => (
+                                        <div className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
+                                            {renderChatItem(chat)}
+                                        </div>
+                                    )}
+                                />
                             </div>
                         </div>
                     )}
@@ -152,15 +162,16 @@ export const SidebarChatList = React.memo(
                                     )}
                                 </div>
                             )}
-                            <div className="space-y-0.5">
-                                {recentChats.map(chat => (
-                                    <div
-                                        key={chat.id}
-                                        className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards"
-                                    >
-                                        {renderChatItem(chat)}
-                                    </div>
-                                ))}
+                            <div>
+                                <Virtuoso
+                                    style={{ height: recentListHeight }}
+                                    data={recentChats}
+                                    itemContent={(_index, chat) => (
+                                        <div className="animate-in fade-in slide-in-from-left-1 duration-200 fill-mode-backwards">
+                                            {renderChatItem(chat)}
+                                        </div>
+                                    )}
+                                />
                             </div>
                         </div>
                     )}

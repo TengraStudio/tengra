@@ -4,7 +4,7 @@ import { useChatGenerator } from '@renderer/features/chat/hooks/useChatGenerator
 import { useFolderManager } from '@renderer/features/chat/hooks/useFolderManager';
 import { usePromptManager } from '@renderer/features/chat/hooks/usePromptManager';
 import { useSpeechRecognition } from '@renderer/features/chat/hooks/useSpeechRecognition';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
@@ -97,10 +97,10 @@ function useChatInitialization(loadFolders: () => Promise<void>, setChats: React
     useEffect(() => {
         const load = async () => {
             const allChats = await window.electron.db.getAllChats();
-            // Limit chats loaded into memory and trim messages per chat
+            // Load chat metadata first; message bodies are loaded lazily per chat selection.
             const trimmedChats = trimChats((allChats as Chat[]).map(chat => ({
                 ...chat,
-                messages: trimMessages(chat.messages)
+                messages: []
             })));
             setChats(trimmedChats);
             await loadFolders();
@@ -182,17 +182,26 @@ export function useChatManager(options: UseChatManagerOptions) {
     const streamingSpeed = useMemo(() => currentStreamState?.speed ?? null, [currentStreamState]);
     const isLoading = useMemo(() => currentChatId ? Boolean(currentChat?.isGenerating) || Boolean(currentStreamState) : false, [currentChatId, currentChat?.isGenerating, currentStreamState]);
     const messages = useMemo(() => currentChat?.messages ?? [], [currentChat]);
-    const normalizedSearchTerm = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
+    const deferredSearchTerm = useDeferredValue(searchTerm);
+    const normalizedSearchTerm = useMemo(() => deferredSearchTerm.trim().toLowerCase(), [deferredSearchTerm]);
+    const messageSearchIndex = useMemo(() => {
+        const index = new Map<string, string>();
+        for (const message of messages) {
+            index.set(
+                message.id,
+                (typeof message.content === 'string' ? message.content : '').toLowerCase()
+            );
+        }
+        return index;
+    }, [messages]);
     const displayMessages = useMemo(
         () =>
             normalizedSearchTerm === ''
                 ? messages
                 : messages.filter(message =>
-                    (typeof message.content === 'string' ? message.content : '')
-                        .toLowerCase()
-                        .includes(normalizedSearchTerm)
+                    (messageSearchIndex.get(message.id) ?? '').includes(normalizedSearchTerm)
                 ),
-        [messages, normalizedSearchTerm]
+        [messages, messageSearchIndex, normalizedSearchTerm]
     );
 
     const handleSend = useCallback(async (customInput?: string) => {

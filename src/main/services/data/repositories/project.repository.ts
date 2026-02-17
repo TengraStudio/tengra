@@ -14,9 +14,7 @@ export class ProjectRepository extends BaseRepository {
     }
 
     async getProjects(): Promise<Project[]> {
-        const rows = await this.adapter
-            .prepare('SELECT * FROM projects ORDER BY updated_at DESC')
-            .all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM projects ORDER BY updated_at DESC');
         return rows.map(r => this.mapRowToProject(r));
     }
 

@@ -3437,5 +3437,15 @@
       "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
       "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
     ]
+  },
+  "2026-02-17-copilot-token-refactor": {
+    "title": "Copilot Token Refresh Refactor",
+    "summary": "Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.",
+    "items": [
+      "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.",
+      "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
+      "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
+      "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
+    ]
   }
 }

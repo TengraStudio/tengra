@@ -265,8 +265,21 @@ const handleThrottledUpdates = (params: {
     finalReasoning: string;
     finalVariants: Record<number, { content: string; reasoning: string }>;
     setChats: Dispatch<SetStateAction<Chat[]>>;
+    queueDbSave: (options: SaveToDbOptions) => void;
 }): { lastSaveTime: number; lastDbSaveTime: number } => {
-    const { now, lastSaveTime, lastDbSaveTime, finalContent, chatId, assistantId, activeModel, finalReasoning, finalVariants, setChats } = params;
+    const {
+        now,
+        lastSaveTime,
+        lastDbSaveTime,
+        finalContent,
+        chatId,
+        assistantId,
+        activeModel,
+        finalReasoning,
+        finalVariants,
+        setChats,
+        queueDbSave,
+    } = params;
     
     let updatedLastSaveTime = lastSaveTime;
     let updatedLastDbSaveTime = lastDbSaveTime;
@@ -278,7 +291,13 @@ const handleThrottledUpdates = (params: {
 
     if (shouldSaveToDb(now, lastDbSaveTime, finalContent)) {
         updatedLastDbSaveTime = now;
-        void saveMessageToDb({ assistantId, model: activeModel, content: finalContent, reasoning: finalReasoning, variants: finalVariants });
+        queueDbSave({
+            assistantId,
+            model: activeModel,
+            content: finalContent,
+            reasoning: finalReasoning,
+            variants: finalVariants,
+        });
     }
 
     return { lastSaveTime: updatedLastSaveTime, lastDbSaveTime: updatedLastDbSaveTime };
@@ -299,6 +318,28 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
     let lastSaveTime = Date.now();
     let lastDbSaveTime = Date.now();
+    let pendingDbSave: Promise<void> | null = null;
+    let queuedDbSave: SaveToDbOptions | null = null;
+
+    const queueDbSave = (saveOptions: SaveToDbOptions): void => {
+        if (pendingDbSave) {
+            queuedDbSave = saveOptions;
+            return;
+        }
+        pendingDbSave = saveMessageToDb(saveOptions)
+            .catch((error: unknown) => {
+                const err = error instanceof Error ? error : new Error(String(error));
+                window.electron.log.error('[processChatStream] Failed to save streamed message', err);
+            })
+            .finally(() => {
+                pendingDbSave = null;
+                if (queuedDbSave) {
+                    const nextSave = queuedDbSave;
+                    queuedDbSave = null;
+                    queueDbSave(nextSave);
+                }
+            });
+    };
 
     // Process stream chunks
     for await (const chunk of stream) {
@@ -308,13 +349,13 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
 
         // Update state if chunk produced changes
         if (result.updated) {
-            if (result.streamError) {
-                if (index === 0) {
-                    const suffix = buildStreamInterruptedSuffix(result.streamError);
-                    if (!finalContent.includes(suffix)) {
-                        finalContent = `${finalContent}${suffix}`.trim();
-                    }
+            if (result.streamError && index === 0) {
+                const suffix = buildStreamInterruptedSuffix(result.streamError);
+                if (!finalContent.includes(suffix)) {
+                    finalContent = `${finalContent}${suffix}`.trim();
                 }
+            }
+            if (result.streamError) {
                 break;
             }
 
@@ -343,10 +384,25 @@ export const processChatStream = async (options: ProcessStreamOptions): Promise<
         // Throttled updates
         const now = Date.now();
         const throttleResult = handleThrottledUpdates({
-            now, lastSaveTime, lastDbSaveTime, finalContent, chatId, assistantId, activeModel, finalReasoning, finalVariants, setChats
+            now,
+            lastSaveTime,
+            lastDbSaveTime,
+            finalContent,
+            chatId,
+            assistantId,
+            activeModel,
+            finalReasoning,
+            finalVariants,
+            setChats,
+            queueDbSave,
         });
         lastSaveTime = throttleResult.lastSaveTime;
         lastDbSaveTime = throttleResult.lastDbSaveTime;
+    }
+
+    const pendingSave = pendingDbSave;
+    if (pendingSave) {
+        await Promise.resolve(pendingSave);
     }
 
     // Final updates
@@ -388,21 +444,48 @@ interface UpdateChatsStateOptions {
     variants: Record<number, { content: string; reasoning: string }>
 }
 
+const updateMessageById = (
+    messages: Message[],
+    messageId: string,
+    updater: (message: Message) => Message
+): Message[] => {
+    const messageIndex = messages.findIndex(message => message.id === messageId);
+    if (messageIndex < 0) {
+        return messages;
+    }
+    const updatedMessages = [...messages];
+    updatedMessages[messageIndex] = updater(messages[messageIndex]);
+    return updatedMessages;
+};
+
+const updateChatById = (
+    chats: Chat[],
+    chatId: string,
+    updater: (chat: Chat) => Chat
+): Chat[] => {
+    const chatIndex = chats.findIndex(chat => chat.id === chatId);
+    if (chatIndex < 0) {
+        return chats;
+    }
+    const updatedChats = [...chats];
+    updatedChats[chatIndex] = updater(chats[chatIndex]);
+    return updatedChats;
+};
+
 const updateChatsState = (options: UpdateChatsStateOptions) => {
     const { setChats, chatId, assistantId, model, content, reasoning, variants } = options;
-    setChats((prev) => prev.map((c) => c.id === chatId ? {
-        ...c,
-        messages: c.messages.map((m) => {
-            if (m.id !== assistantId) { return m; }
-            const currentVariants = createVariantsArray(assistantId, model, variants);
-            return {
-                ...m,
+    setChats(prev => updateChatById(prev, chatId, (chat) => {
+        const currentVariants = createVariantsArray(assistantId, model, variants);
+        return {
+            ...chat,
+            messages: updateMessageById(chat.messages, assistantId, (message) => ({
+                ...message,
                 content,
                 reasoning: reasoning || undefined,
                 variants: currentVariants.length > 1 ? currentVariants : undefined
-            };
-        })
-    } : c));
+            }))
+        };
+    }));
 };
 
 interface SaveToDbOptions {

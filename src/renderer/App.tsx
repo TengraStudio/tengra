@@ -111,7 +111,9 @@ function MainApp() {
         currentView,
         isSidebarCollapsed,
         setIsSidebarCollapsed,
+        setShowCommandPalette,
         addToast,
+        setCurrentView,
     } = appState;
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
@@ -159,15 +161,24 @@ function MainApp() {
         };
         void clear();
     }, [currentChatId, setChats]);
+    const handleToggleSidebar = useCallback(() => {
+        setIsSidebarCollapsed(!isSidebarCollapsed);
+    }, [isSidebarCollapsed, setIsSidebarCollapsed]);
+    const handleOpenSettings = useCallback((category?: SettingsCategory) => {
+        setCurrentView('settings');
+        if (category) {
+            setSettingsCategory(category);
+        }
+    }, [setCurrentView, setSettingsCategory]);
 
     const keyboardShortcutsConfig = useMemo(
         () => ({
             onCommandPalette: () => {
-                appState.setShowCommandPalette(!appState.showCommandPalette);
+                setShowCommandPalette(!appState.showCommandPalette);
             },
             onNewChat: createNewChat,
             onOpenSettings: () => {
-                appState.setCurrentView('settings');
+                setCurrentView('settings');
                 setSettingsCategory('general');
             },
             onShowShortcuts: () => {
@@ -175,10 +186,10 @@ function MainApp() {
             },
             onClearChat: handleClearChat,
             onSwitchView: (view: AppView) => {
-                appState.setCurrentView(view);
+                setCurrentView(view);
             },
             onToggleSidebar: () => {
-                setIsSidebarCollapsed(!isSidebarCollapsed);
+                handleToggleSidebar();
             },
             onCloseModals: () => {
                 appState.setShowCommandPalette(false);
@@ -194,9 +205,10 @@ function MainApp() {
             appState,
             createNewChat,
             currentChatId,
+            handleToggleSidebar,
             handleClearChat,
-            isSidebarCollapsed,
-            setIsSidebarCollapsed,
+            setCurrentView,
+            setShowCommandPalette,
             setSettingsCategory
         ]
     );
@@ -206,13 +218,13 @@ function MainApp() {
 
     useEffect(() => {
         const openPalette = () => {
-            appState.setShowCommandPalette(true);
+            setShowCommandPalette(true);
         };
         window.addEventListener('app:open-command-palette', openPalette as EventListener);
         return () => {
             window.removeEventListener('app:open-command-palette', openPalette as EventListener);
         };
-    }, [appState.setShowCommandPalette]);
+    }, [setShowCommandPalette]);
 
     useEffect(() => {
         const remove = window.electron.ipcRenderer.on(
@@ -263,17 +275,10 @@ function MainApp() {
                             sidebarContent={
                                 <Sidebar
                                     currentView={appState.currentView}
-                                    onChangeView={appState.setCurrentView}
+                                    onChangeView={setCurrentView}
                                     isCollapsed={appState.isSidebarCollapsed}
-                                    toggleSidebar={() => {
-                                        appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed);
-                                    }}
-                                    onOpenSettings={(cat?: SettingsCategory) => {
-                                        appState.setCurrentView('settings');
-                                        if (cat) {
-                                            setSettingsCategory(cat);
-                                        }
-                                    }}
+                                    toggleSidebar={handleToggleSidebar}
+                                    onOpenSettings={handleOpenSettings}
                                     onSearch={() => { }}
                                 />
                             }
@@ -321,7 +326,7 @@ function MainApp() {
                     t={t}
                     handleAntigravityLogout={handleAntigravityLogout}
                     setSettingsCategory={setSettingsCategory}
-                    setCurrentView={appState.setCurrentView}
+                    setCurrentView={setCurrentView}
                     showShortcuts={appState.showShortcuts}
                     setShowShortcuts={appState.setShowShortcuts}
                     isAudioOverlayOpen={appState.isAudioOverlayOpen}
@@ -361,15 +366,10 @@ function MainApp() {
                         const p = projects.find(pro => pro.id === id);
                         if (p) {
                             setSelectedProject(p);
-                            appState.setCurrentView('projects');
+                            setCurrentView('projects');
                         }
                     }}
-                    onOpenSettings={(cat?: SettingsCategory) => {
-                        appState.setCurrentView('settings');
-                        if (cat) {
-                            setSettingsCategory(cat);
-                        }
-                    }}
+                    onOpenSettings={handleOpenSettings}
                     onOpenSSHManager={() => {
                         appState.setShowSSHManager(true);
                     }}
@@ -391,17 +391,10 @@ function MainApp() {
                         sidebarContent={
                             <Sidebar
                                 currentView={appState.currentView}
-                                onChangeView={appState.setCurrentView}
+                                onChangeView={setCurrentView}
                                 isCollapsed={appState.isSidebarCollapsed}
-                                toggleSidebar={() => {
-                                    appState.setIsSidebarCollapsed(!appState.isSidebarCollapsed);
-                                }}
-                                onOpenSettings={(cat?: SettingsCategory) => {
-                                    appState.setCurrentView('settings');
-                                    if (cat) {
-                                        setSettingsCategory(cat);
-                                    }
-                                }}
+                                toggleSidebar={handleToggleSidebar}
+                                onOpenSettings={handleOpenSettings}
                                 onSearch={() => { }}
                             />
                         }

@@ -4,6 +4,7 @@ import { AppSettings } from '@shared/types';
 import { CodexUsage, QuotaResponse } from '@shared/types/quota';
 import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-react';
 import React, { memo, useState } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { Language, useTranslation } from '@/i18n';
@@ -302,44 +303,48 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                             </button>
                             <div className="text-right">Actions</div>
                         </div>
-                        {sortedProjects.map((project) => (
-                            <div key={project.id} className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
-                                <div>
-                                    <input
-                                        type="checkbox"
-                                        checked={sm.state.selectedProjectIds.has(project.id)}
-                                        onChange={() => sm.toggleSelection(project.id)}
-                                        className="w-4 h-4 rounded border-border/40 bg-muted/30 text-foreground focus:ring-foreground/20 cursor-pointer"
-                                    />
+                        <Virtuoso
+                            style={{ height: 520 }}
+                            data={sortedProjects}
+                            itemContent={(_index, project) => (
+                                <div className="grid grid-cols-[40px_2fr_2fr_1fr_160px] gap-3 px-4 py-3 border-t border-border/20 items-center text-sm">
+                                    <div>
+                                        <input
+                                            type="checkbox"
+                                            checked={sm.state.selectedProjectIds.has(project.id)}
+                                            onChange={() => sm.toggleSelection(project.id)}
+                                            className="w-4 h-4 rounded border-border/40 bg-muted/30 text-foreground focus:ring-foreground/20 cursor-pointer"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => onSelectProject?.(project)}
+                                        className="text-left min-w-0"
+                                        title={project.description || t('projects.noDescription')}
+                                    >
+                                        <div className="font-medium truncate">{project.title}</div>
+                                        <div className="text-xs text-muted-foreground truncate">{project.description || t('projects.noDescription')}</div>
+                                    </button>
+                                    <div className="text-xs text-muted-foreground truncate font-mono">{project.path}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {new Date(project.updatedAt).toLocaleDateString()}
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1">
+                                        <button onClick={() => onSelectProject?.(project)} className="p-2 rounded-md hover:bg-muted/30" title="Open">
+                                            <FolderOpen className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => sm.startArchive(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('projects.archiveProject')}>
+                                            <Archive className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => sm.startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => onSelectProject?.(project)}
-                                    className="text-left min-w-0"
-                                    title={project.description || t('projects.noDescription')}
-                                >
-                                    <div className="font-medium truncate">{project.title}</div>
-                                    <div className="text-xs text-muted-foreground truncate">{project.description || t('projects.noDescription')}</div>
-                                </button>
-                                <div className="text-xs text-muted-foreground truncate font-mono">{project.path}</div>
-                                <div className="text-xs text-muted-foreground">
-                                    {new Date(project.updatedAt).toLocaleDateString()}
-                                </div>
-                                <div className="flex items-center justify-end gap-1">
-                                    <button onClick={() => onSelectProject?.(project)} className="p-2 rounded-md hover:bg-muted/30" title="Open">
-                                        <FolderOpen className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => sm.startArchive(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('projects.archiveProject')}>
-                                        <Archive className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => sm.startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            )}
+                        />
                         {sortedProjects.length === 0 && (
                             <div className="py-12 text-center border-t border-border/20">
                                 <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />

@@ -4,6 +4,38 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-17-copilot-token-refactor",
+      "date": "2026-02-17",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "CopilotService",
+        "TokenService",
+        "tandem-token-service",
+        "AuthService"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Copilot Token Refresh Refactor",
+          "summary": "Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.",
+          "items": [
+            "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.",
+            "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
+            "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
+            "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-17-llm-security-and-attachments",
       "date": "2026-02-17",
       "channel": "stable",
@@ -63,7 +95,15 @@
             "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
             "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
             "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).",
-            "- **Performance Batch #1**: Completed key PERF refactors including MessageList render-path state removal, Sidebar folder-chat precomputation, MessageBubble comparator optimization (removed `JSON.stringify` deep compares), project search index caching, and deferred/indexed sidebar search with cached pinned/recent derivations."
+            "- **Performance Batch #1**: Completed key PERF refactors including MessageList render-path state removal, Sidebar folder-chat precomputation, MessageBubble comparator optimization (removed `JSON.stringify` deep compares), project search index caching, and deferred/indexed sidebar search with cached pinned/recent derivations.",
+            "- **Performance Batch #2**: Memoized MessageList action handlers for stable row callbacks and changed project sorting flow to sort once per active sort mode, then filter the sorted result.",
+            "- **Performance Batch #3**: Added deferred + indexed message search in `useChatManager` to reduce repeated per-message lowercasing and smooth search updates while typing.",
+            "- **Performance Batch #4**: Optimized stream update paths by replacing callback state-read hacks with local message snapshots in tool loops, throttling multi-model streaming fanout, reducing nested chat/message mapping on streaming ticks, coalescing in-flight DB stream saves, and deferring non-critical startup services until first paint.",
+            "- **Performance Batch #5**: Added virtualization for project list mode and confirmed memories to reduce renderer work for large datasets.",
+            "- **Performance Batch #6**: Switched chat startup hydration to metadata-first loading and lazy message fetch per selected chat to avoid full message payload loading at app start.",
+            "- **Performance Batch #7**: Added serialized background PDF export queueing and converted data migration flows from sync filesystem calls to async chunked operations.",
+            "- **Performance Batch #8**: Added repository-level paginated SELECT helper and applied it to high-volume chat/project/knowledge read paths to avoid unbounded in-memory scans.",
+            "- **Performance Batch #9**: Finished remaining renderer PERF items with sidebar chat list virtualization, cached think/plan section parsing, memoized markdown output for stable messages, lazy-loaded markdown renderer module, and split root app callbacks/subscriptions to reduce avoidable tree rerenders."
           ]
         }
       }

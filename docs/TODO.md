@@ -1235,34 +1235,34 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### ⚡ Performance Audit TODOs
 - [x] **AUD-PERF-001**: Remove state updates in render path (`src/renderer/features/chat/components/MessageList.tsx`)
 - [x] **AUD-PERF-002**: Move focus recovery scan out of per-render path (`src/renderer/features/chat/components/MessageList.tsx`)
-- [ ] **AUD-PERF-003**: Memoize message action callbacks to reduce child rerenders (`src/renderer/features/chat/components/MessageList.tsx`)
+- [x] **AUD-PERF-003**: Memoize message action callbacks to reduce child rerenders (`src/renderer/features/chat/components/MessageList.tsx`)
 - [x] **AUD-PERF-004**: Replace sync layout scroll preservation with passive strategy (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
 - [x] **AUD-PERF-005**: Precompute folder-chat mappings (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
-- [ ] **AUD-PERF-006**: Add chat list virtualization in sidebar (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
+- [x] **AUD-PERF-006**: Add chat list virtualization in sidebar (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
 - [x] **AUD-PERF-007**: Debounce + index chat search normalization (`src/renderer/components/layout/Sidebar.tsx`)
 - [x] **AUD-PERF-008**: Cache pinned/recent derivations (`src/renderer/components/layout/Sidebar.tsx`)
-- [ ] **AUD-PERF-009**: Add project list virtualization (`src/renderer/features/projects/ProjectsPage.tsx`)
+- [x] **AUD-PERF-009**: Add project list virtualization (`src/renderer/features/projects/ProjectsPage.tsx`)
 - [x] **AUD-PERF-010**: Cache project lowercase search keys (`src/renderer/features/projects/ProjectsPage.tsx`)
-- [ ] **AUD-PERF-011**: Avoid full clone/sort on each sort interaction (`src/renderer/features/projects/ProjectsPage.tsx`)
-- [ ] **AUD-PERF-012**: Virtualize confirmed memory cards (`src/renderer/features/memory/components/ConfirmedMemoriesList.tsx`)
+- [x] **AUD-PERF-011**: Avoid full clone/sort on each sort interaction (`src/renderer/features/projects/ProjectsPage.tsx`)
+- [x] **AUD-PERF-012**: Virtualize confirmed memory cards (`src/renderer/features/memory/components/ConfirmedMemoriesList.tsx`)
 - [x] **AUD-PERF-013**: Remove deep `JSON.stringify` prop comparators (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [ ] **AUD-PERF-014**: Parse think/plan tags once at ingestion (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [ ] **AUD-PERF-015**: Cache markdown render output for stable messages (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [ ] **AUD-PERF-016**: Lazy-load heavy markdown/code renderer stack (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [ ] **AUD-PERF-017**: Replace startup full-chat load with paged loading (`src/renderer/features/chat/hooks/useChatManager.ts`)
-- [ ] **AUD-PERF-018**: Use indexed/debounced message search in chat (`src/renderer/features/chat/hooks/useChatManager.ts`)
-- [ ] **AUD-PERF-019**: Reduce nested map updates on streaming ticks (`src/renderer/features/chat/hooks/process-stream.ts`)
-- [ ] **AUD-PERF-020**: Batch/coalesce DB writes during stream (`src/renderer/features/chat/hooks/process-stream.ts`)
-- [ ] **AUD-PERF-021**: Coalesce multi-model streaming state fanout (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
-- [ ] **AUD-PERF-022**: Replace `setChats` callback state-read hack with refs/store (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
-- [ ] **AUD-PERF-023**: Split root app subscriptions to reduce full-tree rerenders (`src/renderer/App.tsx`)
-- [ ] **AUD-PERF-024**: Defer non-critical startup initialization until after first paint (`src/main/main.ts`)
-- [ ] **AUD-PERF-025**: Offload PDF export to worker/background queue (`src/main/services/export/export.service.ts`)
+- [x] **AUD-PERF-014**: Parse think/plan tags once at ingestion (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [x] **AUD-PERF-015**: Cache markdown render output for stable messages (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [x] **AUD-PERF-016**: Lazy-load heavy markdown/code renderer stack (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [x] **AUD-PERF-017**: Replace startup full-chat load with paged loading (`src/renderer/features/chat/hooks/useChatManager.ts`)
+- [x] **AUD-PERF-018**: Use indexed/debounced message search in chat (`src/renderer/features/chat/hooks/useChatManager.ts`)
+- [x] **AUD-PERF-019**: Reduce nested map updates on streaming ticks (`src/renderer/features/chat/hooks/process-stream.ts`)
+- [x] **AUD-PERF-020**: Batch/coalesce DB writes during stream (`src/renderer/features/chat/hooks/process-stream.ts`)
+- [x] **AUD-PERF-021**: Coalesce multi-model streaming state fanout (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
+- [x] **AUD-PERF-022**: Replace `setChats` callback state-read hack with refs/store (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
+- [x] **AUD-PERF-023**: Split root app subscriptions to reduce full-tree rerenders (`src/renderer/App.tsx`)
+- [x] **AUD-PERF-024**: Defer non-critical startup initialization until after first paint (`src/main/main.ts`)
+- [x] **AUD-PERF-025**: Offload PDF export to worker/background queue (`src/main/services/export/export.service.ts`)
 - [x] **AUD-PERF-026**: Replace sync gallery stat scans with async batched scans (`src/main/ipc/gallery.ts`)
 - [x] **AUD-PERF-027**: Remove sync log cleanup from startup/interval path (`src/main/logging/logger.ts`)
-- [ ] **AUD-PERF-028**: Convert sync data migrations to async chunked operations (`src/main/services/data/data.service.ts`)
+- [x] **AUD-PERF-028**: Convert sync data migrations to async chunked operations (`src/main/services/data/data.service.ts`)
 - [x] **AUD-PERF-029**: Replace sync terminal backend detection command (`src/main/services/terminal/backends/windows-terminal.backend.ts`)
-- [ ] **AUD-PERF-030**: Replace unbounded SELECT + in-memory loops with pagination (`src/main/services/data/repositories/*.ts`)
+- [x] **AUD-PERF-030**: Replace unbounded SELECT + in-memory loops with pagination (`src/main/services/data/repositories/*.ts`)
 
 ### ♿ UI/UX & Accessibility Audit TODOs
 - [ ] **AUD-UX-001**: Add live region announcement for streaming/new messages (`src/renderer/features/chat/components/MessageList.tsx`)
@@ -1339,6 +1339,8 @@ Work that has been successfully implemented and verified.
   - Progress: `MultiLLMOrchestrator` manages priority queues and concurrency.
   - Progress: Partial output preservation on stream errors.
   - Progress: `ModelRegistryService` normalizes model capabilities and refreshes cache.
+  - [x] **LLM-REF-01**: Refactor GitHub Copilot token refresh to use Rust-based `tandem-token-service` for improved reliability.
+  - [x] **SEC-001**: Token Rotation Hardening (TokenService + Rust refresher) implemented.
 
 ### 🎨 UI & UX
   - Progress: Added arrow key navigation, focus indicators, and regenerate shortcut.

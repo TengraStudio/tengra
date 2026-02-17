@@ -50,7 +50,7 @@ export class ChatRepository extends BaseRepository {
     }
 
     async getAllChats(): Promise<Chat[]> {
-        const rows = await this.adapter.prepare('SELECT * FROM chats ORDER BY updated_at DESC').all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM chats ORDER BY updated_at DESC');
         return rows.map(row => this.mapRowToChat(row));
     }
 
@@ -70,8 +70,7 @@ export class ChatRepository extends BaseRepository {
         }
 
         sql += ' ORDER BY updated_at DESC';
-
-        const rows = await this.adapter.prepare(sql).all<JsonObject>(...params);
+        const rows = await this.selectAllPaginated<JsonObject>(sql, params);
         return rows.map(row => this.mapRowToChat(row));
     }
 
@@ -163,7 +162,10 @@ export class ChatRepository extends BaseRepository {
     }
 
     async getMessages(chatId: string) {
-        const rows = await this.adapter.prepare('SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp ASC').all<JsonObject>(chatId);
+        const rows = await this.selectAllPaginated<JsonObject>(
+            'SELECT * FROM messages WHERE chat_id = ? ORDER BY timestamp ASC',
+            [chatId]
+        );
         return rows.map((row) => ({
             id: String(row.id),
             chatId: String(row.chat_id),
@@ -177,7 +179,7 @@ export class ChatRepository extends BaseRepository {
     }
 
     async getAllMessages() {
-        const rows = await this.adapter.prepare('SELECT * FROM messages ORDER BY timestamp ASC').all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM messages ORDER BY timestamp ASC');
         return rows.map((row) => ({
             id: String(row.id),
             chatId: String(row.chat_id),
@@ -292,13 +294,13 @@ export class ChatRepository extends BaseRepository {
     }
 
     async getBookmarkedMessages(): Promise<Array<{ id: string; chatId: string; content: string; timestamp: number; chatTitle?: string | undefined }>> {
-        const rows = await this.adapter.prepare(`
+        const rows = await this.selectAllPaginated<JsonObject>(`
             SELECT m.id, m.chat_id, m.content, m.timestamp, m.metadata, c.title as chat_title
             FROM messages m
             LEFT JOIN chats c ON m.chat_id = c.id
             WHERE json_extract(m.metadata, '$.isBookmarked') = 'true'
             ORDER BY m.timestamp DESC
-        `).all<JsonObject>();
+        `);
 
         return rows.map(r => ({
             id: String(r.id),

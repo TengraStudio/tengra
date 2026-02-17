@@ -145,7 +145,7 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async getAllSemanticFragments(): Promise<SemanticFragment[]> {
-        const rows = await this.adapter.prepare('SELECT * FROM semantic_fragments ORDER BY created_at DESC').all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM semantic_fragments ORDER BY created_at DESC');
         return rows.map(r => this.mapRowToFragment(r));
     }
 
@@ -215,7 +215,7 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async getAllEpisodicMemories(): Promise<EpisodicMemory[]> {
-        const rows = await this.adapter.prepare('SELECT * FROM episodic_memories ORDER BY created_at DESC').all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM episodic_memories ORDER BY created_at DESC');
         return rows.map(r => this.mapRowToMemory(r));
     }
 
@@ -251,7 +251,7 @@ export class KnowledgeRepository extends BaseRepository {
     }
 
     async getAllEntityKnowledge(): Promise<EntityKnowledge[]> {
-        const rows = await this.adapter.prepare('SELECT * FROM entity_knowledge').all<JsonObject>();
+        const rows = await this.selectAllPaginated<JsonObject>('SELECT * FROM entity_knowledge');
         return rows.map(r => this.mapRowToEntity(r));
     }
 

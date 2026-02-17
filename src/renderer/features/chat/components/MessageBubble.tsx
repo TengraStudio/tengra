@@ -22,8 +22,7 @@ import {
     VolumeX,
 } from 'lucide-react';
 import { Highlight, themes } from 'prism-react-renderer';
-import { isValidElement, memo, useEffect, useId, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { isValidElement, lazy, memo, Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -554,79 +553,82 @@ const MarkdownContent = memo(
         t: TranslationFn;
     }) => (
         <div className="markdown-body">
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-                components={{
-                    code: props => (
-                        <CodeBlock
-                            {...props}
-                            isSpeaking={isSpeaking}
-                            onStop={onStop}
-                            onSpeak={onSpeak}
-                            t={t}
-                        />
-                    ),
-                    img: props => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
-                    a: ({ href, children }) => (
-                        <a
-                            href={href}
-                            className="text-primary hover:underline underline-offset-4 font-medium"
-                            onClick={e => {
-                                e.preventDefault();
-                                if (href) {
-                                    window.electron.openExternal(href);
-                                }
-                            }}
-                        >
-                            {children}
-                        </a>
-                    ),
-                    li: ({ children }) => {
-                        const isCheckbox =
-                            Array.isArray(children) &&
-                            children.some(
-                                c =>
-                                    isValidElement(c) &&
-                                    (c as React.ReactElement<{ type?: string }>).props.type ===
-                                        'checkbox'
-                            );
-                        return (
-                            <li
-                                className={cn(isCheckbox ? 'list-none -ms-4' : 'list-disc', 'my-1')}
+            <Suspense fallback={<div className="text-sm text-muted-foreground">{t('common.loading')}</div>}>
+                <LazyReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                        code: props => (
+                            <CodeBlock
+                                {...props}
+                                isSpeaking={isSpeaking}
+                                onStop={onStop}
+                                onSpeak={onSpeak}
+                                t={t}
+                            />
+                        ),
+                        img: props => <MarkdownImage {...props} onCodeConvert={onCodeConvert} t={t} />,
+                        a: ({ href, children }) => (
+                            <a
+                                href={href}
+                                className="text-primary hover:underline underline-offset-4 font-medium"
+                                onClick={e => {
+                                    e.preventDefault();
+                                    if (href) {
+                                        window.electron.openExternal(href);
+                                    }
+                                }}
                             >
                                 {children}
-                            </li>
-                        );
-                    },
-                    input: ({ type, checked, ...props }) => {
-                        if (type === 'checkbox') {
+                            </a>
+                        ),
+                        li: ({ children }) => {
+                            const isCheckbox =
+                                Array.isArray(children) &&
+                                children.some(
+                                    c =>
+                                        isValidElement(c) &&
+                                        (c as React.ReactElement<{ type?: string }>).props.type ===
+                                            'checkbox'
+                                );
                             return (
-                                <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    readOnly
-                                    className="mr-2 accent-primary scale-110 align-middle"
-                                    {...props}
-                                />
+                                <li
+                                    className={cn(isCheckbox ? 'list-none -ms-4' : 'list-disc', 'my-1')}
+                                >
+                                    {children}
+                                </li>
                             );
-                        }
-                        return <input {...props} />;
-                    },
-                    ul: ({ children }) => <ul className="ps-4 my-2 space-y-1">{children}</ul>,
-                    ol: ({ children }) => (
-                        <ol className="list-decimal ps-4 my-2 space-y-1">{children}</ol>
-                    ),
-                }}
-            >
-                {content}
-            </ReactMarkdown>
+                        },
+                        input: ({ type, checked, ...props }) => {
+                            if (type === 'checkbox') {
+                                return (
+                                    <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        readOnly
+                                        className="mr-2 accent-primary scale-110 align-middle"
+                                        {...props}
+                                    />
+                                );
+                            }
+                            return <input {...props} />;
+                        },
+                        ul: ({ children }) => <ul className="ps-4 my-2 space-y-1">{children}</ul>,
+                        ol: ({ children }) => (
+                            <ol className="list-decimal ps-4 my-2 space-y-1">{children}</ol>
+                        ),
+                    }}
+                >
+                    {content}
+                </LazyReactMarkdown>
+            </Suspense>
         </div>
     )
 );
 MarkdownContent.displayName = 'MarkdownContent';
 
 // --- Sections ---
+const LazyReactMarkdown = lazy(() => import('react-markdown'));
 
 const ThoughtSection = memo(
     ({
@@ -743,20 +745,22 @@ const PlanSection = memo(
                     </span>
                 </div>
                 <div className="text-xs text-foreground/90 leading-relaxed font-medium">
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                            li: ({ children }) => (
-                                <li className="flex gap-2.5 my-1.5 items-start">
-                                    <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" />
-                                    <span>{children}</span>
-                                </li>
-                            ),
-                            ul: ({ children }) => <ul className="space-y-1">{children}</ul>,
-                        }}
-                    >
-                        {plan}
-                    </ReactMarkdown>
+                    <Suspense fallback={<div className="text-xs text-muted-foreground">{t('common.loading')}</div>}>
+                        <LazyReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                li: ({ children }) => (
+                                    <li className="flex gap-2.5 my-1.5 items-start">
+                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" />
+                                        <span>{children}</span>
+                                    </li>
+                                ),
+                                ul: ({ children }) => <ul className="space-y-1">{children}</ul>,
+                            }}
+                        >
+                            {plan}
+                        </LazyReactMarkdown>
+                    </Suspense>
                 </div>
                 {isLast && !isStreaming && onApprovePlan && (
                     <div className="mt-4 pt-4 border-t border-primary/10 flex justify-end">
@@ -828,6 +832,19 @@ const MessageBubbleContent = memo(
         t,
         isUser,
     }: MessageBubbleContentProps) => {
+        const markdownNode = useMemo(
+            () => (
+                <MarkdownContent
+                    content={displayContent}
+                    onSpeak={onSpeak}
+                    onStop={onStop}
+                    isSpeaking={isSpeaking}
+                    onCodeConvert={onCodeConvert}
+                    t={t}
+                />
+            ),
+            [displayContent, onSpeak, onStop, isSpeaking, onCodeConvert, t]
+        );
         if (quotaDetails) {
             return <QuotaErrorCard details={quotaDetails} t={t} />;
         }
@@ -848,16 +865,7 @@ const MessageBubbleContent = memo(
                 </div>
             );
         }
-        return (
-            <MarkdownContent
-                content={displayContent}
-                onSpeak={onSpeak}
-                onStop={onStop}
-                isSpeaking={isSpeaking}
-                onCodeConvert={onCodeConvert}
-                t={t}
-            />
-        );
+        return markdownNode;
     }
 );
 MessageBubbleContent.displayName = 'MessageBubbleContent';
@@ -1247,13 +1255,49 @@ MessageBubbleInner.displayName = 'MessageBubbleInner';
 
 // --- Main Hook Logic ---
 
+interface ParsedMessageSections {
+    thought: string | null;
+    plan: string | null;
+    displayContent: string;
+}
+
+const messageContentParseCache = new Map<string, ParsedMessageSections>();
+
+const parseTagSection = (
+    content: string,
+    tagName: 'think' | 'plan'
+): { value: string | null; content: string } => {
+    const match = new RegExp(`<${tagName}>([\\s\\S]*?)(?:<\\/${tagName}>|$)`).exec(content);
+    if (!match) {
+        return { value: null, content };
+    }
+    return {
+        value: match[1],
+        content: content.replace(new RegExp(`<${tagName}>[\\s\\S]*?(?:<\\/${tagName}>|$)`), ''),
+    };
+};
+
+const parseMessageTaggedSections = (
+    content: string,
+    reasoning: string | undefined,
+    streaming: string | undefined
+): ParsedMessageSections => {
+    const thoughtSection = parseTagSection(content, 'think');
+    const planSection = parseTagSection(thoughtSection.content, 'plan');
+    return {
+        thought: streaming ?? reasoning ?? thoughtSection.value,
+        plan: planSection.value,
+        displayContent: planSection.content.trim(),
+    };
+};
+
 const useMessageContent = (
     raw: Message['content'],
     reasoning: string | undefined,
     streaming: string | undefined
 ) =>
     useMemo(() => {
-        let content =
+        const content =
             typeof raw === 'string'
                 ? raw
                 : Array.isArray(raw)
@@ -1269,21 +1313,24 @@ const useMessageContent = (
                         })
                         .join('')
                   : '';
-        let r = reasoning ?? null;
-        if (!r) {
-            const m = /<think>([\s\S]*?)(?:<\/think>|$)/.exec(content);
-            if (m) {
-                r = m[1];
-                content = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/, '');
+        const cacheKey = `${content}::${reasoning ?? ''}`;
+        if (!streaming) {
+            const cached = messageContentParseCache.get(cacheKey);
+            if (cached) {
+                return cached;
             }
         }
-        const pm = /<plan>([\s\S]*?)(?:<\/plan>|$)/.exec(content);
-        let p = null;
-        if (pm) {
-            p = pm[1];
-            content = content.replace(/<plan>[\s\S]*?(?:<\/plan>|$)/, '');
+        const parsed = parseMessageTaggedSections(content, reasoning, streaming);
+        if (!streaming) {
+            messageContentParseCache.set(cacheKey, parsed);
+            if (messageContentParseCache.size > 500) {
+                const oldest = messageContentParseCache.keys().next().value;
+                if (oldest) {
+                    messageContentParseCache.delete(oldest);
+                }
+            }
         }
-        return { thought: streaming ?? r, plan: p, displayContent: content.trim() };
+        return parsed;
     }, [raw, reasoning, streaming]);
 
 interface QuotaErrorResponse {

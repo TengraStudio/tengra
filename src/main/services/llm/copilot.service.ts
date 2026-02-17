@@ -385,6 +385,17 @@ export class CopilotService extends BaseService {
             try {
                 await this.waitForRateLimit();
 
+                // 1. Try to get valid session token from AuthService (synced from Rust)
+                if (this.authService) {
+                    const account = await this.authService.getActiveAccountFull('copilot');
+                    if (account && account.sessionToken && account.expiresAt && account.expiresAt > Date.now()) {
+                        this.logInfo('Using proactive Copilot session token from AuthService');
+                        this.copilotSessionToken = account.sessionToken;
+                        this.tokenExpiresAt = account.expiresAt;
+                        return this.copilotSessionToken;
+                    }
+                }
+
                 // Ensure we have tokens loaded
                 if (!this.copilotAuthToken) {
                     await this.recoverTokenFromAuthService();
@@ -415,6 +426,24 @@ export class CopilotService extends BaseService {
                 const data = await response.json() as CopilotTokenResponse;
                 this.copilotSessionToken = data.token;
                 this.tokenExpiresAt = (data.expires_at ?? (Date.now() / 1000 + 1200)) * 1000;
+
+                // Persist to AuthService for Rust service monitoring
+                if (this.authService) {
+                    try {
+                        await this.authService.linkAccount('copilot', {
+                            accessToken: authHeaderToken, // Vital for Rust refresh
+                            sessionToken: this.copilotSessionToken,
+                            expiresAt: this.tokenExpiresAt,
+                            metadata: {
+                                plan: this.accountType
+                            }
+                        });
+                        this.logInfo('Persisted Copilot session token to AuthService');
+                    } catch (err) {
+                        this.logWarn(`Failed to persist Copilot token: ${getErrorMessage(err)}`);
+                    }
+                }
+
                 return this.copilotSessionToken;
             } finally {
                 this.tokenPromise = null;
@@ -423,6 +452,7 @@ export class CopilotService extends BaseService {
 
         return this.tokenPromise;
     }
+
 
     private async detectAccountType(authHeaderToken: string) {
         const usageRes = await fetch('https://api.github.com/copilot_internal/user', {

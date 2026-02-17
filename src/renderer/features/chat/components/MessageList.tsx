@@ -155,17 +155,6 @@ export const MessageList = memo(({
         [effectiveFocusedIndex, messages, onRegenerate]
     );
 
-    // Determine if we should follow the output (stick to bottom)
-    // We stick to bottom if we are loading (streaming) or if the user is near the bottom (handled by Virtuoso default 'smooth' or 'auto')
-
-    if (messages.length === 0 && isLoading) {
-        return (
-            <div className="p-4 h-full flex flex-col justify-end">
-                <MessageSkeleton />
-            </div>
-        );
-    }
-
     const renderMessageItem = useCallback((index: number, message: Message) => {
         const isStreamingCurrent =
             isLoading && index === messages.length - 1 && message.role === 'assistant';
@@ -218,6 +207,17 @@ export const MessageList = memo(({
         streamingSpeed,
         streamingReasoning,
     ]);
+
+    // Determine if we should follow the output (stick to bottom)
+    // We stick to bottom if we are loading (streaming) or if the user is near the bottom (handled by Virtuoso default 'smooth' or 'auto')
+
+    if (messages.length === 0 && isLoading) {
+        return (
+            <div className="p-4 h-full flex flex-col justify-end">
+                <MessageSkeleton />
+            </div>
+        );
+    }
 
     return (
         <div

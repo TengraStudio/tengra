@@ -276,6 +276,7 @@ export class TokenService extends BaseService {
                     provider: string
                     access_token?: string
                     refresh_token?: string
+                    session_token?: string
                     expires_at?: number
                 }
                 updated_at: number
@@ -296,7 +297,7 @@ export class TokenService extends BaseService {
                     continue;
                 }
 
-                if (data.token.access_token) {
+                if (data.token.access_token || data.token.session_token) {
                     // Check if database already has this or newer (optional but good for log clarity)
                     const fullAccount = await this.authService.getActiveAccountFull(data.token.provider);
                     if (fullAccount?.id === id && fullAccount.expiresAt === data.token.expires_at) {
@@ -308,6 +309,7 @@ export class TokenService extends BaseService {
                     await this.authService.updateToken(id, {
                         accessToken: data.token.access_token,
                         refreshToken: data.token.refresh_token,
+                        sessionToken: data.token.session_token,
                         expiresAt: data.token.expires_at
                     });
                     updatedCount++;
@@ -378,7 +380,7 @@ export class TokenService extends BaseService {
     }
 
     private isNativeProvider(account: LinkedAccount): boolean {
-        return this.isGoogleProvider(account) || this.isCodexProvider(account) || this.isClaudeProvider(account);
+        return this.isGoogleProvider(account) || this.isCodexProvider(account) || this.isClaudeProvider(account) || this.isCopilotProvider(account);
     }
 
 
@@ -424,6 +426,7 @@ export class TokenService extends BaseService {
             provider: account.provider,
             access_token: account.accessToken,
             refresh_token: account.refreshToken,
+            session_token: account.sessionToken,
             expires_at: account.expiresAt,
             scope: account.scope,
             email: account.email
@@ -431,7 +434,7 @@ export class TokenService extends BaseService {
 
         // 1. If refreshing, use immediate /refresh endpoint
         if (force || (account.expiresAt && (account.expiresAt - Date.now() < this.REFRESH_THRESHOLD_MS))) {
-            const refreshResponse = await this.system.processManager.sendRequest<{ success: boolean; token?: { access_token?: string; refresh_token?: string; expires_at?: number }; error?: string }>('token-service', {
+            const refreshResponse = await this.system.processManager.sendRequest<{ success: boolean; token?: { access_token?: string; refresh_token?: string; session_token?: string; expires_at?: number }; error?: string }>('token-service', {
                 type: 'Refresh',
                 token: nativeToken,
                 client_id: clientId,
@@ -443,6 +446,7 @@ export class TokenService extends BaseService {
                 await this.authService.updateToken(account.id, {
                     accessToken: refreshResponse.token.access_token,
                     refreshToken: refreshResponse.token.refresh_token,
+                    sessionToken: refreshResponse.token.session_token,
                     expiresAt: refreshResponse.token.expires_at
                 });
                 appLogger.info('TokenService', `Token refreshed immediately for ${account.provider}`);
@@ -462,6 +466,7 @@ export class TokenService extends BaseService {
             provider: account.provider,
             access_token: account.accessToken,
             refresh_token: account.refreshToken,
+            session_token: account.sessionToken,
             expires_at: account.expiresAt,
             scope: account.scope,
             email: account.email
@@ -493,7 +498,12 @@ export class TokenService extends BaseService {
 
     private isGithubProvider(account: LinkedAccount): boolean {
         const p = account.provider.toLowerCase();
-        return p === 'github' || p === 'copilot';
+        return p === 'github';
+    }
+
+    private isCopilotProvider(account: LinkedAccount): boolean {
+        const p = account.provider.toLowerCase();
+        return p === 'copilot';
     }
 
     private async refreshGithubToken(account: LinkedAccount) {
@@ -592,16 +602,20 @@ export class TokenService extends BaseService {
 
     private async refreshCopilotToken(): Promise<void> {
         try {
-            appLogger.debug('TokenService', 'Checking Copilot session token...');
+            appLogger.debug('TokenService', 'Refreshing Copilot session token via native service...');
 
-            const settings = this.settingsService.getSettings();
-            const copilotToken = settings.copilot?.token ?? await this.authService.getActiveToken('copilot_token');
-
-            if (copilotToken) {
-                this.copilotService.setGithubToken(copilotToken);
-                appLogger.info('TokenService', 'Copilot token loaded, session token will refresh on next use');
+            // Find active copilot account
+            const account = await this.authService.getActiveAccountFull('copilot');
+            if (account) {
+                // Force refresh means we want to ensure it's valid NOW.
+                // If it's not expired, refreshNativeToken won't hit the API unless force=true.
+                // We let the scheduler drive this, so strict expiry check is usually fine.
+                // But since this is a dedicated "refresh job", we might as well check expiry.
+                await this.refreshSingleToken(account, false);
             } else {
-                appLogger.warn('TokenService', 'No copilot_token found - user needs to re-login');
+                // Try to fallback to GitHub token if we don't have a dedicated copilot account yet?
+                // For now, assume migration has created 'copilot' provider accounts or user logged in.
+                appLogger.debug('TokenService', 'No active copilot account found to refresh.');
             }
         } catch (error) {
             appLogger.error('TokenService', `Failed to refresh Copilot token: ${getErrorMessage(error)}`);

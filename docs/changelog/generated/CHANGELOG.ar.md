@@ -15,6 +15,17 @@
 
 ## [2026-02-17]
 
+### Copilot Token Refresh Refactor
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.
+
+- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.
+- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
+- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
+- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
+
 ### LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion
 
 - **Type**: feature

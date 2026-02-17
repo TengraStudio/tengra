@@ -357,23 +357,15 @@ const executeToolTurnLoop = async (params: {
         setChats,
         activeWorkspacePath,
         systemMode,
+        chats,
     } = params;
 
     let currentAssistantId = assistantId;
     let toolIterations = 0;
     const MAX_TOOL_ITERATIONS = 5;
+    let currentMessages: Message[] = chats.find(c => c.id === chatId)?.messages ?? [];
 
     while (toolIterations < MAX_TOOL_ITERATIONS) {
-        // Re-fetch messages from latest state for each iteration
-        // Use a Promise to synchronously read the latest state via setChats callback
-        const currentMessages = await new Promise<Message[]>(resolve => {
-            setChats(prev => {
-                const msgs = prev.find(c => c.id === chatId)?.messages ?? [];
-                resolve(msgs);
-                return prev; // Don't modify state
-            });
-        });
-
         if (currentMessages.length === 0) {
             window.electron.log.error(
                 '[executeToolTurnLoop] No messages found, stopping tool iteration',
@@ -467,41 +459,29 @@ const executeToolTurnLoop = async (params: {
                 }
             }
 
-            // Update chats with assistant message (including tool calls) AND tool results
-            setChats(prev =>
-                prev.map(c => {
-                    if (c.id !== chatId) {
-                        return c;
-                    }
-                    return {
-                        ...c,
-                        messages: c.messages
-                            .map(m => (m.id === currentAssistantId ? assistantMsg : m))
-                            .concat(toolResults),
-                    };
-                })
-            );
-
             // Prepare for next turn
-            currentAssistantId = generateId();
-
-            // Add a placeholder for the next assistant response
+            const nextAssistantId = generateId();
             const nextAssistantPlaceholder: Message = {
-                id: currentAssistantId,
+                id: nextAssistantId,
                 role: 'assistant',
                 content: '',
                 timestamp: new Date(),
                 provider: selectedProvider,
                 model: activeModel,
             };
-            setChats(prev =>
-                prev.map(c => {
-                    if (c.id !== chatId) {
-                        return c;
-                    }
-                    return { ...c, messages: [...c.messages, nextAssistantPlaceholder] };
-                })
-            );
+
+            const messagesWithToolResults = currentMessages
+                .map(message => (message.id === currentAssistantId ? assistantMsg : message))
+                .concat(toolResults);
+            const nextMessages = [...messagesWithToolResults, nextAssistantPlaceholder];
+            currentMessages = nextMessages;
+            setChats(prev => prev.map(chat => (
+                chat.id === chatId
+                    ? { ...chat, messages: nextMessages }
+                    : chat
+            )));
+
+            currentAssistantId = nextAssistantId;
             void window.electron.db.addMessage({
                 ...nextAssistantPlaceholder,
                 chatId,
@@ -746,6 +726,7 @@ async function handleModelStreamIteration(params: {
     let variantContent = '';
     let variantReasoning = '';
     let lastUpdate = 0;
+    let lastStreamingStateUpdate = 0;
 
     for await (const chunk of stream) {
         if (chunk.content) {
@@ -755,23 +736,25 @@ async function handleModelStreamIteration(params: {
             variantReasoning += chunk.reasoning;
         }
 
-        const isMain = index === 0;
-        setStreamingStates((prev: Record<string, StreamStreamingState>) => {
-            const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
-            const variants = { ...state.variants };
-            variants[index] = { content: variantContent, reasoning: variantReasoning };
-            return {
-                ...prev,
-                [chatId]: {
-                    ...state,
-                    content: isMain ? variantContent : state.content,
-                    reasoning: isMain ? variantReasoning : state.reasoning,
-                    variants,
-                },
-            };
-        });
-
         const now = Date.now();
+        const isMain = index === 0;
+        if (now - lastStreamingStateUpdate >= 80 || !chunk.content) {
+            lastStreamingStateUpdate = now;
+            setStreamingStates((prev: Record<string, StreamStreamingState>) => {
+                const state = prev[chatId] ?? { content: '', reasoning: '', speed: null, variants: {} };
+                const variants = { ...state.variants };
+                variants[index] = { content: variantContent, reasoning: variantReasoning };
+                return {
+                    ...prev,
+                    [chatId]: {
+                        ...state,
+                        content: isMain ? variantContent : state.content,
+                        reasoning: isMain ? variantReasoning : state.reasoning,
+                        variants,
+                    },
+                };
+            });
+        }
         if (now - lastUpdate > 200 || !chunk.content) {
             lastUpdate = now;
             setChats((prev: Chat[]) =>

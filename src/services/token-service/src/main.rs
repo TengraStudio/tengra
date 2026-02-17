@@ -27,6 +27,7 @@ struct AuthToken {
     provider: String,
     refresh_token: Option<String>,
     access_token: Option<String>,
+    session_token: Option<String>, // New field for Copilot Session Token
     expires_at: Option<i64>,
     scope: Option<String>,
     email: Option<String>,
@@ -175,6 +176,29 @@ async fn handle_monitor(
                     error: None 
                 });
             }
+        }
+        // Preserve session_token if not provided in payload but exists in memory
+        if payload.token.session_token.is_none() && existing.token.session_token.is_some() {
+             let mut merged = payload.token.clone();
+             merged.session_token = existing.token.session_token.clone();
+             
+             let monitored = MonitoredToken {
+                token: merged,
+                client_id: payload.client_id,
+                client_secret: payload.client_secret,
+                updated_at: now_ms,
+            };
+            tokens.insert(payload.token.id.clone(), monitored);
+            
+             if let Err(e) = save_state(&state.store_path, &tokens) {
+                log(&format!("Failed to save state: {}", e));
+            }
+
+            return Json(Response {
+                success: true, 
+                token: Some(payload.token), 
+                error: None 
+            });
         }
     }
 
@@ -341,6 +365,11 @@ async fn execute_refresh(
     client_id: String, 
     client_secret: Option<String>
 ) -> Response {
+
+    if token.provider.contains("copilot") {
+        return fetch_copilot_token(client, token).await;
+    }
+
     let refresh_token_str = match &token.refresh_token {
         Some(rt) => rt,
         None => return Response { success: false, token: None, error: Some("No refresh token".into()) }
@@ -407,6 +436,57 @@ async fn execute_refresh(
             }
             token.expires_at = Some(chrono::Utc::now().timestamp_millis() + (data.expires_in * 1000));
             
+            Response { success: true, token: Some(token), error: None }
+        },
+        Err(e) => Response { success: false, token: None, error: Some(format!("Parse error: {}", e)) }
+    }
+}
+
+async fn fetch_copilot_token(client: &Client, mut token: AuthToken) -> Response {
+    let access_token = match &token.access_token {
+        Some(at) => at,
+        None => return Response { success: false, token: None, error: Some("No access token for Copilot".into()) }
+    };
+
+    // Copilot V2 Token Endpoint
+    let url = "https://api.github.com/copilot_internal/v2/token";
+    
+    // We need to mimic the VSCode Copilot extension headers
+    let request = client.get(url)
+        .header("Authorization", format!("token {}", access_token))
+        .header("Accept", "application/json")
+        .header("Editor-Version", "vscode/1.85.1") 
+        .header("Editor-Plugin-Version", "copilot/1.149.0") 
+        .header("User-Agent", "GithubCopilot/1.149.0")
+        .header("X-GitHub-Api-Version", "2023-07-07");
+
+    let res = match request.send().await {
+        Ok(r) => r,
+        Err(e) => return Response { success: false, token: None, error: Some(format!("Request failed: {}", e)) }
+    };
+
+    if !res.status().is_success() {
+         let status = res.status();
+         let error_body = res.text().await.unwrap_or_default();
+         log(&format!("Copilot token fetch failed with status {}. Body: {}", status, error_body));
+         return Response { success: false, token: None, error: Some(format!("HTTP {} - {}", status, error_body)) };
+    }
+
+    #[derive(Deserialize)]
+    struct CopilotTokenResponse {
+        token: String,
+        expires_at: i64,
+        // other fields ignored
+    }
+
+    match res.json::<CopilotTokenResponse>().await {
+        Ok(data) => {
+            token.session_token = Some(data.token);
+            // Copilot expires_at is usually a timestamp in seconds, we generally work with millis in database but here struct says i64.
+            // Copilot API returns seconds. Our AuthToken `expires_at` is usually millis (from JS Date.now()).
+            token.expires_at = Some(data.expires_at * 1000); 
+            
+            log("Refreshed Copilot session token");
             Response { success: true, token: Some(token), error: None }
         },
         Err(e) => Response { success: false, token: None, error: Some(format!("Parse error: {}", e)) }

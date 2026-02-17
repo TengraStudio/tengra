@@ -11,6 +11,8 @@ export interface ExportOptions {
 }
 
 export class ExportService extends BaseService {
+    private pdfExportQueue: Promise<void> = Promise.resolve();
+
     constructor() {
         super('ExportService');
     }
@@ -30,6 +32,20 @@ export class ExportService extends BaseService {
     }
 
     async exportToPDF(htmlContent: string, filePath: string): Promise<{ success: boolean; error?: string }> {
+        return await new Promise(resolve => {
+            this.pdfExportQueue = this.pdfExportQueue
+                .then(async () => {
+                    const result = await this.exportToPDFInternal(htmlContent, filePath);
+                    resolve(result);
+                })
+                .catch(error => {
+                    appLogger.error('ExportService', 'Failed to process PDF export queue', error as Error);
+                    resolve({ success: false, error: (error as Error).message });
+                });
+        });
+    }
+
+    private async exportToPDFInternal(htmlContent: string, filePath: string): Promise<{ success: boolean; error?: string }> {
         let printWindow: BrowserWindow | null = null;
         try {
             printWindow = new BrowserWindow({

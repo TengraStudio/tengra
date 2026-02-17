@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
@@ -38,7 +38,7 @@ export class DataService extends BaseService {
         this.logInfo('Initializing data service and ensuring directory structure...');
 
         try {
-            this.ensureDirectories();
+            await this.ensureDirectories();
             this.logInfo('Data service initialized successfully');
         } catch (error) {
             this.logError('Failed to initialize data service', error);
@@ -50,11 +50,11 @@ export class DataService extends BaseService {
         this.logInfo('Data service cleanup - no resources to clean');
     }
 
-    private ensureDirectories() {
-        if (!fs.existsSync(this.baseDir)) { fs.mkdirSync(this.baseDir, { recursive: true, mode: 0o700 }); }
-        Object.values(this.paths).forEach(p => {
-            if (!fs.existsSync(p)) { fs.mkdirSync(p, { recursive: true, mode: 0o700 }); }
-        });
+    private async ensureDirectories(): Promise<void> {
+        await fsp.mkdir(this.baseDir, { recursive: true, mode: 0o700 });
+        for (const targetPath of Object.values(this.paths)) {
+            await fsp.mkdir(targetPath, { recursive: true, mode: 0o700 });
+        }
     }
 
     getPath(type: DataType): string {
@@ -142,63 +142,76 @@ export class DataService extends BaseService {
 
         appLogger.info('DataService', 'Checking for migrations...');
 
-        for (const m of migrations) {
+        for (const [index, migration] of migrations.entries()) {
             try {
-                if (!fs.existsSync(m.old)) { continue; }
+                if (!(await this.pathExists(migration.old))) {
+                    continue;
+                }
 
-                if (m.isDir) {
-                    this.migrateDirectory(m.old, m.new);
+                if (migration.isDir) {
+                    await this.migrateDirectory(migration.old, migration.new);
                 } else {
-                    this.migrateFile(m.old, m.new);
+                    await this.migrateFile(migration.old, migration.new);
+                }
+                if ((index + 1) % 3 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
                 }
             } catch (error) {
-                appLogger.error('DataService', `Failed to migrate ${m.old}: ${getErrorMessage(error as Error)}`);
+                appLogger.error('DataService', `Failed to migrate ${migration.old}: ${getErrorMessage(error as Error)}`);
             }
         }
 
         // Cleanup: Remove legacy .cli-proxy-api folder from Root
         try {
             const legacyPath = path.join(rootPath, '.cli-proxy-api');
-            if (fs.existsSync(legacyPath)) {
+            if (await this.pathExists(legacyPath)) {
                 appLogger.info('DataService', 'Cleaning up legacy .cli-proxy-api folder');
-                fs.rmSync(legacyPath, { recursive: true, force: true });
+                await fsp.rm(legacyPath, { recursive: true, force: true });
             }
         } catch (e) {
             appLogger.error('DataService', `Failed to cleanup legacy folder: ${getErrorMessage(e as Error)}`);
         }
     }
 
-    private migrateDirectory(oldPath: string, newPath: string): void {
-        if (!fs.existsSync(newPath)) {
-            fs.mkdirSync(newPath, { recursive: true });
-        }
-
-        const files = fs.readdirSync(oldPath);
+    private async migrateDirectory(oldPath: string, newPath: string): Promise<void> {
+        await fsp.mkdir(newPath, { recursive: true });
+        const files = await fsp.readdir(oldPath);
         for (const file of files) {
             const oldFile = path.join(oldPath, file);
             const newFile = path.join(newPath, file);
-            if (fs.existsSync(newFile)) { continue; }
+            if (await this.pathExists(newFile)) {
+                continue;
+            }
             appLogger.info('DataService', `Migrating file ${file} to ${newPath}`);
-            fs.renameSync(oldFile, newFile);
+            await fsp.rename(oldFile, newFile);
         }
 
         // Try to remove old dir if empty
         try {
-            if (fs.readdirSync(oldPath).length === 0) {
-                fs.rmdirSync(oldPath);
+            if ((await fsp.readdir(oldPath)).length === 0) {
+                await fsp.rmdir(oldPath);
             }
         } catch {
             // Ignore error during cleanup of empty dir
         }
     }
 
-    private migrateFile(oldPath: string, newPath: string): void {
-        if (fs.existsSync(newPath)) { return; }
+    private async migrateFile(oldPath: string, newPath: string): Promise<void> {
+        if (await this.pathExists(newPath)) {
+            return;
+        }
         appLogger.info('DataService', `Migrating ${path.basename(oldPath)} to ${newPath}`);
         const destDir = path.dirname(newPath);
-        if (!fs.existsSync(destDir)) {
-            fs.mkdirSync(destDir, { recursive: true });
+        await fsp.mkdir(destDir, { recursive: true });
+        await fsp.rename(oldPath, newPath);
+    }
+
+    private async pathExists(targetPath: string): Promise<boolean> {
+        try {
+            await fsp.access(targetPath);
+            return true;
+        } catch {
+            return false;
         }
-        fs.renameSync(oldPath, newPath);
     }
 }

@@ -152,15 +152,29 @@ app.whenReady().then(async () => {
         });
     }
 
-    // Background Tasks
-    const { startOllama } = await import('@main/startup/ollama');
-    void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
-
-    const openedMainWindow = getMainWindow();
-    if (openedMainWindow) {
-        services.updateService.init(openedMainWindow);
-    }
-    void services.sentryService.init();
+    let deferredTasksStarted = false;
+    const runDeferredStartupTasks = () => {
+        if (deferredTasksStarted) {
+            return;
+        }
+        deferredTasksStarted = true;
+        void Promise.resolve().then(async () => {
+            const { startOllama } = await import('@main/startup/ollama');
+            void startOllama(getMainWindow, false).catch(err => appLogger.error('Main', `Ollama Fail: ${err}`));
+            const openedMainWindow = getMainWindow();
+            if (openedMainWindow) {
+                services.updateService.init(openedMainWindow);
+            }
+            void services.sentryService.init();
+        }).catch(error => {
+            appLogger.error('Main', 'Deferred startup tasks failed', error as Error);
+        });
+    };
+    mainWindow.once('ready-to-show', () => {
+        setTimeout(runDeferredStartupTasks, 0);
+    });
+    mainWindow.webContents.once('did-finish-load', runDeferredStartupTasks);
+    setTimeout(runDeferredStartupTasks, 5000);
 
 }).catch(e => {
     closeSplashWindow();
