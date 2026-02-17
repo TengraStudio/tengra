@@ -1,3 +1,4 @@
+import { detectFileType } from '@shared/utils/file-type.util';
 import { useState } from 'react';
 
 import { generateId } from '@/lib/utils';
@@ -140,8 +141,9 @@ async function optimizeImageContent(file: File, mimeType: string): Promise<strin
     });
 }
 
-export function validateDroppedFile(file: File): DropValidationResult {
-    const detectedMimeType = detectMimeType(file);
+export async function validateDroppedFile(file: File): Promise<DropValidationResult> {
+    const signatureType = await detectFileType(file);
+    const detectedMimeType = signatureType || detectMimeType(file);
 
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
@@ -187,7 +189,7 @@ export const useAttachments = () => {
 
     const processFile = async (file: File): Promise<DropValidationResult> => {
         // Validate file before processing
-        const validation = validateDroppedFile(file);
+        const validation = await validateDroppedFile(file);
         if (!validation.valid) {
             return validation;
         }

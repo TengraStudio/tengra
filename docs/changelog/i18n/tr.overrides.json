@@ -1,4 +1,14 @@
 {
+  "2026-02-17-llm-05-attachments-and-audit-backlog": {
+    "title": "LLM-05 İlerlemesi: Çok Modlu Ekler ve Denetim İş Listesi Genişletmesi",
+    "summary": "Sohbet ekleri için dosya türü algılama ve görsel boyut optimizasyonu uygulandı; ardından güvenlik, performans, UX ve mimari alanlarında 100+ maddelik uygulanabilir bir denetim iş listesi eklendi.",
+    "items": [
+      "- **LLM-05.4**: MIME + uzantı yedeğiyle daha güçlü dosya türü algılama ve güvenli ek türü eşleme eklendi.",
+      "- **LLM-05.5**: Büyük görsel eklerde model gönderimi öncesi istemci tarafı ön işleme ve boyut optimizasyonu eklendi.",
+      "- **Sohbet Akışı**: Hazır görsel ekler çok modlu giriş olarak iletiliyor; görsel olmayan ekler istem bağlamına dahil ediliyor.",
+      "- **İş Listesi Genişlemesi**: Depo genelindeki denetimler sonucu `docs/TODO.md` dosyasına 100+ uygulanabilir TODO maddesi eklendi."
+    ]
+  },
   "2026-02-18-sidebar-accessibility-and-clear-history": {
     "title": "Kenar Çubuğu İyileştirmeleri: Erişilebilirlik ve Geçmişi Temizle",
     "summary": "Kenar çubuğu erişilebilirliği başlık nitelikleriyle iyileştirildi ve sohbet geçmişi için 'Tümünü Temizle' özelliği eklendi.",
@@ -3395,6 +3405,15 @@
       "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
       "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
       "- **Verification**: Verified clean build, lint, and type-check across both components."
+    ]
+  },
+  "2026-02-17-llm-security-and-attachments": {
+    "title": "LLM Security & Robust Attachments",
+    "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+    "items": [
+      "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
+      "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
+      "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
     ]
   }
 }

@@ -140,12 +140,12 @@ function MainApp() {
         }
     }, [breakpoint, setIsSidebarCollapsed]);
 
-    const handleScrollToBottom = () => {
+    const handleScrollToBottom = useCallback(() => {
         const ref = appState.messagesEndRef.current;
         if (ref) {
             ref.scrollIntoView({ behavior: 'smooth' });
         }
-    };
+    }, [appState.messagesEndRef]);
 
     const handleClearChat = useCallback(() => {
         const clear = async () => {
@@ -415,16 +415,18 @@ function MainApp() {
                                     isDragging={appState.isDragging}
                                     setIsDragging={appState.setIsDragging}
                                     onFileDrop={file => {
-                                        // Validate file before processing
-                                        const validation = validateDroppedFile(file);
-                                        if (!validation.valid) {
-                                            appState.addToast({
-                                                type: 'error',
-                                                message: validation.error || 'Invalid file',
-                                            });
-                                            return;
-                                        }
-                                        void processFile(file);
+                                        void (async () => {
+                                            // Validate file before processing
+                                            const validation = await validateDroppedFile(file);
+                                            if (!validation.valid) {
+                                                appState.addToast({
+                                                    type: 'error',
+                                                    message: validation.error || 'Invalid file',
+                                                });
+                                                return;
+                                            }
+                                            void processFile(file);
+                                        })();
                                     }}
                                 >
                                     <ViewManager

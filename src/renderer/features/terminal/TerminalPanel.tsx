@@ -28,8 +28,8 @@ import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { TerminalContextMenu } from './components/TerminalContextMenu';
 import { TerminalCommandPanels } from './components/TerminalCommandPanels';
+import { TerminalContextMenu } from './components/TerminalContextMenu';
 import { TerminalEmptyState } from './components/TerminalEmptyState';
 import { TerminalInstance } from './components/TerminalInstance';
 import { TerminalMultiplexerPanel } from './components/TerminalMultiplexerPanel';

@@ -14,6 +14,7 @@ import { SettingsService } from '@main/services/system/settings.service';
 import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { ApiError, AuthenticationError, NetworkError } from '@main/utils/error.util';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
+import { sanitizePrompt } from '@main/utils/prompt-sanitizer.util';
 import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
 import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
@@ -152,6 +153,38 @@ export class LLMService {
         return content;
     }
 
+    /**
+     * Sanitizes user input messages to prevent injection/XSS.
+     * Preserves code formatting through escaping.
+     */
+    private sanitizeMessages(messages: Array<Message | ChatMessage>): Array<Message | ChatMessage> {
+        return messages.map(msg => {
+            if (msg.role === 'user') {
+                if (typeof msg.content === 'string') {
+                    return { ...msg, content: sanitizePrompt(msg.content) };
+                }
+                // Handle multimodal content
+                if (Array.isArray(msg.content)) {
+                    // Cast to any to handle the union type complexity during map
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const content = msg.content as any[];
+
+                    const sanitizedContent = content.map(part => {
+                        if (typeof part === 'string') { return sanitizePrompt(part); }
+                        if (typeof part === 'object' && part && 'type' in part && part.type === 'text' && 'text' in part) {
+                            return { ...part, text: sanitizePrompt(part.text as string) };
+                        }
+                        return part;
+                    });
+
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    return { ...msg, content: sanitizedContent } as any;
+                }
+            }
+            return msg;
+        });
+    }
+
     // --- Configuration ---
 
     // Note: Setters are kept for runtime updates from settings UI.
@@ -218,10 +251,11 @@ export class LLMService {
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
+        const sanitized = this.sanitizeMessages(messages);
 
         // LLM-001-3: Context overflow mitigation
         const contextService = getContextWindowService();
-        const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
+        const { truncated } = contextService.truncateMessages(sanitized as Message[], model, { reservedTokens: 1000 });
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
@@ -283,9 +317,10 @@ export class LLMService {
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
+        const sanitized = this.sanitizeMessages(messages);
 
         const contextService = getContextWindowService();
-        const { truncated } = contextService.truncateMessages(messages as Message[], model, { reservedTokens: 1000 });
+        const { truncated } = contextService.truncateMessages(sanitized as Message[], model, { reservedTokens: 1000 });
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;

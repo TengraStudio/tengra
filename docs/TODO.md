@@ -52,8 +52,14 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### ⏳ Pending Quick Wins
 - [ ] **UI-ACC-01**: Add title attributes to all sidebar interactive elements (DONE - verification needed)
 - [ ] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
-- [ ] **LLM-09.2**: Add HTML/JS sanitization for prompts
-- [x] **LLM-05.4**: Add file type detection for multi-modal support
+- [x] **LLM-09.2**: Add HTML/JS sanitization for AI prompts
+  - [x] Added `prompt-sanitizer.util.ts`
+  - [x] Integrated `sanitizeMessages` into `LLMService`
+- [ ] **LLM-09.3**: Implement prompt length limits
+- [ ] **LLM-09.4**: Add suspicious pattern detection
+- [x] **LLM-05.4**: Add file type detection
+  - [x] Added `file-type.util.ts` with magic number checks
+  - [x] Updated `useAttachments` to use robust detection
 - [x] **LLM-05.5**: Implement size optimization for image inputs
 - [ ] **MKT-UI-03.6**: Implement search history for marketplace
 - [ ] **SSH-07.5**: Implement profile testing for SSH
@@ -750,12 +756,7 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [ ] **I18N-05**: Add locale-specific AI behavior
   - Model prompts in user's language
   - Locale-aware responses
-  - Regional model preferences
-
-- [ ] **I18N-08**: Add locale-specific validation
-  - Phone number validation
-  - Address validation
-  - Name validation
+  - Regional model preferences 
 
 ### Browser Extension
 
@@ -1188,6 +1189,122 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ---
 
+## 🔍 Audit Backlog (Generated 2026-02-17)
+
+### 🔐 Security Audit TODOs
+- [ ] **AUD-SEC-001**: Restrict generic IPC invoke API exposure (`src/main/preload.ts`)
+- [ ] **AUD-SEC-002**: Remove generic IPC event subscription bridge (`src/main/preload.ts`)
+- [ ] **AUD-SEC-003**: Add sender/origin verification to auth IPC handlers (`src/main/ipc/auth.ts`)
+- [ ] **AUD-SEC-004**: Add sender/origin verification to files IPC handlers (`src/main/ipc/files.ts`)
+- [ ] **AUD-SEC-005**: Add sender/origin verification to ssh IPC handlers (`src/main/ipc/ssh.ts`)
+- [ ] **AUD-SEC-006**: Add sender/origin verification to process IPC handlers (`src/main/ipc/process.ts`)
+- [ ] **AUD-SEC-007**: Add sender/origin verification to proxy IPC handlers (`src/main/ipc/proxy.ts`)
+- [ ] **AUD-SEC-008**: Add sender/origin verification to mcp IPC handlers (`src/main/ipc/mcp.ts`)
+- [ ] **AUD-SEC-009**: Add sender/origin verification to terminal IPC handlers (`src/main/ipc/terminal.ts`)
+- [ ] **AUD-SEC-010**: Enforce allowed protocol allowlist for `openExternal` (`src/main/startup/window.ts`)
+- [ ] **AUD-SEC-011**: Harden hidden cookie-capture BrowserWindow URL policy (`src/main/ipc/window.ts`)
+- [ ] **AUD-SEC-012**: Enforce allowed roots before `shell.openPath` (`src/main/ipc/window.ts`)
+- [ ] **AUD-SEC-013**: Redact sensitive URL query params in logs (`src/main/ipc/window.ts`)
+- [ ] **AUD-SEC-014**: Fix allowed-root prefix confusion in safe-file protocol (`src/main/startup/protocols.ts`)
+- [ ] **AUD-SEC-015**: Fix allowed-root prefix confusion in file system service (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-016**: Add symlink/junction escape checks to filesystem operations (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-017**: Validate path authorization in `fileExists` (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-018**: Validate path authorization in `extractStrings` (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-019**: Validate path authorization in `syncNote` (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-020**: Add source allowlist + integrity checks for remote downloads (`src/main/services/data/filesystem.service.ts`)
+- [ ] **AUD-SEC-021**: Replace shell-string git execution with argument-safe process APIs (`src/main/services/project/git.service.ts`)
+- [ ] **AUD-SEC-022**: Harden git-advanced shell interpolation handling (`src/main/ipc/git-advanced.ts`)
+- [ ] **AUD-SEC-023**: Protect `/api/auth/token` behind strict local auth (`src/main/api/api-server.service.ts`)
+- [ ] **AUD-SEC-024**: Bind API server explicitly to loopback only (`src/main/api/api-server.service.ts`)
+- [ ] **AUD-SEC-025**: Require auth for all WebSocket connections (`src/main/api/api-server.service.ts`)
+- [ ] **AUD-SEC-026**: Enforce strict OAuth state validation in Antigravity callback (`src/main/utils/local-auth-server.util.ts`)
+- [ ] **AUD-SEC-027**: Enforce strict OAuth state validation in Claude callback (`src/main/utils/local-auth-server.util.ts`)
+- [ ] **AUD-SEC-028**: Remove plaintext master-key fallback (`src/main/services/security/security.service.ts`)
+- [ ] **AUD-SEC-029**: Encrypt SSH private keys at rest (`src/main/services/project/ssh.service.ts`)
+- [ ] **AUD-SEC-030**: Stop returning sensitive SSH fields to renderer (`src/main/ipc/ssh.ts`)
+
+### ⚡ Performance Audit TODOs
+- [ ] **AUD-PERF-001**: Remove state updates in render path (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-PERF-002**: Move focus recovery scan out of per-render path (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-PERF-003**: Memoize message action callbacks to reduce child rerenders (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-PERF-004**: Replace sync layout scroll preservation with passive strategy (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
+- [ ] **AUD-PERF-005**: Precompute folder-chat mappings (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
+- [ ] **AUD-PERF-006**: Add chat list virtualization in sidebar (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
+- [ ] **AUD-PERF-007**: Debounce + index chat search normalization (`src/renderer/components/layout/Sidebar.tsx`)
+- [ ] **AUD-PERF-008**: Cache pinned/recent derivations (`src/renderer/components/layout/Sidebar.tsx`)
+- [ ] **AUD-PERF-009**: Add project list virtualization (`src/renderer/features/projects/ProjectsPage.tsx`)
+- [ ] **AUD-PERF-010**: Cache project lowercase search keys (`src/renderer/features/projects/ProjectsPage.tsx`)
+- [ ] **AUD-PERF-011**: Avoid full clone/sort on each sort interaction (`src/renderer/features/projects/ProjectsPage.tsx`)
+- [ ] **AUD-PERF-012**: Virtualize confirmed memory cards (`src/renderer/features/memory/components/ConfirmedMemoriesList.tsx`)
+- [ ] **AUD-PERF-013**: Remove deep `JSON.stringify` prop comparators (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [ ] **AUD-PERF-014**: Parse think/plan tags once at ingestion (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [ ] **AUD-PERF-015**: Cache markdown render output for stable messages (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [ ] **AUD-PERF-016**: Lazy-load heavy markdown/code renderer stack (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [ ] **AUD-PERF-017**: Replace startup full-chat load with paged loading (`src/renderer/features/chat/hooks/useChatManager.ts`)
+- [ ] **AUD-PERF-018**: Use indexed/debounced message search in chat (`src/renderer/features/chat/hooks/useChatManager.ts`)
+- [ ] **AUD-PERF-019**: Reduce nested map updates on streaming ticks (`src/renderer/features/chat/hooks/process-stream.ts`)
+- [ ] **AUD-PERF-020**: Batch/coalesce DB writes during stream (`src/renderer/features/chat/hooks/process-stream.ts`)
+- [ ] **AUD-PERF-021**: Coalesce multi-model streaming state fanout (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
+- [ ] **AUD-PERF-022**: Replace `setChats` callback state-read hack with refs/store (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
+- [ ] **AUD-PERF-023**: Split root app subscriptions to reduce full-tree rerenders (`src/renderer/App.tsx`)
+- [ ] **AUD-PERF-024**: Defer non-critical startup initialization until after first paint (`src/main/main.ts`)
+- [ ] **AUD-PERF-025**: Offload PDF export to worker/background queue (`src/main/services/export/export.service.ts`)
+- [ ] **AUD-PERF-026**: Replace sync gallery stat scans with async batched scans (`src/main/ipc/gallery.ts`)
+- [ ] **AUD-PERF-027**: Remove sync log cleanup from startup/interval path (`src/main/logging/logger.ts`)
+- [ ] **AUD-PERF-028**: Convert sync data migrations to async chunked operations (`src/main/services/data/data.service.ts`)
+- [ ] **AUD-PERF-029**: Replace sync terminal backend detection command (`src/main/services/terminal/backends/windows-terminal.backend.ts`)
+- [ ] **AUD-PERF-030**: Replace unbounded SELECT + in-memory loops with pagination (`src/main/services/data/repositories/*.ts`)
+
+### ♿ UI/UX & Accessibility Audit TODOs
+- [ ] **AUD-UX-001**: Add live region announcement for streaming/new messages (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-UX-002**: Fix selection semantics and roles in message list (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-UX-003**: Add in-UI keyboard help for message shortcuts (`src/renderer/features/chat/components/MessageList.tsx`)
+- [ ] **AUD-UX-004**: Add missing `chat-input-hint` description target (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [ ] **AUD-UX-005**: Make attachment remove actions keyboard-visible without hover dependency (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [ ] **AUD-UX-006**: Improve combobox/listbox semantics for prompt command menu (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [ ] **AUD-UX-007**: Expose busy/loading state semantics on send/stop controls (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [ ] **AUD-UX-008**: Turn command palette into strict modal dialog with focus trap (`src/renderer/components/layout/CommandPalette.tsx`)
+- [ ] **AUD-UX-009**: Add aria-label to command palette close control (`src/renderer/components/layout/command-palette/CommandHeader.tsx`)
+- [ ] **AUD-UX-010**: Expose selected result state semantically in command list (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
+- [ ] **AUD-UX-011**: Use semantic headings for command categories (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
+- [ ] **AUD-UX-012**: Narrow modal aria-describedby to concise summary region (`src/renderer/components/ui/modal.tsx`)
+- [ ] **AUD-UX-013**: Add consistent visible close affordance in base modal (`src/renderer/components/ui/modal.tsx`)
+- [ ] **AUD-UX-014**: Upgrade ErrorBoundary fallback with retry/navigation actions (`src/renderer/components/shared/ErrorBoundary.tsx`)
+- [ ] **AUD-UX-015**: Add operation-specific loading labels (`src/renderer/components/ui/LoadingState.tsx`)
+- [ ] **AUD-UX-016**: Localize and semantically structure session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
+- [ ] **AUD-UX-017**: Add initial focus + Escape behavior to session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
+- [ ] **AUD-UX-018**: Add aria-labels to title bar icon controls (`src/renderer/components/layout/TitleBar.tsx`)
+- [ ] **AUD-UX-019**: Add explicit labels for changelog filter fields (`src/renderer/components/layout/TitleBar.tsx`)
+- [ ] **AUD-UX-020**: Remove remaining hardcoded strings in changelog UI (`src/renderer/components/layout/TitleBar.tsx`)
+- [ ] **AUD-UX-021**: Add aria-labels to quick action icon buttons (`src/renderer/components/layout/QuickActionBar.tsx`)
+- [ ] **AUD-UX-022**: Add keyboard invocation/discoverability for quick actions (`src/renderer/components/layout/QuickActionBar.tsx`)
+- [ ] **AUD-UX-023**: Expose active-state semantics in activity bar (`src/renderer/components/layout/ActivityBar.tsx`)
+- [ ] **AUD-UX-024**: Add labels for sidebar collapse/expand chevrons (`src/renderer/components/layout/ActivityBar.tsx`)
+- [ ] **AUD-UX-025**: Implement roving keyboard navigation for sidebar entries (`src/renderer/components/layout/sidebar/SidebarNavigation.tsx`)
+
+### 🧱 Architecture, Reliability & Testing Audit TODOs
+- [ ] **AUD-ARCH-001**: Split preload bridge into domain modules (`src/main/preload.ts`)
+- [ ] **AUD-ARCH-002**: Add preload contract regression tests (`src/tests/main/preload/**`)
+- [ ] **AUD-ARCH-003**: Break up service bootstrap composition (`src/main/startup/services.ts`)
+- [ ] **AUD-ARCH-004**: Add startup lifecycle/service-graph integration tests (`src/tests/main/startup/**`)
+- [ ] **AUD-ARCH-005**: Remove `as any` in chat IPC registration path (`src/main/ipc/chat.ts`)
+- [ ] **AUD-ARCH-006**: Replace permissive `z.any()` usage in chat IPC schemas (`src/main/ipc/chat.ts`)
+- [ ] **AUD-ARCH-007**: Replace permissive `z.any()` args schema in DB IPC (`src/main/ipc/db.ts`)
+- [ ] **AUD-ARCH-008**: Tighten decorator typing in rate limiter utilities (`src/main/utils/rate-limiter.util.ts`)
+- [ ] **AUD-ARCH-009**: Standardize IPC response envelope conventions (`src/main/utils/ipc-wrapper.util.ts`)
+- [ ] **AUD-ARCH-010**: Migrate legacy handlers to validated IPC wrapper (`src/main/ipc/*.ts`)
+- [ ] **AUD-ARCH-011**: Upgrade IPC coverage tests from regex to behavior assertions (`src/tests/main/ipc/ipc-handler-coverage.test.ts`)
+- [ ] **AUD-ARCH-012**: Replace smoke-only IPC tests with behavior-driven integration tests (`src/tests/main/ipc/test-gap-smoke.integration.test.ts`)
+- [ ] **AUD-ARCH-013**: Replace smoke-only service tests with functional assertions (`src/tests/main/services/test-gap-smoke.service.test.ts`)
+- [ ] **AUD-ARCH-014**: Add dedicated TerminalService unit/integration suite (`src/main/services/project/terminal.service.ts`)
+- [ ] **AUD-ARCH-015**: Remove silent catch in terminal cleanup paths (`src/main/services/project/terminal.service.ts`)
+- [ ] **AUD-ARCH-016**: Add crash/restart persistence tests for terminal sessions (`src/tests/main/services/project/**`)
+- [ ] **AUD-ARCH-017**: Remove silent catch in project scanning paths (`src/main/services/project/project.service.ts`)
+- [ ] **AUD-ARCH-018**: Add negative-path tests for scanning and permission failures (`src/tests/main/services/project.service.test.ts`)
+- [ ] **AUD-ARCH-019**: Surface stale-temp cleanup failures instead of swallowing (`src/main/services/llm/local-image.service.ts`)
+- [ ] **AUD-ARCH-020**: Add failure-path tests for image provider fallback chain (`src/tests/main/services/llm/local-image.service.test.ts`)
+
+---
 ## ✅ Completed Tasks
 
 Work that has been successfully implemented and verified.
@@ -1272,4 +1389,5 @@ When picking up a task from this list:
 ---
 
 *This document is automatically updated. Do not edit manually without updating the tracking system.*
+
 

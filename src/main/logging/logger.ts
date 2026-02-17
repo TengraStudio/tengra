@@ -106,7 +106,8 @@ class AppLogger {
         if (!fs.existsSync(this.logDir)) {
             fs.mkdirSync(this.logDir, { recursive: true, mode: 0o700 });
         }
-        this.size = this.safeStatSize(this.logPath);
+        this.size = 0;
+        void this.refreshCurrentLogSize();
         this.initialized = true;
 
         // Start cleanup scheduler (runs every 24 hours)
@@ -351,14 +352,54 @@ class AppLogger {
             return;
         }
 
+        const runCleanup = () => {
+            void this.cleanupOldLogsAsync();
+        };
+
         // Run cleanup every 24 hours
         const ONE_DAY_MS = 24 * 60 * 60 * 1000;
         this.cleanupTimer = setInterval(() => {
-            this.cleanupOldLogs();
+            runCleanup();
         }, ONE_DAY_MS);
 
         // Also run cleanup on startup
-        this.cleanupOldLogs();
+        runCleanup();
+    }
+
+    private async cleanupOldLogsAsync(): Promise<number> {
+        if (!this.logDir) {
+            return 0;
+        }
+
+        try {
+            await fs.promises.access(this.logDir, fs.constants.F_OK);
+        } catch {
+            return 0;
+        }
+
+        const retentionMs = this.config.retentionDays * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        let deleted = 0;
+
+        try {
+            const files = await fs.promises.readdir(this.logDir);
+            const maxFilesToCleanup = 1000;
+            const processFiles = files.slice(0, maxFilesToCleanup).filter(file => this.isLogFile(file));
+            for (const file of processFiles) {
+                const filePath = path.join(this.logDir, file);
+                const stat = await fs.promises.stat(filePath);
+                if (now - stat.mtime.getTime() > retentionMs) {
+                    await fs.promises.unlink(filePath);
+                    deleted++;
+                }
+            }
+        } catch (err) {
+            if (this.originalConsole) {
+                this.originalConsole.error('Failed to cleanup old logs', err);
+            }
+        }
+
+        return deleted;
     }
 
     /**
@@ -465,6 +506,15 @@ class AppLogger {
             return fs.statSync(filePath).size;
         } catch {
             return 0;
+        }
+    }
+
+    private async refreshCurrentLogSize(): Promise<void> {
+        try {
+            const stat = await fs.promises.stat(this.logPath);
+            this.size = stat.size;
+        } catch {
+            this.size = 0;
         }
     }
 }

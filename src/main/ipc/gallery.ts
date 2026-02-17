@@ -93,24 +93,33 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
 
             for (const sub of subdirs) {
                 const subPath = path.join(galleryRoot, sub);
-                if (!fs.existsSync(subPath)) { continue; }
+                try {
+                    await fs.promises.access(subPath);
+                } catch {
+                    continue;
+                }
 
                 const files = await fs.promises.readdir(subPath);
-                for (const f of files) {
-                    if (/\.(png|jpg|jpeg|webp|gif|mp4|webm|mov)$/i.test(f)) {
-                        const fullPath = path.join(subPath, f);
+                const mediaFiles = files.filter(file => /\.(png|jpg|jpeg|webp|gif|mp4|webm|mov)$/i.test(file));
+                const scannedItems = await Promise.all(mediaFiles.map(async (fileName): Promise<GalleryItem | null> => {
+                    try {
+                        const fullPath = path.join(subPath, fileName);
                         const resolvedPath = resolveGalleryPath(fullPath);
-                        const stats = fs.statSync(fullPath);
-                        results.push({
-                            name: f,
+                        const stats = await fs.promises.stat(fullPath);
+                        return {
+                            name: fileName,
                             path: resolvedPath,
                             url: `safe-file://${resolvedPath.replace(/\\/g, '/')}`,
                             mtime: stats.mtime.getTime(),
                             type: sub === 'images' ? 'image' : 'video',
-                            metadata: metadataMap[f]
-                        });
+                            metadata: metadataMap[fileName]
+                        };
+                    } catch (error) {
+                        appLogger.warn('Gallery', `Failed to stat gallery item ${fileName}: ${String(error)}`);
+                        return null;
                     }
-                }
+                }));
+                results.push(...scannedItems.filter((item): item is GalleryItem => item !== null));
             }
 
             return results.sort((a, b) => b.mtime - a.mtime); // Newest first

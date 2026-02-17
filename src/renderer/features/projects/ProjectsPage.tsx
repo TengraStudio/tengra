@@ -87,10 +87,26 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
         );
     }, [viewMode, sortBy, sortDirection, listPreset]);
 
-    const filteredProjects = React.useMemo(() => projects.filter(p =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase())
-    ), [projects, searchQuery]);
+    const normalizedSearchQuery = React.useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
+    const projectSearchIndex = React.useMemo(() => {
+        const index = new Map<string, string>();
+        for (const project of projects) {
+            index.set(
+                project.id,
+                `${project.title} ${project.description}`.toLowerCase()
+            );
+        }
+        return index;
+    }, [projects]);
+    const filteredProjects = React.useMemo(
+        () =>
+            normalizedSearchQuery === ''
+                ? projects
+                : projects.filter(project =>
+                    (projectSearchIndex.get(project.id) ?? '').includes(normalizedSearchQuery)
+                ),
+        [projects, normalizedSearchQuery, projectSearchIndex]
+    );
     const sortedProjects = React.useMemo(() => {
         const direction = sortDirection === 'asc' ? 1 : -1;
         return [...filteredProjects].sort((a, b) => {
