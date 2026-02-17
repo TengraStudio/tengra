@@ -61,6 +61,27 @@ jobs:
     - name: Changelog i18n Gate
       run: npm run changelog:i18n:gate
 
+  security:
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.app == 'true'
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Install Dependencies
+      run: npm ci
+    - name: Run Secret Scan
+      run: npm run secrets:scan
+    - name: Run Dependency Vulnerability Gate
+      run: npm run audit:deps:gate
+
   lint-and-types:
     runs-on: ubuntu-latest
     needs: [changes]

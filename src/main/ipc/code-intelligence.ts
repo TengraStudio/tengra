@@ -1,185 +1,134 @@
-/**
- * IPC handlers for Code Intelligence Service
- */
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { FileSearchResult } from '@shared/types/common';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { ipcMain } from 'electron';
+import { z } from 'zod';
 
+const RootPathSchema = z.string().min(1).trim();
+const QuerySchema = z.string().min(1).trim();
+const ProjectIdSchema = z.string().min(1).trim();
 
-export const registerCodeIntelligenceIpc = (codeIntelligenceService: CodeIntelligenceService) => {
+/**
+ * Registers IPC handlers for code intelligence operations.
+ */
+export function registerCodeIntelligenceIpc(codeIntelligenceService: CodeIntelligenceService) {
     /**
-     * Scan project for TODOs
+     * Find symbols by name/query
      */
-    ipcMain.handle('code:scanTodos', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['scanProjectTodos']>>, [string]>('code:scanTodos', async (_, rootPath) => {
-        return await codeIntelligenceService.scanProjectTodos(rootPath);
-    }, []));
-
-
-    /**
-     * Find symbols in project
-     */
-    ipcMain.handle('code:findSymbols', createSafeIpcHandler<FileSearchResult[], [string, string]>('code:findSymbols', async (_, rootPath, query) => {
+    ipcMain.handle('code:findSymbols', createValidatedIpcHandler('code:findSymbols', async (_, rootPath: string, query: string) => {
         return await codeIntelligenceService.findSymbols(rootPath, query);
-    }, []));
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema, QuerySchema])
+    }));
 
     /**
      * Search files in project
      */
-    ipcMain.handle('code:searchFiles', createSafeIpcHandler<FileSearchResult[], [string, string, string, boolean]>('code:searchFiles', async (_, rootPath, query, projectId, isRegex = false) => {
+    ipcMain.handle('code:searchFiles', createValidatedIpcHandler('code:searchFiles', async (_, rootPath: string, query: string, projectId: string, isRegexArg?: boolean) => {
+        const isRegex = typeof isRegexArg === 'boolean' ? isRegexArg : false;
         return await codeIntelligenceService.searchFiles(rootPath, query, projectId, isRegex);
-    }, []));
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([
+            RootPathSchema,
+            QuerySchema,
+            ProjectIdSchema.optional(),
+            z.boolean().optional().default(false)
+        ])
+    }));
 
     /**
      * Index a project
      */
-    ipcMain.handle('code:indexProject', createSafeIpcHandler<void, [string, string, boolean]>('code:indexProject', async (_, rootPath, projectId, force = false) => {
+    ipcMain.handle('code:indexProject', createValidatedIpcHandler('code:indexProject', async (_, rootPath: string, projectId: string, forceArg?: boolean) => {
+        const force = typeof forceArg === 'boolean' ? forceArg : false;
         return await codeIntelligenceService.indexProject(rootPath, projectId, force);
-    }, void 0));
-
-
+    }, {
+        defaultValue: undefined,
+        argsSchema: z.tuple([
+            RootPathSchema,
+            ProjectIdSchema,
+            z.boolean().optional().default(false)
+        ])
+    }));
 
     /**
-     * Query indexed symbols
+     * Query indexed symbols semantically
      */
-    ipcMain.handle('code:queryIndexedSymbols', createSafeIpcHandler<FileSearchResult[], [string]>('code:queryIndexedSymbols', async (_, query) => {
+    ipcMain.handle('code:querySymbols', createValidatedIpcHandler('code:querySymbols', async (_, query: string) => {
         return await codeIntelligenceService.queryIndexedSymbols(query);
-    }, []));
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([QuerySchema])
+    }));
 
     /**
-     * Find symbol definition
+     * Get outline for a file
      */
-    ipcMain.handle('code:findDefinition', createSafeIpcHandler<FileSearchResult | null, [string, string]>('code:findDefinition', async (_, rootPath, symbol) => {
-        return await codeIntelligenceService.findDefinition(rootPath, symbol);
-    }, null));
-
-    /**
-     * Find symbol references/usages
-     */
-    ipcMain.handle('code:findReferences', createSafeIpcHandler<FileSearchResult[], [string, string]>('code:findReferences', async (_, rootPath, symbol) => {
-        return await codeIntelligenceService.findReferences(rootPath, symbol);
-    }, []));
-
-    /**
-     * Find likely symbol implementations
-     */
-    ipcMain.handle('code:findImplementations', createSafeIpcHandler<FileSearchResult[], [string, string]>('code:findImplementations', async (_, rootPath, symbol) => {
-        return await codeIntelligenceService.findImplementations(rootPath, symbol);
-    }, []));
-
-    /**
-     * Get symbol relationship graph edges (flat list)
-     */
-    ipcMain.handle('code:getSymbolRelationships', createSafeIpcHandler<FileSearchResult[], [string, string, number?]>('code:getSymbolRelationships', async (_, rootPath, symbol, maxItems) => {
-        return await codeIntelligenceService.getSymbolRelationships(rootPath, symbol, maxItems);
-    }, []));
-
-    /**
-     * Get file symbol outline
-     */
-    ipcMain.handle('code:getFileOutline', createSafeIpcHandler<FileSearchResult[], [string]>('code:getFileOutline', async (_, filePath) => {
+    ipcMain.handle('code:getFileOutline', createValidatedIpcHandler('code:getFileOutline', async (_, filePath: string) => {
         return await codeIntelligenceService.getFileOutline(filePath);
-    }, []));
-
-    /**
-     * Preview symbol rename refactor
-     */
-    ipcMain.handle('code:previewRenameSymbol', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['renameSymbol']>>, [string, string, string, number?]>('code:previewRenameSymbol', async (_, rootPath, symbol, newSymbol, maxFiles) => {
-        return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, false, maxFiles);
     }, {
-        success: false,
-        applied: false,
-        symbol: '',
-        newSymbol: '',
-        totalFiles: 0,
-        totalOccurrences: 0,
-        changes: [],
-        updatedFiles: [],
-        errors: [],
+        defaultValue: [],
+        argsSchema: z.tuple([z.string().min(1)])
     }));
 
     /**
-     * Apply symbol rename refactor
+     * Find definition for a symbol
      */
-    ipcMain.handle('code:applyRenameSymbol', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['renameSymbol']>>, [string, string, string, number?]>('code:applyRenameSymbol', async (_, rootPath, symbol, newSymbol, maxFiles) => {
-        return await codeIntelligenceService.renameSymbol(rootPath, symbol, newSymbol, true, maxFiles);
+    ipcMain.handle('code:findDefinition', createValidatedIpcHandler('code:findDefinition', async (_, rootPath: string, symbol: string) => {
+        return await codeIntelligenceService.findDefinition(rootPath, symbol);
     }, {
-        success: false,
-        applied: true,
-        symbol: '',
-        newSymbol: '',
-        totalFiles: 0,
-        totalOccurrences: 0,
-        changes: [],
-        updatedFiles: [],
-        errors: [],
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema, QuerySchema])
     }));
 
     /**
-     * Generate documentation preview for a file
+     * Find usage for a symbol
      */
-    ipcMain.handle('code:generateFileDocumentation', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['generateFileDocumentation']>>, [string, ('markdown' | 'jsdoc-comments')?]>('code:generateFileDocumentation', async (_, filePath, format = 'markdown') => {
-        return await codeIntelligenceService.generateFileDocumentation(filePath, format);
+    ipcMain.handle('code:findUsage', createValidatedIpcHandler('code:findUsage', async (_, rootPath: string, symbol: string) => {
+        return await codeIntelligenceService.findUsage(rootPath, symbol);
     }, {
-        success: false,
-        filePath: '',
-        format: 'markdown',
-        content: '',
-        symbolCount: 0,
-        generatedAt: '',
-        error: 'Failed to generate documentation',
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema, QuerySchema])
     }));
 
     /**
-     * Generate markdown documentation summary for a project
+     * Get related files/symbols for a given symbol
      */
-    ipcMain.handle('code:generateProjectDocumentation', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['generateProjectDocumentation']>>, [string, number?]>('code:generateProjectDocumentation', async (_, rootPath, maxFiles) => {
-        return await codeIntelligenceService.generateProjectDocumentation(rootPath, maxFiles);
+    ipcMain.handle('code:getSymbolRelationships', createValidatedIpcHandler('code:getSymbolRelationships', async (_, rootPath: string, symbol: string, maxItems?: number) => {
+        return await codeIntelligenceService.getSymbolRelationships(rootPath, symbol, maxItems);
     }, {
-        success: false,
-        filePath: '',
-        format: 'markdown',
-        content: '',
-        symbolCount: 0,
-        generatedAt: '',
-        error: 'Failed to generate project documentation',
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema, QuerySchema, z.number().optional()])
     }));
 
     /**
-     * Analyze project code quality
+     * Get symbol analytics for a project
      */
-    ipcMain.handle('code:analyzeQuality', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['analyzeCodeQuality']>>, [string, number?]>('code:analyzeQuality', async (_, rootPath, maxFiles) => {
-        return await codeIntelligenceService.analyzeCodeQuality(rootPath, maxFiles);
-    }, {
-        rootPath: '',
-        filesScanned: 0,
-        totalLines: 0,
-        functionSymbols: 0,
-        classSymbols: 0,
-        longLineCount: 0,
-        todoLikeCount: 0,
-        consoleUsageCount: 0,
-        securityIssueCount: 0,
-        topSecurityFindings: [],
-        averageComplexity: 0,
-        highestComplexityFiles: [],
-        qualityScore: 0,
-        generatedAt: '',
-    }));
-
-    /**
-     * Get symbol analytics for a project path
-     */
-    ipcMain.handle('code:getSymbolAnalytics', createSafeIpcHandler<Awaited<ReturnType<CodeIntelligenceService['getSymbolAnalytics']>>, [string]>('code:getSymbolAnalytics', async (_, rootPath) => {
+    ipcMain.handle('code:getSymbolAnalytics', createValidatedIpcHandler('code:getSymbolAnalytics', async (_, rootPath: string) => {
         return await codeIntelligenceService.getSymbolAnalytics(rootPath);
     }, {
-        totalSymbols: 0,
-        uniqueFiles: 0,
-        uniqueKinds: 0,
-        byKind: {},
-        byExtension: {},
-        topFiles: [],
-        topSymbols: [],
-        generatedAt: '',
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema])
     }));
-};
+
+    /**
+     * Scan for TODOs in a project
+     */
+    ipcMain.handle('code:scanTodos', createValidatedIpcHandler('code:scanTodos', async (_, rootPath: string) => {
+        return await codeIntelligenceService.scanTodos(rootPath);
+    }, {
+        defaultValue: [],
+        argsSchema: z.tuple([RootPathSchema])
+    }));
+
+    /**
+     * Get code quality analysis
+     */
+    ipcMain.handle('code:getQualityAnalysis', createValidatedIpcHandler('code:getQualityAnalysis', async (_, rootPath: string) => {
+        return await codeIntelligenceService.analyzeCodeQuality(rootPath);
+    }, {
+        defaultValue: null,
+        argsSchema: z.tuple([RootPathSchema])
+    }));
+}

@@ -4,8 +4,9 @@ import { LogoService } from '@main/services/external/logo.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
 import { ProjectService } from '@main/services/project/project.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { dialog, ipcMain } from 'electron';
+import { z } from 'zod';
 
 /** Dependencies required by the project IPC handlers. */
 export interface ProjectIpcDeps {
@@ -20,6 +21,17 @@ export interface ProjectIpcDeps {
     /** Service for database access and project lookups. */
     databaseService: DatabaseService;
 }
+
+const PathSchema = z.string().min(1);
+const ProjectIdSchema = z.string().optional();
+const EnvVarsSchema = z.record(z.string(), z.string());
+
+const GenerateLogoOptionsSchema = z.object({
+    prompt: z.string(),
+    style: z.string(),
+    model: z.string(),
+    count: z.number().int().positive()
+});
 
 /**
  * Registers all project-related IPC handlers including analysis, file watching,
@@ -38,11 +50,12 @@ export const registerProjectIpc = (
         jobSchedulerService,
         databaseService,
     } = deps;
+
     ipcMain.handle(
         'project:analyze',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:analyze',
-            async (_event, rootPath: string, projectId: string) => {
+            async (_event, rootPath: string, projectId: string | undefined) => {
                 appLogger.info(
                     'ProjectIPC',
                     `[ProjectIPC] Analyze requested for ${rootPath} (ID: ${projectId})`
@@ -60,13 +73,16 @@ export const registerProjectIpc = (
                 }
                 return results;
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema, ProjectIdSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:watch',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:watch',
             async (_event, rootPath: string) => {
                 const win = getWindow();
@@ -112,25 +128,31 @@ export const registerProjectIpc = (
                 });
                 return { success: true };
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:unwatch',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:unwatch',
             async (_event, rootPath: string) => {
                 await projectService.stopWatch(rootPath);
                 return { success: true };
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:generateLogo',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:generateLogo',
             async (
                 _event,
@@ -145,68 +167,86 @@ export const registerProjectIpc = (
                     options.count
                 );
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema, GenerateLogoOptionsSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:analyzeIdentity',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:analyzeIdentity',
             async (_event, projectPath: string) => {
                 return await logoService.analyzeProjectIdentity(projectPath);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:analyzeDirectory',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:analyzeDirectory',
             async (_event, dirPath: string) => {
                 return await projectService.analyzeDirectory(dirPath);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:applyLogo',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:applyLogo',
             async (_event, projectPath: string, tempLogoPath: string) => {
                 return await logoService.applyLogo(projectPath, tempLogoPath);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema, PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:getCompletion',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:getCompletion',
             async (_event, text: string) => {
                 return await logoService.getCompletion(text);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([z.string()]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:improveLogoPrompt',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:improveLogoPrompt',
             async (_event, prompt: string) => {
                 return await logoService.improveLogoPrompt(prompt);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([z.string()]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:uploadLogo',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:uploadLogo',
             async (_event, projectPath: string) => {
                 const result = await dialog.showOpenDialog({
@@ -220,31 +260,40 @@ export const registerProjectIpc = (
 
                 return await logoService.applyLogo(projectPath, result.filePaths[0] || '');
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     // Environment Manager
     ipcMain.handle(
         'project:getEnv',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:getEnv',
             async (_event, rootPath: string) => {
                 return await projectService.getEnvVars(rootPath);
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema]),
+                wrapResponse: true
+            }
         )
     );
 
     ipcMain.handle(
         'project:saveEnv',
-        createIpcHandler(
+        createValidatedIpcHandler(
             'project:saveEnv',
             async (_event, rootPath: string, vars: Record<string, string>) => {
                 await projectService.saveEnvVars(rootPath, vars);
                 return { success: true };
             },
-            { wrapResponse: true }
+            {
+                argsSchema: z.tuple([PathSchema, EnvVarsSchema]),
+                wrapResponse: true
+            }
         )
     );
 };

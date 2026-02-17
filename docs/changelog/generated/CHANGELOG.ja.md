@@ -1,5 +1,19 @@
 # 変更履歴
 
+## [2026-02-17]
+
+### Token Rotation Hardening (SEC-001)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
+
+- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
+- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
+- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
+- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
+- **Verification**: Verified clean build, lint, and type-check across both components.
+
 ## [2026-02-16]
 
 ### エージェントシステムの改善：ツールの実行とコンテキスト管理

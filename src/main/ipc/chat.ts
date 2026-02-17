@@ -10,7 +10,7 @@ import { CodeIntelligenceService } from '@main/services/project/code-intelligenc
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { parseAIResponseContent } from '@main/utils/response-parser';
 import { StreamParser } from '@main/utils/stream-parser.util';
 import { Message, ToolDefinition } from '@shared/types/chat';
@@ -20,6 +20,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { sanitizeObject, sanitizeString } from '@shared/utils/sanitize.util';
 import { estimateTokens } from '@shared/utils/token.util';
 import { app, ipcMain, IpcMainInvokeEvent, WebContents } from 'electron';
+import { z } from 'zod';
 
 /**
  * Safely send IPC message to renderer
@@ -222,7 +223,7 @@ class ChatIpcManager {
             const promptTokens = res.promptTokens ?? 0;
             const completionTokens = res.completionTokens ?? 0;
 
-            await this.options.databaseService.addTokenUsage({
+            await this.options.databaseService.system.addTokenUsage({
                 chatId: sanitized.chatId ?? 'system',
                 projectId: sanitized.projectId,
                 provider: sanitized.provider,
@@ -518,7 +519,7 @@ class ChatIpcManager {
         } finally {
             // Save partial response if aborted or finished
             if (fullContent || fullReasoning) {
-                await this.options.databaseService.addMessage({
+                await this.options.databaseService.chats.addMessage({
                     chatId,
                     role: 'assistant',
                     content: fullContent,
@@ -530,7 +531,7 @@ class ChatIpcManager {
             }
 
             if (totalPrompt > 0 || totalCompletion > 0) {
-                await this.options.databaseService.addTokenUsage({
+                await this.options.databaseService.system.addTokenUsage({
                     chatId,
                     provider,
                     model,
@@ -542,17 +543,55 @@ class ChatIpcManager {
     }
 }
 
+
+const ChatMessageSchema = z.object({
+    id: z.string().optional(),
+    role: z.enum(['system', 'user', 'assistant', 'function', 'tool']),
+    content: z.union([z.string(), z.array(z.any())]),
+    timestamp: z.union([z.string(), z.date()]).optional().transform(val => val ? new Date(val) : new Date()),
+    name: z.string().optional(),
+    tool_calls: z.array(z.any()).optional(),
+    tool_call_id: z.string().optional(),
+});
+
+const ToolDefinitionSchema = z.object({
+    type: z.literal('function'),
+    function: z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        parameters: z.record(z.string(), z.any()).optional(),
+    })
+});
+
+const OpenAIChatSchema = z.object({
+    messages: z.array(ChatMessageSchema),
+    model: z.string(),
+    tools: z.array(ToolDefinitionSchema).optional(),
+    provider: z.string(),
+    projectId: z.string().optional(),
+    systemMode: z.enum(['default', 'architect', 'code', 'research']).optional()
+});
+
+const StreamChatSchema = OpenAIChatSchema.extend({
+    chatId: z.string(),
+    optionsJson: z.record(z.string(), z.any()).optional()
+});
+
 export function registerChatIpc(options: ChatIpcOptions) {
     const manager = new ChatIpcManager(options);
 
-    ipcMain.handle('chat:openai', createIpcHandler('chat:openai', (event, ...args: unknown[]) =>
-        manager.handleOpenAIChat(event, { messages: args[0] as Message[], model: args[1] as string, tools: args[2] as ToolDefinition[], provider: args[3] as string, projectId: args[4] as string, systemMode: args[5] as SystemMode }),
-        { wrapResponse: true }
+    ipcMain.handle('chat:openai', createValidatedIpcHandler(
+        'chat:openai',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (event, args) => manager.handleOpenAIChat(event, args as any),
+        { argsSchema: z.tuple([OpenAIChatSchema]) }
     ));
 
-
-    ipcMain.handle('chat:stream', createIpcHandler('chat:stream', (event, ...args: unknown[]) =>
-        manager.handleChatStream(event, { messages: args[0] as Message[], model: args[1] as string, tools: args[2] as ToolDefinition[], provider: args[3] as string, optionsJson: args[4] as JsonObject, chatId: args[5] as string, projectId: args[6] as string, systemMode: args[7] as SystemMode })
+    ipcMain.handle('chat:stream', createValidatedIpcHandler(
+        'chat:stream',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (event, args) => manager.handleChatStream(event, args as any),
+        { argsSchema: z.tuple([StreamChatSchema]) }
     ));
 
     ipcMain.handle('chat:copilot', createIpcHandler('chat:copilot', async (_event, messages: Message[], model: string) => {

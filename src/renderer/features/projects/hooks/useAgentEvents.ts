@@ -1,4 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { z } from 'zod';
+
+import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
 import { ActivityLog } from '../components/agent/ActivityStream';
 import { ExecutionPlan } from '../components/agent/ExecutionPlanView';
@@ -24,6 +27,13 @@ interface UseAgentEventsProps {
     currentPlanStepsCount: number;
     setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
+type AgentEventsIpcContract = IpcContractMap & {
+    'project-agent:subscribe-events': {
+        args: [];
+        response: { success: boolean };
+    };
+};
 
 interface EventData {
     taskId: string;
@@ -357,7 +367,13 @@ export function useAgentEvents(props: UseAgentEventsProps) {
         // Mark as mounted
         isMountedRef.current = true;
 
-        void window.electron.ipcRenderer.invoke('project-agent:subscribe-events');
+        void invokeTypedIpc<AgentEventsIpcContract, 'project-agent:subscribe-events'>(
+            'project-agent:subscribe-events',
+            [],
+            {
+                responseSchema: z.object({ success: z.boolean() })
+            }
+        );
 
         const unsubscribe = window.electron.on('agent-event', (payload: unknown) => {
             // Prevent state updates if component is unmounted

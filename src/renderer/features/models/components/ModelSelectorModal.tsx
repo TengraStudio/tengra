@@ -56,8 +56,6 @@ const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
     xhigh: 'Max',
 };
 
-// TODO: Split into smaller subcomponents; temporary suppression for legacy size limit.
- 
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen,
     onClose,

@@ -1,7 +1,9 @@
 import { Eye, EyeOff, Plus, Save, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { z } from 'zod';
 
 import { Language, useTranslation } from '@/i18n';
+import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -16,6 +18,28 @@ interface ProjectEnvironmentTabProps {
     language: Language
 }
 
+type ProjectEnvironmentIpcContract = IpcContractMap & {
+    'project:getEnv': {
+        args: [string];
+        response: { success: boolean; data?: Record<string, string> };
+    };
+    'project:saveEnv': {
+        args: [string, Record<string, string>];
+        response: { success: boolean; data?: { success: boolean } };
+    };
+};
+
+const projectGetEnvArgsSchema = z.tuple([z.string().min(1)]);
+const projectSaveEnvArgsSchema = z.tuple([z.string().min(1), z.record(z.string(), z.string())]);
+const projectGetEnvResponseSchema = z.object({
+    success: z.boolean(),
+    data: z.record(z.string(), z.string()).optional()
+});
+const projectSaveEnvResponseSchema = z.object({
+    success: z.boolean(),
+    data: z.object({ success: z.boolean() }).optional()
+});
+
 const useProjectEnv = (projectPath: string) => {
     const [envVars, setEnvVars] = useState<EnvVar[]>([]);
     const [loading, setLoading] = useState(true);
@@ -25,7 +49,14 @@ const useProjectEnv = (projectPath: string) => {
     const loadEnvVars = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await window.electron.ipcRenderer.invoke('project:getEnv', projectPath);
+            const result = await invokeTypedIpc<ProjectEnvironmentIpcContract, 'project:getEnv'>(
+                'project:getEnv',
+                [projectPath],
+                {
+                    argsSchema: projectGetEnvArgsSchema,
+                    responseSchema: projectGetEnvResponseSchema
+                }
+            );
             if (result?.success && result.data) {
                 const vars = Object.entries(result.data as Record<string, string>).map(([key, value]) => ({
                     key,
@@ -54,7 +85,14 @@ const useProjectEnv = (projectPath: string) => {
                     varsObj[v.key.trim()] = v.value;
                 }
             }
-            await window.electron.ipcRenderer.invoke('project:saveEnv', projectPath, varsObj);
+            await invokeTypedIpc<ProjectEnvironmentIpcContract, 'project:saveEnv'>(
+                'project:saveEnv',
+                [projectPath, varsObj],
+                {
+                    argsSchema: projectSaveEnvArgsSchema,
+                    responseSchema: projectSaveEnvResponseSchema
+                }
+            );
             setHasChanges(false);
         } catch (error) {
             appLogger.error('ProjectEnvironmentTab', 'Failed to save env vars', error as Error);
