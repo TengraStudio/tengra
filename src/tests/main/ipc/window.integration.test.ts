@@ -109,7 +109,7 @@ describe('Window IPC Handlers', () => {
         mockMainWindow.isDestroyed.mockReturnValue(false);
         
         // Trigger registration
-        registerWindowIpc(() => mockMainWindow as any);
+        registerWindowIpc(() => mockMainWindow as any, new Set<string>());
     });
 
     afterEach(() => {

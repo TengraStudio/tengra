@@ -7,6 +7,25 @@ import { app, BrowserWindow, HandlerDetails, Menu, nativeImage, shell, Tray } fr
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['https:', 'http:', 'mailto:']);
+const SENSITIVE_QUERY_KEYS = new Set([
+    'token', 'access_token', 'refresh_token', 'code', 'state', 'sessionkey', 'session_key',
+    'apikey', 'api_key', 'authorization', 'password', 'passphrase'
+]);
+
+function redactUrlForLogs(rawUrl: string): string {
+    try {
+        const parsed = new URL(rawUrl);
+        for (const key of parsed.searchParams.keys()) {
+            if (SENSITIVE_QUERY_KEYS.has(key.toLowerCase())) {
+                parsed.searchParams.set(key, '[REDACTED]');
+            }
+        }
+        return parsed.toString();
+    } catch {
+        return rawUrl;
+    }
+}
 
 export function getMainWindow(): BrowserWindow | null {
     return mainWindow;
@@ -49,7 +68,22 @@ export function createWindow(settingsService?: SettingsService): BrowserWindow {
     setupWindowReadyState(win, settingsService);
 
     win.webContents.setWindowOpenHandler((details: HandlerDetails) => {
-        void shell.openExternal(details.url);
+        try {
+            const parsed = new URL(details.url);
+            if (ALLOWED_EXTERNAL_PROTOCOLS.has(parsed.protocol)) {
+                void shell.openExternal(parsed.toString());
+            } else {
+                appLogger.warn(
+                    'Security',
+                    `Blocked external protocol in window open handler: ${parsed.protocol} (${redactUrlForLogs(details.url)})`
+                );
+            }
+        } catch (error) {
+            appLogger.warn(
+                'Security',
+                `Blocked invalid external URL in window open handler: ${redactUrlForLogs(details.url)} (${String(error)})`
+            );
+        }
         return { action: 'deny' };
     });
 

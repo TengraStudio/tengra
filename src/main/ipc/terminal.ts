@@ -1,3 +1,4 @@
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { DockerService } from '@main/services/project/docker.service';
 import { TerminalService } from '@main/services/project/terminal.service';
@@ -14,7 +15,7 @@ import {
 } from '@main/services/terminal/terminal-profile.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 const MAX_COLS = 500;
@@ -116,6 +117,22 @@ type ImportSessionOptions = z.infer<typeof importSessionOptionsSchema>;
 type TemplateSavePayload = z.infer<typeof templateSavePayloadSchema>;
 
 // --- Helpers ---
+let terminalWindowGetter: (() => BrowserWindow | null) | null = null;
+
+function secureHandle(
+    channel: string,
+    handler: (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>
+) {
+    ipcMain.handle(channel, async (event, ...args) => {
+        const getWindow = terminalWindowGetter;
+        if (!getWindow) {
+            throw new Error('Terminal window getter not initialized');
+        }
+        const validateSender = createMainWindowSenderValidator(getWindow, 'terminal operation');
+        validateSender(event);
+        return await handler(event, ...args);
+    });
+}
 
 function broadcastTerminalEvent(
     getWindow: () => BrowserWindow | null,
@@ -145,7 +162,7 @@ function buildSessionId(): string {
 // --- Registration Functions ---
 
 function registerProfileIpc(profileService: TerminalProfileService) {
-    ipcMain.handle(
+    secureHandle(
         'terminal:getProfiles',
         createValidatedIpcHandler(
             'terminal:getProfiles',
@@ -156,7 +173,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:saveProfile',
         createValidatedIpcHandler(
             'terminal:saveProfile',
@@ -170,7 +187,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:deleteProfile',
         createValidatedIpcHandler(
             'terminal:deleteProfile',
@@ -184,7 +201,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:validateProfile',
         createValidatedIpcHandler(
             'terminal:validateProfile',
@@ -198,7 +215,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getProfileTemplates',
         createValidatedIpcHandler(
             'terminal:getProfileTemplates',
@@ -209,7 +226,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:exportProfiles',
         createValidatedIpcHandler(
             'terminal:exportProfiles',
@@ -220,7 +237,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:exportProfileShareCode',
         createValidatedIpcHandler(
             'terminal:exportProfileShareCode',
@@ -234,7 +251,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:importProfileShareCode',
         createValidatedIpcHandler(
             'terminal:importProfileShareCode',
@@ -251,7 +268,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:importProfiles',
         createValidatedIpcHandler(
             'terminal:importProfiles',
@@ -271,7 +288,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
 
 function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
     // Create session
-    ipcMain.handle(
+    secureHandle(
         'terminal:create',
         createValidatedIpcHandler(
             'terminal:create',
@@ -302,7 +319,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
     );
 
     // Close session
-    ipcMain.handle(
+    secureHandle(
         'terminal:close',
         createValidatedIpcHandler(
             'terminal:close',
@@ -317,7 +334,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
     );
 
     // Kill session
-    ipcMain.handle(
+    secureHandle(
         'terminal:kill',
         createValidatedIpcHandler(
             'terminal:kill',
@@ -332,7 +349,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
     );
 
     // Get active sessions
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSessions',
         createValidatedIpcHandler(
             'terminal:getSessions',
@@ -343,7 +360,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSnapshotSessions',
         createValidatedIpcHandler(
             'terminal:getSnapshotSessions',
@@ -354,7 +371,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:restoreSnapshotSession',
         createValidatedIpcHandler(
             'terminal:restoreSnapshotSession',
@@ -380,7 +397,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
 
 function registerSessionIOIpc(terminalService: TerminalService) {
     // Write to session
-    ipcMain.handle(
+    secureHandle(
         'terminal:write',
         createValidatedIpcHandler(
             'terminal:write',
@@ -400,7 +417,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
     );
 
     // Resize session
-    ipcMain.handle(
+    secureHandle(
         'terminal:resize',
         createValidatedIpcHandler(
             'terminal:resize',
@@ -424,7 +441,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
     );
 
     // Read session buffer
-    ipcMain.handle(
+    secureHandle(
         'terminal:readBuffer',
         createValidatedIpcHandler(
             'terminal:readBuffer',
@@ -438,7 +455,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:setSessionTitle',
         createValidatedIpcHandler(
             'terminal:setSessionTitle',
@@ -454,7 +471,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
 }
 
 function registerSessionExportIpc(terminalService: TerminalService) {
-    ipcMain.handle(
+    secureHandle(
         'terminal:exportSession',
         createValidatedIpcHandler(
             'terminal:exportSession',
@@ -472,7 +489,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:importSession',
         createValidatedIpcHandler(
             'terminal:importSession',
@@ -489,7 +506,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:createSessionShareCode',
         createValidatedIpcHandler(
             'terminal:createSessionShareCode',
@@ -507,7 +524,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:importSessionShareCode',
         createValidatedIpcHandler(
             'terminal:importSessionShareCode',
@@ -524,7 +541,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:exportScrollback',
         createValidatedIpcHandler(
             'terminal:exportScrollback',
@@ -547,7 +564,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
 }
 
 function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, terminalService: TerminalService) {
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSessionTemplates',
         createValidatedIpcHandler(
             'terminal:getSessionTemplates',
@@ -558,7 +575,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:saveSessionTemplate',
         createValidatedIpcHandler(
             'terminal:saveSessionTemplate',
@@ -578,7 +595,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:deleteSessionTemplate',
         createValidatedIpcHandler(
             'terminal:deleteSessionTemplate',
@@ -592,7 +609,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:createFromSessionTemplate',
         createValidatedIpcHandler(
             'terminal:createFromSessionTemplate',
@@ -642,7 +659,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:restoreAllSnapshots',
         createValidatedIpcHandler(
             'terminal:restoreAllSnapshots',
@@ -663,7 +680,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
 }
 
 function registerSessionSearchIpc(terminalService: TerminalService) {
-    ipcMain.handle(
+    secureHandle(
         'terminal:searchScrollback',
         createValidatedIpcHandler(
             'terminal:searchScrollback',
@@ -686,7 +703,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSessionAnalytics',
         createValidatedIpcHandler(
             'terminal:getSessionAnalytics',
@@ -700,7 +717,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSearchAnalytics',
         createValidatedIpcHandler(
             'terminal:getSearchAnalytics',
@@ -711,7 +728,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSearchSuggestions',
         createValidatedIpcHandler(
             'terminal:getSearchSuggestions',
@@ -728,7 +745,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:exportSearchResults',
         createValidatedIpcHandler(
             'terminal:exportSearchResults',
@@ -759,7 +776,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:addScrollbackMarker',
         createValidatedIpcHandler(
             'terminal:addScrollbackMarker',
@@ -777,7 +794,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:listScrollbackMarkers',
         createValidatedIpcHandler(
             'terminal:listScrollbackMarkers',
@@ -791,7 +808,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:deleteScrollbackMarker',
         createValidatedIpcHandler(
             'terminal:deleteScrollbackMarker',
@@ -805,7 +822,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:filterScrollback',
         createValidatedIpcHandler(
             'terminal:filterScrollback',
@@ -823,7 +840,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
     );
 
     // Command history
-    ipcMain.handle(
+    secureHandle(
         'terminal:getCommandHistory',
         createValidatedIpcHandler(
             'terminal:getCommandHistory',
@@ -842,7 +859,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:clearCommandHistory',
         createValidatedIpcHandler(
             'terminal:clearCommandHistory',
@@ -855,7 +872,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
 }
 
 function registerSmartIpc(smartService: TerminalSmartService) {
-    ipcMain.handle(
+    secureHandle(
         'terminal:getSuggestions',
         createValidatedIpcHandler(
             'terminal:getSuggestions',
@@ -869,7 +886,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:explainCommand',
         createValidatedIpcHandler(
             'terminal:explainCommand',
@@ -883,7 +900,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:explainError',
         createValidatedIpcHandler(
             'terminal:explainError',
@@ -897,7 +914,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:fixError',
         createValidatedIpcHandler(
             'terminal:fixError',
@@ -922,6 +939,7 @@ export function registerTerminalIpc(
     smartService: TerminalSmartService,
     dockerService: DockerService
 ) {
+    terminalWindowGetter = getWindow;
     ipcMain.setMaxListeners(60);
     appLogger.info('terminal', '[IPC] Terminal service registered');
 
@@ -935,14 +953,14 @@ export function registerTerminalIpc(
     registerSmartIpc(smartService);
 
     // Misc
-    ipcMain.handle(
+    secureHandle(
         'terminal:isAvailable',
         createValidatedIpcHandler('terminal:isAvailable', async () => {
             return terminalService.isAvailable();
         }, { defaultValue: false })
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getShells',
         createValidatedIpcHandler(
             'terminal:getShells',
@@ -953,7 +971,7 @@ export function registerTerminalIpc(
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getBackends',
         createValidatedIpcHandler(
             'terminal:getBackends',
@@ -964,7 +982,7 @@ export function registerTerminalIpc(
         )
     );
 
-    ipcMain.handle(
+    secureHandle(
         'terminal:getDockerContainers',
         createValidatedIpcHandler(
             'terminal:getDockerContainers',
@@ -977,3 +995,4 @@ export function registerTerminalIpc(
         )
     );
 }
+

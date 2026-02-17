@@ -52,30 +52,11 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### ⏳ Pending Quick Wins
 - [ ] **UI-ACC-01**: Add title attributes to all sidebar interactive elements (DONE - verification needed)
 - [ ] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
-- [x] **LLM-09.2**: Add HTML/JS sanitization for AI prompts
-  - [x] Added `prompt-sanitizer.util.ts`
-- [x] **LLM-09.3**: Implement strict prompt length limits (128,000 characters) to prevent large payload attacks.
-- [x] **LLM-09.4**: Implement suspicious pattern detection (roleplay, instruction overrides, PII, shell prompts).
-- [x] **LLM-05.4**: Add file type detection
-  - [x] Added `file-type.util.ts` with magic number checks
-  [x] Updated `useAttachments` to use robust detection
-- [x] **LLM-05.5**: Implement size optimization for image inputs
 - [ ] **MKT-UI-03.6**: Implement search history for marketplace
-- [x] **DEBT-01**: Clean up obsolete feature flags from `feature-flag.service.ts`.
-- [x] **DEBT-02**: Improve test coverage for core services
-- [x] **DEBT-03**: Audit and remove unused dependencies
-  - [x] Removed `cheerio`
-  - [x] Consolidated error utilities
-- [x] **DEBT-06**: Implement lazy loading for identified heavy UI components in `App.tsx`.
-- [x] **DEBT-07**: Standardize error handling patterns
-  - [x] Merged `src/main/utils/error.util.ts` into shared utility
-  - [x] Updated all imports to use `@shared/utils/error.util`
 - [ ] **SSH-07.5**: Implement profile testing for SSH
 - [ ] **MEM-06.4**: Add search suggestions for memory search
 - [ ] **IMG-02.1**: Store generated images with metadata
 - [ ] **IMG-04.5**: Add gallery search
-- [x] **AGENT-08.3**: Error rate monitoring for agents
-- [x] **AGENT-08.4**: Resource usage tracking for agents
 
 
 ---
@@ -887,9 +868,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Cache summaries per URL
   - Progress: Popup suggestion flow can trigger page-content extraction and AI summary prompts (`extension/popup/popup.js`, `extension/content/content-script.js`); URL-level summary caching is not implemented yet.
 
-
-
-
 - [ ] **EXT-06**: Add extension synchronization
   - Sync settings across devices
   - Sync custom actions
@@ -942,12 +920,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Identify components for migration
   - Performance benchmarking
 
-- [x] **DEBT-03**: Refactor IPC communication
-  - Create type-safe IPC client
-  - Add request/response validation
-  - Implement retry logic
-  - Progress: Extended renderer IPC client with contract-based typed invocation (`invokeTypedIpc` in `src/renderer/lib/ipc-client.ts`), strengthened retry policy with exponential backoff + jitter and non-retryable validation/auth classifications, migrated theme + MCP marketplace typed clients (`src/renderer/utils/theme-ipc.util.ts`, `src/renderer/lib/mcp-marketplace-client.ts`) to the typed path, and migrated project-agent/project renderer callsites from raw invoke to schema-validated typed IPC (`src/renderer/features/projects/hooks/converters/asyncHandlers.ts`, `src/renderer/features/projects/hooks/converters/startTaskHandler.ts`, `src/renderer/features/projects/hooks/useAgentEvents.ts`, `src/renderer/features/projects/components/ProjectEnvironmentTab.tsx`). Added renderer tests in `src/tests/renderer/ipc-client.test.ts`.
-
 ### Infrastructure
 
 - [ ] **DEBT-05**: Add monitoring and observability
@@ -960,25 +932,9 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add error grouping
   - Create error analytics
 
-- [ ] **DEBT-07**: Refactor oversized TerminalPanel into smaller modules
-  - Location: `src/renderer/features/terminal/TerminalPanel.tsx:566`
-  - Extract panel state + command handling into focused hooks
-  - Split view/layout sections into subcomponents
-  - Remove temporary max-lines suppression after modularization
-  - Add regression tests for terminal interactions
-  - Progress: Extracted command history/task-runner state, loading effects, and execution flows into `useTerminalCommandTools` (`src/renderer/features/terminal/hooks/useTerminalCommandTools.ts`), moved command-history/task-runner UI into `src/renderer/features/terminal/components/TerminalCommandPanels.tsx`, moved search overlay into `src/renderer/features/terminal/components/TerminalSearchOverlay.tsx`, moved recordings overlay into `src/renderer/features/terminal/components/TerminalRecordingPanel.tsx`, moved multiplexer overlay into `src/renderer/features/terminal/components/TerminalMultiplexerPanel.tsx`, moved split presets/controls into `src/renderer/features/terminal/components/TerminalSplitControls.tsx`, and moved semantic issues overlay into `src/renderer/features/terminal/components/TerminalSemanticPanel.tsx`.
-
 ---
 
 ## 🧪 Service-Specific TODOs
-
-### Copilot Service
-- [x] **COPILOT-01**: Move Copilot token refresh into Rust token service
-  - Location: `src-tauri/services/token-service` + `src/main/services/security/token.service.ts`
-  - Move refresh orchestration from Electron to Rust service
-  - Keep Electron side as bridge (status/trigger)
-  - Add compatibility checks for existing auth/settings flow
-
 
 ---
 
@@ -1000,17 +956,7 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [ ] **FEAT-03**: Add code execution sandbox
   - Safe code execution
   - Multiple language support
-  - Output visualization
-
-- [ ] **FEAT-04**: Add custom model fine-tuning
-  - Fine-tuning UI
-  - Dataset preparation
-  - Model evaluation
-
-- [ ] **FEAT-05**: Add workflow automation
-  - Custom workflows
-  - Trigger conditions
-  - Action templates
+  - Output visualization 
 
 ### New Ideas & Systems
 
@@ -1307,191 +1253,48 @@ Selected small/contained tasks that are realistic to ship quickly:
 ## 🔍 Audit Backlog (Generated 2026-02-17)
 
 ### 🔐 Security Audit TODOs
-- [x] **AUD-SEC-001**: Restrict generic IPC invoke API exposure (`src/main/preload.ts`)
-- [x] **AUD-SEC-002**: Remove generic IPC event subscription bridge (`src/main/preload.ts`)
-- [ ] **AUD-SEC-003**: Add sender/origin verification to auth IPC handlers (`src/main/ipc/auth.ts`)
-- [ ] **AUD-SEC-004**: Add sender/origin verification to files IPC handlers (`src/main/ipc/files.ts`)
-- [ ] **AUD-SEC-005**: Add sender/origin verification to ssh IPC handlers (`src/main/ipc/ssh.ts`)
-- [ ] **AUD-SEC-006**: Add sender/origin verification to process IPC handlers (`src/main/ipc/process.ts`)
-- [ ] **AUD-SEC-007**: Add sender/origin verification to proxy IPC handlers (`src/main/ipc/proxy.ts`)
-- [ ] **AUD-SEC-008**: Add sender/origin verification to mcp IPC handlers (`src/main/ipc/mcp.ts`)
-- [ ] **AUD-SEC-009**: Add sender/origin verification to terminal IPC handlers (`src/main/ipc/terminal.ts`)
-- [ ] **AUD-SEC-010**: Enforce allowed protocol allowlist for `openExternal` (`src/main/startup/window.ts`)
-- [ ] **AUD-SEC-011**: Harden hidden cookie-capture BrowserWindow URL policy (`src/main/ipc/window.ts`)
-- [ ] **AUD-SEC-012**: Enforce allowed roots before `shell.openPath` (`src/main/ipc/window.ts`)
-- [ ] **AUD-SEC-013**: Redact sensitive URL query params in logs (`src/main/ipc/window.ts`)
-- [ ] **AUD-SEC-014**: Fix allowed-root prefix confusion in safe-file protocol (`src/main/startup/protocols.ts`)
-- [ ] **AUD-SEC-015**: Fix allowed-root prefix confusion in file system service (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-016**: Add symlink/junction escape checks to filesystem operations (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-017**: Validate path authorization in `fileExists` (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-018**: Validate path authorization in `extractStrings` (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-019**: Validate path authorization in `syncNote` (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-020**: Add source allowlist + integrity checks for remote downloads (`src/main/services/data/filesystem.service.ts`)
-- [ ] **AUD-SEC-021**: Replace shell-string git execution with argument-safe process APIs (`src/main/services/project/git.service.ts`)
-- [ ] **AUD-SEC-022**: Harden git-advanced shell interpolation handling (`src/main/ipc/git-advanced.ts`)
-- [ ] **AUD-SEC-023**: Protect `/api/auth/token` behind strict local auth (`src/main/api/api-server.service.ts`)
-- [ ] **AUD-SEC-024**: Bind API server explicitly to loopback only (`src/main/api/api-server.service.ts`)
-- [ ] **AUD-SEC-025**: Require auth for all WebSocket connections (`src/main/api/api-server.service.ts`)
-- [ ] **AUD-SEC-026**: Enforce strict OAuth state validation in Antigravity callback (`src/main/utils/local-auth-server.util.ts`)
-- [ ] **AUD-SEC-027**: Enforce strict OAuth state validation in Claude callback (`src/main/utils/local-auth-server.util.ts`)
-- [ ] **AUD-SEC-028**: Remove plaintext master-key fallback (`src/main/services/security/security.service.ts`)
-- [ ] **AUD-SEC-029**: Encrypt SSH private keys at rest (`src/main/services/project/ssh.service.ts`)
-- [ ] **AUD-SEC-030**: Stop returning sensitive SSH fields to renderer (`src/main/ipc/ssh.ts`)
+- [x] **AUD-SEC-003**: Add sender/origin verification to auth IPC handlers (`src/main/ipc/auth.ts`)
+- [x] **AUD-SEC-004**: Add sender/origin verification to files IPC handlers (`src/main/ipc/files.ts`)
+- [x] **AUD-SEC-005**: Add sender/origin verification to ssh IPC handlers (`src/main/ipc/ssh.ts`)
+- [x] **AUD-SEC-006**: Add sender/origin verification to process IPC handlers (`src/main/ipc/process.ts`)
+- [x] **AUD-SEC-007**: Add sender/origin verification to proxy IPC handlers (`src/main/ipc/proxy.ts`)
+- [x] **AUD-SEC-008**: Add sender/origin verification to mcp IPC handlers (`src/main/ipc/mcp.ts`)
+- [x] **AUD-SEC-009**: Add sender/origin verification to terminal IPC handlers (`src/main/ipc/terminal.ts`)
+- [x] **AUD-SEC-010**: Enforce allowed protocol allowlist for `openExternal` (`src/main/startup/window.ts`)
+- [x] **AUD-SEC-011**: Harden hidden cookie-capture BrowserWindow URL policy (`src/main/ipc/window.ts`)
+- [x] **AUD-SEC-012**: Enforce allowed roots before `shell.openPath` (`src/main/ipc/window.ts`)
+- [x] **AUD-SEC-013**: Redact sensitive URL query params in logs (`src/main/ipc/window.ts`)
+- [x] **AUD-SEC-014**: Fix allowed-root prefix confusion in safe-file protocol (`src/main/startup/protocols.ts`)
+- [x] **AUD-SEC-015**: Fix allowed-root prefix confusion in file system service (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-016**: Add symlink/junction escape checks to filesystem operations (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-017**: Validate path authorization in `fileExists` (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-018**: Validate path authorization in `extractStrings` (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-019**: Validate path authorization in `syncNote` (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-020**: Add source allowlist + integrity checks for remote downloads (`src/main/services/data/filesystem.service.ts`)
+- [x] **AUD-SEC-021**: Replace shell-string git execution with argument-safe process APIs (`src/main/services/project/git.service.ts`)
+- [x] **AUD-SEC-022**: Harden git-advanced shell interpolation handling (`src/main/ipc/git-advanced.ts`)
+- [x] **AUD-SEC-023**: Protect `/api/auth/token` behind strict local auth (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-024**: Bind API server explicitly to loopback only (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-025**: Require auth for all WebSocket connections (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-026**: Enforce strict OAuth state validation in Antigravity callback (`src/main/utils/local-auth-server.util.ts`)
+- [x] **AUD-SEC-027**: Enforce strict OAuth state validation in Claude callback (`src/main/utils/local-auth-server.util.ts`)
+- [x] **AUD-SEC-028**: Remove plaintext master-key fallback (`src/main/services/security/security.service.ts`)
+- [x] **AUD-SEC-029**: Encrypt SSH private keys at rest (`src/main/services/project/ssh.service.ts`)
+- [x] **AUD-SEC-030**: Stop returning sensitive SSH fields to renderer (`src/main/ipc/ssh.ts`)
 
 ### ⚡ Performance Audit TODOs
-- [x] **AUD-PERF-001**: Remove state updates in render path (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-PERF-002**: Move focus recovery scan out of per-render path (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-PERF-003**: Memoize message action callbacks to reduce child rerenders (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-PERF-004**: Replace sync layout scroll preservation with passive strategy (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
-- [x] **AUD-PERF-005**: Precompute folder-chat mappings (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
-- [x] **AUD-PERF-006**: Add chat list virtualization in sidebar (`src/renderer/components/layout/sidebar/SidebarChatList.tsx`)
-- [x] **AUD-PERF-007**: Debounce + index chat search normalization (`src/renderer/components/layout/Sidebar.tsx`)
-- [x] **AUD-PERF-008**: Cache pinned/recent derivations (`src/renderer/components/layout/Sidebar.tsx`)
-- [x] **AUD-PERF-009**: Add project list virtualization (`src/renderer/features/projects/ProjectsPage.tsx`)
-- [x] **AUD-PERF-010**: Cache project lowercase search keys (`src/renderer/features/projects/ProjectsPage.tsx`)
-- [x] **AUD-PERF-011**: Avoid full clone/sort on each sort interaction (`src/renderer/features/projects/ProjectsPage.tsx`)
-- [x] **AUD-PERF-012**: Virtualize confirmed memory cards (`src/renderer/features/memory/components/ConfirmedMemoriesList.tsx`)
-- [x] **AUD-PERF-013**: Remove deep `JSON.stringify` prop comparators (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [x] **AUD-PERF-014**: Parse think/plan tags once at ingestion (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [x] **AUD-PERF-015**: Cache markdown render output for stable messages (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [x] **AUD-PERF-016**: Lazy-load heavy markdown/code renderer stack (`src/renderer/features/chat/components/MessageBubble.tsx`)
-- [x] **AUD-PERF-017**: Replace startup full-chat load with paged loading (`src/renderer/features/chat/hooks/useChatManager.ts`)
-- [x] **AUD-PERF-018**: Use indexed/debounced message search in chat (`src/renderer/features/chat/hooks/useChatManager.ts`)
-- [x] **AUD-PERF-019**: Reduce nested map updates on streaming ticks (`src/renderer/features/chat/hooks/process-stream.ts`)
-- [x] **AUD-PERF-020**: Batch/coalesce DB writes during stream (`src/renderer/features/chat/hooks/process-stream.ts`)
-- [x] **AUD-PERF-021**: Coalesce multi-model streaming state fanout (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
-- [x] **AUD-PERF-022**: Replace `setChats` callback state-read hack with refs/store (`src/renderer/features/chat/hooks/useChatGenerator.ts`)
-- [x] **AUD-PERF-023**: Split root app subscriptions to reduce full-tree rerenders (`src/renderer/App.tsx`)
-- [x] **AUD-PERF-024**: Defer non-critical startup initialization until after first paint (`src/main/main.ts`)
-- [x] **AUD-PERF-025**: Offload PDF export to worker/background queue (`src/main/services/export/export.service.ts`)
-- [x] **AUD-PERF-026**: Replace sync gallery stat scans with async batched scans (`src/main/ipc/gallery.ts`)
-- [x] **AUD-PERF-027**: Remove sync log cleanup from startup/interval path (`src/main/logging/logger.ts`)
-- [x] **AUD-PERF-028**: Convert sync data migrations to async chunked operations (`src/main/services/data/data.service.ts`)
-- [x] **AUD-PERF-029**: Replace sync terminal backend detection command (`src/main/services/terminal/backends/windows-terminal.backend.ts`)
-- [x] **AUD-PERF-030**: Replace unbounded SELECT + in-memory loops with pagination (`src/main/services/data/repositories/*.ts`)
+(All performance audit items completed)
 
 ### ♿ UI/UX & Accessibility Audit TODOs
-- [x] **AUD-UX-001**: Add live region announcement for streaming/new messages (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-UX-002**: Fix selection semantics and roles in message list (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-UX-003**: Add in-UI keyboard help for message shortcuts (`src/renderer/features/chat/components/MessageList.tsx`)
-- [x] **AUD-UX-004**: Add missing `chat-input-hint` description target (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [x] **AUD-UX-005**: Make attachment remove actions keyboard-visible without hover dependency (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [x] **AUD-UX-006**: Improve combobox/listbox semantics for prompt command menu (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [x] **AUD-UX-007**: Expose busy/loading state semantics on send/stop controls (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [x] **AUD-UX-008**: Turn command palette into strict modal dialog with focus trap (`src/renderer/components/layout/CommandPalette.tsx`)
-- [x] **AUD-UX-009**: Add aria-label to command palette close control (`src/renderer/components/layout/command-palette/CommandHeader.tsx`)
-- [x] **AUD-UX-010**: Expose selected result state semantically in command list (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
-- [x] **AUD-UX-011**: Use semantic headings for command categories (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
-- [x] **AUD-UX-012**: Narrow modal aria-describedby to concise summary region (`src/renderer/components/ui/modal.tsx`)
-- [x] **AUD-UX-013**: Add consistent visible close affordance in base modal (`src/renderer/components/ui/modal.tsx`)
-- [x] **AUD-UX-014**: Upgrade ErrorBoundary fallback with retry/navigation actions (`src/renderer/components/shared/ErrorBoundary.tsx`)
-- [x] **AUD-UX-015**: Add operation-specific loading labels (`src/renderer/components/ui/LoadingState.tsx`)
-- [x] **AUD-UX-016**: Localize and semantically structure session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
-- [x] **AUD-UX-017**: Add initial focus + Escape behavior to session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
-- [x] **AUD-UX-018**: Add aria-labels to title bar icon controls (`src/renderer/components/layout/TitleBar.tsx`)
-- [x] **AUD-UX-019**: Add explicit labels for changelog filter fields (`src/renderer/components/layout/TitleBar.tsx`)
-- [x] **AUD-UX-020**: Remove remaining hardcoded strings in changelog UI (`src/renderer/components/layout/TitleBar.tsx`)
-- [x] **AUD-UX-021**: Add aria-labels to quick action icon buttons (`src/renderer/components/layout/QuickActionBar.tsx`)
-- [x] **AUD-UX-022**: Add keyboard invocation/discoverability for quick actions (`src/renderer/components/layout/QuickActionBar.tsx`)
-- [x] **AUD-UX-023**: Expose active-state semantics in activity bar (`src/renderer/components/layout/ActivityBar.tsx`)
-- [x] **AUD-UX-024**: Add labels for sidebar collapse/expand chevrons (`src/renderer/components/layout/ActivityBar.tsx`)
-- [x] **AUD-UX-025**: Implement roving keyboard navigation for sidebar entries (`src/renderer/components/layout/sidebar/SidebarNavigation.tsx`)
+(All UI/UX accessibility audit items completed)
 
 ### 🧱 Architecture, Reliability & Testing Audit TODOs
-- [x] **AUD-ARCH-001**: Split preload bridge into domain modules (`src/main/preload.ts`)
-- [x] **AUD-ARCH-002**: Add preload contract regression tests (`src/tests/main/preload/**`)
-- [x] **AUD-ARCH-003**: Break up service bootstrap composition (`src/main/startup/services.ts`)
-- [x] **AUD-ARCH-004**: Add startup lifecycle/service-graph integration tests (`src/tests/main/startup/**`)
-- [x] **AUD-ARCH-005**: Remove `as any` in chat IPC registration path (`src/main/ipc/chat.ts`)
-- [x] **AUD-ARCH-006**: Replace permissive `z.any()` usage in chat IPC schemas (`src/main/ipc/chat.ts`)
-- [x] **AUD-ARCH-007**: Replace permissive `z.any()` args schema in DB IPC (`src/main/ipc/db.ts`)
-- [x] **AUD-ARCH-008**: Tighten decorator typing in rate limiter utilities (`src/main/utils/rate-limiter.util.ts`)
-- [x] **AUD-ARCH-009**: Standardize IPC response envelope conventions (`src/main/utils/ipc-wrapper.util.ts`)
-- [x] **AUD-ARCH-010**: Migrate legacy handlers to validated IPC wrapper (`src/main/ipc/*.ts`)
-- [x] **AUD-ARCH-011**: Upgrade IPC coverage tests from regex to behavior assertions (`src/tests/main/ipc/ipc-handler-coverage.test.ts`)
-- [x] **AUD-ARCH-012**: Replace smoke-only IPC tests with behavior-driven integration tests (`src/tests/main/ipc/test-gap-smoke.integration.test.ts`)
-- [x] **AUD-ARCH-013**: Replace smoke-only service tests with functional assertions (`src/tests/main/services/test-gap-smoke.service.test.ts`)
-- [x] **AUD-ARCH-014**: Add dedicated TerminalService unit/integration suite (`src/main/services/project/terminal.service.ts`)
-- [x] **AUD-ARCH-015**: Remove silent catch in terminal cleanup paths (`src/main/services/project/terminal.service.ts`)
-- [x] **AUD-ARCH-016**: Add crash/restart persistence tests for terminal sessions (`src/tests/main/services/project/**`)
-- [x] **AUD-ARCH-017**: Remove silent catch in project scanning paths (`src/main/services/project/project.service.ts`)
-- [x] **AUD-ARCH-018**: Add negative-path tests for scanning and permission failures (`src/tests/main/services/project.service.test.ts`)
-- [x] **AUD-ARCH-019**: Surface stale-temp cleanup failures instead of swallowing (`src/main/services/llm/local-image.service.ts`)
-- [x] **AUD-ARCH-020**: Add failure-path tests for image provider fallback chain (`src/tests/main/services/llm/local-image.service.test.ts`)
+(All architecture audit items completed)
 
 ---
 ## ✅ Completed Tasks
 
-Work that has been successfully implemented and verified.
-
-### 🛡️ Security & Infrastructure
-  - Progress: Unified `TokenService` performs proactive refresh checks with exponential backoff. Rust service hardened.
-  - Progress: Added Zod validation pipeline for all IPC handlers; completed database/auth/shell audits.
-  - Progress: `ModelDetailsPanel` now uses DOMPurify for `longDescriptionHtml`.
-  - Progress: Replaced string-based `exec` with `spawn/execFile` argument arrays.
-  - Progress: Command parsing now tokenizes args and uses `shell: false`.
-  - Progress: PowerShell/`unzip` now run via non-shell argument arrays.
-  - Progress: Integrated `vuln-gate.cjs` into CI pipeline.
-  - Progress: Added `.secretlintignore` for release artifacts.
-
-### 🤖 Agent & LLM Systems
-  - Progress: Added timeouts, caching, semi-parallel execution, and retry logic.
-  - Progress: Integrated `ContextWindowService` and LLM-based summarization.
-  - Progress: Added error categorization and exponential backoff retries.
-  - Progress: `ModelFallbackService` implements failover, retry/backoff, and circuit breakers.
-  - Progress: `ResponseCacheService` integrated in `LLMService.chat`.
-  - Progress: `ContextWindowService` provides smart truncation and preservation.
-  - Progress: `OllamaHealthService` implements scheduled checks and auto-recovery.
-  - Progress: `MultiLLMOrchestrator` manages priority queues and concurrency.
-  - Progress: Partial output preservation on stream errors.
-  - Progress: `ModelRegistryService` normalizes model capabilities and refreshes cache.
-  - [x] **LLM-REF-01**: Refactor GitHub Copilot token refresh to use Rust-based `tandem-token-service` for improved reliability.
-  - [x] **SEC-001**: Token Rotation Hardening (TokenService + Rust refresher) implemented.
-
-### 🎨 UI & UX
-  - Progress: Added arrow key navigation, focus indicators, and regenerate shortcut.
-  - Progress: Modularized into `model-selector/` subcomponents with virtualization.
-  - Progress: Fully implemented and accessible via `Ctrl/Cmd+K`.
-  - Progress: Added grid/list toggle with sortable columns and CSV export.
-  - Progress: Added live terminal-backed logs with filtering and analytics.
-  - Progress: Fully interactive remap/import/export system implemented.
-  - Progress: Implemented chat input attachments and project folder moves.
-  - Progress: Wired through `useChatManager.regenerateMessage`.
-
-### 📂 Git & Source Control
-  - Progress: Advanced resolution panel with `ours`/`theirs`/manual actions.
-  - Progress: Full stash lifecycle (create/apply/pop/drop) with search.
-  - Progress: Inline and sidebar blame information implemented.
-  - Progress: Interactive rebase UI with conflict awareness.
-  - Progress: Full management (init/update/sync) actions added.
-  - Progress: Added git-flow helpers and branch type templates.
-  - Progress: Management APIs for hook templates and custom scripts.
-  - Progress: Repository-level analytics (commits/author/file) with CSV export.
-
-### 🧠 Code Intelligence
-  - Progress: Added TS/JS, Python, and Go support with relationship graphs.
-  - Progress: Definition, references, and implementions navigation added.
-  - Progress: Rename symbol primitives with preview/apply workflow.
-  - Progress: JSDoc and README generation for files and projects.
-  - Progress: Complexity, code smell, and security-smell detection implemented.
-
-### 🐛 Bugs & Resolved Issues
-  - Progress: Resolved crashes in Marketplace and Model hooks via defensive array checks.
-  - Progress: Added support for multiple binary names and improved recursive discovery.
-
-### 🌐 Internationalization & Browser Extension
-  - Progress: Implemented CSS logical properties and tested RTL layouts.
-  - Progress: Date/time, number, and currency formatting added.
-  - Progress: Detects system language and prompts user on first run.
-  - Progress: Added plural rules and forms for all supported languages.
-  - Progress: `FormIntelligence` implements field detection and profile-based autofill.
-  - Progress: `MultiTabManager` handles batch operations and cross-tab search.
-
-### � Documentation
-  - Progress: Added Table of Contents, restructured Quick Wins, and archived completed tasks.
-
-### �🛠️ Service-Specific & Other
-  - Progress: Added bounded request queue with notifications and queue-full protection.
+All completed tasks have been archived. See git history for details.
 
 ---
 

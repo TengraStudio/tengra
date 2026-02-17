@@ -40,7 +40,10 @@ const HookNameSchema = z.enum(['pre-commit', 'commit-msg', 'pre-push', 'post-mer
  * Escapes a string for use in a double-quoted shell argument.
  */
 function shellEscapeQuoted(value: string): string {
-    return value.replace(/"/g, '\\"');
+    if (/[\0\r\n`]/.test(value)) {
+        throw new Error('Invalid git argument');
+    }
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 /**

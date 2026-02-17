@@ -49,7 +49,7 @@ interface ClaudeCallbackParams {
     code: string
     verifier: string
     redirectUri: string
-    callbackState: string | null
+    callbackState: string
     oauthState: string
     onSuccess: (data: AuthCallbackData) => Promise<void> | void
     onError: (err: CatchError) => void
@@ -104,11 +104,11 @@ export class LocalAuthServer {
         const { code, verifier, redirectUri, callbackState, oauthState, onSuccess, onError, res } = params;
         try {
             if (!verifier) { throw new Error('Code verifier missing'); }
+            if (!callbackState || callbackState !== oauthState) {
+                throw new Error('OAuth state validation failed');
+            }
 
-            // Use callback state if present, otherwise use the original state
-            const stateToUse = callbackState ?? oauthState;
-
-            const tokenData = await LocalAuthServer.exchangeCodeForClaudeToken(code, verifier, redirectUri, stateToUse);
+            const tokenData = await LocalAuthServer.exchangeCodeForClaudeToken(code, verifier, redirectUri, callbackState);
 
             await onSuccess(tokenData);
 
@@ -130,6 +130,7 @@ export class LocalAuthServer {
     private static createAntigravityRequestHandler(
         server: http.Server,
         verifier: string,
+        oauthState: string,
         onSuccess: (data: AuthCallbackData) => void,
         onError: (err: CatchError) => void
     ) {
@@ -143,6 +144,7 @@ export class LocalAuthServer {
 
                     if (url.pathname === '/callback') {
                         const code = url.searchParams.get('code');
+                        const callbackState = url.searchParams.get('state');
                         const error = url.searchParams.get('error');
 
                         if (error) {
@@ -150,6 +152,15 @@ export class LocalAuthServer {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end('<h1>Auth Failed</h1><p>Check the app for details.</p><script>window.close()</script>');
                             onError(new Error(error));
+                            server.close();
+                            return;
+                        }
+
+                        if (!callbackState || callbackState !== oauthState) {
+                            appLogger.error('LocalAuthServer', 'OAuth state validation failed for Antigravity callback');
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            onError(new Error('OAuth state validation failed'));
                             server.close();
                             return;
                         }
@@ -182,11 +193,12 @@ export class LocalAuthServer {
         return new Promise((resolve, reject) => {
             // PKCE Variables (captured by closure)
             let verifier: string;
+            let oauthState: string;
 
             const server = http.createServer();
 
             server.on('request', (req, res) => {
-                const handler = LocalAuthServer.createAntigravityRequestHandler(server, verifier, onSuccess, onError);
+                const handler = LocalAuthServer.createAntigravityRequestHandler(server, verifier, oauthState, onSuccess, onError);
                 handler(req, res);
             });
 
@@ -195,7 +207,7 @@ export class LocalAuthServer {
                     const address = server.address() as AddressInfo;
                     const port = address.port;
                     const redirectUri = `http://127.0.0.1:${port}/callback`;
-                    const state = crypto.randomBytes(16).toString('hex');
+                    oauthState = crypto.randomBytes(16).toString('hex');
 
                     // PKCE Generation
                     verifier = LocalAuthServer.generateCodeVerifier();
@@ -206,13 +218,13 @@ export class LocalAuthServer {
                     authUrl.searchParams.append('redirect_uri', redirectUri);
                     authUrl.searchParams.append('response_type', 'code');
                     authUrl.searchParams.append('scope', 'email profile openid https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/cclog https://www.googleapis.com/auth/experimentsandconfigs');
-                    authUrl.searchParams.append('state', state);
+                    authUrl.searchParams.append('state', oauthState);
                     authUrl.searchParams.append('code_challenge', challenge);
                     authUrl.searchParams.append('code_challenge_method', 'S256');
                     authUrl.searchParams.append('access_type', 'offline'); // Get refresh token
                     authUrl.searchParams.append('prompt', 'consent');
 
-                    resolve({ url: authUrl.toString(), state });
+                    resolve({ url: authUrl.toString(), state: oauthState });
                 } catch (e) {
                     server.close();
                     reject(e);
@@ -249,6 +261,15 @@ export class LocalAuthServer {
                             res.writeHead(400, { 'Content-Type': 'text/html' });
                             res.end('<h1>Auth Failed</h1><p>Check the app.</p><script>window.close()</script>');
                             onError(new Error(error));
+                            server.close();
+                            return;
+                        }
+
+                        if (!callbackState || callbackState !== oauthState) {
+                            appLogger.error('LocalAuthServer', 'OAuth state validation failed for Claude callback');
+                            res.writeHead(400, { 'Content-Type': 'text/html' });
+                            res.end('<h1>Auth Failed</h1><p>Invalid state parameter.</p><script>window.close()</script>');
+                            onError(new Error('OAuth state validation failed'));
                             server.close();
                             return;
                         }

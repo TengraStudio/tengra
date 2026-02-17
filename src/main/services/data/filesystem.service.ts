@@ -1,5 +1,7 @@
+import { createHash } from 'crypto';
 import { watch } from 'fs';
 import { createWriteStream } from 'fs';
+import { existsSync, lstatSync, realpathSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as https from 'https';
 import * as path from 'path';
@@ -14,6 +16,12 @@ import type { FileChangeTracker } from './file-change-tracker.service';
 
 export class FileSystemService {
     private allowedRoots: string[] = [];
+    private readonly allowedDownloadHosts = new Set([
+        'github.com',
+        'raw.githubusercontent.com',
+        'objects.githubusercontent.com',
+        'release-assets.githubusercontent.com'
+    ]);
     private fileChangeTracker?: FileChangeTracker;
 
     constructor(allowedRoots?: string[], fileChangeTracker?: FileChangeTracker) {
@@ -32,23 +40,53 @@ export class FileSystemService {
     }
 
     private isPathAllowed(filePath: string): boolean {
-        const absolutePath = path.resolve(filePath);
         const isWin = process.platform === 'win32';
-        const p = isWin ? absolutePath.toLowerCase() : absolutePath;
+        const normalizeForComparison = (candidatePath: string): string => {
+            const resolvedPath = path.resolve(candidatePath);
+            return isWin ? resolvedPath.toLowerCase() : resolvedPath;
+        };
+        const normalizedPath = normalizeForComparison(filePath);
 
         return this.allowedRoots.some(root => {
-            const r = isWin ? root.toLowerCase() : root;
-            const sep = isWin ? '\\' : path.sep;
-            if (p === r) {
-                return true;
-            }
-            return p.startsWith(r.endsWith(sep) ? r : r + sep);
+            const normalizedRoot = normalizeForComparison(root);
+            const relativePath = path.relative(normalizedRoot, normalizedPath);
+            return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
         });
     }
 
     private validatePath(filePath: string) {
-        if (!this.isPathAllowed(filePath)) {
+        const absolutePath = path.resolve(filePath);
+        if (!this.isPathAllowed(absolutePath)) {
             throw new Error(`Access denied: Path is outside allowed directories. (${filePath})`);
+        }
+
+        try {
+            const absolutePathStats = lstatSync(absolutePath);
+            if (absolutePathStats.isSymbolicLink()) {
+                throw new Error(`Access denied: Symbolic links/junctions are not allowed. (${filePath})`);
+            }
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+                throw error;
+            }
+        }
+
+        let candidate = absolutePath;
+        while (!existsSync(candidate)) {
+            const parent = path.dirname(candidate);
+            if (parent === candidate) {
+                break;
+            }
+            candidate = parent;
+        }
+
+        if (!existsSync(candidate)) {
+            return;
+        }
+
+        const realPath = realpathSync.native(candidate);
+        if (!this.isPathAllowed(realPath)) {
+            throw new Error(`Access denied: Path resolves outside allowed directories. (${filePath})`);
         }
     }
 
@@ -296,6 +334,7 @@ export class FileSystemService {
 
     async fileExists(filePath: string): Promise<{ exists: boolean }> {
         try {
+            this.validatePath(filePath);
             await fs.access(path.resolve(filePath));
             return { exists: true };
         } catch {
@@ -369,6 +408,7 @@ export class FileSystemService {
         minLength: number = 4
     ): Promise<ServiceResponse<{ strings: string[] }>> {
         try {
+            this.validatePath(filePath);
             const buffer = await fs.readFile(path.resolve(filePath));
             const strings: string[] = [];
             let current = '';
@@ -395,8 +435,10 @@ export class FileSystemService {
         dir: string
     ): Promise<ServiceResponse<{ path: string }>> {
         try {
+            this.validatePath(dir);
             const fileName = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
             const fullPath = path.join(dir, fileName);
+            this.validatePath(fullPath);
             await fs.writeFile(fullPath, content);
             return { success: true, data: { path: fullPath } };
         } catch (e) {
@@ -495,17 +537,50 @@ export class FileSystemService {
         }
     }
 
-    async downloadFile(url: string, destPath: string): Promise<ServiceResponse<{ path: string }>> {
-        if (!this.isPathAllowed(destPath)) {
-            return { success: false, error: 'Access denied: Path is outside allowed directories' };
+    async downloadFile(
+        url: string,
+        destPath: string,
+        options?: { checksum?: string; algorithm?: 'sha256' | 'sha1' | 'md5' }
+    ): Promise<ServiceResponse<{ path: string }>> {
+        try {
+            this.validatePath(destPath);
+            const parsedUrl = new URL(url);
+            if (parsedUrl.protocol !== 'https:') {
+                return { success: false, error: 'Only https downloads are allowed' };
+            }
+            if (!this.allowedDownloadHosts.has(parsedUrl.hostname.toLowerCase())) {
+                return { success: false, error: 'Download source is not allowed' };
+            }
+        } catch (error) {
+            return { success: false, error: getErrorMessage(error as Error) };
         }
         return new Promise(resolve => {
             const file = createWriteStream(destPath);
             https
                 .get(url, (response: import('http').IncomingMessage) => {
+                    if (response.statusCode && response.statusCode >= 400) {
+                        fs.unlink(destPath).catch(() => { });
+                        resolve({ success: false, error: `Download failed with status ${response.statusCode}` });
+                        return;
+                    }
                     response.pipe(file);
                     file.on('finish', () => {
                         file.close();
+                        if (options?.checksum) {
+                            fs.readFile(destPath).then((content) => {
+                                const algorithm = options.algorithm ?? 'sha256';
+                                const digest = createHash(algorithm).update(content).digest('hex');
+                                if (digest.toLowerCase() !== options.checksum?.toLowerCase()) {
+                                    void fs.unlink(destPath).catch(() => { });
+                                    resolve({ success: false, error: 'Checksum validation failed' });
+                                    return;
+                                }
+                                resolve({ success: true, data: { path: destPath } });
+                            }).catch((error) => {
+                                resolve({ success: false, error: getErrorMessage(error as Error) });
+                            });
+                            return;
+                        }
                         resolve({ success: true, data: { path: destPath } });
                     });
                 })

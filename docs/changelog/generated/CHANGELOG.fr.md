@@ -24,6 +24,17 @@
 - **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.
 - **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling.
 
+### AUD-SEC 003-030 Security Hardening Complete
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.
+
+- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.
+- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.
+- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.
+- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses.
+
 ### AUD-SEC Preload API Hardening (001/002)
 
 - **Type**: security

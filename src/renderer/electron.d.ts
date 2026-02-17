@@ -1895,19 +1895,6 @@ export interface ElectronAPI {
         deleteCanvasEdge: (id: string) => Promise<void>;
     };
 
-    /**
-     * Browser extension management APIs
-     */
-    extension: {
-        /** Check if extension warning should be shown */
-        shouldShowWarning: () => Promise<boolean>;
-        /** Dismiss the extension warning permanently */
-        dismissWarning: () => Promise<{ success: boolean }>;
-        /** Get extension installation status */
-        getStatus: () => Promise<{ installed: boolean; shouldShowWarning: boolean }>;
-        /** Mark extension as installed/uninstalled */
-        setInstalled: (installed: boolean) => Promise<{ success: boolean }>;
-    };
     workflow: {
         getAll: () => Promise<import('@shared/types/workflow.types').Workflow[]>;
         get: (id: string) => Promise<import('@shared/types/workflow.types').Workflow | null>;

@@ -33,8 +33,7 @@ export class SecurityService extends BaseService implements ISecurityService {
                     // Encrypted format
                     this.loadEncryptedKey(rawContent);
                 } else {
-                    // Legacy plain-text hex format
-                    this.migrateLegacyKey(rawContent);
+                    throw new Error('Legacy plaintext master key format is no longer supported');
                 }
             } else {
                 // New initialization
@@ -62,17 +61,6 @@ export class SecurityService extends BaseService implements ISecurityService {
         appLogger.info('SecurityService', 'Master Key (Encrypted V2) loaded successfully.');
     }
 
-    private migrateLegacyKey(hexKey: string) {
-        this.masterKey = Buffer.from(hexKey, 'hex');
-        if (this.masterKey.length !== 32) {
-            throw new Error('Invalid legacy master key length');
-        }
-
-        appLogger.warn('SecurityService', 'Legacy plain-text Master Key detected. Migrating to encrypted format...');
-        this.saveMasterKeyEncrypted();
-        appLogger.info('SecurityService', 'Master Key migration complete.');
-    }
-
     private generateNewMasterKey() {
         this.masterKey = crypto.randomBytes(32);
         this.saveMasterKeyEncrypted();
@@ -88,9 +76,7 @@ export class SecurityService extends BaseService implements ISecurityService {
             const content = `v2:${encryptedBuffer.toString('base64')}`;
             fs.writeFileSync(this.keyPath, content, 'utf8');
         } else {
-            // Fallback to plain text if safeStorage is unavailable (e.g. some CI envs)
-            appLogger.warn('SecurityService', 'safeStorage not available for saving Master Key - falling back to plain text (CAUTION)');
-            fs.writeFileSync(this.keyPath, this.masterKey.toString('hex'), 'utf8');
+            throw new Error('safeStorage not available for saving master key securely');
         }
     }
 
@@ -244,8 +230,8 @@ export class SecurityService extends BaseService implements ISecurityService {
             appLogger.error('SecurityService', `safeStorage encryption failed: ${getErrorMessage(error as Error)}`);
         }
 
-        appLogger.error('SecurityService', 'Encryption not available - returning plain text (CAUTION)');
-        return text;
+        appLogger.error('SecurityService', 'Encryption not available - refusing plaintext fallback');
+        return '';
     }
 
     /**

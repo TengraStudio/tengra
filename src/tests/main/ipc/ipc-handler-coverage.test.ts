@@ -35,7 +35,7 @@ describe('IPC Handler Coverage', () => {
             on: vi.fn(),
         };
 
-        registerProcessIpc(processService as never);
+        registerProcessIpc(() => null, processService as never);
 
         const spawn = handlers.get('process:spawn');
         expect(spawn).toBeDefined();

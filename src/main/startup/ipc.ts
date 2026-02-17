@@ -11,7 +11,6 @@ import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
-import { registerExtensionIpc } from '@main/ipc/extension';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -68,7 +67,7 @@ export function registerIpcHandlers(
     setIpcEventBus(services.eventBusService);
 
     // Registers
-    registerWindowIpc(getMainWindow);
+    registerWindowIpc(getMainWindow, allowedFileRoots);
     registerLazyServicesIpc();
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerModelDownloaderIpc(services.modelDownloaderService);
@@ -129,7 +128,7 @@ export function registerIpcHandlers(
         databaseService: services.databaseService,
     });
     registerAgentIpc(services.agentService);
-    registerProcessIpc(services.processService);
+    registerProcessIpc(getMainWindow, services.processService);
     setupProcessEvents(services.processService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);
 
@@ -174,7 +173,7 @@ export function registerIpcHandlers(
     registerCollaborationIpc(services.modelCollaborationService);
 
     registerToolsIpc(toolExecutor, services.commandService);
-    registerMcpIpc(mcpDispatcher);
+    registerMcpIpc(mcpDispatcher, getMainWindow);
     registerMcpMarketplaceHandlers(
         services.mcpMarketplaceService,
         services.settingsService,
@@ -213,9 +212,6 @@ export function registerIpcHandlers(
 
     // Register Multi-Agent Orchestrator IPC
     registerOrchestratorIpc(services.multiAgentOrchestratorService, getMainWindow);
-
-    // Browser Extension
-    registerExtensionIpc(services.extensionDetectorService);
 
     // Token Estimation
     registerTokenEstimationIpc();

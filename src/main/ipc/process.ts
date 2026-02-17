@@ -1,7 +1,8 @@
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { ProcessService } from '@main/services/system/process.service';
-import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { createSafeIpcHandler as baseCreateSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 const MAX_COMMAND_LENGTH = 1024;
 const MAX_PATH_LENGTH = 4096;
@@ -78,8 +79,17 @@ function validateNumber(value: unknown, min: number, max: number): number | null
 /**
  * Registers IPC handlers for process management
  */
-export const registerProcessIpc = (processService: ProcessService) => {
+export const registerProcessIpc = (getMainWindow: () => BrowserWindow | null, processService: ProcessService) => {
     appLogger.info('ProcessIPC', 'Registering process IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'process operation');
+    const createSafeIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+        handlerName: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        defaultValue: T
+    ) => baseCreateSafeIpcHandler<T, Args>(handlerName, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    }, defaultValue);
 
     ipcMain.handle('process:spawn', createSafeIpcHandler('process:spawn',
         async (_event: IpcMainInvokeEvent, commandRaw: unknown, argsRaw: unknown, cwdRaw: unknown) => {
@@ -174,8 +184,6 @@ export const registerProcessIpc = (processService: ProcessService) => {
     })
     */
 };
-
-import { BrowserWindow } from 'electron';
 
 /**
  * Sets up process data and exit event forwarding to all renderer windows with buffered output.

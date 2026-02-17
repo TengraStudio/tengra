@@ -1,13 +1,32 @@
 import { randomUUID } from 'crypto';
 
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/ipc/validation';
 import { SSHConnection, SSHService } from '@main/services/project/ssh.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { IpcValue, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+
+function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
+    const safeConnection = { ...connection };
+    delete safeConnection.password;
+    delete safeConnection.privateKey;
+    delete safeConnection.passphrase;
+    return safeConnection;
+}
 
 export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshService: SSHService, rateLimitService: RateLimitService) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'ssh operation');
+    const secureHandle = <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => {
+        ipcMain.handle(channel, async (event, ...args: Args) => {
+            validateSender(event);
+            return await handler(event, ...args);
+        });
+    };
     const send = (channel: string, data: JsonValue) => {
         const win = getMainWindow();
         if (win && !win.isDestroyed()) {
@@ -30,10 +49,10 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     sshService.on('disconnected', listeners.disconnected);
     sshService.on('error', listeners.error);
 
-    registerConnectionHandlers(sshService);
-    registerCommandHandlers(sshService, rateLimitService, send);
-    registerFileSystemHandlers(sshService, send);
-    registerSystemHandlers(sshService);
+    registerConnectionHandlers(sshService, secureHandle);
+    registerCommandHandlers(sshService, rateLimitService, send, secureHandle);
+    registerFileSystemHandlers(sshService, send, secureHandle);
+    registerSystemHandlers(sshService, secureHandle);
 
     // Return dispose function
     return () => {
@@ -45,8 +64,14 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     };
 }
 
-function registerConnectionHandlers(sshService: SSHService) {
-    ipcMain.handle('ssh:connect', async (_event, connection: unknown) => {
+function registerConnectionHandlers(
+    sshService: SSHService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:connect', async (_event, connection: unknown) => {
         const validated = validateIpc(sshConnectionSchema, connection, 'ssh:connect');
 
         const id = validated.id ?? randomUUID();
@@ -73,7 +98,7 @@ function registerConnectionHandlers(sshService: SSHService) {
         return { ...result, id };
     });
 
-    ipcMain.handle('ssh:disconnect', async (_event, connectionId: string) => {
+    secureHandle('ssh:disconnect', async (_event, connectionId: string) => {
         try {
             await sshService.disconnect(connectionId);
             return { success: true };
@@ -82,19 +107,20 @@ function registerConnectionHandlers(sshService: SSHService) {
         }
     });
 
-    ipcMain.handle('ssh:getConnections', async () => {
-        return sshService.getAllConnections();
+    secureHandle('ssh:getConnections', async () => {
+        return sshService.getAllConnections().map(sanitizeConnectionForRenderer);
     });
 
-    ipcMain.handle('ssh:isConnected', async (_event, connectionId: string) => {
+    secureHandle('ssh:isConnected', async (_event, connectionId: string) => {
         return sshService.isConnected(connectionId);
     });
 
-    ipcMain.handle('ssh:getProfiles', async () => {
-        return await sshService.getSavedProfiles();
+    secureHandle('ssh:getProfiles', async () => {
+        const profiles = await sshService.getSavedProfiles();
+        return profiles.map(sanitizeConnectionForRenderer);
     });
 
-    ipcMain.handle('ssh:saveProfile', async (_event, profile: unknown) => {
+    secureHandle('ssh:saveProfile', async (_event, profile: unknown) => {
         try {
             const validated = validateIpc(sshProfileSchema, profile, 'ssh:saveProfile');
             // Validation strips unknown fields but SSHConnection has index signature [key: string]
@@ -108,7 +134,7 @@ function registerConnectionHandlers(sshService: SSHService) {
         }
     });
 
-    ipcMain.handle('ssh:deleteProfile', async (_event, id: string) => {
+    secureHandle('ssh:deleteProfile', async (_event, id: string) => {
         try {
             return await sshService.deleteProfile(id);
         } catch {
@@ -117,8 +143,16 @@ function registerConnectionHandlers(sshService: SSHService) {
     });
 }
 
-function registerCommandHandlers(sshService: SSHService, rateLimitService: RateLimitService, send: (channel: string, data: JsonValue) => void) {
-    ipcMain.handle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
+function registerCommandHandlers(
+    sshService: SSHService,
+    rateLimitService: RateLimitService,
+    send: (channel: string, data: JsonValue) => void,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:execute', async (_event, connectionId: string, command: string, options?: Record<string, IpcValue>) => {
         try {
             await rateLimitService.waitForToken('ssh:execute');
             return await sshService.executeCommand(connectionId, command, options);
@@ -128,7 +162,7 @@ function registerCommandHandlers(sshService: SSHService, rateLimitService: RateL
         }
     });
 
-    ipcMain.handle('ssh:shellStart', async (_event, connectionId: string) => {
+    secureHandle('ssh:shellStart', async (_event, connectionId: string) => {
         return await sshService.startShell(
             connectionId,
             (data) => send('ssh:shellData', { connectionId, data }),
@@ -136,14 +170,21 @@ function registerCommandHandlers(sshService: SSHService, rateLimitService: RateL
         );
     });
 
-    ipcMain.handle('ssh:shellWrite', async (_event, payload: { connectionId: string; data: string }) => {
+    secureHandle('ssh:shellWrite', async (_event, payload: { connectionId: string; data: string }) => {
         const success = sshService.sendShellData(payload.connectionId, payload.data);
         return { success };
     });
 }
 
-function registerFileSystemHandlers(sshService: SSHService, send: (channel: string, data: JsonValue) => void) {
-    ipcMain.handle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
+function registerFileSystemHandlers(
+    sshService: SSHService,
+    send: (channel: string, data: JsonValue) => void,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:listDir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             return await sshService.listDirectory(payload.connectionId, payload.path);
         } catch (_error) {
@@ -151,7 +192,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:readFile', async (_event, payload: { connectionId: string; path: string }) => {
+    secureHandle('ssh:readFile', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             const content = await sshService.readFile(payload.connectionId, payload.path);
             return { success: true, content };
@@ -160,7 +201,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:writeFile', async (_event, payload: { connectionId: string; path: string; content: string }) => {
+    secureHandle('ssh:writeFile', async (_event, payload: { connectionId: string; path: string; content: string }) => {
         try {
             const success = await sshService.writeFile(payload.connectionId, payload.path, payload.content);
             return { success };
@@ -169,7 +210,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:deleteDir', async (_event, payload: { connectionId: string; path: string }) => {
+    secureHandle('ssh:deleteDir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             const success = await sshService.deleteDirectory(payload.connectionId, payload.path);
             return { success };
@@ -178,7 +219,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:deleteFile', async (_event, payload: { connectionId: string; path: string }) => {
+    secureHandle('ssh:deleteFile', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             const success = await sshService.deleteFile(payload.connectionId, payload.path);
             return { success };
@@ -187,7 +228,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:mkdir', async (_event, payload: { connectionId: string; path: string }) => {
+    secureHandle('ssh:mkdir', async (_event, payload: { connectionId: string; path: string }) => {
         try {
             const success = await sshService.createDirectory(payload.connectionId, payload.path);
             return { success };
@@ -196,7 +237,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:rename', async (_event, payload: { connectionId: string; oldPath: string; newPath: string }) => {
+    secureHandle('ssh:rename', async (_event, payload: { connectionId: string; oldPath: string; newPath: string }) => {
         try {
             const success = await sshService.rename(payload.connectionId, payload.oldPath, payload.newPath);
             return { success };
@@ -205,7 +246,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:upload', async (_event, payload: { connectionId: string; local: string; remote: string }) => {
+    secureHandle('ssh:upload', async (_event, payload: { connectionId: string; local: string; remote: string }) => {
         try {
             const success = await sshService.uploadFile(payload.connectionId, payload.local, payload.remote, (transferred, total) => {
                 send('ssh:uploadProgress', { connectionId: payload.connectionId, transferred, total });
@@ -216,7 +257,7 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
         }
     });
 
-    ipcMain.handle('ssh:download', async (_event, payload: { connectionId: string; remote: string; local: string }) => {
+    secureHandle('ssh:download', async (_event, payload: { connectionId: string; remote: string; local: string }) => {
         try {
             const success = await sshService.downloadFile(payload.connectionId, payload.remote, payload.local, (transferred, total) => {
                 send('ssh:downloadProgress', { connectionId: payload.connectionId, transferred, total });
@@ -228,8 +269,14 @@ function registerFileSystemHandlers(sshService: SSHService, send: (channel: stri
     });
 }
 
-function registerSystemHandlers(sshService: SSHService) {
-    ipcMain.handle('ssh:getSystemStats', async (_event, connectionId: string) => {
+function registerSystemHandlers(
+    sshService: SSHService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:getSystemStats', async (_event, connectionId: string) => {
         try {
             return await sshService.getSystemStats(connectionId);
         } catch (error) {
@@ -238,7 +285,7 @@ function registerSystemHandlers(sshService: SSHService) {
         }
     });
 
-    ipcMain.handle('ssh:getInstalledPackages', async (_event, connectionId: string, manager?: 'apt' | 'npm' | 'pip') => {
+    secureHandle('ssh:getInstalledPackages', async (_event, connectionId: string, manager?: 'apt' | 'npm' | 'pip') => {
         try {
             return await sshService.getInstalledPackages(connectionId, manager);
         } catch {
@@ -246,7 +293,7 @@ function registerSystemHandlers(sshService: SSHService) {
         }
     });
 
-    ipcMain.handle('ssh:getLogFiles', async (_event, connectionId: string) => {
+    secureHandle('ssh:getLogFiles', async (_event, connectionId: string) => {
         try {
             return await sshService.getLogFiles(connectionId);
         } catch {
@@ -254,7 +301,7 @@ function registerSystemHandlers(sshService: SSHService) {
         }
     });
 
-    ipcMain.handle('ssh:readLogFile', async (_event, payload: { connectionId: string; path: string; lines?: number }) => {
+    secureHandle('ssh:readLogFile', async (_event, payload: { connectionId: string; path: string; lines?: number }) => {
         try {
             return await sshService.readLogFile(payload.connectionId, payload.path, payload.lines);
         } catch (error) {

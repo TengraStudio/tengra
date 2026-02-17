@@ -1269,12 +1269,6 @@ export const webElectronMock: ElectronAPI = {
         getCanvasEdges: async () => [],
         deleteCanvasEdge: async (_id: string) => { },
     },
-    extension: {
-        shouldShowWarning: async () => false,
-        dismissWarning: async () => ({ success: true }),
-        getStatus: async () => ({ installed: false, shouldShowWarning: false }),
-        setInstalled: async (_installed: boolean) => ({ success: true }),
-    },
     workflow: {
         getAll: async () => [],
         get: async (_id: string) => null,

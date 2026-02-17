@@ -1,10 +1,11 @@
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { McpDispatcher } from '@main/mcp/dispatcher';
-import { createIpcHandler, createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createIpcHandler as baseCreateIpcHandler, createSafeIpcHandler as baseCreateSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { MCPServerConfig } from '@shared/types';
 import { JsonObject } from '@shared/types/common';
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 /** Maximum service name length */
 const MAX_SERVICE_NAME_LENGTH = 128;
@@ -52,8 +53,24 @@ function validateArgs(value: unknown): JsonObject {
 /**
  * Registers IPC handlers for MCP operations
  */
-export function registerMcpIpc(mcpDispatcher: McpDispatcher) {
+export function registerMcpIpc(mcpDispatcher: McpDispatcher, getMainWindow: () => BrowserWindow | null) {
     appLogger.info('McpIPC', 'Registering MCP IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'mcp operation');
+    const createIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>
+    ) => baseCreateIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    });
+    const createSafeIpcHandler = <T = unknown, Args extends unknown[] = unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        defaultValue: T
+    ) => baseCreateSafeIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    }, defaultValue);
 
     ipcMain.handle('mcp:list', createSafeIpcHandler('mcp:list',
         async () => {

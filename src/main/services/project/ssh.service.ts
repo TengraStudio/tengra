@@ -220,6 +220,9 @@ export class SSHService extends EventEmitter {
             if (safeProfile.passphrase) {
                 safeProfile.passphrase = this.encryptCredential(safeProfile.passphrase);
             }
+            if (safeProfile.privateKey) {
+                safeProfile.privateKey = this.encryptCredential(safeProfile.privateKey);
+            }
 
             const profileIndex = profiles.findIndex(p => p.id === safeProfile.id);
             if (profileIndex >= 0) {
@@ -256,6 +259,9 @@ export class SSHService extends EventEmitter {
         }
         if (decrypted.passphrase) {
             decrypted.passphrase = this.decryptCredential(decrypted.passphrase);
+        }
+        if (decrypted.privateKey) {
+            decrypted.privateKey = this.decryptCredential(decrypted.privateKey);
         }
         return decrypted;
     }

@@ -24,6 +24,17 @@
 - **AUD-ARCH-015/017**: Terminal temizleme ve proje tarama yollarındaki sessiz catch blokları, açık uyarı loglarıyla değiştirildi.
 - **AUD-ARCH-019**: Eski temp görsel dosyası temizleme hataları açık uyarı ve hata sinyallemesiyle görünür hale getirildi.
 
+### AUD-SEC 003-030 Güvenlik Güçlendirmesi Tamamlandı
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: IPC güven sınırları, dosya sistemi yol doğrulaması, API kimlik doğrulaması, OAuth callback akışları ve gizli anahtar yönetiminde güvenlik denetimi güçlendirmeleri tamamlandı.
+
+- **IPC/Pencere**: Kritik IPC modüllerinde gönderici doğrulaması ve external-open/cookie/loglama korumaları güçlendirildi.
+- **Dosya Sistemi/Protokol**: Prefix tabanlı kontroller relative-path sınır doğrulamasına taşındı ve symlink/junction kaçışları engellendi.
+- **API/OAuth**: Token endpoint için sıkı local erişim, loopback bind, kimlik doğrulamalı websocket oturumları ve callback state doğrulaması zorunlu kılındı.
+- **Gizli Veriler/SSH**: Düz metin master-key fallback desteği kaldırıldı ve renderer yanıtlarında SSH hassas alanlarının sızması engellendi.
+
 ### AUD-SEC Preload API Güçlendirmesi (001/002)
 
 - **Type**: security

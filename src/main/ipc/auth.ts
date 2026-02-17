@@ -1,3 +1,4 @@
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import {
     accountIdSchema,
     authTokenDataSchema,
@@ -12,10 +13,10 @@ import { ProxyService } from '@main/services/proxy/proxy.service';
 import { AuthService, TokenData } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { createIpcHandler, createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { JsonValue } from '@shared/types/common';
+import { createIpcHandler as baseCreateIpcHandler, createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { IpcValue, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 export interface AuthIpcDependencies {
@@ -38,6 +39,38 @@ export interface AuthIpcDependencies {
  */
 export function registerAuthIpc(deps: AuthIpcDependencies) {
     const { proxyService, copilotService, authService, auditLogService, getMainWindow, eventBus } = deps;
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'auth operation');
+    const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+        handlerName: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>
+    ) => baseCreateIpcHandler<T, Args>(
+        handlerName,
+        async (event, ...args) => {
+            validateSender(event);
+            return handler(event, ...args);
+        }
+    );
+    const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] = unknown[]>(
+        handlerName: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]
+    ) => baseCreateValidatedIpcHandler<T, Args>(
+        handlerName,
+        async (event, ...args) => {
+            validateSender(event);
+            return handler(event, ...args);
+        },
+        options
+    );
+    const registerSecureBatchableHandler = (
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>
+    ) => {
+        registerBatchableHandler(channel, async (event, ...args) => {
+            validateSender(event);
+            return await handler(event, ...args);
+        });
+    };
     // --- GitHub/Copilot Device Code Flow ---
 
     ipcMain.handle('auth:github-login', createIpcHandler('auth:github-login', async (_event, appId: 'profile' | 'copilot' = 'copilot') => {
@@ -244,7 +277,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
     // Note: auth:has-linked-account is registered in batch handlers below
 
     // Register commonly batched handlers
-    registerBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
+    registerSecureBatchableHandler('auth:get-linked-accounts', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
         const provider = args[0] as string | undefined;
         try {
             if (provider) {
@@ -257,7 +290,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         }
     });
 
-    registerBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
+    registerSecureBatchableHandler('auth:get-active-linked-account', async (_event, ...args): Promise<import('@shared/types/common').JsonValue> => {
         const provider = args[0] as string;
         try {
             return (await authService.getActiveAccount(provider)) as unknown as JsonValue;
@@ -267,7 +300,7 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
         }
     });
 
-    registerBatchableHandler('auth:has-linked-account', async (_event, ...args) => {
+    registerSecureBatchableHandler('auth:has-linked-account', async (_event, ...args) => {
         const provider = args[0] as string;
         try {
             return await authService.hasLinkedAccount(provider);

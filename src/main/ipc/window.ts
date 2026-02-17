@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { resolveWindowsCommand } from '@main/utils/windows-command.util';
@@ -18,6 +19,19 @@ const DETACHED_TERMINAL_WIDTH = 1000;
 const DETACHED_TERMINAL_HEIGHT = 420;
 const MAX_TEXT_LENGTH = 512;
 const detachedTerminalWindows = new Map<string, BrowserWindow>();
+const SENSITIVE_QUERY_KEYS = new Set([
+    'token', 'access_token', 'refresh_token', 'code', 'state', 'sessionkey', 'session_key',
+    'apikey', 'api_key', 'authorization', 'password', 'passphrase'
+]);
+const COOKIE_CAPTURE_ALLOWED_PROTOCOLS = new Set(['https:', 'http:']);
+const COOKIE_CAPTURE_ALLOWED_HOSTS = new Set([
+    'localhost',
+    '127.0.0.1',
+    'accounts.google.com',
+    'claude.ai',
+    'api.anthropic.com',
+    'github.com'
+]);
 
 interface DetachedTerminalWindowOptions {
     sessionId: string;
@@ -30,10 +44,53 @@ interface DetachedTerminalWindowOptions {
  * Registers all window-related IPC handlers including window controls, shell operations, and cookies.
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
  */
-export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
+export function registerWindowIpc(getMainWindow: () => BrowserWindow | null, allowedRoots: Set<string>) {
     registerWindowControlHandlers(getMainWindow);
-    registerShellHandlers();
-    registerCookieHandlers();
+    registerShellHandlers(getMainWindow, allowedRoots);
+    registerCookieHandlers(getMainWindow);
+}
+
+function isPathAllowed(filePath: string, allowedRoots: Set<string>): boolean {
+    const absolutePath = path.resolve(filePath);
+    const isWin = process.platform === 'win32';
+    const normalizedPath = isWin ? absolutePath.toLowerCase() : absolutePath;
+    return Array.from(allowedRoots).some((root) => {
+        const resolvedRoot = path.resolve(root);
+        const normalizedRoot = isWin ? resolvedRoot.toLowerCase() : resolvedRoot;
+        const sep = isWin ? '\\' : path.sep;
+        return normalizedPath === normalizedRoot || normalizedPath.startsWith(normalizedRoot.endsWith(sep) ? normalizedRoot : `${normalizedRoot}${sep}`);
+    });
+}
+
+function redactUrlForLogs(rawUrl: string): string {
+    try {
+        const parsed = new URL(rawUrl);
+        for (const key of parsed.searchParams.keys()) {
+            if (SENSITIVE_QUERY_KEYS.has(key.toLowerCase())) {
+                parsed.searchParams.set(key, '[REDACTED]');
+            }
+        }
+        return parsed.toString();
+    } catch {
+        return rawUrl;
+    }
+}
+
+function isCookieCaptureUrlAllowed(rawUrl: string): boolean {
+    try {
+        const parsed = new URL(rawUrl);
+        if (!COOKIE_CAPTURE_ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+            return false;
+        }
+        const host = parsed.hostname.toLowerCase();
+        return COOKIE_CAPTURE_ALLOWED_HOSTS.has(host)
+            || host.endsWith('.claude.ai')
+            || host.endsWith('.anthropic.com')
+            || host.endsWith('.github.com')
+            || host.endsWith('.google.com');
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -41,22 +98,13 @@ export function registerWindowIpc(getMainWindow: () => BrowserWindow | null) {
  * @param getMainWindow - Factory function that returns the main BrowserWindow instance
  */
 function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null) {
-    const validateSender = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
-        const win = getMainWindow();
-        // SEC-013-3: Auth check for window operations
-        if (event.sender.id !== win?.webContents.id) {
-            appLogger.warn(
-                'Security',
-                `Unauthorized window operation attempt from sender ${event.sender.id}`
-            );
-            throw new Error('Unauthorized window operation');
-        }
-        return win;
-    };
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
 
     ipcMain.on('window:minimize', event => {
         try {
-            validateSender(event).minimize();
+            const win = getMainWindow();
+            validateSender(event);
+            win?.minimize();
         } catch {
             /* ignore */
         }
@@ -64,7 +112,11 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
 
     ipcMain.on('window:maximize', event => {
         try {
-            const win = validateSender(event);
+            const win = getMainWindow();
+            validateSender(event);
+            if (!win) {
+                return;
+            }
             if (win.isMaximized()) {
                 win.unmaximize();
             } else {
@@ -77,7 +129,9 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
 
     ipcMain.on('window:close', event => {
         try {
-            validateSender(event).close();
+            const win = getMainWindow();
+            validateSender(event);
+            win?.close();
         } catch {
             /* ignore */
         }
@@ -85,7 +139,11 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
 
     ipcMain.on('window:toggle-compact', (event, enabled) => {
         try {
-            const win = validateSender(event);
+            const win = getMainWindow();
+            validateSender(event);
+            if (!win) {
+                return;
+            }
             if (enabled) {
                 win.setSize(COMPACT_WIDTH, COMPACT_HEIGHT);
             } else {
@@ -98,7 +156,11 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
 
     ipcMain.on('window:resize', (event, resolution: string) => {
         try {
-            const win = validateSender(event);
+            const win = getMainWindow();
+            validateSender(event);
+            if (!win) {
+                return;
+            }
             const [width, height] = resolution.split('x').map(Number);
             if (width && height) {
                 win.setSize(width, height);
@@ -111,7 +173,11 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
 
     ipcMain.on('window:toggle-fullscreen', event => {
         try {
-            const win = validateSender(event);
+            const win = getMainWindow();
+            validateSender(event);
+            if (!win) {
+                return;
+            }
             win.setFullScreen(!win.isFullScreen());
         } catch {
             /* ignore */
@@ -119,7 +185,8 @@ function registerWindowControlHandlers(getMainWindow: () => BrowserWindow | null
     });
 
     ipcMain.handle('window:openDetachedTerminal', async (event, optionsRaw: unknown) => {
-        const win = validateSender(event);
+        validateSender(event);
+        const win = getMainWindow();
         if (!win) {
             return false;
         }
@@ -235,16 +302,22 @@ function parseDetachedTerminalOptions(value: unknown): DetachedTerminalWindowOpt
 /**
  * Registers IPC handlers for shell operations (open external URLs, open terminal, run commands).
  */
-function registerShellHandlers() {
-    ipcMain.handle('shell:openExternal', createValidatedIpcHandler('shell:openExternal', async (_event, url: string) => {
-        appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${url}`);
+function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowedRoots: Set<string>) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
+    ipcMain.handle('shell:openExternal', createValidatedIpcHandler('shell:openExternal', async (event, url: string) => {
+        validateSender(event);
+        appLogger.info('WindowIPC', `shell:openExternal handle called with URL: ${redactUrlForLogs(url)}`);
 
         // Handle safe-file:// protocol for local images
         if (url.startsWith('safe-file://')) {
             const filePath = url.replace('safe-file://', '');
             appLogger.info('WindowIPC', `Opening local file path: ${filePath}`);
             try {
-                const error = await shell.openPath(decodeURIComponent(filePath));
+                const decodedPath = decodeURIComponent(filePath);
+                if (!isPathAllowed(decodedPath, allowedRoots)) {
+                    return { success: false, error: 'Access denied' };
+                }
+                const error = await shell.openPath(decodedPath);
                 if (error) {
                     appLogger.error('WindowIPC', `shell.openPath failed: ${error}`);
                     return { success: false, error };
@@ -261,7 +334,7 @@ function registerShellHandlers() {
             const urlString = parsed.toString();
 
             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                appLogger.info('WindowIPC', `Opening URL with shell.openExternal: ${urlString}`);
+                appLogger.info('WindowIPC', `Opening URL with shell.openExternal: ${redactUrlForLogs(urlString)}`);
                 try {
                     await shell.openExternal(urlString);
                     return { success: true };
@@ -284,7 +357,8 @@ function registerShellHandlers() {
         defaultValue: { success: false, error: 'Validation failed' }
     }));
 
-    ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (_event, command: string) => {
+    ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (event, command: string) => {
+        validateSender(event);
         if (process.platform === 'win32') {
             // Sanitize command - remove shell metacharacters to prevent injection
             // Block: pipes, redirects, semicolons, backticks, $(), newlines
@@ -312,7 +386,8 @@ function registerShellHandlers() {
         defaultValue: false
     }));
 
-    ipcMain.handle('shell:runCommand', createValidatedIpcHandler('shell:runCommand', async (_event, command: string, args: string[], cwd?: string) => {
+    ipcMain.handle('shell:runCommand', createValidatedIpcHandler('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
+        validateSender(event);
         return new Promise(resolve => {
             const resolvedCommand = resolveWindowsCommand(command);
             appLogger.info('WindowIPC', `Running command: ${resolvedCommand} ${args.join(' ')}`);
@@ -349,17 +424,24 @@ function registerShellHandlers() {
 /**
  * Registers IPC handlers for cookie capture operations via hidden browser windows.
  */
-function registerCookieHandlers() {
+function registerCookieHandlers(getMainWindow: () => BrowserWindow | null) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'window operation');
     /**
      * Opens a hidden BrowserWindow to capture cookies from a URL.
      * Useful for capturing session cookies after OAuth completes in an external browser.
      */
-    ipcMain.handle('window:captureCookies', async (_event, url: string, timeoutMs = 5000) => {
+    ipcMain.handle('window:captureCookies', async (event, url: string, timeoutMs = 5000) => {
+        validateSender(event);
         return new Promise<{ success: boolean }>(resolve => {
             try {
+                if (!isCookieCaptureUrlAllowed(url)) {
+                    appLogger.warn('Security', `Denied cookie capture URL: ${redactUrlForLogs(url)}`);
+                    resolve({ success: false });
+                    return;
+                }
                 appLogger.info(
                     'WindowIPC',
-                    `Creating hidden window to capture cookies from: ${url}`
+                    `Creating hidden window to capture cookies from: ${redactUrlForLogs(url)}`
                 );
 
                 const hiddenWin = new BrowserWindow({

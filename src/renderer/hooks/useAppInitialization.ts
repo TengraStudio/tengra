@@ -1,14 +1,13 @@
 import { useTextToSpeech } from '@renderer/features/chat/hooks/useTextToSpeech';
 import { Language, useLanguage } from '@renderer/i18n';
 import { themeRegistry } from '@renderer/themes/theme-registry.service';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';
 
 export function useAppInitialization() {
     const { language, setLanguage } = useLanguage();
     const { speak: handleSpeak } = useTextToSpeech();
-    const [showExtensionWarning, setShowExtensionWarning] = useState(false);
 
     useEffect(() => {
         window.TandemSpeak = handleSpeak;
@@ -64,41 +63,6 @@ export function useAppInitialization() {
         };
     }, [setLanguage]);
 
-    useEffect(() => {
-        const abortController = new AbortController();
 
-        const checkExtensionWarning = async () => {
-            if (abortController.signal.aborted) {
-                return;
-            }
-
-            try {
-                const shouldShow = await window.electron.extension.shouldShowWarning();
-                if (!abortController.signal.aborted) {
-                    setShowExtensionWarning(shouldShow);
-                }
-            } catch (error) {
-                appLogger.error('Extension', 'Failed to check warning status', error as Error);
-            }
-        };
-        const idleCallback = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number }).requestIdleCallback;
-        if (idleCallback) {
-            idleCallback(() => {
-                void checkExtensionWarning();
-            });
-        } else {
-            window.setTimeout(() => {
-                void checkExtensionWarning();
-            }, 250);
-        }
-
-        return () => {
-            abortController.abort();
-        };
-    }, []);
-
-    return {
-        showExtensionWarning,
-        setShowExtensionWarning,
-    };
+    return {};
 }

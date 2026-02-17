@@ -90,7 +90,6 @@ import { TokenService } from '@main/services/security/token.service';
 import { CommandService } from '@main/services/system/command.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { ExtensionDetectorService } from '@main/services/system/extension-detector.service';
 import {
     getHealthCheckService,
     HealthCheckService,
@@ -205,7 +204,6 @@ export interface Services {
     mcpPluginService: McpPluginService;
     mcpMarketplaceService: McpMarketplaceService;
     apiServerService: ApiServerService;
-    extensionDetectorService: ExtensionDetectorService;
     timeTrackingService: TimeTrackingService;
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
@@ -295,12 +293,6 @@ function registerSystemServices(allowedFileRoots: Set<string>) {
         ['databaseService', 'securityService']
     );
 
-    // Extension detector service
-    container.register(
-        'extensionDetectorService',
-        ss => new ExtensionDetectorService(ss as SettingsService),
-        ['settingsService']
-    );
 
     // Theme service
     container.register('themeService', ds => new ThemeService(ds as DataService), ['dataService']);
@@ -1051,9 +1043,6 @@ function buildServicesMap(
         mcpPluginService: container.resolve<McpPluginService>('mcpPluginService'),
         mcpMarketplaceService: container.resolve<McpMarketplaceService>('mcpMarketplaceService'),
         localImageService: container.resolve<LocalImageService>('localImageService'),
-        extensionDetectorService: container.resolve<ExtensionDetectorService>(
-            'extensionDetectorService'
-        ),
         timeTrackingService: container.resolve<TimeTrackingService>('timeTrackingService'),
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),

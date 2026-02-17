@@ -4,6 +4,40 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-18-aud-sec-completion",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "security",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "IPC",
+        "Filesystem",
+        "API",
+        "OAuth",
+        "SecurityService",
+        "SSH"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-terminal-ipc-renderer-migration",
       "date": "2026-02-18",
       "channel": "stable",

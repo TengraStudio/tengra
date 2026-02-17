@@ -20,6 +20,23 @@ export function preRegisterProtocols() {
  * Register the actual protocol handlers after app is ready.
  */
 export function registerProtocols(allowedFileRoots: Set<string>) {
+    const isWindows = process.platform === 'win32';
+    const normalizeForComparison = (candidatePath: string): string => {
+        const resolvedPath = path.resolve(candidatePath);
+        return isWindows ? resolvedPath.toLowerCase() : resolvedPath;
+    };
+    const isPathWithinRoot = (targetPath: string, rootPath: string): boolean => {
+        const normalizedTargetPath = normalizeForComparison(targetPath);
+        const normalizedRootPath = normalizeForComparison(rootPath);
+        const relativePath = path.relative(normalizedRootPath, normalizedTargetPath);
+        return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath));
+    };
+
+    const isPathAllowed = (absolutePath: string): boolean => {
+        const normalizedPath = path.resolve(absolutePath);
+        return Array.from(allowedFileRoots).some(root => isPathWithinRoot(normalizedPath, root));
+    };
+
     protocol.registerFileProtocol('safe-file', (request, callback) => {
         let url = request.url.replace('safe-file://', '');
 
@@ -36,14 +53,7 @@ export function registerProtocols(allowedFileRoots: Set<string>) {
         const absolutePath = path.resolve(decoded);
 
         // Security check: Must be in allowed roots
-        const isWindows = process.platform === 'win32';
-        const allowed = Array.from(allowedFileRoots).some(root => {
-            const resolvedRoot = path.resolve(root);
-            if (isWindows) {
-                return absolutePath.toLowerCase().startsWith(resolvedRoot.toLowerCase());
-            }
-            return absolutePath.startsWith(resolvedRoot);
-        });
+        const allowed = isPathAllowed(absolutePath);
 
         if (!allowed) {
             appLogger.error('Security', `Denied attempt to access file outside allowed roots via protocol: ${absolutePath} `);

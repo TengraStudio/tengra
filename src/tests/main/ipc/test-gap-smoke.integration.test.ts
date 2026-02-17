@@ -1,6 +1,5 @@
 import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
 import { registerDialogIpc } from '@main/ipc/dialog';
-import { registerExtensionIpc } from '@main/ipc/extension';
 import { registerFilesIpc } from '@main/ipc/files';
 import { dialog, ipcMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -69,23 +68,6 @@ describe('Missing IPC TODO coverage (behavior)', () => {
 
         expect(result).toEqual({ success: false, error: 'Invalid options provided' });
         expect(dialog.showSaveDialog).not.toHaveBeenCalled();
-    });
-
-    it('coerces extension installation flag and updates detector state', async () => {
-        const handlers = setupHandlers();
-        const detector = {
-            shouldShowWarning: vi.fn(() => true),
-            dismissWarning: vi.fn(),
-            isExtensionInstalled: vi.fn(() => false),
-            setExtensionInstalled: vi.fn(),
-        };
-
-        registerExtensionIpc(detector as never);
-        const handler = handlers.get('extension:setInstalled');
-
-        const result = await handler?.({} as unknown, 'yes');
-        expect(result).toEqual({ success: true });
-        expect(detector.setExtensionInstalled).toHaveBeenCalledWith(false);
     });
 
     it('updates allowed roots when directory selection succeeds', async () => {

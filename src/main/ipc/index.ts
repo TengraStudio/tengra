@@ -9,7 +9,6 @@ import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
-import { registerExtensionIpc } from '@main/ipc/extension';
 import { registerFilesIpc } from '@main/ipc/files';
 import { registerGalleryIpc } from '@main/ipc/gallery';
 import { registerGitIpc } from '@main/ipc/git';
@@ -63,9 +62,9 @@ export function registerAllIpc(
     const getWin = mainWindowGetter;
 
     // Window & System
-    registerWindowIpc(getWin);
+    registerWindowIpc(getWin, allowedFileRoots);
     registerLazyServicesIpc();
-    registerProcessIpc(services.processService);
+    registerProcessIpc(getWin, services.processService);
     setupProcessEvents(services.processService);
     registerLoggingIpc();
     registerDialogIpc(getWin);
@@ -188,10 +187,8 @@ export function registerAllIpc(
 
     // External Integrations
     registerToolsIpc(toolExecutor, services.commandService);
-    registerMcpIpc(mcpDispatcher);
+    registerMcpIpc(mcpDispatcher, getWin);
 
-    // Browser Extension
-    registerExtensionIpc(services.extensionDetectorService);
 
     // Backup & Restore
     registerBackupIpc(services.backupService);

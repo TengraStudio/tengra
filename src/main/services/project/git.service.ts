@@ -1,20 +1,71 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
 
 import { getErrorMessage } from '@shared/utils/error.util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export class GitService {
-    private async execute(command: string, cwd: string) {
+    private tokenizeCommand(command: string): string[] {
+        const tokens: string[] = [];
+        let current = '';
+        let inSingle = false;
+        let inDouble = false;
+        let escaping = false;
+
+        for (const char of command) {
+            if (escaping) {
+                current += char;
+                escaping = false;
+                continue;
+            }
+
+            if (char === '\\' && inDouble) {
+                escaping = true;
+                continue;
+            }
+
+            if (char === '\'' && !inDouble) {
+                inSingle = !inSingle;
+                continue;
+            }
+
+            if (char === '"' && !inSingle) {
+                inDouble = !inDouble;
+                continue;
+            }
+
+            if (/\s/.test(char) && !inSingle && !inDouble) {
+                if (current.length > 0) {
+                    tokens.push(current);
+                    current = '';
+                }
+                continue;
+            }
+
+            current += char;
+        }
+
+        if (current.length > 0) {
+            tokens.push(current);
+        }
+        return tokens;
+    }
+
+    private async executeArgs(args: string[], cwd: string) {
         try {
-            const { stdout, stderr } = await execAsync(`git ${command} `, { cwd });
+            const { stdout, stderr } = await execFileAsync('git', args, { cwd, shell: false, maxBuffer: 10 * 1024 * 1024 });
             return { success: true, stdout, stderr };
         } catch (error) {
             return { success: false, error: getErrorMessage(error) };
         }
+    }
+
+    private async execute(command: string, cwd: string) {
+        const args = this.tokenizeCommand(command);
+        return await this.executeArgs(args, cwd);
     }
 
     async getStatus(cwd: string): Promise<{ path: string, status: string }[]> {
@@ -31,15 +82,15 @@ export class GitService {
     }
 
     async add(cwd: string, files: string = '.') {
-        return await this.execute(`add "${files}"`, cwd);
+        return await this.executeArgs(['add', '--', files], cwd);
     }
 
     async commit(cwd: string, message: string) {
-        return await this.execute(`commit -m "${message}"`, cwd);
+        return await this.executeArgs(['commit', '-m', message], cwd);
     }
 
     async push(cwd: string, remote: string = 'origin', branch: string = 'main') {
-        return await this.execute(`push ${remote} ${branch} `, cwd);
+        return await this.executeArgs(['push', remote, branch], cwd);
     }
 
     async pull(cwd: string) {
@@ -63,7 +114,7 @@ export class GitService {
     }
 
     async checkout(cwd: string, branch: string) {
-        return await this.execute(`checkout ${branch} `, cwd);
+        return await this.executeArgs(['checkout', branch], cwd);
     }
 
     async executeRaw(cwd: string, command: string) {
@@ -161,11 +212,11 @@ export class GitService {
     }
 
     async stageFile(cwd: string, filePath: string) {
-        return await this.execute(`add "${filePath}"`, cwd);
+        return await this.executeArgs(['add', '--', filePath], cwd);
     }
 
     async unstageFile(cwd: string, filePath: string) {
-        return await this.execute(`reset HEAD -- "${filePath}"`, cwd);
+        return await this.executeArgs(['reset', 'HEAD', '--', filePath], cwd);
     }
 
     async getCommitDiff(cwd: string, hash: string): Promise<{ diff: string; success: boolean; error?: string }> {

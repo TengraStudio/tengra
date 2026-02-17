@@ -1,12 +1,13 @@
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { ProxyService } from '@main/services/proxy/proxy.service';
 import { ProxyProcessManager } from '@main/services/proxy/proxy-process.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { createSafeIpcHandler,createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createSafeIpcHandler as baseCreateSafeIpcHandler,createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue } from '@shared/types/common';
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 import { providerNameSchema, proxyAccountIdSchema, rateLimitConfigSchema,sessionKeySchema } from './validation';
@@ -24,20 +25,47 @@ export function registerProxyIpc(
     getMainWindow?: () => BrowserWindow | null,
     eventBus?: EventBusService
 ) {
+    const validateSender = createMainWindowSenderValidator(getMainWindow ?? (() => null), 'proxy operation');
+    const createSafeIpcHandler = <T = IpcValue, Args extends unknown[] = unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        defaultValue: T
+    ) => baseCreateSafeIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    }, defaultValue);
+    const createValidatedIpcHandler = <T = IpcValue, Args extends unknown[] = unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]
+    ) => baseCreateValidatedIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    }, options);
+    const registerSecureBatchableHandler = (
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<IpcValue>
+    ) => {
+        registerBatchableHandler(channel, async (event, ...args) => {
+            validateSender(event);
+            return await handler(event, ...args);
+        });
+    };
+
     // Register batchable quota handlers for efficient batch loading
-    registerBatchableHandler('getQuota', async (): Promise<IpcValue> => {
+    registerSecureBatchableHandler('getQuota', async (): Promise<IpcValue> => {
         return (await proxyService.getQuota()) as unknown as IpcValue;
     });
 
-    registerBatchableHandler('getCopilotQuota', async (): Promise<IpcValue> => {
+    registerSecureBatchableHandler('getCopilotQuota', async (): Promise<IpcValue> => {
         return (await proxyService.getCopilotQuota()) as unknown as IpcValue;
     });
 
-    registerBatchableHandler('getCodexUsage', async (): Promise<IpcValue> => {
+    registerSecureBatchableHandler('getCodexUsage', async (): Promise<IpcValue> => {
         return (await proxyService.getCodexUsage()) as unknown as IpcValue;
     });
 
-    registerBatchableHandler('getClaudeQuota', async (): Promise<IpcValue> => {
+    registerSecureBatchableHandler('getClaudeQuota', async (): Promise<IpcValue> => {
         return (await proxyService.getClaudeQuota()) as unknown as IpcValue;
     });
 

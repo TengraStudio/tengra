@@ -1,4 +1,14 @@
 {
+  "2026-02-18-aud-sec-completion": {
+    "title": "AUD-SEC 003-030 Security Hardening Complete",
+    "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+    "items": [
+      "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+      "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+      "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+      "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+    ]
+  },
   "2026-02-18-llm-security-v2": {
     "title": "LLM Security Hardening & Performance Optimization",
     "summary": "Implemented advanced prompt security measures and optimized application load time via lazy loading.",

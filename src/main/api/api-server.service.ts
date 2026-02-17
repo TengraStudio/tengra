@@ -94,7 +94,7 @@ export class ApiServerService extends BaseService {
                     return;
                 }
 
-                this.httpServer.listen(this.port, () => {
+                this.httpServer.listen(this.port, '127.0.0.1', () => {
                     appLogger.info(
                         this.name,
                         `API server listening on http://localhost:${this.port}`
@@ -157,7 +157,7 @@ export class ApiServerService extends BaseService {
         const method = req.method ?? 'GET';
 
         // Handle public/unauthenticated routes
-        if (this.handlePublicRoutes(pathname, method, res)) {
+        if (this.handlePublicRoutes(pathname, method, req, res)) {
             return;
         }
 
@@ -201,7 +201,7 @@ export class ApiServerService extends BaseService {
      *   get:
      *     description: Get the current API token (local only)
      */
-    private handlePublicRoutes(pathname: string, method: string, res: ServerResponse): boolean {
+    private handlePublicRoutes(pathname: string, method: string, req: IncomingMessage, res: ServerResponse): boolean {
         // Health check endpoint
         if (pathname === '/health' && method === 'GET') {
             this.sendJson(res, 200, {
@@ -220,6 +220,14 @@ export class ApiServerService extends BaseService {
 
         // Token endpoint
         if (pathname === '/api/auth/token' && method === 'GET') {
+            if (!this.isStrictLocalRequest(req)) {
+                this.sendJson(res, 403, {
+                    success: false,
+                    error: 'Forbidden',
+                    message: 'Local access required'
+                });
+                return true;
+            }
             this.sendJson(res, 200, {
                 token: this.apiToken,
                 expiresIn: 86400
@@ -249,6 +257,53 @@ export class ApiServerService extends BaseService {
         }
 
         return true;
+    }
+
+    private isStrictLocalRequest(req: IncomingMessage): boolean {
+        const remoteAddress = req.socket.remoteAddress?.replace('::ffff:', '') ?? '';
+        if (remoteAddress !== '127.0.0.1' && remoteAddress !== '::1') {
+            return false;
+        }
+
+        const hostHeader = (req.headers.host ?? '').toLowerCase();
+        const host = hostHeader.split(':')[0] ?? '';
+        if (host !== 'localhost' && host !== '127.0.0.1') {
+            return false;
+        }
+
+        const forwardedFor = req.headers['x-forwarded-for'];
+        if (typeof forwardedFor === 'string' && forwardedFor.trim().length > 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private extractTokenFromRequest(req: IncomingMessage): string | null {
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith('Bearer ')) {
+            return authHeader.substring(7);
+        }
+        if (typeof authHeader === 'string' && authHeader.trim().length > 0) {
+            return authHeader;
+        }
+
+        const headerToken = req.headers['x-api-token'];
+        if (typeof headerToken === 'string' && headerToken.trim().length > 0) {
+            return headerToken.trim();
+        }
+
+        try {
+            const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+            const queryToken = requestUrl.searchParams.get('token');
+            if (queryToken && queryToken.trim().length > 0) {
+                return queryToken.trim();
+            }
+        } catch {
+            return null;
+        }
+
+        return null;
     }
 
     /**
@@ -621,7 +676,12 @@ export class ApiServerService extends BaseService {
             return;
         }
 
-        this.wsServer.on('connection', (ws, _req) => {
+        this.wsServer.on('connection', (ws, req) => {
+            const requestToken = this.extractTokenFromRequest(req);
+            if (!requestToken || requestToken !== this.apiToken || !this.isStrictLocalRequest(req)) {
+                ws.close(1008, 'Unauthorized');
+                return;
+            }
             const clientId = randomBytes(8).toString('hex');
             appLogger.info(this.name, `WebSocket client connected: ${clientId}`);
 

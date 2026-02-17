@@ -1,10 +1,11 @@
 import { resolve } from 'path';
 
+import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { FileSystemService } from '@main/services/data/filesystem.service';
-import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { AISystemType } from '@shared/types/file-diff';
-import { BrowserWindow, dialog, ipcMain } from 'electron';
+import { BrowserWindow, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
 /** Maximum path length */
@@ -38,6 +39,15 @@ export function registerFilesIpc(
     allowedRoots: Set<string>
 ): void {
     appLogger.info('FilesIPC', 'Registering files IPC handlers');
+    const validateSender = createMainWindowSenderValidator(getMainWindow, 'file operation');
+    const createValidatedIpcHandler = <T, Args extends unknown[] = unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<T>,
+        options: Parameters<typeof baseCreateValidatedIpcHandler<T, Args>>[2]
+    ) => baseCreateValidatedIpcHandler<T, Args>(channel, async (event, ...args) => {
+        validateSender(event);
+        return await handler(event, ...args);
+    }, options);
 
     ipcMain.handle('files:exists', createValidatedIpcHandler('files:exists', async (_event, filePath: string) => {
         const result = await fileSystemService.fileExists(filePath);

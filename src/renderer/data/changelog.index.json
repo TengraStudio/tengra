@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-17T23:04:50.263Z",
+  "generatedAt": "2026-02-17T23:38:08.355Z",
   "locales": [
     "en",
     "tr",
@@ -210,6 +210,109 @@
             "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
             "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
             "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-sec-completion",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "security",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "IPC",
+        "Filesystem",
+        "API",
+        "OAuth",
+        "SecurityService",
+        "SSH"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "tr": {
+          "title": "AUD-SEC 003-030 Güvenlik Güçlendirmesi Tamamlandı",
+          "summary": "IPC güven sınırları, dosya sistemi yol doğrulaması, API kimlik doğrulaması, OAuth callback akışları ve gizli anahtar yönetiminde güvenlik denetimi güçlendirmeleri tamamlandı.",
+          "items": [
+            "- **IPC/Pencere**: Kritik IPC modüllerinde gönderici doğrulaması ve external-open/cookie/loglama korumaları güçlendirildi.",
+            "- **Dosya Sistemi/Protokol**: Prefix tabanlı kontroller relative-path sınır doğrulamasına taşındı ve symlink/junction kaçışları engellendi.",
+            "- **API/OAuth**: Token endpoint için sıkı local erişim, loopback bind, kimlik doğrulamalı websocket oturumları ve callback state doğrulaması zorunlu kılındı.",
+            "- **Gizli Veriler/SSH**: Düz metin master-key fallback desteği kaldırıldı ve renderer yanıtlarında SSH hassas alanlarının sızması engellendi."
+          ]
+        },
+        "de": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "fr": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "es": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "ja": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "zh": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+          ]
+        },
+        "ar": {
+          "title": "AUD-SEC 003-030 Security Hardening Complete",
+          "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+          "items": [
+            "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
+            "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
+            "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
+            "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
           ]
         }
       }
