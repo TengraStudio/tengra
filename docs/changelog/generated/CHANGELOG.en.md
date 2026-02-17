@@ -25,6 +25,7 @@
 - **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.
 - **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.
 - **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).
+- **Performance Batch #1**: Completed key PERF refactors including MessageList render-path state removal, Sidebar folder-chat precomputation, MessageBubble comparator optimization (removed `JSON.stringify` deep compares), project search index caching, and deferred/indexed sidebar search with cached pinned/recent derivations.
 
 ### LLM Security & Robust Attachments
 
@@ -34,6 +35,7 @@
 
 - **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
 - **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **DEBT-07**: Standardized error handling across Main and Shared processes by consolidating `TandemError`, `ApiError`, and `NetworkError` into a single shared utility.
 - **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
 
 ### Comprehensive TODO List Reorganization

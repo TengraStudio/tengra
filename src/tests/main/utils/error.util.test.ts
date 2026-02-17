@@ -1,6 +1,6 @@
 
-import { ApiError, AppErrorCode,isTandemError, TandemError } from '@main/utils/error.util';
-import { describe, expect,it } from 'vitest';
+import { ApiError, AppErrorCode, isTandemError, TandemError } from '@shared/utils/error.util';
+import { describe, expect, it } from 'vitest';
 
 describe('Error Hierarchy', () => {
     it('should correctly construct TandemError', () => {

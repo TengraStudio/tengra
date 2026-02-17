@@ -501,14 +501,6 @@ class AppLogger {
         }
     }
 
-    private safeStatSize(filePath: string): number {
-        try {
-            return fs.statSync(filePath).size;
-        } catch {
-            return 0;
-        }
-    }
-
     private async refreshCurrentLogSize(): Promise<void> {
         try {
             const stat = await fs.promises.stat(this.logPath);

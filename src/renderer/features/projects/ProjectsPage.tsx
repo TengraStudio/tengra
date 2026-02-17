@@ -98,24 +98,25 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
         }
         return index;
     }, [projects]);
-    const filteredProjects = React.useMemo(
-        () =>
-            normalizedSearchQuery === ''
-                ? projects
-                : projects.filter(project =>
-                    (projectSearchIndex.get(project.id) ?? '').includes(normalizedSearchQuery)
-                ),
-        [projects, normalizedSearchQuery, projectSearchIndex]
-    );
-    const sortedProjects = React.useMemo(() => {
+    const sortedProjectsByActiveSort = React.useMemo(() => {
         const direction = sortDirection === 'asc' ? 1 : -1;
-        return [...filteredProjects].sort((a, b) => {
+        return [...projects].sort((a, b) => {
             if (sortBy === 'title') {
                 return a.title.localeCompare(b.title) * direction;
             }
             return (a[sortBy] - b[sortBy]) * direction;
         });
-    }, [filteredProjects, sortBy, sortDirection]);
+    }, [projects, sortBy, sortDirection]);
+    const filteredProjects = React.useMemo(
+        () =>
+            normalizedSearchQuery === ''
+                ? sortedProjectsByActiveSort
+                : sortedProjectsByActiveSort.filter(project =>
+                    (projectSearchIndex.get(project.id) ?? '').includes(normalizedSearchQuery)
+                ),
+        [sortedProjectsByActiveSort, normalizedSearchQuery, projectSearchIndex]
+    );
+    const sortedProjects = filteredProjects;
 
     const toggleSort = (nextSortBy: 'title' | 'updatedAt' | 'createdAt') => {
         if (sortBy === nextSortBy) {

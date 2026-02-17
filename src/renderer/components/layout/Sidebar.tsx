@@ -4,7 +4,7 @@ import { SidebarFooter } from '@renderer/components/layout/sidebar/SidebarFooter
 import { SidebarHeader } from '@renderer/components/layout/sidebar/SidebarHeader';
 import { SidebarNavigation } from '@renderer/components/layout/sidebar/SidebarNavigation';
 import { Modal } from '@renderer/components/ui/modal';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useChat } from '@/context/ChatContext';
 import { useProject } from '@/context/ProjectContext';
@@ -53,17 +53,44 @@ export const Sidebar = React.memo(({
     const editRef = useRef<HTMLInputElement>(null);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const deferredSearchQuery = useDeferredValue(searchQuery);
 
     const activeFolders = useMemo(() => folders, [folders]);
+    const chatSearchIndex = useMemo(() => {
+        const index = new Map<string, string>();
+        for (const chat of chats) {
+            index.set(chat.id, chat.title.toLowerCase());
+        }
+        return index;
+    }, [chats]);
+    const normalizedSearchQuery = useMemo(
+        () => deferredSearchQuery.trim().toLowerCase(),
+        [deferredSearchQuery]
+    );
 
     const filteredChats = useMemo(() => {
-        if (!searchQuery) { return chats; }
-        const q = searchQuery.toLowerCase();
-        return chats.filter(c => c.title.toLowerCase().includes(q));
-    }, [chats, searchQuery]);
+        if (normalizedSearchQuery === '') {
+            return chats;
+        }
+        return chats.filter(chat =>
+            (chatSearchIndex.get(chat.id) ?? '').includes(normalizedSearchQuery)
+        );
+    }, [chatSearchIndex, chats, normalizedSearchQuery]);
 
-    const pinnedChats = useMemo(() => filteredChats.filter(c => c.isPinned), [filteredChats]);
-    const recentChats = useMemo(() => filteredChats.filter(c => !c.isPinned && !c.folderId).slice(0, 20), [filteredChats]);
+    const { pinnedChats, recentChats } = useMemo(() => {
+        const pinned: Chat[] = [];
+        const recent: Chat[] = [];
+        for (const chat of filteredChats) {
+            if (chat.isPinned) {
+                pinned.push(chat);
+                continue;
+            }
+            if (!chat.folderId && recent.length < 20) {
+                recent.push(chat);
+            }
+        }
+        return { pinnedChats: pinned, recentChats: recent };
+    }, [filteredChats]);
 
     useEffect(() => {
         if (editingId && editRef.current) {

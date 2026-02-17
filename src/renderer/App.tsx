@@ -70,8 +70,10 @@ const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     },
 ];
 
+const isDetachedTerminalWindow = new URLSearchParams(window.location.search).get('detachedTerminal') === '1';
+
 export default function App() {
-    if (new URLSearchParams(window.location.search).get('detachedTerminal') === '1') {
+    if (isDetachedTerminalWindow) {
         return <DetachedTerminalWindow />;
     }
 
@@ -140,12 +142,12 @@ function MainApp() {
         }
     }, [breakpoint, setIsSidebarCollapsed]);
 
-    const handleScrollToBottom = useCallback(() => {
+    const handleScrollToBottom = () => {
         const ref = appState.messagesEndRef.current;
         if (ref) {
             ref.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [appState.messagesEndRef]);
+    };
 
     const handleClearChat = useCallback(() => {
         const clear = async () => {
