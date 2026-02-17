@@ -547,10 +547,10 @@ class ChatIpcManager {
 const ChatMessageSchema = z.object({
     id: z.string().optional(),
     role: z.enum(['system', 'user', 'assistant', 'function', 'tool']),
-    content: z.union([z.string(), z.array(z.any())]),
+    content: z.union([z.string(), z.array(z.unknown())]),
     timestamp: z.union([z.string(), z.date()]).optional().transform(val => val ? new Date(val) : new Date()),
     name: z.string().optional(),
-    tool_calls: z.array(z.any()).optional(),
+    tool_calls: z.array(z.record(z.string(), z.unknown())).optional(),
     tool_call_id: z.string().optional(),
 });
 
@@ -559,7 +559,7 @@ const ToolDefinitionSchema = z.object({
     function: z.object({
         name: z.string(),
         description: z.string().optional(),
-        parameters: z.record(z.string(), z.any()).optional(),
+        parameters: z.record(z.string(), z.unknown()).optional(),
     })
 });
 
@@ -574,7 +574,7 @@ const OpenAIChatSchema = z.object({
 
 const StreamChatSchema = OpenAIChatSchema.extend({
     chatId: z.string(),
-    optionsJson: z.record(z.string(), z.any()).optional()
+    optionsJson: z.record(z.string(), z.unknown()).optional()
 });
 
 export function registerChatIpc(options: ChatIpcOptions) {
@@ -582,15 +582,13 @@ export function registerChatIpc(options: ChatIpcOptions) {
 
     ipcMain.handle('chat:openai', createValidatedIpcHandler(
         'chat:openai',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (event, args) => manager.handleOpenAIChat(event, args as any),
+        (event, args) => manager.handleOpenAIChat(event, args as unknown as Parameters<ChatIpcManager['handleOpenAIChat']>[1]),
         { argsSchema: z.tuple([OpenAIChatSchema]) }
     ));
 
     ipcMain.handle('chat:stream', createValidatedIpcHandler(
         'chat:stream',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (event, args) => manager.handleChatStream(event, args as any),
+        (event, args) => manager.handleChatStream(event, args as unknown as Parameters<ChatIpcManager['handleChatStream']>[1]),
         { argsSchema: z.tuple([StreamChatSchema]) }
     ));
 

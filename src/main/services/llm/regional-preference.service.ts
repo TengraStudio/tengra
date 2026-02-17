@@ -15,6 +15,8 @@ const REGIONAL_PREFERENCES: Record<string, RegExp[]> = {
     de: [/mistral/i, /aleph/i, /discolm/i, /leo-/i],
     // Arabic: Jais, AceGPT
     ar: [/jais/i, /acegpt/i, /allam/i],
+    // Turkish: Trendyol, Turkcell, Cosmos, Kocdigital, Hamza, Fikri
+    tr: [/trendyol/i, /turkcell/i, /cosmos/i, /kocdigital/i, /hamza/i, /fikri/i, /kumru/i, /vbart/i],
     // Spanish: various, but Mistral/Llama usually good. No strong specific "Spanish-native" widely known open weights dominant yet, but keeping structure.
     es: [],
 };

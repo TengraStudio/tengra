@@ -54,7 +54,7 @@ export const TerminalPanel: React.FC = () => {
         ) => {
             try {
                 const backendId = type === 'local' ? 'node-pty' : type;
-                const sessionId = (await window.electron.invoke('terminal:create', {
+                const sessionId = (await window.electron.terminal.create({
                     cols: 80,
                     rows: 24,
                     backendId,
@@ -115,7 +115,7 @@ export const TerminalPanel: React.FC = () => {
 
     const closeTerminal = async (sessionId: string) => {
         try {
-            await window.electron.invoke('terminal:close', sessionId);
+            await window.electron.terminal.close(sessionId);
 
             setPanelState(prev => {
                 const newSessions = prev.sessions.filter(s => s.id !== sessionId);
@@ -161,7 +161,7 @@ export const TerminalPanel: React.FC = () => {
             return;
         }
         const title = next.trim();
-        await window.electron.invoke('terminal:setSessionTitle', sessionId, title);
+        await window.electron.terminal.setSessionTitle(sessionId, title);
         setPanelState(prev => ({
             ...prev,
             sessions: prev.sessions.map(s => (s.id === sessionId ? { ...s, title } : s)),
@@ -191,7 +191,7 @@ export const TerminalPanel: React.FC = () => {
         terminalRefs.current.set(sessionId, { terminal, fitAddon });
 
         terminal.onData((data: string) => {
-            void window.electron.invoke('terminal:write', sessionId, data);
+            void window.electron.terminal.write(sessionId, data);
         });
     };
 
@@ -233,7 +233,7 @@ export const TerminalPanel: React.FC = () => {
 
         const restoreSnapshots = async () => {
             try {
-                const snapshots = (await window.electron.invoke('terminal:getSnapshotSessions')) as Array<{
+                const snapshots = (await window.electron.terminal.getSnapshotSessions()) as Array<{
                     id: string;
                     shell: string;
                     cwd: string;
@@ -244,7 +244,7 @@ export const TerminalPanel: React.FC = () => {
                     return;
                 }
 
-                const result = (await window.electron.invoke('terminal:restoreAllSnapshots')) as {
+                const result = (await window.electron.terminal.restoreAllSnapshots()) as {
                     restored: number;
                     failed: number;
                     sessionIds: string[];

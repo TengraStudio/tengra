@@ -168,7 +168,12 @@ export const MessageList = memo(({
         }
 
         return (
-            <div className="px-4 pb-4" aria-selected={isFocused}>
+            <div
+                id={`message-list-option-${message.id}`}
+                className="px-4 pb-4"
+                aria-selected={isFocused}
+                role="option"
+            >
                 <MessageBubble
                     id={`message-bubble-${message.id}`}
                     message={message}
@@ -224,8 +229,22 @@ export const MessageList = memo(({
             className="h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-lg"
             tabIndex={0}
             onKeyDown={handleKeyboardNavigation}
-            aria-label="Message list. Use arrow keys to navigate messages and Enter to select."
+            role="listbox"
+            aria-label="Message list"
+            aria-describedby="message-list-keyboard-help"
+            aria-activedescendant={
+                effectiveFocusedIndex >= 0 && messages[effectiveFocusedIndex]
+                    ? `message-list-option-${messages[effectiveFocusedIndex].id}`
+                    : undefined
+            }
         >
+            <p id="message-list-keyboard-help" className="sr-only">
+                Use ArrowUp and ArrowDown to navigate, Home and End to jump, Enter to select, and R to regenerate assistant messages.
+            </p>
+            <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                {isLoading ? 'Assistant is streaming a new message.' : ''}
+                {messages.length > 0 && !isLoading ? `Message list now has ${messages.length} messages.` : ''}
+            </div>
             <Virtuoso
                 ref={virtuosoRef}
                 style={{ height: '100%', width: '100%' }}

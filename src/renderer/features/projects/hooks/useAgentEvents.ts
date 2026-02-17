@@ -375,7 +375,7 @@ export function useAgentEvents(props: UseAgentEventsProps) {
             }
         );
 
-        const unsubscribe = window.electron.on('agent-event', (payload: unknown) => {
+        const unsubscribe = window.electron.onAgentEvent((payload: unknown) => {
             // Prevent state updates if component is unmounted
             if (!isMountedRef.current) {
                 return;

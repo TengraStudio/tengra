@@ -73,6 +73,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const [search, setSearch] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
     const debouncedSearch = useDebounce(search, 200);
 
     const commands: CommandItem[] = useMemo(() => {
@@ -229,6 +230,42 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         }
     }, [isOpen]);
 
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        const handleModalKeydown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                onClose();
+                return;
+            }
+            if (event.key !== 'Tab' || !panelRef.current) {
+                return;
+            }
+            const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            ));
+            if (focusable.length === 0) {
+                return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const active = document.activeElement;
+            if (event.shiftKey && active === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && active === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', handleModalKeydown);
+        return () => {
+            document.removeEventListener('keydown', handleModalKeydown);
+        };
+    }, [isOpen, onClose]);
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -282,9 +319,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                        ref={panelRef}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                         className="relative w-full max-w-3xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col h-[550px]"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={t('commandPalette.title')}
+                        aria-describedby="command-palette-help"
                     >
+                        <p id="command-palette-help" className="sr-only">
+                            Use arrow keys to move through command results and Enter to run the selected command.
+                        </p>
                         <CommandHeader
                             search={search}
                             setSearch={setSearch}

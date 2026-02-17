@@ -223,11 +223,19 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         rows={1}
                         aria-label={ctrl.t('input.placeholder.default')}
                         aria-describedby="chat-input-hint"
+                        role="combobox"
+                        aria-expanded={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
+                        aria-controls="chat-prompt-command-listbox"
+                        aria-autocomplete="list"
+                        aria-haspopup="listbox"
                     />
 
                     <EnhanceButton ctrl={ctrl} />
                     <SendButton ctrl={ctrl} />
                 </div>
+                <p id="chat-input-hint" className="sr-only">
+                    Press Enter to send, Shift plus Enter for a new line, and type slash to open prompt suggestions.
+                </p>
             </div>
         );
     },
@@ -289,7 +297,7 @@ const AttachmentList: React.FC<{
                             </span>
                             <button
                                 onClick={() => onRemove(i)}
-                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-destructive opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity focus-visible:opacity-100"
                                 aria-label={t('input.removeAttachment', { name: att.name })}
                             >
                                 <X size={12} aria-hidden="true" />
@@ -318,6 +326,7 @@ const PromptCommandMenu: React.FC<{
                 className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border/50 rounded-lg shadow-xl overflow-hidden z-50"
                 role="listbox"
                 aria-label={t('input.promptSuggestions')}
+                id="chat-prompt-command-listbox"
             >
                 <div
                     className="text-xxs uppercase font-bold text-muted-foreground px-3 py-1.5 bg-muted/30"
@@ -430,6 +439,8 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
             disabled={!isLoading && !hasContent}
             className={btnClass}
             aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}
+            aria-busy={isLoading}
+            aria-live="polite"
         >
             <SendIcon isLoading={isLoading} hasContent={hasContent} />
         </button>

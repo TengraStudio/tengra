@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import type { ExplainErrorResult, FixErrorResult } from '../utils/terminal-ipc';
 import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 
 /**
@@ -8,14 +9,12 @@ import type { TerminalSemanticIssue } from '../utils/terminal-panel-types';
 export type AiPanelMode = 'explain-error' | 'fix-error' | 'explain-command';
 
 /**
- * AI result data
+ * AI result data as a discriminated union for better type narrowing
  */
-export interface AiResult {
-    /** Result type */
-    type: AiPanelMode;
-    /** Result data */
-    data: Record<string, unknown>;
-}
+export type AiResult =
+    | { type: 'explain-error'; data: ExplainErrorResult }
+    | { type: 'fix-error'; data: FixErrorResult }
+    | { type: 'explain-command'; data: Record<string, unknown> };
 
 /**
  * Hook for terminal AI assistant state management

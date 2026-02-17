@@ -4,6 +4,36 @@
   "generatedAt": "2026-02-12T19:15:30.129Z",
   "entries": [
     {
+      "id": "2026-02-18-terminal-ipc-renderer-migration",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Terminal",
+        "IPC",
+        "Renderer"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-llm-security-v2",
       "date": "2026-02-18",
       "channel": "stable",
@@ -32,6 +62,145 @@
             "- **DEBT-01**: Cleaned up obsolete feature flags (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) to streamline the configuration layer.",
             "- **DEBT-06**: Reduced initial bundle size by implementing lazy loading for heavy UI components like `CommandPalette`, `QuickActionBar`, and `ExtensionInstallPrompt`.",
             "- **Testing**: Added comprehensive unit tests for the security validation logic."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-sec-preload-hardening",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "security",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Preload",
+        "Renderer",
+        "IPC"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-arch-completion",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Preload",
+        "Startup",
+        "IPC",
+        "TerminalService",
+        "ProjectService",
+        "LocalImageService"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-arch-foundation",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "ProjectService",
+        "TerminalService",
+        "LocalImageService"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-ux-accessibility",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ux",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Chat",
+        "CommandPalette",
+        "Modal",
+        "Layout",
+        "Accessibility"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "tr": {
+          "title": "AUD-UX 001-025 Erişilebilirlik ve Etkileşim İyileştirmeleri",
+          "summary": "Çekirdek arayüzlerde klavye, odak, semantik ve yerelleştirme iyileştirmeleriyle AUD-UX görev seti tamamlandı.",
+          "items": [
+            "- **Chat UX**: Canlı bölge duyuruları eklendi, liste semantiği düzeltildi ve klavye yardımı/komut önerileri iyileştirildi.",
+            "- **Komut Paleti**: Modal odak tuzağı davranışı zorunlu hale getirildi, kapatma kontrolleri ve sonuçlar için semantik yapı iyileştirildi.",
+            "- **Temel UI**: Ortak modal ve hata sınırı geri dönüşleri daha net kontroller ve kurtarma eylemleriyle geliştirildi.",
+            "- **Oturum ve Gezinme**: Oturum kilidi için başlangıç odağı/Escape davranışı ve kenar çubuğu etkinlik alanlarında roving klavye gezinmesi eklendi.",
+            "- **Başlık Çubuğu/Hızlı Eylemler**: Eksik etiketler, değişiklik günlüğü filtre etiketleri ve hızlı eylemler için klavye keşfedilebilirliği eklendi."
           ]
         }
       }

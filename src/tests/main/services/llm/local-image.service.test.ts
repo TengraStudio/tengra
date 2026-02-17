@@ -109,6 +109,25 @@ describe('LocalImageService Integration', () => {
             // Note: the track method is called INSIDE generateWithSDCpp if we don't mock it,
             // but here we mocked it. Let's see if we can go deeper.
         });
+
+        it('should reject when sd-cpp fails and pollinations fallback also fails', async () => {
+            vi.spyOn(service as any, 'generateWithSDCpp').mockRejectedValue(new Error('sd-cpp failed'));
+            vi.spyOn(service as any, 'generateWithPollinations').mockRejectedValue(new Error('pollinations failed'));
+
+            await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('pollinations failed');
+            expect(mockTelemetryService.track).toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
+        });
+
+        it('should propagate provider errors when provider is not sd-cpp', async () => {
+            vi.mocked(mockSettingsService.getSettings).mockReturnValue({
+                images: { provider: 'ollama' },
+                ollama: { url: 'http://localhost:11434' }
+            } as never);
+            vi.spyOn(service as any, 'generateWithProvider').mockRejectedValue(new Error('ollama unavailable'));
+
+            await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('ollama unavailable');
+            expect(mockTelemetryService.track).not.toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
+        });
     });
 
     describe('Telemetry Tracking', () => {

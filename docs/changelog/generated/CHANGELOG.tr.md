@@ -2,6 +2,50 @@
 
 ## [2026-02-18]
 
+### AUD-ARCH 001-020 Tamamlandı
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Preload/startup ayrıştırması, wrapper standardizasyonu ve güvenilirlik odaklı test kapsamıyla mimari denetim görevleri tamamlandı.
+
+- **Preload/Startup**: Alan bazlı preload bridge modülleri ve başlangıç yaşam döngüsü bileşenleri için regresyon testleri eklendi.
+- **IPC Güçlendirme**: Kalan legacy marketplace handler'ları doğrulamalı wrapper'lara taşındı; kapsam testleri regex/smoke yerine davranış odaklı hale getirildi.
+- **Servis Güvenilirliği**: Smoke-only servis testleri fonksiyonel doğrulamalara dönüştürüldü ve terminal oturum yaşam döngüsü/persist testleri eklendi.
+- **Hata Yolları**: Proje tarama ve local image üretimi fallback zinciri için negatif yol testleri eklendi.
+
+### AUD-ARCH İlk Güvenilirlik Güçlendirmesi
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: İlk mimari güvenilirlik paketi; IPC şemalarını sıkılaştırıp sessiz hata yollarını kaldırarak tamamlandı.
+
+- **AUD-ARCH-005/006**: Chat IPC kayıt yolundaki `as any` kaldırıldı ve gevşek `z.any()` chat şemaları `z.unknown()` tabanlı doğrulamaya geçirildi.
+- **AUD-ARCH-007/008**: DB proje argüman şeması sıkılaştırıldı ve rate limiter dekoratör tiplemesi güçlendirildi.
+- **AUD-ARCH-015/017**: Terminal temizleme ve proje tarama yollarındaki sessiz catch blokları, açık uyarı loglarıyla değiştirildi.
+- **AUD-ARCH-019**: Eski temp görsel dosyası temizleme hataları açık uyarı ve hata sinyallemesiyle görünür hale getirildi.
+
+### AUD-SEC Preload API Güçlendirmesi (001/002)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Genel amaçlı IPC yüzeyi azaltılarak renderer köprüsünde kanal-özel yöntemlere geçildi.
+
+- **AUD-SEC-001**: Genel `window.electron.invoke` erişimi kaldırıldı ve çağrılar açık API yöntemlerine taşındı.
+- **AUD-SEC-002**: Genel `window.electron.on` köprüsü kaldırıldı; chat, agent ve SD-CPP olayları için isimlendirilmiş abonelik yöntemleri eklendi.
+- **Güvenlik**: Renderer tarafında dinamik kanal çağrılarını azaltmak için özel `modelDownloader` köprü yöntemleri eklendi.
+
+### AUD-UX 001-025 Erişilebilirlik ve Etkileşim İyileştirmeleri
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Çekirdek arayüzlerde klavye, odak, semantik ve yerelleştirme iyileştirmeleriyle AUD-UX görev seti tamamlandı.
+
+- **Chat UX**: Canlı bölge duyuruları eklendi, liste semantiği düzeltildi ve klavye yardımı/komut önerileri iyileştirildi.
+- **Komut Paleti**: Modal odak tuzağı davranışı zorunlu hale getirildi, kapatma kontrolleri ve sonuçlar için semantik yapı iyileştirildi.
+- **Temel UI**: Ortak modal ve hata sınırı geri dönüşleri daha net kontroller ve kurtarma eylemleriyle geliştirildi.
+- **Oturum ve Gezinme**: Oturum kilidi için başlangıç odağı/Escape davranışı ve kenar çubuğu etkinlik alanlarında roving klavye gezinmesi eklendi.
+- **Başlık Çubuğu/Hızlı Eylemler**: Eksik etiketler, değişiklik günlüğü filtre etiketleri ve hızlı eylemler için klavye keşfedilebilirliği eklendi.
+
 ### LLM Güvenliği Güçlendirme ve Performans Optimizasyonu
 
 - **Type**: feature
@@ -24,6 +68,17 @@
 - **Erişilebilirlik**: Daha iyi Ekran Okuyucu desteği için tüm kenar çubuğu navigasyon ve menü öğelerine `title` ve `aria-label` nitelikleri eklendi.
 - **Bakım**: Tamamlanan görevler kaldırılarak ve bir sonraki geliştirme aşaması için 10 öncelikli öğe seçilerek proje TODO listesi temizlendi.
 - **Kod Kalitesi**: Merkezi geçmiş yönetimi için `bulkDeleteChats` özelliği `ChatContext` ve `useChatManager` içine entegre edildi.
+
+### Terminal IPC Renderer Göçü
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Terminal renderer bileşenlerinin tip güvenli IPC iletişimi kullanacak şekilde taşınması tamamlandı.
+
+- **Tip Güvenliği**: `useTerminal`, `TerminalConnectionSelector` ve diğer bileşenler `invokeTypedIpc` ve `TerminalIpcContract` kullanacak şekilde taşındı.
+- **Doğrulama**: Renderer tarafındaki terminal IPC yanıtları için Zod şema doğrulaması zorunlu kılındı.
+- **Kod Temizliği**: Ham `window.electron.terminal` çağrıları ve kullanılmayan importlar kaldırıldı.
+- **Hata Düzeltme**: Bağlantı seçicide `getDockerContainers` dönüş tipi işleme hatası düzeltildi.
 
 ## [2026-02-17]
 

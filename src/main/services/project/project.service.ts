@@ -260,7 +260,9 @@ export class ProjectService extends BaseService {
                 const content = await fs.readFile(file, 'utf-8');
                 this.extractTodosFromContent(content, todoComments, file);
                 if (todoComments.length >= 10) { break; }
-            } catch { /* ignore */ }
+            } catch (error) {
+                this.logWarn(`Failed to scan TODO comments in ${file}: ${getErrorMessage(error as Error)}`);
+            }
             if (todoComments.length >= 10) { break; }
         }
         return todoComments;
@@ -290,7 +292,9 @@ export class ProjectService extends BaseService {
             try {
                 await this.scanFileIssues(file, rootPath, issues);
                 if (issues.length >= 50) { break; }
-            } catch { /* ignore */ }
+            } catch (error) {
+                this.logWarn(`Failed to scan issues in ${file}: ${getErrorMessage(error as Error)}`);
+            }
             if (issues.length >= 50) { break; }
         }
         return issues;

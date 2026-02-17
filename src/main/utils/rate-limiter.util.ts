@@ -226,10 +226,9 @@ export function getRateLimiter(provider: string): RateLimiter {
  */
 export function rateLimited(provider: string) {
     return function (_target: object, _propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
-        const original = descriptor.value;
+        const original = descriptor.value as (this: unknown, ...args: unknown[]) => Promise<unknown>;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        descriptor.value = async function (this: any, ...args: any[]) {
+        descriptor.value = async function (this: unknown, ...args: unknown[]) {
             const limiter = getRateLimiter(provider);
             try {
                 await limiter.acquire();

@@ -62,7 +62,7 @@ export function useModelOperations(loadInstalledOllamaModels: () => Promise<void
     const handlePullOllama = useCallback(async (modelName: string, tag: string) => {
         const fullModelName = `${modelName}:${tag}`;
         try {
-            await window.electron.invoke('model-downloader:start', {
+            await window.electron.modelDownloader.start({
                 provider: 'ollama',
                 modelName,
                 tag,
@@ -92,7 +92,7 @@ export function useModelOperations(loadInstalledOllamaModels: () => Promise<void
             return;
         }
         try {
-            await window.electron.invoke('model-downloader:start', {
+            await window.electron.modelDownloader.start({
                 provider: 'huggingface',
                 modelId,
                 fileName: file.path,
@@ -104,7 +104,7 @@ export function useModelOperations(loadInstalledOllamaModels: () => Promise<void
 
     const handleCancelDownload = useCallback(async (downloadId: string) => {
         try {
-            await window.electron.invoke('model-downloader:cancel', downloadId);
+            await window.electron.modelDownloader.cancel(downloadId);
         } catch (err) {
             window.electron.log.error('Failed to cancel download:', err);
         }

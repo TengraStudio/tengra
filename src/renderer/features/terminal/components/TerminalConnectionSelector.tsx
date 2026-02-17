@@ -2,8 +2,14 @@ import { ChevronRight, HardDrive, Server } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { SSHConfig } from '@/types/ssh';
 import { appLogger } from '@/utils/renderer-logger';
+
+import {
+    terminalGetDockerContainersResponseSchema,
+    TerminalIpcContract
+} from '../utils/terminal-ipc';
 
 interface ConnectionOption {
     id: string;
@@ -20,6 +26,12 @@ interface DockerContainerOption {
     id: string;
     name: string;
     status: string;
+}
+
+interface RawDockerContainer {
+    Id: string;
+    Names: string[];
+    Status: string;
 }
 
 interface TerminalConnectionSelectorProps {
@@ -46,8 +58,17 @@ export const TerminalConnectionSelector: React.FC<TerminalConnectionSelectorProp
                 );
 
                 // Fetch Docker containers
-                const dockerData = await window.electron.terminal.getDockerContainers();
-                setContainers(dockerData);
+                const dockerResult = await invokeTypedIpc<TerminalIpcContract, 'terminal:getDockerContainers'>('terminal:getDockerContainers', [], { responseSchema: terminalGetDockerContainersResponseSchema });
+                if (dockerResult.success && Array.isArray(dockerResult.containers)) {
+                    const mappedContainers: DockerContainerOption[] = (dockerResult.containers as unknown as RawDockerContainer[]).map(c => ({
+                        id: c.Id,
+                        name: Array.isArray(c.Names) ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12),
+                        status: c.Status
+                    }));
+                    setContainers(mappedContainers);
+                } else {
+                    setContainers([]);
+                }
             } catch (error) {
                 appLogger.error('TerminalSelector', 'Failed to fetch connection options', error as Error);
             } finally {

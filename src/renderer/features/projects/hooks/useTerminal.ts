@@ -3,9 +3,17 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { useSettingsStore } from '@/store/settings.store';
 
+import {
+    terminalCreateResponseSchema,
+    TerminalIpcContract,
+    terminalKillResponseSchema,
+    terminalResizeResponseSchema,
+    terminalWriteResponseSchema
+} from '../../terminal/utils/terminal-ipc';
 import { loadHistory, saveHistory } from '../utils/terminal-history';
 
 const initializedTerminals = new Set<string>();
@@ -90,8 +98,8 @@ const handleArrowUp = (context: LineBufferContext): string => {
 
     const historyItem = historyRef.current[historyIndexRef.current] ?? '';
     if (pidRef.current) {
-        void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
-        void window.electron.terminal.write(pidRef.current, historyItem);
+        void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
+        void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, historyItem], { responseSchema: terminalWriteResponseSchema });
     }
     return historyItem;
 };
@@ -107,15 +115,15 @@ const handleArrowDown = (context: LineBufferContext): string => {
         historyIndexRef.current++;
         const historyItem = historyRef.current[historyIndexRef.current] ?? '';
         if (pidRef.current) {
-            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
-            void window.electron.terminal.write(pidRef.current, historyItem);
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, historyItem], { responseSchema: terminalWriteResponseSchema });
         }
         return historyItem;
     } else {
         historyIndexRef.current = -1;
         if (pidRef.current) {
-            void window.electron.terminal.write(pidRef.current, KEY_CODES.CLEAR_LINE);
-            void window.electron.terminal.write(pidRef.current, currentInputRef.current);
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, KEY_CODES.CLEAR_LINE], { responseSchema: terminalWriteResponseSchema });
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, currentInputRef.current], { responseSchema: terminalWriteResponseSchema });
         }
         return currentInputRef.current;
     }
@@ -189,12 +197,12 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
             initializingTerminals.add(finalTerminalId);
 
             try {
-                const sessionId = await window.electron.terminal.create({
+                const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
                     id: finalTerminalId,
                     cwd: cwd ?? (typeof process !== 'undefined' ? process.cwd() : ''),
                     cols: term.cols,
                     rows: term.rows
-                });
+                }], { responseSchema: terminalCreateResponseSchema });
 
                 if (!sessionId) {
                     const errorMessage = t ? t('projectDashboard.terminalFailedSession') : 'Failed to start session';
@@ -243,13 +251,13 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                     }
 
                     if (pidRef.current) {
-                        window.electron.terminal.write(pidRef.current, data).catch(() => { });
+                        invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, data], { responseSchema: terminalWriteResponseSchema }).catch(() => { });
                     }
                 });
 
                 term.onResize(({ cols, rows }) => {
                     if (pidRef.current) {
-                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(() => { });
+                        invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(() => { });
                     }
                 });
 
@@ -274,7 +282,7 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
             if (terminalId) {
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
-                window.electron.terminal.kill(terminalId).catch(() => { });
+                invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [terminalId], { responseSchema: terminalKillResponseSchema }).catch(() => { });
             }
             if (cleanupsRef.current.data) { cleanupsRef.current.data(); }
             if (cleanupsRef.current.exit) { cleanupsRef.current.exit(); }

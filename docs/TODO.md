@@ -942,7 +942,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Identify components for migration
   - Performance benchmarking
 
-- [ ] **DEBT-03**: Refactor IPC communication
+- [x] **DEBT-03**: Refactor IPC communication
   - Create type-safe IPC client
   - Add request/response validation
   - Implement retry logic
@@ -973,7 +973,7 @@ Selected small/contained tasks that are realistic to ship quickly:
 ## 🧪 Service-Specific TODOs
 
 ### Copilot Service
-- [ ] **COPILOT-01**: Move Copilot token refresh into Rust token service
+- [x] **COPILOT-01**: Move Copilot token refresh into Rust token service
   - Location: `src-tauri/services/token-service` + `src/main/services/security/token.service.ts`
   - Move refresh orchestration from Electron to Rust service
   - Keep Electron side as bridge (status/trigger)
@@ -1307,8 +1307,8 @@ Selected small/contained tasks that are realistic to ship quickly:
 ## 🔍 Audit Backlog (Generated 2026-02-17)
 
 ### 🔐 Security Audit TODOs
-- [ ] **AUD-SEC-001**: Restrict generic IPC invoke API exposure (`src/main/preload.ts`)
-- [ ] **AUD-SEC-002**: Remove generic IPC event subscription bridge (`src/main/preload.ts`)
+- [x] **AUD-SEC-001**: Restrict generic IPC invoke API exposure (`src/main/preload.ts`)
+- [x] **AUD-SEC-002**: Remove generic IPC event subscription bridge (`src/main/preload.ts`)
 - [ ] **AUD-SEC-003**: Add sender/origin verification to auth IPC handlers (`src/main/ipc/auth.ts`)
 - [ ] **AUD-SEC-004**: Add sender/origin verification to files IPC handlers (`src/main/ipc/files.ts`)
 - [ ] **AUD-SEC-005**: Add sender/origin verification to ssh IPC handlers (`src/main/ipc/ssh.ts`)
@@ -1371,53 +1371,53 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [x] **AUD-PERF-030**: Replace unbounded SELECT + in-memory loops with pagination (`src/main/services/data/repositories/*.ts`)
 
 ### ♿ UI/UX & Accessibility Audit TODOs
-- [ ] **AUD-UX-001**: Add live region announcement for streaming/new messages (`src/renderer/features/chat/components/MessageList.tsx`)
-- [ ] **AUD-UX-002**: Fix selection semantics and roles in message list (`src/renderer/features/chat/components/MessageList.tsx`)
-- [ ] **AUD-UX-003**: Add in-UI keyboard help for message shortcuts (`src/renderer/features/chat/components/MessageList.tsx`)
-- [ ] **AUD-UX-004**: Add missing `chat-input-hint` description target (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [ ] **AUD-UX-005**: Make attachment remove actions keyboard-visible without hover dependency (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [ ] **AUD-UX-006**: Improve combobox/listbox semantics for prompt command menu (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [ ] **AUD-UX-007**: Expose busy/loading state semantics on send/stop controls (`src/renderer/features/chat/components/ChatInput.tsx`)
-- [ ] **AUD-UX-008**: Turn command palette into strict modal dialog with focus trap (`src/renderer/components/layout/CommandPalette.tsx`)
-- [ ] **AUD-UX-009**: Add aria-label to command palette close control (`src/renderer/components/layout/command-palette/CommandHeader.tsx`)
-- [ ] **AUD-UX-010**: Expose selected result state semantically in command list (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
-- [ ] **AUD-UX-011**: Use semantic headings for command categories (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
-- [ ] **AUD-UX-012**: Narrow modal aria-describedby to concise summary region (`src/renderer/components/ui/modal.tsx`)
-- [ ] **AUD-UX-013**: Add consistent visible close affordance in base modal (`src/renderer/components/ui/modal.tsx`)
-- [ ] **AUD-UX-014**: Upgrade ErrorBoundary fallback with retry/navigation actions (`src/renderer/components/shared/ErrorBoundary.tsx`)
-- [ ] **AUD-UX-015**: Add operation-specific loading labels (`src/renderer/components/ui/LoadingState.tsx`)
-- [ ] **AUD-UX-016**: Localize and semantically structure session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
-- [ ] **AUD-UX-017**: Add initial focus + Escape behavior to session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
-- [ ] **AUD-UX-018**: Add aria-labels to title bar icon controls (`src/renderer/components/layout/TitleBar.tsx`)
-- [ ] **AUD-UX-019**: Add explicit labels for changelog filter fields (`src/renderer/components/layout/TitleBar.tsx`)
-- [ ] **AUD-UX-020**: Remove remaining hardcoded strings in changelog UI (`src/renderer/components/layout/TitleBar.tsx`)
-- [ ] **AUD-UX-021**: Add aria-labels to quick action icon buttons (`src/renderer/components/layout/QuickActionBar.tsx`)
-- [ ] **AUD-UX-022**: Add keyboard invocation/discoverability for quick actions (`src/renderer/components/layout/QuickActionBar.tsx`)
-- [ ] **AUD-UX-023**: Expose active-state semantics in activity bar (`src/renderer/components/layout/ActivityBar.tsx`)
-- [ ] **AUD-UX-024**: Add labels for sidebar collapse/expand chevrons (`src/renderer/components/layout/ActivityBar.tsx`)
-- [ ] **AUD-UX-025**: Implement roving keyboard navigation for sidebar entries (`src/renderer/components/layout/sidebar/SidebarNavigation.tsx`)
+- [x] **AUD-UX-001**: Add live region announcement for streaming/new messages (`src/renderer/features/chat/components/MessageList.tsx`)
+- [x] **AUD-UX-002**: Fix selection semantics and roles in message list (`src/renderer/features/chat/components/MessageList.tsx`)
+- [x] **AUD-UX-003**: Add in-UI keyboard help for message shortcuts (`src/renderer/features/chat/components/MessageList.tsx`)
+- [x] **AUD-UX-004**: Add missing `chat-input-hint` description target (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [x] **AUD-UX-005**: Make attachment remove actions keyboard-visible without hover dependency (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [x] **AUD-UX-006**: Improve combobox/listbox semantics for prompt command menu (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [x] **AUD-UX-007**: Expose busy/loading state semantics on send/stop controls (`src/renderer/features/chat/components/ChatInput.tsx`)
+- [x] **AUD-UX-008**: Turn command palette into strict modal dialog with focus trap (`src/renderer/components/layout/CommandPalette.tsx`)
+- [x] **AUD-UX-009**: Add aria-label to command palette close control (`src/renderer/components/layout/command-palette/CommandHeader.tsx`)
+- [x] **AUD-UX-010**: Expose selected result state semantically in command list (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
+- [x] **AUD-UX-011**: Use semantic headings for command categories (`src/renderer/components/layout/command-palette/ResultsList.tsx`)
+- [x] **AUD-UX-012**: Narrow modal aria-describedby to concise summary region (`src/renderer/components/ui/modal.tsx`)
+- [x] **AUD-UX-013**: Add consistent visible close affordance in base modal (`src/renderer/components/ui/modal.tsx`)
+- [x] **AUD-UX-014**: Upgrade ErrorBoundary fallback with retry/navigation actions (`src/renderer/components/shared/ErrorBoundary.tsx`)
+- [x] **AUD-UX-015**: Add operation-specific loading labels (`src/renderer/components/ui/LoadingState.tsx`)
+- [x] **AUD-UX-016**: Localize and semantically structure session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
+- [x] **AUD-UX-017**: Add initial focus + Escape behavior to session lock overlay (`src/renderer/components/layout/SessionLockOverlay.tsx`)
+- [x] **AUD-UX-018**: Add aria-labels to title bar icon controls (`src/renderer/components/layout/TitleBar.tsx`)
+- [x] **AUD-UX-019**: Add explicit labels for changelog filter fields (`src/renderer/components/layout/TitleBar.tsx`)
+- [x] **AUD-UX-020**: Remove remaining hardcoded strings in changelog UI (`src/renderer/components/layout/TitleBar.tsx`)
+- [x] **AUD-UX-021**: Add aria-labels to quick action icon buttons (`src/renderer/components/layout/QuickActionBar.tsx`)
+- [x] **AUD-UX-022**: Add keyboard invocation/discoverability for quick actions (`src/renderer/components/layout/QuickActionBar.tsx`)
+- [x] **AUD-UX-023**: Expose active-state semantics in activity bar (`src/renderer/components/layout/ActivityBar.tsx`)
+- [x] **AUD-UX-024**: Add labels for sidebar collapse/expand chevrons (`src/renderer/components/layout/ActivityBar.tsx`)
+- [x] **AUD-UX-025**: Implement roving keyboard navigation for sidebar entries (`src/renderer/components/layout/sidebar/SidebarNavigation.tsx`)
 
 ### 🧱 Architecture, Reliability & Testing Audit TODOs
-- [ ] **AUD-ARCH-001**: Split preload bridge into domain modules (`src/main/preload.ts`)
-- [ ] **AUD-ARCH-002**: Add preload contract regression tests (`src/tests/main/preload/**`)
-- [ ] **AUD-ARCH-003**: Break up service bootstrap composition (`src/main/startup/services.ts`)
-- [ ] **AUD-ARCH-004**: Add startup lifecycle/service-graph integration tests (`src/tests/main/startup/**`)
-- [ ] **AUD-ARCH-005**: Remove `as any` in chat IPC registration path (`src/main/ipc/chat.ts`)
-- [ ] **AUD-ARCH-006**: Replace permissive `z.any()` usage in chat IPC schemas (`src/main/ipc/chat.ts`)
-- [ ] **AUD-ARCH-007**: Replace permissive `z.any()` args schema in DB IPC (`src/main/ipc/db.ts`)
-- [ ] **AUD-ARCH-008**: Tighten decorator typing in rate limiter utilities (`src/main/utils/rate-limiter.util.ts`)
-- [ ] **AUD-ARCH-009**: Standardize IPC response envelope conventions (`src/main/utils/ipc-wrapper.util.ts`)
-- [ ] **AUD-ARCH-010**: Migrate legacy handlers to validated IPC wrapper (`src/main/ipc/*.ts`)
-- [ ] **AUD-ARCH-011**: Upgrade IPC coverage tests from regex to behavior assertions (`src/tests/main/ipc/ipc-handler-coverage.test.ts`)
-- [ ] **AUD-ARCH-012**: Replace smoke-only IPC tests with behavior-driven integration tests (`src/tests/main/ipc/test-gap-smoke.integration.test.ts`)
-- [ ] **AUD-ARCH-013**: Replace smoke-only service tests with functional assertions (`src/tests/main/services/test-gap-smoke.service.test.ts`)
-- [ ] **AUD-ARCH-014**: Add dedicated TerminalService unit/integration suite (`src/main/services/project/terminal.service.ts`)
-- [ ] **AUD-ARCH-015**: Remove silent catch in terminal cleanup paths (`src/main/services/project/terminal.service.ts`)
-- [ ] **AUD-ARCH-016**: Add crash/restart persistence tests for terminal sessions (`src/tests/main/services/project/**`)
-- [ ] **AUD-ARCH-017**: Remove silent catch in project scanning paths (`src/main/services/project/project.service.ts`)
-- [ ] **AUD-ARCH-018**: Add negative-path tests for scanning and permission failures (`src/tests/main/services/project.service.test.ts`)
-- [ ] **AUD-ARCH-019**: Surface stale-temp cleanup failures instead of swallowing (`src/main/services/llm/local-image.service.ts`)
-- [ ] **AUD-ARCH-020**: Add failure-path tests for image provider fallback chain (`src/tests/main/services/llm/local-image.service.test.ts`)
+- [x] **AUD-ARCH-001**: Split preload bridge into domain modules (`src/main/preload.ts`)
+- [x] **AUD-ARCH-002**: Add preload contract regression tests (`src/tests/main/preload/**`)
+- [x] **AUD-ARCH-003**: Break up service bootstrap composition (`src/main/startup/services.ts`)
+- [x] **AUD-ARCH-004**: Add startup lifecycle/service-graph integration tests (`src/tests/main/startup/**`)
+- [x] **AUD-ARCH-005**: Remove `as any` in chat IPC registration path (`src/main/ipc/chat.ts`)
+- [x] **AUD-ARCH-006**: Replace permissive `z.any()` usage in chat IPC schemas (`src/main/ipc/chat.ts`)
+- [x] **AUD-ARCH-007**: Replace permissive `z.any()` args schema in DB IPC (`src/main/ipc/db.ts`)
+- [x] **AUD-ARCH-008**: Tighten decorator typing in rate limiter utilities (`src/main/utils/rate-limiter.util.ts`)
+- [x] **AUD-ARCH-009**: Standardize IPC response envelope conventions (`src/main/utils/ipc-wrapper.util.ts`)
+- [x] **AUD-ARCH-010**: Migrate legacy handlers to validated IPC wrapper (`src/main/ipc/*.ts`)
+- [x] **AUD-ARCH-011**: Upgrade IPC coverage tests from regex to behavior assertions (`src/tests/main/ipc/ipc-handler-coverage.test.ts`)
+- [x] **AUD-ARCH-012**: Replace smoke-only IPC tests with behavior-driven integration tests (`src/tests/main/ipc/test-gap-smoke.integration.test.ts`)
+- [x] **AUD-ARCH-013**: Replace smoke-only service tests with functional assertions (`src/tests/main/services/test-gap-smoke.service.test.ts`)
+- [x] **AUD-ARCH-014**: Add dedicated TerminalService unit/integration suite (`src/main/services/project/terminal.service.ts`)
+- [x] **AUD-ARCH-015**: Remove silent catch in terminal cleanup paths (`src/main/services/project/terminal.service.ts`)
+- [x] **AUD-ARCH-016**: Add crash/restart persistence tests for terminal sessions (`src/tests/main/services/project/**`)
+- [x] **AUD-ARCH-017**: Remove silent catch in project scanning paths (`src/main/services/project/project.service.ts`)
+- [x] **AUD-ARCH-018**: Add negative-path tests for scanning and permission failures (`src/tests/main/services/project.service.test.ts`)
+- [x] **AUD-ARCH-019**: Surface stale-temp cleanup failures instead of swallowing (`src/main/services/llm/local-image.service.ts`)
+- [x] **AUD-ARCH-020**: Add failure-path tests for image provider fallback chain (`src/tests/main/services/llm/local-image.service.test.ts`)
 
 ---
 ## ✅ Completed Tasks

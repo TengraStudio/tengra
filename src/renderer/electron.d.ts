@@ -165,7 +165,6 @@ export interface TokenData {
  */
 export interface ElectronAPI {
     invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>;
-
     /**
      * Minimizes the application window.
      */
@@ -656,6 +655,18 @@ export interface ElectronAPI {
     forceOllamaHealthCheck: () => Promise<{ status: 'ok' | 'error' }>;
     checkCuda: () => Promise<{ hasCuda: boolean; detail?: string }>;
     onOllamaStatusChange: (callback: (status: { status: string }) => void) => void;
+    onChatGenerationStatus: (
+        callback: (data: { chatId?: string; isGenerating?: boolean }) => void
+    ) => () => void;
+    onAgentEvent: (callback: (payload: unknown) => void) => () => void;
+    onSdCppStatus: (callback: (data: unknown) => void) => () => void;
+    onSdCppProgress: (callback: (data: unknown) => void) => () => void;
+    modelDownloader: {
+        start: (request: Record<string, unknown>) => Promise<unknown>;
+        pause: (downloadId: string) => Promise<unknown>;
+        resume: (downloadId: string) => Promise<unknown>;
+        cancel: (downloadId: string) => Promise<unknown>;
+    };
 
     // Marketplace API (models from database)
     marketplace: {

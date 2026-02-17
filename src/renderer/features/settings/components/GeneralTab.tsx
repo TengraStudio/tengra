@@ -3,6 +3,10 @@ import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
+import {
+    terminalGetBackendsResponseSchema,
+    TerminalIpcContract} from '@/features/terminal/utils/terminal-ipc';
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { AppSettings } from '@/types/settings';
 
 interface GeneralTabProps {
@@ -71,7 +75,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
         void (async () => {
             try {
                 setIsLoadingTerminalBackends(true);
-                const backends = await window.electron.terminal.getBackends();
+                const backends = await invokeTypedIpc<TerminalIpcContract, 'terminal:getBackends'>('terminal:getBackends', [], { responseSchema: terminalGetBackendsResponseSchema });
                 if (!cancelled && Array.isArray(backends)) {
                     setTerminalBackends(backends);
                 }
@@ -96,13 +100,13 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
             terminalBackends.length > 0
                 ? terminalBackends
                 : [
-                      { id: 'node-pty', name: 'Integrated Terminal', available: true },
-                      { id: 'windows-terminal', name: 'Windows Terminal', available: true },
-                      { id: 'kitty', name: 'Kitty', available: true },
-                      { id: 'ghostty', name: 'Ghostty', available: true },
-                      { id: 'alacritty', name: 'Alacritty', available: true },
-                      { id: 'warp', name: 'Warp', available: true },
-                  ];
+                    { id: 'node-pty', name: 'Integrated Terminal', available: true },
+                    { id: 'windows-terminal', name: 'Windows Terminal', available: true },
+                    { id: 'kitty', name: 'Kitty', available: true },
+                    { id: 'ghostty', name: 'Ghostty', available: true },
+                    { id: 'alacritty', name: 'Alacritty', available: true },
+                    { id: 'warp', name: 'Warp', available: true },
+                ];
 
         return options.map(backend => ({
             value: backend.id,

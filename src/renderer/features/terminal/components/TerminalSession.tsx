@@ -6,11 +6,21 @@ import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
 import { useTheme } from '@/hooks/useTheme';
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 import { useTerminalSmartSuggestions } from '../hooks/useTerminalSmartSuggestions';
+import {
+    terminalCreateResponseSchema,
+    TerminalIpcContract,
+    terminalIsAvailableResponseSchema,
+    terminalKillResponseSchema,
+    terminalReadBufferResponseSchema,
+    terminalResizeResponseSchema,
+    terminalWriteResponseSchema
+} from '../utils/terminal-ipc';
 
 import 'xterm/css/xterm.css';
 
@@ -121,18 +131,18 @@ export const TerminalSession = memo(
 
         const initializeBackend = useCallback(
             async (term: XTerm) => {
-                if (!(await window.electron.terminal.isAvailable())) {
+                if (!(await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema }))) {
                     term.write('\r\n\x1b[31m[ERROR] Terminal service unavailable.\x1b[0m\r\n');
                     initializingTerminals.delete(tab.id);
                     return null;
                 }
-                const sessionId = await window.electron.terminal.create({
+                const sessionId = await invokeTypedIpc<TerminalIpcContract, 'terminal:create'>('terminal:create', [{
                     id: tab.id,
                     shell: tab.type,
                     ...(projectPath ? { cwd: projectPath } : {}),
                     cols: term.cols,
                     rows: term.rows,
-                });
+                }], { responseSchema: terminalCreateResponseSchema });
                 if (!sessionId) {
                     term.write(`\r\n\x1b[31m[ERROR] Failed to create session\x1b[0m\r\n`);
                     setTimeout(() => setHasError(true), 0);
@@ -166,12 +176,12 @@ export const TerminalSession = memo(
                     return false;
                 }
                 term.onResize(s => {
-                    window.electron.terminal.resize(tab.id, s.cols, s.rows).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [tab.id, s.cols, s.rows], { responseSchema: terminalResizeResponseSchema }).catch(() => { });
                 });
                 term.onData(d => {
-                    window.electron.terminal.write(tab.id, d).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [tab.id, d], { responseSchema: terminalWriteResponseSchema }).catch(() => { });
                 });
-                const buf = await window.electron.terminal.readBuffer(tab.id).catch(() => null);
+                const buf = await invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [tab.id], { responseSchema: terminalReadBufferResponseSchema }).catch(() => null);
                 if (buf) {
                     term.write(buf);
                 }
@@ -237,7 +247,7 @@ export const TerminalSession = memo(
                 isInitializedRef.current = false;
                 if (isActiveRef.current && sessionIdRef.current) {
                     initializedTerminals.delete(tab.id);
-                    window.electron.terminal.kill(sessionIdRef.current).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionIdRef.current], { responseSchema: terminalKillResponseSchema }).catch(() => { });
                 }
                 initializingTerminals.delete(tab.id);
                 term.dispose();

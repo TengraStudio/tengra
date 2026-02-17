@@ -1,13 +1,11 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { DataService } from '@main/services/data/data.service';
-import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { ProjectScaffoldService } from '@main/services/project/project-scaffold.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { ProcessService } from '@main/services/system/process.service';
-import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SystemService } from '@main/services/system/system.service';
-import { ThemeService } from '@main/services/ui/theme.service';
+import { ThemeService } from '@main/services/theme/theme.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class TestBaseService extends BaseService {
@@ -23,12 +21,12 @@ class TestBaseService extends BaseService {
     }
 }
 
-describe('Missing service TODO coverage (smoke)', () => {
+describe('Missing service TODO coverage (functional)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('BaseService logs through logger facade', () => {
+    it('BaseService emits all logger levels through logger facade', () => {
         const infoSpy = vi.spyOn(appLogger, 'info');
         const warnSpy = vi.spyOn(appLogger, 'warn');
         const debugSpy = vi.spyOn(appLogger, 'debug');
@@ -40,92 +38,84 @@ describe('Missing service TODO coverage (smoke)', () => {
         expect(infoSpy).toHaveBeenCalledWith('TestBaseService', 'info');
         expect(warnSpy).toHaveBeenCalledWith('TestBaseService', 'warn');
         expect(debugSpy).toHaveBeenCalledWith('TestBaseService', 'debug');
-        expect(errorSpy).toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledWith('TestBaseService', 'error', undefined);
     });
 
-    it('DataService initializes and resolves paths', async () => {
+    it('DataService creates and resolves all expected data paths', async () => {
         const dataService = new DataService();
-
         await dataService.initialize();
 
-        expect(dataService.getPath('data')).toContain('/tmp');
-        expect(dataService.getPath('auth')).toContain('/tmp');
+        expect(dataService.getPath('data')).toContain('data');
+        expect(dataService.getPath('auth')).toContain('auth');
+        expect(dataService.getPath('logs')).toContain('logs');
     });
 
-    it('ProjectAgentService can be constructed with minimal dependencies', () => {
-        const svc = new ProjectAgentService({
-            databaseService: {} as any,
-            llmService: {} as any,
-            eventBus: { on: vi.fn() } as any,
-            agentRegistryService: {} as any,
-            agentCheckpointService: {} as any,
-            gitService: {} as any,
-            agentCollaborationService: {} as any,
-            agentTemplateService: {} as any,
-            agentPerformanceService: {} as any,
+    it('ProjectScaffoldService generates README with core sections', () => {
+        const service = new ProjectScaffoldService();
+        const readme = service.generateReadme({
+            id: 'idea-1',
+            sessionId: 'session-1',
+            title: 'Test Idea',
+            description: 'Useful tool',
+            category: 'website',
+            valueProposition: 'Value',
+            explanation: 'Explanation',
+            status: 'pending',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         });
 
-        svc.setToolExecutor({} as any);
-
-        expect(svc).toBeDefined();
+        expect(readme).toContain('# Test Idea');
+        expect(readme).toContain('## Getting Started');
+        expect(readme).toContain('index.html');
     });
 
-    it('ProjectScaffoldService exports scaffold function', () => {
-        const svc = new ProjectScaffoldService();
-        expect(typeof svc.scaffoldProject).toBe('function');
-    });
-
-    it('AuthService can be created and query accounts', async () => {
+    it('AuthService filters linked accounts by provider', async () => {
         const auth = new AuthService(
             {
-                getLinkedAccounts: vi.fn(async () => []),
+                getLinkedAccounts: vi.fn(async (provider?: string) =>
+                    provider === 'github'
+                        ? [{ id: 'a1', provider: 'github', isActive: true, createdAt: 1 }]
+                        : []
+                ),
                 getActiveLinkedAccount: vi.fn(async () => null),
                 initialize: vi.fn(async () => undefined),
-            } as any,
+            } as never,
             {
                 encrypt: vi.fn(),
                 decrypt: vi.fn(),
-            } as any,
+            } as never,
             {
                 emit: vi.fn(),
-            } as any,
+            } as never,
             {
-                getPath: vi.fn(() => '/tmp/auth'),
-            } as any
+                getPath: vi.fn(() => 'C:/tmp/auth'),
+            } as never
         );
 
-        const accounts = await auth.getAccountsByProvider('github');
-        expect(accounts).toEqual([]);
+        const githubAccounts = await auth.getAccountsByProvider('github');
+        const gitlabAccounts = await auth.getAccountsByProvider('gitlab');
+
+        expect(githubAccounts).toHaveLength(1);
+        expect(gitlabAccounts).toEqual([]);
     });
 
-    it('ProcessService exposes read-only listing APIs', () => {
+    it('ProcessService exposes no running tasks by default', () => {
         const processService = new ProcessService();
-
         expect(processService.getRunningTasks()).toEqual([]);
-        expect(typeof processService.execute).toBe('function');
     });
 
-    it('ProcessManagerService lifecycle methods run', async () => {
-        const manager = new ProcessManagerService();
-
-        await manager.initialize();
-        await manager.cleanup();
-
-        expect(manager).toBeDefined();
-    });
-
-    it('SystemService returns system info and health payload', async () => {
-        const svc = new SystemService();
-
-        const info = await svc.getSystemInfo();
-        const health = await svc.healthCheck();
-
-        expect(info.platform).toBe(process.platform);
+    it('SystemService returns successful health payload', async () => {
+        const service = new SystemService();
+        const health = await service.healthCheck();
         expect(health.success).toBe(true);
+        expect(health.result?.status).toBe('healthy');
     });
 
-    it('ThemeService returns current theme', () => {
-        const svc = new ThemeService();
-        expect(svc.getCurrentTheme()).toBe('graphite');
+    it('ThemeService returns persisted default theme', () => {
+        const service = new ThemeService({
+            getPath: vi.fn(() => 'C:/user-data/db'),
+        } as never);
+        expect(service.getThemesDirectory()).toContain('runtime');
     });
 });

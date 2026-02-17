@@ -27,11 +27,11 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
     useEffect(() => {
         void checkStatus();
 
-        const removeStatusListener = window.electron.on('sd-cpp:status', (data: unknown) => {
+        const removeStatusListener = window.electron.onSdCppStatus((data: unknown) => {
             setSdCppStatus((data as { state: string }).state);
         });
 
-        const removeProgressListener = window.electron.on('sd-cpp:progress', (data: unknown) => {
+        const removeProgressListener = window.electron.onSdCppProgress((data: unknown) => {
             setDownloadProgress(data as { downloaded: number; total: number; filename: string });
         });
 

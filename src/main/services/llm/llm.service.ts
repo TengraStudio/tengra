@@ -195,6 +195,52 @@ export class LLMService {
         });
     }
 
+    /**
+     * Injects locale-specific instructions into the system prompt.
+     * I18N-05: Ensures AI responses align with the user's selected language.
+     */
+    private applyLocaleInstructions(messages: Array<Message | ChatMessage>): Array<Message | ChatMessage> {
+        const settings = this.deps.settingsService.getSettings();
+        const lang = settings.general?.language ?? 'en';
+
+        if (lang === 'en') { return messages; }
+
+        const instructions: Record<string, string> = {
+            tr: 'Respond in Turkish.',
+            ar: 'Respond in Arabic.',
+            de: 'Respond in German.',
+            es: 'Respond in Spanish.',
+            fr: 'Respond in French.',
+            ja: 'Respond in Japanese.',
+            zh: 'Respond in Chinese.',
+        };
+
+        const instruction = instructions[lang];
+        if (!instruction) { return messages; }
+
+        const result = [...messages];
+        const systemMsgIndex = result.findIndex(m => m.role === 'system');
+
+        if (systemMsgIndex !== -1) {
+            const systemMsg = result[systemMsgIndex];
+            if (typeof systemMsg.content === 'string') {
+                if (!systemMsg.content.includes(instruction)) {
+                    result[systemMsgIndex] = {
+                        ...systemMsg,
+                        content: `${systemMsg.content}\n\nIMPORTANT: ${instruction}`
+                    } as Message | ChatMessage;
+                }
+            }
+        } else {
+            result.unshift({
+                role: 'system',
+                content: `IMPORTANT: ${instruction}`
+            } as Message | ChatMessage);
+        }
+
+        return result;
+    }
+
     // --- Configuration ---
 
     // Note: Setters are kept for runtime updates from settings UI.
@@ -261,7 +307,7 @@ export class LLMService {
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
-        const sanitized = this.sanitizeMessages(messages);
+        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
 
         // LLM-001-3: Context overflow mitigation
         const contextService = getContextWindowService();
@@ -327,7 +373,7 @@ export class LLMService {
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
-        const sanitized = this.sanitizeMessages(messages);
+        const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
 
         const contextService = getContextWindowService();
         const { truncated } = contextService.truncateMessages(sanitized as Message[], model, { reservedTokens: 1000 });

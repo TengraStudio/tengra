@@ -1,5 +1,5 @@
 import { Bot, Boxes, Brain, Lightbulb, MessageSquare, Rocket, Zap } from 'lucide-react';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { AppView } from '@/hooks/useAppState';
 
@@ -20,58 +20,55 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
     chatsCount,
     t
 }) => {
+    const navItems = useMemo(() => ([
+        { view: 'chat' as const, icon: MessageSquare, label: t('sidebar.chats'), badge: chatsCount > 0 ? chatsCount : undefined },
+        { view: 'projects' as const, icon: Rocket, label: t('sidebar.projects') },
+        { view: 'models' as const, icon: Boxes, label: t('sidebar.models') },
+        { view: 'memory' as const, icon: Brain, label: t('sidebar.memory') },
+        { view: 'ideas' as const, icon: Lightbulb, label: t('sidebar.ideas') },
+        { view: 'project-agent' as const, icon: Bot, label: t('sidebar.agent') },
+        { view: 'workflows' as const, icon: Zap, label: t('sidebar.workflows') }
+    ]), [chatsCount, t]);
+    const [focusedIndex, setFocusedIndex] = useState(0);
+
+    const handleRovingNav = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setFocusedIndex((index + 1) % navItems.length);
+            return;
+        }
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setFocusedIndex((index - 1 + navItems.length) % navItems.length);
+            return;
+        }
+        if (event.key === 'Home') {
+            event.preventDefault();
+            setFocusedIndex(0);
+            return;
+        }
+        if (event.key === 'End') {
+            event.preventDefault();
+            setFocusedIndex(navItems.length - 1);
+        }
+    };
+
     return (
         <nav className="px-3 space-y-1" aria-label="Sidebar navigation">
-            <SidebarItem
-                icon={MessageSquare}
-                label={t('sidebar.chats')}
-                active={currentView === 'chat'}
-                onClick={() => onChangeView('chat')}
-                badge={chatsCount > 0 ? chatsCount : undefined}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Rocket}
-                label={t('sidebar.projects')}
-                active={currentView === 'projects'}
-                onClick={() => onChangeView('projects')}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Boxes}
-                label={t('sidebar.models')}
-                active={currentView === 'models'}
-                onClick={() => onChangeView('models')}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Brain}
-                label={t('sidebar.memory')}
-                active={currentView === 'memory'}
-                onClick={() => onChangeView('memory')}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Lightbulb}
-                label={t('sidebar.ideas')}
-                active={currentView === 'ideas'}
-                onClick={() => onChangeView('ideas')}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Bot}
-                label={t('sidebar.agent')}
-                active={currentView === 'project-agent'}
-                onClick={() => onChangeView('project-agent')}
-                isCollapsed={isCollapsed}
-            />
-            <SidebarItem
-                icon={Zap}
-                label={t('sidebar.workflows')}
-                active={currentView === 'workflows'}
-                onClick={() => onChangeView('workflows')}
-                isCollapsed={isCollapsed}
-            />
+            {navItems.map((item, index) => (
+                <SidebarItem
+                    key={item.view}
+                    icon={item.icon}
+                    label={item.label}
+                    active={currentView === item.view}
+                    onClick={() => onChangeView(item.view)}
+                    badge={item.badge}
+                    isCollapsed={isCollapsed}
+                    tabIndex={focusedIndex === index ? 0 : -1}
+                    onFocus={() => setFocusedIndex(index)}
+                    onKeyDown={(event) => handleRovingNav(event, index)}
+                />
+            ))}
         </nav>
     );
 };

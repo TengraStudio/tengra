@@ -5,7 +5,16 @@ import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
 import { useTheme } from '@/hooks/useTheme';
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
+
+import {
+    TerminalIpcContract,
+    terminalKillResponseSchema,
+    terminalReadBufferResponseSchema,
+    terminalResizeResponseSchema,
+    terminalWriteResponseSchema
+} from '../utils/terminal-ipc';
 
 import 'xterm/css/xterm.css';
 
@@ -73,12 +82,12 @@ export function DetachedTerminalWindow() {
 
         term.onData((data) => {
             if (!isExitedRef.current) {
-                void window.electron.terminal.write(sessionId, data);
+                void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [sessionId, data], { responseSchema: terminalWriteResponseSchema });
             }
         });
         term.onResize((size) => {
             if (!isExitedRef.current) {
-                void window.electron.terminal.resize(sessionId, size.cols, size.rows);
+                void invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [sessionId, size.cols, size.rows], { responseSchema: terminalResizeResponseSchema });
             }
         });
 
@@ -95,7 +104,7 @@ export function DetachedTerminalWindow() {
             }
         });
 
-        void window.electron.terminal.readBuffer(sessionId).then((buffer) => {
+        void invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [sessionId], { responseSchema: terminalReadBufferResponseSchema }).then((buffer) => {
             if (buffer && terminalRef.current) {
                 terminalRef.current.write(buffer);
             }
@@ -128,7 +137,7 @@ export function DetachedTerminalWindow() {
             return;
         }
         const handleBeforeUnload = () => {
-            void window.electron.terminal.kill(sessionId);
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionId], { responseSchema: terminalKillResponseSchema });
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {

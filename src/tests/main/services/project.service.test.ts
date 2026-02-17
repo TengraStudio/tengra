@@ -96,4 +96,31 @@ describe('ProjectService', () => {
         expect(result.pkg.name).toBe('test-pkg');
         expect(result.stats.fileCount).toBe(2);
     });
+
+    it('should return safe defaults when directory listing fails', async () => {
+        const mockDirPath = '/restricted/project';
+
+        vi.mocked(fs.readFile).mockRejectedValue(new Error('EACCES'));
+        vi.mocked(fs.readdir).mockRejectedValue(new Error('EACCES'));
+
+        const result = await projectService.analyzeDirectory(mockDirPath);
+
+        expect(result.hasPackageJson).toBe(false);
+        expect(result.pkg).toEqual({});
+        expect(result.readme).toBeNull();
+        expect(result.stats.fileCount).toBe(0);
+        expect(result.stats.totalSize).toBe(0);
+    });
+
+    it('should tolerate scan permission failures during project analysis', async () => {
+        const mockDirPath = '/restricted/project';
+
+        vi.mocked(fs.readdir).mockRejectedValue(new Error('EACCES'));
+
+        const result = await projectService.analyzeProject(mockDirPath);
+
+        expect(result.type).toBe('unknown');
+        expect(result.files).toEqual([]);
+        expect(result.stats.fileCount).toBe(0);
+    });
 });

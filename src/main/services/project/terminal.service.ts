@@ -574,8 +574,8 @@ export class TerminalService extends BaseService {
             if (session.logStream) {
                 try {
                     session.logStream.end();
-                } catch {
-                    /* ignore */
+                } catch (error) {
+                    appLogger.warn('TerminalService', `Failed to close log stream for session ${sessionId}: ${error instanceof Error ? error.message : String(error)}`);
                 }
             }
             this.sessions.delete(sessionId);
@@ -1388,8 +1388,8 @@ export class TerminalService extends BaseService {
             try {
                 session.process?.kill();
                 session.logStream?.end();
-            } catch {
-                /* Already dead */
+            } catch (error) {
+                appLogger.warn('TerminalService', `Session cleanup warning: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
         this.sessions.clear();

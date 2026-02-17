@@ -85,6 +85,14 @@ const TokenUsageRecordSchema = z.object({
     costEstimate: z.number().optional(),
 });
 
+const ProjectSchema = z.object({
+    title: z.string().min(1),
+    path: z.string().min(1),
+    description: z.string().optional(),
+    mounts: z.unknown().optional(),
+    councilConfig: z.unknown().optional(),
+}).passthrough();
+
 type SenderValidator = (event: IpcMainEvent | IpcMainInvokeEvent) => void;
 
 /**
@@ -261,7 +269,7 @@ function registerProjectHandlers(databaseService: DatabaseService, validateSende
         ));
     }, {
         defaultValue: null,
-        argsSchema: z.tuple([z.any()])
+        argsSchema: z.tuple([ProjectSchema])
     }));
 
     ipcMain.handle('db:getProjects', createValidatedIpcHandler('db:getProjects', async (event) => {

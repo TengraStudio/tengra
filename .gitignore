@@ -167,8 +167,5 @@ docs/changelog/i18n/.tr.translation.cache.json
 *.exe
 resources/bin/
 vendor/**/*.exe
-cursor_network_analysis.md
- 
- 0 
-
+reports/**
 .claude/settings.local.json

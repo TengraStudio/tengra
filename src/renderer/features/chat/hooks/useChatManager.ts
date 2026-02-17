@@ -8,7 +8,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 
 import { generateId } from '@/lib/utils';
 import { AppSettings, Chat, Message } from '@/types';
-import { CatchError, IpcValue } from '@/types/common';
+import { CatchError } from '@/types/common'; // Force update
 
 /** Maximum messages to keep in memory per chat to prevent memory leaks */
 const MAX_MESSAGES_IN_MEMORY = 100;
@@ -107,8 +107,7 @@ function useChatInitialization(loadFolders: () => Promise<void>, setChats: React
         };
         void load();
 
-        const removeStatusListener = window.electron.on('chat:generation-status', (_event, ...args: IpcValue[]) => {
-            const data = (args[0] && typeof args[0] === 'object') ? args[0] as { chatId?: string; isGenerating?: boolean } : {};
+        const removeStatusListener = window.electron.onChatGenerationStatus((data: { chatId?: string; isGenerating?: boolean }) => {
             setChats(prev => prev.map(c => c.id === data.chatId ? { ...c, isGenerating: data.isGenerating } : c));
         });
         return () => { removeStatusListener(); };

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-17T22:01:14.797Z",
+  "generatedAt": "2026-02-17T23:04:50.263Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,410 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-18-aud-arch-completion",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Preload",
+        "Startup",
+        "IPC",
+        "TerminalService",
+        "ProjectService",
+        "LocalImageService"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "tr": {
+          "title": "AUD-ARCH 001-020 Tamamlandı",
+          "summary": "Preload/startup ayrıştırması, wrapper standardizasyonu ve güvenilirlik odaklı test kapsamıyla mimari denetim görevleri tamamlandı.",
+          "items": [
+            "- **Preload/Startup**: Alan bazlı preload bridge modülleri ve başlangıç yaşam döngüsü bileşenleri için regresyon testleri eklendi.",
+            "- **IPC Güçlendirme**: Kalan legacy marketplace handler'ları doğrulamalı wrapper'lara taşındı; kapsam testleri regex/smoke yerine davranış odaklı hale getirildi.",
+            "- **Servis Güvenilirliği**: Smoke-only servis testleri fonksiyonel doğrulamalara dönüştürüldü ve terminal oturum yaşam döngüsü/persist testleri eklendi.",
+            "- **Hata Yolları**: Proje tarama ve local image üretimi fallback zinciri için negatif yol testleri eklendi."
+          ]
+        },
+        "de": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "fr": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "es": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "ja": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "zh": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        },
+        "ar": {
+          "title": "AUD-ARCH 001-020 Completion",
+          "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+          "items": [
+            "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+            "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+            "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+            "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-arch-foundation",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "ProjectService",
+        "TerminalService",
+        "LocalImageService"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "tr": {
+          "title": "AUD-ARCH İlk Güvenilirlik Güçlendirmesi",
+          "summary": "İlk mimari güvenilirlik paketi; IPC şemalarını sıkılaştırıp sessiz hata yollarını kaldırarak tamamlandı.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Chat IPC kayıt yolundaki `as any` kaldırıldı ve gevşek `z.any()` chat şemaları `z.unknown()` tabanlı doğrulamaya geçirildi.",
+            "- **AUD-ARCH-007/008**: DB proje argüman şeması sıkılaştırıldı ve rate limiter dekoratör tiplemesi güçlendirildi.",
+            "- **AUD-ARCH-015/017**: Terminal temizleme ve proje tarama yollarındaki sessiz catch blokları, açık uyarı loglarıyla değiştirildi.",
+            "- **AUD-ARCH-019**: Eski temp görsel dosyası temizleme hataları açık uyarı ve hata sinyallemesiyle görünür hale getirildi."
+          ]
+        },
+        "de": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "fr": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "es": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "ja": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "zh": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        },
+        "ar": {
+          "title": "AUD-ARCH Initial Reliability Hardening",
+          "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+          "items": [
+            "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+            "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+            "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+            "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-sec-preload-hardening",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "security",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Preload",
+        "Renderer",
+        "IPC"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "tr": {
+          "title": "AUD-SEC Preload API Güçlendirmesi (001/002)",
+          "summary": "Genel amaçlı IPC yüzeyi azaltılarak renderer köprüsünde kanal-özel yöntemlere geçildi.",
+          "items": [
+            "- **AUD-SEC-001**: Genel `window.electron.invoke` erişimi kaldırıldı ve çağrılar açık API yöntemlerine taşındı.",
+            "- **AUD-SEC-002**: Genel `window.electron.on` köprüsü kaldırıldı; chat, agent ve SD-CPP olayları için isimlendirilmiş abonelik yöntemleri eklendi.",
+            "- **Güvenlik**: Renderer tarafında dinamik kanal çağrılarını azaltmak için özel `modelDownloader` köprü yöntemleri eklendi."
+          ]
+        },
+        "de": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "fr": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "es": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "ja": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "zh": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        },
+        "ar": {
+          "title": "AUD-SEC Preload API Hardening (001/002)",
+          "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+          "items": [
+            "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+            "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+            "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-aud-ux-accessibility",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Chat",
+        "CommandPalette",
+        "Modal",
+        "Layout",
+        "Accessibility"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "tr": {
+          "title": "AUD-UX 001-025 Erişilebilirlik ve Etkileşim İyileştirmeleri",
+          "summary": "Çekirdek arayüzlerde klavye, odak, semantik ve yerelleştirme iyileştirmeleriyle AUD-UX görev seti tamamlandı.",
+          "items": [
+            "- **Chat UX**: Canlı bölge duyuruları eklendi, liste semantiği düzeltildi ve klavye yardımı/komut önerileri iyileştirildi.",
+            "- **Komut Paleti**: Modal odak tuzağı davranışı zorunlu hale getirildi, kapatma kontrolleri ve sonuçlar için semantik yapı iyileştirildi.",
+            "- **Temel UI**: Ortak modal ve hata sınırı geri dönüşleri daha net kontroller ve kurtarma eylemleriyle geliştirildi.",
+            "- **Oturum ve Gezinme**: Oturum kilidi için başlangıç odağı/Escape davranışı ve kenar çubuğu etkinlik alanlarında roving klavye gezinmesi eklendi.",
+            "- **Başlık Çubuğu/Hızlı Eylemler**: Eksik etiketler, değişiklik günlüğü filtre etiketleri ve hızlı eylemler için klavye keşfedilebilirliği eklendi."
+          ]
+        },
+        "de": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "fr": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "es": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "ja": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "zh": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        },
+        "ar": {
+          "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+          "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+          "items": [
+            "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+            "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+            "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+            "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+            "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-18-llm-security-v2",
       "date": "2026-02-18",
@@ -216,6 +620,105 @@
             "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
             "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
             "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-terminal-ipc-renderer-migration",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Terminal",
+        "IPC",
+        "Renderer"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "tr": {
+          "title": "Terminal IPC Renderer Göçü",
+          "summary": "Terminal renderer bileşenlerinin tip güvenli IPC iletişimi kullanacak şekilde taşınması tamamlandı.",
+          "items": [
+            "- **Tip Güvenliği**: `useTerminal`, `TerminalConnectionSelector` ve diğer bileşenler `invokeTypedIpc` ve `TerminalIpcContract` kullanacak şekilde taşındı.",
+            "- **Doğrulama**: Renderer tarafındaki terminal IPC yanıtları için Zod şema doğrulaması zorunlu kılındı.",
+            "- **Kod Temizliği**: Ham `window.electron.terminal` çağrıları ve kullanılmayan importlar kaldırıldı.",
+            "- **Hata Düzeltme**: Bağlantı seçicide `getDockerContainers` dönüş tipi işleme hatası düzeltildi."
+          ]
+        },
+        "de": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "fr": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "es": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "ja": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "zh": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        },
+        "ar": {
+          "title": "Terminal IPC Renderer Migration",
+          "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+          "items": [
+            "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+            "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+            "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+            "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
           ]
         }
       }

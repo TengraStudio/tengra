@@ -231,6 +231,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             onClick={() => setIsChangelogOpen(true)}
                             className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-md transition-all duration-200 text-muted-foreground"
                             title={t('titleBar.changelog')}
+                            aria-label={t('titleBar.changelog')}
                         >
                             <FileText className="w-4 h-4" />
                         </button>
@@ -239,6 +240,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                 onClick={onExtensionClick}
                                 className="p-1.5 hover:bg-info/10 hover:text-info rounded-md transition-all duration-200 text-muted-foreground"
                                 title={t('titleBar.extension')}
+                                aria-label={t('titleBar.extension')}
                             >
                                 <Puzzle className="w-4 h-4" />
                             </button>
@@ -247,6 +249,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             onClick={() => window.electron.minimize()}
                             className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
                             title={t('titleBar.minimize')}
+                            aria-label={t('titleBar.minimize')}
                         >
                             <Minus className="w-4 h-4" />
                         </button>
@@ -254,6 +257,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             onClick={() => window.electron.maximize()}
                             className="p-1.5 hover:bg-muted/50 rounded-md transition-all duration-200 text-muted-foreground hover:text-foreground"
                             title={t('titleBar.maximize')}
+                            aria-label={t('titleBar.maximize')}
                         >
                             <Square className="w-3.5 h-3.5" />
                         </button>
@@ -261,6 +265,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             onClick={() => window.electron.close()}
                             className="p-1.5 hover:bg-destructive hover:text-destructive-foreground rounded-md transition-all duration-200 text-muted-foreground"
                             title={t('titleBar.close')}
+                            aria-label={t('titleBar.close')}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -292,8 +297,9 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                                 commitSearch();
                                             }
                                         }}
-                                        placeholder="Search changelog..."
+                                        placeholder={t('common.search')}
                                         className="w-full bg-transparent text-xs py-2 outline-none"
+                                        aria-label={t('common.search')}
                                     />
                                 </div>
                                 <input
@@ -301,21 +307,24 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                     value={dateFrom}
                                     onChange={event => setDateFrom(event.target.value)}
                                     className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                    aria-label={t('titleBar.changelogFromDate')}
                                 />
                                 <input
                                     type="date"
                                     value={dateTo}
                                     onChange={event => setDateTo(event.target.value)}
                                     className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                    aria-label={t('titleBar.changelogToDate')}
                                 />
                                 <select
                                     value={typeFilter}
                                     onChange={event => setTypeFilter(event.target.value)}
                                     className="text-xs px-2 py-2 rounded-md border border-border bg-background"
+                                    aria-label={t('titleBar.changelogType')}
                                 >
                                     {typeOptions.map(option => (
                                         <option key={option} value={option}>
-                                            {option === 'all' ? 'all types' : option}
+                                            {option === 'all' ? t('common.all') : option}
                                         </option>
                                     ))}
                                 </select>
@@ -323,10 +332,11 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                                     type="button"
                                     onClick={exportFilteredResults}
                                     className="px-2 py-2 rounded-md border border-border hover:bg-muted/40 text-xs flex items-center gap-1"
-                                    title="Export filtered results"
+                                    title={t('titleBar.exportFilteredResults')}
+                                    aria-label={t('titleBar.exportFilteredResults')}
                                 >
                                     <Download className="w-3.5 h-3.5" />
-                                    Export
+                                    {t('common.export')}
                                 </button>
                             </div>
                             {suggestions.length > 0 && (
@@ -413,7 +423,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
                             </section>
                         ))}
                         {filteredGroups.length === 0 && (
-                            <p className="text-sm text-muted-foreground">No changelog entry matched your filters.</p>
+                            <p className="text-sm text-muted-foreground">{t('titleBar.noFilterResults')}</p>
                         )}
                     </div>
                 )}

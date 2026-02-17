@@ -105,7 +105,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
             return;
         }
         try {
-            await window.electron.invoke('model-downloader:pause', active.downloadId);
+            await window.electron.modelDownloader.pause(active.downloadId);
         } catch (err) {
             window.electron.log.error('Failed to pause download:', err);
         }
@@ -124,7 +124,7 @@ export function MarketplaceGrid({ t }: MarketplaceGridProps): React.ReactElement
             return;
         }
         try {
-            await window.electron.invoke('model-downloader:resume', active.downloadId);
+            await window.electron.modelDownloader.resume(active.downloadId);
         } catch (err) {
             window.electron.log.error('Failed to resume download:', err);
         }
@@ -517,4 +517,3 @@ function MarketplaceModelCard({ model, isInstalled = false, isSelected, onSelect
         </div>
     );
 }
-

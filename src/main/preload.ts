@@ -53,6 +53,9 @@ import {
 import { ConsensusResult, ModelRoutingRule, VotingSession } from '@shared/types/project-agent';
 import { isProjectState } from '@shared/utils/type-guards.util';
 
+import { createAuthBridge } from './preload/domains/auth.preload';
+import { createWindowControlsBridge } from './preload/domains/window-controls.preload';
+
 interface ModelDefinition {
     id: string;
     name: string;
@@ -141,8 +144,6 @@ export interface TokenData {
 }
 
 export interface ElectronAPI {
-    invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) => Promise<T>;
-
     // Window controls
     minimize: () => void;
     maximize: () => void;
@@ -507,6 +508,12 @@ export interface ElectronAPI {
         delete: (id: string) => Promise<void>;
         execute: (id: string, context?: Record<string, unknown>) => Promise<import('@shared/types/workflow.types').WorkflowExecutionResult>;
         triggerManual: (triggerId: string, context?: Record<string, unknown>) => Promise<void>;
+    };
+    modelDownloader: {
+        start: (request: Record<string, unknown>) => Promise<unknown>;
+        pause: (downloadId: string) => Promise<unknown>;
+        resume: (downloadId: string) => Promise<unknown>;
+        cancel: (downloadId: string) => Promise<unknown>;
     };
 
     // Database
@@ -1453,7 +1460,12 @@ export interface ElectronAPI {
         reveal: (path: string) => Promise<boolean>;
     };
 
-    on: (channel: string, callback: (...args: IpcValue[]) => void) => () => void;
+    onChatGenerationStatus: (
+        callback: (data: { chatId?: string; isGenerating?: boolean }) => void
+    ) => () => void;
+    onAgentEvent: (callback: (payload: unknown) => void) => () => void;
+    onSdCppStatus: (callback: (data: unknown) => void) => () => void;
+    onSdCppProgress: (callback: (data: unknown) => void) => () => void;
     getUserDataPath: () => Promise<string>;
 
     update: {
@@ -1942,22 +1954,8 @@ export interface ElectronAPI {
 }
 
 const api: ElectronAPI = {
-    invoke: <T = IpcValue>(channel: string, ...args: IpcValue[]) =>
-        ipcRenderer.invoke(channel, ...args) as Promise<T>,
-
-    minimize: () => ipcRenderer.send('window:minimize'),
-    maximize: () => ipcRenderer.send('window:maximize'),
-    close: () => ipcRenderer.send('window:close'),
-    toggleCompact: enabled => ipcRenderer.send('window:toggle-compact', enabled),
-    resizeWindow: resolution => ipcRenderer.send('window:resize', resolution),
-
-    githubLogin: (appId?: 'profile' | 'copilot') => ipcRenderer.invoke('auth:github-login', appId),
-    pollToken: (deviceCode: string, interval: number, appId?: 'profile' | 'copilot') =>
-        ipcRenderer.invoke('auth:poll-token', deviceCode, interval, appId),
-    antigravityLogin: () => ipcRenderer.invoke('proxy:antigravityLogin'),
-
-    saveClaudeSession: (sessionKey: string, accountId?: string) =>
-        ipcRenderer.invoke('proxy:saveClaudeSession', sessionKey, accountId),
+    ...createWindowControlsBridge(ipcRenderer),
+    ...createAuthBridge(ipcRenderer),
 
     // --- Linked Accounts (New Multi-Account API) ---
     getLinkedAccounts: provider => ipcRenderer.invoke('auth:get-linked-accounts', provider),
@@ -2927,10 +2925,25 @@ const api: ElectronAPI = {
         reveal: path => ipcRenderer.invoke('gallery:reveal', path),
     },
 
-    on: (channel: string, callback: (...args: IpcValue[]) => void) => {
-        const listener = (_event: IpcRendererEvent, ...args: IpcValue[]) => callback(...args);
-        ipcRenderer.on(channel, listener);
-        return () => ipcRenderer.removeListener(channel, listener);
+    onChatGenerationStatus: callback => {
+        const listener = (_event: IpcRendererEvent, data: { chatId?: string; isGenerating?: boolean }) => callback(data);
+        ipcRenderer.on('chat:generation-status', listener);
+        return () => ipcRenderer.removeListener('chat:generation-status', listener);
+    },
+    onAgentEvent: callback => {
+        const listener = (_event: IpcRendererEvent, payload: unknown) => callback(payload);
+        ipcRenderer.on('agent-event', listener);
+        return () => ipcRenderer.removeListener('agent-event', listener);
+    },
+    onSdCppStatus: callback => {
+        const listener = (_event: IpcRendererEvent, data: unknown) => callback(data);
+        ipcRenderer.on('sd-cpp:status', listener);
+        return () => ipcRenderer.removeListener('sd-cpp:status', listener);
+    },
+    onSdCppProgress: callback => {
+        const listener = (_event: IpcRendererEvent, data: unknown) => callback(data);
+        ipcRenderer.on('sd-cpp:progress', listener);
+        return () => ipcRenderer.removeListener('sd-cpp:progress', listener);
     },
 
     getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath'),
@@ -3138,6 +3151,12 @@ const api: ElectronAPI = {
             ipcRenderer.invoke('workflow:execute', id, context),
         triggerManual: (triggerId: string, context?: Record<string, unknown>) =>
             ipcRenderer.invoke('workflow:triggerManual', triggerId, context),
+    },
+    modelDownloader: {
+        start: request => ipcRenderer.invoke('model-downloader:start', request),
+        pause: downloadId => ipcRenderer.invoke('model-downloader:pause', downloadId),
+        resume: downloadId => ipcRenderer.invoke('model-downloader:resume', downloadId),
+        cancel: downloadId => ipcRenderer.invoke('model-downloader:cancel', downloadId),
     },
 };
 

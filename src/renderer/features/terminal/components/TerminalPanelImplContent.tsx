@@ -1,9 +1,11 @@
 import { useTranslation } from '@renderer/i18n';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type ITheme, Terminal as XTerm } from 'xterm';
+import { z } from 'zod';
 
 import { useTheme } from '@/hooks/useTheme';
 import { motion } from '@/lib/framer-motion-compat';
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { cn } from '@/lib/utils';
 import { TerminalTab } from '@/types';
@@ -51,6 +53,11 @@ import {
     TERMINAL_SPLIT_PRESET_LIMIT,
 } from '../utils/split-config';
 import { createTerminalShortcutEventHandler } from '../utils/terminal-event-handlers';
+import {
+    explainErrorResultSchema,
+    fixErrorResultSchema,
+    terminalCommandHistoryEntrySchema,
+    type TerminalIpcContract} from '../utils/terminal-ipc';
 import {
     buildDockerBootstrapCommand,
     buildFormattedClipboardHtml,
@@ -641,7 +648,13 @@ function TerminalPanelContentImpl({
                 return;
             }
             await Promise.all(
-                targets.map(sessionId => window.electron.terminal.write(sessionId, value))
+                targets.map(sessionId =>
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>(
+                        'terminal:write',
+                        [sessionId, value],
+                        { responseSchema: z.boolean() }
+                    )
+                )
             );
         },
         [resolveInputTargetSessionIds]
@@ -809,7 +822,11 @@ function TerminalPanelContentImpl({
             if (recordingCaptureRef.current?.tabId === id) {
                 completeRecording();
             }
-            void window.electron.terminal.kill(id);
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>(
+                'terminal:kill',
+                [id],
+                { responseSchema: z.boolean() }
+            );
 
             setTabs(prev => prev.filter(tab => tab.id !== id));
             setActiveTabId(nextActiveTabId);
@@ -1213,12 +1230,11 @@ function TerminalPanelContentImpl({
         }
 
         try {
-            const detached = await window.electron.terminal.detach({
-                sessionId: tabToDetach.id,
-                title: tabToDetach.name,
-                shell: tabToDetach.type,
-                cwd: tabToDetach.cwd,
-            });
+            const detached = await invokeTypedIpc<TerminalIpcContract, 'terminal:detach'>(
+                'terminal:detach',
+                [{ sessionId: tabToDetach.id }],
+                { responseSchema: z.boolean() }
+            );
             if (!detached) {
                 return;
             }
@@ -1590,12 +1606,16 @@ function TerminalPanelContentImpl({
             setAiResult(null);
 
             try {
-                const result = await window.electron.terminal.explainError({
-                    errorOutput: issue.message,
-                    shell: getActiveShellType(),
-                    cwd: projectPath ?? undefined,
-                });
-                setAiResult({ type: 'explain-error', data: result as Record<string, unknown> });
+                const result = await invokeTypedIpc<TerminalIpcContract, 'terminal:explainError'>(
+                    'terminal:explainError',
+                    [{
+                        errorOutput: issue.message,
+                        shell: getActiveShellType(),
+                        cwd: projectPath ?? undefined,
+                    }],
+                    { responseSchema: explainErrorResultSchema }
+                );
+                setAiResult({ type: 'explain-error', data: result });
             } catch (err) {
                 appLogger.error('TerminalPanel', 'Failed to explain error', err as Error);
                 setAiResult({
@@ -1603,7 +1623,7 @@ function TerminalPanelContentImpl({
                     data: {
                         summary: 'Failed to analyze error',
                         cause: 'Service error',
-                        solution: 'Please try again',
+                        solution: 'Please try again.',
                     },
                 });
             } finally {
@@ -1624,7 +1644,11 @@ function TerminalPanelContentImpl({
             // Try to get the last command from history
             let lastCommand = '';
             try {
-                const history = await window.electron.terminal.getCommandHistory('', 1);
+                const history = await invokeTypedIpc<TerminalIpcContract, 'terminal:getCommandHistory'>(
+                    'terminal:getCommandHistory',
+                    ['', 1],
+                    { responseSchema: z.array(terminalCommandHistoryEntrySchema) }
+                );
                 if (history.length > 0) {
                     lastCommand = history[0]?.command ?? '';
                 }
@@ -1633,20 +1657,24 @@ function TerminalPanelContentImpl({
             }
 
             try {
-                const result = await window.electron.terminal.fixError({
-                    errorOutput: issue.message,
-                    command: lastCommand,
-                    shell: getActiveShellType(),
-                    cwd: projectPath ?? undefined,
-                });
-                setAiResult({ type: 'fix-error', data: result as Record<string, unknown> });
+                const result = await invokeTypedIpc<TerminalIpcContract, 'terminal:fixError'>(
+                    'terminal:fixError',
+                    [{
+                        errorOutput: issue.message,
+                        command: lastCommand,
+                        shell: getActiveShellType(),
+                        cwd: projectPath ?? undefined,
+                    }],
+                    { responseSchema: fixErrorResultSchema }
+                );
+                setAiResult({ type: 'fix-error', data: result });
             } catch (err) {
                 appLogger.error('TerminalPanel', 'Failed to suggest fix', err as Error);
                 setAiResult({
                     type: 'fix-error',
                     data: {
                         suggestedCommand: '',
-                        explanation: 'Failed to suggest fix',
+                        explanation: 'Failed to suggest fix. Please try again.',
                         confidence: 'low',
                     },
                 });

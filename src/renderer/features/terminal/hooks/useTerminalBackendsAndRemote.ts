@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { invokeTypedIpc } from '@/lib/ipc-client';
 import { appLogger } from '@/utils/renderer-logger';
+
+import {
+    terminalGetBackendsResponseSchema,
+    terminalGetDockerContainersResponseSchema,
+    terminalGetShellsResponseSchema,
+    TerminalIpcContract,
+    terminalIsAvailableResponseSchema,
+} from '../utils/terminal-ipc';
 
 /**
  * Terminal backend information
@@ -252,10 +261,11 @@ export function useTerminalBackendsAndRemote({
     const fetchAvailableShells = useCallback(async () => {
         try {
             setIsLoadingShells(true);
-            if (!(await window.electron.terminal.isAvailable())) {
+            const isAvailable = await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema });
+            if (!isAvailable) {
                 return [];
             }
-            const shells = await window.electron.terminal.getShells();
+            const shells = await invokeTypedIpc<TerminalIpcContract, 'terminal:getShells'>('terminal:getShells', [], { responseSchema: terminalGetShellsResponseSchema });
             setAvailableShells(shells);
             return shells;
         } catch (error) {
@@ -274,10 +284,11 @@ export function useTerminalBackendsAndRemote({
     const fetchAvailableBackends = useCallback(async () => {
         try {
             setIsLoadingBackends(true);
-            if (!(await window.electron.terminal.isAvailable())) {
+            const isAvailable = await invokeTypedIpc<TerminalIpcContract, 'terminal:isAvailable'>('terminal:isAvailable', [], { responseSchema: terminalIsAvailableResponseSchema });
+            if (!isAvailable) {
                 return [];
             }
-            const backends = await window.electron.terminal.getBackends();
+            const backends = await invokeTypedIpc<TerminalIpcContract, 'terminal:getBackends'>('terminal:getBackends', [], { responseSchema: terminalGetBackendsResponseSchema });
             setAvailableBackends(backends);
             return backends;
         } catch (error) {
@@ -295,13 +306,15 @@ export function useTerminalBackendsAndRemote({
         try {
             setIsLoadingRemoteConnections(true);
 
-            const [profilesRaw, dockerRaw] = await Promise.all([
+            const [profilesRaw, dockerResult] = await Promise.all([
                 window.electron.ssh.getProfiles().catch(() => []),
-                window.electron.terminal.getDockerContainers().catch(() => []),
+                invokeTypedIpc<TerminalIpcContract, 'terminal:getDockerContainers'>('terminal:getDockerContainers', [], { responseSchema: terminalGetDockerContainersResponseSchema }).catch(() => ({ success: false })),
             ]);
 
             setRemoteSshProfiles(normalizeSshProfiles(profilesRaw));
-            setRemoteDockerContainers(normalizeDockerContainers(dockerRaw as unknown));
+
+            const dockerContainers = ('containers' in dockerResult && dockerResult.containers) ? dockerResult.containers : [];
+            setRemoteDockerContainers(normalizeDockerContainers(dockerContainers));
         } catch (error) {
             appLogger.error(
                 'TerminalPanel',

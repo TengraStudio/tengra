@@ -88,7 +88,7 @@ export const useAgentHandlers = ({
     }, [selectedTaskId]);
 
     useEffect(() => {
-        const unsubscribe = window.electron.on('agent-event', (payload: unknown) => {
+        const unsubscribe = window.electron.onAgentEvent((payload: unknown) => {
             const typedPayload = payload as { type: string; data?: { taskId?: string; reason?: string } };
             if (typedPayload.type === 'agent:interrupt_required' && typedPayload.data?.taskId === selectedTaskId) {
                 setInterruptReason(typedPayload.data.reason ?? 'Manual intervention required');

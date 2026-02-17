@@ -63,6 +63,9 @@ const ActivityButton: React.FC<{
         onClick={onClick}
         disabled={item.disabled}
         title={item.label}
+        aria-label={item.label}
+        aria-current={isActive ? 'page' : undefined}
+        aria-pressed={isActive}
         className={cn(
             "relative w-12 h-12 flex items-center justify-center transition-colors",
             isActive
@@ -214,6 +217,7 @@ export const ActivityBarLayout: React.FC<{
                         <button
                             onClick={() => setCollapsed(true)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground"
+                            aria-label="Collapse sidebar"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -230,6 +234,7 @@ export const ActivityBarLayout: React.FC<{
                 <button
                     onClick={() => setCollapsed(false)}
                     className="w-6 h-full flex items-center justify-center hover:bg-muted/50 text-muted-foreground border-r border-border/30"
+                    aria-label="Expand sidebar"
                 >
                     <ChevronRight className="w-4 h-4" />
                 </button>

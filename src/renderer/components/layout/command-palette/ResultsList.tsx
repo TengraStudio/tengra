@@ -24,17 +24,22 @@ export const ResultsList: React.FC<ResultsListProps> = ({
     t,
 }) => {
     return (
-        <div className="flex-1 overflow-y-auto py-2 border-r border-white/5 custom-scrollbar">
+        <div
+            className="flex-1 overflow-y-auto py-2 border-r border-white/5 custom-scrollbar"
+            role="listbox"
+            aria-label={t('commandPalette.results')}
+        >
             {Object.entries(groupedCommands).map(([category, items]) => (
                 <div key={category}>
-                    <div className="px-4 py-1.5 text-xxs font-bold text-foreground/20 uppercase tracking-widest">
+                    <h3 className="px-4 py-1.5 text-xxs font-bold text-foreground/20 uppercase tracking-widest">
                         {categoryLabels[category]}
-                    </div>
+                    </h3>
                     {items.map(cmd => {
                         const flatIdx = getFlatIndex();
                         const isSelected = flatIdx === selectedIndex;
                         return (
                             <button
+                                id={`command-option-${cmd.id}`}
                                 key={cmd.id}
                                 onClick={cmd.action}
                                 onMouseEnter={() => setSelectedIndex(cmd.id)}
@@ -44,6 +49,8 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                                         ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                                         : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
                                 )}
+                                role="option"
+                                aria-selected={isSelected}
                             >
                                 <span
                                     className={cn(

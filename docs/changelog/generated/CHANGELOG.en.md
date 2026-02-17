@@ -2,6 +2,50 @@
 
 ## [2026-02-18]
 
+### AUD-ARCH 001-020 Completion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.
+
+- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.
+- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.
+- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.
+- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation.
+
+### AUD-ARCH Initial Reliability Hardening
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.
+
+- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.
+- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.
+- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.
+- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling.
+
+### AUD-SEC Preload API Hardening (001/002)
+
+- **Type**: security
+- **Status**: completed
+- **Summary**: Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.
+
+- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.
+- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.
+- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer.
+
+### AUD-UX 001-025 Accessibility and Interaction Improvements
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.
+
+- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.
+- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.
+- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.
+- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
+- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
+
 ### LLM Security Hardening & Performance Optimization
 
 - **Type**: feature
@@ -24,6 +68,17 @@
 - **Accessibility**: Added `title` and `aria-label` attributes to all sidebar navigation items and menu items for better Screen Reader support.
 - **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.
 - **Code Quality**: Refactored `bulkDeleteChats` into `ChatContext` and `useChatManager` for centralized history management.
+
+### Terminal IPC Renderer Migration
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed the migration of Terminal renderer components to use type-safe IPC communication.
+
+- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.
+- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.
+- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.
+- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector.
 
 ## [2026-02-17]
 

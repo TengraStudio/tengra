@@ -3460,5 +3460,55 @@
       "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
       "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
     ]
+  },
+  "2026-02-18-aud-ux-accessibility": {
+    "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
+    "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+    "items": [
+      "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
+      "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
+      "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
+      "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
+      "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+    ]
+  },
+  "2026-02-18-terminal-ipc-renderer-migration": {
+    "title": "Terminal IPC Renderer Migration",
+    "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+    "items": [
+      "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
+      "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
+      "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
+      "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+    ]
+  },
+  "2026-02-18-aud-arch-foundation": {
+    "title": "AUD-ARCH Initial Reliability Hardening",
+    "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+    "items": [
+      "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
+      "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
+      "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
+      "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+    ]
+  },
+  "2026-02-18-aud-arch-completion": {
+    "title": "AUD-ARCH 001-020 Completion",
+    "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+    "items": [
+      "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
+      "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
+      "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
+      "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+    ]
+  },
+  "2026-02-18-aud-sec-preload-hardening": {
+    "title": "AUD-SEC Preload API Hardening (001/002)",
+    "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+    "items": [
+      "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
+      "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
+      "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+    ]
   }
 }

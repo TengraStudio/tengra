@@ -1,7 +1,6 @@
 import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
 import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services';
-import { appLogger } from '@main/logging/logger';
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -111,6 +110,12 @@ import { ClipboardService } from '@main/services/ui/clipboard.service';
 import { NotificationService } from '@main/services/ui/notification.service';
 import { ScreenshotService } from '@main/services/ui/screenshot.service';
 import { WorkflowService } from '@main/services/workflow/workflow.service';
+import {
+    bootstrapCoreData,
+    initializeContainerSafely,
+    registerServiceGroups,
+    startCriticalHealthChecks,
+} from '@main/startup/service-lifecycle';
 import { JsonObject } from '@shared/types/common';
 
 // Export the container instance so it can be accessed if needed
@@ -211,38 +216,21 @@ export interface Services {
 }
 
 export async function createServices(allowedFileRoots: Set<string>): Promise<Services> {
-    // 1. Core Data & Logging
-    container.register('dataService', () => new DataService());
-    const dataService = container.resolve<DataService>('dataService');
-    try {
-        await dataService.migrate();
-    } catch (error) {
-        appLogger.error('Startup', `Failed to migrate data service: ${error}`);
-    }
+    const dataService = await bootstrapCoreData(container);
 
-    appLogger.init(dataService.getPath('logs'));
+    registerServiceGroups({
+        registerSystemServices: () => registerSystemServices(allowedFileRoots),
+        registerDataServices,
+        registerSecurityServices,
+        registerLLMServices,
+        registerProjectServices,
+        registerAnalysisServices,
+        registerMcpServices,
+        registerLazyServices,
+        registerLazyProxies,
+    });
 
-    // 2. Register Service Groups
-    registerSystemServices(allowedFileRoots);
-    registerDataServices();
-    registerSecurityServices();
-    registerLLMServices();
-    registerProjectServices();
-    registerAnalysisServices();
-    registerMcpServices();
-
-    // Register lazy services that are loaded on-demand
-    registerLazyServices();
-
-    // Register proxies in container for services that depend on lazy services
-    registerLazyProxies();
-
-    // 3. Initialize Container (calls init on all LifecycleAware singletons)
-    try {
-        await container.init();
-    } catch (e) {
-        appLogger.error('Startup', `Container initialization failed partially: ${e}`);
-    }
+    await initializeContainerSafely(container);
 
     // 4. Post-Init Setup
     const settingsService = container.resolve<SettingsService>('settingsService');
@@ -251,11 +239,10 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
     // 5. Build Services Map
     const services = buildServicesMap(dataService, settingsService, ollamaHealthService);
 
-    getHealthCheckService().registerCriticalChecks({
+    startCriticalHealthChecks({
         databaseService: services.databaseService,
         networkService: services.networkService,
     });
-    getHealthCheckService().start();
 
     return services;
 }

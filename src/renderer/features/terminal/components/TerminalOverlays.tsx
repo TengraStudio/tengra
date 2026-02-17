@@ -2,6 +2,8 @@ import { Bot, Loader2, Play, X } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { createPortal } from 'react-dom';
 
+import { type AiPanelMode, type AiResult } from '../hooks/useTerminalAI';
+
 import { TerminalCommandPanels } from './TerminalCommandPanels';
 import { TerminalContextMenu } from './TerminalContextMenu';
 import { TerminalMultiplexerPanel } from './TerminalMultiplexerPanel';
@@ -16,13 +18,10 @@ interface TerminalOverlaysProps {
     contextMenuProps: Omit<ComponentProps<typeof TerminalContextMenu>, 'position' | 'canUseGallery' | 'isGalleryView'>;
     semanticPanelProps: ComponentProps<typeof TerminalSemanticPanel> | null;
     isAiPanelOpen: boolean;
-    aiPanelMode: 'explain-error' | 'fix-error' | 'explain-command';
+    aiPanelMode: AiPanelMode;
     aiSelectedIssue: { severity: string; message: string } | null;
     aiIsLoading: boolean;
-    aiResult: {
-        type: 'explain-error' | 'fix-error' | 'explain-command';
-        data: Record<string, unknown>;
-    } | null;
+    aiResult: AiResult | null;
     closeAiPanel: () => void;
     t: (key: string) => string;
     handleAiApplyFix: (command: string) => Promise<void>;

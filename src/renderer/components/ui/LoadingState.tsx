@@ -156,6 +156,15 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
         const seconds = Math.ceil(remaining / 1000);
         return seconds > 0 ? `~${seconds}s remaining` : 'Finalizing...';
     }, [currentTime, estimatedMs, startedAt]);
+    const statusLabel = useMemo(() => {
+        if (message) {
+            return message;
+        }
+        if (analyticsContext) {
+            return `Loading ${analyticsContext}`;
+        }
+        return 'Loading';
+    }, [analyticsContext, message]);
 
     useEffect(() => {
         if (!operationId || hasRegisteredRef.current) {
@@ -184,13 +193,13 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
 
     if (inline) {
         return (
-            <Loader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" />
+            <Loader2 className={cn('animate-spin text-primary', sizeClasses[size], className)} aria-hidden="true" aria-label={statusLabel} />
         );
     }
 
     if (fullScreen) {
         return (
-            <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm', className)} role="status" aria-live="polite">
+            <div className={cn('fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm', className)} role="status" aria-live="polite" aria-label={statusLabel}>
                 <div className="flex flex-col items-center gap-3 text-muted-foreground min-w-[260px]">
                     <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
                     {message && (
@@ -235,6 +244,7 @@ export const LoadingState: React.FC<LoadingStateProps> = React.memo(({
             )}
             role="status"
             aria-live="polite"
+            aria-label={statusLabel}
         >
             <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} aria-hidden="true" />
             {message && <span className={cn('font-medium', textSizeClasses[size])}>{message}</span>}

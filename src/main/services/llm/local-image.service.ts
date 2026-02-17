@@ -111,9 +111,18 @@ export class LocalImageService extends BaseService {
         const tempDir = path.join(process.cwd(), 'temp', 'generated');
         if (await this.pathExists(tempDir)) {
             const files = await fs.promises.readdir(tempDir);
+            const failedFiles: string[] = [];
             for (const file of files) {
                 const filePath = path.join(tempDir, file);
-                await fs.promises.unlink(filePath).catch(() => { });
+                try {
+                    await fs.promises.unlink(filePath);
+                } catch (error) {
+                    failedFiles.push(filePath);
+                    this.logWarn(`Failed to remove stale temp file ${filePath}: ${getErrorMessage(error as Error)}`);
+                }
+            }
+            if (failedFiles.length > 0) {
+                throw new Error(`Failed to cleanup ${failedFiles.length} stale temp files`);
             }
             this.logDebug(`Cleaned up ${files.length} stale temp files`);
         }

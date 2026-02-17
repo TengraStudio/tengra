@@ -351,6 +351,16 @@ export const webElectronMock: ElectronAPI = {
     forceOllamaHealthCheck: async () => ({ status: 'ok' as const }),
     checkCuda: async () => ({ hasCuda: true }),
     onOllamaStatusChange: (_callback: (status: { status: string }) => void) => { },
+    onAgentEvent: (_callback: (payload: unknown) => void) => () => { },
+    onChatGenerationStatus: (_callback: (data: { chatId?: string; isGenerating?: boolean }) => void) => () => { },
+    onSdCppStatus: (_callback: (data: unknown) => void) => () => { },
+    onSdCppProgress: (_callback: (data: unknown) => void) => () => { },
+    modelDownloader: {
+        start: async (_request: Record<string, unknown>) => ({}),
+        pause: async (_downloadId: string) => ({}),
+        resume: async (_downloadId: string) => ({}),
+        cancel: async (_downloadId: string) => ({}),
+    },
 
     // Marketplace API stubs
     marketplace: {

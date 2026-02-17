@@ -1,43 +1,119 @@
-import { describe, expect, it, vi } from 'vitest';
+import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
+import { registerMcpMarketplaceHandlers } from '@main/ipc/mcp-marketplace';
+import { registerProcessIpc } from '@main/ipc/process';
+import { ipcMain } from 'electron';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const REQUIRED_FILES = [
-    'advanced-memory.ts',
-    'auth.ts',
-    'brain.ts',
-    'code-intelligence.ts',
-    'db.ts',
-    'dialog.ts',
-    'extension.ts',
-    'file-diff.ts',
-    'files.ts',
-    'gallery.ts',
-    'git.ts',
-    'idea-generator.ts',
-    'mcp.ts',
-    'mcp-marketplace.ts',
-    'process.ts',
-    'project-agent.ts',
-    'proxy-embed.ts',
-    'proxy.ts'
-];
+vi.mock('electron', () => ({
+    ipcMain: { handle: vi.fn() }
+}));
+
+type IpcHandler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
+
+const getRegisteredHandlers = (): Map<string, IpcHandler> => {
+    const handlers = new Map<string, IpcHandler>();
+    vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
+        handlers.set(channel, handler as IpcHandler);
+    });
+    return handlers;
+};
 
 describe('IPC Handler Coverage', () => {
-    it('includes handler registration and wrappers in required IPC modules', async () => {
-        const fs = await vi.importActual<typeof import('node:fs')>('node:fs');
-        const path = await vi.importActual<typeof import('node:path')>('node:path');
-        const ipcDir = path.join(process.cwd(), 'src', 'main', 'ipc');
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
-        for (const file of REQUIRED_FILES) {
-            const fullPath = path.join(ipcDir, file);
-            expect(fs.existsSync(fullPath), `missing file: ${file}`).toBe(true);
-            const content = fs.readFileSync(fullPath, 'utf8');
-            expect(/ipcMain\s*\.\s*handle\s*\(/.test(content), `${file} has no ipcMain.handle`).toBe(true);
-            const hasWrapper = /create(IpcHandler|SafeIpcHandler|ValidatedIpcHandler)\s*\(/.test(content);
-            const allowedManual =
-                file === 'code-intelligence.ts' ||
-                file === 'mcp-marketplace.ts' ||
-                file === 'proxy.ts';
-            expect(hasWrapper || allowedManual, `${file} should use a wrapper handler`).toBe(true);
-        }
+    it('validates args and executes process handlers through wrapper behavior', async () => {
+        const handlers = getRegisteredHandlers();
+        const processService = {
+            spawn: vi.fn(() => 'task-1'),
+            kill: vi.fn(() => true),
+            getRunningTasks: vi.fn(() => []),
+            scanScripts: vi.fn(async () => ({})),
+            resize: vi.fn(() => true),
+            write: vi.fn(() => true),
+            on: vi.fn(),
+        };
+
+        registerProcessIpc(processService as never);
+
+        const spawn = handlers.get('process:spawn');
+        expect(spawn).toBeDefined();
+
+        const blocked = await spawn?.({} as unknown, 'npm; rm -rf /', [], 'C:/repo');
+        expect(blocked).toBeNull();
+        expect(processService.spawn).not.toHaveBeenCalled();
+
+        const ok = await spawn?.({} as unknown, 'npm', ['run', 'test'], 'C:/repo');
+        expect(ok).toBe('task-1');
+        expect(processService.spawn).toHaveBeenCalledWith('npm', ['run', 'test'], 'C:/repo');
+    });
+
+    it('enforces validated wrapper behavior for mcp marketplace handlers', async () => {
+        const handlers = getRegisteredHandlers();
+        const marketplaceService = {
+            listServers: vi.fn(async () => [{ id: 'srv-1', name: 'Srv', command: 'npx srv', description: 'd' }]),
+            searchServers: vi.fn(async () => [{ id: 'srv-1' }]),
+            filterByCategory: vi.fn(async () => []),
+            getCategories: vi.fn(async () => ['dev']),
+            refreshCache: vi.fn(async () => undefined),
+        };
+        const settingsService = {
+            getSettings: vi.fn(() => ({ mcpUserServers: [] })),
+            saveSettings: vi.fn(async () => undefined),
+        };
+        const pluginService = {
+            listPlugins: vi.fn(async () => []),
+            getDispatchMetrics: vi.fn(() => ({ totalDispatches: 0 })),
+        };
+
+        registerMcpMarketplaceHandlers(
+            marketplaceService as never,
+            settingsService as never,
+            pluginService as never
+        );
+
+        const search = handlers.get('mcp:marketplace:search');
+        const list = handlers.get('mcp:marketplace:list');
+        expect(search).toBeDefined();
+        expect(list).toBeDefined();
+
+        const invalidSearch = await search?.({} as unknown, '');
+        expect(invalidSearch).toMatchObject({ success: false });
+        expect(marketplaceService.searchServers).not.toHaveBeenCalled();
+
+        const listResult = await list?.({} as unknown);
+        expect(listResult).toMatchObject({ success: true, servers: expect.any(Array) });
+    });
+
+    it('uses default fallback values for validated code intelligence handlers', async () => {
+        const handlers = getRegisteredHandlers();
+        const service = {
+            scanProjectTodos: vi.fn(async () => []),
+            findSymbols: vi.fn(async () => [{ symbol: 'A' }]),
+            searchFiles: vi.fn(async () => []),
+            indexProject: vi.fn(async () => undefined),
+            queryIndexedSymbols: vi.fn(async () => []),
+            getFileOutline: vi.fn(async () => []),
+            findDefinition: vi.fn(async () => null),
+            findUsage: vi.fn(async () => []),
+            getSymbolRelationships: vi.fn(async () => []),
+            getSymbolAnalytics: vi.fn(async () => null),
+            scanTodos: vi.fn(async () => []),
+            analyzeCodeQuality: vi.fn(async () => null),
+        };
+
+        registerCodeIntelligenceIpc(service as never);
+
+        const findSymbols = handlers.get('code:findSymbols');
+        expect(findSymbols).toBeDefined();
+
+        const invalid = await findSymbols?.({} as unknown, '', 'query');
+        expect(invalid).toEqual([]);
+        expect(service.findSymbols).not.toHaveBeenCalled();
+
+        const valid = await findSymbols?.({} as unknown, 'C:/repo', 'query');
+        expect(valid).toEqual([{ symbol: 'A' }]);
+        expect(service.findSymbols).toHaveBeenCalledWith('C:/repo', 'query');
     });
 });

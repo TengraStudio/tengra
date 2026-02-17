@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import React, { useEffect, useId, useRef } from 'react';
 
 interface ModalProps {
@@ -183,9 +184,22 @@ const ModalBase: React.FC<ModalProps> = ({
                 className={`bg-popover border border-border w-full rounded-2xl shadow-2xl p-8 animate-spring-in mx-4 flex flex-col max-h-[90vh] ${sizeClassName} ${className}`}
             >
                 <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-6 shrink-0">
+                    {!preventClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="self-end mb-2 inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                            aria-label="Close modal"
+                        >
+                            <X className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                    )}
                     <h3 id={titleId} className="font-black leading-none tracking-tight text-2xl text-foreground uppercase">{title}</h3>
                 </div>
-                <div id={descriptionId} className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
+                <p id={descriptionId} className="sr-only">
+                    Modal content for {title}
+                </p>
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2">
                     {children}
                 </div>
                 {footer && (

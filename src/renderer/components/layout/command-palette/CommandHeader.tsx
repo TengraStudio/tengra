@@ -37,6 +37,7 @@ export const CommandHeader: React.FC<CommandHeaderProps> = ({
             <button
                 onClick={onClose}
                 className="p-1 rounded hover:bg-white/10 text-foreground/40 hover:text-foreground/80 transition-colors"
+                aria-label={t('common.close')}
             >
                 <X className="w-4 h-4" />
             </button>
