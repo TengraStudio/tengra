@@ -14,9 +14,10 @@
 5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
 6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
 7.  **CODEX MIRRORING**: All documentation must be kept in sync with the `.codex/` directory.
-8.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
-9.  **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
-10. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`) using `view_file` at the start of every session before coding.
+8.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](../.agent/rules/advanced-hardening.md).
+9.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+10. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
+11. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding.
 
 
 ---
@@ -320,11 +321,11 @@ container.register(
 
 ### 5.1 Mandatory Rules
 
-1. **Log files MUST be placed in `logs/` directory only**
-2. **Files WITHOUT extensions are FORBIDDEN**
-3. Valid log extensions: `.log`, `.txt`, `.json`
-4. Log file format: `{service}_{date}.log`
-5. **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
+1.  **Log files MUST be placed in `logs/` directory only**
+2.  **Files WITHOUT extensions are FORBIDDEN**
+3.  Valid log extensions: `.log`, `.txt`, `.json`
+4.  Log file format: `{service}_{date}.log`
+5.  **Debugging Logs**: When an AI/agent/LLM creates a log file for debugging (format: .txt, .json, or .log), it MUST be created in the `logs/` folder at the project root. This folder is gitignored.
 
 ### 5.2 Valid Log File Examples
 
@@ -919,6 +920,8 @@ Before submitting any change, verify:
 
 ### Code Quality
 - [ ] No TypeScript errors (`npm run build:check`)
+- [ ] Is my function under 150 lines?
+- [ ] Have I adhered to the [Advanced Hardening Rules](./advanced-hardening.md)?
 - [ ] No ESLint warnings (`npm run lint`)
 - [ ] All tests pass (`npm run test`) - 100% SUCCESS REQUIRED
 - [ ] No `any` types used

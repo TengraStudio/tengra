@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-18T12:07:48.890Z",
+  "generatedAt": "2026-02-18T12:16:11.952Z",
   "locales": [
     "en",
     "tr",
@@ -721,6 +721,113 @@
             "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
             "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
             "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-ipc-hardening-and-zod-contracts",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "docs",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "IPC",
+        "Rules",
+        "Documentation"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "tr": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "de": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "fr": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "es": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "ja": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "zh": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+          ]
+        },
+        "ar": {
+          "title": "Advanced IPC Hardening & Zod Contract Rules",
+          "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+          "items": [
+            "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+            "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+            "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+            "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+            "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
           ]
         }
       }

@@ -3572,5 +3572,16 @@
       "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
       "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
     ]
+  },
+  "2026-02-18-ipc-hardening-and-zod-contracts": {
+    "title": "Advanced IPC Hardening & Zod Contract Rules",
+    "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+    "items": [
+      "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
+      "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
+      "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
+      "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
+      "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+    ]
   }
 }

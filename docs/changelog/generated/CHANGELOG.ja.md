@@ -80,6 +80,18 @@
 - **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.
 - **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory.
 
+### Advanced IPC Hardening & Zod Contract Rules
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.
+
+- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.
+- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.
+- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.
+- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.
+- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs.
+
 ### LLM Security Hardening & Performance Optimization
 
 - **Type**: feature

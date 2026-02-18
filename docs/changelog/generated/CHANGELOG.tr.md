@@ -80,6 +80,18 @@
 - **Tip Güvenliği**: Açık `// SAFETY` gerekçelendirme yorumları olmadan `as any` ve `as unknown` kullanımı yasaklandı.
 - **Kılavuz Güncellemeleri**: `AGENTS.md` senkronize edildi ve tüm kural güncellemeleri `.codex/` dizinine aynalandı.
 
+### Advanced IPC Hardening & Zod Contract Rules
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.
+
+- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.
+- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.
+- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.
+- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.
+- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs.
+
 ### LLM Güvenliği Güçlendirme ve Performans Optimizasyonu
 
 - **Type**: feature

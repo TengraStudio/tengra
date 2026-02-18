@@ -17,12 +17,17 @@ As an AI Agent on Tandem, you ARE these rules. They are your core logic.
 5.  **DESTRUCTION**: No full file overwrites for minor changes. Use targeted edits.
 6.  **MESS**: No relative paths for internal modules. Use `@/` aliases.
 7.  **CLUTTER**: No debug files in root/src. Use `logs/` for all temporary output.
-8.  **BLINDNESS**: No commits without building (`npm run build`), linting (`npm run lint`), and PASSING ALL TESTS (`npm run test`). NO EXCEPTIONS. If tests fail, you MUST fix them before proceeding.
+8.  **LOGGING LOCATION**: All temporary files (logs, debug dumps, txt) MUST be created in the `logs/` directory. Root directory clutter is forbidden.
+8.  **BLINDNESS**: No commits without building- [ ] Is my function under 150 lines?
+- [ ] Have I validated against [Advanced Hardening Rules](./advanced-hardening.md)?
+- [ ] Did I run `npm run lint`?
+), and PASSING ALL TESTS (`npm run test`). NO EXCEPTIONS. If tests fail, you MUST fix them before proceeding.
 9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion.
 10. **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
 11. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
 12. **DOCS**: No changes without mirroring to `.codex/`. ทุก dökümantasyon `.codex/` altında toplanmalıdır.
-13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files at the start of every session.
+13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) at the start of every session.
+14. **HARDENING**: Strictly adhere to the [Advanced Hardening Rules](./advanced-hardening.md). Ignorance of architectural standards is a fatal error.
 
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
