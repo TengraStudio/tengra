@@ -1,7 +1,6 @@
 import { TerminalComponent } from '@renderer/features/projects/components/ide/Terminal';
 import { ProjectEnvironmentTab } from '@renderer/features/projects/components/ProjectEnvironmentTab';
 import { ProjectGitTab } from '@renderer/features/projects/components/ProjectGitTab';
-import { ProjectIssuesTab } from '@renderer/features/projects/components/ProjectIssuesTab';
 import { ProjectLogsTab } from '@renderer/features/projects/components/ProjectLogsTab';
 import { ProjectSettingsPanel } from '@renderer/features/projects/components/ProjectSettingsPanel';
 import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTodoTab';
@@ -82,7 +81,6 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
         handleSearch,
         searchResults,
         handleFileSelect,
-        analysis,
         availableAgents
     } = props;
 
@@ -133,16 +131,6 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
         git: (
             <div className="h-full overflow-hidden animate-in fade-in duration-500">
                 <ProjectGitTab project={project} t={t} activeTab={activeTab} />
-            </div>
-        ),
-        issues: (
-            <div className="h-full overflow-hidden animate-in fade-in duration-500">
-                <ProjectIssuesTab
-                    analysis={analysis}
-                    projectRoot={projectRoot}
-                    onOpenFile={(path, line) => { void handleFileSelect(path, line); }}
-                    language={language}
-                />
             </div>
         ),
         env: (

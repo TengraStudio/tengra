@@ -1313,6 +1313,13 @@ export const en = {
         copyStripAnsi: 'Copy (Strip ANSI)',
         pastePreview: 'Paste Preview',
         pasteTest: 'Test Paste',
+        projectIssuesTabTitle: 'Project Issues',
+        projectIssuesTitle: 'Project Warnings & Errors',
+        projectIssuesDescription: 'Aggregated warnings and errors detected across the current project.',
+        projectIssuesLoading: 'Refreshing project diagnostics...',
+        projectIssuesNoProject: 'Open a project to inspect diagnostics.',
+        projectIssuesNoIssues: 'No warnings or errors detected in the latest scan.',
+        projectIssuesLoadFailed: 'Failed to load project diagnostics.',
     },
     workspace: {
         editor: 'Editor',

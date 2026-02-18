@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-18T11:35:00.595Z",
+  "generatedAt": "2026-02-18T12:07:48.890Z",
   "locales": [
     "en",
     "tr",
@@ -619,6 +619,113 @@
       }
     },
     {
+      "id": "2026-02-18-hardened-ai-rules-v2",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "docs",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AI Rules",
+        "Workflow",
+        "Testing"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "tr": {
+          "title": "Sert Yapay Zeka Kuralları Zorlaması ve Cuma Yayım Yasağı",
+          "summary": "Zorunlu Cuma commit yasağı ve kural okuma protokolleri dahil olmak üzere daha da sert yapay zeka ajan kuralları uygulandı.",
+          "items": [
+            "- **Cuma Yasağı**: Cuma günleri commit ve büyük dağıtımlar için sıfır tolerans politikası uygulandı.",
+            "- **Kural Protokolleri**: Ajan uyumluluğunu sağlamak için her oturumun başında kural dosyalarında `view_file` çağrıları zorunlu kılındı.",
+            "- **Test Zorunluluğu**: Herhangi bir commit'ten önce zorunlu %100 test başarısı (`npm run test`) getirildi.",
+            "- **Tip Güvenliği**: Açık `// SAFETY` gerekçelendirme yorumları olmadan `as any` ve `as unknown` kullanımı yasaklandı.",
+            "- **Kılavuz Güncellemeleri**: `AGENTS.md` senkronize edildi ve tüm kural güncellemeleri `.codex/` dizinine aynalandı."
+          ]
+        },
+        "de": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "fr": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "es": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "ja": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "zh": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        },
+        "ar": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-llm-security-v2",
       "date": "2026-02-18",
       "channel": "stable",
@@ -723,6 +830,94 @@
             "- **DEBT-01**: Cleaned up obsolete feature flags.",
             "- **DEBT-06**: Reduced bundle size via lazy loading.",
             "- **Testing**: Added unit tests for security validation."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-project-terminal-diagnostics",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "tr": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "de": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "fr": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "es": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "ja": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "zh": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        },
+        "ar": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
           ]
         }
       }
@@ -1036,6 +1231,115 @@
             "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
             "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
             "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-test-stability-and-ipc-fixes",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Testing",
+        "IPC",
+        "Copilot",
+        "Prompt Templates",
+        "UI"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "tr": {
+          "title": "Kapsamlı Test Süreci Stabilizasyonu ve IPC Düzeltmeleri",
+          "summary": "Copilot, MCP ve UI bileşenleri dahil olmak üzere birden fazla modülde kritik entegrasyon ve renderer test hataları giderildi.",
+          "items": [
+            "- **IPC Stabilizasyonu**: Senkronize servis mock'ları düzeltilerek ve geçerli gönderici doğrulama bağlamı sağlanarak hatalı entegrasyon testleri onarıldı.",
+            "- **Copilot Düzeltmeleri**: Geçerli istemci kimlikleriyle doğru jeton yenileme mantığı uygulandı ve ilgili servis testleri düzeltildi.",
+            "- **Renderer Testleri**: Zorunlu IPC sözleşme müzakeresi mock'lanarak ve UI bileşenleri için beklenen ARIA rolleri güncellenerek başarısız renderer testleri geri yüklendi.",
+            "- **Prompt Şablonları**: LLM prompt şablonları için entegrasyon testleri, temel servislerin senkron yapısına uyacak şekilde düzeltildi.",
+            "- **Pazar Yeri**: MCP pazar yeri istemci testleri, yazılmış çağrılar sırasında düzgün IPC sözleşme sürümü sağlanarak düzeltildi."
+          ]
+        },
+        "de": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "fr": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "es": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "ja": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "zh": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        },
+        "ar": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
           ]
         }
       }

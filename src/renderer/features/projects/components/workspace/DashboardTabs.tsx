@@ -1,4 +1,4 @@
-import { AlertCircle, Braces, FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
+import { Braces, FileText, GitBranch, Layout, ListTodo, Play, Search, Settings } from 'lucide-react';
 import React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -23,7 +23,6 @@ export const DashboardTabs: React.FC<DashboardTabsProps> = ({
         { id: 'search', icon: Search, title: t('projectDashboard.search') },
         { id: 'code', icon: Braces, title: 'Code' },
         { id: 'git', icon: GitBranch, title: t('projectDashboard.git') },
-        { id: 'issues', icon: AlertCircle, title: t('projectDashboard.issues') },
         { id: 'env', icon: Settings, title: t('projectDashboard.environment') },
         { id: 'logs', icon: FileText, title: t('projectDashboard.logs') },
         { id: 'settings', icon: Settings, title: t('projectDashboard.settings') || 'Settings' },

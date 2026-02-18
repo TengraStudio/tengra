@@ -10,16 +10,20 @@ As an AI Agent on Tandem, you ARE these rules. They are your core logic.
 > **TERMINATION WARNING**: Violating these rules results in immediate session termination. No exceptions.
 
 1.  **LOGGING**: No `console.log`. Use `appLogger`.
-2.  **TYPES**: No `any` or `unknown`. Strictly forbidden. Use explicit interfaces.
+2.  **TYPES**: No `any` or `unknown`. Strictly forbidden. Use explicit interfaces. NEVER use `as any` or `as unknown` unless accompanied by a `// SAFETY: <reason>` comment justifying it.
+
 3.  **SILENCE**: No `@ts-ignore` or `eslint-disable`. Fix the root cause.
 4.  **LAZINESS**: No placeholders (`// ...`). No truncated logic.
 5.  **DESTRUCTION**: No full file overwrites for minor changes. Use targeted edits.
 6.  **MESS**: No relative paths for internal modules. Use `@/` aliases.
 7.  **CLUTTER**: No debug files in root/src. Use `logs/` for all temporary output.
-8.  **BLINDNESS**: No commits without building (`npm run build`) and linting (`npm run lint`).
+8.  **BLINDNESS**: No commits without building (`npm run build`), linting (`npm run lint`), and PASSING ALL TESTS (`npm run test`). NO EXCEPTIONS. If tests fail, you MUST fix them before proceeding.
 9.  **PROCRASTINATION**: No uncommitted changes. Commit after every TODO completion.
-10. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
-11. **DOCS**: No changes without mirroring to `.codex/`. ทุก dökümantasyon `.codex/` altında toplanmalıdır. (Add Turkish instruction for clarity as requested).
+10. **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+11. **TRANSLATION OVERLOAD**: No locale updates on weekdays.
+12. **DOCS**: No changes without mirroring to `.codex/`. ทุก dökümantasyon `.codex/` altında toplanmalıdır.
+13. **IGNORANCE**: No coding without first reading ALL active rules and commandments. You MUST call `view_file` on rule files at the start of every session.
+
 
 ## 🟢 THE DIVINE VIRTUES (ALWAYS DO)
 1.  **BOY SCOUT RULE**: Leave the code cleaner. If you edit a file, you MUST fix at least one existing lint warning or type issue in that file.
@@ -62,6 +66,7 @@ Use these for direct system and environment interaction:
 - **Minor Changes**: Every fix, improvement, or refactor gets its own commit.
 - **Pre-Commit Check**: ALWAYS run `npm run build && npm run lint && npm run type-check` before committing.
 - **No Errors**: If any check fails, fix errors first. Only commit when all checks pass.
+
 
 ## 🌍 CHANGELOG RULES
 - **English First**: ALWAYS update `changelog.entries.json` first.

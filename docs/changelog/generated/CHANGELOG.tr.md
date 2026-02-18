@@ -68,6 +68,18 @@
 - **Bakım**: Dokümantasyon merkezindeki bozuk mutlak yollar düzeltildi ve sistematik teknik borç takibi için `LINT_ISSUES.md` oluşturuldu.
 - **Yapı**: `PROJECT_STRUCTURE.md`, yeni `.codex` ve `.agent` organizasyonel modellerini yansıtacak şekilde güncellendi.
 
+### Sert Yapay Zeka Kuralları Zorlaması ve Cuma Yayım Yasağı
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Zorunlu Cuma commit yasağı ve kural okuma protokolleri dahil olmak üzere daha da sert yapay zeka ajan kuralları uygulandı.
+
+- **Cuma Yasağı**: Cuma günleri commit ve büyük dağıtımlar için sıfır tolerans politikası uygulandı.
+- **Kural Protokolleri**: Ajan uyumluluğunu sağlamak için her oturumun başında kural dosyalarında `view_file` çağrıları zorunlu kılındı.
+- **Test Zorunluluğu**: Herhangi bir commit'ten önce zorunlu %100 test başarısı (`npm run test`) getirildi.
+- **Tip Güvenliği**: Açık `// SAFETY` gerekçelendirme yorumları olmadan `as any` ve `as unknown` kullanımı yasaklandı.
+- **Kılavuz Güncellemeleri**: `AGENTS.md` senkronize edildi ve tüm kural güncellemeleri `.codex/` dizinine aynalandı.
+
 ### LLM Güvenliği Güçlendirme ve Performans Optimizasyonu
 
 - **Type**: feature
@@ -79,6 +91,16 @@
 - **DEBT-01**: Yapılandırma katmanını basitleştirmek için kullanılmayan özellik bayrakları (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) temizlendi.
 - **DEBT-06**: `CommandPalette`, `QuickActionBar` ve `ExtensionInstallPrompt` gibi ağır UI bileşenleri için tembel yükleme uygulanarak başlangıç paket boyutu düşürüldü.
 - **Test**: Güvenlik doğrulama mantığı için kapsamlı birim testleri eklendi.
+
+### Project Terminal Diagnostics Tab
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.
+
+- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation
+- Removed Issues tab wiring from workspace/project dashboard navigation surfaces
+- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)
 
 ### SEC-007/009 + LLM-05 + I18N-05 Takip Güncellemesi
 
@@ -113,6 +135,18 @@
 - **Doğrulama**: Renderer tarafındaki terminal IPC yanıtları için Zod şema doğrulaması zorunlu kılındı.
 - **Kod Temizliği**: Ham `window.electron.terminal` çağrıları ve kullanılmayan importlar kaldırıldı.
 - **Hata Düzeltme**: Bağlantı seçicide `getDockerContainers` dönüş tipi işleme hatası düzeltildi.
+
+### Kapsamlı Test Süreci Stabilizasyonu ve IPC Düzeltmeleri
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Copilot, MCP ve UI bileşenleri dahil olmak üzere birden fazla modülde kritik entegrasyon ve renderer test hataları giderildi.
+
+- **IPC Stabilizasyonu**: Senkronize servis mock'ları düzeltilerek ve geçerli gönderici doğrulama bağlamı sağlanarak hatalı entegrasyon testleri onarıldı.
+- **Copilot Düzeltmeleri**: Geçerli istemci kimlikleriyle doğru jeton yenileme mantığı uygulandı ve ilgili servis testleri düzeltildi.
+- **Renderer Testleri**: Zorunlu IPC sözleşme müzakeresi mock'lanarak ve UI bileşenleri için beklenen ARIA rolleri güncellenerek başarısız renderer testleri geri yüklendi.
+- **Prompt Şablonları**: LLM prompt şablonları için entegrasyon testleri, temel servislerin senkron yapısına uyacak şekilde düzeltildi.
+- **Pazar Yeri**: MCP pazar yeri istemci testleri, yazılmış çağrılar sırasında düzgün IPC sözleşme sürümü sağlanarak düzeltildi.
 
 ## [2026-02-17]
 

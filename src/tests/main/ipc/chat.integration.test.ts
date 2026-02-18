@@ -1,6 +1,6 @@
 import { registerChatIpc } from '@main/ipc/chat';
-import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 
 // Mock Electron ipcMain
 const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
@@ -16,22 +16,39 @@ vi.mock('electron', () => ({
 
 // Mock IPC Wrapper to avoid transitive dependency issues with error.util
 vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (...args: any[]) => {
+    createIpcHandler: (_name: string, handler: (...args: any[]) => any) => async (event: unknown, ...args: any[]) => {
         try {
-            const result = await handler(...args);
+            const result = await handler(event, ...args);
             return { success: true, data: result };
         } catch (error: any) {
             return { success: false, error: error.message ?? 'Unknown Error' };
         }
+    },
+    createValidatedIpcHandler: (
+        _name: string,
+        handler: (...args: any[]) => any,
+        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
+    ) => async (event: unknown, ...args: unknown[]) => {
+        try {
+            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
+            const result = await handler(event, ...(parsedArgs as unknown[]));
+            return { success: true, data: result };
+        } catch (error: any) {
+            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
+                return options.defaultValue;
+            }
+            return { success: false, error: error.message ?? 'Validation failed' };
+        }
     }
 }));
+
 
 // Mock Services
 const mockSettingsService = { getSettings: vi.fn().mockReturnValue({}) };
 const mockCopilotService = { chat: vi.fn(), streamChat: vi.fn() };
-const mockLLMService = { 
+const mockLLMService = {
     chat: vi.fn(),  // Used by handleOpenAIChat line 208
-    chatOpenAI: vi.fn(), 
+    chatOpenAI: vi.fn(),
     chatOpenAIStream: vi.fn(),
     chatOpenCode: vi.fn()
 };
@@ -41,10 +58,13 @@ const mockCodeIntelligenceService = { queryIndexedSymbols: vi.fn().mockResolvedV
 const mockContextRetrievalService = { retrieveContext: vi.fn().mockResolvedValue({ contextString: '', sources: [] }) };
 
 describe('Chat IPC Integration', () => {
+    const mockEvent = { sender: { id: 1 } } as any;
+
     beforeEach(() => {
         ipcMainHandlers.clear();
         vi.clearAllMocks();
     });
+
 
     const initIPC = () => {
         registerChatIpc({
@@ -76,7 +96,14 @@ describe('Chat IPC Integration', () => {
             role: 'assistant'
         });
 
-        const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o', [], 'openai', 'proj-1');
+        const result = await handler?.(mockEvent, {
+            messages: [{ role: 'user', content: 'test' }],
+            model: 'gpt-4o',
+            tools: [],
+            provider: 'openai',
+            projectId: 'proj-1'
+        });
+
 
         expect(mockLLMService.chat).toHaveBeenCalled();
         expect(result).toMatchObject({
@@ -96,7 +123,14 @@ describe('Chat IPC Integration', () => {
             content: 'Copilot Response'
         });
 
-        const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o', [], 'copilot', 'proj-1');
+        const result = await handler?.(mockEvent, {
+            messages: [{ role: 'user', content: 'test' }],
+            model: 'gpt-4o',
+            tools: [],
+            provider: 'copilot',
+            projectId: 'proj-1'
+        });
+
 
         expect(mockCopilotService.chat).toHaveBeenCalled();
         expect(result).toMatchObject({
@@ -114,7 +148,14 @@ describe('Chat IPC Integration', () => {
 
         mockLLMService.chat.mockRejectedValue(new Error('Simulated Fail'));
 
-        const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o', [], 'openai', 'proj-1');
+        const result = await handler?.(mockEvent, {
+            messages: [{ role: 'user', content: 'test' }],
+            model: 'gpt-4o',
+            tools: [],
+            provider: 'openai',
+            projectId: 'proj-1'
+        });
+
 
         // The IPC wrapper usually catches errors and returns { success: false, error: ... }
         // BUT checking chat.ts: ipcMain.handle('chat:openai', createIpcHandler(...))
@@ -131,7 +172,8 @@ describe('Chat IPC Integration', () => {
 
         mockCopilotService.chat.mockResolvedValue({ content: 'Legacy' });
 
-        const result = await handler?.({} as IpcMainInvokeEvent, [{ role: 'user', content: 'test' }], 'gpt-4o');
+        const result = await handler?.(mockEvent, [{ role: 'user', content: 'test' }], 'gpt-4o');
+
 
         expect(mockCopilotService.chat).toHaveBeenCalled();
         expect(result).toMatchObject({

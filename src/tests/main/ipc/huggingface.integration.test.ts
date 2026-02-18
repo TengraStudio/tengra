@@ -206,7 +206,13 @@ describe('HuggingFace IPC Handlers', () => {
             const url = 'https://huggingface.co/meta-llama/Llama-2-7b/resolve/main/model.gguf';
             const outputPath = '/path/to/model.gguf';
 
-            await handler!(mockEvent, url, outputPath, 1024000, 'abc123'.padEnd(64, '0'));
+            await handler!(mockEvent, {
+                url,
+                outputPath,
+                expectedSize: 1024000,
+                expectedSha256: 'abc123'.padEnd(64, '0')
+            });
+
 
             expect(mockHFService.downloadFile).toHaveBeenCalled();
             const args = vi.mocked(mockHFService.downloadFile).mock.calls[0];
@@ -221,16 +227,18 @@ describe('HuggingFace IPC Handlers', () => {
             const handler = ipcMainHandlers.get('hf:download-file');
 
             await expect(
-                handler!(mockEvent, 'http://huggingface.co/model.gguf', '/path/out', 0, '')
+                handler!(mockEvent, { url: 'http://huggingface.co/model.gguf', outputPath: '/path/out', expectedSize: 0, expectedSha256: '' })
             ).rejects.toThrow('Invalid URL or output path');
+
         });
 
         it('should reject non-huggingface URLs', async () => {
             const handler = ipcMainHandlers.get('hf:download-file');
 
             await expect(
-                handler!(mockEvent, 'https://evil.com/model.gguf', '/path/out', 0, '')
+                handler!(mockEvent, { url: 'https://evil.com/model.gguf', outputPath: '/path/out', expectedSize: 0, expectedSha256: '' })
             ).rejects.toThrow('Invalid URL or output path');
+
         });
 
         it('should reject invalid output paths', async () => {
@@ -238,8 +246,9 @@ describe('HuggingFace IPC Handlers', () => {
             const url = 'https://huggingface.co/model.gguf';
 
             await expect(
-                handler!(mockEvent, url, '', 0, '')
+                handler!(mockEvent, { url, outputPath: '', expectedSize: 0, expectedSha256: '' })
             ).rejects.toThrow('Invalid URL or output path');
+
         });
 
         it('should validate SHA256 format', async () => {
@@ -248,7 +257,8 @@ describe('HuggingFace IPC Handlers', () => {
             const outputPath = '/path/to/model.gguf';
 
             // Invalid SHA256 (not 64 hex chars)
-            await handler!(mockEvent, url, outputPath, 1024, 'invalid-sha');
+            await handler!(mockEvent, { url, outputPath, expectedSize: 1024, expectedSha256: 'invalid-sha' });
+
 
             const args = vi.mocked(mockHFService.downloadFile).mock.calls[0];
             expect(args[2]?.expectedSha256).toBe(''); // Should be empty string due to validation
@@ -266,7 +276,8 @@ describe('HuggingFace IPC Handlers', () => {
                 return { success: true };
             });
 
-            await handler!(mockEvent, url, outputPath, 1024, '');
+            await handler!(mockEvent, { url, outputPath, expectedSize: 1024, expectedSha256: '' });
+
 
             expect(mockEvent.sender.send).toHaveBeenCalledWith('hf:download-progress', {
                 filename: outputPath,

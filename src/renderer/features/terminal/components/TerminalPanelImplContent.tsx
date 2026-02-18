@@ -73,6 +73,7 @@ import {
 } from '../utils/terminal-search';
 
 import { TerminalOverlays } from './TerminalOverlays';
+import { TerminalProjectIssuesTab } from './TerminalProjectIssuesTab';
 import { TerminalSplitView } from './TerminalSplitView';
 import { TerminalToolbar } from './TerminalToolbar';
 
@@ -92,6 +93,7 @@ const TERMINAL_SYNC_INPUT_STORAGE_KEY = 'terminal.sync-input.v1';
 const TERMINAL_SPLIT_PRESETS_STORAGE_KEY = 'terminal.split-presets.v1';
 const TERMINAL_SPLIT_LAYOUT_STORAGE_KEY = 'terminal.split-layout.v1';
 const TERMINAL_SPLIT_ANALYTICS_STORAGE_KEY = 'terminal.split-analytics.v1';
+const TERMINAL_PROJECT_ISSUES_TAB_ID = '__project-issues-tab__';
 const TERMINAL_MANAGER_MODULE_VERSION = serializeTerminalModuleVersion();
 const ANSI_ESCAPE_SEQUENCE_REGEX = new RegExp(
     String.raw`\x1B(?:\[[0-?]*[ -/]*[@-~]|[@-Z\\-_]|\][^\x07]*(?:\x07|\x1B\\))`,
@@ -105,11 +107,13 @@ export interface TerminalPanelProps {
     onMaximizeChange?: (isMaximized: boolean) => void;
     isFloating?: boolean;
     onFloatingChange?: (isFloating: boolean) => void;
+    projectId?: string;
     projectPath?: string;
     tabs: TerminalTab[];
     activeTabId: string | null;
     setTabs: (tabs: TerminalTab[] | ((prev: TerminalTab[]) => TerminalTab[])) => void;
     setActiveTabId: (id: string | null) => void;
+    onOpenFile?: (path: string, line?: number) => void;
 }
 
 type RemoteConnectionTarget =
@@ -300,11 +304,13 @@ function TerminalPanelContentImpl({
     onMaximizeChange: onMaximizeChangeProp,
     isFloating = false,
     onFloatingChange,
+    projectId,
     projectPath,
     tabs,
     activeTabId,
     setTabs,
     setActiveTabId,
+    onOpenFile,
 }: TerminalPanelProps) {
     const { t } = useTranslation();
     const { theme } = useTheme();
@@ -432,7 +438,28 @@ function TerminalPanelContentImpl({
     const terminalInstancesRef = useRef<Record<string, XTerm | null>>({});
     const appearanceImportInputRef = useRef<HTMLInputElement | null>(null);
     const shortcutImportInputRef = useRef<HTMLInputElement | null>(null);
-    const hasActiveSession = Boolean(activeTabId);
+    const projectIssuesTab = useMemo<TerminalTab | null>(() => {
+        if (!projectPath) {
+            return null;
+        }
+        return {
+            id: TERMINAL_PROJECT_ISSUES_TAB_ID,
+            name: t('terminal.projectIssuesTabTitle'),
+            type: 'panel',
+            status: 'idle',
+            history: [],
+            command: '',
+            metadata: {
+                panelType: 'project-issues',
+                closable: false,
+            },
+        };
+    }, [projectPath, t]);
+    const displayTabs = useMemo(
+        () => (projectIssuesTab ? [projectIssuesTab, ...tabs] : tabs),
+        [projectIssuesTab, tabs]
+    );
+    const hasActiveSession = Boolean(activeTabId && tabs.some(tab => tab.id === activeTabId));
     const {
         recordings,
         activeRecordingTabId,
@@ -459,8 +486,9 @@ function TerminalPanelContentImpl({
     }, [tabs]);
 
     useTrackedEffect(() => {
-        activeTabIdRef.current = activeTabId;
-    }, [activeTabId]);
+        activeTabIdRef.current =
+            activeTabId && tabs.some(tab => tab.id === activeTabId) ? activeTabId : null;
+    }, [activeTabId, tabs]);
 
     const tabById = useMemo(() => {
         const lookup = new Map<string, TerminalTab>();
@@ -855,16 +883,16 @@ function TerminalPanelContentImpl({
             setActiveTabId(nextActiveTabId);
             activeTabIdRef.current = nextActiveTabId;
 
-            if (remainingTabs.length === 0) {
+            if (remainingTabs.length === 0 && !projectIssuesTab) {
                 setIsNewTerminalMenuOpen(false);
                 onToggle();
             }
         },
-        [clearSemanticIssues, completeRecording, onToggle, setTabs, setActiveTabId]
+        [clearSemanticIssues, completeRecording, onToggle, projectIssuesTab, setTabs, setActiveTabId]
     );
 
     useTrackedEffect(() => {
-        if (tabs.length === 0) {
+        if (displayTabs.length === 0) {
             if (activeTabId !== null) {
                 setActiveTabId(null);
             }
@@ -873,10 +901,18 @@ function TerminalPanelContentImpl({
             return;
         }
 
-        if (!activeTabId || !tabs.some(tab => tab.id === activeTabId)) {
+        if (!activeTabId || !displayTabs.some(tab => tab.id === activeTabId)) {
+            if (tabs.length > 0) {
+                setActiveTabId(tabs[tabs.length - 1]?.id ?? null);
+                return;
+            }
+            if (projectIssuesTab) {
+                setActiveTabId(projectIssuesTab.id);
+                return;
+            }
             setActiveTabId(tabs[tabs.length - 1]?.id ?? null);
         }
-    }, [activeTabId, setActiveTabId, tabs]);
+    }, [activeTabId, displayTabs, projectIssuesTab, setActiveTabId, tabs]);
 
     useTrackedEffect(() => {
         if (!splitView) {
@@ -1276,7 +1312,7 @@ function TerminalPanelContentImpl({
             setActiveTabId(nextActiveTabId);
             activeTabIdRef.current = nextActiveTabId;
 
-            if (remainingTabs.length === 0) {
+            if (remainingTabs.length === 0 && !projectIssuesTab) {
                 setIsNewTerminalMenuOpen(false);
                 onToggle();
             }
@@ -1285,7 +1321,7 @@ function TerminalPanelContentImpl({
         } finally {
             setTerminalContextMenu(null);
         }
-    }, [completeRecording, onToggle, setActiveTabId, setTabs]);
+    }, [completeRecording, onToggle, projectIssuesTab, setActiveTabId, setTabs]);
 
     const closeSplitView = useTrackedCallback(() => {
         setSplitView(null);
@@ -2005,6 +2041,18 @@ function TerminalPanelContentImpl({
 
     const handleTabSelect = useTrackedCallback(
         (tabId: string) => {
+            if (tabId === TERMINAL_PROJECT_ISSUES_TAB_ID) {
+                setActiveTabId(tabId);
+                setSplitView(null);
+                setIsGalleryView(false);
+                setIsSearchOpen(false);
+                setIsSemanticPanelOpen(false);
+                setIsCommandHistoryOpen(false);
+                setIsTaskRunnerOpen(false);
+                setIsMultiplexerOpen(false);
+                setIsRecordingPanelOpen(false);
+                return;
+            }
             setActiveTabId(tabId);
             if (!splitView) {
                 return;
@@ -2026,7 +2074,20 @@ function TerminalPanelContentImpl({
                     : { ...prev, secondaryId: tabId };
             });
         },
-        [setActiveTabId, splitFocusedPane, splitView]
+        [
+            setActiveTabId,
+            setIsCommandHistoryOpen,
+            setIsGalleryView,
+            setIsMultiplexerOpen,
+            setIsRecordingPanelOpen,
+            setIsSearchOpen,
+            setIsSemanticPanelOpen,
+            setIsTaskRunnerOpen,
+            setSplitFocusedPane,
+            setSplitView,
+            splitFocusedPane,
+            splitView,
+        ]
     );
 
     const handlePaneActivate = useTrackedCallback(
@@ -2146,7 +2207,7 @@ function TerminalPanelContentImpl({
             data-terminal-module-version={TERMINAL_MANAGER_MODULE_VERSION}
         >
             <TerminalToolbar
-                tabs={tabs}
+                tabs={displayTabs}
                 activeTabId={activeTabId}
                 draggingTabId={draggingTabId}
                 dragOverTabId={dragOverTabId}
@@ -2243,7 +2304,7 @@ function TerminalPanelContentImpl({
             <TerminalSplitView
                 onContextMenu={openTerminalContextMenu}
                 isGalleryView={isGalleryView}
-                tabs={tabs}
+                tabs={displayTabs}
                 activeTabId={activeTabId}
                 splitView={splitView}
                 getTabLayoutClass={getTabLayoutClass}
@@ -2258,10 +2319,19 @@ function TerminalPanelContentImpl({
                 emptyTitle={t('terminal.noActiveSessions')}
                 emptyActionLabel={t('terminal.startNewSession')}
                 createDefaultTerminal={createDefaultTerminal}
+                renderTabContent={tab =>
+                    tab.id === TERMINAL_PROJECT_ISSUES_TAB_ID ? (
+                        <TerminalProjectIssuesTab
+                            projectId={projectId}
+                            projectPath={projectPath}
+                            onOpenFile={onOpenFile}
+                        />
+                    ) : null
+                }
             />
             <TerminalOverlays
                 terminalContextMenu={terminalContextMenu}
-                canUseGallery={tabs.length > 1}
+                canUseGallery={displayTabs.length > 1}
                 isGalleryView={isGalleryView}
                 contextMenuProps={{
                     hasActiveSession,

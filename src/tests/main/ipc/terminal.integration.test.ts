@@ -1,7 +1,7 @@
 import { registerTerminalIpc } from '@main/ipc/terminal';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
-import { IpcMainInvokeEvent } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 
 const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
 
@@ -140,10 +140,15 @@ describe('Terminal IPC Integration', () => {
     };
 
     const mockWindow = {
+        isDestroyed: vi.fn().mockReturnValue(false),
         webContents: {
+            id: 1,
             send: vi.fn()
         }
     };
+
+    const mockEvent = { sender: { id: 1 } } as any;
+
 
     beforeEach(() => {
         ipcMainHandlers.clear();
@@ -207,7 +212,7 @@ describe('Terminal IPC Integration', () => {
 
     it('creates session with generated id when options are missing', async () => {
         const handler = ipcMainHandlers.get('terminal:create')!;
-        const result = await handler({} as IpcMainInvokeEvent, undefined);
+        const result = await handler(mockEvent, undefined);
 
         expect(typeof result).toBe('string');
         expect(result).toMatch(/^term-/);
@@ -221,7 +226,7 @@ describe('Terminal IPC Integration', () => {
     it('validates terminal profile payload', async () => {
         const handler = ipcMainHandlers.get('terminal:validateProfile')!;
         const payload = { id: 'p1', name: 'PowerShell', shell: 'powershell.exe' };
-        const result = await handler({} as IpcMainInvokeEvent, payload);
+        const result = await handler(mockEvent, payload);
 
         expect(result).toEqual({ valid: true, errors: [] });
         expect(mockProfileService.validateProfile).toHaveBeenCalledWith(payload);
@@ -230,8 +235,8 @@ describe('Terminal IPC Integration', () => {
     it('exports and imports terminal profile share code', async () => {
         const exportHandler = ipcMainHandlers.get('terminal:exportProfileShareCode')!;
         const importHandler = ipcMainHandlers.get('terminal:importProfileShareCode')!;
-        const code = await exportHandler({} as IpcMainInvokeEvent, 'p1');
-        const result = await importHandler({} as IpcMainInvokeEvent, code, { overwrite: true });
+        const code = await exportHandler(mockEvent, 'p1');
+        const result = await importHandler(mockEvent, code, { overwrite: true });
 
         expect(code).toBe('termprofile:abc');
         expect(result).toEqual({ success: true, imported: true, profileId: 'p1' });
@@ -239,7 +244,7 @@ describe('Terminal IPC Integration', () => {
 
     it('loads available backends', async () => {
         const handler = ipcMainHandlers.get('terminal:getBackends')!;
-        const result = await handler({} as IpcMainInvokeEvent);
+        const result = await handler(mockEvent);
 
         expect(Array.isArray(result)).toBe(true);
         expect(mockTerminalService.getAvailableBackends).toHaveBeenCalledTimes(1);
@@ -247,13 +252,13 @@ describe('Terminal IPC Integration', () => {
 
     it('rejects invalid dimensions on create', async () => {
         const handler = ipcMainHandlers.get('terminal:create')!;
-        const result = await handler({} as IpcMainInvokeEvent, { cols: 0, rows: 24 });
+        const result = await handler(mockEvent, { cols: 0, rows: 24 });
         expect(result).toBeNull();
     });
 
     it('returns false for invalid session id on write', async () => {
         const handler = ipcMainHandlers.get('terminal:write')!;
-        const result = await handler({} as IpcMainInvokeEvent, '', 'echo hello');
+        const result = await handler(mockEvent, '', 'echo hello');
 
         expect(result).toBe(false);
         expect(mockTerminalService.write).not.toHaveBeenCalled();
@@ -261,7 +266,7 @@ describe('Terminal IPC Integration', () => {
 
     it('applies rate limit and writes for valid payload', async () => {
         const handler = ipcMainHandlers.get('terminal:write')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'term-1', 'echo hello');
+        const result = await handler(mockEvent, 'term-1', 'echo hello');
 
         expect(result).toBe(true);
         expect(withRateLimit).toHaveBeenCalledWith('terminal', expect.any(Function));
@@ -271,7 +276,7 @@ describe('Terminal IPC Integration', () => {
     it('returns false when write payload exceeds max size', async () => {
         const handler = ipcMainHandlers.get('terminal:write')!;
         const tooLarge = 'x'.repeat(1024 * 1024 + 1);
-        const result = await handler({} as IpcMainInvokeEvent, 'term-1', tooLarge);
+        const result = await handler(mockEvent, 'term-1', tooLarge);
 
         expect(result).toBe(false);
         expect(mockTerminalService.write).not.toHaveBeenCalled();
@@ -279,7 +284,7 @@ describe('Terminal IPC Integration', () => {
 
     it('returns empty string for invalid session id on readBuffer', async () => {
         const handler = ipcMainHandlers.get('terminal:readBuffer')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'bad id with spaces');
+        const result = await handler(mockEvent, 'bad id with spaces');
 
         expect(result).toBe('');
         expect(mockTerminalService.getSessionBuffer).not.toHaveBeenCalled();
@@ -288,7 +293,7 @@ describe('Terminal IPC Integration', () => {
     it('loads command history with query and limit', async () => {
         mockTerminalService.getCommandHistory.mockReturnValue([{ command: 'npm test', timestamp: Date.now(), sessionId: 'term-1' }]);
         const handler = ipcMainHandlers.get('terminal:getCommandHistory')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'npm', 20);
+        const result = await handler(mockEvent, 'npm', 20);
 
         expect(Array.isArray(result)).toBe(true);
         expect(mockTerminalService.getCommandHistory).toHaveBeenCalledWith('npm', 20);
@@ -300,7 +305,7 @@ describe('Terminal IPC Integration', () => {
         ]);
         const handler = ipcMainHandlers.get('terminal:searchScrollback')!;
         const result = await handler(
-            {} as IpcMainInvokeEvent,
+            mockEvent,
             'term-1',
             'npm test',
             { regex: false, caseSensitive: false, limit: 20 }
@@ -319,14 +324,14 @@ describe('Terminal IPC Integration', () => {
         const importHandler = ipcMainHandlers.get('terminal:importSession')!;
         const codeHandler = ipcMainHandlers.get('terminal:createSessionShareCode')!;
 
-        const exported = await exportHandler({} as IpcMainInvokeEvent, 'term-1', {
+        const exported = await exportHandler(mockEvent, 'term-1', {
             includeScrollback: true,
         });
-        const imported = await importHandler({} as IpcMainInvokeEvent, '{"version":1}', {
+        const imported = await importHandler(mockEvent, '{"version":1}', {
             overwrite: true,
             sessionId: 'term-2',
         });
-        const shareCode = await codeHandler({} as IpcMainInvokeEvent, 'term-1');
+        const shareCode = await codeHandler(mockEvent, 'term-1');
 
         expect(exported).toBe('{"version":1}');
         expect(imported).toEqual({ success: true, sessionId: 'term-2' });
@@ -335,7 +340,7 @@ describe('Terminal IPC Integration', () => {
 
     it('returns search suggestions', async () => {
         const handler = ipcMainHandlers.get('terminal:getSearchSuggestions')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'npm', 5);
+        const result = await handler(mockEvent, 'npm', 5);
 
         expect(result).toEqual(['npm test']);
         expect(mockTerminalService.getSearchSuggestions).toHaveBeenCalledWith('npm', 5);
@@ -343,7 +348,7 @@ describe('Terminal IPC Integration', () => {
 
     it('sets terminal session title', async () => {
         const handler = ipcMainHandlers.get('terminal:setSessionTitle')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'term-1', 'Backend Logs');
+        const result = await handler(mockEvent, 'term-1', 'Backend Logs');
 
         expect(result).toBe(true);
         expect(mockTerminalService.setSessionTitle).toHaveBeenCalledWith('term-1', 'Backend Logs');
@@ -351,7 +356,7 @@ describe('Terminal IPC Integration', () => {
 
     it('adds scrollback marker', async () => {
         const handler = ipcMainHandlers.get('terminal:addScrollbackMarker')!;
-        const result = await handler({} as IpcMainInvokeEvent, 'term-1', 'checkpoint', 12);
+        const result = await handler(mockEvent, 'term-1', 'checkpoint', 12);
 
         expect(result).toEqual(expect.objectContaining({
             id: 'marker-1',
@@ -365,7 +370,7 @@ describe('Terminal IPC Integration', () => {
     it('returns smart command suggestions', async () => {
         mockSmartService.getSuggestions.mockResolvedValue(['npm test']);
         const handler = ipcMainHandlers.get('terminal:getSuggestions')!;
-        const result = await handler({} as IpcMainInvokeEvent, { command: 'npm t', shell: 'bash', cwd: '/repo' });
+        const result = await handler(mockEvent, { command: 'npm t', shell: 'bash', cwd: '/repo' });
 
         expect(result).toEqual(['npm test']);
         expect(mockSmartService.getSuggestions).toHaveBeenCalledWith({ command: 'npm t', shell: 'bash', cwd: '/repo' });
@@ -373,7 +378,7 @@ describe('Terminal IPC Integration', () => {
 
     it('clears command history', async () => {
         const handler = ipcMainHandlers.get('terminal:clearCommandHistory')!;
-        const result = await handler({} as IpcMainInvokeEvent);
+        const result = await handler(mockEvent);
 
         expect(result).toBe(true);
         expect(mockTerminalService.clearCommandHistory).toHaveBeenCalledTimes(1);

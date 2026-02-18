@@ -14,6 +14,10 @@
 5.  **NASA RULES**: Max 150 lines per function. Fixed loop bounds mandatory.
 6.  **BOY SCOUT RULE**: Mandatory. Every edit MUST fix at least one existing lint/type issue.
 7.  **CODEX MIRRORING**: All documentation must be kept in sync with the `.codex/` directory.
+8.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
+9.  **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
+10. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`) using `view_file` at the start of every session before coding.
+
 
 ---
 
@@ -916,9 +920,12 @@ Before submitting any change, verify:
 ### Code Quality
 - [ ] No TypeScript errors (`npm run build:check`)
 - [ ] No ESLint warnings (`npm run lint`)
-- [ ] All tests pass (`npm run test`)
+- [ ] All tests pass (`npm run test`) - 100% SUCCESS REQUIRED
 - [ ] No `any` types used
 - [ ] No `console.log` statements
+- [ ] Not a Friday (No commits on Fridays)
+- [ ] Documentation mirrored to `.codex/`
+
 
 ### Architecture
 - [ ] Service in correct domain folder
@@ -995,8 +1002,12 @@ After:
    npm run build        # Must pass
    npm run lint         # Must pass
    npm run type-check   # Must pass
+   npm run test         # Must pass (100% coverage/success required)
    ```
 4. **Commit Only If Clean**: If any check fails, fix errors first. Only commit when all checks pass.
+5. **Friday Forbidden**: Do NOT commit or push on Fridays. If you finish work on a Friday, wait until the user manually commits or wait until Saturday to continue.
+6. **Rule Refresh**: You MUST call `view_file` on rules files at the start of every session. IGNORANCE IS NO EXCUSE.
+
 
 **Commit Workflow:**
 ```

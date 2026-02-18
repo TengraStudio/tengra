@@ -3,12 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('mcpMarketplaceClient', () => {
     beforeEach(() => {
-        (window as unknown as { electron: unknown }).electron = {
+        (window as any).electron = {
             ipcRenderer: {
-                invoke: vi.fn().mockResolvedValue({ success: true, servers: [] })
+                invoke: vi.fn().mockImplementation((channel) => {
+                    if (channel === 'ipc:contract:get') {
+                        return Promise.resolve({
+                            version: 1,
+                            minRendererVersion: 1,
+                            minMainVersion: 1
+                        });
+                    }
+                    return Promise.resolve({ success: true, servers: [] });
+                })
             }
         };
     });
+
 
     it('validates and invokes list channel', async () => {
         const result = await mcpMarketplaceClient.list();

@@ -26,8 +26,8 @@ describe('ChatInput', () => {
             setSelectedIndex: vi.fn(),
             isLoading: false,
             attachments: [],
-            sendMessage: vi.fn(async () => {}),
-            processFile: vi.fn(async () => {}),
+            sendMessage: vi.fn(async () => { }),
+            processFile: vi.fn(async () => { }),
             removeAttachment: vi.fn(),
             t: (key: string) => key,
             isDragging: false,
@@ -37,7 +37,7 @@ describe('ChatInput', () => {
             stopListening: vi.fn(),
             startListening: vi.fn(),
             isEnhancing: false,
-            handleEnhancePrompt: vi.fn(async () => {}),
+            handleEnhancePrompt: vi.fn(async () => { }),
             stopGeneration: vi.fn(),
             selectedProvider: 'openai',
             selectedModel: 'gpt',
@@ -59,8 +59,8 @@ describe('ChatInput', () => {
         };
 
         class RO {
-            observe() {}
-            disconnect() {}
+            observe() { }
+            disconnect() { }
         }
         vi.stubGlobal('ResizeObserver', RO);
     });
@@ -69,8 +69,9 @@ describe('ChatInput', () => {
         render(<ChatInput />);
 
         expect(screen.getByRole('group', { name: 'Chat input' })).toBeInTheDocument();
-        expect(screen.getByRole('textbox', { name: 'input.placeholder.default' })).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: 'input.placeholder.default' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'common.send' })).toBeDisabled();
+
     });
 
     it('sends message when content exists and send button is clicked', () => {

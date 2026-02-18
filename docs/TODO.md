@@ -1283,6 +1283,40 @@ Selected small/contained tasks that are realistic to ship quickly:
 - [x] **AUD-ARCH-023**: Replace lazy service proxy hotspots with explicit dependency injection boundaries (`src/main/core/lazy-services.ts`)
 - [x] **AUD-ARCH-024**: Define and enforce cache invalidation strategy for LLM response cache (`src/main/services/llm/response-cache.service.ts`)
 
+### 🧩 Project System Opportunity Backlog (Generated 2026-02-18)
+
+- [ ] **AUD-PROJ-001**: Add unsaved-change guard before closing workspace editors (`src/renderer/features/projects/components/workspace/WorkspaceEditor.tsx`, `src/renderer/features/projects/components/workspace/EditorTabs.tsx`)
+- [ ] **AUD-PROJ-002**: Add unified operation summary toasts for workspace actions (`src/renderer/features/projects/components/workspace/WorkspaceNotifications.tsx`)
+- [ ] **AUD-PROJ-003**: Persist workspace tree expand/collapse state per project (`src/renderer/features/projects/components/WorkspaceExplorer.tsx`, `src/renderer/features/projects/utils/workspaceUtils.ts`)
+- [ ] **AUD-PROJ-004**: Add keyboard shortcut help overlay for project workspace (`src/renderer/features/projects/components/ProjectWorkspace.tsx`)
+- [ ] **AUD-PROJ-005**: Add quick-switch palette for project tabs/files (`src/renderer/features/projects/components/ProjectWorkspace.tsx`, `src/renderer/features/projects/components/workspace/CommandStrip.tsx`)
+- [ ] **AUD-PROJ-006**: Add undo/redo support for project TODO editing flows (`src/renderer/features/projects/hooks/useProjectTodoLogic.ts`, `src/renderer/features/projects/components/todo/TodoItemCard.tsx`)
+- [ ] **AUD-PROJ-007**: Add optimistic edit rollback for project metadata updates (`src/renderer/features/projects/components/modals/EditProjectModal.tsx`, `src/renderer/features/projects/components/ProjectModals.tsx`)
+- [x] **AUD-PROJ-008**: Add stale-data auto-refresh policy for project dashboard panels (`src/renderer/features/projects/hooks/useProjectDashboardLogic.ts`)
+- [ ] **AUD-PROJ-009**: Add fine-grained loading/error states for Git panel sections (`src/renderer/features/projects/components/ProjectGitTab.tsx`, `src/renderer/features/projects/hooks/useGitData.ts`)
+- [ ] **AUD-PROJ-010**: Add cancellation and timeout controls for long Git operations (`src/main/services/project/git.service.ts`, `src/renderer/features/projects/hooks/useGitAdvancedOperations.ts`)
+- [ ] **AUD-PROJ-011**: Debounce/coalesce workspace watcher event bursts to reduce UI thrash (`src/renderer/features/projects/hooks/useWorkspaceExplorerLogic.ts`, `src/renderer/features/projects/components/WorkspaceExplorer.tsx`)
+- [ ] **AUD-PROJ-012**: Add incremental project scan invalidation by changed path set (`src/main/services/project/project.service.ts`)
+- [ ] **AUD-PROJ-013**: Virtualize large project search result sets (`src/renderer/features/projects/components/SearchResults.tsx`, `src/renderer/features/projects/components/ProjectSearchTab.tsx`)
+- [ ] **AUD-PROJ-014**: Persist and restore project list filters/sort across sessions (`src/renderer/features/projects/hooks/useProjectListStateMachine.ts`, `src/renderer/features/projects/ProjectsPage.tsx`)
+- [ ] **AUD-PROJ-015**: Add backend health/status chips for SSH/Docker terminals (`src/renderer/features/projects/components/ide/Terminal.tsx`, `src/main/services/project/terminal.service.ts`)
+- [ ] **AUD-PROJ-016**: Add retry/backoff and diagnostics for remote mount failures (`src/renderer/features/projects/hooks/useWorkspaceManager.ts`, `src/main/services/project/ssh.service.ts`)
+- [ ] **AUD-PROJ-017**: Add repository-lock recovery guidance for failed Git actions (`src/main/services/project/git.service.ts`, `src/renderer/features/projects/components/ProjectGitTab.tsx`)
+- [ ] **AUD-PROJ-018**: Implement archive restore flow in project list UX (`src/renderer/features/projects/ProjectsPage.tsx`, `src/renderer/features/projects/components/ProjectModals.tsx`)
+- [ ] **AUD-PROJ-019**: Extract shared modal validation helpers to reduce duplication (`src/renderer/features/projects/components/modals`)
+- [ ] **AUD-PROJ-020**: Add typed schema normalization for agent event conversion pipeline (`src/renderer/features/projects/hooks/useAgentEvents.ts`, `src/renderer/features/projects/hooks/converters`)
+- [ ] **AUD-PROJ-021**: Add audit log hooks for destructive project actions (`src/main/ipc/project.ts`, `src/main/services/project/project.service.ts`)
+- [ ] **AUD-PROJ-022**: Add renderer tests for project dashboard tab state and transitions (`src/tests/renderer`)
+- [ ] **AUD-PROJ-023**: Add integration tests for project wizard SSH connect/browser flow (`src/tests/renderer/features/projects`)
+- [ ] **AUD-PROJ-024**: Add mount/unmount + tab persistence smoke tests for workspace (`src/tests/renderer/features/projects`)
+- [ ] **AUD-PROJ-025**: Add render performance telemetry for project cards and virtualized grid thresholds (`src/renderer/features/projects/components/ProjectCard.tsx`, `src/renderer/features/projects/components/VirtualizedProjectGrid.tsx`)
+
+### 🧪 Test Fixes (Applied 2026-02-18)
+- [x] **TEST-FIX-01**: Fix IPC handler integration tests (Prompt templates, Gap smoke, Coverage)
+- [x] **TEST-FIX-02**: Fix Copilot token refresh service tests and integration
+- [x] **TEST-FIX-03**: Fix renderer tests for MCP marketplace and IPC client negotiation
+- [x] **TEST-FIX-04**: Fix ChatInput accessibility role test failure
+
 ### ⚡ Performance Audit TODOs
 (All performance audit items completed)
 

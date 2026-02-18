@@ -35,16 +35,24 @@ describe('IPC Handler Coverage', () => {
             on: vi.fn(),
         };
 
-        registerProcessIpc(() => null, processService as never);
+        const mockWin = {
+            webContents: { id: 1 }
+        } as any;
+
+        const mockEvent = {
+            sender: { id: 1 }
+        } as any;
+
+        registerProcessIpc(() => mockWin, processService as any);
 
         const spawn = handlers.get('process:spawn');
         expect(spawn).toBeDefined();
 
-        const blocked = await spawn?.({} as unknown, 'npm; rm -rf /', [], 'C:/repo');
+        const blocked = await spawn?.(mockEvent, 'npm; rm -rf /', [], 'C:/repo');
         expect(blocked).toBeNull();
         expect(processService.spawn).not.toHaveBeenCalled();
 
-        const ok = await spawn?.({} as unknown, 'npm', ['run', 'test'], 'C:/repo');
+        const ok = await spawn?.(mockEvent, 'npm', ['run', 'test'], 'C:/repo');
         expect(ok).toBe('task-1');
         expect(processService.spawn).toHaveBeenCalledWith('npm', ['run', 'test'], 'C:/repo');
     });
@@ -67,22 +75,29 @@ describe('IPC Handler Coverage', () => {
             getDispatchMetrics: vi.fn(() => ({ totalDispatches: 0 })),
         };
 
+
+        const mockEvent = {
+            sender: { id: 1 }
+        } as any;
+
         registerMcpMarketplaceHandlers(
-            marketplaceService as never,
-            settingsService as never,
-            pluginService as never
+            marketplaceService as any,
+            settingsService as any,
+            pluginService as any
         );
+
+
 
         const search = handlers.get('mcp:marketplace:search');
         const list = handlers.get('mcp:marketplace:list');
         expect(search).toBeDefined();
         expect(list).toBeDefined();
 
-        const invalidSearch = await search?.({} as unknown, '');
+        const invalidSearch = await search?.(mockEvent, '');
         expect(invalidSearch).toMatchObject({ success: false });
         expect(marketplaceService.searchServers).not.toHaveBeenCalled();
 
-        const listResult = await list?.({} as unknown);
+        const listResult = await list?.(mockEvent);
         expect(listResult).toMatchObject({ success: true, servers: expect.any(Array) });
     });
 
@@ -103,17 +118,24 @@ describe('IPC Handler Coverage', () => {
             analyzeCodeQuality: vi.fn(async () => null),
         };
 
-        registerCodeIntelligenceIpc(service as never);
+
+        const mockEvent = {
+            sender: { id: 1 }
+        } as any;
+
+        registerCodeIntelligenceIpc(service as any);
+
 
         const findSymbols = handlers.get('code:findSymbols');
         expect(findSymbols).toBeDefined();
 
-        const invalid = await findSymbols?.({} as unknown, '', 'query');
+        const invalid = await findSymbols?.(mockEvent, '', 'query');
         expect(invalid).toEqual([]);
         expect(service.findSymbols).not.toHaveBeenCalled();
 
-        const valid = await findSymbols?.({} as unknown, 'C:/repo', 'query');
+        const valid = await findSymbols?.(mockEvent, 'C:/repo', 'query');
         expect(valid).toEqual([{ symbol: 'A' }]);
         expect(service.findSymbols).toHaveBeenCalledWith('C:/repo', 'query');
     });
+
 });

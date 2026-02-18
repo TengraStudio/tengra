@@ -1954,6 +1954,13 @@ export const tr = {
         aiConfidence: 'Güven',
         aiExplanation: 'Açıklama',
         aiAlternatives: 'Alternatif Komutlar',
+        projectIssuesTabTitle: 'Proje Sorunları',
+        projectIssuesTitle: 'Proje Uyarıları ve Hataları',
+        projectIssuesDescription: 'Mevcut projede tespit edilen uyarı ve hataların toplu görünümü.',
+        projectIssuesLoading: 'Proje tanıları yenileniyor...',
+        projectIssuesNoProject: 'Tanıları görmek için bir proje açın.',
+        projectIssuesNoIssues: 'Son taramada uyarı veya hata tespit edilmedi.',
+        projectIssuesLoadFailed: 'Proje tanıları yüklenemedi.',
     },
     logging: {
         title: 'Günlük Panosu',

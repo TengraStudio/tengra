@@ -68,6 +68,18 @@
 - **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
 - **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
 
+### Strict AI Rule Enforcement & Friday Deployment Ban
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.
+
+- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.
+- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.
+- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.
+- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.
+- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory.
+
 ### LLM Security Hardening & Performance Optimization
 
 - **Type**: feature
@@ -79,6 +91,16 @@
 - **DEBT-01**: Cleaned up obsolete feature flags (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) to streamline the configuration layer.
 - **DEBT-06**: Reduced initial bundle size by implementing lazy loading for heavy UI components like `CommandPalette`, `QuickActionBar`, and `ExtensionInstallPrompt`.
 - **Testing**: Added comprehensive unit tests for the security validation logic.
+
+### Project Terminal Diagnostics Tab
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.
+
+- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation
+- Removed Issues tab wiring from workspace/project dashboard navigation surfaces
+- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)
 
 ### SEC-007/009 + LLM-05 + I18N-05 Follow-up
 
@@ -116,6 +138,18 @@
 - **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.
 - **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.
 - **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector.
+
+### Comprehensive Test Suite Stabilization and IPC Fixes
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.
+
+- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.
+- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.
+- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.
+- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.
+- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations.
 
 ## [2026-02-17]
 

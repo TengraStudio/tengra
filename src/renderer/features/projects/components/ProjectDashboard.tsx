@@ -3,7 +3,6 @@ import { ProjectCodeTab } from '@renderer/features/projects/components/ProjectCo
 import { ProjectEnvironmentTab } from '@renderer/features/projects/components/ProjectEnvironmentTab';
 import { ProjectFilesTab } from '@renderer/features/projects/components/ProjectFilesTab';
 import { ProjectGitTab } from '@renderer/features/projects/components/ProjectGitTab';
-import { ProjectIssuesTab } from '@renderer/features/projects/components/ProjectIssuesTab';
 import { ProjectLogsTab } from '@renderer/features/projects/components/ProjectLogsTab';
 import { ProjectOverviewTab } from '@renderer/features/projects/components/ProjectOverviewTab';
 import { ProjectSearchTab } from '@renderer/features/projects/components/ProjectSearchTab';
@@ -147,16 +146,6 @@ export const ProjectDashboard = ({
             </div>
         ),
         git: <ProjectGitTab project={project} t={t} activeTab={state.activeTab} />,
-        issues: (
-            <ProjectIssuesTab
-                analysis={analysis}
-                projectRoot={state.projectRoot}
-                onOpenFile={(path, line) => {
-                    void actions.handleFileSelect(path, line);
-                }}
-                language={language}
-            />
-        ),
         env: <ProjectEnvironmentTab projectPath={state.projectRoot} language={language} />,
         environment: <ProjectEnvironmentTab projectPath={state.projectRoot} language={language} />,
         logs: <ProjectLogsTab projectPath={state.projectRoot} language={language} />,

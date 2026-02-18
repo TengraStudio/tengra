@@ -7,7 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('electron', () => ({
     ipcMain: { handle: vi.fn(), removeHandler: vi.fn() },
     dialog: { showOpenDialog: vi.fn(), showSaveDialog: vi.fn() },
+    BrowserWindow: { fromId: vi.fn() },
 }));
+
 
 type IpcHandler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
 
@@ -88,18 +90,27 @@ describe('Missing IPC TODO coverage (behavior)', () => {
             searchFilesStream: vi.fn(),
         };
 
+        const mockWin = {
+            webContents: { id: 1 }
+        } as any;
+
+        const mockEvent = {
+            sender: { id: 1 }
+        } as any;
+
         vi.mocked(dialog.showOpenDialog).mockResolvedValue({
             canceled: false,
             filePaths: ['C:/workspace/project']
-        } as never);
+        } as any);
 
-        registerFilesIpc(() => ({}) as never, fileSystemService as never, roots);
+        registerFilesIpc(() => mockWin, fileSystemService as any, roots);
 
         const handler = handlers.get('files:selectDirectory');
-        const result = await handler?.({} as unknown);
+        const result = await handler?.(mockEvent);
 
         expect(result).toMatchObject({ success: true, path: 'C:/workspace/project' });
         expect(fileSystemService.updateAllowedRoots).toHaveBeenCalledTimes(1);
         expect(Array.from(roots)).toContain('C:/workspace/project');
     });
+
 });

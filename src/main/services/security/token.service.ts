@@ -573,7 +573,9 @@ export class TokenService extends BaseService {
         if (this.isGoogleProvider(account)) { return '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com'; }
         if (this.isCodexProvider(account)) { return 'app_EMoamEEZ73f0CkXaXp7hrann'; }
         if (this.isClaudeProvider(account)) { return '9d1c250a-e61b-44d9-88ed-5944d1962f5e'; }
+        if (this.isCopilotProvider(account)) { return '01ab8ac9400c4e429b23'; }
         return undefined;
+
     }
 
     private getClientSecret(account: LinkedAccount): string | undefined {

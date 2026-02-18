@@ -7,6 +7,8 @@ import { Language, useTranslation } from '@/i18n';
 import { AgentDefinition, ProjectAnalysis, ProjectDashboardTab, ProjectStats } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
+const PROJECT_ANALYSIS_REFRESH_INTERVAL_MS = 90_000;
+
 interface UseProjectDashboardLogicProps {
     project: Project;
     activeTab?: ProjectDashboardTab;
@@ -91,6 +93,18 @@ export function useProjectDashboardLogic({ project, activeTab: externalTab, onTa
     };
 
     useEffect(() => { void analyzeProject(); }, [project.path, project.id, analyzeProject]);
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            if (document.hidden) {
+                return;
+            }
+            void analyzeProject();
+        }, PROJECT_ANALYSIS_REFRESH_INTERVAL_MS);
+        return () => {
+            window.clearInterval(timer);
+        };
+    }, [analyzeProject]);
 
     const handleFileSelect = async (path: string, line?: number) => {
         if (onOpenFile) { return onOpenFile(path, line); }

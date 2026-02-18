@@ -1,8 +1,72 @@
 {
   "version": 1,
   "generatedFrom": "docs/changelog/data/changelog.entries.json",
-  "generatedAt": "2026-02-12T19:15:30.129Z",
+  "generatedAt": "2026-02-18T12:05:34.665Z",
   "entries": [
+    {
+      "id": "2026-02-18-test-stability-and-ipc-fixes",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "fix",
+      "category": "testing",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Testing",
+        "IPC",
+        "Copilot",
+        "Prompt Templates",
+        "UI"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
+          "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+          "items": [
+            "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
+            "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
+            "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
+            "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
+            "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-hardened-ai-rules-v2",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "docs",
+      "category": "documentation",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AI Rules",
+        "Workflow",
+        "Testing"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
+          "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+          "items": [
+            "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
+            "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
+            "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
+            "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
+            "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-18-docs-and-rules-hardening",
       "date": "2026-02-18",
@@ -5753,6 +5817,31 @@
             "- Local Ollama support.",
             "- Project management view.",
             "- Theme support (Dark/Light)."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-project-terminal-diagnostics",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Project Terminal Diagnostics Tab",
+          "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+          "items": [
+            "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+            "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+            "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
           ]
         }
       }

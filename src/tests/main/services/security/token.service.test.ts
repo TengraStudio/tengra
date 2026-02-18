@@ -61,10 +61,10 @@ beforeEach(() => {
         sendRequest: vi.fn().mockResolvedValue({ success: true, token: { id: 'test', accessToken: 'new-token' } })
     } as unknown as ProcessManagerService;
 
-    mockEventBus = { 
-        emit: vi.fn(), 
-        on: vi.fn().mockReturnValue(() => {}), // Return unsubscribe function
-        off: vi.fn() 
+    mockEventBus = {
+        emit: vi.fn(),
+        on: vi.fn().mockReturnValue(() => { }), // Return unsubscribe function
+        off: vi.fn()
     } as unknown as EventBusService;
 
     tokenService = new TokenService(
@@ -110,13 +110,23 @@ describe('TokenService - Refresh Logic', () => {
         expect(mockProcessManager.sendRequest).not.toHaveBeenCalled();
     });
 
-    it('should refresh Copilot token from settings', async () => {
-        vi.mocked(mockSettingsService.getSettings).mockReturnValue({ copilot: { token: 'gh-token' } } as any);
+    it('should refresh Copilot token when expired', async () => {
+        const copilotToken = { ...mockToken, provider: 'copilot', id: 'copilot_user' };
+        vi.mocked(mockAuthService.getActiveAccountFull).mockResolvedValue(copilotToken as any);
+
         await tokenService.initialize();
         const jobCallback = vi.mocked(mockJobScheduler.registerRecurringJob).mock.calls.find(call => call[0] === 'token-refresh-copilot')?.[1];
+
         if (jobCallback) {
             await jobCallback();
-            expect(mockCopilotService.setGithubToken).toHaveBeenCalledWith('gh-token');
+            expect(mockProcessManager.sendRequest).toHaveBeenCalledWith(
+                'token-service',
+                expect.objectContaining({
+                    type: 'Refresh',
+                    token: expect.objectContaining({ provider: 'copilot' })
+                })
+            );
         }
     });
+
 });

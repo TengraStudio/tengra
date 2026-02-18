@@ -1,4 +1,26 @@
 {
+  "2026-02-18-test-stability-and-ipc-fixes": {
+    "title": "Kapsamlı Test Süreci Stabilizasyonu ve IPC Düzeltmeleri",
+    "summary": "Copilot, MCP ve UI bileşenleri dahil olmak üzere birden fazla modülde kritik entegrasyon ve renderer test hataları giderildi.",
+    "items": [
+      "- **IPC Stabilizasyonu**: Senkronize servis mock'ları düzeltilerek ve geçerli gönderici doğrulama bağlamı sağlanarak hatalı entegrasyon testleri onarıldı.",
+      "- **Copilot Düzeltmeleri**: Geçerli istemci kimlikleriyle doğru jeton yenileme mantığı uygulandı ve ilgili servis testleri düzeltildi.",
+      "- **Renderer Testleri**: Zorunlu IPC sözleşme müzakeresi mock'lanarak ve UI bileşenleri için beklenen ARIA rolleri güncellenerek başarısız renderer testleri geri yüklendi.",
+      "- **Prompt Şablonları**: LLM prompt şablonları için entegrasyon testleri, temel servislerin senkron yapısına uyacak şekilde düzeltildi.",
+      "- **Pazar Yeri**: MCP pazar yeri istemci testleri, yazılmış çağrılar sırasında düzgün IPC sözleşme sürümü sağlanarak düzeltildi."
+    ]
+  },
+  "2026-02-18-hardened-ai-rules-v2": {
+    "title": "Sert Yapay Zeka Kuralları Zorlaması ve Cuma Yayım Yasağı",
+    "summary": "Zorunlu Cuma commit yasağı ve kural okuma protokolleri dahil olmak üzere daha da sert yapay zeka ajan kuralları uygulandı.",
+    "items": [
+      "- **Cuma Yasağı**: Cuma günleri commit ve büyük dağıtımlar için sıfır tolerans politikası uygulandı.",
+      "- **Kural Protokolleri**: Ajan uyumluluğunu sağlamak için her oturumun başında kural dosyalarında `view_file` çağrıları zorunlu kılındı.",
+      "- **Test Zorunluluğu**: Herhangi bir commit'ten önce zorunlu %100 test başarısı (`npm run test`) getirildi.",
+      "- **Tip Güvenliği**: Açık `// SAFETY` gerekçelendirme yorumları olmadan `as any` ve `as unknown` kullanımı yasaklandı.",
+      "- **Kılavuz Güncellemeleri**: `AGENTS.md` senkronize edildi ve tüm kural güncellemeleri `.codex/` dizinine aynalandı."
+    ]
+  },
   "2026-02-18-docs-and-rules-hardening": {
     "title": "Dokümantasyon Sertleştirme ve Codex Uygulaması",
     "summary": "Kilitli bir .codex dokümantasyon dizini uygulandı ve uyumluluğu artırmak için yapay zeka ajan kuralları fesih uyarılarıyla sertleştirildi.",
@@ -3527,6 +3549,15 @@
       "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
       "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
       "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
+    ]
+  },
+  "2026-02-18-project-terminal-diagnostics": {
+    "title": "Project Terminal Diagnostics Tab",
+    "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+    "items": [
+      "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
+      "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
+      "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
     ]
   }
 }

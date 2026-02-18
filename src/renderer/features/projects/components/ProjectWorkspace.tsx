@@ -284,6 +284,26 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         };
     }, [isFloatingTerminal, setShowTerminal, setTerminalHeight, showTerminal]);
 
+    const openWorkspaceFile = React.useCallback(
+        (path: string, line?: number) => {
+            const name = path.split(/[\\/]/).pop() ?? 'file';
+            const mountId = wm.mounts[0]?.id;
+            if (!mountId) {
+                return;
+            }
+            const entry = {
+                mountId,
+                path,
+                name,
+                isDirectory: false,
+                initialLine: line,
+            };
+            void wm.openFile(entry);
+            ps.setSelectedEntries([entry]);
+        },
+        [ps, wm]
+    );
+
     return (
         <div className="h-full flex flex-col bg-background relative overflow-hidden">
             {/* Top Toolbar */}
@@ -334,21 +354,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     setDashboardTab={wm.setDashboardTab}
                     onDeleteProject={onDeleteProject}
                     selectedEntry={ps.selectedEntries[0]}
-                    onOpenFile={(path: string, line?: number) => {
-                        const name = path.split(/[\\/]/).pop() ?? 'file';
-                        const mountId = wm.mounts[0]?.id;
-                        if (mountId) {
-                            const entry = {
-                                mountId,
-                                path,
-                                name,
-                                isDirectory: false,
-                                initialLine: line,
-                            };
-                            void wm.openFile(entry);
-                            ps.setSelectedEntries([entry]);
-                        }
-                    }}
+                    onOpenFile={openWorkspaceFile}
                 />
 
                 <WorkspaceSidebar
@@ -488,11 +494,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                                     onMaximizeChange={setIsMaximizedTerminal}
                                     isFloating={isFloatingTerminal}
                                     onFloatingChange={setIsFloatingTerminal}
+                                    projectId={project.id}
                                     projectPath={project.path}
                                     tabs={tabs}
                                     activeTabId={activeTabId}
                                     setTabs={setTabs}
                                     setActiveTabId={setActiveTabId}
+                                    onOpenFile={openWorkspaceFile}
                                 />
                             </div>
                         </Resizable>
