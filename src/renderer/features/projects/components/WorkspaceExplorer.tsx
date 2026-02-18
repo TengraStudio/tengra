@@ -1,4 +1,10 @@
-﻿import { useWorkspaceExplorerLogic } from '@renderer/features/projects/hooks/useWorkspaceExplorerLogic';
+import { useWorkspaceExplorerLogic } from '@renderer/features/projects/hooks/useWorkspaceExplorerLogic';
+import {
+    getWorkspaceExplorerStorageKey,
+    getWorkspaceTreeStorageKey,
+    loadExpandedTreeState,
+    saveExpandedTreeState,
+} from '@renderer/features/projects/utils/workspaceUtils';
 import { Folder, Plus } from 'lucide-react';
 import React from 'react';
 
@@ -11,6 +17,7 @@ import { WorkspaceContextMenu } from './workspace/WorkspaceContextMenu';
 import { WorkspaceMountItem } from './workspace/WorkspaceMountItem';
 
 interface WorkspaceExplorerProps {
+    projectId: string;
     mounts: WorkspaceMount[];
     mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>;
     refreshSignal: number;
@@ -27,6 +34,7 @@ interface WorkspaceExplorerProps {
 }
 
 export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
+    projectId,
     mounts,
     mountStatus,
     refreshSignal,
@@ -42,6 +50,14 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
     onMove,
 }) => {
     const { t } = useTranslation(language);
+    const storageKey = React.useMemo(
+        () => getWorkspaceExplorerStorageKey(projectId, mounts),
+        [mounts, projectId]
+    );
+    const treeStorageKey = React.useMemo(() => getWorkspaceTreeStorageKey(projectId), [projectId]);
+    const [expandedTreeNodes, setExpandedTreeNodes] = React.useState<Record<string, boolean>>(() =>
+        loadExpandedTreeState(treeStorageKey)
+    );
     const {
         expandedMounts,
         rootNodes,
@@ -52,7 +68,17 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
         handleMountContextMenu,
         handleContextAction,
         closeContextMenu,
-    } = useWorkspaceExplorerLogic(mounts, refreshSignal, onEnsureMount, onContextAction);
+    } = useWorkspaceExplorerLogic(mounts, refreshSignal, onEnsureMount, onContextAction, storageKey);
+    React.useEffect(() => {
+        setExpandedTreeNodes(loadExpandedTreeState(treeStorageKey));
+    }, [treeStorageKey]);
+    React.useEffect(() => {
+        saveExpandedTreeState(treeStorageKey, expandedTreeNodes);
+    }, [expandedTreeNodes, treeStorageKey]);
+
+    const handleExpandedTreeNodeChange = React.useCallback((nodeKey: string, expanded: boolean) => {
+        setExpandedTreeNodes(prev => ({ ...prev, [nodeKey]: expanded }));
+    }, []);
 
     const hasMounts = mounts.length > 0;
 
@@ -156,6 +182,8 @@ export const WorkspaceExplorer: React.FC<WorkspaceExplorerProps> = ({
                         onEnsureMount={onEnsureMount}
                         onTreeItemContextMenu={handleContextMenu}
                         onMove={onMove}
+                        expandedTreeNodes={expandedTreeNodes}
+                        onExpandedTreeNodeChange={handleExpandedTreeNodeChange}
                         t={t}
                     />
                 ))}

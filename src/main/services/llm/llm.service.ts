@@ -336,8 +336,7 @@ export class LLMService {
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
 
         // LLM-001-3: Context overflow mitigation
-        const contextService = getContextWindowService();
-        const { truncated } = contextService.truncateMessages(sanitized as Message[], model, { reservedTokens: 1000 });
+        const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
@@ -345,7 +344,7 @@ export class LLMService {
         await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
         const execute = async () => {
-            const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: false, n, systemMode, reasoningEffort });
+            const body = this.buildOpenAIBody(preparedMessages, { model, tools, provider, stream: false, n, systemMode, reasoningEffort });
             const requestInit = this.createOpenAIRequest(body, config.apiKey);
             if (signal) { requestInit.signal = signal; }
 
@@ -401,15 +400,14 @@ export class LLMService {
         const provider = this.resolveProvider(model, requestedProvider);
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
 
-        const contextService = getContextWindowService();
-        const { truncated } = contextService.truncateMessages(sanitized as Message[], model, { reservedTokens: 1000 });
+        const preparedMessages = this.prepareMessagesForContextWindow(sanitized as Message[], model);
 
         const config = this.getOpenAISettings(baseUrlOverride, apiKeyOverride, provider);
         const endpoint = `${config.baseUrl}/chat/completions`;
 
         await this.deps.rateLimitService.waitForToken(provider ?? 'openai');
 
-        const body = this.buildOpenAIBody(truncated, { model, tools, provider, stream: true, systemMode, reasoningEffort });
+        const body = this.buildOpenAIBody(preparedMessages, { model, tools, provider, stream: true, systemMode, reasoningEffort });
         const acceptHeader = provider === 'nvidia' ? 'application/json' : 'text/event-stream';
         const requestInit = this.createOpenAIRequest(body, config.apiKey, { 'Accept': acceptHeader });
         if (signal) { requestInit.signal = signal; }
@@ -911,6 +909,26 @@ export class LLMService {
         return { baseUrl, apiKey };
     }
 
+
+    private prepareMessagesForContextWindow(messages: Message[], model: string): Message[] {
+        const contextService = getContextWindowService();
+        const compaction = contextService.compactMessages(messages, model, {
+            reservedTokens: 1000,
+            keepSystemMessages: true,
+            keepRecentMessages: 12,
+            strategy: 'recent-first'
+        });
+
+        if (compaction.removedCount > 0) {
+            const mode = compaction.compacted ? 'compacted' : 'truncated';
+            appLogger.info(
+                'LLMService',
+                `Context ${mode} for ${model}. removed=${compaction.removedCount} passes=${compaction.passes} utilization=${compaction.info.utilizationPercent.toFixed(1)}%`
+            );
+        }
+
+        return compaction.messages;
+    }
 
     private buildOpenAIBody(messages: Array<Message | ChatMessage>, options: {
         model: string;

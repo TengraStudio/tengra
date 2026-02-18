@@ -1,13 +1,30 @@
 import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { promisify } from 'util';
 
 import { getErrorMessage } from '@shared/utils/error.util';
 
-const execFileAsync = promisify(execFile);
+interface GitExecutionOptions {
+    timeoutMs?: number;
+    operationId?: string;
+}
+
+interface GitExecutionResult {
+    success: boolean;
+    stdout?: string;
+    stderr?: string;
+    error?: string;
+    timedOut?: boolean;
+    cancelled?: boolean;
+    lockRecoveryGuidance?: string;
+}
 
 export class GitService {
+    private readonly DEFAULT_TIMEOUT_MS = 60000;
+    private readonly MIN_TIMEOUT_MS = 1000;
+    private readonly MAX_TIMEOUT_MS = 600000;
+    private readonly activeOperations = new Map<string, AbortController>();
+
     private tokenizeCommand(command: string): string[] {
         const tokens: string[] = [];
         let current = '';
@@ -54,18 +71,111 @@ export class GitService {
         return tokens;
     }
 
-    private async executeArgs(args: string[], cwd: string) {
+    private normalizeTimeoutMs(timeoutMs?: number): number {
+        if (!Number.isFinite(timeoutMs)) {
+            return this.DEFAULT_TIMEOUT_MS;
+        }
+        const normalizedTimeout = Math.trunc(timeoutMs ?? this.DEFAULT_TIMEOUT_MS);
+        return Math.max(this.MIN_TIMEOUT_MS, Math.min(normalizedTimeout, this.MAX_TIMEOUT_MS));
+    }
+
+    private getRepositoryLockGuidance(cwd: string): string {
+        const lockPath = join(cwd, '.git', 'index.lock');
+        return [
+            'Repository appears locked by another Git process.',
+            '1) Ensure no Git command is still running for this repo.',
+            `2) If no process is running, remove lock file: ${lockPath}`,
+            '3) Retry the operation.',
+        ].join(' ');
+    }
+
+    private decorateGitError(error: string, cwd: string): Pick<GitExecutionResult, 'error' | 'lockRecoveryGuidance'> {
+        const looksLikeLockError =
+            error.includes('index.lock') ||
+            error.includes('Unable to create') ||
+            error.includes('could not lock');
+
+        if (!looksLikeLockError) {
+            return { error };
+        }
+
+        const lockRecoveryGuidance = this.getRepositoryLockGuidance(cwd);
+        return {
+            error: `${error} ${lockRecoveryGuidance}`,
+            lockRecoveryGuidance,
+        };
+    }
+
+    cancelOperation(operationId: string): boolean {
+        const normalizedOperationId = operationId.trim();
+        if (!normalizedOperationId) {
+            return false;
+        }
+        const controller = this.activeOperations.get(normalizedOperationId);
+        if (!controller) {
+            return false;
+        }
+        controller.abort();
+        this.activeOperations.delete(normalizedOperationId);
+        return true;
+    }
+
+    private async executeArgs(args: string[], cwd: string, options?: GitExecutionOptions): Promise<GitExecutionResult> {
+        const timeoutMs = this.normalizeTimeoutMs(options?.timeoutMs);
+        const operationId = options?.operationId?.trim();
+        const controller = new AbortController();
+
+        if (operationId) {
+            if (this.activeOperations.has(operationId)) {
+                return { success: false, error: `Operation already running: ${operationId}` };
+            }
+            this.activeOperations.set(operationId, controller);
+        }
+
         try {
-            const { stdout, stderr } = await execFileAsync('git', args, { cwd, shell: false, maxBuffer: 10 * 1024 * 1024 });
+            const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+                execFile(
+                    'git',
+                    args,
+                    {
+                        cwd,
+                        shell: false,
+                        maxBuffer: 10 * 1024 * 1024,
+                        timeout: timeoutMs,
+                        signal: controller.signal,
+                    },
+                    (error, out, err) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+                        resolve({ stdout: out, stderr: err });
+                    }
+                );
+            });
             return { success: true, stdout, stderr };
         } catch (error) {
-            return { success: false, error: getErrorMessage(error) };
+            const baseError = getErrorMessage(error);
+            if (controller.signal.aborted) {
+                return {
+                    success: false,
+                    error: `Git operation cancelled${operationId ? `: ${operationId}` : ''}`,
+                    cancelled: true,
+                };
+            }
+            const isTimedOut = baseError.includes('timed out');
+            const decorated = this.decorateGitError(baseError, cwd);
+            return { success: false, ...decorated, timedOut: isTimedOut };
+        } finally {
+            if (operationId) {
+                this.activeOperations.delete(operationId);
+            }
         }
     }
 
-    private async execute(command: string, cwd: string) {
+    private async execute(command: string, cwd: string, options?: GitExecutionOptions) {
         const args = this.tokenizeCommand(command);
-        return await this.executeArgs(args, cwd);
+        return await this.executeArgs(args, cwd, options);
     }
 
     async getStatus(cwd: string): Promise<{ path: string, status: string }[]> {
@@ -127,8 +237,8 @@ export class GitService {
         return await this.executeArgs(['checkout', branch], cwd);
     }
 
-    async executeRaw(cwd: string, command: string) {
-        return await this.execute(command, cwd);
+    async executeRaw(cwd: string, command: string, options?: GitExecutionOptions) {
+        return await this.execute(command, cwd, options);
     }
 
     async getFileDiff(cwd: string, filePath: string, staged: boolean = false): Promise<{ original: string; modified: string; success: boolean; error?: string }> {

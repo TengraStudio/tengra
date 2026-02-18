@@ -948,15 +948,18 @@ ${context}`;
             await fs.mkdir(tandemDir, { recursive: true });
 
             const targetPath = join(tandemDir, 'logo.png');
-            await fs.copyFile(tempLogoPath, targetPath);
+            const sourcePath = this.resolveLocalImagePath(tempLogoPath);
+            if (sourcePath !== targetPath) {
+                await fs.copyFile(sourcePath, targetPath);
+            }
 
             // Also try to save as icon.png in public if it exists (common for web apps)
             const publicDir = join(projectPath, 'public');
             try {
                 const publicStats = await fs.stat(publicDir);
                 if (publicStats.isDirectory()) {
-                    await fs.copyFile(tempLogoPath, join(publicDir, 'icon.png'));
-                    await fs.copyFile(tempLogoPath, join(publicDir, 'favicon.png'));
+                    await fs.copyFile(targetPath, join(publicDir, 'icon.png'));
+                    await fs.copyFile(targetPath, join(publicDir, 'favicon.png'));
                 }
             } catch {
                 // Ignore if public dir doesn't exist

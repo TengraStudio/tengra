@@ -1,5 +1,5 @@
 import { appLogger } from '@main/logging/logger';
-import { DatabaseService } from '@main/services/data/database.service';
+import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 
 export interface RetrievalResult {
@@ -7,7 +7,31 @@ export interface RetrievalResult {
     sources: string[];
 }
 
+export interface RetrievalAnalytics {
+    totalRequests: number;
+    failedRequests: number;
+    averageSources: number;
+    averageContextLength: number;
+    topQueries: Array<{ query: string; count: number }>;
+    lastRetrievedAt?: number;
+}
+
+interface ScoredContextItem {
+    source: string;
+    sourceId: string;
+    content: string;
+    score: number;
+}
+
 export class ContextRetrievalService {
+    private analytics = {
+        totalRequests: 0,
+        failedRequests: 0,
+        totalSources: 0,
+        totalContextLength: 0,
+        lastRetrievedAt: 0,
+        queryCounts: new Map<string, number>()
+    };
 
     constructor(
         private db: DatabaseService,
@@ -16,6 +40,7 @@ export class ContextRetrievalService {
 
     async retrieveContext(query: string, projectId?: string, limit: number = 5): Promise<RetrievalResult> {
         try {
+            this.analytics.totalRequests++;
             let projectPath: string | undefined;
             if (projectId) {
                 // Try to find project by ID to get its path
@@ -50,32 +75,151 @@ export class ContextRetrievalService {
             }
 
             const contextParts: string[] = [];
-            const sources: string[] = [];
+            const sourceSet = new Set<string>();
+            const scoredItems: ScoredContextItem[] = [];
 
             if (symbols.length > 0) {
                 contextParts.push("Relevant Code Symbols:");
-                symbols.slice(0, 3).forEach(sym => {
+                const sortedSymbols = symbols
+                    .slice()
+                    .sort((left, right) => (right.score ?? 0) - (left.score ?? 0));
+                sortedSymbols.slice(0, 3).forEach(sym => {
                     contextParts.push(`- ${sym.kind} ${sym.name} (${sym.path}:${sym.line})\n  ${sym.signature}\n  ${sym.docstring}`);
-                    if (!sources.includes(sym.path)) { sources.push(sym.path); }
+                    sourceSet.add(sym.path);
+                    scoredItems.push({
+                        source: sym.path,
+                        sourceId: sym.id,
+                        content: `${sym.kind} ${sym.name}: ${sym.signature}`,
+                        score: sym.score ?? 0.8
+                    });
                 });
             }
 
             if (fragments.length > 0) {
                 contextParts.push("\nRelevant Context:");
-                fragments.forEach(frag => {
-                    contextParts.push(`- [${frag.source}] ${frag.content.trim().substring(0, 300)}...`);
-                    if (!sources.includes(frag.sourceId)) { sources.push(frag.sourceId); }
+                const dedupedFragments = this.deduplicateFragments(fragments);
+                dedupedFragments.slice(0, limit).forEach(frag => {
+                    const snippet = frag.content.trim().substring(0, 300);
+                    contextParts.push(`- [${frag.source}] ${snippet}...`);
+                    sourceSet.add(frag.sourceId);
+                    scoredItems.push({
+                        source: frag.source,
+                        sourceId: frag.sourceId,
+                        content: snippet,
+                        score: this.getFragmentScore(frag)
+                    });
                 });
             }
 
-            return {
+            const summary = this.summarizeContext(scoredItems, 4);
+            if (summary.length > 0) {
+                contextParts.unshift('Context Summary:');
+                contextParts.unshift(summary.map(item => `- ${item}`).join('\n'));
+            }
+
+            appLogger.info(
+                'ContextRetrieval',
+                `Retrieved context with ${scoredItems.length} items and ${sourceSet.size} unique sources`
+            );
+
+            const result = {
                 contextString: contextParts.join('\n'),
-                sources
+                sources: Array.from(sourceSet)
             };
+            this.recordRetrievalAnalytics(query, result);
+            return result;
 
         } catch (error) {
+            this.analytics.failedRequests++;
             appLogger.error('ContextRetrieval', 'Failed to retrieve context', error as Error);
             return { contextString: '', sources: [] };
         }
+    }
+
+    getAnalytics(): RetrievalAnalytics {
+        const totalRequests = this.analytics.totalRequests;
+        const averageSources = totalRequests === 0 ? 0 : this.analytics.totalSources / totalRequests;
+        const averageContextLength = totalRequests === 0 ? 0 : this.analytics.totalContextLength / totalRequests;
+        const topQueries = Array.from(this.analytics.queryCounts.entries())
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 10)
+            .map(([query, count]) => ({ query, count }));
+
+        return {
+            totalRequests,
+            failedRequests: this.analytics.failedRequests,
+            averageSources,
+            averageContextLength,
+            topQueries,
+            lastRetrievedAt: this.analytics.lastRetrievedAt || undefined
+        };
+    }
+
+    async exportContext(query: string, projectId?: string, limit: number = 5): Promise<{
+        exportedAt: string;
+        query: string;
+        projectId?: string;
+        contextString: string;
+        sources: string[];
+    }> {
+        const result = await this.retrieveContext(query, projectId, limit);
+        return {
+            exportedAt: new Date().toISOString(),
+            query,
+            projectId,
+            contextString: result.contextString,
+            sources: result.sources
+        };
+    }
+
+    private deduplicateFragments(fragments: SemanticFragment[]): SemanticFragment[] {
+        const seen = new Set<string>();
+        const deduped: SemanticFragment[] = [];
+
+        for (const fragment of fragments) {
+            const normalized = fragment.content.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 180);
+            const key = `${fragment.sourceId}:${normalized}`;
+            if (seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            deduped.push(fragment);
+        }
+
+        return deduped;
+    }
+
+    private getFragmentScore(fragment: SemanticFragment): number {
+        const rawScore = fragment.score;
+        if (typeof rawScore === 'number' && Number.isFinite(rawScore)) {
+            return rawScore;
+        }
+        return 0.7;
+    }
+
+    private summarizeContext(items: ScoredContextItem[], maxItems: number): string[] {
+        if (items.length === 0) {
+            return [];
+        }
+
+        const sorted = items
+            .slice()
+            .sort((left, right) => right.score - left.score)
+            .slice(0, maxItems);
+
+        return sorted.map(item => `${item.source}: ${item.content}`);
+    }
+
+    private recordRetrievalAnalytics(query: string, result: RetrievalResult): void {
+        this.analytics.lastRetrievedAt = Date.now();
+        this.analytics.totalSources += result.sources.length;
+        this.analytics.totalContextLength += result.contextString.length;
+
+        const normalizedQuery = query.trim().slice(0, 120);
+        if (!normalizedQuery) {
+            return;
+        }
+        const currentCount = this.analytics.queryCounts.get(normalizedQuery) ?? 0;
+        this.analytics.queryCounts.set(normalizedQuery, currentCount + 1);
     }
 }

@@ -36,6 +36,27 @@ export interface ThemeColors {
     error?: string;
     errorForeground?: string;
 
+    // Monaco editor token colors (HSL tokens)
+    editorBackground?: string;
+    editorForeground?: string;
+    editorGutterBackground?: string;
+    editorLineNumber?: string;
+    editorLineNumberActive?: string;
+    editorCursor?: string;
+    editorSelection?: string;
+    editorSelectionInactive?: string;
+    editorLineHighlight?: string;
+    editorWidgetBackground?: string;
+    editorWidgetBorder?: string;
+    editorIndentGuide?: string;
+    editorIndentGuideActive?: string;
+    editorTokenComment?: string;
+    editorTokenKeyword?: string;
+    editorTokenString?: string;
+    editorTokenNumber?: string;
+    editorTokenType?: string;
+    editorTokenInvalid?: string;
+
     // Neutral shades
     neutral?: string;
     neutralLight?: string;

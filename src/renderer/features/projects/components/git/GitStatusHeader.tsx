@@ -47,6 +47,7 @@ export const GitStatusHeader: React.FC<StatusHeaderProps> = ({ gitData, branches
                 <div className={cn("text-sm font-semibold", gitData.isClean ? "text-success" : "text-warning")}>
                     {gitData.isClean ? t('projectDashboard.clean') : t('projectDashboard.dirty')}
                 </div>
+                {/* TODO: add tooltip for why the project is dirty. show the reasons etc. */}
             </div>
             <div className="bg-muted/30 rounded-xl p-4">
                 <div className="text-xs text-muted-foreground mb-1">{t('projectDashboard.lastCommit')}</div>

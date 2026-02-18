@@ -43,6 +43,9 @@ export const ProjectSearchTab = ({
                 </button>
             </div>
             <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col p-2">
+                <div className="px-2 py-1 text-xxs text-muted-foreground">
+                    {searchResults.length} {t('projectDashboard.results') || 'results'}
+                </div>
                 <SearchResults
                     results={searchResults}
                     projectRoot={projectRoot}

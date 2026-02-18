@@ -21,6 +21,7 @@ export interface McpMarketplaceServer {
     downloads?: number
     rating?: number
     isOfficial?: boolean
+    extensionType?: 'mcp_server' | 'theme' | 'command' | 'language' | 'agent_template' | 'widget' | 'integration'
     capabilities?: string[]
     dependencies?: string[]
     conflictsWith?: string[]
@@ -35,6 +36,24 @@ export interface McpMarketplaceServer {
     storage?: {
         quotaMb?: number
     }
+    oauth?: {
+        enabled?: boolean
+        authUrl?: string
+        tokenUrl?: string
+        scopes?: string[]
+    }
+}
+
+export interface McpExtensionTemplate {
+    id: string;
+    type: 'mcp_server' | 'theme' | 'command' | 'language' | 'agent_template' | 'widget' | 'integration';
+    name: string;
+    description: string;
+    manifest: {
+        entrypoint: string;
+        permissions: string[];
+        capabilities: string[];
+    };
 }
 
 /**
@@ -49,6 +68,85 @@ export class McpMarketplaceService extends BaseService {
     });
     private readonly CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
     private readonly CACHE_KEY_ALL = 'servers:all';
+    private readonly EXTENSION_TEMPLATES: McpExtensionTemplate[] = [
+        {
+            id: 'tpl-mcp-server',
+            type: 'mcp_server',
+            name: 'MCP Server Extension',
+            description: 'Scaffold for custom MCP servers with runtime permissions and diagnostics.',
+            manifest: {
+                entrypoint: 'index.ts',
+                permissions: ['filesystem.read', 'network.outbound'],
+                capabilities: ['tools/list', 'tools/call']
+            }
+        },
+        {
+            id: 'tpl-theme',
+            type: 'theme',
+            name: 'Theme Extension',
+            description: 'Theme package manifest for color tokens, icon packs, and typography presets.',
+            manifest: {
+                entrypoint: 'theme.json',
+                permissions: ['ui.theme'],
+                capabilities: ['theme/preview', 'theme/apply']
+            }
+        },
+        {
+            id: 'tpl-command',
+            type: 'command',
+            name: 'Command Extension',
+            description: 'Slash-command package with command palette integration and argument schema.',
+            manifest: {
+                entrypoint: 'commands.ts',
+                permissions: ['chat.command'],
+                capabilities: ['command/register', 'command/execute']
+            }
+        },
+        {
+            id: 'tpl-language',
+            type: 'language',
+            name: 'Language Extension',
+            description: 'Language tools extension for syntax, formatter bridges, and language assistants.',
+            manifest: {
+                entrypoint: 'language.ts',
+                permissions: ['editor.syntax', 'editor.format'],
+                capabilities: ['language/detect', 'language/tools']
+            }
+        },
+        {
+            id: 'tpl-agent-template',
+            type: 'agent_template',
+            name: 'Agent Template Extension',
+            description: 'Agent persona and workflow template package for reusable task automation.',
+            manifest: {
+                entrypoint: 'agent-template.json',
+                permissions: ['agent.profile'],
+                capabilities: ['agent/template', 'agent/config']
+            }
+        },
+        {
+            id: 'tpl-widget',
+            type: 'widget',
+            name: 'Widget Extension',
+            description: 'Dashboard widget and sidebar panel extension manifest.',
+            manifest: {
+                entrypoint: 'widget.tsx',
+                permissions: ['ui.widget'],
+                capabilities: ['widget/render', 'widget/message']
+            }
+        },
+        {
+            id: 'tpl-integration',
+            type: 'integration',
+            name: 'Integration Extension',
+            description: 'External integration template with OAuth and credential lifecycle support.',
+            manifest: {
+                entrypoint: 'integration.ts',
+                permissions: ['network.oauth', 'secrets.read'],
+                capabilities: ['integration/connect', 'integration/webhook']
+            }
+        }
+    ];
     private readonly GITHUB_API = 'https://api.github.com/repos/modelcontextprotocol/servers/contents/src';
     private readonly FALLBACK_SERVERS: McpMarketplaceServer[] = [
         // Reference Servers (Official)
@@ -319,6 +417,7 @@ export class McpMarketplaceService extends BaseService {
                                 repository: pkg.repository?.url ?? `https://github.com/modelcontextprotocol/servers/tree/main/src/${dir.name}`,
                                 license: pkg.license,
                                 categories: this.inferCategories(dir.name, pkg.description),
+                                extensionType: this.inferExtensionType(dir.name, pkg.description),
                                 isOfficial: true,
                                 capabilities: this.inferCategories(dir.name, pkg.description),
                                 dependencies: [],
@@ -361,16 +460,17 @@ export class McpMarketplaceService extends BaseService {
 
                 this.cache.set(this.CACHE_KEY_ALL, servers, { warm: this.CACHE_TTL_MS });
                 this.logInfo(`Loaded ${servers.length} servers from GitHub (cache hitRate=${(this.cache.stats().hitRate * 100).toFixed(1)}%)`);
-                return servers;
+                return servers.map(server => this.normalizeExtensionType(server));
             }
         } catch (error) {
             this.logError('Failed to fetch from GitHub, using fallback', error);
         }
 
         // Fallback to hardcoded list
-        this.cache.set(this.CACHE_KEY_ALL, this.FALLBACK_SERVERS, { warm: this.CACHE_TTL_MS });
+        const fallbackServers = this.FALLBACK_SERVERS.map(server => this.normalizeExtensionType(server));
+        this.cache.set(this.CACHE_KEY_ALL, fallbackServers, { warm: this.CACHE_TTL_MS });
         this.logInfo(`Using fallback servers: ${this.FALLBACK_SERVERS.length}`);
-        return this.FALLBACK_SERVERS;
+        return fallbackServers;
     }
 
     /**
@@ -406,6 +506,72 @@ export class McpMarketplaceService extends BaseService {
         }
 
         return categories.length > 0 ? categories : ['Utility'];
+    }
+
+    private inferExtensionType(
+        name: string,
+        description?: string
+    ): McpMarketplaceServer['extensionType'] {
+        const text = `${name} ${description ?? ''}`.toLowerCase();
+        if (text.includes('theme') || text.includes('color') || text.includes('icon pack')) {
+            return 'theme';
+        }
+        if (text.includes('command') || text.includes('slash')) {
+            return 'command';
+        }
+        if (text.includes('language') || text.includes('formatter') || text.includes('syntax')) {
+            return 'language';
+        }
+        if (text.includes('agent template') || text.includes('persona')) {
+            return 'agent_template';
+        }
+        if (text.includes('widget') || text.includes('dashboard')) {
+            return 'widget';
+        }
+        if (text.includes('oauth') || text.includes('integration') || text.includes('webhook')) {
+            return 'integration';
+        }
+        return 'mcp_server';
+    }
+
+    private normalizeExtensionType(server: McpMarketplaceServer): McpMarketplaceServer {
+        return {
+            ...server,
+            extensionType: server.extensionType ?? this.inferExtensionType(server.id, server.description)
+        };
+    }
+
+    getExtensionTemplates(): McpExtensionTemplate[] {
+        return this.EXTENSION_TEMPLATES.map(template => ({ ...template, manifest: { ...template.manifest, permissions: [...template.manifest.permissions], capabilities: [...template.manifest.capabilities] } }));
+    }
+
+    createExtensionDraft(payload: {
+        id: string;
+        name: string;
+        type: McpExtensionTemplate['type'];
+        publisher: string;
+    }): McpMarketplaceServer {
+        const template = this.EXTENSION_TEMPLATES.find(item => item.type === payload.type);
+        if (!template) {
+            throw new Error(`Unknown extension template type: ${payload.type}`);
+        }
+        const nowVersion = '0.1.0';
+        return {
+            id: payload.id,
+            name: payload.name,
+            description: template.description,
+            publisher: payload.publisher,
+            version: nowVersion,
+            extensionType: payload.type,
+            command: template.manifest.entrypoint,
+            categories: template.manifest.capabilities,
+            capabilities: template.manifest.capabilities,
+            dependencies: [],
+            conflictsWith: [],
+            isOfficial: false,
+            settingsVersion: 1,
+            storage: { quotaMb: 128 }
+        };
     }
 
     /**

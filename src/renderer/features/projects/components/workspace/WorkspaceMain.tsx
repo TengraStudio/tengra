@@ -14,12 +14,20 @@ interface WorkspaceMainProps {
     activeTabId: string | null;
     setActiveEditorTabId: (id: string | null) => void;
     closeTab: (id: string) => void;
+    togglePinTab: (id: string) => void;
+    closeAllTabs: () => void;
+    closeTabsToRight: (id: string) => void;
+    closeOtherTabs: (id: string) => void;
+    copyTabAbsolutePath: (id: string) => Promise<void>;
+    copyTabRelativePath: (id: string) => Promise<void>;
+    revealTabInExplorer: (id: string) => Promise<void>;
     activeTab: EditorTab | null;
     updateTabContent: (content: string) => void;
     project: Project;
     handleUpdateProject: (updates: Partial<Project>) => Promise<void>;
     onAddMount?: () => void;
     setShowLogoModal: (show: boolean) => void;
+    t: (key: string) => string;
     language: Language;
     setDashboardTab: (tab: ProjectDashboardTab) => void;
     onDeleteProject?: () => void;
@@ -33,12 +41,20 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     activeTabId,
     setActiveEditorTabId,
     closeTab,
+    togglePinTab,
+    closeAllTabs,
+    closeTabsToRight,
+    closeOtherTabs,
+    copyTabAbsolutePath,
+    copyTabRelativePath,
+    revealTabInExplorer,
     activeTab,
     updateTabContent,
     project,
     handleUpdateProject,
     onAddMount,
     setShowLogoModal,
+    t,
     language,
     setDashboardTab,
     onDeleteProject,
@@ -54,6 +70,14 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                         activeTabId={activeTabId}
                         setActiveTabId={setActiveEditorTabId}
                         closeTab={closeTab}
+                        togglePinTab={togglePinTab}
+                        closeAllTabs={closeAllTabs}
+                        closeTabsToRight={closeTabsToRight}
+                        closeOtherTabs={closeOtherTabs}
+                        copyTabAbsolutePath={copyTabAbsolutePath}
+                        copyTabRelativePath={copyTabRelativePath}
+                        revealTabInExplorer={revealTabInExplorer}
+                        t={t}
                     />
                 </div>
             )}

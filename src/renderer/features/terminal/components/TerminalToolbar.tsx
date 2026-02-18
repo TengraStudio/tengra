@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, ChevronDown, LayoutGrid, Maximize2, Minimize2, Play, Plus, Rows2, Square, TerminalSquare } from 'lucide-react';
+import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -145,15 +145,10 @@ export function TerminalToolbar({
     toggleSynchronizedInput,
     toggleSplitOrientation,
     closeSplitView,
-    isGalleryView,
-    toggleGalleryView,
     onFloatingChange,
     toggleFloatingMode,
-    isFloating,
-    toggleSemanticPanel,
-    hasActiveSession,
-    activeSemanticIssuesLength,
-    activeSemanticErrorCount,
+    isFloating, 
+    hasActiveSession, 
     openMultiplexerPanel,
     isMultiplexerOpen,
     toggleRecording,
@@ -163,6 +158,9 @@ export function TerminalToolbar({
     onToggle,
     appearanceProps,
 }: TerminalToolbarProps) {
+    void toggleRecording;
+    void activeRecordingTabId;
+
     return (
         <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/70">
             <TerminalTabsBar
@@ -344,18 +342,7 @@ export function TerminalToolbar({
                         toggleSynchronizedInput={toggleSynchronizedInput}
                         toggleSplitOrientation={toggleSplitOrientation}
                         closeSplitView={closeSplitView}
-                    />
-                    <button
-                        onClick={toggleGalleryView}
-                        disabled={tabs.length <= 1}
-                        className={cn(
-                            'p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                            isGalleryView && 'text-primary'
-                        )}
-                        title={t('terminal.galleryView')}
-                    >
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                    </button>
+                    /> 
                     {onFloatingChange && (
                         <button
                             onClick={toggleFloatingMode}
@@ -369,27 +356,7 @@ export function TerminalToolbar({
                         >
                             <TerminalSquare className="w-3.5 h-3.5" />
                         </button>
-                    )}
-                    <button
-                        onClick={toggleSemanticPanel}
-                        disabled={!hasActiveSession}
-                        className="relative p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t('terminal.semanticIssues')}
-                    >
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        {activeSemanticIssuesLength > 0 && (
-                            <span
-                                className={cn(
-                                    'absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full text-[9px] leading-[14px] text-center font-semibold',
-                                    activeSemanticErrorCount > 0
-                                        ? 'bg-destructive/90 text-destructive-foreground'
-                                        : 'bg-amber-500/90 text-black'
-                                )}
-                            >
-                                {Math.min(activeSemanticIssuesLength, 99)}
-                            </span>
-                        )}
-                    </button>
+                    )} 
                     <button
                         onClick={openMultiplexerPanel}
                         disabled={!hasActiveSession}
@@ -401,24 +368,7 @@ export function TerminalToolbar({
                     >
                         <Rows2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                        onClick={toggleRecording}
-                        disabled={!hasActiveSession}
-                        className={cn(
-                            'relative p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                            activeRecordingTabId && 'text-destructive'
-                        )}
-                        title={activeRecordingTabId ? 'Stop recording' : 'Start recording'}
-                    >
-                        {activeRecordingTabId ? (
-                            <Square className="w-3.5 h-3.5" />
-                        ) : (
-                            <Play className="w-3.5 h-3.5" />
-                        )}
-                        {activeRecordingTabId && (
-                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-destructive" />
-                        )}
-                    </button>
+                    
                     <button
                         onClick={() => {
                             setIsMaximized(!isMaximized);

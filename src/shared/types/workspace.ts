@@ -40,6 +40,7 @@ export interface EditorTab {
     content: string
     savedContent: string
     isDirty: boolean
+    isPinned?: boolean
     type: 'code' | 'image'
     initialLine?: number
 }

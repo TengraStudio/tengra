@@ -35,6 +35,15 @@ const StashRefSchema = z.string().regex(/^stash@\{\d+\}$/);
 const ConflictStrategySchema = z.enum(['ours', 'theirs', 'manual']);
 const FlowTypeSchema = z.enum(['feature', 'release', 'hotfix', 'support']);
 const HookNameSchema = z.enum(['pre-commit', 'commit-msg', 'pre-push', 'post-merge', 'pre-rebase']);
+const OperationIdSchema = z.string().min(1).max(128).regex(/^[a-zA-Z0-9._:-]+$/).trim();
+const ControlledCommandSchema = z.string().min(1).max(2048).trim();
+
+const CONTROLLED_COMMAND_ALLOWLIST: RegExp[] = [
+    /^rebase(?:\s|$)/,
+    /^submodule(?:\s|$)/,
+    /^stash(?:\s|$)/,
+    /^merge(?:\s|$)/,
+];
 
 /**
  * Escapes a string for use in a double-quoted shell argument.
@@ -209,6 +218,10 @@ function parseAuthorsCsv(shortlogOutput: string): string {
             return `${commits},"${author}"`;
         });
     return ['commits,author', ...rows].join('\n');
+}
+
+function isControlledCommandAllowed(command: string): boolean {
+    return CONTROLLED_COMMAND_ALLOWLIST.some(pattern => pattern.test(command));
 }
 
 /**
@@ -992,4 +1005,34 @@ export function registerGitAdvancedIpc(gitService: GitService) {
     registerFlowHandlers(gitService);
     registerHookHandlers(gitService);
     registerStatsHandlers(gitService);
+
+    ipcMain.handle('git:runControlledOperation', createValidatedIpcHandler('git:runControlledOperation', async (_event, cwd: string, command: string, operationId?: string, timeoutMs?: number) => {
+        if (!isControlledCommandAllowed(command)) {
+            return {
+                success: false,
+                error: 'Operation is not allowed for controlled execution',
+            };
+        }
+
+        return await withRateLimit('git', () =>
+            gitService.executeRaw(cwd, command, { operationId, timeoutMs })
+        );
+    }, {
+        defaultValue: {
+            success: false,
+            error: 'Failed to run controlled operation',
+        },
+        argsSchema: z.tuple([PathSchema, ControlledCommandSchema, OperationIdSchema.optional(), z.number().int().min(1000).max(600000).optional()])
+    }));
+
+    ipcMain.handle('git:cancelOperation', createValidatedIpcHandler('git:cancelOperation', async (_event, operationId: string) => {
+        const cancelled = gitService.cancelOperation(operationId);
+        return {
+            success: cancelled,
+            error: cancelled ? undefined : 'Operation not found',
+        };
+    }, {
+        defaultValue: { success: false, error: 'Failed to cancel operation' },
+        argsSchema: z.tuple([OperationIdSchema])
+    }));
 }

@@ -100,7 +100,11 @@ export const ProjectDashboard = ({
         ),
         tasks: (
             <div className="h-full overflow-hidden">
-                <ProjectTodoTab projectRoot={state.projectRoot} t={t} />
+                <ProjectTodoTab
+                    project={project}
+                    onUpdate={onUpdate}
+                    t={t}
+                />
             </div>
         ),
         search: (

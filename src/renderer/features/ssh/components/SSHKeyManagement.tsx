@@ -1,0 +1,118 @@
+import React, { useCallback, useEffect, useState } from 'react';
+
+import { SSHKnownHostEntry, SSHManagedKey } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
+
+interface SSHKeyManagementProps {
+    t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
+    const [keys, setKeys] = useState<SSHManagedKey[]>([]);
+    const [knownHosts, setKnownHosts] = useState<SSHKnownHostEntry[]>([]);
+    const [keyName, setKeyName] = useState('');
+    const [passphrase, setPassphrase] = useState('');
+    const [importName, setImportName] = useState('');
+    const [importKey, setImportKey] = useState('');
+    const [knownHost, setKnownHost] = useState<SSHKnownHostEntry>({ host: '', keyType: 'ssh-ed25519', publicKey: '' });
+    const [status, setStatus] = useState('');
+
+    const loadData = useCallback(async () => {
+        const [managedKeys, hosts] = await Promise.all([
+            window.electron.ssh.listManagedKeys(),
+            window.electron.ssh.listKnownHosts()
+        ]);
+        setKeys(managedKeys);
+        setKnownHosts(hosts);
+    }, []);
+
+    useEffect(() => {
+        const init = async () => {
+            await loadData();
+        };
+
+        void init().catch((error: Error) => {
+            appLogger.error('SSHKeyManagement', 'Failed to load SSH key data', error);
+        });
+    }, [loadData]);
+
+    const runAction = useCallback(async (action: () => Promise<void>, successMessage: string) => {
+        try {
+            await action();
+            setStatus(successMessage);
+            await loadData();
+        } catch (error) {
+            appLogger.error('SSHKeyManagement', 'SSH key action failed', error as Error);
+            setStatus(t('ssh.keyActionFailed'));
+        }
+    }, [loadData, t]);
+
+    return (
+        <div className="p-4 space-y-4 overflow-auto h-full">
+            <div className="text-sm text-muted-foreground">{status}</div>
+            <div className="grid grid-cols-2 gap-4">
+                <section className="border border-border rounded-lg p-3 space-y-2">
+                    <h4 className="font-medium">{t('ssh.generateKey')}</h4>
+                    <input value={keyName} onChange={e => setKeyName(e.target.value)} placeholder={t('ssh.keyName')} className="w-full px-2 py-1 rounded bg-background border border-border" />
+                    <input type="password" value={passphrase} onChange={e => setPassphrase(e.target.value)} placeholder={t('ssh.keyPassphraseOptional')} className="w-full px-2 py-1 rounded bg-background border border-border" />
+                    <button
+                        className="primary-btn w-full"
+                        onClick={() => { void runAction(async () => { await window.electron.ssh.generateManagedKey({ name: keyName, passphrase: passphrase || undefined }); setKeyName(''); setPassphrase(''); }, t('ssh.keyGenerated')); }}
+                    >
+                        {t('ssh.generateKey')}
+                    </button>
+                </section>
+                <section className="border border-border rounded-lg p-3 space-y-2">
+                    <h4 className="font-medium">{t('ssh.importKey')}</h4>
+                    <input value={importName} onChange={e => setImportName(e.target.value)} placeholder={t('ssh.keyName')} className="w-full px-2 py-1 rounded bg-background border border-border" />
+                    <textarea value={importKey} onChange={e => setImportKey(e.target.value)} placeholder={t('ssh.privateKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-[90px]" />
+                    <button
+                        className="secondary-btn w-full"
+                        onClick={() => { void runAction(async () => { await window.electron.ssh.importManagedKey({ name: importName, privateKey: importKey, passphrase: undefined }); setImportName(''); setImportKey(''); }, t('ssh.keyImported')); }}
+                    >
+                        {t('ssh.importKey')}
+                    </button>
+                </section>
+            </div>
+
+            <section className="border border-border rounded-lg p-3 space-y-2">
+                <h4 className="font-medium">{t('ssh.managedKeys')}</h4>
+                <div className="space-y-2 max-h-56 overflow-auto pr-1">
+                    {keys.map(key => (
+                        <div key={key.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
+                            <div className="text-xs">
+                                <div className="font-medium">{key.name}</div>
+                                <div className="text-muted-foreground">{key.fingerprint}</div>
+                            </div>
+                            <div className="flex gap-1">
+                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { const backup = await window.electron.ssh.backupManagedKey(key.id); if (backup) { await window.electron.saveFile(backup.privateKey, backup.filename); } }, t('ssh.keyBackedUp')); }}>{t('ssh.backup')}</button>
+                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.rotateManagedKey({ id: key.id }); }, t('ssh.keyRotated')); }}>{t('ssh.rotate')}</button>
+                                <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.deleteManagedKey(key.id); }, t('ssh.keyDeleted')); }}>{t('common.delete')}</button>
+                            </div>
+                        </div>
+                    ))}
+                    {keys.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noManagedKeys')}</div> : null}
+                </div>
+            </section>
+
+            <section className="border border-border rounded-lg p-3 space-y-2">
+                <h4 className="font-medium">{t('ssh.knownHosts')}</h4>
+                <div className="grid grid-cols-3 gap-2">
+                    <input value={knownHost.host} onChange={e => setKnownHost(prev => ({ ...prev, host: e.target.value }))} placeholder={t('ssh.host')} className="px-2 py-1 rounded bg-background border border-border" />
+                    <input value={knownHost.keyType} onChange={e => setKnownHost(prev => ({ ...prev, keyType: e.target.value }))} placeholder={t('ssh.keyType')} className="px-2 py-1 rounded bg-background border border-border" />
+                    <button className="secondary-btn" onClick={() => { void runAction(async () => { await window.electron.ssh.addKnownHost(knownHost); setKnownHost({ host: '', keyType: 'ssh-ed25519', publicKey: '' }); }, t('ssh.knownHostAdded')); }}>{t('ssh.addKnownHost')}</button>
+                </div>
+                <textarea value={knownHost.publicKey} onChange={e => setKnownHost(prev => ({ ...prev, publicKey: e.target.value }))} placeholder={t('ssh.publicKey')} className="w-full px-2 py-1 rounded bg-background border border-border min-h-[70px]" />
+                <div className="space-y-2 max-h-40 overflow-auto pr-1">
+                    {knownHosts.map((entry, index) => (
+                        <div key={`${entry.host}-${index}`} className="flex items-center justify-between border border-border rounded px-2 py-1">
+                            <div className="text-xs">{entry.host} ({entry.keyType})</div>
+                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void runAction(async () => { await window.electron.ssh.removeKnownHost({ host: entry.host, keyType: entry.keyType }); }, t('ssh.knownHostRemoved')); }}>{t('common.delete')}</button>
+                        </div>
+                    ))}
+                    {knownHosts.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noKnownHosts')}</div> : null}
+                </div>
+            </section>
+        </div>
+    );
+};

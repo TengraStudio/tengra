@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service';
-import { type IpcContractVersionInfo,isIpcContractCompatible } from '@shared/constants/ipc-contract';
+import { type IpcContractVersionInfo, isIpcContractCompatible } from '@shared/constants/ipc-contract';
 import {
     AgentDefinition,
     AgentStartOptions,
@@ -35,10 +35,20 @@ import {
     SemanticFragment,
     SSHConfig,
     SSHConnection,
+    SSHDevContainer,
     SSHExecOptions,
     SSHFile,
+    SSHKnownHostEntry,
+    SSHManagedKey,
     SSHPackageInfo,
+    SSHPortForward,
+    SSHProfileTemplate,
+    SSHRemoteSearchResult,
+    SSHSearchHistoryEntry,
+    SSHSessionRecording,
     SSHSystemStats,
+    SSHTransferTask,
+    SSHTunnelPreset,
     TodoItem,
     ToolCall,
     ToolDefinition,
@@ -47,11 +57,29 @@ import {
 import {
     AdvancedSemanticFragment,
     MemoryCategory,
+    SharedMemoryAnalytics,
+    SharedMemoryNamespace,
+    SharedMemorySyncRequest,
+    SharedMemorySyncResult,
+    MemoryImportResult,
+    MemorySearchAnalytics,
+    MemorySearchHistoryEntry,
     MemoryStatistics,
     PendingMemory,
     RecallContext,
 } from '@shared/types/advanced-memory';
-import { ConsensusResult, ModelRoutingRule, VotingConfiguration, VotingSession, VotingTemplate } from '@shared/types/project-agent';
+import {
+    AgentTeamworkAnalytics,
+    ConsensusResult,
+    DebateCitation,
+    DebateReplay,
+    DebateSession,
+    DebateSide,
+    ModelRoutingRule,
+    VotingConfiguration,
+    VotingSession,
+    VotingTemplate
+} from '@shared/types/project-agent';
 import { isProjectState } from '@shared/utils/type-guards.util';
 
 import { createAuthBridge } from './preload/domains/auth.preload';
@@ -496,6 +524,86 @@ export interface ElectronAPI {
     sdCpp: {
         getStatus: () => Promise<string>;
         reinstall: () => Promise<void>;
+        getHistory: (limit?: number) => Promise<Array<{
+            id: string;
+            provider: string;
+            prompt: string;
+            negativePrompt?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            seed: number;
+            imagePath: string;
+            createdAt: number;
+            source?: string;
+        }>>;
+        regenerate: (historyId: string) => Promise<string>;
+        getAnalytics: () => Promise<{
+            totalGenerated: number;
+            byProvider: Record<string, number>;
+            averageSteps: number;
+        }>;
+        listPresets: () => Promise<Array<{
+            id: string;
+            name: string;
+            promptPrefix?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            provider?: string;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        savePreset: (preset: {
+            id?: string;
+            name: string;
+            promptPrefix?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+        }) => Promise<unknown>;
+        deletePreset: (id: string) => Promise<boolean>;
+        schedule: (payload: {
+            runAt: number;
+            options: {
+                prompt: string;
+                negativePrompt?: string;
+                width?: number;
+                height?: number;
+                steps?: number;
+                cfgScale?: number;
+                seed?: number;
+                count?: number;
+            };
+        }) => Promise<unknown>;
+        listSchedules: () => Promise<unknown[]>;
+        cancelSchedule: (id: string) => Promise<boolean>;
+        compare: (ids: string[]) => Promise<unknown>;
+        batchGenerate: (requests: Array<{
+            prompt: string;
+            negativePrompt?: string;
+            width?: number;
+            height?: number;
+            steps?: number;
+            cfgScale?: number;
+            seed?: number;
+            count?: number;
+        }>) => Promise<string[]>;
+        getQueueStats: () => Promise<{ queued: number; running: boolean }>;
+        edit: (options: {
+            sourceImage: string;
+            mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+            prompt: string;
+            negativePrompt?: string;
+            strength?: number;
+            width?: number;
+            height?: number;
+            maskImage?: string;
+        }) => Promise<string>;
     };
     clipboard: {
         writeText: (text: string) => Promise<{ success: boolean }>;
@@ -655,6 +763,32 @@ export interface ElectronAPI {
             query: string,
             limit?: number
         ) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        getSearchAnalytics: () => Promise<{ success: boolean; data: MemorySearchAnalytics; error?: string }>;
+        getSearchHistory: (
+            limit?: number
+        ) => Promise<{ success: boolean; data: MemorySearchHistoryEntry[]; error?: string }>;
+        getSearchSuggestions: (
+            prefix?: string,
+            limit?: number
+        ) => Promise<{ success: boolean; data: string[]; error?: string }>;
+        export: (
+            query?: string,
+            limit?: number
+        ) => Promise<{
+            success: boolean;
+            data?: {
+                exportedAt: string;
+                query?: string;
+                count: number;
+                memories: AdvancedSemanticFragment[];
+            };
+            error?: string;
+        }>;
+        import: (payload: {
+            memories?: Array<Partial<AdvancedSemanticFragment>>;
+            pendingMemories?: Array<Partial<PendingMemory>>;
+            replaceExisting?: boolean;
+        }) => Promise<{ success: boolean; data?: MemoryImportResult; error?: string }>;
 
         // Stats & Maintenance
         getStats: () => Promise<{ success: boolean; data?: MemoryStatistics; error?: string }>;
@@ -680,6 +814,7 @@ export interface ElectronAPI {
                 tags?: string[];
                 importance?: number;
                 projectId?: string | null;
+                expiresAt?: number;
             }
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
         archive: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -690,6 +825,139 @@ export interface ElectronAPI {
         get: (
             id: string
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        shareWithProject: (
+            memoryId: string,
+            targetProjectId: string
+        ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        createSharedNamespace: (payload: {
+            id: string;
+            name: string;
+            projectIds: string[];
+            accessControl?: Record<string, string[]>;
+        }) => Promise<{ success: boolean; data?: SharedMemoryNamespace; error?: string }>;
+        syncSharedNamespace: (
+            request: SharedMemorySyncRequest
+        ) => Promise<{ success: boolean; data?: SharedMemorySyncResult; error?: string }>;
+        getSharedNamespaceAnalytics: (
+            namespaceId: string
+        ) => Promise<{ success: boolean; data?: SharedMemoryAnalytics; error?: string }>;
+        searchAcrossProjects: (payload: {
+            namespaceId: string;
+            query: string;
+            projectId: string;
+            limit?: number;
+        }) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        getHistory: (id: string) => Promise<{ success: boolean; data: import('@shared/types/advanced-memory').MemoryVersion[]; error?: string }>;
+        rollback: (id: string, versionIndex: number) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        recategorize: (ids?: string[]) => Promise<{ success: boolean; error?: string }>;
+        getAllEntityKnowledge: () => Promise<{ success: boolean; data: EntityKnowledge[]; error?: string }>;
+        getAllEpisodes: () => Promise<{ success: boolean; data: EpisodicMemory[]; error?: string }>;
+        getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+    };
+
+    codeSandbox: {
+        languages: () => Promise<{ languages: Array<'javascript' | 'typescript' | 'python' | 'shell'> }>;
+        execute: (payload: {
+            language: 'javascript' | 'typescript' | 'python' | 'shell';
+            code: string;
+            timeoutMs?: number;
+            stdin?: string;
+        }) => Promise<{
+            success: boolean;
+            stdout: string;
+            stderr: string;
+            result?: string;
+            durationMs: number;
+            language: 'javascript' | 'typescript' | 'python' | 'shell';
+        }>;
+    };
+
+    voice: {
+        detectWakeWord: (payload: { transcript: string; wakeWord?: string }) => Promise<{
+            activated: boolean;
+            wakeWord: string;
+            intent: 'none' | 'new_chat' | 'open_settings' | 'stop_speaking' | 'send_message' | 'search_workspace';
+            commandText: string;
+            confidence: number;
+        }>;
+        startSession: (payload?: { wakeWord?: string; locale?: string }) => Promise<{
+            id: string;
+            wakeWord: string;
+            locale: string;
+            state: 'listening' | 'speaking' | 'idle';
+            turnCount: number;
+            startedAt: number;
+            updatedAt: number;
+        }>;
+        submitUtterance: (payload: {
+            sessionId: string;
+            transcript: string;
+            assistantSpeaking?: boolean;
+        }) => Promise<{
+            session: {
+                id: string;
+                wakeWord: string;
+                locale: string;
+                state: 'listening' | 'speaking' | 'idle';
+                turnCount: number;
+                startedAt: number;
+                updatedAt: number;
+            };
+            interruptAssistant: boolean;
+            intent: 'none' | 'new_chat' | 'open_settings' | 'stop_speaking' | 'send_message' | 'search_workspace';
+            commandText: string;
+            responseMode: 'listen' | 'speak' | 'idle';
+        }>;
+        endSession: (sessionId: string) => Promise<{ success: true }>;
+        createNote: (payload: { title?: string; transcript: string }) => Promise<{
+            id: string;
+            title: string;
+            transcript: string;
+            summary: string;
+            keyPoints: string[];
+            actionItems: string[];
+            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+            speakers: string[];
+            createdAt: number;
+            updatedAt: number;
+        }>;
+        listNotes: () => Promise<{ notes: Array<{
+            id: string;
+            title: string;
+            transcript: string;
+            summary: string;
+            keyPoints: string[];
+            actionItems: string[];
+            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+            speakers: string[];
+            createdAt: number;
+            updatedAt: number;
+        }> }>;
+        getNote: (noteId: string) => Promise<{ note: {
+            id: string;
+            title: string;
+            transcript: string;
+            summary: string;
+            keyPoints: string[];
+            actionItems: string[];
+            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+            speakers: string[];
+            createdAt: number;
+            updatedAt: number;
+        } | null }>;
+        searchNotes: (payload: { query: string; limit?: number }) => Promise<{ notes: Array<{
+            id: string;
+            title: string;
+            transcript: string;
+            summary: string;
+            keyPoints: string[];
+            actionItems: string[];
+            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+            speakers: string[];
+            createdAt: number;
+            updatedAt: number;
+        }> }>;
+        deleteNote: (noteId: string) => Promise<{ deleted: boolean }>;
     };
 
     collaboration: {
@@ -856,6 +1124,12 @@ export interface ElectronAPI {
         ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
         getShells: () => Promise<{ id: string; name: string; path: string }[]>;
         getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
+        getRuntimeHealth: () => Promise<{
+            terminalAvailable: boolean;
+            totalBackends: number;
+            availableBackends: number;
+            backends: Array<{ id: string; name: string; available: boolean }>;
+        }>;
         create: (options: {
             id?: string;
             shell?: string;
@@ -1052,7 +1326,7 @@ export interface ElectronAPI {
     ssh: {
         connect: (
             connection: SSHConnection
-        ) => Promise<{ success: boolean; error?: string; id?: string }>;
+        ) => Promise<{ success: boolean; error?: string; id?: string; diagnostics?: { category: string; hint: string } }>;
         disconnect: (connectionId: string) => Promise<{ success: boolean }>;
         execute: (
             connectionId: string,
@@ -1128,6 +1402,89 @@ export interface ElectronAPI {
         getProfiles: () => Promise<SSHConfig[]>;
         saveProfile: (profile: SSHConfig) => Promise<boolean>;
         deleteProfile: (id: string) => Promise<boolean>;
+        createTunnel: (payload: {
+            connectionId: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost?: string;
+            remotePort?: number;
+        }) => Promise<{ success: boolean; forwardId?: string; error?: string }>;
+        listTunnels: (connectionId?: string) => Promise<SSHPortForward[]>;
+        closeTunnel: (forwardId: string) => Promise<boolean>;
+        saveTunnelPreset: (preset: {
+            name: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost: string;
+            remotePort: number;
+        }) => Promise<SSHTunnelPreset>;
+        listTunnelPresets: () => Promise<SSHTunnelPreset[]>;
+        deleteTunnelPreset: (id: string) => Promise<boolean>;
+        listManagedKeys: () => Promise<SSHManagedKey[]>;
+        generateManagedKey: (payload: { name: string; passphrase?: string }) => Promise<{
+            key: SSHManagedKey;
+            privateKey: string;
+            publicKey: string;
+        }>;
+        importManagedKey: (payload: {
+            name: string;
+            privateKey: string;
+            passphrase?: string;
+        }) => Promise<SSHManagedKey>;
+        deleteManagedKey: (id: string) => Promise<boolean>;
+        rotateManagedKey: (payload: { id: string; nextPassphrase?: string }) => Promise<SSHManagedKey | null>;
+        backupManagedKey: (id: string) => Promise<{ filename: string; privateKey: string } | null>;
+        listKnownHosts: () => Promise<SSHKnownHostEntry[]>;
+        addKnownHost: (payload: SSHKnownHostEntry) => Promise<boolean>;
+        removeKnownHost: (payload: { host: string; keyType?: string }) => Promise<boolean>;
+        searchRemoteFiles: (payload: {
+            connectionId: string;
+            query: string;
+            options?: { path?: string; contentSearch?: boolean; limit?: number };
+        }) => Promise<SSHRemoteSearchResult[]>;
+        getSearchHistory: (connectionId?: string) => Promise<SSHSearchHistoryEntry[]>;
+        exportSearchHistory: () => Promise<string>;
+        reconnect: (connectionId: string, retries?: number) => Promise<{ success: boolean; error?: string }>;
+        acquireConnection: (connectionId: string) => Promise<{ success: boolean; error?: string }>;
+        releaseConnection: (connectionId: string) => Promise<boolean>;
+        getConnectionPoolStats: () => Promise<Array<{ connectionId: string; refs: number }>>;
+        enqueueTransfer: (task: SSHTransferTask) => Promise<void>;
+        getTransferQueue: () => Promise<SSHTransferTask[]>;
+        runTransferBatch: (tasks: SSHTransferTask[], concurrency?: number) => Promise<boolean[]>;
+        listRemoteContainers: (connectionId: string) => Promise<SSHDevContainer[]>;
+        runRemoteContainer: (payload: {
+            connectionId: string;
+            image: string;
+            name: string;
+            ports?: Array<{ hostPort: number; containerPort: number }>;
+        }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        stopRemoteContainer: (connectionId: string, containerId: string) => Promise<boolean>;
+        saveProfileTemplate: (template: {
+            name: string;
+            port: number;
+            username: string;
+            tags?: string[];
+        }) => Promise<SSHProfileTemplate>;
+        listProfileTemplates: () => Promise<SSHProfileTemplate[]>;
+        deleteProfileTemplate: (id: string) => Promise<boolean>;
+        exportProfiles: (ids?: string[]) => Promise<string>;
+        importProfiles: (payload: string) => Promise<number>;
+        validateProfile: (profile: Partial<SSHConnection>) => Promise<{ valid: boolean; errors: string[] }>;
+        testProfile: (profile: Partial<SSHConnection>) => Promise<{
+            success: boolean;
+            latencyMs: number;
+            authMethod: 'password' | 'key';
+            message: string;
+            error?: string;
+        }>;
+        startSessionRecording: (connectionId: string) => Promise<SSHSessionRecording>;
+        stopSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
+        getSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
+        searchSessionRecording: (connectionId: string, query: string) => Promise<string[]>;
+        exportSessionRecording: (connectionId: string) => Promise<string>;
+        listSessionRecordings: () => Promise<SSHSessionRecording[]>;
     };
 
     // Tools
@@ -1919,6 +2276,32 @@ export interface ElectronAPI {
         updateVotingConfiguration: (patch: Partial<VotingConfiguration>) => Promise<VotingConfiguration>;
         listVotingTemplates: () => Promise<VotingTemplate[]>;
         buildConsensus: (outputs: Array<{ modelId: string; provider: string; output: string }>) => Promise<ConsensusResult>;
+        createDebateSession: (payload: {
+            taskId: string;
+            stepIndex: number;
+            topic: string;
+        }) => Promise<DebateSession | null>;
+        submitDebateArgument: (payload: {
+            sessionId: string;
+            agentId: string;
+            provider: string;
+            side: DebateSide;
+            content: string;
+            confidence: number;
+            citations?: DebateCitation[];
+        }) => Promise<DebateSession | null>;
+        resolveDebateSession: (sessionId: string) => Promise<DebateSession | null>;
+        overrideDebateSession: (payload: {
+            sessionId: string;
+            moderatorId: string;
+            decision: DebateSide | 'balanced';
+            reason?: string;
+        }) => Promise<DebateSession | null>;
+        getDebateSession: (sessionId: string) => Promise<DebateSession | null>;
+        listDebateHistory: (taskId?: string) => Promise<DebateSession[]>;
+        getDebateReplay: (sessionId: string) => Promise<DebateReplay | null>;
+        generateDebateSummary: (sessionId: string) => Promise<string | null>;
+        getTeamworkAnalytics: () => Promise<AgentTeamworkAnalytics | null>;
         getTemplates: (category?: AgentTemplateCategory) => Promise<AgentTemplate[]>;
         getTemplate: (id: string) => Promise<AgentTemplate | null>;
         saveTemplate: (template: AgentTemplate) => Promise<{ success: boolean; template: AgentTemplate }>;
@@ -2338,6 +2721,18 @@ const api: ElectronAPI = {
         recall: (context: RecallContext) => ipcRenderer.invoke('advancedMemory:recall', context),
         search: (query: string, limit?: number) =>
             ipcRenderer.invoke('advancedMemory:search', query, limit),
+        getSearchAnalytics: () => ipcRenderer.invoke('advancedMemory:getSearchAnalytics'),
+        getSearchHistory: (limit?: number) =>
+            ipcRenderer.invoke('advancedMemory:getSearchHistory', limit),
+        getSearchSuggestions: (prefix?: string, limit?: number) =>
+            ipcRenderer.invoke('advancedMemory:getSearchSuggestions', prefix, limit),
+        export: (query?: string, limit?: number) =>
+            ipcRenderer.invoke('advancedMemory:export', query, limit),
+        import: (payload: {
+            memories?: Array<Partial<AdvancedSemanticFragment>>;
+            pendingMemories?: Array<Partial<PendingMemory>>;
+            replaceExisting?: boolean;
+        }) => ipcRenderer.invoke('advancedMemory:import', payload),
 
         // Stats & Maintenance
         getStats: () => ipcRenderer.invoke('advancedMemory:getStats'),
@@ -2364,6 +2759,57 @@ const api: ElectronAPI = {
         archiveMany: (ids: string[]) => ipcRenderer.invoke('advancedMemory:archiveMany', ids),
         restore: (id: string) => ipcRenderer.invoke('advancedMemory:restore', id),
         get: (id: string) => ipcRenderer.invoke('advancedMemory:get', id),
+        shareWithProject: (memoryId: string, targetProjectId: string) =>
+            ipcRenderer.invoke('advancedMemory:shareWithProject', memoryId, targetProjectId),
+        createSharedNamespace: (payload: {
+            id: string;
+            name: string;
+            projectIds: string[];
+            accessControl?: Record<string, string[]>;
+        }) => ipcRenderer.invoke('advancedMemory:createSharedNamespace', payload),
+        syncSharedNamespace: (request: SharedMemorySyncRequest) =>
+            ipcRenderer.invoke('advancedMemory:syncSharedNamespace', request),
+        getSharedNamespaceAnalytics: (namespaceId: string) =>
+            ipcRenderer.invoke('advancedMemory:getSharedNamespaceAnalytics', namespaceId),
+        searchAcrossProjects: (payload: {
+            namespaceId: string;
+            query: string;
+            projectId: string;
+            limit?: number;
+        }) => ipcRenderer.invoke('advancedMemory:searchAcrossProjects', payload),
+        getHistory: (id: string) => ipcRenderer.invoke('advancedMemory:getHistory', id),
+        rollback: (id: string, versionIndex: number) =>
+            ipcRenderer.invoke('advancedMemory:rollback', id, versionIndex),
+        recategorize: (ids?: string[]) => ipcRenderer.invoke('advancedMemory:recategorize', ids),
+        // Visualization
+        getAllEntityKnowledge: () => ipcRenderer.invoke('advancedMemory:getAllEntityKnowledge'),
+        getAllEpisodes: () => ipcRenderer.invoke('advancedMemory:getAllEpisodes'),
+        getAllAdvancedMemories: () => ipcRenderer.invoke('advancedMemory:getAllAdvancedMemories'),
+    },
+    codeSandbox: {
+        languages: () => ipcRenderer.invoke('code-sandbox:languages'),
+        execute: (payload: {
+            language: 'javascript' | 'typescript' | 'python' | 'shell';
+            code: string;
+            timeoutMs?: number;
+            stdin?: string;
+        }) => ipcRenderer.invoke('code-sandbox:execute', payload),
+    },
+    voice: {
+        detectWakeWord: (payload: { transcript: string; wakeWord?: string }) =>
+            ipcRenderer.invoke('voice:wake-word-detect', payload),
+        startSession: (payload?: { wakeWord?: string; locale?: string }) =>
+            ipcRenderer.invoke('voice:session-start', payload ?? {}),
+        submitUtterance: (payload: { sessionId: string; transcript: string; assistantSpeaking?: boolean }) =>
+            ipcRenderer.invoke('voice:session-utterance', payload),
+        endSession: (sessionId: string) => ipcRenderer.invoke('voice:session-end', sessionId),
+        createNote: (payload: { title?: string; transcript: string }) =>
+            ipcRenderer.invoke('voice:note-create', payload),
+        listNotes: () => ipcRenderer.invoke('voice:note-list'),
+        getNote: (noteId: string) => ipcRenderer.invoke('voice:note-get', noteId),
+        searchNotes: (payload: { query: string; limit?: number }) =>
+            ipcRenderer.invoke('voice:note-search', payload),
+        deleteNote: (noteId: string) => ipcRenderer.invoke('voice:note-delete', noteId),
     },
     audit: {
         getLogs: (startDate?: string, endDate?: string, category?: string) =>
@@ -2481,6 +2927,47 @@ const api: ElectronAPI = {
         getProfiles: () => ipcRenderer.invoke('ssh:getProfiles'),
         saveProfile: profile => ipcRenderer.invoke('ssh:saveProfile', profile),
         deleteProfile: id => ipcRenderer.invoke('ssh:deleteProfile', id),
+        createTunnel: payload => ipcRenderer.invoke('ssh:createTunnel', payload),
+        listTunnels: connectionId => ipcRenderer.invoke('ssh:listTunnels', connectionId),
+        closeTunnel: forwardId => ipcRenderer.invoke('ssh:closeTunnel', forwardId),
+        saveTunnelPreset: preset => ipcRenderer.invoke('ssh:saveTunnelPreset', preset),
+        listTunnelPresets: () => ipcRenderer.invoke('ssh:listTunnelPresets'),
+        deleteTunnelPreset: id => ipcRenderer.invoke('ssh:deleteTunnelPreset', id),
+        listManagedKeys: () => ipcRenderer.invoke('ssh:listManagedKeys'),
+        generateManagedKey: payload => ipcRenderer.invoke('ssh:generateManagedKey', payload),
+        importManagedKey: payload => ipcRenderer.invoke('ssh:importManagedKey', payload),
+        deleteManagedKey: id => ipcRenderer.invoke('ssh:deleteManagedKey', id),
+        rotateManagedKey: payload => ipcRenderer.invoke('ssh:rotateManagedKey', payload),
+        backupManagedKey: id => ipcRenderer.invoke('ssh:backupManagedKey', id),
+        listKnownHosts: () => ipcRenderer.invoke('ssh:listKnownHosts'),
+        addKnownHost: payload => ipcRenderer.invoke('ssh:addKnownHost', payload),
+        removeKnownHost: payload => ipcRenderer.invoke('ssh:removeKnownHost', payload),
+        searchRemoteFiles: payload => ipcRenderer.invoke('ssh:searchRemoteFiles', payload),
+        getSearchHistory: connectionId => ipcRenderer.invoke('ssh:getSearchHistory', connectionId),
+        exportSearchHistory: () => ipcRenderer.invoke('ssh:exportSearchHistory'),
+        reconnect: (connectionId, retries) => ipcRenderer.invoke('ssh:reconnect', connectionId, retries),
+        acquireConnection: connectionId => ipcRenderer.invoke('ssh:acquireConnection', connectionId),
+        releaseConnection: connectionId => ipcRenderer.invoke('ssh:releaseConnection', connectionId),
+        getConnectionPoolStats: () => ipcRenderer.invoke('ssh:getConnectionPoolStats'),
+        enqueueTransfer: task => ipcRenderer.invoke('ssh:enqueueTransfer', task),
+        getTransferQueue: () => ipcRenderer.invoke('ssh:getTransferQueue'),
+        runTransferBatch: (tasks, concurrency) => ipcRenderer.invoke('ssh:runTransferBatch', tasks, concurrency),
+        listRemoteContainers: connectionId => ipcRenderer.invoke('ssh:listRemoteContainers', connectionId),
+        runRemoteContainer: payload => ipcRenderer.invoke('ssh:runRemoteContainer', payload),
+        stopRemoteContainer: (connectionId, containerId) => ipcRenderer.invoke('ssh:stopRemoteContainer', connectionId, containerId),
+        saveProfileTemplate: template => ipcRenderer.invoke('ssh:saveProfileTemplate', template),
+        listProfileTemplates: () => ipcRenderer.invoke('ssh:listProfileTemplates'),
+        deleteProfileTemplate: id => ipcRenderer.invoke('ssh:deleteProfileTemplate', id),
+        exportProfiles: ids => ipcRenderer.invoke('ssh:exportProfiles', ids),
+        importProfiles: payload => ipcRenderer.invoke('ssh:importProfiles', payload),
+        validateProfile: profile => ipcRenderer.invoke('ssh:validateProfile', profile),
+        testProfile: profile => ipcRenderer.invoke('ssh:testProfile', profile),
+        startSessionRecording: connectionId => ipcRenderer.invoke('ssh:startSessionRecording', connectionId),
+        stopSessionRecording: connectionId => ipcRenderer.invoke('ssh:stopSessionRecording', connectionId),
+        getSessionRecording: connectionId => ipcRenderer.invoke('ssh:getSessionRecording', connectionId),
+        searchSessionRecording: (connectionId, query) => ipcRenderer.invoke('ssh:searchSessionRecording', connectionId, query),
+        exportSessionRecording: connectionId => ipcRenderer.invoke('ssh:exportSessionRecording', connectionId),
+        listSessionRecordings: () => ipcRenderer.invoke('ssh:listSessionRecordings'),
     },
 
     executeTools: (toolName, args, toolCallId) =>
@@ -2647,7 +3134,21 @@ const api: ElectronAPI = {
     },
 
     getSettings: () => ipcRenderer.invoke('settings:get'),
-    saveSettings: settings => ipcRenderer.invoke('settings:save', settings),
+    saveSettings: async settings => {
+        const response = await ipcRenderer.invoke('settings:save', settings) as {
+            success?: boolean;
+            data?: AppSettings;
+            error?: { message?: string } | string;
+        };
+        if (response?.success === false) {
+            const errorMessage =
+                typeof response.error === 'string'
+                    ? response.error
+                    : response.error?.message ?? 'Failed to save settings';
+            throw new Error(errorMessage);
+        }
+        return response?.data ?? settings;
+    },
 
     project: {
         analyze: async (rootPath: string, projectId: string) => {
@@ -2865,6 +3366,7 @@ const api: ElectronAPI = {
             ipcRenderer.invoke('terminal:importProfileShareCode', shareCode, options),
         getShells: () => ipcRenderer.invoke('terminal:getShells'),
         getBackends: () => ipcRenderer.invoke('terminal:getBackends'),
+        getRuntimeHealth: () => ipcRenderer.invoke('terminal:getRuntimeHealth'),
         getDockerContainers: () => ipcRenderer.invoke('terminal:getDockerContainers'),
         create: options => ipcRenderer.invoke('terminal:create', options),
         detach: options => ipcRenderer.invoke('window:openDetachedTerminal', options),
@@ -3154,6 +3656,15 @@ const api: ElectronAPI = {
         updateVotingConfiguration: patch => ipcRenderer.invoke('project:update-voting-config', patch),
         listVotingTemplates: () => ipcRenderer.invoke('project:list-voting-templates'),
         buildConsensus: outputs => ipcRenderer.invoke('project:build-consensus', outputs),
+        createDebateSession: payload => ipcRenderer.invoke('project:create-debate-session', payload),
+        submitDebateArgument: payload => ipcRenderer.invoke('project:submit-debate-argument', payload),
+        resolveDebateSession: sessionId => ipcRenderer.invoke('project:resolve-debate-session', sessionId),
+        overrideDebateSession: payload => ipcRenderer.invoke('project:override-debate-session', payload),
+        getDebateSession: sessionId => ipcRenderer.invoke('project:get-debate-session', sessionId),
+        listDebateHistory: taskId => ipcRenderer.invoke('project:list-debate-history', taskId),
+        getDebateReplay: sessionId => ipcRenderer.invoke('project:get-debate-replay', sessionId),
+        generateDebateSummary: sessionId => ipcRenderer.invoke('project:generate-debate-summary', sessionId),
+        getTeamworkAnalytics: () => ipcRenderer.invoke('project:get-teamwork-analytics'),
         getTemplates: category => ipcRenderer.invoke('project:get-templates', category),
         getTemplate: id => ipcRenderer.invoke('project:get-template', id),
         saveTemplate: template => ipcRenderer.invoke('project:save-template', template),
@@ -3189,6 +3700,19 @@ const api: ElectronAPI = {
     sdCpp: {
         getStatus: () => ipcRenderer.invoke('sd-cpp:getStatus'),
         reinstall: () => ipcRenderer.invoke('sd-cpp:reinstall'),
+        getHistory: limit => ipcRenderer.invoke('sd-cpp:getHistory', limit),
+        regenerate: historyId => ipcRenderer.invoke('sd-cpp:regenerate', historyId),
+        getAnalytics: () => ipcRenderer.invoke('sd-cpp:getAnalytics'),
+        listPresets: () => ipcRenderer.invoke('sd-cpp:listPresets'),
+        savePreset: preset => ipcRenderer.invoke('sd-cpp:savePreset', preset),
+        deletePreset: id => ipcRenderer.invoke('sd-cpp:deletePreset', id),
+        schedule: payload => ipcRenderer.invoke('sd-cpp:schedule', payload),
+        listSchedules: () => ipcRenderer.invoke('sd-cpp:listSchedules'),
+        cancelSchedule: id => ipcRenderer.invoke('sd-cpp:cancelSchedule', id),
+        compare: ids => ipcRenderer.invoke('sd-cpp:compare', ids),
+        batchGenerate: requests => ipcRenderer.invoke('sd-cpp:batchGenerate', requests),
+        getQueueStats: () => ipcRenderer.invoke('sd-cpp:getQueueStats'),
+        edit: options => ipcRenderer.invoke('sd-cpp:edit', options),
     },
     clipboard: {
         writeText: (text: string) => ipcRenderer.invoke('clipboard:writeText', text),

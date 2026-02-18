@@ -185,7 +185,16 @@ export class ModelRegistryService extends BaseService {
                 );
             }
 
-            const token = await this.deps.authService.getActiveToken(p);
+            let token: string | undefined;
+            try {
+                token = await this.resolveProviderToken(p);
+            } catch (err) {
+                appLogger.warn(
+                    'ModelRegistry',
+                    `Failed to resolve token for ${p}: ${getErrorMessage(err)}`
+                );
+                token = undefined;
+            }
 
             if (token) {
                 promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
@@ -196,13 +205,13 @@ export class ModelRegistryService extends BaseService {
         const all = results.flat();
 
         // Add NVIDIA models to ensure high-quality ones are always visible
-        const nvidiaToken = await this.deps.authService.getActiveToken('nvidia');
+        const nvidiaToken = await this.resolveProviderToken('nvidia');
         if (nvidiaToken) {
             all.push(...this.getNvidiaModels());
         }
 
         // Add OpenAI Image Models
-        const openaiToken = await this.deps.authService.getActiveToken('openai');
+        const openaiToken = await this.resolveProviderToken('openai');
         if (openaiToken) {
             all.push(...this.getOpenAIImageModels());
         }
@@ -228,6 +237,39 @@ export class ModelRegistryService extends BaseService {
         const locale = settings.general?.language ?? 'en';
 
         return RegionalPreferenceService.applyPreferences(allModels, locale);
+    }
+
+    private async resolveProviderToken(provider: ModelProviderId): Promise<string | undefined> {
+        const activeToken = await this.deps.authService.getActiveToken(provider);
+        if (activeToken) {
+            return activeToken;
+        }
+
+        const settings = this.deps.settingsService.getSettings();
+        const readKey = (value: JsonValue | undefined): string | undefined => {
+            if (!value || typeof value !== 'object' || Array.isArray(value)) {
+                return undefined;
+            }
+            const raw = value['apiKey'];
+            if (typeof raw !== 'string') {
+                return undefined;
+            }
+            const trimmed = raw.trim();
+            return trimmed.length > 0 ? trimmed : undefined;
+        };
+        if (provider === 'nvidia') {
+            return readKey(settings.nvidia);
+        }
+        if (provider === 'openai' || provider === 'codex') {
+            return readKey(settings.openai);
+        }
+        if (provider === 'claude') {
+            return readKey(settings.anthropic);
+        }
+        if (provider === 'antigravity') {
+            return readKey(settings.gemini);
+        }
+        return undefined;
     }
 
     private async fetchModelProvider(

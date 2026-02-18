@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { TodoFile, TodoItem } from '../components/todo/types';
 
@@ -7,6 +7,28 @@ export function useProjectTodoLogic(projectRoot: string) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
+    const undoStackRef = useRef<TodoFile[][]>([]);
+    const redoStackRef = useRef<TodoFile[][]>([]);
+    const [historyVersion, setHistoryVersion] = useState(0);
+
+    const snapshotTodoFiles = useCallback((files: TodoFile[]): TodoFile[] => {
+        return files.map(file => ({
+            ...file,
+            items: file.items.map(item => ({ ...item })),
+        }));
+    }, []);
+
+    const pushUndoSnapshot = useCallback(
+        (files: TodoFile[]) => {
+            undoStackRef.current.push(snapshotTodoFiles(files));
+            if (undoStackRef.current.length > 100) {
+                undoStackRef.current.shift();
+            }
+            redoStackRef.current = [];
+            setHistoryVersion(version => version + 1);
+        },
+        [snapshotTodoFiles]
+    );
 
     const fetchTodos = useCallback(async () => {
         if (!projectRoot) { return; }
@@ -15,6 +37,9 @@ export function useProjectTodoLogic(projectRoot: string) {
         try {
             const validFiles = await window.electron.code.scanTodos(projectRoot);
             setTodoFiles(validFiles);
+            undoStackRef.current = [];
+            redoStackRef.current = [];
+            setHistoryVersion(version => version + 1);
 
             // Auto expand all by default
             const expanded: Record<string, boolean> = {};
@@ -51,19 +76,21 @@ export function useProjectTodoLogic(projectRoot: string) {
             lines[item.line - 1] = newLine;
             await window.electron.files.writeFile(item.filePath, lines.join('\n'));
 
-            // Optimistic update
-            setTodoFiles(prev => prev.map(f => {
-                if (f.path !== item.filePath) { return f; }
-                return {
-                    ...f,
-                    items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
-                };
-            }));
+            setTodoFiles(prev => {
+                pushUndoSnapshot(prev);
+                return prev.map(f => {
+                    if (f.path !== item.filePath) { return f; }
+                    return {
+                        ...f,
+                        items: f.items.map(i => i.id === item.id ? { ...i, completed: !i.completed } : i)
+                    };
+                });
+            });
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
             void fetchTodos(); // Revert/Refresh on error
         }
-    }, [fetchTodos]);
+    }, [fetchTodos, pushUndoSnapshot]);
 
     const handleAddTask = useCallback(async (text: string) => {
         if (!text.trim()) { return; }
@@ -85,12 +112,13 @@ export function useProjectTodoLogic(projectRoot: string) {
             const newContent = content + newTaskLine + '\n';
 
             await window.electron.files.writeFile(targetPath, newContent);
+            pushUndoSnapshot(todoFiles);
             await fetchTodos();
 
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         }
-    }, [projectRoot, fetchTodos]);
+    }, [fetchTodos, projectRoot, pushUndoSnapshot, todoFiles]);
 
     const totalStats = useMemo(() => {
         let total = 0;
@@ -106,6 +134,57 @@ export function useProjectTodoLogic(projectRoot: string) {
         setExpandedFiles(prev => ({ ...prev, [path]: !prev[path] }));
     }, []);
 
+    const undo = useCallback(() => {
+        const previous = undoStackRef.current.pop();
+        if (!previous) {
+            return false;
+        }
+        redoStackRef.current.push(snapshotTodoFiles(todoFiles));
+        setTodoFiles(snapshotTodoFiles(previous));
+        setHistoryVersion(version => version + 1);
+        return true;
+    }, [snapshotTodoFiles, todoFiles]);
+
+    const redo = useCallback(() => {
+        const next = redoStackRef.current.pop();
+        if (!next) {
+            return false;
+        }
+        undoStackRef.current.push(snapshotTodoFiles(todoFiles));
+        setTodoFiles(snapshotTodoFiles(next));
+        setHistoryVersion(version => version + 1);
+        return true;
+    }, [snapshotTodoFiles, todoFiles]);
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (!(event.ctrlKey || event.metaKey)) {
+                return;
+            }
+            const target = event.target as HTMLElement | null;
+            const tagName = target?.tagName?.toLowerCase();
+            const isTypingTarget =
+                target?.isContentEditable || tagName === 'input' || tagName === 'textarea';
+            if (isTypingTarget) {
+                return;
+            }
+            const key = event.key.toLowerCase();
+            if (key === 'z' && !event.shiftKey) {
+                event.preventDefault();
+                undo();
+                return;
+            }
+            if (key === 'y' || (key === 'z' && event.shiftKey)) {
+                event.preventDefault();
+                redo();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [redo, undo]);
+
     return {
         todoFiles,
         loading,
@@ -115,6 +194,11 @@ export function useProjectTodoLogic(projectRoot: string) {
         fetchTodos,
         handleToggle,
         handleAddTask,
-        toggleFileExpand
+        toggleFileExpand,
+        undo,
+        redo,
+        canUndo: undoStackRef.current.length > 0,
+        canRedo: redoStackRef.current.length > 0,
+        historyVersion,
     };
 }

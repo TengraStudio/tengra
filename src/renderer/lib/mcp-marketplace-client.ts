@@ -32,6 +32,7 @@ const ServerSchema = z.object({
     args: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     category: z.string().optional(),
+    extensionType: z.enum(['mcp_server', 'theme', 'command', 'language', 'agent_template', 'widget', 'integration']).optional(),
     isOfficial: z.boolean().optional(),
     capabilities: z.array(z.string()).optional(),
     dependencies: z.array(z.string()).optional(),
@@ -51,8 +52,30 @@ const ServerSchema = z.object({
         autoUpdate: z.boolean().optional(),
         scheduleCron: z.string().optional(),
         signatureSha256: z.string().optional(),
+        signatureTimestamp: z.number().optional(),
         lastCheckedAt: z.number().optional(),
         lastUpdatedAt: z.number().optional()
+    }).optional(),
+    oauth: z.object({
+        enabled: z.boolean().optional(),
+        authUrl: z.string().optional(),
+        tokenUrl: z.string().optional(),
+        scopes: z.array(z.string()).optional(),
+        clientId: z.string().optional()
+    }).optional(),
+    security: z.object({
+        reviewStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
+        securityScore: z.number().optional(),
+        malwareFlags: z.array(z.string()).optional(),
+        lastScannedAt: z.number().optional()
+    }).optional(),
+    telemetry: z.object({
+        enabled: z.boolean().optional(),
+        anonymize: z.boolean().optional(),
+        crashReporting: z.boolean().optional(),
+        usageCount: z.number().optional(),
+        crashCount: z.number().optional(),
+        lastCrashAt: z.number().optional()
     }).optional(),
     settingsSchema: SettingsSchema.optional(),
     settingsValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),

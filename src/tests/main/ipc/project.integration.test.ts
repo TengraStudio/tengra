@@ -55,6 +55,7 @@ vi.mock('@main/utils/ipc-wrapper.util', () => ({
 let mockProjectService: any;
 let mockLogoService: any;
 let mockCodeIntelligenceService: any;
+let mockAuditLogService: any;
 
 describe('Project IPC Integration', () => {
     const mockEvent = { sender: { id: 1 } } as any;
@@ -69,7 +70,9 @@ describe('Project IPC Integration', () => {
             analyzeProject: vi.fn(),
             analyzeDirectory: vi.fn(),
             watchProject: vi.fn(),
-            stopWatch: vi.fn()
+            stopWatch: vi.fn(),
+            saveEnvVars: vi.fn(),
+            getAuditContext: vi.fn((rootPath: string) => ({ rootPath, projectName: 'project' }))
         };
 
         mockLogoService = {
@@ -83,6 +86,10 @@ describe('Project IPC Integration', () => {
         mockCodeIntelligenceService = {
             indexProject: vi.fn().mockResolvedValue(undefined)
         };
+
+        mockAuditLogService = {
+            logFileSystemOperation: vi.fn().mockResolvedValue(undefined)
+        };
     });
 
     it('should register project handlers', () => {
@@ -91,7 +98,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
-            databaseService: {} as any
+            databaseService: {} as any,
+            auditLogService: mockAuditLogService
         });
         expect(ipcMainHandlers.has('project:analyze')).toBe(true);
         expect(ipcMainHandlers.has('project:generateLogo')).toBe(true);
@@ -107,7 +115,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
-            databaseService: {} as any
+            databaseService: {} as any,
+            auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:analyze');
 
@@ -134,7 +143,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
-            databaseService: {} as any
+            databaseService: {} as any,
+            auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:generateLogo');
 
@@ -159,7 +169,8 @@ describe('Project IPC Integration', () => {
             logoService: mockLogoService,
             codeIntelligenceService: mockCodeIntelligenceService,
             jobSchedulerService: {} as any,
-            databaseService: {} as any
+            databaseService: {} as any,
+            auditLogService: mockAuditLogService
         });
         const handler = ipcMainHandlers.get('project:analyze');
 
@@ -171,5 +182,29 @@ describe('Project IPC Integration', () => {
             success: false,
             error: 'Analysis Failed'
         });
+    });
+
+    it('logs audit entry for env saves', async () => {
+        mockProjectService.saveEnvVars.mockResolvedValue(undefined);
+        registerProjectIpc(() => null, {
+            projectService: mockProjectService,
+            logoService: mockLogoService,
+            codeIntelligenceService: mockCodeIntelligenceService,
+            jobSchedulerService: {} as any,
+            databaseService: {} as any,
+            auditLogService: mockAuditLogService
+        });
+        const handler = ipcMainHandlers.get('project:saveEnv');
+
+        const result = await handler?.(mockEvent, '/root', { TOKEN: 'x' });
+        expect(result).toMatchObject({
+            success: true,
+            data: { success: true }
+        });
+        expect(mockAuditLogService.logFileSystemOperation).toHaveBeenCalledWith(
+            'project.save-env',
+            true,
+            expect.objectContaining({ rootPath: '/root', variableCount: 1 })
+        );
     });
 });

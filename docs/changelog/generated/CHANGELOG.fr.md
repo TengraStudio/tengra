@@ -2,6 +2,31 @@
 
 ## [2026-02-18]
 
+### Advanced Memory Versioning & Sharing (MEM-03/07/08)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.
+
+- **Versioning**: Added support for tracking memory history and rolling back to previous versions.
+- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.
+- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.
+- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.
+- **Automation**: Integrated expiration checks into the memory decay maintenance loop.
+
+### Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.
+
+- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows
+- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking
+- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search
+- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs
+- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints
+- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking
+
 ### AUD-ARCH 001-020 Completion
 
 - **Type**: refactor
@@ -68,6 +93,16 @@
 - **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
 - **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
 
+### Git Panel Section State Indicators
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.
+
+- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes
+- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback
+- Completed AUD-PROJ-009 and updated project TODO tracking
+
 ### Strict AI Rule Enforcement & Friday Deployment Ban
 
 - **Type**: docs
@@ -103,6 +138,18 @@
 - **DEBT-01**: Cleaned up obsolete feature flags.
 - **DEBT-06**: Reduced bundle size via lazy loading.
 - **Testing**: Added unit tests for security validation.
+
+### MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.
+
+- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix
+- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison
+- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries
+- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback
+- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows
 
 ### Project Terminal Diagnostics Tab
 
@@ -159,6 +206,26 @@
 - **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.
 - **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.
 - **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations.
+
+### Workspace Branch Switch Popover
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.
+
+- Click branch label to open branch list popover
+- Show loading and empty states for branch discovery
+- Switch branch directly from popover with status feedback
+
+### Workspace Editor Tab Power Actions
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.
+
+- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others
+- Added clipboard actions for absolute and relative file paths from editor tabs
+- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip
 
 ## [2026-02-17]
 

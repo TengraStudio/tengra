@@ -3,10 +3,13 @@ import {
     AlertTriangle,
     Archive,
     CheckCircle,
+    Download,
     Gauge,
     Plus,
     RefreshCw,
+    Sparkles,
     TrendingDown,
+    Upload,
 } from 'lucide-react';
 import React from 'react';
 
@@ -21,6 +24,9 @@ interface MemoryHeaderProps {
     onRefresh: () => void;
     onRunDecay: () => void;
     onAddMemory: () => void;
+    onExport: () => void;
+    onImport: () => void;
+    onRecategorize: () => void;
 }
 
 export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
@@ -28,6 +34,9 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
     onRefresh,
     onRunDecay,
     onAddMemory,
+    onExport,
+    onImport,
+    onRecategorize
 }) => {
     const { t } = useTranslation();
     return (
@@ -44,6 +53,18 @@ export const MemoryHeader: React.FC<MemoryHeaderProps> = ({
                 <Button variant="outline" size="sm" onClick={onRunDecay} className="gap-2">
                     <TrendingDown className="w-4 h-4" />
                     {t('memory.runDecay')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={onRecategorize} className="gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    {t('memory.recategorizeAll')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={onExport} className="gap-2">
+                    <Download className="w-4 h-4" />
+                    {t('memory.export')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={onImport} className="gap-2">
+                    <Upload className="w-4 h-4" />
+                    {t('memory.import')}
                 </Button>
                 <Button size="sm" onClick={onAddMemory} className="gap-2">
                     <Plus className="w-4 h-4" />

@@ -12,6 +12,14 @@ export interface MCPServerConfig {
     args?: string[]
     env?: Record<string, string>
     enabled: boolean
+    extensionType?:
+    | 'mcp_server'
+    | 'theme'
+    | 'command'
+    | 'language'
+    | 'agent_template'
+    | 'widget'
+    | 'integration'
     capabilities?: string[]
     dependencies?: string[]
     conflictsWith?: string[]
@@ -30,6 +38,7 @@ export interface MCPServerConfig {
         autoUpdate?: boolean
         scheduleCron?: string
         signatureSha256?: string
+        signatureTimestamp?: number
         lastCheckedAt?: number
         lastUpdatedAt?: number
     }
@@ -37,6 +46,32 @@ export interface MCPServerConfig {
     settingsValues?: Record<string, JsonValue>
     settingsVersion?: number
     integrityHash?: string
+    oauth?: {
+        enabled?: boolean
+        authUrl?: string
+        tokenUrl?: string
+        scopes?: string[]
+        clientId?: string
+    }
+    credentials?: {
+        provider?: string
+        keyRef?: string
+        lastRotatedAt?: number
+    }
+    security?: {
+        reviewStatus?: 'pending' | 'approved' | 'rejected'
+        securityScore?: number
+        malwareFlags?: string[]
+        lastScannedAt?: number
+    }
+    telemetry?: {
+        enabled?: boolean
+        anonymize?: boolean
+        crashReporting?: boolean
+        usageCount?: number
+        crashCount?: number
+        lastCrashAt?: number
+    }
 }
 
 export interface MCPTool {

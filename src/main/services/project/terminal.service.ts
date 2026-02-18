@@ -275,6 +275,22 @@ export class TerminalService extends BaseService {
         return info;
     }
 
+    async getRuntimeHealth(): Promise<{
+        terminalAvailable: boolean;
+        totalBackends: number;
+        availableBackends: number;
+        backends: TerminalBackendInfo[];
+    }> {
+        const backends = await this.getAvailableBackends();
+        const availableBackends = backends.filter(backend => backend.available).length;
+        return {
+            terminalAvailable: availableBackends > 0,
+            totalBackends: backends.length,
+            availableBackends,
+            backends,
+        };
+    }
+
     private getWindowsShells(): { id: string; name: string; path: string }[] {
         const shells: { id: string; name: string; path: string }[] = [];
         const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';

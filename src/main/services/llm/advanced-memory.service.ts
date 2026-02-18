@@ -22,10 +22,19 @@ import {
     ContradictionCandidate,
     DEFAULT_MEMORY_CONFIG,
     MemoryCategory,
+    MemoryImportResult,
     MemoryScoreFactors,
+    MemorySearchAnalytics,
+    MemorySearchHistoryEntry,
+    SharedMemoryAnalytics,
+    SharedMemoryMergeConflict,
+    SharedMemoryNamespace,
+    SharedMemorySyncRequest,
+    SharedMemorySyncResult,
     MemorySource,
     MemoryStatistics,
     MemoryStatus,
+    MemoryVersion,
     PendingMemory,
     RecallContext,
     RecallResult,
@@ -63,8 +72,20 @@ export type PersonalitySettings = {
 export class AdvancedMemoryService {
     private config: AdvancedMemoryConfig;
     private stagingBuffer: Map<string, PendingMemory> = new Map();
+    private sharedNamespaces = new Map<string, SharedMemoryNamespace>();
+    private sharedNamespaceConflicts = new Map<string, SharedMemoryMergeConflict[]>();
     private cachedOllamaModel: string | null = null;
     private isInitialized = false;
+    private searchAnalytics = {
+        totalQueries: 0,
+        semanticQueries: 0,
+        textQueries: 0,
+        hybridQueries: 0,
+        totalResultsReturned: 0,
+        lastQueryAt: 0,
+        queryCounts: new Map<string, number>(),
+        history: [] as MemorySearchHistoryEntry[]
+    };
 
     constructor(
         private db: DatabaseService,
@@ -458,7 +479,148 @@ export class AdvancedMemoryService {
      */
     async recallRelevantFacts(query: string, limit: number = 5): Promise<AdvancedSemanticFragment[]> {
         const result = await this.recall({ query, limit });
+        this.recordSearchAnalytics(query, 'semantic', result.memories.length);
         return result.memories;
+    }
+
+    async searchMemoriesHybrid(query: string, limit: number = 10): Promise<AdvancedSemanticFragment[]> {
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) {
+            return [];
+        }
+
+        const safeLimit = Math.max(1, Math.min(100, limit));
+        const semantic = await this.recall({ query: normalizedQuery, limit: safeLimit * 2 });
+        const lexical = this.rankLexicalMatches(normalizedQuery, await this.getAllAdvancedMemories(), safeLimit * 2);
+
+        const combined = new Map<string, { memory: AdvancedSemanticFragment; score: number }>();
+        this.mergeScoredResults(combined, semantic.memories, 0.7);
+        this.mergeScoredResults(combined, lexical, 0.3);
+
+        const ranked = Array.from(combined.values())
+            .sort((left, right) => right.score - left.score)
+            .slice(0, safeLimit)
+            .map(item => item.memory);
+
+        this.recordSearchAnalytics(normalizedQuery, 'hybrid', ranked.length);
+        return ranked;
+    }
+
+    async exportMemories(query?: string, limit: number = 200): Promise<{
+        exportedAt: string;
+        query?: string;
+        count: number;
+        memories: AdvancedSemanticFragment[];
+    }> {
+        const safeLimit = Math.max(1, Math.min(1000, limit));
+        const memories = query?.trim()
+            ? await this.searchMemoriesHybrid(query, safeLimit)
+            : (await this.getAllAdvancedMemories()).slice(0, safeLimit);
+
+        return {
+            exportedAt: new Date().toISOString(),
+            query: query?.trim() || undefined,
+            count: memories.length,
+            memories
+        };
+    }
+
+    async importMemories(payload: {
+        memories?: Array<Partial<AdvancedSemanticFragment>>;
+        pendingMemories?: Array<Partial<PendingMemory>>;
+        replaceExisting?: boolean;
+    }): Promise<MemoryImportResult> {
+        const memories = Array.isArray(payload.memories) ? payload.memories : [];
+        const pendingMemories = Array.isArray(payload.pendingMemories) ? payload.pendingMemories : [];
+        const result: MemoryImportResult = {
+            imported: 0,
+            pendingImported: 0,
+            skipped: 0,
+            errors: []
+        };
+
+        if (payload.replaceExisting) {
+            await this.clearExistingMemories();
+        }
+
+        for (let index = 0; index < memories.length; index++) {
+            const candidate = this.normalizeMemoryRecord(memories[index]);
+            if (!candidate) {
+                result.skipped++;
+                result.errors.push(`Invalid memory record at index ${index}`);
+                continue;
+            }
+
+            try {
+                if (candidate.embedding.length === 0) {
+                    candidate.embedding = await this.embedding.generateEmbedding(candidate.content);
+                }
+                await this.storeAdvancedMemory(candidate);
+                result.imported++;
+            } catch (error) {
+                result.skipped++;
+                result.errors.push(`Failed to import memory ${candidate.id}: ${String(error)}`);
+            }
+        }
+
+        for (let index = 0; index < pendingMemories.length; index++) {
+            const pending = this.normalizePendingMemoryRecord(pendingMemories[index]);
+            if (!pending) {
+                result.skipped++;
+                result.errors.push(`Invalid pending memory record at index ${index}`);
+                continue;
+            }
+
+            try {
+                this.stagingBuffer.set(pending.id, pending);
+                await this.savePendingMemory(pending);
+                result.pendingImported++;
+            } catch (error) {
+                result.skipped++;
+                result.errors.push(`Failed to import pending memory ${pending.id}: ${String(error)}`);
+            }
+        }
+
+        return result;
+    }
+
+    getSearchAnalytics(): MemorySearchAnalytics {
+        const totalQueries = this.searchAnalytics.totalQueries;
+        const averageResults = totalQueries === 0
+            ? 0
+            : this.searchAnalytics.totalResultsReturned / totalQueries;
+
+        const topQueries = Array.from(this.searchAnalytics.queryCounts.entries())
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 10)
+            .map(([query, count]) => ({ query, count }));
+
+        return {
+            totalQueries,
+            semanticQueries: this.searchAnalytics.semanticQueries,
+            textQueries: this.searchAnalytics.textQueries,
+            hybridQueries: this.searchAnalytics.hybridQueries,
+            averageResults,
+            lastQueryAt: this.searchAnalytics.lastQueryAt || undefined,
+            topQueries
+        };
+    }
+
+    getSearchHistory(limit: number = 25): MemorySearchHistoryEntry[] {
+        const safeLimit = Math.max(1, Math.min(200, limit));
+        const startIndex = Math.max(0, this.searchAnalytics.history.length - safeLimit);
+        return this.searchAnalytics.history.slice(startIndex).reverse();
+    }
+
+    getSearchSuggestions(prefix?: string, limit: number = 8): string[] {
+        const normalizedPrefix = (prefix ?? '').trim().toLowerCase();
+        const safeLimit = Math.max(1, Math.min(20, limit));
+
+        return Array.from(this.searchAnalytics.queryCounts.entries())
+            .filter(([query]) => !normalizedPrefix || query.toLowerCase().startsWith(normalizedPrefix))
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, safeLimit)
+            .map(([query]) => query);
     }
 
     // ========================================================================
@@ -560,6 +722,10 @@ ${transcript}`;
         return await this.db.searchEpisodicMemories(queryEmbedding, limit);
     }
 
+    async getAllEpisodes(): Promise<EpisodicMemory[]> {
+        return await this.db.knowledge.getAllEpisodicMemories();
+    }
+
     // ========================================================================
     // ENTITY KNOWLEDGE
     // ========================================================================
@@ -582,6 +748,10 @@ ${transcript}`;
 
     async getEntityFacts(entityName: string): Promise<EntityKnowledge[]> {
         return await this.db.getEntityKnowledge(entityName);
+    }
+
+    async getAllEntityFacts(): Promise<EntityKnowledge[]> {
+        return await this.db.knowledge.getAllEntityKnowledge();
     }
 
     // ========================================================================
@@ -851,6 +1021,13 @@ Return only the merged fact, no explanation.`;
 
         for (const memory of allMemories) {
             if (memory.status !== 'confirmed') { continue; }
+
+            // Check expiration
+            if (memory.expiresAt && memory.expiresAt < now) {
+                memory.status = 'archived';
+                await this.updateAdvancedMemory(memory);
+                continue;
+            }
 
             const newImportance = this.calculateDecayedImportance(memory, now);
 
@@ -1257,6 +1434,265 @@ If no facts worth remembering, return [].`;
         return true;
     }
 
+    private rankLexicalMatches(
+        query: string,
+        memories: AdvancedSemanticFragment[],
+        limit: number
+    ): AdvancedSemanticFragment[] {
+        const queryTerms = query.split(/\s+/).filter(Boolean);
+        if (queryTerms.length === 0) {
+            return [];
+        }
+
+        const scored = memories
+            .map(memory => {
+                const haystack = `${memory.content} ${memory.tags.join(' ')}`.toLowerCase();
+                let score = 0;
+                for (const term of queryTerms) {
+                    if (haystack.includes(term)) {
+                        score += 1;
+                    }
+                }
+                if (score === 0) {
+                    return null;
+                }
+                return { memory, score };
+            })
+            .filter((item): item is { memory: AdvancedSemanticFragment; score: number } => item !== null)
+            .sort((left, right) => right.score - left.score)
+            .slice(0, limit);
+
+        this.recordSearchAnalytics(query, 'text', scored.length);
+        return scored.map(item => item.memory);
+    }
+
+    private mergeScoredResults(
+        target: Map<string, { memory: AdvancedSemanticFragment; score: number }>,
+        memories: AdvancedSemanticFragment[],
+        weight: number
+    ): void {
+        for (let index = 0; index < memories.length; index++) {
+            const memory = memories[index];
+            const rankScore = weight * (1 / (index + 1));
+            const existing = target.get(memory.id);
+            if (existing) {
+                existing.score += rankScore;
+            } else {
+                target.set(memory.id, { memory, score: rankScore });
+            }
+        }
+    }
+
+    private recordSearchAnalytics(query: string, type: 'semantic' | 'text' | 'hybrid', resultCount: number): void {
+        this.searchAnalytics.totalQueries++;
+        this.searchAnalytics.lastQueryAt = Date.now();
+        this.searchAnalytics.totalResultsReturned += resultCount;
+        if (type === 'semantic') { this.searchAnalytics.semanticQueries++; }
+        if (type === 'text') { this.searchAnalytics.textQueries++; }
+        if (type === 'hybrid') { this.searchAnalytics.hybridQueries++; }
+
+        const normalizedQuery = query.trim().slice(0, 120);
+        if (!normalizedQuery) {
+            return;
+        }
+        const current = this.searchAnalytics.queryCounts.get(normalizedQuery) ?? 0;
+        this.searchAnalytics.queryCounts.set(normalizedQuery, current + 1);
+        this.searchAnalytics.history.push({
+            query: normalizedQuery,
+            type,
+            resultCount,
+            timestamp: this.searchAnalytics.lastQueryAt
+        });
+        if (this.searchAnalytics.history.length > 200) {
+            this.searchAnalytics.history = this.searchAnalytics.history.slice(-200);
+        }
+    }
+
+    private async clearExistingMemories(): Promise<void> {
+        const existing = await this.getAllAdvancedMemories();
+        for (let index = 0; index < existing.length; index++) {
+            await this.db.deleteAdvancedMemory(existing[index].id);
+        }
+
+        const pending = await this.db.getAllPendingMemories();
+        for (let index = 0; index < pending.length; index++) {
+            await this.db.deletePendingMemory(pending[index].id);
+        }
+
+        this.stagingBuffer.clear();
+    }
+
+    private normalizeMemoryRecord(input: Partial<AdvancedSemanticFragment>): AdvancedSemanticFragment | null {
+        const rawContent = typeof input.content === 'string'
+            ? input.content
+            : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
+        const content = rawContent.trim();
+        if (!content) {
+            return null;
+        }
+
+        const now = Date.now();
+        const id = typeof input.id === 'string' && input.id.trim()
+            ? input.id.trim()
+            : this.generateId();
+        const source = this.normalizeMemorySource(input.source);
+        const category = this.normalizeMemoryCategory(input.category);
+        const status = this.normalizeMemoryStatus(input.status);
+        const tags = this.normalizeTags(input.tags);
+        const embedding = this.normalizeEmbeddingVector(input.embedding);
+
+        const confidence = this.normalizeUnitNumber(input.confidence, 0.7);
+        const importance = this.normalizeUnitNumber(input.importance, 0.5);
+        const initialImportance = this.normalizeUnitNumber(input.initialImportance, importance);
+
+        return {
+            id,
+            content,
+            embedding,
+            source,
+            sourceId: typeof input.sourceId === 'string' && input.sourceId.trim() ? input.sourceId.trim() : 'import',
+            sourceContext: typeof input.sourceContext === 'string' ? input.sourceContext : undefined,
+            category,
+            tags,
+            confidence,
+            importance,
+            initialImportance,
+            status,
+            validatedAt: typeof input.validatedAt === 'number' ? input.validatedAt : undefined,
+            validatedBy: input.validatedBy === 'user' || input.validatedBy === 'auto' || input.validatedBy === 'system'
+                ? input.validatedBy
+                : undefined,
+            accessCount: typeof input.accessCount === 'number' && input.accessCount > 0 ? Math.floor(input.accessCount) : 0,
+            lastAccessedAt: typeof input.lastAccessedAt === 'number' ? input.lastAccessedAt : now,
+            relatedMemoryIds: this.normalizeIds(input.relatedMemoryIds),
+            contradictsIds: this.normalizeIds(input.contradictsIds),
+            mergedIntoId: typeof input.mergedIntoId === 'string' ? input.mergedIntoId : undefined,
+            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined,
+            contextTags: this.normalizeTags(input.contextTags),
+            createdAt: typeof input.createdAt === 'number' ? input.createdAt : now,
+            updatedAt: typeof input.updatedAt === 'number' ? input.updatedAt : now,
+            expiresAt: typeof input.expiresAt === 'number' ? input.expiresAt : undefined,
+            metadata: input.metadata
+        };
+    }
+
+    private normalizePendingMemoryRecord(input: Partial<PendingMemory>): PendingMemory | null {
+        const rawContent = typeof input.content === 'string'
+            ? input.content
+            : (typeof input.sourceContext === 'string' ? input.sourceContext : '');
+        const content = rawContent.trim();
+        if (!content) {
+            return null;
+        }
+
+        const now = Date.now();
+        const id = typeof input.id === 'string' && input.id.trim()
+            ? input.id.trim()
+            : this.generateId();
+        const source = this.normalizeMemorySource(input.source);
+        const category = this.normalizeMemoryCategory(input.suggestedCategory);
+
+        return {
+            id,
+            content,
+            embedding: this.normalizeEmbeddingVector(input.embedding),
+            source,
+            sourceId: typeof input.sourceId === 'string' && input.sourceId.trim() ? input.sourceId.trim() : 'import',
+            sourceContext: typeof input.sourceContext === 'string' ? input.sourceContext : content,
+            extractedAt: typeof input.extractedAt === 'number' ? input.extractedAt : now,
+            suggestedCategory: category,
+            suggestedTags: this.normalizeTags(input.suggestedTags),
+            extractionConfidence: this.normalizeUnitNumber(input.extractionConfidence, 0.7),
+            relevanceScore: this.normalizeUnitNumber(input.relevanceScore, 0.6),
+            noveltyScore: this.normalizeUnitNumber(input.noveltyScore, 0.6),
+            requiresUserValidation: Boolean(input.requiresUserValidation),
+            autoConfirmReason: typeof input.autoConfirmReason === 'string' ? input.autoConfirmReason : undefined,
+            potentialContradictions: Array.isArray(input.potentialContradictions) ? input.potentialContradictions : [],
+            similarMemories: Array.isArray(input.similarMemories) ? input.similarMemories : [],
+            projectId: typeof input.projectId === 'string' && input.projectId.trim() ? input.projectId.trim() : undefined
+        };
+    }
+
+    private normalizeMemorySource(source?: MemorySource | string): MemorySource {
+        const valid: MemorySource[] = ['user_explicit', 'user_implicit', 'system', 'conversation', 'tool_result'];
+        if (typeof source === 'string' && valid.includes(source as MemorySource)) {
+            return source as MemorySource;
+        }
+        return 'system';
+    }
+
+    private normalizeMemoryCategory(category?: MemoryCategory | string): MemoryCategory {
+        const valid: MemoryCategory[] = ['preference', 'personal', 'project', 'technical', 'workflow', 'relationship', 'fact', 'instruction'];
+        if (typeof category === 'string' && valid.includes(category as MemoryCategory)) {
+            return category as MemoryCategory;
+        }
+        return 'fact';
+    }
+
+    private normalizeMemoryStatus(status?: MemoryStatus | string): MemoryStatus {
+        const valid: MemoryStatus[] = ['pending', 'confirmed', 'archived', 'contradicted', 'merged'];
+        if (typeof status === 'string' && valid.includes(status as MemoryStatus)) {
+            return status as MemoryStatus;
+        }
+        return 'confirmed';
+    }
+
+    private normalizeTags(tags?: string[]): string[] {
+        if (!tags) {
+            return [];
+        }
+        return tags
+            .map(tag => tag.trim())
+            .filter(Boolean)
+            .slice(0, 50);
+    }
+
+    private normalizeIds(ids?: string[]): string[] {
+        if (!ids) {
+            return [];
+        }
+        return ids
+            .map(id => id.trim())
+            .filter(Boolean)
+            .slice(0, 100);
+    }
+
+    private normalizeEmbeddingVector(value?: number[]): number[] {
+        if (!value) {
+            return [];
+        }
+        return value
+            .filter(entry => Number.isFinite(entry))
+            .slice(0, 4096);
+    }
+
+    private normalizeUnitNumber(value: number | undefined, fallback: number): number {
+        if (value === undefined || !Number.isFinite(value)) {
+            return fallback;
+        }
+        return Math.max(0, Math.min(1, value));
+    }
+
+    private isProjectAllowed(
+        namespace: SharedMemoryNamespace,
+        sourceProjectId: string,
+        targetProjectId: string
+    ): boolean {
+        const allowedTargets = namespace.accessControl[sourceProjectId];
+        if (!allowedTargets) {
+            return false;
+        }
+        return allowedTargets.includes(targetProjectId);
+    }
+
+    private async findProjectMemoryBySource(
+        projectId: string,
+        sourceId: string
+    ): Promise<AdvancedSemanticFragment | null> {
+        const memories = await this.getAllAdvancedMemories();
+        return memories.find(memory => memory.projectId === projectId && memory.sourceId === sourceId) ?? null;
+    }
+
     /**
      * Cosine similarity between two vectors
      */
@@ -1297,7 +1733,7 @@ If no facts worth remembering, return [].`;
         return this.db.getAdvancedMemoryById(id);
     }
 
-    private async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
+    public async getAllAdvancedMemories(): Promise<AdvancedSemanticFragment[]> {
         return this.db.getAllAdvancedMemories();
     }
 
@@ -1432,6 +1868,7 @@ If no facts worth remembering, return [].`;
             tags?: string[];
             importance?: number;
             projectId?: string | null;
+            editReason?: string;
         }
     ): Promise<AdvancedSemanticFragment | null> {
         const memory = await this.getMemoryById(id);
@@ -1439,6 +1876,22 @@ If no facts worth remembering, return [].`;
             appLogger.warn(SERVICE_NAME, `Memory not found for edit: ${id}`);
             return null;
         }
+
+        // Store history before update
+        const historyItem: MemoryVersion = {
+            versionIndex: (memory.history?.length ?? 0),
+            content: memory.content,
+            category: memory.category,
+            tags: [...memory.tags],
+            importance: memory.importance,
+            timestamp: memory.updatedAt,
+            reason: updates.editReason
+        };
+
+        if (!memory.history) {
+            memory.history = [];
+        }
+        memory.history.push(historyItem);
 
         // Apply updates
         if (updates.content !== undefined && updates.content !== memory.content) {
@@ -1467,8 +1920,226 @@ If no facts worth remembering, return [].`;
         memory.updatedAt = Date.now();
 
         await this.updateAdvancedMemory(memory);
-        appLogger.info(SERVICE_NAME, `Memory edited: ${id}`);
+        appLogger.info(SERVICE_NAME, `Memory edited: ${id} (Version ${memory.history.length})`);
         return memory;
+    }
+
+    /**
+     * Rollback a memory to a previous version
+     */
+    async rollbackMemory(id: string, versionIndex: number): Promise<AdvancedSemanticFragment | null> {
+        const memory = await this.getMemoryById(id);
+        if (!memory?.history?.[versionIndex]) {
+            appLogger.warn(SERVICE_NAME, `Rollback failed: Memory ${id} or version ${versionIndex} not found`);
+            return null;
+        }
+
+        const targetVersion = memory.history[versionIndex];
+
+        // Add current state to history before rollback
+        const currentAsVersion: MemoryVersion = {
+            versionIndex: memory.history.length,
+            content: memory.content,
+            category: memory.category,
+            tags: [...memory.tags],
+            importance: memory.importance,
+            timestamp: memory.updatedAt,
+            reason: `Rollback to version ${versionIndex}`
+        };
+        memory.history.push(currentAsVersion);
+
+        // Apply target version
+        memory.content = targetVersion.content;
+        memory.category = targetVersion.category;
+        memory.tags = [...targetVersion.tags];
+        memory.importance = targetVersion.importance;
+        memory.embedding = await this.embedding.generateEmbedding(memory.content);
+        memory.updatedAt = Date.now();
+
+        await this.updateAdvancedMemory(memory);
+        appLogger.info(SERVICE_NAME, `Memory ${id} rolled back to version ${versionIndex}`);
+        return memory;
+    }
+
+    /**
+     * Get the edit history of a memory
+     */
+    async getMemoryHistory(id: string): Promise<MemoryVersion[]> {
+        const memory = await this.getMemoryById(id);
+        return memory?.history ?? [];
+    }
+
+    /**
+     * Share a memory with another project
+     */
+    async shareMemoryWithProject(memoryId: string, targetProjectId: string): Promise<AdvancedSemanticFragment | null> {
+        const memory = await this.getMemoryById(memoryId);
+        if (!memory) { return null; }
+        const normalizedTags = memory.tags ?? [];
+        const normalizedHistory = memory.history ?? [];
+        const normalizedRelatedMemoryIds = memory.relatedMemoryIds ?? [];
+
+        const sharedMemory: AdvancedSemanticFragment = {
+            ...memory,
+            id: this.generateId(),
+            projectId: targetProjectId,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            history: [
+                ...normalizedHistory,
+                {
+                    versionIndex: normalizedHistory.length,
+                    content: memory.content,
+                    category: memory.category,
+                    tags: [...normalizedTags],
+                    importance: memory.importance,
+                    timestamp: Date.now(),
+                    reason: `Shared from ${memory.projectId ?? 'global'} to ${targetProjectId}`
+                }
+            ],
+            tags: [...normalizedTags],
+            relatedMemoryIds: Array.from(new Set([...normalizedRelatedMemoryIds, memory.id])), // Link to original
+        };
+
+        await this.storeAdvancedMemory(sharedMemory);
+        appLogger.info(SERVICE_NAME, `Memory ${memoryId} shared with project ${targetProjectId}`);
+        return sharedMemory;
+    }
+
+    createSharedNamespace(payload: {
+        id: string;
+        name: string;
+        projectIds: string[];
+        accessControl?: Record<string, string[]>;
+    }): SharedMemoryNamespace {
+        const now = Date.now();
+        const uniqueProjects = Array.from(new Set(payload.projectIds.filter(projectId => projectId.trim().length > 0)));
+        const defaultAccess: Record<string, string[]> = {};
+        for (const projectId of uniqueProjects) {
+            defaultAccess[projectId] = uniqueProjects.filter(candidate => candidate !== projectId);
+        }
+        const namespace: SharedMemoryNamespace = {
+            id: payload.id,
+            name: payload.name,
+            projectIds: uniqueProjects,
+            accessControl: payload.accessControl ?? defaultAccess,
+            createdAt: this.sharedNamespaces.get(payload.id)?.createdAt ?? now,
+            updatedAt: now
+        };
+        this.sharedNamespaces.set(namespace.id, namespace);
+        return namespace;
+    }
+
+    async syncSharedNamespace(request: SharedMemorySyncRequest): Promise<SharedMemorySyncResult> {
+        const namespace = this.sharedNamespaces.get(request.namespaceId);
+        if (!namespace) {
+            throw new Error(`Shared namespace not found: ${request.namespaceId}`);
+        }
+        if (!namespace.projectIds.includes(request.sourceProjectId)) {
+            throw new Error(`Source project ${request.sourceProjectId} is not part of namespace ${request.namespaceId}`);
+        }
+
+        const sourceMemories = (await this.getAllAdvancedMemories()).filter(memory =>
+            memory.projectId === request.sourceProjectId &&
+            (request.memoryIds === undefined || request.memoryIds.includes(memory.id))
+        );
+        const targets = (request.targetProjectIds ?? namespace.projectIds)
+            .filter(projectId => projectId !== request.sourceProjectId);
+
+        let synced = 0;
+        let skipped = 0;
+        const conflicts: SharedMemoryMergeConflict[] = [];
+        for (const targetProjectId of targets) {
+            if (!this.isProjectAllowed(namespace, request.sourceProjectId, targetProjectId)) {
+                skipped += sourceMemories.length;
+                continue;
+            }
+            for (const sourceMemory of sourceMemories) {
+                const existing = await this.findProjectMemoryBySource(targetProjectId, sourceMemory.sourceId);
+                if (existing && existing.content !== sourceMemory.content) {
+                    const conflict: SharedMemoryMergeConflict = {
+                        namespaceId: namespace.id,
+                        sourceProjectId: request.sourceProjectId,
+                        targetProjectId,
+                        sourceMemoryId: sourceMemory.id,
+                        targetMemoryId: existing.id,
+                        sourceContent: sourceMemory.content,
+                        targetContent: existing.content,
+                        resolution: request.resolution ?? 'manual_review',
+                        detectedAt: Date.now()
+                    };
+                    conflicts.push(conflict);
+                    continue;
+                }
+
+                const shared = await this.shareMemoryWithProject(sourceMemory.id, targetProjectId);
+                if (shared) {
+                    synced++;
+                } else {
+                    skipped++;
+                }
+            }
+        }
+
+        this.sharedNamespaceConflicts.set(namespace.id, [
+            ...(this.sharedNamespaceConflicts.get(namespace.id) ?? []),
+            ...conflicts
+        ]);
+
+        return {
+            namespaceId: namespace.id,
+            synced,
+            skipped,
+            conflicts,
+            updatedAt: Date.now()
+        };
+    }
+
+    async getSharedNamespaceAnalytics(namespaceId: string): Promise<SharedMemoryAnalytics> {
+        const namespace = this.sharedNamespaces.get(namespaceId);
+        if (!namespace) {
+            throw new Error(`Shared namespace not found: ${namespaceId}`);
+        }
+
+        const allMemories = await this.getAllAdvancedMemories();
+        const memoriesByProject: Record<string, number> = {};
+        let totalMemories = 0;
+        for (const projectId of namespace.projectIds) {
+            const count = allMemories.filter(memory => memory.projectId === projectId).length;
+            memoriesByProject[projectId] = count;
+            totalMemories += count;
+        }
+
+        return {
+            namespaceId,
+            totalMemories,
+            totalProjects: namespace.projectIds.length,
+            conflicts: (this.sharedNamespaceConflicts.get(namespaceId) ?? []).length,
+            memoriesByProject,
+            updatedAt: Date.now()
+        };
+    }
+
+    async searchAcrossProjects(payload: {
+        namespaceId: string;
+        query: string;
+        projectId: string;
+        limit?: number;
+    }): Promise<AdvancedSemanticFragment[]> {
+        const namespace = this.sharedNamespaces.get(payload.namespaceId);
+        if (!namespace) {
+            throw new Error(`Shared namespace not found: ${payload.namespaceId}`);
+        }
+        if (!namespace.projectIds.includes(payload.projectId)) {
+            throw new Error(`Project ${payload.projectId} is not part of namespace ${payload.namespaceId}`);
+        }
+
+        const searchResult = await this.searchMemoriesHybrid(payload.query, payload.limit ?? 20);
+        return searchResult.filter(memory =>
+            memory.projectId !== undefined &&
+            namespace.projectIds.includes(memory.projectId) &&
+            this.isProjectAllowed(namespace, payload.projectId, memory.projectId)
+        );
     }
 
     /**
@@ -1527,5 +2198,62 @@ If no facts worth remembering, return [].`;
      */
     async getMemory(id: string): Promise<AdvancedSemanticFragment | null> {
         return this.getMemoryById(id);
+    }
+
+    /**
+     * Manually trigger re-categorization of memories
+     */
+    async recategorizeMemories(memoryIds?: string[]): Promise<number> {
+        const memories = memoryIds
+            ? await Promise.all(memoryIds.map(id => this.getMemoryById(id)))
+            : await this.getAllAdvancedMemories();
+
+        const validMemories = memories.filter((m): m is AdvancedSemanticFragment => m !== null);
+        const model = await this.getAvailableModel();
+        if (!model || validMemories.length === 0) { return 0; }
+
+        let updatedCount = 0;
+        for (const memory of validMemories) {
+            const prompt = `Identify the best category for this fact from: preference, personal, project, technical, workflow, relationship, fact, instruction.
+Fact: "${memory.content}"
+Current Category: ${memory.category}
+Return only the category name.`;
+
+            try {
+                const res = await this.callLLM([{ role: 'user', content: prompt }], model);
+                const newCategory = res.content.trim().toLowerCase().replace(/[^a-z]/g, '') as MemoryCategory;
+
+                const validCategories = ['preference', 'personal', 'project', 'technical', 'workflow', 'relationship', 'fact', 'instruction'];
+                if (validCategories.includes(newCategory) && newCategory !== memory.category) {
+                    await this.editMemory(memory.id, { category: newCategory, editReason: 'Auto-recategorization' });
+                    updatedCount++;
+                }
+            } catch (error) {
+                appLogger.warn(SERVICE_NAME, `Recategorization failed for ${memory.id}: ${error}`);
+            }
+        }
+
+        return updatedCount;
+    }
+
+    /**
+     * Clean up expired memories
+     */
+    async cleanupExpiredMemories(): Promise<number> {
+        const now = Date.now();
+        const allMemories = await this.getAllAdvancedMemories();
+        let count = 0;
+
+        for (const memory of allMemories) {
+            if (memory.expiresAt && memory.expiresAt < now && memory.status !== 'archived') {
+                await this.archiveMemory(memory.id);
+                count++;
+            }
+        }
+
+        if (count > 0) {
+            appLogger.info(SERVICE_NAME, `Cleaned up ${count} expired memories`);
+        }
+        return count;
     }
 }

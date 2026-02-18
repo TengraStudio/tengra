@@ -167,6 +167,7 @@ describe('Git IPC Integration', () => {
 
     const mockGitService = {
         executeRaw,
+        cancelOperation: vi.fn(() => true),
         getStatus: vi.fn(async () => []),
         getLog: vi.fn(async () => []),
         getFileDiff: vi.fn(async () => ({ success: true, original: '', modified: '' })),
@@ -212,6 +213,31 @@ describe('Git IPC Integration', () => {
         expect(ipcMainHandlers.has('git:getFlowStatus')).toBe(true);
         expect(ipcMainHandlers.has('git:getHooks')).toBe(true);
         expect(ipcMainHandlers.has('git:getRepositoryStats')).toBe(true);
+        expect(ipcMainHandlers.has('git:runControlledOperation')).toBe(true);
+        expect(ipcMainHandlers.has('git:cancelOperation')).toBe(true);
+    });
+
+    it('supports controlled operation execution and cancellation', async () => {
+        const runHandler = ipcMainHandlers.get('git:runControlledOperation')!;
+        const cancelHandler = ipcMainHandlers.get('git:cancelOperation')!;
+
+        const runResult = await runHandler(
+            {} as IpcMainInvokeEvent,
+            'C:/repo',
+            'rebase --continue',
+            'op-1',
+            5000
+        );
+        const cancelResult = await cancelHandler({} as IpcMainInvokeEvent, 'op-1');
+
+        expect(runResult.success).toBe(true);
+        expect(mockGitService.executeRaw).toHaveBeenCalledWith(
+            'C:/repo',
+            'rebase --continue',
+            { operationId: 'op-1', timeoutMs: 5000 }
+        );
+        expect(cancelResult.success).toBe(true);
+        expect(mockGitService.cancelOperation).toHaveBeenCalledWith('op-1');
     });
 
     it('parses conflict entries and analytics', async () => {

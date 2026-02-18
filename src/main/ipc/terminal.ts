@@ -983,6 +983,24 @@ export function registerTerminalIpc(
     );
 
     secureHandle(
+        'terminal:getRuntimeHealth',
+        createValidatedIpcHandler(
+            'terminal:getRuntimeHealth',
+            async () => {
+                return terminalService.getRuntimeHealth();
+            },
+            {
+                defaultValue: {
+                    terminalAvailable: false,
+                    totalBackends: 0,
+                    availableBackends: 0,
+                    backends: [],
+                }
+            }
+        )
+    );
+
+    secureHandle(
         'terminal:getDockerContainers',
         createValidatedIpcHandler(
             'terminal:getDockerContainers',

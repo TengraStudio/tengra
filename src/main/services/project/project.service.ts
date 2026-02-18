@@ -56,6 +56,7 @@ export class ProjectService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private analysisCache: Map<string, { data: ProjectAnalysis; timestamp: number }> = new Map();
     private fileListCache: Map<string, { files: string[]; timestamp: number }> = new Map();
+    private changedPathSets: Map<string, Set<string>> = new Map();
     private readonly ANALYSIS_CACHE_TTL_MS = 300000;
     private readonly PROJECT_FILES_PAGE_SIZE = 1000;
 
@@ -69,6 +70,7 @@ export class ProjectService extends BaseService {
      * @param onChange Callback triggered on file change events.
      */
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
+        rootPath = path.resolve(rootPath);
         this.logInfo(`Starting watch on ${rootPath}`);
 
         // Stop existing watcher if any
@@ -79,13 +81,25 @@ export class ProjectService extends BaseService {
 
         try {
             const { watch } = await import('fs');
+            const eventThrottleMap = new Map<string, number>();
+            const EVENT_THROTTLE_MS = 150;
 
             // Recursive native watcher
             const watcher = watch(rootPath, { recursive: true }, (event, filename) => {
                 if (!filename) { return; }
                 // Simple debounce/filter could be added here
                 if (filename.includes('node_modules') || filename.includes('.git')) { return; }
-                onChange(event, path.join(rootPath, filename.toString()));
+                const fileName = filename.toString();
+                const absolutePath = path.join(rootPath, fileName);
+                const throttleKey = `${event}:${absolutePath}`;
+                const now = Date.now();
+                const lastEmittedAt = eventThrottleMap.get(throttleKey) ?? 0;
+                if (now - lastEmittedAt < EVENT_THROTTLE_MS) {
+                    return;
+                }
+                eventThrottleMap.set(throttleKey, now);
+                this.trackChangedPath(rootPath, absolutePath);
+                onChange(event, absolutePath);
             });
 
             watcher.on('error', (err) => this.logError(`Error on ${rootPath}:`, err));
@@ -108,14 +122,87 @@ export class ProjectService extends BaseService {
         this.watchers.clear();
         this.analysisCache.clear();
         this.fileListCache.clear();
+        this.changedPathSets.clear();
     }
 
     async stopWatch(rootPath: string) {
+        rootPath = path.resolve(rootPath);
         if (this.watchers.has(rootPath)) {
             this.watchers.get(rootPath)?.close();
             this.watchers.delete(rootPath);
+            this.changedPathSets.delete(rootPath);
             this.logInfo(`Stopped watching ${rootPath}`);
         }
+    }
+
+    getAuditContext(rootPath: string): { rootPath: string; projectName: string } {
+        const normalizedRootPath = path.resolve(rootPath);
+        return {
+            rootPath: normalizedRootPath,
+            projectName: path.basename(normalizedRootPath) || normalizedRootPath,
+        };
+    }
+
+    private trackChangedPath(rootPath: string, changedPath: string): void {
+        const normalizedRootPath = path.resolve(rootPath);
+        const normalizedChangedPath = path.resolve(changedPath);
+        const changedPaths = this.changedPathSets.get(normalizedRootPath) ?? new Set<string>();
+        changedPaths.add(normalizedChangedPath);
+        this.changedPathSets.set(normalizedRootPath, changedPaths);
+    }
+
+    private async applyIncrementalInvalidation(rootPath: string): Promise<void> {
+        const changedPaths = this.changedPathSets.get(rootPath);
+        if (!changedPaths || changedPaths.size === 0) {
+            return;
+        }
+        this.changedPathSets.delete(rootPath);
+
+        const cachedFileList = this.fileListCache.get(rootPath);
+        if (!cachedFileList) {
+            this.analysisCache.delete(rootPath);
+            return;
+        }
+
+        const nextFiles = new Set(cachedFileList.files);
+        for (const changedPath of changedPaths) {
+            try {
+                const stat = await fs.stat(changedPath);
+                if (stat.isFile() && !this.shouldIgnore(path.basename(changedPath))) {
+                    nextFiles.add(changedPath);
+                } else {
+                    nextFiles.delete(changedPath);
+                }
+            } catch {
+                nextFiles.delete(changedPath);
+            }
+        }
+
+        const updatedFiles = Array.from(nextFiles).sort();
+        const timestamp = Date.now();
+        this.fileListCache.set(rootPath, { files: updatedFiles, timestamp });
+        const cachedAnalysis = this.analysisCache.get(rootPath);
+        if (!cachedAnalysis) {
+            return;
+        }
+        const initialFilePage = this.paginateFiles(updatedFiles, 0, this.PROJECT_FILES_PAGE_SIZE);
+        this.analysisCache.set(rootPath, {
+            timestamp,
+            data: {
+                ...cachedAnalysis.data,
+                files: initialFilePage.files,
+                filesPage: {
+                    offset: initialFilePage.offset,
+                    limit: initialFilePage.limit,
+                    total: initialFilePage.total,
+                    hasMore: initialFilePage.hasMore,
+                },
+                stats: {
+                    ...cachedAnalysis.data.stats,
+                    fileCount: updatedFiles.length,
+                },
+            },
+        });
     }
 
     /**
@@ -130,6 +217,7 @@ export class ProjectService extends BaseService {
             rootPath = rootPath.slice(1);
         }
         rootPath = path.resolve(rootPath);
+        await this.applyIncrementalInvalidation(rootPath);
 
         // Cache Check (5 min TTL)
         const cached = this.analysisCache.get(rootPath);
@@ -149,7 +237,7 @@ export class ProjectService extends BaseService {
         this.logInfo(`Stats calculated:`, stats as unknown as JsonObject);
         const languages = this.calculateLanguages(files);
         const monorepo = await this.detectMonorepo(rootPath, files);
-        const todos = await this.findTodos(rootPath, files);
+        const todos: string[] = [];
         const issues = await this.findIssues(rootPath, files);
         const initialFilePage = this.paginateFiles(files, 0, this.PROJECT_FILES_PAGE_SIZE);
 
@@ -191,6 +279,7 @@ export class ProjectService extends BaseService {
             rootPath = rootPath.slice(1);
         }
         rootPath = path.resolve(rootPath);
+        await this.applyIncrementalInvalidation(rootPath);
 
         const cachedFiles = this.fileListCache.get(rootPath);
         const isCacheValid = cachedFiles !== undefined &&
@@ -275,76 +364,6 @@ export class ProjectService extends BaseService {
             }
         }
         return undefined;
-    }
-
-    private async findTodos(rootPath: string, files: string[]): Promise<string[]> {
-        const todoFiles = ['todo.md', 'todo.txt', 'todo', 'tasks.md', 'tasks.txt', 'roadmap.md'];
-        const foundFile = files.find(f => {
-            const rel = path.relative(rootPath, f).toLowerCase();
-            return todoFiles.includes(rel);
-        });
-
-        if (foundFile) {
-            return this.parseTodoFile(foundFile);
-        }
-
-        // Fallback: look for TODO comments in code (first 10)
-        return this.scanCodeComments(files);
-    }
-
-    private async parseTodoFile(filePath: string): Promise<string[]> {
-        try {
-            const content = await fs.readFile(filePath, 'utf-8');
-            const lines = content.split('\n');
-            const tasks = lines
-                .map(l => l.trim())
-                .map(l => {
-                    const match = l.match(/^[-*+]\s*\[([ xX-])\]\s*(.*)/);
-                    if (match) { return match[2].trim(); }
-                    if (l.startsWith('TODO:') || l.startsWith('FIXME:')) { return l.replace(/^(TODO|FIXME):?\s*/, '').trim(); }
-                    return null;
-                })
-                .filter((t): t is string => t !== null && t.length > 0);
-
-            if (tasks.length > 0) { return tasks; }
-            // If no checklist, just return first non-empty 10 lines
-            return lines.filter(l => l.trim().length > 0).slice(0, 10);
-        } catch (e) {
-            this.logWarn('Failed to read todo file:', getErrorMessage(e as Error));
-            return [];
-        }
-    }
-
-    private async scanCodeComments(files: string[]): Promise<string[]> {
-        const codeFiles = files.filter(f => /\.(ts|tsx|js|jsx|py|go|rs|kt|java|cpp|h)$/.test(f)).slice(0, 100);
-        const todoComments: string[] = [];
-        for (const file of codeFiles) {
-            try {
-                const content = await fs.readFile(file, 'utf-8');
-                this.extractTodosFromContent(content, todoComments, file);
-                if (todoComments.length >= 10) { break; }
-            } catch (error) {
-                this.logWarn(`Failed to scan TODO comments in ${file}: ${getErrorMessage(error as Error)}`);
-            }
-            if (todoComments.length >= 10) { break; }
-        }
-        return todoComments;
-    }
-
-    private extractTodosFromContent(content: string, todoComments: string[], filePath?: string) {
-        const lines = content.split('\n');
-        const fileName = filePath ? path.basename(filePath) : '';
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (line.includes('TODO:') || line.includes('FIXME:')) {
-                const match = line.match(/(TODO|FIXME):?\s*(.*)/);
-                if (match?.[2]) {
-                    const text = match[2].trim();
-                    todoComments.push(fileName ? `[${fileName}:${i + 1}] ${text}` : text);
-                }
-                if (todoComments.length >= 10) { break; }
-            }
-        }
     }
 
     private async findIssues(rootPath: string, files: string[]): Promise<ProjectIssue[]> {

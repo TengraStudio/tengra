@@ -1,5 +1,5 @@
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 
@@ -347,6 +347,13 @@ const useTerminalInstance = (
 export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) => {
     const { t } = useTranslation();
     const terminalRef = useRef<HTMLDivElement>(null);
+    const [terminalRuntimeHealth, setTerminalRuntimeHealth] = useState<{
+        terminalAvailable: boolean;
+        availableBackends: number;
+        totalBackends: number;
+    } | null>(null);
+    const [sshConnectionCount, setSshConnectionCount] = useState(0);
+    const [dockerAvailable, setDockerAvailable] = useState<boolean | null>(null);
 
     // Command history logic
     const historyRef = useRef<string[]>(loadHistory(projectId));
@@ -366,19 +373,74 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
 
     useTerminalInstance(terminalRef, projectId, cwd, addToHistory, t);
 
+    useEffect(() => {
+        let cancelled = false;
+        const fetchRuntimeStatus = async () => {
+            try {
+                const [runtimeHealth, sshConnections, dockerContainers] = await Promise.all([
+                    window.electron.terminal.getRuntimeHealth(),
+                    window.electron.ssh.getConnections(),
+                    window.electron.terminal.getDockerContainers(),
+                ]);
+                if (cancelled) {
+                    return;
+                }
+                setTerminalRuntimeHealth({
+                    terminalAvailable: runtimeHealth.terminalAvailable,
+                    availableBackends: runtimeHealth.availableBackends,
+                    totalBackends: runtimeHealth.totalBackends,
+                });
+                setSshConnectionCount(Array.isArray(sshConnections) ? sshConnections.length : 0);
+                const hasDockerData = Array.isArray(dockerContainers)
+                    || (
+                        typeof dockerContainers === 'object'
+                        && dockerContainers !== null
+                        && 'success' in dockerContainers
+                    );
+                setDockerAvailable(hasDockerData);
+            } catch {
+                if (!cancelled) {
+                    setDockerAvailable(false);
+                }
+            }
+        };
+
+        void fetchRuntimeStatus();
+        const timer = window.setInterval(() => {
+            void fetchRuntimeStatus();
+        }, 15000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, []);
+
     return (
-        <div className="w-full h-full relative group" style={{ minHeight: '300px' }}>
-            {/* Modern terminal container with gradient border effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 rounded-xl blur-xl opacity-30" />
-            <div
-                ref={terminalRef}
-                className="relative w-full h-full bg-card rounded-xl overflow-hidden border border-border/50 shadow-2xl backdrop-blur-sm"
-                style={{
-                    boxShadow: 'inset 0 1px 0 0 hsl(var(--border) / 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
-                }}
-            />
-            {/* Subtle top gradient overlay */}
-            <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-muted/30 to-transparent pointer-events-none rounded-t-xl" />
+        <div className="w-full h-full relative group flex flex-col gap-2" style={{ minHeight: '300px' }}>
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${terminalRuntimeHealth?.terminalAvailable ? 'border-success/50 text-success' : 'border-destructive/50 text-destructive'}`}>
+                    TERM {terminalRuntimeHealth?.availableBackends ?? 0}/{terminalRuntimeHealth?.totalBackends ?? 0}
+                </span>
+                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${sshConnectionCount > 0 ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
+                    SSH {sshConnectionCount}
+                </span>
+                <span className={`inline-flex items-center rounded-full px-2 py-1 border ${dockerAvailable ? 'border-success/50 text-success' : 'border-muted-foreground/40 text-muted-foreground'}`}>
+                    Docker {dockerAvailable ? 'ready' : 'unavailable'}
+                </span>
+            </div>
+            <div className="relative flex-1">
+                {/* Modern terminal container with gradient border effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 rounded-xl blur-xl opacity-30" />
+                <div
+                    ref={terminalRef}
+                    className="relative w-full h-full bg-card rounded-xl overflow-hidden border border-border/50 shadow-2xl backdrop-blur-sm"
+                    style={{
+                        boxShadow: 'inset 0 1px 0 0 hsl(var(--border) / 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
+                    }}
+                />
+                {/* Subtle top gradient overlay */}
+                <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-muted/30 to-transparent pointer-events-none rounded-t-xl" />
+            </div>
         </div>
     );
 };

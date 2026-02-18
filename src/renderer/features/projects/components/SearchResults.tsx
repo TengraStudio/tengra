@@ -1,5 +1,6 @@
 import { FileSearchResult } from '@shared/types/common';
 import React from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 import { useTranslation } from '@/i18n';
 
@@ -51,6 +52,31 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     onSelect,
 }) => {
     const { t } = useTranslation();
+    const VIRTUALIZATION_THRESHOLD = 120;
+
+    const renderResult = (res: FileSearchResult, index: number) => (
+        <div
+            key={`${res.file}:${res.line}:${index}`}
+            onClick={() => {
+                void onSelect(res.file, res.line);
+            }}
+            className="p-2 hover:bg-muted/20 rounded cursor-pointer group"
+        >
+            <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
+                <span className="font-mono">
+                    {res.file.replace(projectRoot, '')}:{res.line}
+                </span>
+                {res.type && (
+                    <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
+                        {res.type}
+                    </span>
+                )}
+            </div>
+            <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
+                {renderHighlightedSnippet(res.text.trim(), searchQuery)}
+            </div>
+        </div>
+    );
 
     if (results.length === 0) {
         return (
@@ -60,31 +86,19 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         );
     }
 
+    if (results.length >= VIRTUALIZATION_THRESHOLD) {
+        return (
+            <Virtuoso
+                style={{ height: '100%' }}
+                data={results}
+                itemContent={(index, result) => renderResult(result, index)}
+            />
+        );
+    }
+
     return (
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 space-y-2">
-            {results.map((res, i) => (
-                <div
-                    key={i}
-                    onClick={() => {
-                        void onSelect(res.file, res.line);
-                    }}
-                    className="p-2 hover:bg-muted/20 rounded cursor-pointer group"
-                >
-                    <div className="flex items-center gap-2 text-xs text-primary mb-0.5">
-                        <span className="font-mono">
-                            {res.file.replace(projectRoot, '')}:{res.line}
-                        </span>
-                        {res.type && (
-                            <span className="px-1.5 py-0.5 bg-primary/10 rounded-full text-xxs uppercase tracking-wider">
-                                {res.type}
-                            </span>
-                        )}
-                    </div>
-                    <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
-                        {renderHighlightedSnippet(res.text.trim(), searchQuery)}
-                    </div>
-                </div>
-            ))}
+            {results.map((result, index) => renderResult(result, index))}
         </div>
     );
 };

@@ -1,8 +1,51 @@
 {
   "version": 1,
   "generatedFrom": "docs/changelog/data/changelog.entries.json",
-  "generatedAt": "2026-02-18T12:05:34.665Z",
+  "generatedAt": "2026-02-18T14:03:53.304Z",
   "entries": [
+    {
+      "id": "2026-02-18-advanced-memory-features",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "LLM",
+        "Project"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "tr": {
+          "title": "Gelişmiş Bellek Versiyonlama ve Paylaşım (MEM-03/07/08)",
+          "summary": "Versiyonlama, geri alma, sona erme ve projeler arası paylaşım dahil olmak üzere gelişmiş bellek yaşam döngüsü yönetimi uygulandı.",
+          "items": [
+            "- **Versiyonlama**: Bellek geçmişini izleme ve önceki versiyonlara geri dönme desteği eklendi.",
+            "- **Sona Erme**: Sona erme zaman damgası olan bellekler için otomatik arşivleme uygulandı.",
+            "- **Paylaşım**: Kaynak bağlantılarını koruyarak birden fazla proje arasında bellek paylaşımı etkinleştirildi.",
+            "- **Kategorizasyon**: Evrimleşen bellekler için LLM destekli otomatik yeniden kategorizasyon eklendi.",
+            "- **Otomasyon**: Sona erme kontrolleri bellek azalma (decay) bakım döngüsüne entegre edildi."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-18-ipc-hardening-and-zod-contracts",
       "date": "2026-02-18",
@@ -5873,6 +5916,136 @@
             "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
             "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
             "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-git-panel-section-states",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-workspace-editor-tab-actions",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-workspace-branch-popover-switch",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added a branch-switch popover in the workspace command strip so users can browse and switch git branches without leaving the editor.",
+          "items": [
+            "- Made the command strip branch label clickable and opened a popover listing available branches",
+            "- Loaded current branch and branch list from the active project repository with loading and empty states",
+            "- Added branch checkout action with success/error notifications and switching-state feedback"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-mcp-image-ssh-i18n-sweep",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browser/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-agent-voice-sandbox-marketplace-sec-ext",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
           ]
         }
       }

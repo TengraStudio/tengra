@@ -25,6 +25,98 @@ const translations: Partial<Record<Language, TranslationKeys>> = {
     ar: ar as unknown as TranslationKeys
 };
 
+const TRANSLATION_MEMORY_STORAGE_KEY = 'tandem.i18n.translation-memory.v1';
+const MAX_TRANSLATION_MEMORY_ENTRIES = 1000;
+
+interface TranslationMemoryEntry {
+    key: string;
+    language: Language;
+    fallbackValue: string;
+    timestamp: number;
+}
+
+const translationMemory = new Map<string, TranslationMemoryEntry>();
+let translationMemoryLoaded = false;
+
+const getTranslationNode = (root: JsonValue, path: string): JsonValue | null => {
+    const parts = path.split('.');
+    let current: JsonValue = root;
+
+    for (const part of parts) {
+        if (current && typeof current === 'object' && part in current) {
+            current = (current as Record<string, JsonValue>)[part];
+            continue;
+        }
+        return null;
+    }
+
+    return current;
+};
+
+const loadTranslationMemory = (): void => {
+    if (translationMemoryLoaded) {
+        return;
+    }
+    translationMemoryLoaded = true;
+
+    try {
+        const serialized = window.localStorage.getItem(TRANSLATION_MEMORY_STORAGE_KEY);
+        if (!serialized) {
+            return;
+        }
+
+        const parsed = JSON.parse(serialized) as TranslationMemoryEntry[];
+        if (!Array.isArray(parsed)) {
+            return;
+        }
+
+        parsed.forEach(entry => {
+            if (!entry || typeof entry.key !== 'string' || typeof entry.fallbackValue !== 'string') {
+                return;
+            }
+            translationMemory.set(`${entry.language}:${entry.key}`, entry);
+        });
+    } catch {
+        // Ignore malformed localStorage payloads.
+    }
+};
+
+const persistTranslationMemory = (): void => {
+    try {
+        const items = Array.from(translationMemory.values())
+            .sort((left, right) => right.timestamp - left.timestamp)
+            .slice(0, MAX_TRANSLATION_MEMORY_ENTRIES);
+        window.localStorage.setItem(TRANSLATION_MEMORY_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+        // Ignore persistence failures (storage quota/private mode).
+    }
+};
+
+const rememberTranslationFallback = (
+    language: Language,
+    key: string,
+    fallbackValue: string
+): void => {
+    const entry: TranslationMemoryEntry = {
+        key,
+        language,
+        fallbackValue,
+        timestamp: Date.now()
+    };
+    translationMemory.set(`${language}:${key}`, entry);
+
+    // Keep memory bounded in runtime too.
+    if (translationMemory.size > MAX_TRANSLATION_MEMORY_ENTRIES) {
+        const sorted = Array.from(translationMemory.entries())
+            .sort((left, right) => right[1].timestamp - left[1].timestamp)
+            .slice(0, MAX_TRANSLATION_MEMORY_ENTRIES);
+        translationMemory.clear();
+        sorted.forEach(([memoryKey, memoryEntry]) => translationMemory.set(memoryKey, memoryEntry));
+    }
+
+    persistTranslationMemory();
+};
+
 interface LanguageContextType {
     language: Language;
     setLanguage: (lang: Language) => Promise<void>;
@@ -71,42 +163,37 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         document.documentElement.lang = language;
     }, [language, isRTL]);
 
+    useEffect(() => {
+        loadTranslationMemory();
+    }, []);
+
     const t = useMemo(() => {
         const activeTranslations = (translations[language] ?? translations.en) as JsonValue;
+        const fallbackTranslations = translations.en as JsonValue;
 
         return (path: string, options?: Record<string, string | number>): string => {
-            const parts = path.split('.');
-            let current: JsonValue = activeTranslations;
+            const currentValue = getTranslationNode(activeTranslations, path);
+            const fallbackValue = getTranslationNode(fallbackTranslations, path);
+            const selectedValue = currentValue ?? fallbackValue;
 
-            for (const part of parts) {
-                if (current && typeof current === 'object' && part in current) {
-                    current = (current as Record<string, JsonValue>)[part];
-                } else {
-                    return path;
-                }
+            if (currentValue === null && typeof fallbackValue === 'string' && language !== 'en') {
+                rememberTranslationFallback(language, path, fallbackValue);
             }
 
-            if (typeof current === 'string') {
-                let text = current;
+            if (typeof selectedValue === 'string') {
+                let text = selectedValue;
 
                 // Handle Pluralization (if count is provided)
                 if (options && typeof options.count === 'number') {
                     const pluralRules = new Intl.PluralRules(language);
                     const rule = pluralRules.select(options.count);
                     const pluralKey = `${path}_${rule}`;
-
-                    // Try to find specific plural translation
-                    let pluralCurrent: JsonValue = activeTranslations;
-                    for (const p of pluralKey.split('.')) {
-                        if (pluralCurrent && typeof pluralCurrent === 'object' && p in pluralCurrent) {
-                            pluralCurrent = (pluralCurrent as Record<string, JsonValue>)[p];
-                        } else {
-                            pluralCurrent = null;
-                            break;
-                        }
-                    }
+                    const pluralCurrent = getTranslationNode(activeTranslations, pluralKey);
+                    const pluralFallback = getTranslationNode(fallbackTranslations, pluralKey);
                     if (typeof pluralCurrent === 'string') {
                         text = pluralCurrent;
+                    } else if (typeof pluralFallback === 'string') {
+                        text = pluralFallback;
                     }
                 }
 
@@ -171,25 +258,19 @@ export function useTranslation(lang?: Language) {
     // If explicit language is provided, return its translations (standalone)
     if (lang) {
         const activeTranslations = (translations[lang] ?? translations.en) as JsonValue;
+        const fallbackTranslations = translations.en as JsonValue;
         const get = (path: string, options?: Record<string, string | number>): string => {
-            const parts = path.split('.');
-            let current: JsonValue = activeTranslations;
+            const current = getTranslationNode(activeTranslations, path);
+            const fallback = getTranslationNode(fallbackTranslations, path);
+            const selected = current ?? fallback;
 
-            for (const part of parts) {
-                if (current && typeof current === 'object' && part in current) {
-                    current = (current as Record<string, JsonValue>)[part];
-                } else {
-                    return path;
-                }
-            }
-
-            if (typeof current === 'string') {
+            if (typeof selected === 'string') {
                 if (options) {
                     return Object.keys(options).reduce((acc, key) => {
                         return acc.replace(new RegExp(`{{${key}}}`, 'g'), String(options[key]));
-                    }, current);
+                    }, selected);
                 }
-                return current;
+                return selected;
             }
 
             return path;

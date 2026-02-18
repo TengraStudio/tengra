@@ -14,6 +14,21 @@
 import { JsonValue } from './common';
 
 // ============================================================================
+// MEMORY VERSIONING
+// ============================================================================
+
+export interface MemoryVersion {
+    versionIndex: number;
+    content: string;
+    category: MemoryCategory;
+    tags: string[];
+    importance: number;
+    timestamp: number;
+    reason?: string;
+}
+
+
+// ============================================================================
 // MEMORY STATUS & LIFECYCLE
 // ============================================================================
 
@@ -89,6 +104,9 @@ export interface AdvancedSemanticFragment {
     createdAt: number;
     updatedAt: number;
     expiresAt?: number;         // Optional TTL
+
+    // Versioning
+    history?: MemoryVersion[];
 
     // Extensibility
     metadata?: Record<string, JsonValue>;
@@ -298,6 +316,86 @@ export interface MemoryStatistics {
 
     // Storage
     totalEmbeddingSize: number;
+}
+
+export interface MemorySearchAnalytics {
+    totalQueries: number;
+    semanticQueries: number;
+    textQueries: number;
+    hybridQueries: number;
+    averageResults: number;
+    lastQueryAt?: number;
+    topQueries: Array<{ query: string; count: number }>;
+}
+
+export interface MemorySearchHistoryEntry {
+    query: string;
+    type: 'semantic' | 'text' | 'hybrid';
+    resultCount: number;
+    timestamp: number;
+}
+
+export interface MemoryImportResult {
+    imported: number;
+    pendingImported: number;
+    skipped: number;
+    errors: string[];
+}
+
+// ============================================================================
+// AGENT-14: SHARED MEMORY NAMESPACE
+// ============================================================================
+
+export type SharedMemoryConflictResolution =
+    | 'keep_source'
+    | 'keep_target'
+    | 'merge_copy'
+    | 'manual_review';
+
+export interface SharedMemoryNamespace {
+    id: string;
+    name: string;
+    projectIds: string[];
+    accessControl: Record<string, string[]>;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface SharedMemorySyncRequest {
+    namespaceId: string;
+    sourceProjectId: string;
+    targetProjectIds?: string[];
+    memoryIds?: string[];
+    resolution?: SharedMemoryConflictResolution;
+}
+
+export interface SharedMemoryMergeConflict {
+    namespaceId: string;
+    sourceProjectId: string;
+    targetProjectId: string;
+    sourceMemoryId: string;
+    targetMemoryId: string;
+    sourceContent: string;
+    targetContent: string;
+    resolution: SharedMemoryConflictResolution;
+    detectedAt: number;
+}
+
+export interface SharedMemorySyncResult {
+    namespaceId: string;
+    synced: number;
+    skipped: number;
+    conflicts: SharedMemoryMergeConflict[];
+    updatedAt: number;
+}
+
+export interface SharedMemoryAnalytics {
+    namespaceId: string;
+    totalMemories: number;
+    totalProjects: number;
+    conflicts: number;
+    memoriesByProject: Record<string, number>;
+    updatedAt: number;
 }
 
 // ============================================================================

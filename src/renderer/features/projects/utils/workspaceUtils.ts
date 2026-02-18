@@ -14,3 +14,52 @@ export const sortNodes = (nodes: FileNode[]) => (
         return a.isDirectory ? -1 : 1;
     })
 );
+
+export const getWorkspaceExplorerStorageKey = (
+    projectId: string,
+    mounts: WorkspaceMount[]
+): string => {
+    const projectSignature = mounts
+        .map(mount => `${mount.type}:${mount.rootPath}`)
+        .sort()
+        .join('|');
+    return `workspace.explorer.expanded.v1:${projectId}:${projectSignature}`;
+};
+
+export const getWorkspaceTreeStorageKey = (projectId: string): string =>
+    `workspace.explorer.tree.v1:${projectId}`;
+
+export const loadExpandedMountState = (storageKey: string): Record<string, boolean> => {
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) {
+            return {};
+        }
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        return Object.entries(parsed).reduce<Record<string, boolean>>((acc, [key, value]) => {
+            if (typeof value === 'boolean') {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+    } catch {
+        return {};
+    }
+};
+
+export const saveExpandedMountState = (
+    storageKey: string,
+    expandedMounts: Record<string, boolean>
+): void => {
+    localStorage.setItem(storageKey, JSON.stringify(expandedMounts));
+};
+
+export const loadExpandedTreeState = (storageKey: string): Record<string, boolean> =>
+    loadExpandedMountState(storageKey);
+
+export const saveExpandedTreeState = (
+    storageKey: string,
+    expandedNodes: Record<string, boolean>
+): void => {
+    localStorage.setItem(storageKey, JSON.stringify(expandedNodes));
+};

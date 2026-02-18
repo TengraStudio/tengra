@@ -2,6 +2,31 @@
 
 ## [2026-02-18]
 
+### Gelişmiş Bellek Versiyonlama ve Paylaşım (MEM-03/07/08)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Versiyonlama, geri alma, sona erme ve projeler arası paylaşım dahil olmak üzere gelişmiş bellek yaşam döngüsü yönetimi uygulandı.
+
+- **Versiyonlama**: Bellek geçmişini izleme ve önceki versiyonlara geri dönme desteği eklendi.
+- **Sona Erme**: Sona erme zaman damgası olan bellekler için otomatik arşivleme uygulandı.
+- **Paylaşım**: Kaynak bağlantılarını koruyarak birden fazla proje arasında bellek paylaşımı etkinleştirildi.
+- **Kategorizasyon**: Evrimleşen bellekler için LLM destekli otomatik yeniden kategorizasyon eklendi.
+- **Otomasyon**: Sona erme kontrolleri bellek azalma (decay) bakım döngüsüne entegre edildi.
+
+### Ajan Tartışma/Bellek Analitiği, Ses Akışları, Kod Sandbox ve Marketplace Güvenlik Uzantıları
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: AGENT/VOICE/FEAT ve marketplace uzantı-güvenlik başlıkları; yeni IPC iş akışları, koruma katmanları ve metadata kapsamıyla tamamlandı.
+
+- Gelişmiş bellek paylaşımlı namespace akışları IPC üzerinden bağlandı (oluştur/senkron/analitik/arama) ve projeler arası bellek işbirliği güçlendirildi
+- javascript, 	ypescript, python, shell dilleri için sınırlandırılmış yürütme ve güvenlik kalıp engelleme içeren kod sandbox IPC katmanı eklendi
+- Wake-word algılama, konuşma oturumu tur yönetimi ve AI sesli not özetleme/arama akışları için ses IPC yüzeyi eklendi
+- MCP marketplace uzantı metadata yapısı extension type, OAuth/credential/security/telemetry alanları ve şablon/taslak API'leri ile genişletildi
+- Güvenilir yayıncı doğrulama, imza iptal kontrolü, güvenlik tarama kayıtları, yorum moderasyonu ve telemetri/çökme uçları eklendi
+- TODO takibinde MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03 ve AGENT-13..15 tamamlama işaretleri doğrulandı
+
 ### AUD-ARCH 001-020 Tamamlandı
 
 - **Type**: refactor
@@ -68,6 +93,16 @@
 - **Bakım**: Dokümantasyon merkezindeki bozuk mutlak yollar düzeltildi ve sistematik teknik borç takibi için `LINT_ISSUES.md` oluşturuldu.
 - **Yapı**: `PROJECT_STRUCTURE.md`, yeni `.codex` ve `.agent` organizasyonel modellerini yansıtacak şekilde güncellendi.
 
+### Git Panel Section State Indicators
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.
+
+- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes
+- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback
+- Completed AUD-PROJ-009 and updated project TODO tracking
+
 ### Sert Yapay Zeka Kuralları Zorlaması ve Cuma Yayım Yasağı
 
 - **Type**: docs
@@ -103,6 +138,18 @@
 - **DEBT-01**: Yapılandırma katmanını basitleştirmek için kullanılmayan özellik bayrakları (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) temizlendi.
 - **DEBT-06**: `CommandPalette`, `QuickActionBar` ve `ExtensionInstallPrompt` gibi ağır UI bileşenleri için tembel yükleme uygulanarak başlangıç paket boyutu düşürüldü.
 - **Test**: Güvenlik doğrulama mantığı için kapsamlı birim testleri eklendi.
+
+### MCP Marketplace, Görsel Operasyonlar, SSH Profil Testi ve i18n Tamamlama
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: MCP marketplace ayar deneyimi aktif edildi, görsel üretim operasyonları backend/UI tarafında tamamlandı, SSH profil testi eklendi ve tüm yerel ayar anahtar eşleşmesi sağlandı.
+
+- Ayarlar içinde MCP marketplace sekmesi etkinleştirildi; tarama/kurulu/karşılaştırma yüzeyleri, kartlar, detay görünümü, kurulum sihirbazı, puanlama ve karşılaştırma matrisi bağlandı
+- SD-CPP için geçmiş, tekrar üretim, analitik, preset, zamanlama, kuyruk, düzenleme, toplu üretim ve karşılaştırma IPC/preload köprüsü eklendi
+- Görsel ayarlarında geçmiş/tekrar üretim, preset CRUD, zamanlama-kuyruk, toplu üretim, düzenleme ve karşılaştırma özeti arayüzleri eklendi
+- SSH bağlantı profili test akışı (servis + IPC + preload + modal butonu) gecikme/hata geri bildirimiyle eklendi
+- tr/en/de/fr/es/ja/zh/ar için i18n anahtar eşleşmesi tamamlandı ve yeni ayar/SSH anahtarları tüm dillere işlendi
 
 ### Project Terminal Diagnostics Tab
 
@@ -159,6 +206,26 @@
 - **Renderer Testleri**: Zorunlu IPC sözleşme müzakeresi mock'lanarak ve UI bileşenleri için beklenen ARIA rolleri güncellenerek başarısız renderer testleri geri yüklendi.
 - **Prompt Şablonları**: LLM prompt şablonları için entegrasyon testleri, temel servislerin senkron yapısına uyacak şekilde düzeltildi.
 - **Pazar Yeri**: MCP pazar yeri istemci testleri, yazılmış çağrılar sırasında düzgün IPC sözleşme sürümü sağlanarak düzeltildi.
+
+### Workspace Branch Switch Popover
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.
+
+- Click branch label to open branch list popover
+- Show loading and empty states for branch discovery
+- Switch branch directly from popover with status feedback
+
+### Workspace Editor Tab Power Actions
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.
+
+- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others
+- Added clipboard actions for absolute and relative file paths from editor tabs
+- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip
 
 ## [2026-02-17]
 

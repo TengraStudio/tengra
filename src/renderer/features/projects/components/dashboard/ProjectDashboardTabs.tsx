@@ -92,7 +92,11 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
         agent: <AgentTab {...props} />,
         todo: (
             <div className="h-full overflow-hidden animate-in fade-in duration-500">
-                <ProjectTodoTab projectRoot={projectRoot} t={t} />
+                <ProjectTodoTab
+                    project={project}
+                    onUpdate={onUpdate}
+                    t={t}
+                />
             </div>
         ),
         search: (

@@ -58,9 +58,27 @@ describe('SD-CPP IPC Integration', () => {
     });
 
     it('should register expected handlers', () => {
-        expect(mockIpcMainHandlers.has('sd-cpp:getStatus')).toBe(true);
-        expect(mockIpcMainHandlers.has('sd-cpp:reinstall')).toBe(true);
-        expect(mockIpcMainHandlers.size).toBe(2);
+        const requiredChannels = [
+            'sd-cpp:getStatus',
+            'sd-cpp:reinstall',
+            'sd-cpp:getHistory',
+            'sd-cpp:regenerate',
+            'sd-cpp:getAnalytics',
+            'sd-cpp:listPresets',
+            'sd-cpp:savePreset',
+            'sd-cpp:deletePreset',
+            'sd-cpp:schedule',
+            'sd-cpp:listSchedules',
+            'sd-cpp:cancelSchedule',
+            'sd-cpp:compare',
+            'sd-cpp:batchGenerate',
+            'sd-cpp:getQueueStats',
+            'sd-cpp:edit',
+        ];
+        requiredChannels.forEach(channel => {
+            expect(mockIpcMainHandlers.has(channel)).toBe(true);
+        });
+        expect(mockIpcMainHandlers.size).toBe(requiredChannels.length);
     });
 
     describe('sd-cpp:getStatus', () => {

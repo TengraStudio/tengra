@@ -1,7 +1,12 @@
 import { FileNode } from '@renderer/features/projects/components/WorkspaceTreeItem';
 import { applyGitTreeStatus } from '@renderer/features/projects/utils/gitTreeStatus';
-import { joinPath, sortNodes } from '@renderer/features/projects/utils/workspaceUtils';
-import { useCallback, useEffect, useState } from 'react';
+import {
+    joinPath,
+    loadExpandedMountState,
+    saveExpandedMountState,
+    sortNodes,
+} from '@renderer/features/projects/utils/workspaceUtils';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { WorkspaceEntry, WorkspaceMount } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
@@ -12,12 +17,18 @@ export function useWorkspaceExplorerLogic(
     mounts: WorkspaceMount[],
     refreshSignal: number,
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean,
-    onContextAction?: (action: ContextMenuAction) => void
+    onContextAction?: (action: ContextMenuAction) => void,
+    storageKey?: string
 ) {
-    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>({});
+    const initialExpandedState = useMemo(
+        () => (storageKey ? loadExpandedMountState(storageKey) : {}),
+        [storageKey]
+    );
+    const [expandedMounts, setExpandedMounts] = useState<Record<string, boolean>>(initialExpandedState);
     const [rootNodes, setRootNodes] = useState<Record<string, FileNode[]>>({});
     const [loadingMounts, setLoadingMounts] = useState<Record<string, boolean>>({});
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+    const loadDebounceRef = useRef<number | null>(null);
 
     const loadRoot = useCallback(
         async (mount: WorkspaceMount) => {
@@ -62,14 +73,45 @@ export function useWorkspaceExplorerLogic(
     );
 
     useEffect(() => {
-        mounts.forEach(mount => {
-            const shouldLoad =
-                expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local');
-            if (shouldLoad) {
-                void loadRoot(mount);
+        if (loadDebounceRef.current !== null) {
+            window.clearTimeout(loadDebounceRef.current);
+        }
+        loadDebounceRef.current = window.setTimeout(() => {
+            mounts.forEach(mount => {
+                const shouldLoad =
+                    expandedMounts[mount.id] || (mounts.length === 1 && mount.type === 'local');
+                if (shouldLoad) {
+                    void loadRoot(mount);
+                }
+            });
+            loadDebounceRef.current = null;
+        }, 120);
+
+        return () => {
+            if (loadDebounceRef.current !== null) {
+                window.clearTimeout(loadDebounceRef.current);
+                loadDebounceRef.current = null;
             }
-        });
+        };
     }, [refreshSignal, mounts, expandedMounts, loadRoot]);
+
+    useEffect(() => {
+        setExpandedMounts(initialExpandedState);
+    }, [initialExpandedState]);
+
+    useEffect(() => {
+        const mountIds = new Set(mounts.map(mount => mount.id));
+        setExpandedMounts(prev =>
+            Object.fromEntries(Object.entries(prev).filter(([mountId]) => mountIds.has(mountId)))
+        );
+    }, [mounts]);
+
+    useEffect(() => {
+        if (!storageKey) {
+            return;
+        }
+        saveExpandedMountState(storageKey, expandedMounts);
+    }, [expandedMounts, storageKey]);
 
     useEffect(() => {
         const handleClick = () => setContextMenu(null);

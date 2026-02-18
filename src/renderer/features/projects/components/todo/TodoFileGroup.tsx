@@ -11,10 +11,24 @@ interface TodoFileGroupProps {
     isExpanded: boolean;
     onToggleExpand: (path: string) => void;
     onToggleItem: (item: TodoItem) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
     t: (key: string) => string;
 }
 
-export const TodoFileGroup = ({ file, isExpanded, onToggleExpand, onToggleItem, t }: TodoFileGroupProps) => {
+export const TodoFileGroup = ({
+    file,
+    isExpanded,
+    onToggleExpand,
+    onToggleItem,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
+    t,
+}: TodoFileGroupProps) => {
     const pendingCount = file.items.filter(i => !i.completed).length;
 
     return (
@@ -45,6 +59,10 @@ export const TodoFileGroup = ({ file, isExpanded, onToggleExpand, onToggleItem, 
                                 key={todo.id}
                                 todo={todo}
                                 onToggle={(item) => onToggleItem(item)}
+                                onUndo={onUndo}
+                                onRedo={onRedo}
+                                canUndo={canUndo}
+                                canRedo={canRedo}
                             />
                         ))}
                     </motion.div>

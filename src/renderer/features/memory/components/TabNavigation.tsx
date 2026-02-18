@@ -4,14 +4,14 @@
  * Renders the tab navigation for switching between pending, confirmed, archived memories and stats.
  */
 
-import { Archive, CheckCircle, Clock, Gauge } from 'lucide-react';
+import { Archive, CheckCircle, Clock, Gauge, LayoutGrid } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-type TabType = 'pending' | 'confirmed' | 'archived' | 'stats';
+type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
 
 interface TabNavigationProps {
   activeTab: TabType;
@@ -35,11 +35,12 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     icon: LucideIcon;
     count?: number;
   }> = [
-    { id: 'pending', label: t('memory.tabs.pending'), icon: Clock, count: pendingCount },
-    { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: CheckCircle, count: confirmedCount },
-    { id: 'archived', label: t('memory.tabs.archived'), icon: Archive, count: archivedCount },
-    { id: 'stats', label: t('memory.tabs.stats'), icon: Gauge },
-  ];
+      { id: 'pending', label: t('memory.tabs.pending'), icon: Clock, count: pendingCount },
+      { id: 'confirmed', label: t('memory.tabs.confirmed'), icon: CheckCircle, count: confirmedCount },
+      { id: 'archived', label: t('memory.tabs.archived'), icon: Archive, count: archivedCount },
+      { id: 'visualization', label: t('memory.tabs.visualization') || 'Visualization', icon: LayoutGrid },
+      { id: 'stats', label: t('memory.tabs.stats'), icon: Gauge },
+    ];
 
   return (
     <div className="flex gap-1 p-1 bg-muted/30 rounded-lg w-fit border border-white/5">

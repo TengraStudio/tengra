@@ -71,9 +71,19 @@ import {
     SemanticFragment,
     SSHConfig,
     SSHConnection,
+    SSHDevContainer,
     SSHFile,
+    SSHKnownHostEntry,
+    SSHManagedKey,
     SSHPackageInfo,
+    SSHPortForward,
+    SSHProfileTemplate,
+    SSHRemoteSearchResult,
+    SSHSearchHistoryEntry,
+    SSHSessionRecording,
     SSHSystemStats,
+    SSHTransferTask,
+    SSHTunnelPreset,
     TodoFile,
     ToolCall,
     ToolDefinition,
@@ -82,6 +92,9 @@ import {
 import {
     AdvancedSemanticFragment,
     MemoryCategory,
+    MemoryImportResult,
+    MemorySearchAnalytics,
+    MemorySearchHistoryEntry,
     MemoryStatistics,
     PendingMemory,
     RecallContext,
@@ -736,6 +749,86 @@ export interface ElectronAPI {
     sdCpp: {
         getStatus: () => Promise<string>;
         reinstall: () => Promise<void>;
+        getHistory: (limit?: number) => Promise<Array<{
+            id: string;
+            provider: string;
+            prompt: string;
+            negativePrompt?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            seed: number;
+            imagePath: string;
+            createdAt: number;
+            source?: string;
+        }>>;
+        regenerate: (historyId: string) => Promise<string>;
+        getAnalytics: () => Promise<{
+            totalGenerated: number;
+            byProvider: Record<string, number>;
+            averageSteps: number;
+        }>;
+        listPresets: () => Promise<Array<{
+            id: string;
+            name: string;
+            promptPrefix?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            provider?: string;
+            createdAt: number;
+            updatedAt: number;
+        }>>;
+        savePreset: (preset: {
+            id?: string;
+            name: string;
+            promptPrefix?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+        }) => Promise<unknown>;
+        deletePreset: (id: string) => Promise<boolean>;
+        schedule: (payload: {
+            runAt: number;
+            options: {
+                prompt: string;
+                negativePrompt?: string;
+                width?: number;
+                height?: number;
+                steps?: number;
+                cfgScale?: number;
+                seed?: number;
+                count?: number;
+            };
+        }) => Promise<unknown>;
+        listSchedules: () => Promise<unknown[]>;
+        cancelSchedule: (id: string) => Promise<boolean>;
+        compare: (ids: string[]) => Promise<unknown>;
+        batchGenerate: (requests: Array<{
+            prompt: string;
+            negativePrompt?: string;
+            width?: number;
+            height?: number;
+            steps?: number;
+            cfgScale?: number;
+            seed?: number;
+            count?: number;
+        }>) => Promise<string[]>;
+        getQueueStats: () => Promise<{ queued: number; running: boolean }>;
+        edit: (options: {
+            sourceImage: string;
+            mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+            prompt: string;
+            negativePrompt?: string;
+            strength?: number;
+            width?: number;
+            height?: number;
+            maskImage?: string;
+        }) => Promise<string>;
     };
     clipboard: {
         writeText: (text: string) => Promise<{ success: boolean }>;
@@ -866,6 +959,12 @@ export interface ElectronAPI {
         ) => Promise<{ success: boolean; imported: boolean; profileId?: string; error?: string }>;
         getShells: () => Promise<{ id: string; name: string; path: string }[]>;
         getBackends: () => Promise<Array<{ id: string; name: string; available: boolean }>>;
+        getRuntimeHealth: () => Promise<{
+            terminalAvailable: boolean;
+            totalBackends: number;
+            availableBackends: number;
+            backends: Array<{ id: string; name: string; available: boolean }>;
+        }>;
         create: (options: {
             id?: string;
             shell?: string;
@@ -1111,7 +1210,7 @@ export interface ElectronAPI {
     ssh: {
         connect: (
             connection: SSHConnection
-        ) => Promise<{ success: boolean; error?: string; id?: string }>;
+        ) => Promise<{ success: boolean; error?: string; id?: string; diagnostics?: { category: string; hint: string } }>;
         disconnect: (connectionId: string) => Promise<{ success: boolean }>;
         execute: (
             connectionId: string,
@@ -1187,6 +1286,89 @@ export interface ElectronAPI {
         getProfiles: () => Promise<SSHConfig[]>;
         saveProfile: (profile: SSHConfig) => Promise<boolean>;
         deleteProfile: (id: string) => Promise<boolean>;
+        createTunnel: (payload: {
+            connectionId: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost?: string;
+            remotePort?: number;
+        }) => Promise<{ success: boolean; forwardId?: string; error?: string }>;
+        listTunnels: (connectionId?: string) => Promise<SSHPortForward[]>;
+        closeTunnel: (forwardId: string) => Promise<boolean>;
+        saveTunnelPreset: (preset: {
+            name: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost: string;
+            remotePort: number;
+        }) => Promise<SSHTunnelPreset>;
+        listTunnelPresets: () => Promise<SSHTunnelPreset[]>;
+        deleteTunnelPreset: (id: string) => Promise<boolean>;
+        listManagedKeys: () => Promise<SSHManagedKey[]>;
+        generateManagedKey: (payload: { name: string; passphrase?: string }) => Promise<{
+            key: SSHManagedKey;
+            privateKey: string;
+            publicKey: string;
+        }>;
+        importManagedKey: (payload: {
+            name: string;
+            privateKey: string;
+            passphrase?: string;
+        }) => Promise<SSHManagedKey>;
+        deleteManagedKey: (id: string) => Promise<boolean>;
+        rotateManagedKey: (payload: { id: string; nextPassphrase?: string }) => Promise<SSHManagedKey | null>;
+        backupManagedKey: (id: string) => Promise<{ filename: string; privateKey: string } | null>;
+        listKnownHosts: () => Promise<SSHKnownHostEntry[]>;
+        addKnownHost: (payload: SSHKnownHostEntry) => Promise<boolean>;
+        removeKnownHost: (payload: { host: string; keyType?: string }) => Promise<boolean>;
+        searchRemoteFiles: (payload: {
+            connectionId: string;
+            query: string;
+            options?: { path?: string; contentSearch?: boolean; limit?: number };
+        }) => Promise<SSHRemoteSearchResult[]>;
+        getSearchHistory: (connectionId?: string) => Promise<SSHSearchHistoryEntry[]>;
+        exportSearchHistory: () => Promise<string>;
+        reconnect: (connectionId: string, retries?: number) => Promise<{ success: boolean; error?: string }>;
+        acquireConnection: (connectionId: string) => Promise<{ success: boolean; error?: string }>;
+        releaseConnection: (connectionId: string) => Promise<boolean>;
+        getConnectionPoolStats: () => Promise<Array<{ connectionId: string; refs: number }>>;
+        enqueueTransfer: (task: SSHTransferTask) => Promise<void>;
+        getTransferQueue: () => Promise<SSHTransferTask[]>;
+        runTransferBatch: (tasks: SSHTransferTask[], concurrency?: number) => Promise<boolean[]>;
+        listRemoteContainers: (connectionId: string) => Promise<SSHDevContainer[]>;
+        runRemoteContainer: (payload: {
+            connectionId: string;
+            image: string;
+            name: string;
+            ports?: Array<{ hostPort: number; containerPort: number }>;
+        }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        stopRemoteContainer: (connectionId: string, containerId: string) => Promise<boolean>;
+        saveProfileTemplate: (template: {
+            name: string;
+            port: number;
+            username: string;
+            tags?: string[];
+        }) => Promise<SSHProfileTemplate>;
+        listProfileTemplates: () => Promise<SSHProfileTemplate[]>;
+        deleteProfileTemplate: (id: string) => Promise<boolean>;
+        exportProfiles: (ids?: string[]) => Promise<string>;
+        importProfiles: (payload: string) => Promise<number>;
+        validateProfile: (profile: Partial<SSHConnection>) => Promise<{ valid: boolean; errors: string[] }>;
+        testProfile: (profile: Partial<SSHConnection>) => Promise<{
+            success: boolean;
+            latencyMs: number;
+            authMethod: 'password' | 'key';
+            message: string;
+            error?: string;
+        }>;
+        startSessionRecording: (connectionId: string) => Promise<SSHSessionRecording>;
+        stopSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
+        getSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
+        searchSessionRecording: (connectionId: string, query: string) => Promise<string[]>;
+        exportSessionRecording: (connectionId: string) => Promise<string>;
+        listSessionRecordings: () => Promise<SSHSessionRecording[]>;
     };
 
     // Tools
@@ -1669,6 +1851,33 @@ export interface ElectronAPI {
             query: string,
             limit?: number
         ) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        getSearchAnalytics: () => Promise<{
+            success: boolean;
+            data: MemorySearchAnalytics;
+            error?: string;
+        }>;
+        getSearchHistory: (
+            limit?: number
+        ) => Promise<{ success: boolean; data: MemorySearchHistoryEntry[]; error?: string }>;
+        getSearchSuggestions: (
+            prefix?: string,
+            limit?: number
+        ) => Promise<{ success: boolean; data: string[]; error?: string }>;
+        export: (query?: string, limit?: number) => Promise<{
+            success: boolean;
+            data?: {
+                exportedAt: string;
+                query?: string;
+                count: number;
+                memories: AdvancedSemanticFragment[];
+            };
+            error?: string;
+        }>;
+        import: (payload: {
+            memories?: Array<Partial<AdvancedSemanticFragment>>;
+            pendingMemories?: Array<Partial<PendingMemory>>;
+            replaceExisting?: boolean;
+        }) => Promise<{ success: boolean; data?: MemoryImportResult; error?: string }>;
 
         // Stats & Maintenance
         getStats: () => Promise<{ success: boolean; data?: MemoryStatistics; error?: string }>;
@@ -1694,6 +1903,7 @@ export interface ElectronAPI {
                 tags?: string[];
                 importance?: number;
                 projectId?: string | null;
+                expiresAt?: number;
             }
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
         archive: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -1704,6 +1914,51 @@ export interface ElectronAPI {
         get: (
             id: string
         ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        shareWithProject: (
+            memoryId: string,
+            targetProjectId: string
+        ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        createSharedNamespace: (payload: {
+            id: string;
+            name: string;
+            projectIds: string[];
+            accessControl?: Record<string, string[]>;
+        }) => Promise<{
+            success: boolean;
+            data?: import('@shared/types/advanced-memory').SharedMemoryNamespace;
+            error?: string;
+        }>;
+        syncSharedNamespace: (
+            request: import('@shared/types/advanced-memory').SharedMemorySyncRequest
+        ) => Promise<{
+            success: boolean;
+            data?: import('@shared/types/advanced-memory').SharedMemorySyncResult;
+            error?: string;
+        }>;
+        getSharedNamespaceAnalytics: (namespaceId: string) => Promise<{
+            success: boolean;
+            data?: import('@shared/types/advanced-memory').SharedMemoryAnalytics;
+            error?: string;
+        }>;
+        searchAcrossProjects: (payload: {
+            namespaceId: string;
+            query: string;
+            projectId: string;
+            limit?: number;
+        }) => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        getHistory: (
+            id: string
+        ) => Promise<{ success: boolean; data: import('@shared/types/advanced-memory').MemoryVersion[]; error?: string }>;
+        rollback: (
+            id: string,
+            versionIndex: number
+        ) => Promise<{ success: boolean; data?: AdvancedSemanticFragment; error?: string }>;
+        recategorize: (ids?: string[]) => Promise<{ success: boolean; error?: string }>;
+
+        // Visualization
+        getAllEntityKnowledge: () => Promise<{ success: boolean; data: EntityKnowledge[]; error?: string }>;
+        getAllEpisodes: () => Promise<{ success: boolean; data: EpisodicMemory[]; error?: string }>;
+        getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
     };
 
     // IPC Batching API
@@ -1859,6 +2114,40 @@ export interface ElectronAPI {
         buildConsensus: (
             outputs: Array<{ modelId: string; provider: string; output: string }>
         ) => Promise<import('@shared/types/project-agent').ConsensusResult>;
+        createDebateSession: (payload: {
+            taskId: string;
+            stepIndex: number;
+            topic: string;
+        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        submitDebateArgument: (payload: {
+            sessionId: string;
+            agentId: string;
+            provider: string;
+            side: import('@shared/types/project-agent').DebateSide;
+            content: string;
+            confidence: number;
+            citations?: import('@shared/types/project-agent').DebateCitation[];
+        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        resolveDebateSession: (
+            sessionId: string
+        ) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        overrideDebateSession: (payload: {
+            sessionId: string;
+            moderatorId: string;
+            decision: import('@shared/types/project-agent').DebateSide | 'balanced';
+            reason?: string;
+        }) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        getDebateSession: (
+            sessionId: string
+        ) => Promise<import('@shared/types/project-agent').DebateSession | null>;
+        listDebateHistory: (
+            taskId?: string
+        ) => Promise<import('@shared/types/project-agent').DebateSession[]>;
+        getDebateReplay: (
+            sessionId: string
+        ) => Promise<import('@shared/types/project-agent').DebateReplay | null>;
+        generateDebateSummary: (sessionId: string) => Promise<string | null>;
+        getTeamworkAnalytics: () => Promise<import('@shared/types/project-agent').AgentTeamworkAnalytics | null>;
         getTemplates: (
             category?: import('@shared/types/project-agent').AgentTemplateCategory
         ) => Promise<import('@shared/types/project-agent').AgentTemplate[]>;

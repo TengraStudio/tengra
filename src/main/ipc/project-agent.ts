@@ -6,6 +6,10 @@ import { IpcValue, JsonObject } from '@shared/types/common';
 import {
     AgentProfile,
     AgentStartOptions,
+    DebateCitation,
+    DebateReplay,
+    DebateSession,
+    DebateSide,
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,
@@ -411,6 +415,87 @@ export function registerProjectAgentIpc(
             return await projectAgentService.buildConsensus(outputs);
         }, null)
     );
+
+    ipcMain.handle(
+        'project:create-debate-session',
+        createSafeIpcHandler('project:create-debate-session', async (
+            _,
+            payload: { taskId: string; stepIndex: number; topic: string }
+        ): Promise<DebateSession | null> => {
+            validateString(payload.taskId, 'taskId');
+            validateNumber(payload.stepIndex, 'stepIndex');
+            validateString(payload.topic, 'topic');
+            return projectAgentService.createDebateSession(payload.taskId, payload.stepIndex, payload.topic);
+        }, null)
+    );
+
+    ipcMain.handle(
+        'project:submit-debate-argument',
+        createSafeIpcHandler('project:submit-debate-argument', async (
+            _,
+            payload: {
+                sessionId: string;
+                agentId: string;
+                provider: string;
+                side: DebateSide;
+                content: string;
+                confidence: number;
+                citations?: DebateCitation[];
+            }
+        ): Promise<DebateSession | null> => {
+            validateString(payload.sessionId, 'sessionId');
+            validateString(payload.agentId, 'agentId');
+            validateString(payload.provider, 'provider');
+            validateString(payload.content, 'content');
+            validateNumber(payload.confidence, 'confidence');
+            return projectAgentService.submitDebateArgument(payload);
+        }, null)
+    );
+
+    ipcMain.handle('project:resolve-debate-session', createSafeIpcHandler('project:resolve-debate-session', async (_, sessionId: string) => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.resolveDebateSession(sessionId);
+    }, null));
+
+    ipcMain.handle('project:override-debate-session', createSafeIpcHandler('project:override-debate-session', async (
+        _,
+        payload: { sessionId: string; moderatorId: string; decision: DebateSide | 'balanced'; reason?: string }
+    ) => {
+        validateString(payload.sessionId, 'sessionId');
+        validateString(payload.moderatorId, 'moderatorId');
+        return projectAgentService.overrideDebateSession(
+            payload.sessionId,
+            payload.moderatorId,
+            payload.decision,
+            payload.reason
+        );
+    }, null));
+
+    ipcMain.handle('project:get-debate-session', createSafeIpcHandler('project:get-debate-session', async (_, sessionId: string) => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.getDebateSession(sessionId);
+    }, null));
+
+    ipcMain.handle('project:list-debate-history', createSafeIpcHandler('project:list-debate-history', async (_, taskId?: string) => {
+        if (taskId !== undefined) {
+            validateString(taskId, 'taskId');
+        }
+        return projectAgentService.getDebateHistory(taskId);
+    }, []));
+
+    ipcMain.handle('project:get-debate-replay', createSafeIpcHandler('project:get-debate-replay', async (_, sessionId: string): Promise<DebateReplay | null> => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.getDebateReplay(sessionId);
+    }, null));
+
+    ipcMain.handle('project:generate-debate-summary', createSafeIpcHandler('project:generate-debate-summary', async (_, sessionId: string) => {
+        validateString(sessionId, 'sessionId');
+        return projectAgentService.generateDebateSummary(sessionId);
+    }, null));
+
+    ipcMain.handle('project:get-teamwork-analytics', createSafeIpcHandler('project:get-teamwork-analytics', async () => {
+        return projectAgentService.getTeamworkAnalytics();
+    }, null));
 
     // AGENT-08: Performance Metrics
     ipcMain.handle('project:get-performance-metrics', createSafeIpcHandler('project:get-performance-metrics', async (_, taskId: string) => {

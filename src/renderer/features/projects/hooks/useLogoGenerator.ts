@@ -91,7 +91,8 @@ export function useLogoGenerator(
         try {
             const uploadedPath = await window.electron.project.uploadLogo(project.path);
             if (uploadedPath) {
-                await handleApply(uploadedPath);
+                onApply(uploadedPath);
+                onClose();
             }
         } catch (error) {
             appLogger.error('LogoGenerator', 'Manual upload failed', error as Error);

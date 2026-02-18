@@ -45,7 +45,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
         >
             {/* Sidebar */}
             <div
-                className="relative h-full flex-shrink-0 overflow-visible z-[120] bg-background border-e border-border"
+                className="relative h-full flex-shrink-0 overflow-visible z-20 bg-background border-e border-border"
                 style={{ width: effectiveSidebarWidth }}
             >
                 {sidebarContent}

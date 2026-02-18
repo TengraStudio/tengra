@@ -24,8 +24,9 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
                 aria-checked={checked}
                 disabled={disabled}
                 onClick={() => onCheckedChange(!checked)}
+                onContextMenu={event => event.preventDefault()}
                 className={cn(
-                    'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
+                    'relative inline-flex h-5 w-9 shrink-0 cursor-pointer select-none touch-manipulation items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out [-webkit-tap-highlight-color:transparent]',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     checked ? 'bg-primary' : 'bg-muted',

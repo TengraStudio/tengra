@@ -13,7 +13,14 @@ import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import {
+    AgentTeamworkAnalytics,
     ConsensusResult,
+    DebateArgument,
+    DebateCitation,
+    DebateConsensus,
+    DebateReplay,
+    DebateSession,
+    DebateSide,
     ModelRoutingRule,
     ProjectStep,
     StepModelConfig,
@@ -160,8 +167,20 @@ export interface AgentCollaborationDependencies {
 export class AgentCollaborationService extends BaseService {
     private routingRules: ModelRoutingRule[] = [...DEFAULT_ROUTING_RULES];
     private votingSessions: Map<string, VotingSession> = new Map();
+    private debateSessions: Map<string, DebateSession> = new Map();
     private votingConfiguration: VotingConfiguration = { ...DEFAULT_VOTING_CONFIGURATION };
     private votingTemplates: VotingTemplate[] = [...DEFAULT_VOTING_TEMPLATES];
+    private agentTaskStats = new Map<string, {
+        completedTasks: number;
+        failedTasks: number;
+        inProgressTasks: number;
+        totalDurationMs: number;
+        totalConfidence: number;
+        confidenceSamples: number;
+        votesParticipated: number;
+        debatesParticipated: number;
+        consensusAligned: number;
+    }>();
 
     constructor(private deps: AgentCollaborationDependencies) {
         super('AgentCollaborationService');
@@ -338,6 +357,9 @@ export class AgentCollaborationService extends BaseService {
         }
 
         session.status = 'voting';
+        this.getAgentTaskStats(modelId).votesParticipated++;
+        this.getAgentTaskStats(modelId).totalConfidence += confidence;
+        this.getAgentTaskStats(modelId).confidenceSamples++;
         appLogger.info(
             'AgentCollaboration',
             `Vote submitted: ${modelId} voted "${decision}" (confidence: ${confidence}%)`
@@ -630,6 +652,355 @@ Respond with a JSON object:
             conflictingPoints,
             resolutionMethod: 'manual',
         };
+    }
+
+    // ===== AGENT-13: Multi-Agent Debate =====
+
+    createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
+        const now = Date.now();
+        const session: DebateSession = {
+            id: randomUUID(),
+            taskId,
+            stepIndex,
+            topic,
+            status: 'open',
+            arguments: [],
+            consensus: {
+                detected: false,
+                confidence: 0,
+                rationale: 'Awaiting arguments'
+            },
+            createdAt: now
+        };
+
+        this.debateSessions.set(session.id, session);
+        appLogger.info('AgentCollaboration', `Created debate session: ${session.id}`);
+        return session;
+    }
+
+    submitDebateArgument(options: {
+        sessionId: string;
+        agentId: string;
+        provider: string;
+        side: DebateSide;
+        content: string;
+        confidence: number;
+        citations?: DebateCitation[];
+    }): DebateSession | null {
+        const session = this.debateSessions.get(options.sessionId);
+        if (!session) {
+            return null;
+        }
+
+        const qualityScore = this.scoreArgumentQuality(
+            options.content,
+            options.confidence,
+            options.citations ?? []
+        );
+        const argument: DebateArgument = {
+            id: randomUUID(),
+            agentId: options.agentId,
+            provider: options.provider,
+            side: options.side,
+            content: options.content,
+            confidence: options.confidence,
+            qualityScore,
+            citations: options.citations ?? [],
+            timestamp: Date.now()
+        };
+
+        session.arguments.push(argument);
+        session.consensus = this.detectDebateConsensus(session.arguments);
+        this.getAgentTaskStats(options.agentId).debatesParticipated++;
+        this.getAgentTaskStats(options.agentId).totalConfidence += options.confidence;
+        this.getAgentTaskStats(options.agentId).confidenceSamples++;
+
+        return session;
+    }
+
+    resolveDebateSession(sessionId: string): DebateSession | null {
+        const session = this.debateSessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+        session.consensus = this.detectDebateConsensus(session.arguments);
+        session.summary = this.createDebateSummaryText(session);
+        session.status = 'resolved';
+        session.resolvedAt = Date.now();
+        return session;
+    }
+
+    overrideDebateSession(
+        sessionId: string,
+        moderatorId: string,
+        decision: DebateSide | 'balanced',
+        reason?: string
+    ): DebateSession | null {
+        const session = this.debateSessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+        session.moderatorOverride = {
+            moderatorId,
+            moderatorRole: 'human_moderator',
+            decision,
+            reason,
+            timestamp: Date.now()
+        };
+        session.consensus = {
+            detected: true,
+            winningSide: decision,
+            confidence: 1,
+            rationale: reason ?? 'Resolved by human moderator'
+        };
+        session.summary = this.createDebateSummaryText(session);
+        session.status = 'resolved';
+        session.resolvedAt = Date.now();
+        return session;
+    }
+
+    getDebateSession(sessionId: string): DebateSession | null {
+        return this.debateSessions.get(sessionId) ?? null;
+    }
+
+    getDebateHistory(taskId?: string): DebateSession[] {
+        const sessions = Array.from(this.debateSessions.values());
+        const filtered = taskId ? sessions.filter(session => session.taskId === taskId) : sessions;
+        return filtered.sort((left, right) => right.createdAt - left.createdAt);
+    }
+
+    getDebateReplay(sessionId: string): DebateReplay | null {
+        const session = this.debateSessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+        const timeline = [...session.arguments].sort((left, right) => left.timestamp - right.timestamp);
+        return { session, timeline };
+    }
+
+    generateDebateSummary(sessionId: string): string | null {
+        const session = this.debateSessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+        const summary = this.createDebateSummaryText(session);
+        session.summary = summary;
+        return summary;
+    }
+
+    // ===== AGENT-15: Teamwork Analytics =====
+
+    recordAgentTaskProgress(options: {
+        agentId: string;
+        status: 'in_progress' | 'completed' | 'failed';
+        durationMs?: number;
+        confidence?: number;
+    }): void {
+        const stats = this.getAgentTaskStats(options.agentId);
+        if (options.status === 'in_progress') {
+            stats.inProgressTasks++;
+        } else if (options.status === 'completed') {
+            stats.completedTasks++;
+            stats.inProgressTasks = Math.max(0, stats.inProgressTasks - 1);
+            if (options.durationMs !== undefined) {
+                stats.totalDurationMs += options.durationMs;
+            }
+        } else {
+            stats.failedTasks++;
+            stats.inProgressTasks = Math.max(0, stats.inProgressTasks - 1);
+            if (options.durationMs !== undefined) {
+                stats.totalDurationMs += options.durationMs;
+            }
+        }
+        if (options.confidence !== undefined) {
+            stats.totalConfidence += options.confidence;
+            stats.confidenceSamples++;
+        }
+    }
+
+    getTeamworkAnalytics(): AgentTeamworkAnalytics {
+        const metrics = Array.from(this.agentTaskStats.entries()).map(([agentId, stats]) => {
+            const doneOrFailed = stats.completedTasks + stats.failedTasks;
+            const completionRate = doneOrFailed === 0 ? 0 : (stats.completedTasks / doneOrFailed) * 100;
+            return {
+                agentId,
+                completedTasks: stats.completedTasks,
+                failedTasks: stats.failedTasks,
+                inProgressTasks: stats.inProgressTasks,
+                averageTaskDurationMs: doneOrFailed === 0 ? 0 : stats.totalDurationMs / doneOrFailed,
+                completionRate
+            };
+        });
+
+        const totalAgents = Math.max(1, metrics.length);
+        let totalVotes = 0;
+        let totalDebates = 0;
+        let totalAligned = 0;
+        const efficiencyScores: Record<string, number> = {};
+        const healthSignals: AgentTeamworkAnalytics['healthSignals'] = [];
+
+        for (const [agentId, stats] of this.agentTaskStats.entries()) {
+            totalVotes += stats.votesParticipated;
+            totalDebates += stats.debatesParticipated;
+            totalAligned += stats.consensusAligned;
+            const doneOrFailed = stats.completedTasks + stats.failedTasks;
+            const completionRate = doneOrFailed === 0 ? 0 : stats.completedTasks / doneOrFailed;
+            const avgConfidence = stats.confidenceSamples === 0 ? 0.5 : stats.totalConfidence / stats.confidenceSamples / 100;
+            const efficiency = Math.max(0, Math.min(1, completionRate * 0.7 + avgConfidence * 0.3));
+            efficiencyScores[agentId] = efficiency;
+            const failureRate = doneOrFailed === 0 ? 0 : stats.failedTasks / doneOrFailed;
+            healthSignals.push({
+                agentId,
+                status: failureRate > 0.4 ? 'critical' : failureRate > 0.2 ? 'warning' : 'healthy',
+                failureRate,
+                averageConfidence: avgConfidence
+            });
+        }
+
+        const resourceAllocationInsights = Object.entries(efficiencyScores)
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 3)
+            .map(([agentId, score]) => `Prioritize ${agentId} for high-impact tasks (efficiency ${(score * 100).toFixed(1)}%).`);
+
+        return {
+            perAgentMetrics: metrics,
+            collaborationPatterns: {
+                votingParticipationRate: totalVotes / totalAgents,
+                debateParticipationRate: totalDebates / totalAgents,
+                consensusAlignmentRate: totalDebates === 0 ? 0 : totalAligned / totalDebates
+            },
+            efficiencyScores,
+            resourceAllocationInsights,
+            healthSignals,
+            comparisonReport: this.createComparisonReport(metrics, efficiencyScores),
+            productivityRecommendations: this.createProductivityRecommendations(healthSignals),
+            updatedAt: Date.now()
+        };
+    }
+
+    private getAgentTaskStats(agentId: string): {
+        completedTasks: number;
+        failedTasks: number;
+        inProgressTasks: number;
+        totalDurationMs: number;
+        totalConfidence: number;
+        confidenceSamples: number;
+        votesParticipated: number;
+        debatesParticipated: number;
+        consensusAligned: number;
+    } {
+        const existing = this.agentTaskStats.get(agentId);
+        if (existing) {
+            return existing;
+        }
+        const initial = {
+            completedTasks: 0,
+            failedTasks: 0,
+            inProgressTasks: 0,
+            totalDurationMs: 0,
+            totalConfidence: 0,
+            confidenceSamples: 0,
+            votesParticipated: 0,
+            debatesParticipated: 0,
+            consensusAligned: 0
+        };
+        this.agentTaskStats.set(agentId, initial);
+        return initial;
+    }
+
+    private scoreArgumentQuality(content: string, confidence: number, citations: DebateCitation[]): number {
+        const normalizedLength = Math.min(1, content.trim().length / 400);
+        const confidenceScore = Math.max(0, Math.min(1, confidence / 100));
+        const citationScore = Math.min(1, citations.length / 3);
+        return Number((normalizedLength * 0.4 + confidenceScore * 0.4 + citationScore * 0.2).toFixed(3));
+    }
+
+    private detectDebateConsensus(argumentsList: DebateArgument[]): DebateConsensus {
+        if (argumentsList.length === 0) {
+            return {
+                detected: false,
+                confidence: 0,
+                rationale: 'No arguments submitted'
+            };
+        }
+
+        let proScore = 0;
+        let conScore = 0;
+        for (const argument of argumentsList) {
+            const scoreWeight = argument.qualityScore * (argument.confidence / 100);
+            if (argument.side === 'pro') {
+                proScore += scoreWeight;
+            } else {
+                conScore += scoreWeight;
+            }
+        }
+
+        const total = proScore + conScore;
+        const delta = Math.abs(proScore - conScore);
+        const confidence = total === 0 ? 0 : delta / total;
+        if (confidence < 0.15) {
+            return {
+                detected: true,
+                winningSide: 'balanced',
+                confidence: Number(confidence.toFixed(3)),
+                rationale: 'Arguments are balanced'
+            };
+        }
+        const winningSide: DebateSide = proScore >= conScore ? 'pro' : 'con';
+        for (const argument of argumentsList) {
+            if (argument.side === winningSide) {
+                this.getAgentTaskStats(argument.agentId).consensusAligned++;
+            }
+        }
+        return {
+            detected: true,
+            winningSide,
+            confidence: Number(confidence.toFixed(3)),
+            rationale: `Higher weighted score on ${winningSide} side`
+        };
+    }
+
+    private createDebateSummaryText(session: DebateSession): string {
+        const totalArguments = session.arguments.length;
+        const averageQuality = totalArguments === 0
+            ? 0
+            : session.arguments.reduce((sum, item) => sum + item.qualityScore, 0) / totalArguments;
+        const totalCitations = session.arguments.reduce((sum, item) => sum + item.citations.length, 0);
+        const decision = session.moderatorOverride?.decision
+            ?? session.consensus.winningSide
+            ?? 'undecided';
+        return `Debate on "${session.topic}" recorded ${totalArguments} arguments, ${totalCitations} citations, average quality ${averageQuality.toFixed(2)}. Decision: ${decision}.`;
+    }
+
+    private createComparisonReport(
+        metrics: AgentTeamworkAnalytics['perAgentMetrics'],
+        efficiencyScores: Record<string, number>
+    ): string {
+        if (metrics.length === 0) {
+            return 'No agent teamwork data available yet.';
+        }
+        const ranked = [...metrics].sort((left, right) => {
+            const leftScore = efficiencyScores[left.agentId] ?? 0;
+            const rightScore = efficiencyScores[right.agentId] ?? 0;
+            return rightScore - leftScore;
+        });
+        const top = ranked[0];
+        const topScore = (efficiencyScores[top.agentId] ?? 0) * 100;
+        return `Top performer: ${top.agentId} (${topScore.toFixed(1)}% efficiency). Compared ${metrics.length} agents.`;
+    }
+
+    private createProductivityRecommendations(
+        healthSignals: AgentTeamworkAnalytics['healthSignals']
+    ): string[] {
+        const recommendations: string[] = [];
+        const critical = healthSignals.filter(signal => signal.status === 'critical');
+        if (critical.length > 0) {
+            recommendations.push(`Reduce task load for ${critical.map(item => item.agentId).join(', ')} until failure rate improves.`);
+        }
+        if (healthSignals.length > 0 && recommendations.length === 0) {
+            recommendations.push('Maintain current task distribution and continue monitoring debate participation.');
+        }
+        return recommendations;
     }
 
     /**

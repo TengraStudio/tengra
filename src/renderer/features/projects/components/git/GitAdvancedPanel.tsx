@@ -71,6 +71,7 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
     const [hookName, setHookName] = useState('pre-commit');
     const [hookTemplate, setHookTemplate] = useState('');
     const [statsDays, setStatsDays] = useState('365');
+    const [operationTimeoutMs, setOperationTimeoutMs] = useState(String(git.operationTimeoutMs ?? 60000));
 
     useEffect(() => {
         void git.refreshAll();
@@ -91,6 +92,32 @@ export const GitAdvancedPanel: React.FC<GitAdvancedPanelProps> = ({ projectPath 
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <Card title="GIT-00 Operation Controls" icon={<RefreshCw className="w-4 h-4 text-primary" />} className="xl:col-span-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Field value={operationTimeoutMs} onChange={setOperationTimeoutMs} placeholder="Timeout (ms)" className="w-36" />
+                    <button
+                        onClick={() => git.setOperationTimeoutMs(Math.max(1000, Number.parseInt(operationTimeoutMs, 10) || 60000))}
+                        className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40"
+                    >
+                        Apply timeout
+                    </button>
+                    <button
+                        onClick={() => void git.cancelActiveOperation()}
+                        disabled={!git.activeOperationId}
+                        className="px-3 h-9 rounded-lg border border-border/40 hover:bg-muted/40 disabled:opacity-50"
+                    >
+                        Cancel active
+                    </button>
+                    <span className="text-muted-foreground">
+                        {git.activeOperationId ? `Running: ${git.activeOperationId}` : 'No active operation'}
+                    </span>
+                </div>
+                {git.lastOperationError && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+                        {git.lastOperationError}
+                    </div>
+                )}
+            </Card>
             <Card
                 title="GIT-01 Conflict Resolution"
                 icon={<GitMerge className="w-4 h-4 text-warning" />}

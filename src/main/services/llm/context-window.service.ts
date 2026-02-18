@@ -5,6 +5,7 @@
 
 import { getTokenEstimationService, TokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { Message } from '@shared/types/chat';
+import { randomUUID } from 'node:crypto';
 
 export interface ContextWindowInfo {
     model: string
@@ -22,6 +23,14 @@ export interface TruncationOptions {
     strategy?: 'recent-first' | 'importance-based'
 }
 
+export interface CompactionResult {
+    messages: Message[]
+    removedCount: number
+    compacted: boolean
+    passes: number
+    info: ContextWindowInfo
+}
+
 export class ContextWindowService {
     private tokenEstimator: TokenEstimationService;
 
@@ -33,7 +42,7 @@ export class ContextWindowService {
      * Get context window information for messages
      */
     getContextWindowInfo(messages: Message[], model: string, reservedTokens: number = 0): ContextWindowInfo {
-        const estimate = this.tokenEstimator.estimateMessagesTokens(messages);
+        const estimate = this.tokenEstimator.estimateMessagesTokens(messages, model);
         const contextWindow = this.tokenEstimator.getContextWindowSize(model);
         const totalTokens = estimate.estimatedTotalTokens + reservedTokens;
         const remainingTokens = Math.max(0, contextWindow - totalTokens);
@@ -97,6 +106,160 @@ export class ContextWindowService {
             removedCount,
             info
         };
+    }
+
+    compactMessages(
+        messages: Message[],
+        model: string,
+        options: TruncationOptions = {}
+    ): CompactionResult {
+        const maxPasses = 4;
+        let pass = 0;
+        let keepRecentMessages = options.keepRecentMessages ?? 12;
+        let summaryTokenBudget = 900;
+        let workingMessages = messages;
+        const removedMap = new Map<string, Message>();
+
+        while (pass < maxPasses) {
+            pass += 1;
+            const truncation = this.truncateMessages(workingMessages, model, {
+                ...options,
+                keepRecentMessages
+            });
+
+            if (truncation.removedCount === 0) {
+                return {
+                    messages: truncation.truncated,
+                    removedCount: removedMap.size,
+                    compacted: removedMap.size > 0,
+                    passes: pass,
+                    info: truncation.info
+                };
+            }
+
+            const keptIds = new Set(truncation.truncated.map(message => message.id));
+            const removedMessages = workingMessages.filter(message => !keptIds.has(message.id));
+            for (const removed of removedMessages) {
+                removedMap.set(removed.id, removed);
+            }
+
+            const summary = this.buildCompactedSummary(Array.from(removedMap.values()), summaryTokenBudget);
+            if (!summary) {
+                return {
+                    messages: truncation.truncated,
+                    removedCount: removedMap.size,
+                    compacted: removedMap.size > 0,
+                    passes: pass,
+                    info: truncation.info
+                };
+            }
+
+            const compactMessage: Message = {
+                id: `compact-${randomUUID()}`,
+                role: 'system',
+                content: summary,
+                timestamp: new Date()
+            };
+            workingMessages = this.injectCompactionMessage(truncation.truncated, compactMessage);
+
+            const info = this.getContextWindowInfo(workingMessages, model, options.reservedTokens ?? 0);
+            if (info.fits) {
+                return {
+                    messages: workingMessages,
+                    removedCount: removedMap.size,
+                    compacted: true,
+                    passes: pass,
+                    info
+                };
+            }
+
+            keepRecentMessages = Math.max(2, keepRecentMessages - 3);
+            summaryTokenBudget = Math.max(280, summaryTokenBudget - 180);
+        }
+
+        const fallback = this.truncateMessages(messages, model, {
+            ...options,
+            keepRecentMessages: 2
+        });
+        return {
+            messages: fallback.truncated,
+            removedCount: messages.length - fallback.truncated.length,
+            compacted: false,
+            passes: maxPasses,
+            info: fallback.info
+        };
+    }
+
+    private injectCompactionMessage(messages: Message[], compactMessage: Message): Message[] {
+        const hasCompactedSummary = messages.some(message =>
+            message.role === 'system' &&
+            typeof message.content === 'string' &&
+            message.content.includes('[COMPACT_CONTEXT]')
+        );
+        if (hasCompactedSummary) {
+            return messages;
+        }
+
+        const firstNonSystemIndex = messages.findIndex(message => message.role !== 'system');
+        if (firstNonSystemIndex === -1) {
+            return [...messages, compactMessage];
+        }
+        return [
+            ...messages.slice(0, firstNonSystemIndex),
+            compactMessage,
+            ...messages.slice(firstNonSystemIndex)
+        ];
+    }
+
+    private buildCompactedSummary(removedMessages: Message[], maxSummaryTokens: number): string {
+        const filteredMessages = removedMessages.filter(message => message.role !== 'system');
+        if (filteredMessages.length === 0) {
+            return '';
+        }
+
+        const summaryLines: string[] = [];
+        const maxMessagesToSummarize = Math.min(filteredMessages.length, 24);
+        for (let index = 0; index < maxMessagesToSummarize; index++) {
+            const message = filteredMessages[index];
+            const extracted = this.extractMessageText(message);
+            if (!extracted) {
+                continue;
+            }
+            const compactLine = extracted.length > 220 ? `${extracted.slice(0, 220)}...` : extracted;
+            summaryLines.push(`- ${message.role}: ${compactLine}`);
+        }
+
+        if (summaryLines.length === 0) {
+            return '';
+        }
+
+        const header = '[COMPACT_CONTEXT]\nOlder conversation context was compacted to fit the model context window. Treat this as background memory:\n';
+        let summary = `${header}${summaryLines.join('\n')}`;
+        let tokenCount = this.tokenEstimator.estimateStringTokens(summary);
+
+        while (summaryLines.length > 4 && tokenCount > maxSummaryTokens) {
+            summaryLines.pop();
+            summary = `${header}${summaryLines.join('\n')}`;
+            tokenCount = this.tokenEstimator.estimateStringTokens(summary);
+        }
+
+        return summary;
+    }
+
+    private extractMessageText(message: Message): string {
+        if (typeof message.content === 'string') {
+            return message.content.trim();
+        }
+
+        if (!Array.isArray(message.content)) {
+            return '';
+        }
+
+        return message.content
+            .filter(part => part.type === 'text')
+            .map(part => part.text.trim())
+            .filter(Boolean)
+            .join(' ');
     }
 
     private truncateRecentFirst(

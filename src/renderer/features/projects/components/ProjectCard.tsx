@@ -1,9 +1,10 @@
 import { Archive, ArrowRight, Calendar, MoreVertical, Pencil, Terminal, Trash2 } from 'lucide-react';
-import React, { createContext, memo, useContext } from 'react';
+import React, { createContext, memo, useContext, useEffect } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 interface ProjectCardSurfaceContextValue {
     activeMenuId: string | null
@@ -28,6 +29,8 @@ function useProjectCardSurfaceContext(): ProjectCardSurfaceContextValue {
 export interface ProjectCardSurfaceProviderProps extends ProjectCardSurfaceContextValue {
     children: React.ReactNode
 }
+
+const SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS = 10;
 
 export const ProjectCardSurfaceProvider: React.FC<ProjectCardSurfaceProviderProps> = ({
     children,
@@ -124,7 +127,9 @@ const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Archive className="w-3.5 h-3.5 text-success" />
-                        {project.status === 'archived' ? t('common.unarchive') || 'Unarchive' : t('projects.archiveProject')}
+                        {project.status === 'archived'
+                            ? t('common.unarchive') || 'Restore'
+                            : t('projects.archiveProject')}
                     </button>
                     <button
                         type="button"
@@ -171,6 +176,22 @@ export const ProjectCard = memo<ProjectCardProps>(({
     project, index, isSelected, onToggleSelection
 }) => {
     const { onSelect } = useProjectCardSurfaceContext();
+
+    useEffect(() => {
+        const renderStartMs = performance.now();
+        const rafId = window.requestAnimationFrame(() => {
+            const renderDurationMs = Math.round(performance.now() - renderStartMs);
+            if (renderDurationMs >= SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS) {
+                appLogger.debug('ProjectCard', 'Slow project card render detected', {
+                    projectId: project.id,
+                    cardIndex: index,
+                    renderDurationMs,
+                    thresholdMs: SLOW_PROJECT_CARD_RENDER_THRESHOLD_MS
+                });
+            }
+        });
+        return () => window.cancelAnimationFrame(rafId);
+    }, [index, project.id]);
 
     return (
         <motion.div

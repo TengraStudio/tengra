@@ -23,6 +23,7 @@ export function useGitAdvancedOperations(
     projectPath: string | undefined,
     invokeGit: InvokeGitFn
 ) {
+    const DEFAULT_OPERATION_TIMEOUT_MS = 60000;
     const [rebasePlan, setRebasePlan] = useState<GitRebasePlanCommit[]>([]);
     const [submodules, setSubmodules] = useState<GitSubmodule[]>([]);
     const [flowStatus, setFlowStatus] = useState<GitFlowStatus>(DEFAULT_FLOW_STATUS);
@@ -36,6 +37,45 @@ export function useGitAdvancedOperations(
     } | null>(null);
     const [hookTestOutput, setHookTestOutput] = useState<{ stdout: string; stderr: string } | null>(null);
     const [stats, setStats] = useState<GitRepositoryStats | null>(null);
+    const [operationTimeoutMs, setOperationTimeoutMs] = useState(DEFAULT_OPERATION_TIMEOUT_MS);
+    const [activeOperationId, setActiveOperationId] = useState<string | null>(null);
+    const [lastOperationError, setLastOperationError] = useState<string | null>(null);
+
+    const sanitizeShellArg = useCallback((value: string): string => {
+        return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }, []);
+
+    const runControlledOperation = useCallback(
+        async (command: string) => {
+            if (!canRun || !projectPath) {
+                return { success: false, error: 'Project is not ready' };
+            }
+            const operationId = `git-op-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            setActiveOperationId(operationId);
+            setLastOperationError(null);
+            try {
+                const response = await invokeGit<{
+                    success: boolean;
+                    error?: string;
+                    stdout?: string;
+                    stderr?: string;
+                }>(
+                    'git:runControlledOperation',
+                    projectPath,
+                    command,
+                    operationId,
+                    operationTimeoutMs
+                );
+                if (!response.success && response.error) {
+                    setLastOperationError(response.error);
+                }
+                return response;
+            } finally {
+                setActiveOperationId(null);
+            }
+        },
+        [canRun, invokeGit, operationTimeoutMs, projectPath]
+    );
 
     const fetchRebasePlan = useCallback(
         async (ontoBranch: string) => {
@@ -59,38 +99,26 @@ export function useGitAdvancedOperations(
             if (!canRun || !projectPath) {
                 return false;
             }
-
-            let channel = '';
-            const args: (string | number | boolean)[] = [projectPath];
-
-            switch (action) {
-                case 'start':
-                    channel = 'git:startRebase';
-                    if (ontoBranch) {
-                        args.push(ontoBranch);
-                    }
-                    break;
-                case 'continue':
-                    channel = 'git:continueRebase';
-                    break;
-                case 'abort':
-                    channel = 'git:abortRebase';
-                    break;
-                case 'skip': {
-                    // If git:skipRebase doesn't exist, we might need to use rev-parse or similar,
-                    // but usually it's rebase --skip.
-                    channel = 'git:runRebaseAction';
-                    args.push('skip');
-                    break;
-                }
-                default:
+            let command = '';
+            if (action === 'start') {
+                if (!ontoBranch || ontoBranch.trim().length === 0) {
                     return false;
+                }
+                command = `rebase ${sanitizeShellArg(ontoBranch)}`;
+            } else if (action === 'continue') {
+                command = 'rebase --continue';
+            } else if (action === 'abort') {
+                command = 'rebase --abort';
+            } else if (action === 'skip') {
+                command = 'rebase --skip';
+            } else {
+                return false;
             }
 
-            const response = await invokeGit<{ success: boolean }>(channel, ...args);
+            const response = await runControlledOperation(command);
             return response.success;
         },
-        [canRun, projectPath, invokeGit]
+        [canRun, projectPath, runControlledOperation, sanitizeShellArg]
     );
 
     const fetchSubmodules = useCallback(async () => {
@@ -115,36 +143,52 @@ export function useGitAdvancedOperations(
                 return false;
             }
 
-            let channel = '';
-            const args: (string | number | boolean)[] = [projectPath];
-
+            let command = '';
             if (action === 'init') {
-                channel = 'git:initSubmodules';
-                args.push(typeof options === 'object' ? !!options.recursive : false);
+                const recursive = typeof options === 'object' ? !!options.recursive : false;
+                command = recursive ? 'submodule update --init --recursive' : 'submodule update --init';
             } else if (action === 'update') {
-                channel = 'git:updateSubmodules';
-                args.push(typeof options === 'object' ? !!options.remote : false);
+                const remote = typeof options === 'object' ? !!options.remote : false;
+                command = remote ? 'submodule update --remote --recursive' : 'submodule update --recursive';
             } else if (action === 'sync') {
-                channel = 'git:syncSubmodules';
+                command = 'submodule sync --recursive';
             } else if (action === 'add' && typeof options === 'object') {
-                channel = 'git:addSubmodule';
-                args.push(options.url ?? '', options.path ?? '', options.branch ?? '');
+                const url = (options.url ?? '').trim();
+                const submodulePath = (options.path ?? '').trim();
+                if (!url || !submodulePath) {
+                    return false;
+                }
+                const branchArg = options.branch ? ` -b ${sanitizeShellArg(options.branch)}` : '';
+                command = `submodule add${branchArg} ${sanitizeShellArg(url)} "${sanitizeShellArg(submodulePath)}"`;
             } else if (action === 'remove' && typeof options === 'object') {
-                channel = 'git:removeSubmodule';
-                args.push(options.path ?? '');
-            } else if (typeof options === 'string') {
-                channel = 'git:runSubmoduleAction';
-                args.push(action, options);
+                const submodulePath = (options.path ?? '').trim();
+                if (!submodulePath) {
+                    return false;
+                }
+                command = `submodule deinit -f -- "${sanitizeShellArg(submodulePath)}"`;
+            } else if (typeof options === 'string' && options.trim().length > 0) {
+                command = `submodule ${sanitizeShellArg(action)} -- "${sanitizeShellArg(options)}"`;
             } else {
                 return false;
             }
 
-            const response = await invokeGit<{ success: boolean }>(channel, ...args);
+            const response = await runControlledOperation(command);
             await fetchSubmodules();
             return response.success;
         },
-        [canRun, projectPath, invokeGit, fetchSubmodules]
+        [canRun, fetchSubmodules, projectPath, runControlledOperation, sanitizeShellArg]
     );
+
+    const cancelActiveOperation = useCallback(async () => {
+        if (!activeOperationId) {
+            return false;
+        }
+        const response = await invokeGit<{ success: boolean }>('git:cancelOperation', activeOperationId);
+        if (!response.success) {
+            setLastOperationError('Failed to cancel active Git operation');
+        }
+        return response.success;
+    }, [activeOperationId, invokeGit]);
 
     const fetchFlowStatus = useCallback(async () => {
         if (!canRun || !projectPath) {
@@ -316,6 +360,11 @@ export function useGitAdvancedOperations(
         hookValidation,
         hookTestOutput,
         stats,
+        operationTimeoutMs,
+        activeOperationId,
+        lastOperationError,
+        setOperationTimeoutMs,
+        cancelActiveOperation,
         fetchRebasePlan,
         runRebaseAction,
         fetchSubmodules,

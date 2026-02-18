@@ -253,7 +253,7 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
             </div>
 
             {/* Logs Container */}
-            <div className="flex-1 min-h-0 bg-black/60 backdrop-blur-md rounded-2xl border border-border/50 overflow-hidden flex flex-col font-mono text-xs">
+            <div className="flex-1 min-h-0 bg-background rounded-2xl border border-border/50 overflow-hidden flex flex-col font-mono text-xs">
                 <div className="px-4 py-2 border-b border-border/40 flex items-center gap-2 text-xxs text-muted-foreground">
                     <span>Total: {levelStats.total}</span>
                     <span>Info: {levelStats.info}</span>

@@ -1,4 +1,5 @@
 import type { ElectronAPI } from '@renderer/electron.d';
+import type { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';
 import type { Chat, Folder, Message, ToolCall, ToolResult } from '@shared/types/chat';
 import type { IpcValue } from '@shared/types/common';
 import type { Project, ProjectAnalysis } from '@shared/types/project';
@@ -7,7 +8,20 @@ import type { AppSettings } from '@shared/types/settings';
 import type { Workflow, WorkflowExecutionResult } from '@shared/types/workflow.types';
 import type { IpcRendererEvent } from 'electron';
 
-import type { SSHConfig, SSHConnection, SSHSystemStats } from '@/types/ssh';
+import type {
+    SSHConfig,
+    SSHConnection,
+    SSHDevContainer,
+    SSHKnownHostEntry,
+    SSHManagedKey,
+    SSHPortForward,
+    SSHProfileTemplate,
+    SSHRemoteSearchResult,
+    SSHSearchHistoryEntry,
+    SSHSessionRecording,
+    SSHSystemStats,
+    SSHTransferTask,
+    SSHTunnelPreset} from '@/types/ssh';
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
@@ -354,6 +368,62 @@ export const webElectronMock: ElectronAPI = {
     sdCpp: {
         getStatus: async () => 'ready',
         reinstall: async () => { },
+        getHistory: async (_limit?: number) => [],
+        regenerate: async (_historyId: string) => '',
+        getAnalytics: async () => ({
+            totalGenerated: 0,
+            byProvider: {},
+            averageSteps: 0,
+        }),
+        listPresets: async () => [],
+        savePreset: async (_preset: {
+            id?: string;
+            name: string;
+            promptPrefix?: string;
+            width: number;
+            height: number;
+            steps: number;
+            cfgScale: number;
+            provider?: 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+        }) => ({}),
+        deletePreset: async (_id: string) => true,
+        schedule: async (_payload: {
+            runAt: number;
+            options: {
+                prompt: string;
+                negativePrompt?: string;
+                width?: number;
+                height?: number;
+                steps?: number;
+                cfgScale?: number;
+                seed?: number;
+                count?: number;
+            };
+        }) => ({}),
+        listSchedules: async () => [],
+        cancelSchedule: async (_id: string) => true,
+        compare: async (_ids: string[]) => ({}),
+        batchGenerate: async (_requests: Array<{
+            prompt: string;
+            negativePrompt?: string;
+            width?: number;
+            height?: number;
+            steps?: number;
+            cfgScale?: number;
+            seed?: number;
+            count?: number;
+        }>) => [],
+        getQueueStats: async () => ({ queued: 0, running: false }),
+        edit: async (_options: {
+            sourceImage: string;
+            mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer';
+            prompt: string;
+            negativePrompt?: string;
+            strength?: number;
+            width?: number;
+            height?: number;
+            maskImage?: string;
+        }) => '',
     },
     clipboard: {
         writeText: async (text: string) => {
@@ -592,6 +662,12 @@ export const webElectronMock: ElectronAPI = {
         }),
         getShells: async () => [],
         getBackends: async () => [],
+        getRuntimeHealth: async () => ({
+            terminalAvailable: true,
+            totalBackends: 1,
+            availableBackends: 1,
+            backends: [],
+        }),
         create: async (_options: {
             id?: string;
             shell?: string;
@@ -793,6 +869,138 @@ export const webElectronMock: ElectronAPI = {
         getProfiles: async () => [],
         saveProfile: async (_profile: SSHConfig) => true,
         deleteProfile: async (_id: string) => true,
+        createTunnel: async (_payload: {
+            connectionId: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost?: string;
+            remotePort?: number;
+        }) => ({ success: true, forwardId: 'mock-forward-id' }),
+        listTunnels: async (_connectionId?: string) => [] as SSHPortForward[],
+        closeTunnel: async (_forwardId: string) => true,
+        saveTunnelPreset: async (preset: {
+            name: string;
+            type: 'local' | 'remote' | 'dynamic';
+            localHost: string;
+            localPort: number;
+            remoteHost: string;
+            remotePort: number;
+        }) =>
+            ({
+                ...preset,
+                id: 'mock-preset-id',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            }) as SSHTunnelPreset,
+        listTunnelPresets: async () => [] as SSHTunnelPreset[],
+        deleteTunnelPreset: async (_id: string) => true,
+        listManagedKeys: async () => [],
+        generateManagedKey: async (_payload: { name: string; passphrase?: string }) => ({
+            key: {
+                id: 'mock-key',
+                name: _payload.name,
+                algorithm: 'ed25519',
+                publicKey: '',
+                fingerprint: '',
+                hasPassphrase: Boolean(_payload.passphrase),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                rotationCount: 0
+            } as SSHManagedKey,
+            privateKey: '',
+            publicKey: ''
+        }),
+        importManagedKey: async (_payload: { name: string; privateKey: string; passphrase?: string }) => ({
+            id: 'mock-key',
+            name: _payload.name,
+            algorithm: 'ed25519',
+            publicKey: '',
+            fingerprint: '',
+            hasPassphrase: Boolean(_payload.passphrase),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            rotationCount: 0
+        }),
+        deleteManagedKey: async (_id: string) => true,
+        rotateManagedKey: async (_payload: { id: string; nextPassphrase?: string }) => ({
+            id: _payload.id,
+            name: 'mock-key',
+            algorithm: 'ed25519',
+            publicKey: '',
+            fingerprint: '',
+            hasPassphrase: Boolean(_payload.nextPassphrase),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            rotationCount: 1
+        }),
+        backupManagedKey: async (_id: string) => ({ filename: 'mock.pem', privateKey: '' }),
+        listKnownHosts: async () => [],
+        addKnownHost: async (_payload: SSHKnownHostEntry) => true,
+        removeKnownHost: async (_payload: { host: string; keyType?: string }) => true,
+        searchRemoteFiles: async (_payload: {
+            connectionId: string;
+            query: string;
+            options?: { path?: string; contentSearch?: boolean; limit?: number };
+        }) => [] as SSHRemoteSearchResult[],
+        getSearchHistory: async (_connectionId?: string) => [] as SSHSearchHistoryEntry[],
+        exportSearchHistory: async () => '[]',
+        reconnect: async (_connectionId: string, _retries?: number) => ({ success: true }),
+        acquireConnection: async (_connectionId: string) => ({ success: true }),
+        releaseConnection: async (_connectionId: string) => true,
+        getConnectionPoolStats: async () => [],
+        enqueueTransfer: async (_task: SSHTransferTask) => { },
+        getTransferQueue: async () => [] as SSHTransferTask[],
+        runTransferBatch: async (_tasks: SSHTransferTask[], _concurrency?: number) => [],
+        listRemoteContainers: async (_connectionId: string) => [] as SSHDevContainer[],
+        runRemoteContainer: async (_payload: {
+            connectionId: string;
+            image: string;
+            name: string;
+            ports?: Array<{ hostPort: number; containerPort: number }>;
+        }) => ({ success: true, id: 'mock-container' }),
+        stopRemoteContainer: async (_connectionId: string, _containerId: string) => true,
+        saveProfileTemplate: async (template: {
+            name: string;
+            port: number;
+            username: string;
+            tags?: string[];
+        }) =>
+            ({
+                ...template,
+                id: 'mock-template',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            }) as SSHProfileTemplate,
+        listProfileTemplates: async () => [] as SSHProfileTemplate[],
+        deleteProfileTemplate: async (_id: string) => true,
+        exportProfiles: async (_ids?: string[]) => '[]',
+        importProfiles: async (_payload: string) => 0,
+        validateProfile: async (_profile: Partial<SSHConnection>) => ({ valid: true, errors: [] }),
+        testProfile: async (_profile: Partial<SSHConnection>) => ({
+            success: true,
+            latencyMs: 50,
+            authMethod: (_profile.privateKey ? 'key' : 'password') as 'password' | 'key',
+            message: 'Mock profile test passed'
+        }),
+        startSessionRecording: async (_connectionId: string) => ({
+            id: 'mock-recording',
+            connectionId: _connectionId,
+            startedAt: Date.now(),
+            chunks: []
+        }),
+        stopSessionRecording: async (_connectionId: string) =>
+            ({
+                id: 'mock-recording',
+                connectionId: _connectionId,
+                startedAt: Date.now() - 1000,
+                endedAt: Date.now(),
+                chunks: []
+            }) as SSHSessionRecording,
+        getSessionRecording: async (_connectionId: string) => null,
+        searchSessionRecording: async (_connectionId: string, _query: string) => [],
+        exportSessionRecording: async (_connectionId: string) => '',
+        listSessionRecordings: async () => [] as SSHSessionRecording[],
     },
 
     git: {
@@ -1099,6 +1307,46 @@ export const webElectronMock: ElectronAPI = {
             data: { memories: [], totalMatches: 0 },
         }),
         search: async (_query: string, _limit?: number) => ({ success: true, data: [] }),
+        getSearchAnalytics: async () => ({
+            success: true,
+            data: {
+                totalQueries: 0,
+                semanticQueries: 0,
+                textQueries: 0,
+                hybridQueries: 0,
+                averageResults: 0,
+                topQueries: [],
+            }
+        }),
+        getSearchHistory: async (_limit?: number) => ({
+            success: true,
+            data: []
+        }),
+        getSearchSuggestions: async (_prefix?: string, _limit?: number) => ({
+            success: true,
+            data: []
+        }),
+        export: async (_query?: string, _limit?: number) => ({
+            success: true,
+            data: {
+                exportedAt: new Date().toISOString(),
+                count: 0,
+                memories: []
+            }
+        }),
+        import: async (_payload: {
+            memories?: Array<Partial<AdvancedSemanticFragment>>;
+            pendingMemories?: Array<Partial<PendingMemory>>;
+            replaceExisting?: boolean;
+        }) => ({
+            success: true,
+            data: {
+                imported: 0,
+                pendingImported: 0,
+                skipped: 0,
+                errors: []
+            }
+        }),
         getStats: async () => ({ success: true, data: undefined }),
         runDecay: async () => ({ success: true }),
         extractFromMessage: async (_content: string, _sourceId: string, _projectId?: string) => ({
@@ -1112,6 +1360,60 @@ export const webElectronMock: ElectronAPI = {
         archiveMany: async (_ids: string[]) => ({ success: true, archived: 0, failed: [] }),
         restore: async (_id: string) => ({ success: true }),
         get: async (_id: string) => ({ success: true, data: undefined }),
+        shareWithProject: async (_id: string, _projectId: string) => ({ success: true }),
+        createSharedNamespace: async (_payload: {
+            id: string;
+            name: string;
+            projectIds: string[];
+            accessControl?: Record<string, string[]>;
+        }) => ({
+            success: true,
+            data: {
+                ..._payload,
+                accessControl: _payload.accessControl ?? {},
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            }
+        }),
+        syncSharedNamespace: async (_request: {
+            namespaceId: string;
+            sourceProjectId: string;
+            targetProjectIds?: string[];
+            memoryIds?: string[];
+            resolution?: 'keep_source' | 'keep_target' | 'merge_copy' | 'manual_review';
+        }) => ({
+            success: true,
+            data: {
+                namespaceId: _request.namespaceId,
+                synced: 0,
+                skipped: 0,
+                conflicts: [],
+                updatedAt: Date.now()
+            }
+        }),
+        getSharedNamespaceAnalytics: async (_namespaceId: string) => ({
+            success: true,
+            data: {
+                namespaceId: _namespaceId,
+                totalMemories: 0,
+                totalProjects: 0,
+                conflicts: 0,
+                memoriesByProject: {},
+                updatedAt: Date.now()
+            }
+        }),
+        searchAcrossProjects: async (_payload: {
+            namespaceId: string;
+            query: string;
+            projectId: string;
+            limit?: number;
+        }) => ({ success: true, data: [] }),
+        getHistory: async (_id: string) => ({ success: true, data: [] }),
+        rollback: async (_id: string, _versionIndex: number) => ({ success: true }),
+        recategorize: async (_ids?: string[]) => ({ success: true }),
+        getAllEntityKnowledge: async () => ({ success: true, data: [] }),
+        getAllEpisodes: async () => ({ success: true, data: [] }),
+        getAllAdvancedMemories: async () => ({ success: true, data: [] }),
     },
     ideas: {
         createSession: async (config: unknown) => ({
@@ -1306,6 +1608,77 @@ export const webElectronMock: ElectronAPI = {
         buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => ({
             agreed: false,
             resolutionMethod: 'manual' as const,
+        }),
+        createDebateSession: async (_payload: { taskId: string; stepIndex: number; topic: string }) => ({
+            id: 'mock-debate-session',
+            taskId: _payload.taskId,
+            stepIndex: _payload.stepIndex,
+            topic: _payload.topic,
+            status: 'open' as const,
+            arguments: [],
+            consensus: {
+                detected: false,
+                confidence: 0,
+                rationale: 'Awaiting arguments'
+            },
+            createdAt: Date.now()
+        }),
+        submitDebateArgument: async (_payload: {
+            sessionId: string;
+            agentId: string;
+            provider: string;
+            side: 'pro' | 'con';
+            content: string;
+            confidence: number;
+            citations?: Array<{ sourceId: string; title?: string; url?: string; excerpt?: string }>;
+        }) => ({
+            id: _payload.sessionId,
+            taskId: '',
+            stepIndex: 0,
+            topic: '',
+            status: 'open' as const,
+            arguments: [{
+                id: 'mock-argument',
+                agentId: _payload.agentId,
+                provider: _payload.provider,
+                side: _payload.side,
+                content: _payload.content,
+                confidence: _payload.confidence,
+                qualityScore: 0.5,
+                citations: _payload.citations ?? [],
+                timestamp: Date.now()
+            }],
+            consensus: {
+                detected: false,
+                confidence: 0,
+                rationale: 'Awaiting more arguments'
+            },
+            createdAt: Date.now()
+        }),
+        resolveDebateSession: async (_sessionId: string) => null,
+        overrideDebateSession: async (_payload: {
+            sessionId: string;
+            moderatorId: string;
+            decision: 'pro' | 'con' | 'balanced';
+            reason?: string;
+        }) => null,
+        getDebateSession: async (_sessionId: string) => null,
+        listDebateHistory: async (_taskId?: string) => [],
+        getDebateReplay: async (_sessionId: string) => null,
+        generateDebateSummary: async (_sessionId: string) => null,
+        getTeamworkAnalytics: async () => ({
+            perAgentMetrics: [],
+            collaborationPatterns: {
+                votingParticipationRate: 0,
+                debateParticipationRate: 0,
+                consensusAlignmentRate: 0
+            },
+            efficiencyScores: {},
+            resourceAllocationInsights: [],
+            healthSignals: [],
+            comparisonReport: 'No agent teamwork data available yet.',
+            productivityRecommendations: [],
+            updatedAt: Date.now()
         }),
         getTemplates: async (_category?: unknown) => [],
         getTemplate: async (_id: string) => null,

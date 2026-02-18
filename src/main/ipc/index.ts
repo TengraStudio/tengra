@@ -4,6 +4,7 @@ import { registerAuthIpc } from '@main/ipc/auth';
 import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
+import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerContractIpc } from '@main/ipc/contract';
@@ -40,6 +41,7 @@ import { registerTerminalIpc } from '@main/ipc/terminal';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
+import { registerVoiceIpc } from '@main/ipc/voice';
 // Import all IPC registration functions
 import { registerWindowIpc } from '@main/ipc/window';
 import { appLogger } from '@main/logging/logger';
@@ -72,6 +74,7 @@ export async function registerAllIpc(
     registerWindowIpc(getWin, allowedFileRoots);
     registerLazyServicesIpc();
     registerContractIpc();
+    registerCodeSandboxIpc();
     registerProcessIpc(getWin, services.processService);
     setupProcessEvents(services.processService);
     registerLoggingIpc();
@@ -160,6 +163,7 @@ export async function registerAllIpc(
     registerLlamaIpc(services.llamaService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerTokenEstimationIpc();
+    registerVoiceIpc();
     registerKeyRotationIpc(services.keyRotationService);
     registerCollaborationIpc(services.modelCollaborationService);
     registerMultiModelIpc(services.multiModelComparisonService);
@@ -177,6 +181,7 @@ export async function registerAllIpc(
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
+        auditLogService: services.auditLogService,
     });
     registerAgentIpc(services.agentService);
     registerCodeIntelligenceIpc(services.codeIntelligenceService);

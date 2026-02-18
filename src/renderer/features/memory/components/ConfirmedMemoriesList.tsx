@@ -12,9 +12,11 @@ import {
   CheckCircle,
   CheckSquare,
   Clock,
+  History,
   Edit3,
   Gauge,
   RotateCcw,
+  Share2,
   Square,
   Tag,
   Trash2,
@@ -43,6 +45,8 @@ interface ConfirmedMemoriesListProps {
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
+  onShowHistory: (id: string) => void;
+  onShare: (id: string) => void;
   onArchiveSelected: () => void;
   onDeleteSelected: () => void;
 }
@@ -58,6 +62,8 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
   onDelete,
   onArchive,
   onRestore,
+  onShowHistory,
+  onShare,
   onArchiveSelected,
   onDeleteSelected,
 }) => {
@@ -132,6 +138,8 @@ export const ConfirmedMemoriesList: React.FC<ConfirmedMemoriesListProps> = ({
                   onDelete={() => onDelete(memory.id)}
                   onArchive={() => onArchive(memory.id)}
                   onRestore={() => onRestore(memory.id)}
+                  onShowHistory={() => onShowHistory(memory.id)}
+                  onShare={() => onShare(memory.id)}
                 />
               </div>
             )}
@@ -150,6 +158,8 @@ interface ConfirmedMemoryCardProps {
   onDelete: () => void;
   onArchive: () => void;
   onRestore: () => void;
+  onShowHistory: () => void;
+  onShare: () => void;
 }
 
 const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
@@ -160,6 +170,8 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
   onDelete,
   onArchive,
   onRestore,
+  onShowHistory,
+  onShare,
 }) => {
   const { t } = useTranslation();
   const config = CATEGORY_CONFIG[memory.category];
@@ -251,6 +263,24 @@ const ConfirmedMemoryCard: React.FC<ConfirmedMemoryCardProps> = ({
               title={t('common.delete')}
             >
               <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShowHistory}
+              className="h-7 w-7 p-0"
+              title={t('memory.showHistory')}
+            >
+              <History className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onShare}
+              className="h-7 w-7 p-0"
+              title={t('memory.shareToProject')}
+            >
+              <Share2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>

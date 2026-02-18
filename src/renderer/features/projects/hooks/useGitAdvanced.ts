@@ -47,7 +47,7 @@ export function useGitAdvanced(projectPath?: string) {
 
     const invokeGit = useCallback(
         async <T>(channel: string, ...args: (string | number | boolean)[]) => {
-            return await window.electron.invoke<T>(channel, ...args);
+            return await window.electron.ipcRenderer.invoke(channel, ...args) as T;
         },
         []
     );
@@ -163,6 +163,9 @@ export function useGitAdvanced(projectPath?: string) {
         hookValidation: advancedOpsHook.hookValidation,
         hookTestOutput: advancedOpsHook.hookTestOutput,
         stats: advancedOpsHook.stats,
+        operationTimeoutMs: advancedOpsHook.operationTimeoutMs,
+        activeOperationId: advancedOpsHook.activeOperationId,
+        lastOperationError: advancedOpsHook.lastOperationError,
         refreshAll,
         fetchConflicts: conflictsHook.fetchConflicts,
         resolveConflict: conflictsHook.resolveConflict,
@@ -190,5 +193,7 @@ export function useGitAdvanced(projectPath?: string) {
         exportHooks: advancedOpsHook.exportHooks,
         fetchStats: advancedOpsHook.fetchStats,
         exportStats: advancedOpsHook.exportStats,
+        setOperationTimeoutMs: advancedOpsHook.setOperationTimeoutMs,
+        cancelActiveOperation: advancedOpsHook.cancelActiveOperation,
     };
 }

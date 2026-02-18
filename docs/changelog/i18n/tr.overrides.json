@@ -1,4 +1,15 @@
 {
+  "2026-02-18-advanced-memory-features": {
+    "title": "Gelişmiş Bellek Versiyonlama ve Paylaşım (MEM-03/07/08)",
+    "summary": "Versiyonlama, geri alma, sona erme ve projeler arası paylaşım dahil olmak üzere gelişmiş bellek yaşam döngüsü yönetimi uygulandı.",
+    "items": [
+      "- **Versiyonlama**: Bellek geçmişini izleme ve önceki versiyonlara geri dönme desteği eklendi.",
+      "- **Sona Erme**: Sona erme zaman damgası olan bellekler için otomatik arşivleme uygulandı.",
+      "- **Paylaşım**: Kaynak bağlantılarını koruyarak birden fazla proje arasında bellek paylaşımı etkinleştirildi.",
+      "- **Kategorizasyon**: Evrimleşen bellekler için LLM destekli otomatik yeniden kategorizasyon eklendi.",
+      "- **Otomasyon**: Sona erme kontrolleri bellek azalma (decay) bakım döngüsüne entegre edildi."
+    ]
+  },
   "2026-02-18-test-stability-and-ipc-fixes": {
     "title": "Kapsamlı Test Süreci Stabilizasyonu ve IPC Düzeltmeleri",
     "summary": "Copilot, MCP ve UI bileşenleri dahil olmak üzere birden fazla modülde kritik entegrasyon ve renderer test hataları giderildi.",
@@ -3569,6 +3580,56 @@
       "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
       "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
       "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+    ]
+  },
+  "2026-02-18-git-panel-section-states": {
+    "title": "Git Panel Section State Indicators",
+    "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+    "items": [
+      "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+      "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+      "- Completed AUD-PROJ-009 and updated project TODO tracking"
+    ]
+  },
+  "2026-02-18-workspace-editor-tab-actions": {
+    "title": "Workspace Editor Tab Power Actions",
+    "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+    "items": [
+      "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+      "- Added clipboard actions for absolute and relative file paths from editor tabs",
+      "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+    ]
+  },
+  "2026-02-18-workspace-branch-popover-switch": {
+    "title": "Workspace Branch Switch Popover",
+    "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+    "items": [
+      "- Click branch label to open branch list popover",
+      "- Show loading and empty states for branch discovery",
+      "- Switch branch directly from popover with status feedback"
+    ]
+  },
+  "2026-02-18-mcp-image-ssh-i18n-sweep": {
+    "title": "MCP Marketplace, Görsel Operasyonlar, SSH Profil Testi ve i18n Tamamlama",
+    "summary": "MCP marketplace ayar deneyimi aktif edildi, görsel üretim operasyonları backend/UI tarafında tamamlandı, SSH profil testi eklendi ve tüm yerel ayar anahtar eşleşmesi sağlandı.",
+    "items": [
+      "- Ayarlar içinde MCP marketplace sekmesi etkinleştirildi; tarama/kurulu/karşılaştırma yüzeyleri, kartlar, detay görünümü, kurulum sihirbazı, puanlama ve karşılaştırma matrisi bağlandı",
+      "- SD-CPP için geçmiş, tekrar üretim, analitik, preset, zamanlama, kuyruk, düzenleme, toplu üretim ve karşılaştırma IPC/preload köprüsü eklendi",
+      "- Görsel ayarlarında geçmiş/tekrar üretim, preset CRUD, zamanlama-kuyruk, toplu üretim, düzenleme ve karşılaştırma özeti arayüzleri eklendi",
+      "- SSH bağlantı profili test akışı (servis + IPC + preload + modal butonu) gecikme/hata geri bildirimiyle eklendi",
+      "- tr/en/de/fr/es/ja/zh/ar için i18n anahtar eşleşmesi tamamlandı ve yeni ayar/SSH anahtarları tüm dillere işlendi"
+    ]
+  },
+  "2026-02-18-agent-voice-sandbox-marketplace-sec-ext": {
+    "title": "Ajan Tartışma/Bellek Analitiği, Ses Akışları, Kod Sandbox ve Marketplace Güvenlik Uzantıları",
+    "summary": "AGENT/VOICE/FEAT ve marketplace uzantı-güvenlik başlıkları; yeni IPC iş akışları, koruma katmanları ve metadata kapsamıyla tamamlandı.",
+    "items": [
+      "- Gelişmiş bellek paylaşımlı namespace akışları IPC üzerinden bağlandı (oluştur/senkron/analitik/arama) ve projeler arası bellek işbirliği güçlendirildi",
+      "- javascript, \typescript, python, shell dilleri için sınırlandırılmış yürütme ve güvenlik kalıp engelleme içeren kod sandbox IPC katmanı eklendi",
+      "- Wake-word algılama, konuşma oturumu tur yönetimi ve AI sesli not özetleme/arama akışları için ses IPC yüzeyi eklendi",
+      "- MCP marketplace uzantı metadata yapısı extension type, OAuth/credential/security/telemetry alanları ve şablon/taslak API'leri ile genişletildi",
+      "- Güvenilir yayıncı doğrulama, imza iptal kontrolü, güvenlik tarama kayıtları, yorum moderasyonu ve telemetri/çökme uçları eklendi",
+      "- TODO takibinde MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03 ve AGENT-13..15 tamamlama işaretleri doğrulandı"
     ]
   }
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-18T12:16:11.952Z",
+  "generatedAt": "2026-02-18T21:18:07.786Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,226 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-18-advanced-memory-features",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "LLM",
+        "Project"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "tr": {
+          "title": "Gelişmiş Bellek Versiyonlama ve Paylaşım (MEM-03/07/08)",
+          "summary": "Versiyonlama, geri alma, sona erme ve projeler arası paylaşım dahil olmak üzere gelişmiş bellek yaşam döngüsü yönetimi uygulandı.",
+          "items": [
+            "- **Versiyonlama**: Bellek geçmişini izleme ve önceki versiyonlara geri dönme desteği eklendi.",
+            "- **Sona Erme**: Sona erme zaman damgası olan bellekler için otomatik arşivleme uygulandı.",
+            "- **Paylaşım**: Kaynak bağlantılarını koruyarak birden fazla proje arasında bellek paylaşımı etkinleştirildi.",
+            "- **Kategorizasyon**: Evrimleşen bellekler için LLM destekli otomatik yeniden kategorizasyon eklendi.",
+            "- **Otomasyon**: Sona erme kontrolleri bellek azalma (decay) bakım döngüsüne entegre edildi."
+          ]
+        },
+        "de": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "fr": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "es": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "ja": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "zh": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        },
+        "ar": {
+          "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
+          "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+          "items": [
+            "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
+            "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
+            "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
+            "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
+            "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-agent-voice-sandbox-marketplace-sec-ext",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "tr": {
+          "title": "Ajan Tartışma/Bellek Analitiği, Ses Akışları, Kod Sandbox ve Marketplace Güvenlik Uzantıları",
+          "summary": "AGENT/VOICE/FEAT ve marketplace uzantı-güvenlik başlıkları; yeni IPC iş akışları, koruma katmanları ve metadata kapsamıyla tamamlandı.",
+          "items": [
+            "- Gelişmiş bellek paylaşımlı namespace akışları IPC üzerinden bağlandı (oluştur/senkron/analitik/arama) ve projeler arası bellek işbirliği güçlendirildi",
+            "- javascript, \typescript, python, shell dilleri için sınırlandırılmış yürütme ve güvenlik kalıp engelleme içeren kod sandbox IPC katmanı eklendi",
+            "- Wake-word algılama, konuşma oturumu tur yönetimi ve AI sesli not özetleme/arama akışları için ses IPC yüzeyi eklendi",
+            "- MCP marketplace uzantı metadata yapısı extension type, OAuth/credential/security/telemetry alanları ve şablon/taslak API'leri ile genişletildi",
+            "- Güvenilir yayıncı doğrulama, imza iptal kontrolü, güvenlik tarama kayıtları, yorum moderasyonu ve telemetri/çökme uçları eklendi",
+            "- TODO takibinde MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03 ve AGENT-13..15 tamamlama işaretleri doğrulandı"
+          ]
+        },
+        "de": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "fr": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "es": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "ja": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "zh": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        },
+        "ar": {
+          "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
+          "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+          "items": [
+            "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
+            "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
+            "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
+            "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
+            "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
+            "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-18-aud-arch-completion",
       "date": "2026-02-18",
@@ -619,6 +839,94 @@
       }
     },
     {
+      "id": "2026-02-18-git-panel-section-states",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "tr": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "de": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "fr": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "es": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "ja": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "zh": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        },
+        "ar": {
+          "title": "Git Panel Section State Indicators",
+          "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+          "items": [
+            "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
+            "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
+            "- Completed AUD-PROJ-009 and updated project TODO tracking"
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-hardened-ai-rules-v2",
       "date": "2026-02-18",
       "channel": "stable",
@@ -937,6 +1245,110 @@
             "- **DEBT-01**: Cleaned up obsolete feature flags.",
             "- **DEBT-06**: Reduced bundle size via lazy loading.",
             "- **Testing**: Added unit tests for security validation."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-mcp-image-ssh-i18n-sweep",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browser/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "tr": {
+          "title": "MCP Marketplace, Görsel Operasyonlar, SSH Profil Testi ve i18n Tamamlama",
+          "summary": "MCP marketplace ayar deneyimi aktif edildi, görsel üretim operasyonları backend/UI tarafında tamamlandı, SSH profil testi eklendi ve tüm yerel ayar anahtar eşleşmesi sağlandı.",
+          "items": [
+            "- Ayarlar içinde MCP marketplace sekmesi etkinleştirildi; tarama/kurulu/karşılaştırma yüzeyleri, kartlar, detay görünümü, kurulum sihirbazı, puanlama ve karşılaştırma matrisi bağlandı",
+            "- SD-CPP için geçmiş, tekrar üretim, analitik, preset, zamanlama, kuyruk, düzenleme, toplu üretim ve karşılaştırma IPC/preload köprüsü eklendi",
+            "- Görsel ayarlarında geçmiş/tekrar üretim, preset CRUD, zamanlama-kuyruk, toplu üretim, düzenleme ve karşılaştırma özeti arayüzleri eklendi",
+            "- SSH bağlantı profili test akışı (servis + IPC + preload + modal butonu) gecikme/hata geri bildirimiyle eklendi",
+            "- tr/en/de/fr/es/ja/zh/ar için i18n anahtar eşleşmesi tamamlandı ve yeni ayar/SSH anahtarları tüm dillere işlendi"
+          ]
+        },
+        "de": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "fr": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "es": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "ja": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "zh": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+          ]
+        },
+        "ar": {
+          "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
+          "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+          "items": [
+            "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
+            "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
+            "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
+            "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
+            "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
           ]
         }
       }
@@ -1447,6 +1859,182 @@
             "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
             "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
             "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-workspace-branch-popover-switch",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added a branch-switch popover in the workspace command strip so users can browse and switch git branches without leaving the editor.",
+          "items": [
+            "- Made the command strip branch label clickable and opened a popover listing available branches",
+            "- Loaded current branch and branch list from the active project repository with loading and empty states",
+            "- Added branch checkout action with success/error notifications and switching-state feedback"
+          ]
+        },
+        "tr": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "de": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "fr": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "es": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "ja": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "zh": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        },
+        "ar": {
+          "title": "Workspace Branch Switch Popover",
+          "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
+          "items": [
+            "- Click branch label to open branch list popover",
+            "- Show loading and empty states for branch discovery",
+            "- Switch branch directly from popover with status feedback"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-workspace-editor-tab-actions",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "tr": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "de": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "fr": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "es": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "ja": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "zh": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+          ]
+        },
+        "ar": {
+          "title": "Workspace Editor Tab Power Actions",
+          "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+          "items": [
+            "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
+            "- Added clipboard actions for absolute and relative file paths from editor tabs",
+            "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
           ]
         }
       }

@@ -1,13 +1,23 @@
-import { AdvancedSemanticFragment, MemoryCategory, MemoryStatistics, PendingMemory } from '@shared/types/advanced-memory';
+import {
+    AdvancedSemanticFragment,
+    MemoryCategory,
+    MemorySearchAnalytics,
+    MemoryStatistics,
+    PendingMemory
+} from '@shared/types/advanced-memory';
 import { useCallback, useEffect, useState } from 'react';
 
-type TabType = 'pending' | 'confirmed' | 'archived' | 'stats';
+import { useTranslation } from '@/i18n';
+
+type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
 
 interface UseMemoryReturn {
     // Data
     pendingMemories: PendingMemory[];
     confirmedMemories: AdvancedSemanticFragment[];
     stats: MemoryStatistics | null;
+    searchAnalytics: MemorySearchAnalytics | null;
+    contextPreview: AdvancedSemanticFragment[];
     isLoading: boolean;
     error: string | null;
 
@@ -27,26 +37,43 @@ interface UseMemoryReturn {
     handleArchive: (id: string) => Promise<void>;
     handleArchiveSelected: (selectedIds: Set<string>, setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>) => Promise<void>;
     handleRestore: (id: string) => Promise<void>;
+    handleExport: () => Promise<void>;
+    handleImport: (fileContent: string, replaceExisting: boolean) => Promise<void>;
+    handleShare: (memoryId: string, targetProjectId: string) => Promise<void>;
+    handleRecategorize: (ids?: string[]) => Promise<void>;
+    getHistory: (id: string) => Promise<import('@shared/types/advanced-memory').MemoryVersion[]>;
+    handleRollback: (id: string, versionIndex: number) => Promise<void>;
 }
 
 export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryReturn {
+    const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pendingMemories, setPendingMemories] = useState<PendingMemory[]>([]);
     const [confirmedMemories, setConfirmedMemories] = useState<AdvancedSemanticFragment[]>([]);
     const [stats, setStats] = useState<MemoryStatistics | null>(null);
+    const [searchAnalytics, setSearchAnalytics] = useState<MemorySearchAnalytics | null>(null);
+    const [contextPreview, setContextPreview] = useState<AdvancedSemanticFragment[]>([]);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [pendingRes, statsRes] = await Promise.all([
+            const [pendingRes, statsRes, analyticsRes, contextRes] = await Promise.all([
                 window.electron.advancedMemory.getPending(),
-                window.electron.advancedMemory.getStats()
+                window.electron.advancedMemory.getStats(),
+                window.electron.advancedMemory.getSearchAnalytics(),
+                window.electron.advancedMemory.recall({
+                    query: searchQuery,
+                    limit: 8,
+                    includeArchived: activeTab === 'archived'
+                })
             ]);
 
             if (pendingRes.success) { setPendingMemories(pendingRes.data); }
             if (statsRes.success && statsRes.data) { setStats(statsRes.data); }
+            if (analyticsRes.success) { setSearchAnalytics(analyticsRes.data); }
+            if (contextRes.success) { setContextPreview(contextRes.data.memories); }
 
             if (searchQuery) {
                 const searchRes = await window.electron.advancedMemory.search(searchQuery, 50);
@@ -130,11 +157,78 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         if (res.success) { void loadData(); }
     }, [loadData]);
 
+    const handleExport = useCallback(async () => {
+        const exportRes = await window.electron.advancedMemory.export(searchQuery || undefined, 500);
+        if (!exportRes.success || !exportRes.data) {
+            setError(exportRes.error ?? t('memory.errors.exportFailed'));
+            return;
+        }
+
+        const payload = JSON.stringify(exportRes.data, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `memory-export-${Date.now()}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+    }, [searchQuery, t]);
+
+    const handleImport = useCallback(async (fileContent: string, replaceExisting: boolean) => {
+        try {
+            const parsed = JSON.parse(fileContent) as {
+                memories?: Array<Partial<AdvancedSemanticFragment>>;
+                pendingMemories?: Array<Partial<PendingMemory>>;
+            } | Array<Partial<AdvancedSemanticFragment>>;
+
+            const payload = Array.isArray(parsed)
+                ? { memories: parsed, replaceExisting }
+                : {
+                    memories: parsed.memories ?? [],
+                    pendingMemories: parsed.pendingMemories ?? [],
+                    replaceExisting
+                };
+
+            const importRes = await window.electron.advancedMemory.import(payload);
+            if (!importRes.success) {
+                setError(importRes.error ?? t('memory.errors.importFailed'));
+                return;
+            }
+
+            await loadData();
+        } catch (importError) {
+            setError(`${t('memory.errors.importFailed')}: ${String(importError)}`);
+        }
+    }, [loadData, t]);
+
+    const handleShare = useCallback(async (memoryId: string, targetProjectId: string) => {
+        const res = await window.electron.advancedMemory.shareWithProject(memoryId, targetProjectId);
+        if (res.success) { void loadData(); }
+    }, [loadData]);
+
+    const handleRecategorize = useCallback(async (ids?: string[]) => {
+        const res = await window.electron.advancedMemory.recategorize(ids);
+        if (res.success) { void loadData(); }
+    }, [loadData]);
+
+    const getHistory = useCallback(async (id: string) => {
+        const res = await window.electron.advancedMemory.getHistory(id);
+        return res.success ? res.data : [];
+    }, []);
+
+    const handleRollback = useCallback(async (id: string, versionIndex: number) => {
+        const res = await window.electron.advancedMemory.rollback(id, versionIndex);
+        if (res.success) { void loadData(); }
+    }, [loadData]);
+
     return {
-        pendingMemories, confirmedMemories, stats, isLoading, error,
+        pendingMemories, confirmedMemories, stats, searchAnalytics, contextPreview, isLoading, error,
         setPendingMemories, setConfirmedMemories, loadData,
         handleConfirm, handleReject, handleConfirmAll, handleRejectAll, handleRunDecay,
-        handleDelete, handleDeleteSelected, handleArchive, handleArchiveSelected, handleRestore
+        handleDelete, handleDeleteSelected, handleArchive, handleArchiveSelected, handleRestore,
+        handleExport, handleImport, handleShare, handleRecategorize, getHistory, handleRollback
     };
 }
 
@@ -145,6 +239,7 @@ interface EditModalState {
     editCategory: MemoryCategory;
     editTags: string;
     editImportance: number;
+    editExpiresAt: string;
 }
 
 interface UseEditModalReturn extends EditModalState {
@@ -152,6 +247,7 @@ interface UseEditModalReturn extends EditModalState {
     setEditCategory: (category: MemoryCategory) => void;
     setEditTags: (tags: string) => void;
     setEditImportance: (importance: number) => void;
+    setEditExpiresAt: (expiresAt: string) => void;
     openEditModal: (memory: AdvancedSemanticFragment) => void;
     closeEditModal: () => void;
     handleSaveEdit: (loadData: () => Promise<void>) => Promise<void>;
@@ -163,6 +259,7 @@ export function useEditModal(): UseEditModalReturn {
     const [editCategory, setEditCategory] = useState<MemoryCategory>('fact');
     const [editTags, setEditTags] = useState('');
     const [editImportance, setEditImportance] = useState(0.5);
+    const [editExpiresAt, setEditExpiresAt] = useState('');
 
     const openEditModal = useCallback((memory: AdvancedSemanticFragment) => {
         setEditingMemory(memory);
@@ -170,6 +267,7 @@ export function useEditModal(): UseEditModalReturn {
         setEditCategory(memory.category);
         setEditTags(memory.tags.join(', '));
         setEditImportance(memory.importance);
+        setEditExpiresAt(memory.expiresAt ? new Date(memory.expiresAt).toISOString().split('T')[0] : '');
     }, []);
 
     const closeEditModal = useCallback(() => { setEditingMemory(null); }, []);
@@ -180,14 +278,19 @@ export function useEditModal(): UseEditModalReturn {
             content: editContent,
             category: editCategory,
             tags: editTags.split(',').map(t => t.trim()).filter(Boolean),
-            importance: editImportance
+            importance: editImportance,
+            projectId: editingMemory.projectId,
+            expiresAt: editExpiresAt ? new Date(editExpiresAt).getTime() : undefined
         });
-        if (res.success) { setEditingMemory(null); void loadData(); }
-    }, [editingMemory, editContent, editCategory, editTags, editImportance]);
+        if (res.success) {
+            setEditingMemory(null);
+            void loadData();
+        }
+    }, [editingMemory, editContent, editCategory, editTags, editImportance, editExpiresAt]);
 
     return {
-        editingMemory, editContent, editCategory, editTags, editImportance,
-        setEditContent, setEditCategory, setEditTags, setEditImportance,
+        editingMemory, editContent, editCategory, editTags, editImportance, editExpiresAt,
+        setEditContent, setEditCategory, setEditTags, setEditImportance, setEditExpiresAt,
         openEditModal, closeEditModal, handleSaveEdit
     };
 }

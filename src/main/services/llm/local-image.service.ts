@@ -41,6 +41,77 @@ export interface ImageGenerationOptions {
     count?: number
 }
 
+export interface ImageEditOptions {
+    sourceImage: string
+    mode: 'img2img' | 'inpaint' | 'outpaint' | 'style-transfer'
+    prompt: string
+    negativePrompt?: string
+    strength?: number
+    width?: number
+    height?: number
+    maskImage?: string
+}
+
+export interface ImageGenerationRecord {
+    id: string
+    provider: ImageProvider
+    prompt: string
+    negativePrompt?: string
+    width: number
+    height: number
+    steps: number
+    cfgScale: number
+    seed: number
+    imagePath: string
+    createdAt: number
+    source?: 'generate' | 'edit' | 'schedule' | 'batch'
+}
+
+export interface ImageGenerationPreset {
+    id: string
+    name: string
+    promptPrefix?: string
+    width: number
+    height: number
+    steps: number
+    cfgScale: number
+    provider?: ImageProvider
+    createdAt: number
+    updatedAt: number
+}
+
+export interface ImageScheduleTask {
+    id: string
+    runAt: number
+    options: ImageGenerationOptions
+    status: 'scheduled' | 'running' | 'completed' | 'failed' | 'canceled'
+    createdAt: number
+    updatedAt: number
+    resultPath?: string
+    error?: string
+}
+
+export interface ImageComparisonResult {
+    ids: string[]
+    comparedAt: number
+    entries: Array<{
+        id: string
+        path: string
+        width: number
+        height: number
+        steps: number
+        cfgScale: number
+        seed: number
+        prompt: string
+        fileSizeBytes: number
+    }>
+    summary: {
+        averageFileSizeBytes: number
+        largestFileId?: string
+        smallestFileId?: string
+    }
+}
+
 export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp'
 
 interface AntigravityAccount {
@@ -62,6 +133,22 @@ export interface LocalImageServiceDeps {
 
 export class LocalImageService extends BaseService {
     private sdCppRuntimePromise: Promise<{ binaryPath: string; modelPath: string }> | null = null;
+    private readonly storageRoot: string = path.join(app.getPath('userData'), 'ai', 'images');
+    private readonly historyPath: string = path.join(this.storageRoot, 'generation-history.json');
+    private readonly presetsPath: string = path.join(this.storageRoot, 'generation-presets.json');
+    private readonly schedulePath: string = path.join(this.storageRoot, 'generation-schedule.json');
+    private generationHistory: ImageGenerationRecord[] = [];
+    private generationPresets: ImageGenerationPreset[] = [];
+    private scheduleTasks: ImageScheduleTask[] = [];
+    private scheduleTimers: Map<string, NodeJS.Timeout> = new Map();
+    private generationQueue: Array<{
+        id: string;
+        options: ImageGenerationOptions;
+        source: 'batch' | 'schedule';
+        resolve: (value: string) => void;
+        reject: (error: Error) => void;
+    }> = [];
+    private queueRunning = false;
     private settingsService: SettingsService;
     private eventBusService?: EventBusService;
     private authService?: AuthService;
@@ -95,6 +182,9 @@ export class LocalImageService extends BaseService {
         void this.cleanupStaleTempFiles().catch(err => {
             this.logWarn('Failed to cleanup stale temp files', err);
         });
+        await this.ensureImageStorageReady();
+        await this.loadImageState();
+        this.restoreScheduledTasks();
 
         const settings = this.settingsService.getSettings();
         const preferredProvider = settings.images?.provider;
@@ -128,6 +218,46 @@ export class LocalImageService extends BaseService {
         }
     }
 
+    private async ensureImageStorageReady(): Promise<void> {
+        await fs.promises.mkdir(this.storageRoot, { recursive: true });
+        if (!(await this.pathExists(this.historyPath))) {
+            await fs.promises.writeFile(this.historyPath, JSON.stringify([], null, 2), 'utf-8');
+        }
+        if (!(await this.pathExists(this.presetsPath))) {
+            await fs.promises.writeFile(this.presetsPath, JSON.stringify([], null, 2), 'utf-8');
+        }
+        if (!(await this.pathExists(this.schedulePath))) {
+            await fs.promises.writeFile(this.schedulePath, JSON.stringify([], null, 2), 'utf-8');
+        }
+    }
+
+    private async loadImageState(): Promise<void> {
+        try {
+            const [historyRaw, presetsRaw, scheduleRaw] = await Promise.all([
+                fs.promises.readFile(this.historyPath, 'utf-8'),
+                fs.promises.readFile(this.presetsPath, 'utf-8'),
+                fs.promises.readFile(this.schedulePath, 'utf-8')
+            ]);
+            this.generationHistory = JSON.parse(historyRaw) as ImageGenerationRecord[];
+            this.generationPresets = JSON.parse(presetsRaw) as ImageGenerationPreset[];
+            this.scheduleTasks = JSON.parse(scheduleRaw) as ImageScheduleTask[];
+        } catch (error) {
+            this.logWarn('Failed to load image state, resetting to defaults', error as Error);
+            this.generationHistory = [];
+            this.generationPresets = [];
+            this.scheduleTasks = [];
+        }
+    }
+
+    private async persistImageState(): Promise<void> {
+        await fs.promises.mkdir(this.storageRoot, { recursive: true });
+        await Promise.all([
+            fs.promises.writeFile(this.historyPath, JSON.stringify(this.generationHistory.slice(-1000), null, 2), 'utf-8'),
+            fs.promises.writeFile(this.presetsPath, JSON.stringify(this.generationPresets.slice(-300), null, 2), 'utf-8'),
+            fs.promises.writeFile(this.schedulePath, JSON.stringify(this.scheduleTasks.slice(-500), null, 2), 'utf-8')
+        ]);
+    }
+
     private emitStatus(state: 'installing' | 'ready' | 'failed', error?: string): void {
         if (this.eventBusService) {
             this.eventBusService.emit('sd-cpp:status', { state, error });
@@ -145,30 +275,47 @@ export class LocalImageService extends BaseService {
      * Generate an image using available providers
      * Priority: Antigravity (with quota) > Pollinations > Other local providers
      */
-    async generateImage(options: ImageGenerationOptions): Promise<string> {
+    async generateImage(
+        options: ImageGenerationOptions,
+        source: 'generate' | 'edit' | 'schedule' | 'batch' = 'generate'
+    ): Promise<string> {
         const settings = this.settingsService.getSettings();
         const preferredProvider = (settings.images?.provider ?? 'antigravity') as ImageProvider;
 
         this.logInfo(`Generating image with preferred provider: ${preferredProvider}`);
 
         // Try Antigravity first if available
+        let generatedPath: string | null = null;
         if (this.authService && this.llmService && this.quotaService) {
             const result = await this.tryGenerateWithAntigravity(options);
-            if (result) { return result; }
+            if (result) {
+                generatedPath = result;
+            }
         }
 
-        // Fallback to preferred provider or Pollinations
-        this.logInfo(`Falling back to ${preferredProvider === 'antigravity' ? 'pollinations' : preferredProvider}`);
-        try {
-            return await this.generateWithProvider(preferredProvider, options);
-        } catch (error) {
-            if (preferredProvider === 'sd-cpp') {
-                this.logWarn('SD-CPP generation failed, falling back to Pollinations', error as Error);
-                this.trackSdCppMetric('sd-cpp-fallback-triggered', { error: getErrorMessage(error as Error) });
-                return this.generateWithPollinations(options);
+        if (!generatedPath) {
+            // Fallback to preferred provider or Pollinations
+            this.logInfo(`Falling back to ${preferredProvider === 'antigravity' ? 'pollinations' : preferredProvider}`);
+            try {
+                generatedPath = await this.generateWithProvider(preferredProvider, options);
+            } catch (error) {
+                if (preferredProvider === 'sd-cpp') {
+                    this.logWarn('SD-CPP generation failed, falling back to Pollinations', error as Error);
+                    this.trackSdCppMetric('sd-cpp-fallback-triggered', { error: getErrorMessage(error as Error) });
+                    generatedPath = await this.generateWithPollinations(options);
+                } else {
+                    throw error;
+                }
             }
-            throw error;
         }
+
+        await this.recordGeneration({
+            provider: preferredProvider,
+            options,
+            imagePath: generatedPath,
+            source
+        });
+        return generatedPath;
     }
 
     private async generateWithProvider(provider: string, options: ImageGenerationOptions): Promise<string> {
@@ -186,6 +333,33 @@ export class LocalImageService extends BaseService {
             default:
                 return this.generateWithPollinations(options);
         }
+    }
+
+    private async recordGeneration(input: {
+        provider: ImageProvider;
+        options: ImageGenerationOptions;
+        imagePath: string;
+        source: 'generate' | 'edit' | 'schedule' | 'batch';
+    }): Promise<void> {
+        const record: ImageGenerationRecord = {
+            id: uuidv4(),
+            provider: input.provider,
+            prompt: input.options.prompt,
+            negativePrompt: input.options.negativePrompt,
+            width: input.options.width ?? 1024,
+            height: input.options.height ?? 1024,
+            steps: input.options.steps ?? 24,
+            cfgScale: input.options.cfgScale ?? 7,
+            seed: typeof input.options.seed === 'number' ? input.options.seed : -1,
+            imagePath: input.imagePath,
+            source: input.source,
+            createdAt: Date.now()
+        };
+        this.generationHistory.push(record);
+        if (this.generationHistory.length > 1000) {
+            this.generationHistory = this.generationHistory.slice(-1000);
+        }
+        await this.persistImageState();
     }
 
     /**
@@ -414,8 +588,143 @@ export class LocalImageService extends BaseService {
         };
     }
 
-    private async generateWithComfyUI(_options: ImageGenerationOptions): Promise<string> {
-        throw new Error('ComfyUI integration is coming soon.');
+    private async generateWithComfyUI(options: ImageGenerationOptions): Promise<string> {
+        const settings = this.settingsService.getSettings();
+        const baseUrl = settings.images?.comfyUIUrl ?? 'http://127.0.0.1:8188';
+        const workflow = this.buildComfyWorkflow(options);
+
+        interface ComfyPromptResponse {
+            prompt_id?: string;
+        }
+
+        const queued = await axios.post<ComfyPromptResponse>(`${baseUrl}/prompt`, {
+            prompt: workflow
+        });
+        const promptId = queued.data.prompt_id;
+        if (!promptId) {
+            throw new Error('ComfyUI did not return prompt_id');
+        }
+
+        const imageRef = await this.waitForComfyImage(baseUrl, promptId);
+        const imageResponse = await axios.get<ArrayBuffer>(`${baseUrl}/view`, {
+            params: {
+                filename: imageRef.filename,
+                subfolder: imageRef.subfolder,
+                type: imageRef.type
+            },
+            responseType: 'arraybuffer'
+        });
+
+        return this.saveTempImage(Buffer.from(imageResponse.data));
+    }
+
+    private buildComfyWorkflow(options: ImageGenerationOptions): Record<string, unknown> {
+        const width = options.width ?? 1024;
+        const height = options.height ?? 1024;
+        const steps = options.steps ?? 24;
+        const cfg = options.cfgScale ?? 7;
+        const seed = typeof options.seed === 'number' ? options.seed : Math.floor(Math.random() * 1_000_000);
+        return {
+            '1': {
+                class_type: 'CheckpointLoaderSimple',
+                inputs: {
+                    ckpt_name: 'v1-5-pruned-emaonly.safetensors'
+                }
+            },
+            '2': {
+                class_type: 'CLIPTextEncode',
+                inputs: {
+                    text: options.prompt,
+                    clip: ['1', 1]
+                }
+            },
+            '3': {
+                class_type: 'CLIPTextEncode',
+                inputs: {
+                    text: options.negativePrompt ?? 'low quality, blurry, artifacts',
+                    clip: ['1', 1]
+                }
+            },
+            '4': {
+                class_type: 'EmptyLatentImage',
+                inputs: {
+                    width,
+                    height,
+                    batch_size: Math.max(1, Math.min(options.count ?? 1, 4))
+                }
+            },
+            '5': {
+                class_type: 'KSampler',
+                inputs: {
+                    seed,
+                    steps,
+                    cfg,
+                    sampler_name: 'euler',
+                    scheduler: 'normal',
+                    denoise: 1,
+                    model: ['1', 0],
+                    positive: ['2', 0],
+                    negative: ['3', 0],
+                    latent_image: ['4', 0]
+                }
+            },
+            '6': {
+                class_type: 'VAEDecode',
+                inputs: {
+                    samples: ['5', 0],
+                    vae: ['1', 2]
+                }
+            },
+            '7': {
+                class_type: 'SaveImage',
+                inputs: {
+                    filename_prefix: 'tandem',
+                    images: ['6', 0]
+                }
+            }
+        };
+    }
+
+    private async waitForComfyImage(
+        baseUrl: string,
+        promptId: string
+    ): Promise<{ filename: string; subfolder: string; type: string }> {
+        interface ComfyImageOutput {
+            filename?: string;
+            subfolder?: string;
+            type?: string;
+        }
+        interface ComfyHistoryPayload {
+            [key: string]: {
+                outputs?: Record<string, { images?: ComfyImageOutput[] }>;
+            };
+        }
+
+        const maxAttempts = 60;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+            const response = await axios.get<ComfyHistoryPayload>(`${baseUrl}/history/${promptId}`);
+            const history = response.data[promptId];
+            if (!history?.outputs) {
+                await this.delay(1000);
+                continue;
+            }
+
+            const nodes = Object.values(history.outputs);
+            for (const node of nodes) {
+                const image = node.images?.[0];
+                if (image?.filename) {
+                    return {
+                        filename: image.filename,
+                        subfolder: image.subfolder ?? '',
+                        type: image.type ?? 'output'
+                    };
+                }
+            }
+
+            await this.delay(1000);
+        }
+
+        throw new Error('Timed out waiting for ComfyUI result');
     }
 
     private async generateWithSDCpp(options: ImageGenerationOptions): Promise<string> {
@@ -467,6 +776,346 @@ export class LocalImageService extends BaseService {
             this.trackSdCppMetric('sd-cpp-generation-failure', { error: getErrorMessage(error as Error) });
             throw error;
         }
+    }
+
+    async editImage(options: ImageEditOptions): Promise<string> {
+        const settings = this.settingsService.getSettings();
+        const provider = (settings.images?.provider ?? 'antigravity') as ImageProvider;
+
+        let imagePath: string;
+        if (provider === 'sd-webui') {
+            imagePath = await this.editWithSDWebUI(options);
+        } else {
+            const modePrefix = options.mode === 'style-transfer'
+                ? 'Style transfer'
+                : options.mode === 'inpaint'
+                    ? 'Inpaint'
+                    : options.mode === 'outpaint'
+                        ? 'Outpaint'
+                        : 'Image to image';
+            imagePath = await this.generateWithProvider(provider, {
+                prompt: `${modePrefix}: ${options.prompt}`,
+                negativePrompt: options.negativePrompt,
+                width: options.width,
+                height: options.height,
+                steps: 24,
+                cfgScale: 7
+            });
+        }
+
+        await this.recordGeneration({
+            provider,
+            options: {
+                prompt: options.prompt,
+                negativePrompt: options.negativePrompt,
+                width: options.width,
+                height: options.height,
+                steps: 24,
+                cfgScale: 7
+            },
+            imagePath,
+            source: 'edit'
+        });
+
+        return imagePath;
+    }
+
+    private async editWithSDWebUI(options: ImageEditOptions): Promise<string> {
+        const settings = this.settingsService.getSettings();
+        const baseUrl = settings.images?.sdWebUIUrl ?? 'http://127.0.0.1:7860';
+        const initImage = await this.readImageAsBase64(options.sourceImage);
+        const maskImage = options.maskImage ? await this.readImageAsBase64(options.maskImage) : undefined;
+
+        const payload: Record<string, unknown> = {
+            prompt: options.prompt,
+            negative_prompt: options.negativePrompt ?? 'text, watermark, artifacts',
+            init_images: [initImage],
+            denoising_strength: options.strength ?? 0.55,
+            steps: 24,
+            cfg_scale: 7,
+            width: options.width ?? 1024,
+            height: options.height ?? 1024
+        };
+
+        if (maskImage && (options.mode === 'inpaint' || options.mode === 'outpaint')) {
+            payload.mask = maskImage;
+            payload.inpainting_fill = options.mode === 'outpaint' ? 1 : 0;
+        }
+
+        const response = await axios.post<{ images?: string[] }>(`${baseUrl}/sdapi/v1/img2img`, payload);
+        const firstImage = response.data.images?.[0];
+        if (!firstImage) {
+            throw new Error('SD-WebUI edit did not return an image');
+        }
+        return this.saveTempImage(Buffer.from(firstImage, 'base64'));
+    }
+
+    private async readImageAsBase64(input: string): Promise<string> {
+        if (input.startsWith('data:')) {
+            const dataIndex = input.indexOf('base64,');
+            if (dataIndex > -1) {
+                return input.slice(dataIndex + 7);
+            }
+        }
+        if (input.startsWith('http://') || input.startsWith('https://')) {
+            const response = await axios.get<ArrayBuffer>(input, { responseType: 'arraybuffer' });
+            return Buffer.from(response.data).toString('base64');
+        }
+        const normalized = input.replace(/^safe-file:\/+/i, '').replace(/^file:\/+/i, '');
+        const localPath = process.platform === 'win32' && /^\/[A-Za-z]:/.test(normalized)
+            ? normalized.slice(1)
+            : normalized;
+        const raw = await fs.promises.readFile(localPath);
+        return raw.toString('base64');
+    }
+
+    getGenerationHistory(limit: number = 100): ImageGenerationRecord[] {
+        const bounded = Math.max(1, Math.min(limit, 1000));
+        return this.generationHistory.slice(-bounded).reverse();
+    }
+
+    async regenerateFromHistory(id: string): Promise<string> {
+        const entry = this.generationHistory.find(item => item.id === id);
+        if (!entry) {
+            throw new Error('Generation history entry not found');
+        }
+        return this.generateImage({
+            prompt: entry.prompt,
+            negativePrompt: entry.negativePrompt,
+            width: entry.width,
+            height: entry.height,
+            steps: entry.steps,
+            cfgScale: entry.cfgScale,
+            seed: entry.seed
+        });
+    }
+
+    async exportGenerationHistory(): Promise<string> {
+        return JSON.stringify(this.generationHistory, null, 2);
+    }
+
+    getImageAnalytics(): {
+        totalGenerated: number;
+        byProvider: Record<string, number>;
+        averageSteps: number;
+    } {
+        const byProvider: Record<string, number> = {};
+        let totalSteps = 0;
+        this.generationHistory.forEach(entry => {
+            byProvider[entry.provider] = (byProvider[entry.provider] ?? 0) + 1;
+            totalSteps += entry.steps;
+        });
+        return {
+            totalGenerated: this.generationHistory.length,
+            byProvider,
+            averageSteps: this.generationHistory.length > 0
+                ? Math.round(totalSteps / this.generationHistory.length)
+                : 0
+        };
+    }
+
+    listGenerationPresets(): ImageGenerationPreset[] {
+        return [...this.generationPresets].sort((left, right) => right.updatedAt - left.updatedAt);
+    }
+
+    async saveGenerationPreset(input: Omit<ImageGenerationPreset, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<ImageGenerationPreset> {
+        const now = Date.now();
+        const existingIndex = input.id
+            ? this.generationPresets.findIndex(preset => preset.id === input.id)
+            : -1;
+        const next: ImageGenerationPreset = {
+            id: input.id ?? uuidv4(),
+            name: input.name.trim(),
+            promptPrefix: input.promptPrefix,
+            width: input.width,
+            height: input.height,
+            steps: input.steps,
+            cfgScale: input.cfgScale,
+            provider: input.provider,
+            createdAt: existingIndex >= 0 ? this.generationPresets[existingIndex].createdAt : now,
+            updatedAt: now
+        };
+        if (existingIndex >= 0) {
+            this.generationPresets[existingIndex] = next;
+        } else {
+            this.generationPresets.push(next);
+        }
+        await this.persistImageState();
+        return next;
+    }
+
+    async deleteGenerationPreset(id: string): Promise<boolean> {
+        const filtered = this.generationPresets.filter(preset => preset.id !== id);
+        if (filtered.length === this.generationPresets.length) {
+            return false;
+        }
+        this.generationPresets = filtered;
+        await this.persistImageState();
+        return true;
+    }
+
+    applyPresetToOptions(options: ImageGenerationOptions, presetId?: string): ImageGenerationOptions {
+        if (!presetId) {
+            return options;
+        }
+        const preset = this.generationPresets.find(item => item.id === presetId);
+        if (!preset) {
+            return options;
+        }
+        return {
+            ...options,
+            prompt: preset.promptPrefix ? `${preset.promptPrefix} ${options.prompt}` : options.prompt,
+            width: options.width ?? preset.width,
+            height: options.height ?? preset.height,
+            steps: options.steps ?? preset.steps,
+            cfgScale: options.cfgScale ?? preset.cfgScale
+        };
+    }
+
+    async scheduleGeneration(runAt: number, options: ImageGenerationOptions): Promise<ImageScheduleTask> {
+        const task: ImageScheduleTask = {
+            id: uuidv4(),
+            runAt,
+            options,
+            status: 'scheduled',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+        this.scheduleTasks.push(task);
+        await this.persistImageState();
+        this.queueScheduledGeneration(task);
+        return task;
+    }
+
+    listScheduledGenerations(): ImageScheduleTask[] {
+        return [...this.scheduleTasks].sort((left, right) => left.runAt - right.runAt);
+    }
+
+    async cancelScheduledGeneration(id: string): Promise<boolean> {
+        const task = this.scheduleTasks.find(item => item.id === id);
+        if (!task) {
+            return false;
+        }
+        task.status = 'canceled';
+        task.updatedAt = Date.now();
+        const timer = this.scheduleTimers.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            this.scheduleTimers.delete(id);
+        }
+        await this.persistImageState();
+        return true;
+    }
+
+    private restoreScheduledTasks(): void {
+        this.scheduleTasks
+            .filter(task => task.status === 'scheduled')
+            .forEach(task => this.queueScheduledGeneration(task));
+    }
+
+    private queueScheduledGeneration(task: ImageScheduleTask): void {
+        const delayMs = Math.max(0, task.runAt - Date.now());
+        const timer = setTimeout(() => {
+            this.scheduleTimers.delete(task.id);
+            void this.enqueueGeneration(task.options, 'schedule')
+                .then(async imagePath => {
+                    task.status = 'completed';
+                    task.resultPath = imagePath;
+                    task.updatedAt = Date.now();
+                    await this.persistImageState();
+                })
+                .catch(async error => {
+                    task.status = 'failed';
+                    task.error = getErrorMessage(error as Error);
+                    task.updatedAt = Date.now();
+                    await this.persistImageState();
+                });
+        }, delayMs);
+        this.scheduleTimers.set(task.id, timer);
+    }
+
+    async runBatchGeneration(requests: ImageGenerationOptions[]): Promise<string[]> {
+        const jobs = requests.slice(0, 20).map(request => this.enqueueGeneration(request, 'batch'));
+        return Promise.all(jobs);
+    }
+
+    getQueueStats(): { queued: number; running: boolean } {
+        return {
+            queued: this.generationQueue.length,
+            running: this.queueRunning
+        };
+    }
+
+    private async enqueueGeneration(options: ImageGenerationOptions, source: 'batch' | 'schedule'): Promise<string> {
+        return new Promise<string>((resolve, reject) => {
+            this.generationQueue.push({
+                id: uuidv4(),
+                options,
+                source,
+                resolve,
+                reject
+            });
+            if (!this.queueRunning) {
+                void this.processGenerationQueue();
+            }
+        });
+    }
+
+    private async processGenerationQueue(): Promise<void> {
+        this.queueRunning = true;
+        while (this.generationQueue.length > 0) {
+            const next = this.generationQueue.shift();
+            if (!next) {
+                continue;
+            }
+            try {
+                const imagePath = await this.generateImage(next.options, next.source);
+                next.resolve(imagePath);
+            } catch (error) {
+                next.reject(error as Error);
+            }
+        }
+        this.queueRunning = false;
+    }
+
+    async compareGenerations(ids: string[]): Promise<ImageComparisonResult> {
+        const records = ids
+            .map(id => this.generationHistory.find(item => item.id === id))
+            .filter((item): item is ImageGenerationRecord => Boolean(item));
+        if (records.length < 2) {
+            throw new Error('At least two history entries are required for comparison');
+        }
+
+        const entries = await Promise.all(records.map(async record => {
+            const stats = await fs.promises.stat(record.imagePath);
+            return {
+                id: record.id,
+                path: record.imagePath,
+                width: record.width,
+                height: record.height,
+                steps: record.steps,
+                cfgScale: record.cfgScale,
+                seed: record.seed,
+                prompt: record.prompt,
+                fileSizeBytes: stats.size
+            };
+        }));
+
+        const sortedBySize = [...entries].sort((left, right) => left.fileSizeBytes - right.fileSizeBytes);
+        const averageFileSizeBytes = Math.round(
+            entries.reduce((sum, entry) => sum + entry.fileSizeBytes, 0) / entries.length
+        );
+
+        return {
+            ids: records.map(record => record.id),
+            comparedAt: Date.now(),
+            entries,
+            summary: {
+                averageFileSizeBytes,
+                smallestFileId: sortedBySize[0]?.id,
+                largestFileId: sortedBySize[sortedBySize.length - 1]?.id
+            }
+        };
     }
 
     private trackSdCppMetric(name: string, properties?: Record<string, unknown>): void {
@@ -934,6 +1583,10 @@ export class LocalImageService extends BaseService {
                 }
             });
         });
+    }
+
+    private async delay(ms: number): Promise<void> {
+        await new Promise(resolve => setTimeout(resolve, ms));
     }
 
     private async saveTempImage(buffer: Buffer): Promise<string> {

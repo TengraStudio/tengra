@@ -2,6 +2,7 @@ import { ThemeManifest } from '@shared/types/theme';
 import { FolderOpen, Palette, Type } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { AppSettings } from '@/types/settings';
 import { themeIpc } from '@/utils/theme-ipc.util';
@@ -215,15 +216,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, title, d
             </div>
             <div className="text-xs font-medium text-muted-foreground/70">{description}</div>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer scale-110">
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={e => onChange(e.target.checked)}
-                className="sr-only peer"
-            />
-            <div className="w-12 h-6.5 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:shadow-lg after:transition-all peer-checked:bg-primary border border-border/20"></div>
-        </label>
+        <Switch checked={checked} onCheckedChange={onChange} />
     </div>
 );
 

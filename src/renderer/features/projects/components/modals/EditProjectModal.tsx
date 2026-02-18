@@ -5,12 +5,14 @@ import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 
+import { isValidProjectDescription, isValidProjectTitle } from './modalValidation';
+
 interface EditProjectModalProps {
     project: Project | null;
     onClose: () => void;
     form: { title: string; description: string };
     setForm: (f: { title: string; description: string } | ((prev: { title: string; description: string }) => { title: string; description: string })) => void;
-    onSubmit: () => Promise<void>;
+    onSubmit: () => Promise<boolean>;
     t: (key: string) => string;
 }
 
@@ -22,8 +24,35 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
     onSubmit,
     t,
 }) => {
-    const hasValidTitle = form.title.trim().length > 0;
-    const hasValidDescription = form.description.length === 0 || form.description.trim().length > 0;
+    const hasValidTitle = isValidProjectTitle(form.title);
+    const hasValidDescription = isValidProjectDescription(form.description);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const rollbackRef = React.useRef(form);
+
+    React.useEffect(() => {
+        if (project) {
+            rollbackRef.current = {
+                title: project.title,
+                description: project.description,
+            };
+            setIsSaving(false);
+        }
+    }, [project]);
+
+    const handleSubmit = async () => {
+        if (!hasValidTitle || isSaving) {
+            return;
+        }
+        const optimisticSnapshot = { ...form };
+        setIsSaving(true);
+        const success = await onSubmit();
+        if (!success) {
+            setForm(rollbackRef.current);
+        } else {
+            rollbackRef.current = optimisticSnapshot;
+        }
+        setIsSaving(false);
+    };
 
     return (
         <AnimatePresence>
@@ -79,9 +108,9 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                             </button>
                             <button
                                 onClick={() => {
-                                    void onSubmit();
+                                    void handleSubmit();
                                 }}
-                                disabled={!hasValidTitle}
+                                disabled={!hasValidTitle || isSaving}
                                 className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                             >
                                 {t('common.save')}

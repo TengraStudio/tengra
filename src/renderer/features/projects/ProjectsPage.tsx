@@ -14,7 +14,11 @@ import { appLogger } from '@/utils/renderer-logger';
 import { ProjectCard, ProjectCardSurfaceProvider } from './components/ProjectCard';
 import { ProjectModals } from './components/ProjectModals';
 import { ProjectsHeader } from './components/ProjectsHeader';
-import { useProjectListStateMachine } from './hooks/useProjectListStateMachine';
+import {
+    loadProjectListPreferences,
+    saveProjectListPreferences,
+    useProjectListStateMachine,
+} from './hooks/useProjectListStateMachine';
 
 interface ProjectsPageProps {
     projects: Project[]
@@ -53,39 +57,25 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     const [listPreset, setListPreset] = useState<'recent' | 'oldest' | 'name-az' | 'name-za'>('recent');
 
     React.useEffect(() => {
-        try {
-            const raw = localStorage.getItem(LIST_SETTINGS_STORAGE_KEY);
-            if (!raw) {
-                return;
-            }
-            const parsed = JSON.parse(raw) as {
-                viewMode?: 'grid' | 'list';
-                sortBy?: 'title' | 'updatedAt' | 'createdAt';
-                sortDirection?: 'asc' | 'desc';
-                listPreset?: 'recent' | 'oldest' | 'name-az' | 'name-za';
-            };
-            if (parsed.viewMode) {
-                setViewMode(parsed.viewMode);
-            }
-            if (parsed.sortBy) {
-                setSortBy(parsed.sortBy);
-            }
-            if (parsed.sortDirection) {
-                setSortDirection(parsed.sortDirection);
-            }
-            if (parsed.listPreset) {
-                setListPreset(parsed.listPreset);
-            }
-        } catch {
-            // Ignore malformed list settings.
-        }
+        const savedPreferences = loadProjectListPreferences(LIST_SETTINGS_STORAGE_KEY, {
+            viewMode: 'grid',
+            sortBy: 'updatedAt',
+            sortDirection: 'desc',
+            listPreset: 'recent',
+        });
+        setViewMode(savedPreferences.viewMode);
+        setSortBy(savedPreferences.sortBy);
+        setSortDirection(savedPreferences.sortDirection);
+        setListPreset(savedPreferences.listPreset);
     }, []);
 
     React.useEffect(() => {
-        localStorage.setItem(
-            LIST_SETTINGS_STORAGE_KEY,
-            JSON.stringify({ viewMode, sortBy, sortDirection, listPreset })
-        );
+        saveProjectListPreferences(LIST_SETTINGS_STORAGE_KEY, {
+            viewMode,
+            sortBy,
+            sortDirection,
+            listPreset,
+        });
     }, [viewMode, sortBy, sortDirection, listPreset]);
 
     const normalizedSearchQuery = React.useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
@@ -186,6 +176,17 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     const isArchiving = sm.state.status === 'archiving' ? sm.state.targetProject : null;
     const isBulkDeleting = sm.state.status === 'bulk_deleting';
     const isBulkArchiving = sm.state.status === 'bulk_archiving';
+    const bulkArchiveMode = React.useMemo(() => {
+        const selectedProjects = sortedProjects.filter(project =>
+            sm.state.selectedProjectIds.has(project.id)
+        );
+        if (selectedProjects.length === 0) {
+            return 'archive' as const;
+        }
+        return selectedProjects.every(project => project.status === 'archived')
+            ? ('restore' as const)
+            : ('archive' as const);
+    }, [sm.state.selectedProjectIds, sortedProjects]);
 
     if (selectedProject) {
         return (
@@ -229,6 +230,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     handleArchiveProject={sm.executeArchive}
                     handleBulkDelete={sm.executeBulkDelete}
                     handleBulkArchive={sm.executeBulkArchive}
+                    bulkArchiveMode={bulkArchiveMode}
                     t={t}
                 />
             </>
@@ -338,7 +340,15 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                         <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
                                             <Edit className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => sm.startArchive(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('projects.archiveProject')}>
+                                        <button
+                                            onClick={() => sm.startArchive(project)}
+                                            className="p-2 rounded-md hover:bg-muted/30"
+                                            title={
+                                                project.status === 'archived'
+                                                    ? t('common.unarchive') || 'Restore'
+                                                    : t('projects.archiveProject')
+                                            }
+                                        >
                                             <Archive className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => sm.startDelete(project)} className="p-2 rounded-md hover:bg-destructive/10 text-destructive" title={t('common.delete')}>
@@ -377,6 +387,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     handleArchiveProject={sm.executeArchive}
                     handleBulkDelete={sm.executeBulkDelete}
                     handleBulkArchive={sm.executeBulkArchive}
+                    bulkArchiveMode={bulkArchiveMode}
                     t={t}
                 />
 

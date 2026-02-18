@@ -11,6 +11,8 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { AddConnectionModal } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';
+import { SSHKeyManagement } from './components/SSHKeyManagement';
+import { SSHTunnels } from './components/SSHTunnels';
 import { SSHTerminal } from './components/SSHTerminal';
 import { useSSHConnections } from './hooks/useSSHConnections';
 
@@ -19,7 +21,7 @@ interface SSHProfile { name?: string; host: string; port: number; username: stri
 
 const SSHTabs: React.FC<{ activeTab: string, onTabChange: (id: string) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
     <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
-        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }].map(tab => (
+        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
             <button key={tab.id} onClick={() => { onTabChange(tab.id); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
         ))}
     </div>
@@ -110,6 +112,10 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                         <div className="flex-1 overflow-hidden">
                             {activeTab === 'terminal' ? (
                                 <SSHTerminal terminalOutput={terminalOutput} t={t} onExecute={cmd => { if (selectedConnectionId) { void window.electron.ssh.shellWrite(selectedConnectionId, cmd + '\n'); } else { setTerminalOutput(p => { return p + `${t('ssh.noServerConnected')}\n`; }); } }} selectedConnectionId={selectedConnectionId} />
+                            ) : activeTab === 'keys' ? (
+                                <SSHKeyManagement t={t} />
+                            ) : activeTab === 'tunnels' && selectedConnectionId ? (
+                                <SSHTunnels connectionId={selectedConnectionId} t={t} />
                             ) : !selectedConnectionId ? (
                                 <div className="flex-1 h-full flex items-center justify-center bg-background text-muted-foreground">{t('ssh.selectConnection')}</div>
                             ) : activeTab === 'dashboard' ? (

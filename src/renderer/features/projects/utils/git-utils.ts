@@ -9,6 +9,15 @@ export interface FullGitData {
     trackingInfo: TrackingInfo | null;
     diffStats: DiffStats | null;
     commitStats: Record<string, number>;
+    sectionErrors: GitSectionErrors;
+}
+
+export interface GitSectionErrors {
+    status: string | null;
+    actions: string | null;
+    remotes: string | null;
+    commits: string | null;
+    changes: string | null;
 }
 
 export const emptyGitData: GitData = {
@@ -24,14 +33,15 @@ export const emptyGitData: GitData = {
 };
 
 interface BatchedGitResults {
-    branch?: { success: boolean; branch?: string }
-    status?: { success: boolean; isClean?: boolean }
-    lastCommit?: { success: boolean; hash?: string; message?: string; author?: string; relativeTime?: string }
-    branches?: { success: boolean; branches?: string[] }
+    branch?: { success: boolean; branch?: string; error?: string }
+    status?: { success: boolean; isClean?: boolean; error?: string }
+    lastCommit?: { success: boolean; hash?: string; message?: string; author?: string; relativeTime?: string; error?: string }
+    branches?: { success: boolean; branches?: string[]; error?: string }
 }
 
 interface DetailedStatusResult {
     success: boolean
+    error?: string
     allFiles?: { path: string; status: string; staged: boolean }[]
     stagedFiles?: { path: string; status: string; staged: boolean }[]
     unstagedFiles?: { path: string; status: string; staged: boolean }[]
@@ -39,6 +49,7 @@ interface DetailedStatusResult {
 
 interface RecentCommitsResult {
     success: boolean
+    error?: string
     commits?: { hash: string; message: string; author: string; date: string }[]
 }
 
@@ -88,10 +99,10 @@ const buildGitData = (
     unstagedFiles: extractUnstagedFiles(detailedStatus)
 });
 
-interface RemotesResult { success: boolean; remotes?: Remote[] }
-interface TrackingResult { success: boolean; tracking?: string | null; ahead?: number; behind?: number }
-interface DiffStatsResult { success: boolean; staged?: { added: number; deleted: number; files: number }; unstaged?: { added: number; deleted: number; files: number }; total?: { added: number; deleted: number; files: number } }
-interface CommitStatsResult { success: boolean; commitCounts?: Record<string, number> }
+interface RemotesResult { success: boolean; error?: string; remotes?: Remote[] }
+interface TrackingResult { success: boolean; error?: string; tracking?: string | null; ahead?: number; behind?: number }
+interface DiffStatsResult { success: boolean; error?: string; staged?: { added: number; deleted: number; files: number }; unstaged?: { added: number; deleted: number; files: number }; total?: { added: number; deleted: number; files: number } }
+interface CommitStatsResult { success: boolean; error?: string; commitCounts?: Record<string, number> }
 
 const extractBranches = (batched: BatchedGitResults): string[] =>
     batched.branches?.success ? (batched.branches.branches ?? []) : [];
@@ -111,6 +122,56 @@ const extractDiffStats = (result: DiffStatsResult): DiffStats | null =>
 
 const extractCommitStats = (result: CommitStatsResult): Record<string, number> =>
     result.success ? (result.commitCounts ?? {}) : {};
+
+const normalizeSectionError = (error: string | undefined, fallback: string): string =>
+    error && error.trim().length > 0 ? error : fallback;
+
+const extractStatusSectionError = (batched: BatchedGitResults): string | null => {
+    const errors = [
+        batched.branch?.success === false ? normalizeSectionError(batched.branch.error, 'branch') : null,
+        batched.status?.success === false ? normalizeSectionError(batched.status.error, 'status') : null,
+        batched.lastCommit?.success === false ? normalizeSectionError(batched.lastCommit.error, 'lastCommit') : null,
+        batched.branches?.success === false ? normalizeSectionError(batched.branches.error, 'branches') : null,
+    ].filter((value): value is string => value !== null);
+
+    return errors.length > 0 ? errors.join(', ') : null;
+};
+
+interface GitSectionErrorSources {
+    batched: BatchedGitResults
+    recentCommitsResult: RecentCommitsResult
+    detailedStatus: DetailedStatusResult
+    remotesResult: RemotesResult
+    trackingResult: TrackingResult
+    diffStatsResult: DiffStatsResult
+}
+
+const extractSectionErrors = ({
+    batched,
+    recentCommitsResult,
+    detailedStatus,
+    remotesResult,
+    trackingResult,
+    diffStatsResult
+}: GitSectionErrorSources): GitSectionErrors => ({
+    status: extractStatusSectionError(batched),
+    actions: trackingResult.success ? null : normalizeSectionError(trackingResult.error, 'tracking'),
+    remotes: remotesResult.success ? null : normalizeSectionError(remotesResult.error, 'remotes'),
+    commits: recentCommitsResult.success ? null : normalizeSectionError(recentCommitsResult.error, 'commits'),
+    changes: detailedStatus.success && diffStatsResult.success
+        ? null
+        : [detailedStatus, diffStatsResult]
+            .map((result, index) => {
+                if (result.success) {
+                    return null;
+                }
+                return index === 0
+                    ? normalizeSectionError(result.error, 'detailedStatus')
+                    : normalizeSectionError(result.error, 'diffStats');
+            })
+            .filter((value): value is string => value !== null)
+            .join(', '),
+});
 
 export async function fetchFullGitData(projectPath: string): Promise<FullGitData | null> {
     const repoCheck = await window.electron.git.isRepository(projectPath);
@@ -133,6 +194,14 @@ export async function fetchFullGitData(projectPath: string): Promise<FullGitData
         remotes: extractRemotes(remotesResult),
         trackingInfo: extractTrackingInfo(trackingResult),
         diffStats: extractDiffStats(diffStatsResult),
-        commitStats: extractCommitStats(commitStatsResult)
+        commitStats: extractCommitStats(commitStatsResult),
+        sectionErrors: extractSectionErrors({
+            batched: batchedGitData,
+            recentCommitsResult,
+            detailedStatus,
+            remotesResult,
+            trackingResult,
+            diffStatsResult
+        })
     };
 }

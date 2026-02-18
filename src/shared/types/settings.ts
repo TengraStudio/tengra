@@ -171,6 +171,42 @@ export type AppSettings = {
         status: 'pending' | 'approved' | 'denied';
     }>;
     mcpServerVersionHistory?: Record<string, string[]>;
+    mcpTrustedPublishers?: string[];
+    mcpRevokedSignatures?: string[];
+    mcpSecurityScans?: Record<string, {
+        score: number;
+        flags: string[];
+        status: 'clean' | 'suspicious' | 'blocked';
+        scannedAt: number;
+    }>;
+    mcpExtensionReviews?: Record<string, Array<{
+        id: string;
+        userHash: string;
+        rating: number;
+        comment: string;
+        createdAt: number;
+        helpfulVotes: number;
+        verified: boolean;
+        status: 'published' | 'flagged' | 'hidden';
+    }>>;
+    mcpTelemetry?: {
+        enabled: boolean;
+        anonymize: boolean;
+        crashReporting: boolean;
+        events?: Array<{
+            serverId: string;
+            event: string;
+            timestamp: number;
+            metadata?: Record<string, JsonValue>;
+        }>;
+        crashes?: Array<{
+            serverId: string;
+            timestamp: number;
+            reason: string;
+            stack?: string;
+            metadata?: Record<string, JsonValue>;
+        }>;
+    };
     modelUsageLimits?: {
         copilot?: {
             hourly?: {
@@ -249,6 +285,14 @@ export type MCPServerConfig = {
     category?: string;
     publisher?: string;
     version?: string;
+    extensionType?:
+    | 'mcp_server'
+    | 'theme'
+    | 'command'
+    | 'language'
+    | 'agent_template'
+    | 'widget'
+    | 'integration';
     isOfficial?: boolean;
     capabilities?: string[];
     dependencies?: string[];
@@ -268,6 +312,7 @@ export type MCPServerConfig = {
         autoUpdate?: boolean;
         scheduleCron?: string;
         signatureSha256?: string;
+        signatureTimestamp?: number;
         lastCheckedAt?: number;
         lastUpdatedAt?: number;
     };
@@ -275,6 +320,32 @@ export type MCPServerConfig = {
     settingsValues?: Record<string, JsonValue>;
     settingsVersion?: number;
     integrityHash?: string;
+    oauth?: {
+        enabled?: boolean;
+        authUrl?: string;
+        tokenUrl?: string;
+        scopes?: string[];
+        clientId?: string;
+    };
+    credentials?: {
+        provider?: string;
+        keyRef?: string;
+        lastRotatedAt?: number;
+    };
+    security?: {
+        reviewStatus?: 'pending' | 'approved' | 'rejected';
+        securityScore?: number;
+        malwareFlags?: string[];
+        lastScannedAt?: number;
+    };
+    telemetry?: {
+        enabled?: boolean;
+        anonymize?: boolean;
+        crashReporting?: boolean;
+        usageCount?: number;
+        crashCount?: number;
+        lastCrashAt?: number;
+    };
     installedAt?: number;
     updatedAt?: number;
     previousVersion?: string;

@@ -1,4 +1,4 @@
-import { ThemeCategory,ThemeDefinition } from '@shared/types/theme';
+import { ThemeCategory, ThemeColors, ThemeDefinition } from '@shared/types/theme';
 
 function createHsl(h: number, s: number, l: number): string {
     return `${h} ${s}% ${l}%`;
@@ -477,11 +477,20 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
 ];
 
 export function getThemeById(id: string): ThemeDefinition | undefined {
-    return BUILTIN_THEMES.find(t => t.id === id);
+    const theme = BUILTIN_THEMES.find(t => t.id === id);
+    if (!theme) {
+        return undefined;
+    }
+    return {
+        ...theme,
+        colors: ensureEditorColors(theme.colors)
+    };
 }
 
 export function getThemesByCategory(category: ThemeCategory): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => t.category === category);
+    return BUILTIN_THEMES
+        .filter(t => t.category === category)
+        .map(theme => ({ ...theme, colors: ensureEditorColors(theme.colors) }));
 }
 
 export function getAllThemeCategories(): ThemeCategory[] {
@@ -489,9 +498,38 @@ export function getAllThemeCategories(): ThemeCategory[] {
 }
 
 export function getLightThemes(): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => !t.isDark);
+    return BUILTIN_THEMES
+        .filter(t => !t.isDark)
+        .map(theme => ({ ...theme, colors: ensureEditorColors(theme.colors) }));
 }
 
 export function getDarkThemes(): ThemeDefinition[] {
-    return BUILTIN_THEMES.filter(t => t.isDark);
+    return BUILTIN_THEMES
+        .filter(t => t.isDark)
+        .map(theme => ({ ...theme, colors: ensureEditorColors(theme.colors) }));
+}
+
+function ensureEditorColors(colors: ThemeColors): ThemeColors {
+    return {
+        ...colors,
+        editorBackground: colors.editorBackground ?? colors.background,
+        editorForeground: colors.editorForeground ?? colors.foreground,
+        editorGutterBackground: colors.editorGutterBackground ?? colors.background,
+        editorLineNumber: colors.editorLineNumber ?? colors.mutedForeground,
+        editorLineNumberActive: colors.editorLineNumberActive ?? colors.foreground,
+        editorCursor: colors.editorCursor ?? colors.primary,
+        editorSelection: colors.editorSelection ?? colors.primary,
+        editorSelectionInactive: colors.editorSelectionInactive ?? colors.accent,
+        editorLineHighlight: colors.editorLineHighlight ?? colors.card,
+        editorWidgetBackground: colors.editorWidgetBackground ?? colors.card,
+        editorWidgetBorder: colors.editorWidgetBorder ?? colors.border,
+        editorIndentGuide: colors.editorIndentGuide ?? colors.border,
+        editorIndentGuideActive: colors.editorIndentGuideActive ?? colors.ring,
+        editorTokenComment: colors.editorTokenComment ?? colors.mutedForeground,
+        editorTokenKeyword: colors.editorTokenKeyword ?? colors.primary,
+        editorTokenString: colors.editorTokenString ?? colors.success ?? colors.primary,
+        editorTokenNumber: colors.editorTokenNumber ?? colors.warning ?? colors.primary,
+        editorTokenType: colors.editorTokenType ?? colors.info ?? colors.primary,
+        editorTokenInvalid: colors.editorTokenInvalid ?? colors.destructive,
+    };
 }

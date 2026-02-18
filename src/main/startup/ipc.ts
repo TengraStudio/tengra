@@ -6,6 +6,7 @@ import { registerBackupIpc } from '@main/ipc/backup';
 import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
 import { registerClipboardIpc } from '@main/ipc/clipboard';
+import { registerCodeSandboxIpc } from '@main/ipc/code-sandbox';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
 import { registerContractIpc } from '@main/ipc/contract';
@@ -48,6 +49,7 @@ import { registerThemeIpc } from '@main/ipc/theme';
 import { registerTokenEstimationIpc } from '@main/ipc/token-estimation';
 import { registerToolsIpc } from '@main/ipc/tools';
 import { registerUsageIpc } from '@main/ipc/usage';
+import { registerVoiceIpc } from '@main/ipc/voice';
 import { registerWindowIpc } from '@main/ipc/window';
 import { registerWorkflowIpc } from '@main/ipc/workflow';
 import { appLogger } from '@main/logging/logger';
@@ -77,6 +79,7 @@ export async function registerIpcHandlers(
     registerWindowIpc(getMainWindow, allowedFileRoots);
     registerLazyServicesIpc();
     registerContractIpc();
+    registerCodeSandboxIpc();
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerModelDownloaderIpc(services.modelDownloaderService);
     registerAuditIpc(services.auditLogService);
@@ -134,6 +137,7 @@ export async function registerIpcHandlers(
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
+        auditLogService: services.auditLogService,
     });
     registerAgentIpc(services.agentService);
     registerProcessIpc(getMainWindow, services.processService);
@@ -224,6 +228,7 @@ export async function registerIpcHandlers(
 
     // Token Estimation
     registerTokenEstimationIpc();
+    registerVoiceIpc();
 
     // Backup & Restore
     registerBackupIpc(services.backupService);

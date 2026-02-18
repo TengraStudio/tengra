@@ -44,6 +44,8 @@ export interface WorkspaceTreeItemProps {
     onEnsureMount?: ((mount: WorkspaceMount) => Promise<boolean> | boolean) | undefined;
     onContextMenu?: ((e: React.MouseEvent, entry: WorkspaceEntry) => void) | undefined;
     onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
+    expandedTreeNodes?: Record<string, boolean>;
+    onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
     t: (key: string) => string;
 }
 
@@ -70,12 +72,21 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
     onEnsureMount,
     onContextMenu,
     onMove,
+    expandedTreeNodes,
+    onExpandedTreeNodeChange,
     t,
 }) => {
-    const [expanded, setExpanded] = useState(false);
+    const expandedNodeKey = `${mount.id}:${node.path}`;
+    const [expanded, setExpanded] = useState(
+        () => Boolean(expandedTreeNodes?.[expandedNodeKey])
+    );
     const [children, setChildren] = useState<FileNode[]>([]);
     const [loading, setLoading] = useState(false);
     const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        setExpanded(Boolean(expandedTreeNodes?.[expandedNodeKey]));
+    }, [expandedNodeKey, expandedTreeNodes]);
 
     const entryId = `item:${mount.id}:${node.path}`;
     const {
@@ -170,7 +181,11 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
         onSelectEntry(entry, e);
 
         if (node.isDirectory) {
-            setExpanded(prev => !prev);
+            setExpanded(prev => {
+                const next = !prev;
+                onExpandedTreeNodeChange?.(expandedNodeKey, next);
+                return next;
+            });
             return;
         }
 
@@ -284,6 +299,8 @@ export const WorkspaceTreeItem: React.FC<WorkspaceTreeItemProps> = ({
                             onEnsureMount={onEnsureMount}
                             onContextMenu={onContextMenu}
                             onMove={onMove}
+                            expandedTreeNodes={expandedTreeNodes}
+                            onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                             t={t}
                         />
                     ))}

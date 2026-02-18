@@ -1,4 +1,4 @@
-import { CheckSquare, Square } from 'lucide-react';
+import { CheckSquare, RotateCcw, RotateCw, Square } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -7,9 +7,13 @@ import { TodoItem } from './types';
 interface TodoItemCardProps {
     todo: TodoItem;
     onToggle: (item: TodoItem) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
 }
 
-export const TodoItemCard = ({ todo, onToggle }: TodoItemCardProps) => (
+export const TodoItemCard = ({ todo, onToggle, onUndo, onRedo, canUndo, canRedo }: TodoItemCardProps) => (
     <div
         className={cn(
             "group flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden",
@@ -36,6 +40,38 @@ export const TodoItemCard = ({ todo, onToggle }: TodoItemCardProps) => (
                 <span className="text-xxs font-mono text-muted-foreground/40 text-primary/40">
                     Line {todo.line}
                 </span>
+                {(onUndo || onRedo) && (
+                    <div className="ml-auto flex items-center gap-1">
+                        {onUndo && (
+                            <button
+                                type="button"
+                                onClick={event => {
+                                    event.stopPropagation();
+                                    onUndo();
+                                }}
+                                disabled={!canUndo}
+                                className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
+                                title="Undo (Ctrl/Cmd+Z)"
+                            >
+                                <RotateCcw className="w-3 h-3" />
+                            </button>
+                        )}
+                        {onRedo && (
+                            <button
+                                type="button"
+                                onClick={event => {
+                                    event.stopPropagation();
+                                    onRedo();
+                                }}
+                                disabled={!canRedo}
+                                className="p-1 rounded hover:bg-muted/40 disabled:opacity-30"
+                                title="Redo (Ctrl/Cmd+Y)"
+                            >
+                                <RotateCw className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     </div>

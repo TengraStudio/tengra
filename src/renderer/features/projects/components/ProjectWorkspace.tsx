@@ -3,11 +3,13 @@ import { LogoGeneratorModal } from '@renderer/features/projects/components/LogoG
 import { CommandStrip } from '@renderer/features/projects/components/workspace/CommandStrip';
 import { WorkspaceMain } from '@renderer/features/projects/components/workspace/WorkspaceMain';
 import { WorkspaceModals } from '@renderer/features/projects/components/workspace/WorkspaceModals';
+import { WorkspaceNotifications } from '@renderer/features/projects/components/workspace/WorkspaceNotifications';
 import { WorkspaceSidebar } from '@renderer/features/projects/components/workspace/WorkspaceSidebar';
 import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar';
 import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer';
 import { useProjectState } from '@renderer/features/projects/hooks/useProjectState';
 import { useProjectWorkspaceController } from '@renderer/features/projects/hooks/useProjectWorkspaceController';
+import { useWorkspaceBranchState } from '@renderer/features/projects/hooks/useWorkspaceBranchState';
 import { useWorkspaceManager } from '@renderer/features/projects/hooks/useWorkspaceManager';
 import { AnimatePresence, motion } from '@renderer/lib/framer-motion-compat';
 import { Resizable } from 're-resizable';
@@ -91,6 +93,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     const [isMaximizedTerminal, setIsMaximizedTerminal] = React.useState(false);
     const [isResizingTerminal, setIsResizingTerminal] = React.useState(false);
     const [isFloatingTerminal, setIsFloatingTerminal] = React.useState(false);
+    const [showShortcutHelp, setShowShortcutHelp] = React.useState(false);
+    const [showQuickSwitch, setShowQuickSwitch] = React.useState(false);
+    const [quickSwitchQuery, setQuickSwitchQuery] = React.useState('');
+    const [quickSwitchIndex, setQuickSwitchIndex] = React.useState(0);
     const [viewportWidth, setViewportWidth] = React.useState(() => window.innerWidth);
     const setShowTerminal = ps.setShowTerminal;
     const setTerminalHeight = ps.setTerminalHeight;
@@ -115,6 +121,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 : EXPANDED_EXPLORER_LEFT_INSET_PX,
         [ps.sidebarCollapsed]
     );
+    const {
+        currentBranchName,
+        availableBranches,
+        isBranchLoading,
+        isBranchSwitching,
+        handleBranchSelect,
+    } = useWorkspaceBranchState({
+        projectPath: project.path,
+        notify: ps.notify,
+        t,
+    });
     const floatingTerminalLayout = React.useMemo(() => {
         const availableWidthPx = Math.max(
             0,
@@ -124,6 +141,22 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         const leftPx = workspaceLeftInsetPx + Math.max(0, (availableWidthPx - widthPx) / 2);
         return { leftPx, widthPx };
     }, [dockedTerminalRightInsetPx, viewportWidth, workspaceLeftInsetPx]);
+    const quickSwitchItems = React.useMemo(
+        () =>
+            wm.openTabs
+                .map(tab => ({
+                    id: tab.id,
+                    label: tab.name,
+                    path: tab.path,
+                }))
+                .filter(tab =>
+                    `${tab.label} ${tab.path ?? ''}`
+                        .toLowerCase()
+                        .includes(quickSwitchQuery.trim().toLowerCase())
+                )
+                .slice(0, 12),
+        [quickSwitchQuery, wm.openTabs]
+    );
 
     const calculateTerminalHeight = React.useCallback((clientY: number) => {
         const minHeight = MIN_TERMINAL_HEIGHT;
@@ -284,6 +317,67 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         };
     }, [isFloatingTerminal, setShowTerminal, setTerminalHeight, showTerminal]);
 
+    React.useEffect(() => {
+        const onWorkspaceShortcut = (event: KeyboardEvent) => {
+            if (!(event.ctrlKey || event.metaKey)) {
+                return;
+            }
+            const key = event.key.toLowerCase();
+            const target = event.target as HTMLElement | null;
+            const tagName = target?.tagName?.toLowerCase();
+            const isTypingTarget =
+                target?.isContentEditable || tagName === 'input' || tagName === 'textarea';
+            if (isTypingTarget && key !== '/') {
+                return;
+            }
+            if (key === '/') {
+                event.preventDefault();
+                setShowShortcutHelp(prev => !prev);
+                return;
+            }
+            if (key === 'k') {
+                event.preventDefault();
+                window.dispatchEvent(new CustomEvent('app:open-command-palette'));
+                return;
+            }
+            if (key === 'p') {
+                event.preventDefault();
+                setShowQuickSwitch(true);
+                setQuickSwitchQuery('');
+                setQuickSwitchIndex(0);
+                return;
+            }
+            if (key === 'w' && wm.activeTab) {
+                event.preventDefault();
+                wm.closeTab(wm.activeTab.id);
+            }
+        };
+        const onEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setShowShortcutHelp(false);
+                setShowQuickSwitch(false);
+            }
+        };
+        window.addEventListener('keydown', onWorkspaceShortcut);
+        window.addEventListener('keydown', onEscape);
+        return () => {
+            window.removeEventListener('keydown', onWorkspaceShortcut);
+            window.removeEventListener('keydown', onEscape);
+        };
+    }, [wm]);
+
+    React.useEffect(() => {
+        if (!showQuickSwitch) {
+            return;
+        }
+        setQuickSwitchIndex(prev => {
+            if (quickSwitchItems.length === 0) {
+                return 0;
+            }
+            return Math.min(prev, quickSwitchItems.length - 1);
+        });
+    }, [quickSwitchItems, showQuickSwitch]);
+
     const openWorkspaceFile = React.useCallback(
         (path: string, line?: number) => {
             const name = path.split(/[\\/]/).pop() ?? 'file';
@@ -330,6 +424,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Left Panel: Explorer */}
                 <ProjectExplorerPanel
+                    projectId={project.id}
                     ps={ps}
                     wm={wm}
                     language={language}
@@ -344,12 +439,22 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     activeTabId={wm.activeTabId}
                     setActiveEditorTabId={wm.setActiveEditorTabId}
                     closeTab={wm.closeTab}
+                    togglePinTab={wm.togglePinTab}
+                    closeAllTabs={wm.closeAllTabs}
+                    closeTabsToRight={wm.closeTabsToRight}
+                    closeOtherTabs={wm.closeOtherTabs}
+                    copyTabAbsolutePath={wm.copyTabAbsolutePath}
+                    copyTabRelativePath={wm.copyTabRelativePath}
+                    revealTabInExplorer={async (tabId: string) => {
+                        wm.revealTabInExplorer(tabId);
+                    }}
                     activeTab={wm.activeTab}
                     updateTabContent={wm.updateTabContent}
                     project={project}
                     handleUpdateProject={handleUpdateProject}
                     onAddMount={() => ps.setShowMountModal(true)}
                     setShowLogoModal={ps.setShowLogoModal}
+                    t={t}
                     language={language}
                     setDashboardTab={wm.setDashboardTab}
                     onDeleteProject={onDeleteProject}
@@ -547,29 +652,134 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             {/* Global Command Strip */}
             <CommandStrip
                 language={language}
-                branchName="main"
+                branchName={currentBranchName}
+                branches={availableBranches}
+                isBranchLoading={isBranchLoading}
+                isBranchSwitching={isBranchSwitching}
                 notificationCount={ps.notifications.length}
                 status={isLoading ? 'busy' : 'ready'}
                 activeFilePath={wm.activeTab?.path}
                 activeFileContent={wm.activeTab?.content}
                 activeFileType={wm.activeTab?.type}
+                onBranchSelect={handleBranchSelect}
                 onCommandClick={() => {
                     window.dispatchEvent(new CustomEvent('app:open-command-palette'));
                 }}
+                onQuickSwitchClick={() => {
+                    setShowQuickSwitch(true);
+                    setQuickSwitchQuery('');
+                    setQuickSwitchIndex(0);
+                }}
                 onMouseDown={handleCommandStripResizeStart}
             />
+
+            {showShortcutHelp && (
+                <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="w-full max-w-lg rounded-xl border border-border/50 bg-background p-5 space-y-3">
+                        <h3 className="text-sm font-semibold">
+                            {t('workspace.shortcuts') || 'Workspace Shortcuts'}
+                        </h3>
+                        <ul className="text-xs text-muted-foreground space-y-2">
+                            <li>Ctrl/Cmd + K — {t('shortcuts.commandPalette') || 'Command palette'}</li>
+                            <li>Ctrl/Cmd + P — {t('workspace.quickSwitch') || 'Quick switch tabs'}</li>
+                            <li>Ctrl/Cmd + W — {t('workspace.closeTab') || 'Close current tab'}</li>
+                            <li>Ctrl/Cmd + / — {t('workspace.shortcuts') || 'Toggle this help'}</li>
+                            <li>` — {t('workspace.run') || 'Toggle terminal'}</li>
+                        </ul>
+                    </div>
+                </div>
+            )}
+
+            {showQuickSwitch && (
+                <div
+                    className="absolute inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-start justify-center p-8"
+                    onClick={() => setShowQuickSwitch(false)}
+                >
+                    <div
+                        className="w-full max-w-xl rounded-xl border border-border/50 bg-background p-3 space-y-2"
+                        onClick={event => event.stopPropagation()}
+                    >
+                        <input
+                            autoFocus
+                            value={quickSwitchQuery}
+                            onChange={event => setQuickSwitchQuery(event.target.value)}
+                            onKeyDown={event => {
+                                if (quickSwitchItems.length === 0 && event.key !== 'Escape') {
+                                    return;
+                                }
+                                if (event.key === 'ArrowDown') {
+                                    event.preventDefault();
+                                    setQuickSwitchIndex(prev =>
+                                        Math.min(prev + 1, quickSwitchItems.length - 1)
+                                    );
+                                    return;
+                                }
+                                if (event.key === 'ArrowUp') {
+                                    event.preventDefault();
+                                    setQuickSwitchIndex(prev => Math.max(prev - 1, 0));
+                                    return;
+                                }
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    const selected = quickSwitchItems[quickSwitchIndex];
+                                    if (!selected) {
+                                        return;
+                                    }
+                                    wm.setActiveEditorTabId(selected.id);
+                                    setShowQuickSwitch(false);
+                                    return;
+                                }
+                                if (event.key === 'Escape') {
+                                    event.preventDefault();
+                                    setShowQuickSwitch(false);
+                                }
+                            }}
+                            placeholder={t('workspace.quickSwitch') || 'Quick switch'}
+                            className="w-full rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                        />
+                        <div className="max-h-72 overflow-y-auto space-y-1">
+                            {quickSwitchItems.map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => {
+                                        wm.setActiveEditorTabId(item.id);
+                                        setShowQuickSwitch(false);
+                                    }}
+                                    className={cn(
+                                        'w-full text-left rounded-md px-3 py-2 hover:bg-muted/30 transition-colors',
+                                        quickSwitchItems[quickSwitchIndex]?.id === item.id &&
+                                            'bg-muted/30'
+                                    )}
+                                >
+                                    <div className="text-sm text-foreground">{item.label}</div>
+                                    <div className="text-xxs text-muted-foreground truncate">
+                                        {item.path}
+                                    </div>
+                                </button>
+                            ))}
+                            {quickSwitchItems.length === 0 && (
+                                <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                                    {t('projectDashboard.noResults')}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            <WorkspaceNotifications notifications={ps.notifications} />
         </div>
     );
 };
 
 interface ProjectExplorerPanelProps {
+    projectId: string;
     ps: ReturnType<typeof useProjectState>;
     wm: ReturnType<typeof useWorkspaceManager>;
     language: Language;
     onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
 }
 
-function ProjectExplorerPanel({ ps, wm, language, onMove }: ProjectExplorerPanelProps) {
+function ProjectExplorerPanel({ projectId, ps, wm, language, onMove }: ProjectExplorerPanelProps) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -609,6 +819,7 @@ function ProjectExplorerPanel({ ps, wm, language, onMove }: ProjectExplorerPanel
             <div className="flex-1 overflow-hidden">
                 <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
                     <WorkspaceExplorer
+                        projectId={projectId}
                         mounts={wm.mounts}
                         mountStatus={wm.mountStatus}
                         refreshSignal={wm.refreshSignal}

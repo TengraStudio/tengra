@@ -6,7 +6,7 @@ import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
-import { MCPServerConfig } from '@shared/types/settings';
+import { AppSettings, MCPServerConfig } from '@shared/types/settings';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
 
@@ -21,6 +21,7 @@ const ServerIdSchema = z.string().trim().min(1).max(120);
 const CategorySchema = z.string().trim().min(1).max(120);
 const QuerySchema = z.string().trim().min(1).max(500);
 const VersionSchema = z.string().trim().min(1).max(64);
+const ExtensionTypeSchema = z.enum(['mcp_server', 'theme', 'command', 'language', 'agent_template', 'widget', 'integration']);
 const MarketplaceValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const SettingsFieldSchema = z.object({
     type: z.enum(['string', 'number', 'integer', 'boolean']).optional(),
@@ -41,6 +42,7 @@ const MarketplacePatchSchema = z.object({
     enabled: z.boolean().optional(),
     category: z.string().trim().max(120).optional(),
     publisher: z.string().trim().max(120).optional(),
+    extensionType: ExtensionTypeSchema.optional(),
     version: z.string().trim().max(64).optional(),
     isOfficial: z.boolean().optional(),
     capabilities: z.array(z.string().trim().min(1).max(120)).max(64).optional(),
@@ -61,8 +63,35 @@ const MarketplacePatchSchema = z.object({
         autoUpdate: z.boolean().optional(),
         scheduleCron: z.string().trim().max(120).optional(),
         signatureSha256: z.string().trim().regex(/^[a-fA-F0-9]{64}$/).optional(),
+        signatureTimestamp: z.number().int().nonnegative().optional(),
         lastCheckedAt: z.number().int().nonnegative().optional(),
         lastUpdatedAt: z.number().int().nonnegative().optional()
+    }).optional(),
+    oauth: z.object({
+        enabled: z.boolean().optional(),
+        authUrl: z.string().trim().max(2048).optional(),
+        tokenUrl: z.string().trim().max(2048).optional(),
+        scopes: z.array(z.string().trim().min(1).max(120)).max(64).optional(),
+        clientId: z.string().trim().max(200).optional()
+    }).optional(),
+    credentials: z.object({
+        provider: z.string().trim().max(120).optional(),
+        keyRef: z.string().trim().max(260).optional(),
+        lastRotatedAt: z.number().int().nonnegative().optional()
+    }).optional(),
+    security: z.object({
+        reviewStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
+        securityScore: z.number().min(0).max(100).optional(),
+        malwareFlags: z.array(z.string().trim().min(1).max(200)).max(64).optional(),
+        lastScannedAt: z.number().int().nonnegative().optional()
+    }).optional(),
+    telemetry: z.object({
+        enabled: z.boolean().optional(),
+        anonymize: z.boolean().optional(),
+        crashReporting: z.boolean().optional(),
+        usageCount: z.number().int().nonnegative().optional(),
+        crashCount: z.number().int().nonnegative().optional(),
+        lastCrashAt: z.number().int().nonnegative().optional()
     }).optional(),
     settingsSchema: SettingsSchema.optional(),
     settingsValues: z.record(z.string(), MarketplaceValueSchema).optional(),
@@ -75,6 +104,29 @@ const MarketplacePatchSchema = z.object({
         })
     ).optional(),
 }).passthrough();
+
+const ReviewSchema = z.object({
+    rating: z.number().int().min(1).max(5),
+    comment: z.string().trim().min(3).max(1200),
+    verified: z.boolean().optional()
+});
+
+const ReviewModerationSchema = z.object({
+    status: z.enum(['published', 'flagged', 'hidden'])
+});
+
+const TelemetryEventSchema = z.object({
+    serverId: ServerIdSchema,
+    event: z.string().trim().min(1).max(120),
+    metadata: z.record(z.string(), MarketplaceValueSchema).optional()
+});
+
+const CrashPayloadSchema = z.object({
+    serverId: ServerIdSchema,
+    reason: z.string().trim().min(1).max(1000),
+    stack: z.string().max(12000).optional(),
+    metadata: z.record(z.string(), MarketplaceValueSchema).optional()
+});
 
 const getErrorMessage = (error: Error): string =>
     error instanceof Error ? error.message : String(error);
@@ -92,6 +144,60 @@ const computeIntegrityHash = (server: Pick<MCPServerConfig, 'id' | 'name' | 'com
     });
     return createHash('sha256').update(payload).digest('hex');
 };
+
+const normalizePublisher = (publisher: string | undefined): string =>
+    (publisher ?? '').trim().toLowerCase();
+
+const isSuspiciousCommand = (command: string): boolean => {
+    const normalized = command.toLowerCase();
+    const patterns = [
+        'rm -rf',
+        'powershell -enc',
+        'invoke-expression',
+        'curl http://',
+        'wget http://',
+        'nc -e',
+        'chmod 777',
+        'reg add'
+    ];
+    return patterns.some(pattern => normalized.includes(pattern));
+};
+
+const scanServerSecurity = (serverConfig: MCPServerConfig): {
+    score: number;
+    flags: string[];
+    status: 'clean' | 'suspicious' | 'blocked';
+} => {
+    const flags: string[] = [];
+    let score = 100;
+    if (isSuspiciousCommand(serverConfig.command)) {
+        flags.push('suspicious_command_pattern');
+        score -= 55;
+    }
+    if ((serverConfig.args ?? []).some(arg => arg.toLowerCase().includes('http://'))) {
+        flags.push('insecure_http_dependency');
+        score -= 15;
+    }
+    if ((serverConfig.dependencies?.length ?? 0) > 10) {
+        flags.push('high_dependency_surface');
+        score -= 10;
+    }
+    if (serverConfig.isOfficial !== true) {
+        score -= 5;
+    }
+    const boundedScore = Math.max(0, Math.min(100, score));
+    return {
+        score: boundedScore,
+        flags,
+        status: boundedScore < 40 ? 'blocked' : boundedScore < 70 ? 'suspicious' : 'clean'
+    };
+};
+
+const anonymizeReviewAuthor = (comment: string, rating: number): string =>
+    createHash('sha256')
+        .update(`${comment}:${rating}`)
+        .digest('hex')
+        .slice(0, 16);
 
 const validateSettingsValues = (
     schemaValue: JsonValue | undefined,
@@ -208,6 +314,8 @@ const createMarketplaceHandler = <T extends Record<string, unknown>, Args extend
     );
 };
 
+type ExtensionReviewRecord = NonNullable<AppSettings['mcpExtensionReviews']>[string][number];
+
 /**
  * IPC handlers for MCP Marketplace operations
  */
@@ -222,6 +330,50 @@ export function registerMcpMarketplaceHandlers(
             command: cmdParts[0] ?? '',
             args: cmdParts.slice(1)
         };
+    };
+
+    const checkPublisherTrust = (publisher: string | undefined): void => {
+        const settings = settingsService.getSettings();
+        const trustedPublishers = new Set(
+            (settings.mcpTrustedPublishers ?? []).map(value => normalizePublisher(value))
+        );
+        const normalizedPublisher = normalizePublisher(publisher);
+        if (!normalizedPublisher) {
+            throw new Error('Publisher metadata is required');
+        }
+        if (!trustedPublishers.has(normalizedPublisher)) {
+            throw new Error(`Publisher is not trusted: ${publisher}`);
+        }
+    };
+
+    const checkRevokedSignature = (signature: string | undefined): void => {
+        const settings = settingsService.getSettings();
+        const revokedSignatures = new Set(settings.mcpRevokedSignatures ?? []);
+        if (signature && revokedSignatures.has(signature)) {
+            throw new Error('Signature is revoked');
+        }
+    };
+
+    const persistSecurityScan = async (serverConfig: MCPServerConfig): Promise<void> => {
+        const scan = scanServerSecurity(serverConfig);
+        const settings = settingsService.getSettings();
+        const scans = settings.mcpSecurityScans ?? {};
+        scans[serverConfig.id] = {
+            score: scan.score,
+            flags: scan.flags,
+            status: scan.status,
+            scannedAt: Date.now()
+        };
+        serverConfig.security = {
+            reviewStatus: scan.status === 'clean' ? 'approved' : 'pending',
+            securityScore: scan.score,
+            malwareFlags: scan.flags,
+            lastScannedAt: Date.now()
+        };
+        if (scan.status === 'blocked') {
+            throw new Error(`Security scan blocked installation: ${scan.flags.join(', ') || 'unknown risk'}`);
+        }
+        await settingsService.saveSettings({ mcpSecurityScans: scans });
     };
 
     ipcMain.handle('mcp:marketplace:list', createMarketplaceHandler('mcp:marketplace:list', async () => {
@@ -243,6 +395,31 @@ export function registerMcpMarketplaceHandlers(
         const categories = await marketplaceService.getCategories();
         return { categories };
     }, EmptyArgsSchema));
+
+    ipcMain.handle('mcp:marketplace:extension-templates', createMarketplaceHandler('mcp:marketplace:extension-templates', async () => {
+        const templates = marketplaceService.getExtensionTemplates();
+        return { templates };
+    }, EmptyArgsSchema));
+
+    ipcMain.handle('mcp:marketplace:draft-extension', createMarketplaceHandler('mcp:marketplace:draft-extension', async (
+        payload: {
+            id: string;
+            name: string;
+            type: z.infer<typeof ExtensionTypeSchema>;
+            publisher: string;
+        }
+    ) => {
+        checkPublisherTrust(payload.publisher);
+        const draft = marketplaceService.createExtensionDraft(payload);
+        return { draft };
+    }, z.tuple([
+        z.object({
+            id: ServerIdSchema,
+            name: z.string().trim().min(1).max(120),
+            type: ExtensionTypeSchema,
+            publisher: z.string().trim().min(1).max(120)
+        })
+    ])));
 
     ipcMain.handle('mcp:marketplace:install', createMarketplaceHandler('mcp:marketplace:install', async (serverId: string) => {
         const servers = await marketplaceService.listServers();
@@ -266,6 +443,7 @@ export function registerMcpMarketplaceHandlers(
             enabled: false,
             category: server.categories?.[0],
             publisher: server.publisher,
+            extensionType: server.extensionType ?? 'mcp_server',
             version: server.version,
             isOfficial: server.isOfficial,
             capabilities: server.capabilities ?? server.categories ?? [],
@@ -285,11 +463,21 @@ export function registerMcpMarketplaceHandlers(
                 channel: server.updatePolicy?.channel ?? 'stable',
                 autoUpdate: server.updatePolicy?.autoUpdate ?? true,
                 scheduleCron: server.updatePolicy?.scheduleCron,
-                signatureSha256: server.updatePolicy?.signatureSha256
+                signatureSha256: server.updatePolicy?.signatureSha256,
+                signatureTimestamp: Date.now()
             },
+            oauth: server.oauth,
+            credentials: server.oauth?.enabled ? { provider: 'oauth', keyRef: `oauth/${server.id}` } : undefined,
             settingsSchema: server.settingsSchema,
             settingsValues: {},
             settingsVersion: server.settingsVersion ?? 1,
+            telemetry: {
+                enabled: true,
+                anonymize: true,
+                crashReporting: true,
+                usageCount: 0,
+                crashCount: 0
+            },
             installedAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -301,15 +489,19 @@ export function registerMcpMarketplaceHandlers(
             throw new Error('Server already installed');
         }
         ensureInstallableServerConfig(serverConfig, existing);
+        checkPublisherTrust(serverConfig.publisher);
+        checkRevokedSignature(serverConfig.updatePolicy?.signatureSha256);
         validateSettingsValues(
             serverConfig.settingsSchema as JsonValue | undefined,
             serverConfig.settingsValues as JsonValue | undefined
         );
+        await persistSecurityScan(serverConfig);
         const integrityHash = computeIntegrityHash(serverConfig);
         serverConfig.integrityHash = integrityHash;
         serverConfig.updatePolicy = {
             ...serverConfig.updatePolicy,
-            signatureSha256: serverConfig.updatePolicy?.signatureSha256 ?? integrityHash
+            signatureSha256: serverConfig.updatePolicy?.signatureSha256 ?? integrityHash,
+            signatureTimestamp: serverConfig.updatePolicy?.signatureTimestamp ?? Date.now()
         };
 
         const versionHistory = settings.mcpServerVersionHistory ?? {};
@@ -431,6 +623,8 @@ export function registerMcpMarketplaceHandlers(
                 previousVersion: s.version,
                 updatedAt: Date.now()
             };
+            checkPublisherTrust(mergedServer.publisher);
+            checkRevokedSignature(mergedServer.updatePolicy?.signatureSha256);
             validateSettingsValues(
                 mergedServer.settingsSchema as JsonValue | undefined,
                 mergedServer.settingsValues as JsonValue | undefined
@@ -458,8 +652,17 @@ export function registerMcpMarketplaceHandlers(
                 autoUpdate: mergedServer.updatePolicy?.autoUpdate ?? true,
                 scheduleCron: mergedServer.updatePolicy?.scheduleCron,
                 signatureSha256: mergedServer.updatePolicy?.signatureSha256 ?? computedIntegrityHash,
+                signatureTimestamp: mergedServer.updatePolicy?.signatureTimestamp ?? Date.now(),
                 lastCheckedAt: mergedServer.updatePolicy?.lastCheckedAt,
                 lastUpdatedAt: Date.now()
+            };
+            mergedServer.telemetry = {
+                enabled: mergedServer.telemetry?.enabled ?? true,
+                anonymize: mergedServer.telemetry?.anonymize ?? true,
+                crashReporting: mergedServer.telemetry?.crashReporting ?? true,
+                usageCount: mergedServer.telemetry?.usageCount ?? 0,
+                crashCount: mergedServer.telemetry?.crashCount ?? 0,
+                lastCrashAt: mergedServer.telemetry?.lastCrashAt
             };
             return mergedServer;
         });
@@ -496,6 +699,209 @@ export function registerMcpMarketplaceHandlers(
         await settingsService.saveSettings({ mcpUserServers: updated });
         return {};
     }, z.tuple([ServerIdSchema, VersionSchema])));
+
+    ipcMain.handle('mcp:marketplace:security-scan', createMarketplaceHandler('mcp:marketplace:security-scan', async (serverId: string) => {
+        const settings = settingsService.getSettings();
+        const existing = settings.mcpUserServers ?? [];
+        const target = existing.find(server => server.id === serverId);
+        if (!target) {
+            throw new Error('Server not found');
+        }
+        const scan = scanServerSecurity(target);
+        const scans = settings.mcpSecurityScans ?? {};
+        scans[serverId] = {
+            score: scan.score,
+            flags: scan.flags,
+            status: scan.status,
+            scannedAt: Date.now()
+        };
+        const updated = existing.map(server =>
+            server.id === serverId
+                ? {
+                    ...server,
+                    security: {
+                        reviewStatus: (scan.status === 'clean' ? 'approved' : 'pending') as NonNullable<MCPServerConfig['security']>['reviewStatus'],
+                        securityScore: scan.score,
+                        malwareFlags: scan.flags,
+                        lastScannedAt: Date.now()
+                    }
+                }
+                : server
+        );
+        await settingsService.saveSettings({
+            mcpSecurityScans: scans,
+            mcpUserServers: updated
+        });
+        return { scan };
+    }, z.tuple([ServerIdSchema])));
+
+    ipcMain.handle('mcp:marketplace:reviews:list', createMarketplaceHandler('mcp:marketplace:reviews:list', async (serverId: string) => {
+        const settings = settingsService.getSettings();
+        const reviewStore: NonNullable<AppSettings['mcpExtensionReviews']> = settings.mcpExtensionReviews ?? {};
+        const reviews: ExtensionReviewRecord[] = reviewStore[serverId] ?? [];
+        return { reviews };
+    }, z.tuple([ServerIdSchema])));
+
+    ipcMain.handle('mcp:marketplace:reviews:submit', createMarketplaceHandler('mcp:marketplace:reviews:submit', async (
+        serverId: string,
+        payload: z.infer<typeof ReviewSchema>
+    ) => {
+        const settings = settingsService.getSettings();
+        const installed = (settings.mcpUserServers ?? []).some(server => server.id === serverId);
+        if (!installed) {
+            throw new Error('Only installed extensions can be reviewed');
+        }
+
+        const existing: NonNullable<AppSettings['mcpExtensionReviews']> = settings.mcpExtensionReviews ?? {};
+        const serverReviews: ExtensionReviewRecord[] = existing[serverId] ?? [];
+        const normalizedComment = payload.comment.trim();
+        const duplicate = serverReviews.some(
+            review => review.comment.trim().toLowerCase() === normalizedComment.toLowerCase()
+        );
+        if (duplicate) {
+            throw new Error('Duplicate review detected');
+        }
+        const urlCount = (normalizedComment.match(/https?:\/\//g) ?? []).length;
+        const spamScore = urlCount + (normalizedComment.length < 20 ? 1 : 0);
+        const status: ExtensionReviewRecord['status'] = spamScore >= 3 ? 'flagged' : 'published';
+        const review: ExtensionReviewRecord = {
+            id: `${serverId}-${Date.now()}`,
+            userHash: anonymizeReviewAuthor(normalizedComment, payload.rating),
+            rating: payload.rating,
+            comment: normalizedComment,
+            createdAt: Date.now(),
+            helpfulVotes: 0,
+            verified: payload.verified ?? true,
+            status
+        };
+        const updatedReviews = { ...existing, [serverId]: [...serverReviews, review] };
+        await settingsService.saveSettings({ mcpExtensionReviews: updatedReviews });
+        return { review };
+    }, z.tuple([ServerIdSchema, ReviewSchema])));
+
+    ipcMain.handle('mcp:marketplace:reviews:moderate', createMarketplaceHandler('mcp:marketplace:reviews:moderate', async (
+        serverId: string,
+        reviewId: string,
+        payload: z.infer<typeof ReviewModerationSchema>
+    ) => {
+        const settings = settingsService.getSettings();
+        const existing: NonNullable<AppSettings['mcpExtensionReviews']> = settings.mcpExtensionReviews ?? {};
+        const serverReviews: ExtensionReviewRecord[] = existing[serverId] ?? [];
+        const updatedReviews = serverReviews.map(review =>
+            review.id === reviewId ? { ...review, status: payload.status } : review
+        );
+        await settingsService.saveSettings({
+            mcpExtensionReviews: { ...existing, [serverId]: updatedReviews }
+        });
+        return {};
+    }, z.tuple([ServerIdSchema, z.string().trim().min(1), ReviewModerationSchema])));
+
+    ipcMain.handle('mcp:marketplace:reviews:vote', createMarketplaceHandler('mcp:marketplace:reviews:vote', async (
+        serverId: string,
+        reviewId: string
+    ) => {
+        const settings = settingsService.getSettings();
+        const existing: NonNullable<AppSettings['mcpExtensionReviews']> = settings.mcpExtensionReviews ?? {};
+        const serverReviews: ExtensionReviewRecord[] = existing[serverId] ?? [];
+        const updatedReviews = serverReviews.map(review =>
+            review.id === reviewId ? { ...review, helpfulVotes: review.helpfulVotes + 1 } : review
+        );
+        await settingsService.saveSettings({
+            mcpExtensionReviews: { ...existing, [serverId]: updatedReviews }
+        });
+        return {};
+    }, z.tuple([ServerIdSchema, z.string().trim().min(1)])));
+
+    ipcMain.handle('mcp:marketplace:telemetry:track', createMarketplaceHandler('mcp:marketplace:telemetry:track', async (
+        payload: z.infer<typeof TelemetryEventSchema>
+    ) => {
+        const settings = settingsService.getSettings();
+        const telemetry = settings.mcpTelemetry ?? { enabled: true, anonymize: true, crashReporting: true, events: [], crashes: [] };
+        if (!telemetry.enabled) {
+            return {};
+        }
+        const eventRecord = {
+            serverId: payload.serverId,
+            event: payload.event,
+            timestamp: Date.now(),
+            metadata: telemetry.anonymize ? undefined : payload.metadata
+        };
+        const nextEvents = [...(telemetry.events ?? []), eventRecord].slice(-2000);
+        const servers = (settings.mcpUserServers ?? []).map(server =>
+            server.id === payload.serverId
+                ? {
+                    ...server,
+                    telemetry: {
+                        ...server.telemetry,
+                        enabled: server.telemetry?.enabled ?? true,
+                        anonymize: server.telemetry?.anonymize ?? telemetry.anonymize,
+                        crashReporting: server.telemetry?.crashReporting ?? telemetry.crashReporting,
+                        usageCount: (server.telemetry?.usageCount ?? 0) + 1,
+                        crashCount: server.telemetry?.crashCount ?? 0,
+                        lastCrashAt: server.telemetry?.lastCrashAt
+                    }
+                }
+                : server
+        );
+        await settingsService.saveSettings({
+            mcpTelemetry: { ...telemetry, events: nextEvents },
+            mcpUserServers: servers
+        });
+        return {};
+    }, z.tuple([TelemetryEventSchema])));
+
+    ipcMain.handle('mcp:marketplace:telemetry:crash', createMarketplaceHandler('mcp:marketplace:telemetry:crash', async (
+        payload: z.infer<typeof CrashPayloadSchema>
+    ) => {
+        const settings = settingsService.getSettings();
+        const telemetry = settings.mcpTelemetry ?? { enabled: true, anonymize: true, crashReporting: true, events: [], crashes: [] };
+        if (!telemetry.enabled || !telemetry.crashReporting) {
+            return {};
+        }
+        const crashRecord = {
+            serverId: payload.serverId,
+            timestamp: Date.now(),
+            reason: payload.reason,
+            stack: telemetry.anonymize ? undefined : payload.stack,
+            metadata: telemetry.anonymize ? undefined : payload.metadata
+        };
+        const nextCrashes = [...(telemetry.crashes ?? []), crashRecord].slice(-500);
+        const servers = (settings.mcpUserServers ?? []).map(server =>
+            server.id === payload.serverId
+                ? {
+                    ...server,
+                    telemetry: {
+                        ...server.telemetry,
+                        enabled: server.telemetry?.enabled ?? true,
+                        anonymize: server.telemetry?.anonymize ?? telemetry.anonymize,
+                        crashReporting: server.telemetry?.crashReporting ?? telemetry.crashReporting,
+                        usageCount: server.telemetry?.usageCount ?? 0,
+                        crashCount: (server.telemetry?.crashCount ?? 0) + 1,
+                        lastCrashAt: Date.now()
+                    }
+                }
+                : server
+        );
+        await settingsService.saveSettings({
+            mcpTelemetry: { ...telemetry, crashes: nextCrashes },
+            mcpUserServers: servers
+        });
+        return {};
+    }, z.tuple([CrashPayloadSchema])));
+
+    ipcMain.handle('mcp:marketplace:telemetry:summary', createMarketplaceHandler('mcp:marketplace:telemetry:summary', async () => {
+        const settings = settingsService.getSettings();
+        const telemetry = settings.mcpTelemetry ?? { enabled: true, anonymize: true, crashReporting: true, events: [], crashes: [] };
+        return {
+            telemetry: {
+                enabled: telemetry.enabled,
+                anonymize: telemetry.anonymize,
+                crashReporting: telemetry.crashReporting,
+                eventCount: telemetry.events?.length ?? 0,
+                crashCount: telemetry.crashes?.length ?? 0
+            }
+        };
+    }, EmptyArgsSchema));
 
     ipcMain.handle('mcp:marketplace:debug', createMarketplaceHandler('mcp:marketplace:debug', async () => {
         const pluginMetrics = mcpPluginService.getDispatchMetrics();

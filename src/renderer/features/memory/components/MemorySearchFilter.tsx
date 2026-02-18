@@ -81,47 +81,74 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
         onSearch(event);
     }, [onSearch, rememberSearch]);
 
-    return (
-        <div className="flex gap-4 items-center">
-            <form onSubmit={handleSubmit} className="flex gap-2 items-center flex-1">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
-                    <Input
-                        list="memory-search-suggestions"
-                        placeholder={t('memory.searchPlaceholder')}
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        onBlur={rememberSearch}
-                        className="pl-10 bg-muted/30 border-white/5"
-                    />
-                    <datalist id="memory-search-suggestions">
-                        {searchHistory.map(query => (
-                            <option key={query} value={query} />
-                        ))}
-                    </datalist>
-                </div>
-                <Button type="submit" variant="secondary">{t('common.search')}</Button>
-            </form>
+    const clearSearchHistory = useCallback(() => {
+        setSearchHistory([]);
+    }, []);
 
-            <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v as MemoryCategory | 'all')}>
-                    <SelectTrigger className="w-[180px] bg-muted/30 border-white/5">
-                        <SelectValue placeholder={t('memory.allCategories')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">{t('memory.allCategories')}</SelectItem>
-                        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-                            <SelectItem key={key} value={key}>
-                                <span className="flex items-center gap-2">
-                                    <config.icon className="w-4 h-4" />
-                                    {t(config.labelKey)}
-                                </span>
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex gap-4 items-center">
+                <form onSubmit={handleSubmit} className="flex gap-2 items-center flex-1">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                        <Input
+                            list="memory-search-suggestions"
+                            placeholder={t('memory.searchPlaceholder')}
+                            value={searchQuery}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            onBlur={rememberSearch}
+                            className="pl-10 bg-muted/30 border-white/5"
+                        />
+                        <datalist id="memory-search-suggestions">
+                            {searchHistory.map(query => (
+                                <option key={query} value={query} />
+                            ))}
+                        </datalist>
+                    </div>
+                    <Button type="submit" variant="secondary">{t('common.search')}</Button>
+                </form>
+
+                <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v as MemoryCategory | 'all')}>
+                        <SelectTrigger className="w-[180px] bg-muted/30 border-white/5">
+                            <SelectValue placeholder={t('memory.allCategories')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{t('memory.allCategories')}</SelectItem>
+                            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
+                                <SelectItem key={key} value={key}>
+                                    <span className="flex items-center gap-2">
+                                        <config.icon className="w-4 h-4" />
+                                        {t(config.labelKey)}
+                                    </span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
+
+            {searchHistory.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{t('memory.searchHistory') || 'Recent'}:</span>
+                    <div className="flex flex-wrap gap-1">
+                        {searchHistory.map(query => (
+                            <button
+                                key={query}
+                                type="button"
+                                className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+                                onClick={() => onSearchChange(query)}
+                            >
+                                {query}
+                            </button>
+                        ))}
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={clearSearchHistory}>
+                        {t('common.clear') || 'Clear'}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

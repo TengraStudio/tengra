@@ -30,7 +30,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center max-w-2xl mx-auto space-y-8">
-            <div className="w-20 h-20 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary shadow-xl shadow-primary/5 animate-pulse">
+            <div className="w-20 h-20 flex items-center justify-center">
                 <img src={logo} alt="logo" />
             </div>
             <div className="space-y-3 shadow-sm">

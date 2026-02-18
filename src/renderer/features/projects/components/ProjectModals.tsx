@@ -5,6 +5,8 @@ import { AnimatePresence } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 
+import { isValidProjectDescription, isValidProjectTitle } from './modals/modalValidation';
+
 interface ProjectModalsProps {
     editingProject: Project | null;
     setEditingProject: (p: Project | null) => void;
@@ -26,11 +28,12 @@ interface ProjectModalsProps {
                   description: string;
               })
     ) => void;
-    handleUpdateProject: () => Promise<void>;
+    handleUpdateProject: () => Promise<boolean>;
     handleDeleteProject: (deleteFiles: boolean) => Promise<void>;
     handleArchiveProject: () => Promise<void>;
     handleBulkDelete: (deleteFiles: boolean) => Promise<void>;
     handleBulkArchive: (isArchived: boolean) => Promise<void>;
+    bulkArchiveMode?: 'archive' | 'restore';
     t: (key: string) => string;
 }
 
@@ -46,11 +49,38 @@ const EditProjectModal: React.FC<{
                   description: string;
               })
     ) => void;
-    onSubmit: () => Promise<void>;
+    onSubmit: () => Promise<boolean>;
     t: (key: string) => string;
 }> = ({ project, onClose, form, setForm, onSubmit, t }) => {
-    const hasValidTitle = form.title.trim().length > 0;
-    const hasValidDescription = form.description.length === 0 || form.description.trim().length > 0;
+    const hasValidTitle = isValidProjectTitle(form.title);
+    const hasValidDescription = isValidProjectDescription(form.description);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const rollbackRef = React.useRef(form);
+
+    React.useEffect(() => {
+        if (project) {
+            rollbackRef.current = {
+                title: project.title,
+                description: project.description,
+            };
+            setIsSaving(false);
+        }
+    }, [project]);
+
+    const handleSubmit = async () => {
+        if (!hasValidTitle || isSaving) {
+            return;
+        }
+        const optimisticSnapshot = { ...form };
+        setIsSaving(true);
+        const success = await onSubmit();
+        if (!success) {
+            setForm(rollbackRef.current);
+        } else {
+            rollbackRef.current = optimisticSnapshot;
+        }
+        setIsSaving(false);
+    };
 
     return (
         <AnimatePresence>
@@ -108,9 +138,9 @@ const EditProjectModal: React.FC<{
                             </button>
                             <button
                                 onClick={() => {
-                                    void onSubmit();
+                                    void handleSubmit();
                                 }}
-                                disabled={!hasValidTitle}
+                                disabled={!hasValidTitle || isSaving}
                                 className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                             >
                                 {t('common.save')}
@@ -190,10 +220,15 @@ const ArchiveProjectModal: React.FC<{
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')}{' '}
+                            {project.status === 'archived'
+                                ? t('projects.restoreConfirmation') || 'Restore'
+                                : t('projects.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">{project.title}</span>?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
-                                {t('projects.archiveWarning')}
+                                {project.status === 'archived'
+                                    ? t('projects.restoreWarning') ||
+                                      'This will move the project back to active.'
+                                    : t('projects.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -224,23 +259,29 @@ const ArchiveProjectModal: React.FC<{
 const BulkArchiveModal: React.FC<{
     isOpen: boolean;
     count: number;
+    mode: 'archive' | 'restore';
     onClose: () => void;
     onSubmit: () => Promise<void>;
     t: (key: string) => string;
-}> = ({ isOpen, count, onClose, onSubmit, t }) => (
+}> = ({ isOpen, count, mode, onClose, onSubmit, t }) => (
     <AnimatePresence>
         {isOpen && (
             <Modal isOpen={isOpen} onClose={onClose} title={t('projects.bulkArchive')}>
                 <div className="space-y-4 pt-2">
                     <div className="p-3 rounded-lg bg-success/10 border border-success/20">
                         <p className="text-sm text-success/90 leading-relaxed font-light">
-                            {t('projects.archiveConfirmation')}{' '}
+                            {mode === 'restore'
+                                ? t('projects.restoreConfirmation') || 'Restore'
+                                : t('projects.archiveConfirmation')}{' '}
                             <span className="font-semibold text-foreground">
                                 {count} {t('sidebar.projects').toLowerCase()}
                             </span>
                             ?
                             <span className="block mt-1 text-xs text-success font-normal italic opacity-80">
-                                {t('projects.archiveWarning')}
+                                {mode === 'restore'
+                                    ? t('projects.restoreWarning') ||
+                                      'This will move selected projects back to active.'
+                                    : t('projects.archiveWarning')}
                             </span>
                         </p>
                     </div>
@@ -257,7 +298,9 @@ const BulkArchiveModal: React.FC<{
                             }}
                             className="px-6 py-2 rounded-lg text-sm font-medium bg-success text-foreground hover:bg-success active:scale-95 transition-all shadow-lg shadow-emerald-900/20"
                         >
-                            {t('projects.bulkArchive')}
+                            {mode === 'restore'
+                                ? t('projects.bulkRestore') || 'Restore Selected'
+                                : t('projects.bulkArchive')}
                         </button>
                     </div>
                 </div>
@@ -383,6 +426,7 @@ export const ProjectModals: React.FC<ProjectModalsProps> = ({
     handleArchiveProject,
     handleBulkDelete,
     handleBulkArchive,
+    bulkArchiveMode = 'archive',
     t,
 }) => (
     <>
@@ -409,8 +453,9 @@ export const ProjectModals: React.FC<ProjectModalsProps> = ({
         <BulkArchiveModal
             isOpen={isBulkArchiving}
             count={selectedCount}
+            mode={bulkArchiveMode}
             onClose={() => setIsBulkArchiving(false)}
-            onSubmit={() => handleBulkArchive(true)}
+            onSubmit={() => handleBulkArchive(bulkArchiveMode !== 'restore')}
             t={t}
         />
         <BulkDeleteModal

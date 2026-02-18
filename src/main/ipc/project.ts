@@ -1,4 +1,5 @@
 import { appLogger } from '@main/logging/logger';
+import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { LogoService } from '@main/services/external/logo.service';
 import { CodeIntelligenceService } from '@main/services/project/code-intelligence.service';
@@ -20,6 +21,8 @@ export interface ProjectIpcDeps {
     jobSchedulerService: JobSchedulerService;
     /** Service for database access and project lookups. */
     databaseService: DatabaseService;
+    /** Optional service for audit logging sensitive/destructive project operations. */
+    auditLogService?: AuditLogService;
 }
 
 const PathSchema = z.string().min(1);
@@ -49,7 +52,26 @@ export const registerProjectIpc = (
         codeIntelligenceService,
         jobSchedulerService,
         databaseService,
+        auditLogService,
     } = deps;
+
+    const logDestructiveAction = async (
+        action: string,
+        rootPath: string,
+        success: boolean,
+        details?: Record<string, string | number | boolean>,
+        error?: string
+    ) => {
+        if (!auditLogService) {
+            return;
+        }
+        const context = projectService.getAuditContext(rootPath);
+        await auditLogService.logFileSystemOperation(action, success, {
+            ...context,
+            ...(details ?? {}),
+            ...(error ? { error } : {}),
+        });
+    };
 
     ipcMain.handle(
         'project:analyze',
@@ -207,7 +229,17 @@ export const registerProjectIpc = (
         createValidatedIpcHandler(
             'project:applyLogo',
             async (_event, projectPath: string, tempLogoPath: string) => {
-                return await logoService.applyLogo(projectPath, tempLogoPath);
+                try {
+                    const result = await logoService.applyLogo(projectPath, tempLogoPath);
+                    await logDestructiveAction('project.apply-logo', projectPath, true, {
+                        hasTempLogoPath: Boolean(tempLogoPath),
+                    });
+                    return result;
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Unknown error';
+                    await logDestructiveAction('project.apply-logo', projectPath, false, undefined, message);
+                    throw error;
+                }
             },
             {
                 argsSchema: z.tuple([PathSchema, PathSchema]),
@@ -287,8 +319,19 @@ export const registerProjectIpc = (
         createValidatedIpcHandler(
             'project:saveEnv',
             async (_event, rootPath: string, vars: Record<string, string>) => {
-                await projectService.saveEnvVars(rootPath, vars);
-                return { success: true };
+                try {
+                    await projectService.saveEnvVars(rootPath, vars);
+                    await logDestructiveAction('project.save-env', rootPath, true, {
+                        variableCount: Object.keys(vars).length,
+                    });
+                    return { success: true };
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Unknown error';
+                    await logDestructiveAction('project.save-env', rootPath, false, {
+                        variableCount: Object.keys(vars).length,
+                    }, message);
+                    throw error;
+                }
             },
             {
                 argsSchema: z.tuple([PathSchema, EnvVarsSchema]),

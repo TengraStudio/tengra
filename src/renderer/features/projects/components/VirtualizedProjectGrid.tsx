@@ -4,8 +4,10 @@
  */
 
 import { Project } from '@shared/types/project';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+
+import { appLogger } from '@/utils/renderer-logger';
 
 import { ProjectCard, ProjectCardSurfaceProvider } from './ProjectCard';
 
@@ -28,6 +30,8 @@ interface VirtualizedProjectGridProps {
     t?: (key: string) => string
 }
 
+const VIRTUALIZATION_THRESHOLD_ROW_MULTIPLIER = 4;
+
 export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
     projects,
     onSelectProject,
@@ -38,6 +42,24 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
     itemHeight = 280,
     t = (key: string) => key
 }) => {
+    const lastThresholdStateRef = useRef<boolean | null>(null);
+
+    useEffect(() => {
+        const virtualizationThreshold = itemsPerRow * VIRTUALIZATION_THRESHOLD_ROW_MULTIPLIER;
+        const isThresholdReached = projects.length >= virtualizationThreshold;
+        if (lastThresholdStateRef.current === isThresholdReached) {
+            return;
+        }
+
+        lastThresholdStateRef.current = isThresholdReached;
+        appLogger.debug('VirtualizedProjectGrid', 'Virtualization threshold state changed', {
+            projectCount: projects.length,
+            virtualizationThreshold,
+            itemsPerRow,
+            isThresholdReached
+        });
+    }, [itemsPerRow, projects.length]);
+
     // Create rows of projects for virtualization
     const projectRows = useMemo(() => {
         const rows = [];

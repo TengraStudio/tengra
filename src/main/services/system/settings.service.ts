@@ -95,6 +95,17 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpActionPermissions: {},
     mcpPermissionRequests: [],
     mcpServerVersionHistory: {},
+    mcpTrustedPublishers: ['Model Context Protocol', 'Tandem', 'Brave', 'Notion', 'MongoDB'],
+    mcpRevokedSignatures: [],
+    mcpSecurityScans: {},
+    mcpExtensionReviews: {},
+    mcpTelemetry: {
+        enabled: true,
+        anonymize: true,
+        crashReporting: true,
+        events: [],
+        crashes: []
+    },
     security: {
         session: {
             enabled: false,

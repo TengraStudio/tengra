@@ -1,5 +1,4 @@
 import { Language, useLanguage } from '@renderer/i18n';
-import { Globe } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 
 interface LanguageSelectionPromptProps {
@@ -27,16 +26,12 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="glass-card w-full max-w-md p-8 flex flex-col items-center text-center animate-spring-in">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                    <Globe className="w-8 h-8 text-primary" />
-                </div>
-
+            <div className="bg-background w-full max-w-md p-8 flex flex-col items-center text-center animate-spring-in">
                 <h2 className="text-2xl font-bold mb-2">
-                    {t('onboarding.language.title', { code: 'en' }) || 'Choose your language'}
+                    {t('onboarding.language.title', { code: 'en' })}
                 </h2>
                 <p className="text-muted-foreground mb-8">
-                    {t('onboarding.language.description', { code: 'en' }) || 'Select your preferred language to get started with Tandem.'}
+                    {t('onboarding.language.description', { code: 'en' })}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 w-full capitalize">
@@ -46,7 +41,7 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
                             onClick={() => handleSelect(lang.code)}
                             className={`flex items-center justify-start px-4 h-12 rounded-lg border transition-all ${language === lang.code
                                 ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted/30 hover:bg-muted text-foreground border-border/40'
+                                : 'bg-background/30 hover:bg-primary/50 text-foreground border-border/40'
                                 } ${lang.isRTL ? 'font-arabic text-right' : ''}`}
                         >
                             <span className="flex-1 text-left">{lang.name}</span>
@@ -57,7 +52,7 @@ export function LanguageSelectionPrompt({ onClose }: LanguageSelectionPromptProp
                 <div className="mt-8 pt-6 border-t border-border/50 w-full">
                     <button
                         onClick={onClose}
-                        className="w-full h-11 px-4 rounded-lg bg-muted/50 hover:bg-muted text-foreground transition-all font-medium border border-border/40"
+                        className="w-full h-11 px-4 rounded-lg bg-primary/50 hover:bg-primary text-foreground transition-all font-medium border border-border/40"
                     >
                         {t('common.continue') || 'Continue with detected language'}
                     </button>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface AddConnectionModalProps {
     isOpen: boolean
@@ -31,6 +31,37 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     isConnecting,
     onConnect
 }) => {
+    const [isTesting, setIsTesting] = useState(false);
+    const [testMessage, setTestMessage] = useState('');
+
+    const handleTestProfile = async () => {
+        setIsTesting(true);
+        setTestMessage('');
+        try {
+            const result = await window.electron.ssh.testProfile({
+                id: 'test-profile',
+                name: newConnection.name ?? 'Test Profile',
+                host: newConnection.host,
+                port: newConnection.port,
+                username: newConnection.username,
+                password: newConnection.password,
+                privateKey: newConnection.privateKey,
+                authType: newConnection.privateKey ? 'key' : 'password',
+                status: 'connecting'
+            });
+            if (result.success) {
+                setTestMessage(t('ssh.profileTestSuccess', { latency: result.latencyMs }));
+            } else {
+                setTestMessage(t('ssh.profileTestFailed', { error: result.error ?? 'Unknown error' }));
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            setTestMessage(t('ssh.profileTestFailed', { error: message }));
+        } finally {
+            setIsTesting(false);
+        }
+    };
+
     if (!isOpen) { return null; }
 
     return (
@@ -104,10 +135,22 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     <button className="secondary-btn" onClick={onClose} disabled={isConnecting}>
                         {t('common.cancel')}
                     </button>
+                    <button
+                        className="secondary-btn"
+                        onClick={() => { void handleTestProfile(); }}
+                        disabled={isConnecting || isTesting || !newConnection.host}
+                    >
+                        {isTesting ? t('ssh.testingProfile') : t('ssh.testProfile')}
+                    </button>
                     <button className="primary-btn" onClick={onConnect} disabled={isConnecting || !newConnection.host}>
                         {isConnecting ? t('ssh.connecting') : t('ssh.connect')}
                     </button>
                 </div>
+                {testMessage && (
+                    <div className="text-xs mt-2 text-muted-foreground">
+                        {testMessage}
+                    </div>
+                )}
             </div>
         </div>
     );

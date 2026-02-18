@@ -20,6 +20,7 @@ vi.mock('fs', async (importOriginal) => {
             ...actual.promises,
             access: vi.fn().mockResolvedValue(undefined),
             mkdir: vi.fn().mockResolvedValue(undefined),
+            writeFile: vi.fn().mockResolvedValue(undefined),
             unlink: vi.fn().mockResolvedValue(undefined),
             rename: vi.fn().mockResolvedValue(undefined),
         }

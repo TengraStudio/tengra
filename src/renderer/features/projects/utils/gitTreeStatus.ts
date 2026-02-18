@@ -54,7 +54,7 @@ export async function applyGitTreeStatus(
 
     let response: GitTreeStatusResponse;
     try {
-        response = await window.electron.invoke<GitTreeStatusResponse>('git:getTreeStatus', cwd, directoryPath);
+        response = await window.electron.ipcRenderer.invoke('git:getTreeStatus', cwd, directoryPath) as GitTreeStatusResponse;
     } catch {
         return nodes;
     }

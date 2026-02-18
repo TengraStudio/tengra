@@ -3,6 +3,7 @@ import { Activity, Database, Download, Globe, RefreshCw } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
+import { Switch } from '@/components/ui/switch';
 import {
     terminalGetBackendsResponseSchema,
     TerminalIpcContract} from '@/features/terminal/utils/terminal-ipc';
@@ -43,10 +44,9 @@ const ToggleSwitch: React.FC<{
                 )}
             </div>
         )}
-        <label className="relative inline-flex items-center cursor-pointer scale-110 ml-auto">
-            <input type="checkbox" checked={enabled} onChange={onToggle} className="sr-only peer" />
-            <div className="w-12 h-6.5 bg-muted/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:shadow-lg after:transition-all peer-checked:bg-primary border border-border/20"></div>
-        </label>
+        <div className="ml-auto">
+            <Switch checked={enabled} onCheckedChange={() => onToggle()} />
+        </div>
     </div>
 );
 

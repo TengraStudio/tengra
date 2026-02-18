@@ -1,6 +1,6 @@
 import { useGitData } from '@renderer/features/projects/hooks/useGitData';
 import { Project } from '@shared/types/project';
-import { FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileCode, Minus, Plus, RefreshCw } from 'lucide-react';
 import React, { useEffect } from 'react';
 
 import { GitAdvancedPanel } from './git/GitAdvancedPanel';
@@ -31,6 +31,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
         isPushing,
         isPulling,
         isCheckingOut,
+        lastActionError,
         fetchGitData,
         handleStageFile,
         handleUnstageFile,
@@ -41,6 +42,7 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
         selectedCommit,
         commitDiff,
         loadingDiff,
+        sectionStates,
         handleCommitSelect
     } = useGitData(project);
 
@@ -58,6 +60,14 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
         return <FileCode className="w-3.5 h-3.5 text-muted-foreground" />;
     };
 
+    const sectionDescriptors: Array<{ key: keyof typeof sectionStates; label: string }> = [
+        { key: 'status', label: t('projectDashboard.gitSectionStatus') },
+        { key: 'actions', label: t('projectDashboard.gitSectionActions') },
+        { key: 'remotes', label: t('projectDashboard.gitSectionRemotes') },
+        { key: 'commits', label: t('projectDashboard.gitSectionCommits') },
+        { key: 'changes', label: t('projectDashboard.gitSectionChanges') },
+    ];
+
     return (
         <div className="h-full flex flex-col gap-6 overflow-y-auto px-6 py-6">
             {!gitData.isRepository ? (
@@ -66,15 +76,54 @@ export const ProjectGitTab: React.FC<ProjectGitTabProps> = ({ project, t, active
                         <div className="text-muted-foreground text-sm">{t('projectDashboard.notAGitRepo')}</div>
                     </div>
                 </div>
-            ) : gitData.loading ? (
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                        <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto" />
-                        <div className="text-muted-foreground text-sm">{t('projectDashboard.loadingGit')}</div>
-                    </div>
-                </div>
             ) : (
                 <>
+                    {lastActionError && lastActionError.toLowerCase().includes('lock') && (
+                        <div className="rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                            {lastActionError}
+                        </div>
+                    )}
+                    {gitData.loading && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 rounded-xl px-3 py-2">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+                            {t('projectDashboard.loadingGit')}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        {sectionDescriptors.map(section => {
+                            const state = sectionStates[section.key];
+                            return (
+                                <div key={section.key} className="bg-card/60 border border-border/50 rounded-xl px-3 py-2 space-y-1">
+                                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{section.label}</div>
+                                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                                        {state.loading ? (
+                                            <>
+                                                <RefreshCw className="w-3 h-3 animate-spin text-warning" />
+                                                <span className="text-warning">{t('projectDashboard.gitSectionLoading')}</span>
+                                            </>
+                                        ) : state.error ? (
+                                            <>
+                                                <AlertTriangle className="w-3 h-3 text-destructive" />
+                                                <span className="text-destructive">{t('projectDashboard.gitSectionError')}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="w-3 h-3 text-success" />
+                                                <span className="text-success">{t('projectDashboard.gitSectionReady')}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    {state.error && (
+                                        <div className="text-[10px] text-muted-foreground truncate" title={state.error}>
+                                            {state.error}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
                     <GitStatusHeader
                         gitData={gitData}
                         branches={branches}

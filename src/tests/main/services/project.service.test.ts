@@ -123,4 +123,41 @@ describe('ProjectService', () => {
         expect(result.files).toEqual([]);
         expect(result.stats.fileCount).toBe(0);
     });
+
+    it('applies incremental invalidation from changed path set', async () => {
+        const mockDirPath = '/mock/project';
+
+        vi.mocked(fs.readdir)
+            .mockResolvedValueOnce([
+                mockDirent('src', true),
+                mockDirent('package.json', false)
+            ] as never)
+            .mockResolvedValueOnce([
+                mockDirent('index.ts', false)
+            ] as never);
+
+        vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({
+            dependencies: { react: '18.2.0' },
+            devDependencies: {}
+        }));
+
+        vi.mocked(fs.stat).mockResolvedValue({
+            size: 1000,
+            mtimeMs: Date.now(),
+            isDirectory: () => false,
+            isFile: () => true
+        } as unknown as import('fs').Stats);
+
+        const initial = await projectService.analyzeProject(mockDirPath);
+        expect(initial.stats.fileCount).toBeGreaterThan(0);
+
+        const trackChangedPath = (
+            projectService as unknown as { trackChangedPath: (rootPath: string, changedPath: string) => void }
+        ).trackChangedPath.bind(projectService);
+        trackChangedPath(mockDirPath, '/mock/project/src/new-file.ts');
+        const updated = await projectService.analyzeProject(mockDirPath);
+
+        expect(updated.stats.fileCount).toBe(initial.stats.fileCount + 1);
+        expect(updated.files.some(file => file.includes('new-file.ts'))).toBe(true);
+    });
 });

@@ -19,6 +19,110 @@ const loadMonaco = async () => {
     return { Editor, monaco };
 };
 
+function rgbChannelToHex(channel: number): string {
+    return channel.toString(16).padStart(2, '0');
+}
+
+function toHexColorFromComputedColor(colorValue: string): string | null {
+    const rgbMatch = colorValue.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (!rgbMatch) {
+        return null;
+    }
+    const red = Number(rgbMatch[1]);
+    const green = Number(rgbMatch[2]);
+    const blue = Number(rgbMatch[3]);
+    return `#${rgbChannelToHex(red)}${rgbChannelToHex(green)}${rgbChannelToHex(blue)}`;
+}
+
+function readCssVariableAsHex(name: string, fallbackVariableName?: string): string {
+    const styles = getComputedStyle(document.documentElement);
+    const primaryToken = styles.getPropertyValue(name).trim();
+    const fallbackToken = fallbackVariableName ? styles.getPropertyValue(fallbackVariableName).trim() : '';
+    const cssToken = primaryToken || fallbackToken;
+
+    if (!cssToken) {
+        const bodyColor = getComputedStyle(document.body).color;
+        const rootColor = getComputedStyle(document.documentElement).color;
+        const fallback =
+            toHexColorFromComputedColor(bodyColor) ??
+            toHexColorFromComputedColor(rootColor) ??
+            toHexColorFromComputedColor(getComputedStyle(document.body).backgroundColor);
+        if (!fallback) {
+            throw new Error(`Unable to resolve Monaco color token: ${name}`);
+        }
+        return fallback;
+    }
+
+    const probe = document.createElement('span');
+    probe.style.color = `hsl(${cssToken})`;
+    probe.style.position = 'fixed';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    document.body.appendChild(probe);
+    const resolvedColor = getComputedStyle(probe).color;
+    document.body.removeChild(probe);
+    const resolved =
+        toHexColorFromComputedColor(resolvedColor) ??
+        toHexColorFromComputedColor(getComputedStyle(document.body).color);
+    if (!resolved) {
+        throw new Error(`Unable to resolve Monaco color token: ${name}`);
+    }
+    return resolved;
+}
+
+function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
+    const background = readCssVariableAsHex('--editor-background', '--background');
+    const foreground = readCssVariableAsHex('--editor-foreground', '--foreground');
+    const gutterBackground = readCssVariableAsHex('--editor-gutter-background', '--background');
+    const widgetBackground = readCssVariableAsHex('--editor-widget-background', '--card');
+    const widgetBorder = readCssVariableAsHex('--editor-widget-border', '--border');
+    const lineNumber = readCssVariableAsHex('--editor-line-number', '--muted-foreground');
+    const lineNumberActive = readCssVariableAsHex('--editor-line-number-active', '--foreground');
+    const cursor = readCssVariableAsHex('--editor-cursor', '--primary');
+    const selection = readCssVariableAsHex('--editor-selection', '--primary');
+    const selectionInactive = readCssVariableAsHex('--editor-selection-inactive', '--accent');
+    const lineHighlight = readCssVariableAsHex('--editor-line-highlight', '--card');
+    const indentGuide = readCssVariableAsHex('--editor-indent-guide', '--border');
+    const indentGuideActive = readCssVariableAsHex('--editor-indent-guide-active', '--ring');
+    const tokenComment = readCssVariableAsHex('--editor-token-comment', '--code-comment');
+    const tokenKeyword = readCssVariableAsHex('--editor-token-keyword', '--code-keyword');
+    const tokenString = readCssVariableAsHex('--editor-token-string', '--code-string');
+    const tokenNumber = readCssVariableAsHex('--editor-token-number', '--code-number');
+    const tokenType = readCssVariableAsHex('--editor-token-type', '--code-function');
+    const tokenInvalid = readCssVariableAsHex('--editor-token-invalid', '--destructive');
+
+    const themeName = isLight ? 'tandem-light' : 'tandem-dark';
+    monaco.editor.defineTheme(themeName, {
+        base: isLight ? 'vs' : 'vs-dark',
+        inherit: true,
+        rules: [
+            { token: 'comment', foreground: tokenComment.replace('#', ''), fontStyle: 'italic' },
+            { token: 'keyword', foreground: tokenKeyword.replace('#', '') },
+            { token: 'string', foreground: tokenString.replace('#', '') },
+            { token: 'number', foreground: tokenNumber.replace('#', '') },
+            { token: 'type', foreground: tokenType.replace('#', '') },
+            { token: 'invalid', foreground: tokenInvalid.replace('#', '') },
+        ],
+        colors: {
+            'editor.background': background,
+            'editor.foreground': foreground,
+            'editorLineNumber.foreground': lineNumber,
+            'editorLineNumber.activeForeground': lineNumberActive,
+            'editorCursor.foreground': cursor,
+            'editor.selectionBackground': `${selection}33`,
+            'editor.inactiveSelectionBackground': `${selectionInactive}1f`,
+            'editor.lineHighlightBackground': `${lineHighlight}80`,
+            'editorIndentGuide.background1': `${indentGuide}80`,
+            'editorIndentGuide.activeBackground1': indentGuideActive,
+            'editorWidget.background': widgetBackground,
+            'editorWidget.border': widgetBorder,
+            'editorGutter.background': gutterBackground,
+        },
+    });
+    monaco.editor.setTheme(themeName);
+    return themeName;
+}
+
 export interface CodeEditorProps {
     value?: string;
     language?: string;
@@ -270,7 +374,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     initialLine,
     appLanguage,
 }) => {
-    const { isLight } = useTheme();
+    const { isLight, theme } = useTheme();
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
@@ -282,6 +386,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     useEditorInitialLine(editorRef, initialLine);
 
     const handleEditorDidMount = useEditorLifecycle(editorRef, monacoRef, updateDecorations);
+
+    const monacoTheme = useMemo(() => {
+        if (!monacoComponents?.monaco) {
+            return isLight ? 'vs' : 'vs-dark';
+        }
+        return applyMonacoTheme(monacoComponents.monaco, isLight);
+    }, [monacoComponents, isLight, theme]);
 
     const editorOptions = useMemo(
         (): editor.IStandaloneEditorConstructionOptions => ({
@@ -317,7 +428,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             normalizedLanguage={normalizedLanguage}
             value={value ?? ''}
             onChange={onChange}
-            theme={isLight ? 'light' : 'vs-dark'}
+            theme={monacoTheme}
             onMount={(e: MonacoEditorInstance, m: Monaco) => {
                 void handleEditorDidMount(e, m);
             }}

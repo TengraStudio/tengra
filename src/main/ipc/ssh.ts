@@ -53,6 +53,9 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     registerCommandHandlers(sshService, rateLimitService, send, secureHandle);
     registerFileSystemHandlers(sshService, send, secureHandle);
     registerSystemHandlers(sshService, secureHandle);
+    registerTunnelHandlers(sshService, secureHandle);
+    registerAdvancedSshHandlers(sshService, secureHandle);
+    registerKeyManagementHandlers(sshService, secureHandle);
 
     // Return dispose function
     return () => {
@@ -308,4 +311,212 @@ function registerSystemHandlers(
             return getErrorMessage(error as Error);
         }
     });
+}
+
+function registerTunnelHandlers(
+    sshService: SSHService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle(
+        'ssh:createTunnel',
+        async (
+            _event,
+            payload: {
+                connectionId: string;
+                type: 'local' | 'remote' | 'dynamic';
+                localHost: string;
+                localPort: number;
+                remoteHost?: string;
+                remotePort?: number;
+            }
+        ) => {
+            if (payload.type === 'local') {
+                return sshService.createLocalForward(
+                    payload.connectionId,
+                    payload.localHost,
+                    payload.localPort,
+                    payload.remoteHost ?? '127.0.0.1',
+                    payload.remotePort ?? 0
+                );
+            }
+            if (payload.type === 'remote') {
+                return sshService.createRemoteForward(
+                    payload.connectionId,
+                    payload.remoteHost ?? '127.0.0.1',
+                    payload.remotePort ?? 0,
+                    payload.localHost,
+                    payload.localPort
+                );
+            }
+            return sshService.createDynamicForward(
+                payload.connectionId,
+                payload.localHost,
+                payload.localPort
+            );
+        }
+    );
+
+    secureHandle('ssh:listTunnels', async (_event, connectionId?: string) =>
+        sshService.getPortForwards(connectionId)
+    );
+    secureHandle('ssh:closeTunnel', async (_event, forwardId: string) =>
+        sshService.closePortForward(forwardId)
+    );
+
+    secureHandle(
+        'ssh:saveTunnelPreset',
+        async (
+            _event,
+            payload: {
+                name: string;
+                type: 'local' | 'remote' | 'dynamic';
+                localHost: string;
+                localPort: number;
+                remoteHost: string;
+                remotePort: number;
+            }
+        ) => sshService.saveTunnelPreset(payload)
+    );
+    secureHandle('ssh:listTunnelPresets', async () => sshService.listTunnelPresets());
+    secureHandle('ssh:deleteTunnelPreset', async (_event, id: string) => sshService.deleteTunnelPreset(id));
+}
+
+function registerAdvancedSshHandlers(
+    sshService: SSHService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle(
+        'ssh:searchRemoteFiles',
+        async (
+            _event,
+            payload: {
+                connectionId: string;
+                query: string;
+                options?: { path?: string; contentSearch?: boolean; limit?: number };
+            }
+        ) => sshService.searchRemoteFiles(payload.connectionId, payload.query, payload.options)
+    );
+    secureHandle('ssh:getSearchHistory', async (_event, connectionId?: string) =>
+        sshService.getSearchHistory(connectionId)
+    );
+    secureHandle('ssh:exportSearchHistory', async () => sshService.exportSearchHistory());
+    secureHandle('ssh:reconnect', async (_event, connectionId: string, retries?: number) =>
+        sshService.reconnectConnection(connectionId, retries)
+    );
+    secureHandle('ssh:acquireConnection', async (_event, connectionId: string) =>
+        sshService.acquireConnection(connectionId)
+    );
+    secureHandle('ssh:releaseConnection', async (_event, connectionId: string) =>
+        sshService.releaseConnection(connectionId)
+    );
+    secureHandle('ssh:getConnectionPoolStats', async () => sshService.getConnectionPoolStats());
+    secureHandle('ssh:enqueueTransfer', async (_event, task: unknown) =>
+        sshService.enqueueTransfer(task as never)
+    );
+    secureHandle('ssh:getTransferQueue', async () => sshService.getTransferQueue());
+    secureHandle('ssh:runTransferBatch', async (_event, tasks: unknown, concurrency?: number) =>
+        sshService.runTransferBatch(tasks as never, concurrency)
+    );
+    secureHandle('ssh:listRemoteContainers', async (_event, connectionId: string) =>
+        sshService.listRemoteContainers(connectionId)
+    );
+    secureHandle(
+        'ssh:runRemoteContainer',
+        async (
+            _event,
+            payload: {
+                connectionId: string;
+                image: string;
+                name: string;
+                ports?: Array<{ hostPort: number; containerPort: number }>;
+            }
+        ) => sshService.runRemoteContainer(payload.connectionId, payload.image, payload.name, payload.ports)
+    );
+    secureHandle('ssh:stopRemoteContainer', async (_event, connectionId: string, containerId: string) =>
+        sshService.stopRemoteContainer(connectionId, containerId)
+    );
+    secureHandle('ssh:saveProfileTemplate', async (_event, template: unknown) =>
+        sshService.saveProfileTemplate(template as never)
+    );
+    secureHandle('ssh:listProfileTemplates', async () => sshService.listProfileTemplates());
+    secureHandle('ssh:deleteProfileTemplate', async (_event, id: string) =>
+        sshService.deleteProfileTemplate(id)
+    );
+    secureHandle('ssh:exportProfiles', async (_event, ids?: string[]) => sshService.exportProfiles(ids));
+    secureHandle('ssh:importProfiles', async (_event, payload: string) => sshService.importProfiles(payload));
+    secureHandle('ssh:validateProfile', async (_event, profile: unknown) =>
+        sshService.validateProfile(profile as never)
+    );
+    secureHandle('ssh:testProfile', async (_event, profile: unknown) =>
+        sshService.testProfile(profile as never)
+    );
+    secureHandle('ssh:startSessionRecording', async (_event, connectionId: string) =>
+        sshService.startSessionRecording(connectionId)
+    );
+    secureHandle('ssh:stopSessionRecording', async (_event, connectionId: string) =>
+        sshService.stopSessionRecording(connectionId)
+    );
+    secureHandle('ssh:getSessionRecording', async (_event, connectionId: string) =>
+        sshService.getSessionRecording(connectionId)
+    );
+    secureHandle('ssh:searchSessionRecording', async (_event, connectionId: string, query: string) =>
+        sshService.searchSessionRecording(connectionId, query)
+    );
+    secureHandle('ssh:exportSessionRecording', async (_event, connectionId: string) =>
+        sshService.exportSessionRecording(connectionId)
+    );
+    secureHandle('ssh:listSessionRecordings', async () => sshService.listSessionRecordings());
+}
+
+function registerKeyManagementHandlers(
+    sshService: SSHService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:listManagedKeys', async () => sshService.listManagedKeys());
+
+    secureHandle(
+        'ssh:generateManagedKey',
+        async (
+            _event,
+            payload: { name: string; passphrase?: string }
+        ) => sshService.generateManagedKey(payload.name, payload.passphrase)
+    );
+
+    secureHandle(
+        'ssh:importManagedKey',
+        async (
+            _event,
+            payload: { name: string; privateKey: string; passphrase?: string }
+        ) => sshService.importManagedKey(payload.name, payload.privateKey, payload.passphrase)
+    );
+
+    secureHandle('ssh:deleteManagedKey', async (_event, id: string) => sshService.deleteManagedKey(id));
+
+    secureHandle(
+        'ssh:rotateManagedKey',
+        async (_event, payload: { id: string; nextPassphrase?: string }) =>
+            sshService.rotateManagedKey(payload.id, payload.nextPassphrase)
+    );
+
+    secureHandle('ssh:backupManagedKey', async (_event, id: string) => sshService.backupManagedKey(id));
+    secureHandle('ssh:listKnownHosts', async () => sshService.listKnownHosts());
+    secureHandle(
+        'ssh:addKnownHost',
+        async (_event, payload: { host: string; keyType: string; publicKey: string }) =>
+            sshService.addKnownHost(payload)
+    );
+    secureHandle(
+        'ssh:removeKnownHost',
+        async (_event, payload: { host: string; keyType?: string }) =>
+            sshService.removeKnownHost(payload.host, payload.keyType)
+    );
 }

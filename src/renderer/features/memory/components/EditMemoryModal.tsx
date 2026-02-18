@@ -21,10 +21,12 @@ interface EditMemoryModalProps {
     category: MemoryCategory;
     tags: string;
     importance: number;
+    expiresAt: string;
     onContentChange: (content: string) => void;
     onCategoryChange: (category: MemoryCategory) => void;
     onTagsChange: (tags: string) => void;
     onImportanceChange: (importance: number) => void;
+    onExpiresAtChange: (expiresAt: string) => void;
     onSave: () => void;
     onCancel: () => void;
 }
@@ -34,10 +36,12 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
     category,
     tags,
     importance,
+    expiresAt,
     onContentChange,
     onCategoryChange,
     onTagsChange,
     onImportanceChange,
+    onExpiresAtChange,
     onSave,
     onCancel
 }) => {
@@ -96,14 +100,26 @@ export const EditMemoryModal: React.FC<EditMemoryModalProps> = ({
                         </div>
                     </div>
 
-                    <div>
-                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.tagsLabel')}</label>
-                        <Input
-                            value={tags}
-                            onChange={(e) => onTagsChange(e.target.value)}
-                            placeholder={t('memory.tagsPlaceholderFull')}
-                            className="mt-1 bg-muted/50 border-white/5"
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.tagsLabel')}</label>
+                            <Input
+                                value={tags}
+                                onChange={(e) => onTagsChange(e.target.value)}
+                                placeholder={t('memory.tagsPlaceholderFull')}
+                                className="mt-1 bg-muted/50 border-white/5"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">{t('memory.expirationLabel')}</label>
+                            <Input
+                                type="date"
+                                value={expiresAt}
+                                onChange={(e) => onExpiresAtChange(e.target.value)}
+                                className="mt-1 bg-muted/50 border-white/5"
+                            />
+                        </div>
                     </div>
                 </div>
 

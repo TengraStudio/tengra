@@ -24,6 +24,22 @@ export const WorkspaceEditor: React.FC<WorkspaceEditorProps> = ({
     updateTabContent,
     emptyState
 }) => {
+    const hasUnsavedChanges = Boolean(activeTab && activeTab.content !== activeTab.savedContent);
+
+    React.useEffect(() => {
+        if (!hasUnsavedChanges) {
+            return undefined;
+        }
+        const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', beforeUnloadHandler);
+        return () => {
+            window.removeEventListener('beforeunload', beforeUnloadHandler);
+        };
+    }, [hasUnsavedChanges]);
+
     return (
         <div className="absolute inset-0 overflow-hidden">
             {activeTab?.type === 'image' ? (

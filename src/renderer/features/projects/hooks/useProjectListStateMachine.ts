@@ -8,6 +8,46 @@ import { useCallback, useReducer } from 'react';
 
 import { Project, WorkspaceMount } from '@/types';
 
+export type ProjectListViewMode = 'grid' | 'list';
+export type ProjectListSortBy = 'title' | 'updatedAt' | 'createdAt';
+export type ProjectListSortDirection = 'asc' | 'desc';
+export type ProjectListPreset = 'recent' | 'oldest' | 'name-az' | 'name-za';
+
+export interface ProjectListPreferences {
+    viewMode: ProjectListViewMode;
+    sortBy: ProjectListSortBy;
+    sortDirection: ProjectListSortDirection;
+    listPreset: ProjectListPreset;
+}
+
+export const loadProjectListPreferences = (
+    storageKey: string,
+    fallback: ProjectListPreferences
+): ProjectListPreferences => {
+    try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) {
+            return fallback;
+        }
+        const parsed = JSON.parse(raw) as Partial<ProjectListPreferences>;
+        return {
+            viewMode: parsed.viewMode ?? fallback.viewMode,
+            sortBy: parsed.sortBy ?? fallback.sortBy,
+            sortDirection: parsed.sortDirection ?? fallback.sortDirection,
+            listPreset: parsed.listPreset ?? fallback.listPreset,
+        };
+    } catch {
+        return fallback;
+    }
+};
+
+export const saveProjectListPreferences = (
+    storageKey: string,
+    preferences: ProjectListPreferences
+): void => {
+    localStorage.setItem(storageKey, JSON.stringify(preferences));
+};
+
 // ============================================================================
 // State Machine Types
 // ============================================================================
@@ -193,16 +233,18 @@ const useProjectListOperations = (
     dispatch: React.Dispatch<ProjectListAction>,
     onError?: (error: string) => void
 ) => {
-    const executeUpdate = useCallback(async () => {
-        if (state.status !== 'editing' || !state.targetProject) { return; }
+    const executeUpdate = useCallback(async (): Promise<boolean> => {
+        if (state.status !== 'editing' || !state.targetProject) { return false; }
         dispatch({ type: 'OPERATION_START', message: 'Updating project...' });
         try {
             await window.electron.db.updateProject(state.targetProject.id, state.editForm);
             dispatch({ type: 'OPERATION_SUCCESS' });
+            return true;
         } catch (error) {
             const msg = error instanceof Error ? error.message : 'Failed to update project';
             dispatch({ type: 'OPERATION_ERROR', error: msg });
             onError?.(msg);
+            return false;
         }
     }, [state.status, state.targetProject, state.editForm, dispatch, onError]);
 

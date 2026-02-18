@@ -12,7 +12,7 @@
 import { appLogger } from '@main/logging/logger';
 import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { createIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { MemoryCategory, RecallContext } from '@shared/types/advanced-memory';
+import { MemoryCategory, RecallContext, SharedMemorySyncRequest } from '@shared/types/advanced-memory';
 import { ipcMain } from 'electron';
 
 
@@ -27,6 +27,7 @@ export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryS
     registerMaintenanceHandlers(advancedMemoryService);
     registerExtractionHandlers(advancedMemoryService);
     registerManagementHandlers(advancedMemoryService);
+    registerVisualizationHandlers(advancedMemoryService);
 
     appLogger.info(LOG_TAG, 'Advanced memory IPC handlers registered');
 }
@@ -121,9 +122,59 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
     }, { onError: (error) => ({ success: false, error: String(error), data: { memories: [], totalMatches: 0 } }) }));
 
     ipcMain.handle('advancedMemory:search', createIpcHandler('advancedMemory:search', async (_event, query: string, limit?: number) => {
-        const memories = await advancedMemoryService.recallRelevantFacts(query, limit ?? 10);
+        const memories = await advancedMemoryService.searchMemoriesHybrid(query, limit ?? 10);
         return { success: true, data: memories };
     }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
+
+    ipcMain.handle('advancedMemory:getSearchAnalytics', createIpcHandler('advancedMemory:getSearchAnalytics', async () => {
+        return { success: true, data: advancedMemoryService.getSearchAnalytics() };
+    }, {
+        onError: (error) => ({
+            success: false,
+            error: String(error),
+            data: {
+                totalQueries: 0,
+                semanticQueries: 0,
+                textQueries: 0,
+                hybridQueries: 0,
+                averageResults: 0,
+                topQueries: []
+            }
+        })
+    }));
+
+    ipcMain.handle('advancedMemory:getSearchHistory', createIpcHandler('advancedMemory:getSearchHistory', async (_event, limit?: number) => {
+        return { success: true, data: advancedMemoryService.getSearchHistory(limit ?? 25) };
+    }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
+
+    ipcMain.handle('advancedMemory:getSearchSuggestions', createIpcHandler('advancedMemory:getSearchSuggestions', async (
+        _event,
+        prefix?: string,
+        limit?: number
+    ) => {
+        return { success: true, data: advancedMemoryService.getSearchSuggestions(prefix, limit ?? 8) };
+    }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
+
+    ipcMain.handle('advancedMemory:export', createIpcHandler('advancedMemory:export', async (
+        _event,
+        query?: string,
+        limit?: number
+    ) => {
+        const exported = await advancedMemoryService.exportMemories(query, limit ?? 200);
+        return { success: true, data: exported };
+    }, { onError: (error) => ({ success: false, error: String(error) }) }));
+
+    ipcMain.handle('advancedMemory:import', createIpcHandler('advancedMemory:import', async (
+        _event,
+        payload: {
+            memories?: Array<Partial<import('@shared/types/advanced-memory').AdvancedSemanticFragment>>;
+            pendingMemories?: Array<Partial<import('@shared/types/advanced-memory').PendingMemory>>;
+            replaceExisting?: boolean;
+        }
+    ) => {
+        const result = await advancedMemoryService.importMemories(payload ?? {});
+        return { success: true, data: result };
+    }, { onError: (error) => ({ success: false, error: String(error) }) }));
 }
 
 function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryService): void {
@@ -136,6 +187,11 @@ function registerMaintenanceHandlers(advancedMemoryService: AdvancedMemoryServic
 
     ipcMain.handle('advancedMemory:runDecay', createIpcHandler('advancedMemory:runDecay', async () => {
         await advancedMemoryService.runDecayMaintenance();
+        return { success: true };
+    }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:recategorize', createIpcHandler('advancedMemory:recategorize', async (_event, ids?: string[]) => {
+        await advancedMemoryService.recategorizeMemories(ids);
         return { success: true };
     }, { onError: handleBasicError }));
 }
@@ -215,4 +271,70 @@ function registerManagementHandlers(advancedMemoryService: AdvancedMemoryService
         const memory = await advancedMemoryService.getMemory(id);
         return { success: !!memory, data: memory };
     }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:shareWithProject', createIpcHandler('advancedMemory:shareWithProject', async (_event, memoryId: string, targetProjectId: string) => {
+        const shared = await advancedMemoryService.shareMemoryWithProject(memoryId, targetProjectId);
+        return { success: !!shared, data: shared };
+    }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:createSharedNamespace', createIpcHandler('advancedMemory:createSharedNamespace', async (
+        _event,
+        payload: { id: string; name: string; projectIds: string[]; accessControl?: Record<string, string[]> }
+    ) => {
+        const namespace = advancedMemoryService.createSharedNamespace(payload);
+        return { success: true, data: namespace };
+    }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:syncSharedNamespace', createIpcHandler('advancedMemory:syncSharedNamespace', async (
+        _event,
+        request: SharedMemorySyncRequest
+    ) => {
+        const result = await advancedMemoryService.syncSharedNamespace(request);
+        return { success: true, data: result };
+    }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:getSharedNamespaceAnalytics', createIpcHandler('advancedMemory:getSharedNamespaceAnalytics', async (
+        _event,
+        namespaceId: string
+    ) => {
+        const analytics = await advancedMemoryService.getSharedNamespaceAnalytics(namespaceId);
+        return { success: true, data: analytics };
+    }, { onError: handleBasicError }));
+
+    ipcMain.handle('advancedMemory:searchAcrossProjects', createIpcHandler('advancedMemory:searchAcrossProjects', async (
+        _event,
+        payload: { namespaceId: string; query: string; projectId: string; limit?: number }
+    ) => {
+        const result = await advancedMemoryService.searchAcrossProjects(payload);
+        return { success: true, data: result };
+    }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
+
+    ipcMain.handle('advancedMemory:getHistory', createIpcHandler('advancedMemory:getHistory', async (_event, id: string) => {
+        const history = await advancedMemoryService.getMemoryHistory(id);
+        return { success: true, data: history };
+    }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
+
+    ipcMain.handle('advancedMemory:rollback', createIpcHandler('advancedMemory:rollback', async (_event, id: string, versionIndex: number) => {
+        const memory = await advancedMemoryService.rollbackMemory(id, versionIndex);
+        return { success: !!memory, data: memory };
+    }, { onError: handleBasicError }));
+}
+
+function registerVisualizationHandlers(advancedMemoryService: AdvancedMemoryService): void {
+    const handleListError = (error: Error) => ({ success: false, error: String(error), data: [] });
+
+    ipcMain.handle('advancedMemory:getAllEntityKnowledge', createIpcHandler('advancedMemory:getAllEntityKnowledge', async () => {
+        const data = await advancedMemoryService.getAllEntityFacts();
+        return { success: true, data };
+    }, { onError: handleListError }));
+
+    ipcMain.handle('advancedMemory:getAllEpisodes', createIpcHandler('advancedMemory:getAllEpisodes', async () => {
+        const data = await advancedMemoryService.getAllEpisodes();
+        return { success: true, data };
+    }, { onError: handleListError }));
+
+    ipcMain.handle('advancedMemory:getAllAdvancedMemories', createIpcHandler('advancedMemory:getAllAdvancedMemories', async () => {
+        const data = await advancedMemoryService.getAllAdvancedMemories();
+        return { success: true, data };
+    }, { onError: handleListError }));
 }

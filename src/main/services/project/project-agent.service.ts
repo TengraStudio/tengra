@@ -11,6 +11,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
+    AgentTeamworkAnalytics,
     AgentProfile,
     AgentStartOptions,
     AgentTaskHistoryItem,
@@ -18,6 +19,10 @@ import {
     AgentTemplateCategory,
     AgentTemplateExport,
     ConsensusResult,
+    DebateCitation,
+    DebateReplay,
+    DebateSession,
+    DebateSide,
     ModelRoutingRule,
     ProjectState,
     ProjectStep,
@@ -73,6 +78,7 @@ export class ProjectAgentService extends BaseService {
     private readonly agentPerformanceService: AgentPerformanceService;
     private readonly activeExecutionTaskIds = new Set<string>();
     private readonly queuedExecutionTasks: QueuedExecutionTask[] = [];
+    private readonly taskAgentAssignments = new Map<string, string>();
     private readonly maxConcurrentExecutionTasks = 3;
     private unsubscribeExecutionObserver?: () => void;
 
@@ -156,6 +162,11 @@ export class ProjectAgentService extends BaseService {
                             // We might need to parse metadata for full options
                             ...safeJsonParse<Record<string, unknown>>(task.metadata, {})
                         });
+                        const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
+                        const restoredAgentId = typeof metadata['agentProfileId'] === 'string'
+                            ? metadata['agentProfileId']
+                            : 'default';
+                        this.taskAgentAssignments.set(task.id, restoredAgentId);
                         // Restore state
                         await executor.restoreStateFromDB();
                     }
@@ -200,12 +211,30 @@ export class ProjectAgentService extends BaseService {
             }
             if (payload.status === 'running') {
                 this.activeExecutionTaskIds.add(taskId);
+                const agentId = this.taskAgentAssignments.get(taskId);
+                if (agentId) {
+                    this.agentCollaborationService.recordAgentTaskProgress({
+                        agentId,
+                        status: 'in_progress'
+                    });
+                }
                 return;
             }
             const isTerminalState = ['idle', 'failed', 'completed', 'error', 'paused'].includes(
                 payload.status
             );
             if (isTerminalState && this.activeExecutionTaskIds.delete(taskId)) {
+                const agentId = this.taskAgentAssignments.get(taskId);
+                if (agentId && (payload.status === 'completed' || payload.status === 'failed' || payload.status === 'error')) {
+                    const durationMs = payload.timing?.startedAt
+                        ? Date.now() - payload.timing.startedAt
+                        : undefined;
+                    this.agentCollaborationService.recordAgentTaskProgress({
+                        agentId,
+                        status: payload.status === 'completed' ? 'completed' : 'failed',
+                        durationMs
+                    });
+                }
                 void this.drainExecutionQueue();
             }
         });
@@ -296,9 +325,15 @@ export class ProjectAgentService extends BaseService {
         });
 
         this.currentTaskId = taskId;
+        const taskAgentId = options.agentProfileId ?? 'default';
+        this.taskAgentAssignments.set(taskId, taskAgentId);
 
         // Initialize performance metrics for the new task
         this.agentPerformanceService.initializeMetrics(taskId);
+        this.agentCollaborationService.recordAgentTaskProgress({
+            agentId: taskAgentId,
+            status: 'in_progress'
+        });
         const executor = await this.getOrCreateExecutor(taskId, options);
         const canStartNow = await this.scheduleExecutionStart(taskId, options.priority);
         if (canStartNow) {
@@ -329,9 +364,15 @@ export class ProjectAgentService extends BaseService {
         });
 
         this.currentTaskId = taskId;
+        const taskAgentId = options.agentProfileId ?? 'default';
+        this.taskAgentAssignments.set(taskId, taskAgentId);
 
         // Initialize performance metrics for the new task
         this.agentPerformanceService.initializeMetrics(taskId);
+        this.agentCollaborationService.recordAgentTaskProgress({
+            agentId: taskAgentId,
+            status: 'in_progress'
+        });
         const executor = await this.getOrCreateExecutor(taskId, options);
         await executor.generatePlan();
     }
@@ -497,6 +538,7 @@ export class ProjectAgentService extends BaseService {
 
         await this.stop(targetId);
         this.executors.delete(targetId);
+        this.taskAgentAssignments.delete(targetId);
 
         if (targetId === this.currentTaskId) {
             this.currentTaskId = null;
@@ -626,6 +668,7 @@ export class ProjectAgentService extends BaseService {
     async deleteTask(taskId: string): Promise<boolean> {
         await this.stop(taskId);
         this.executors.delete(taskId);
+        this.taskAgentAssignments.delete(taskId);
         await this.databaseService.uac.deleteTask(taskId);
         return true;
     }
@@ -754,6 +797,55 @@ export class ProjectAgentService extends BaseService {
         outputs: Array<{ modelId: string; provider: string; output: string }>
     ): Promise<ConsensusResult> {
         return await this.agentCollaborationService.buildConsensus(outputs);
+    }
+
+    createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
+        return this.agentCollaborationService.createDebateSession(taskId, stepIndex, topic);
+    }
+
+    submitDebateArgument(options: {
+        sessionId: string;
+        agentId: string;
+        provider: string;
+        side: DebateSide;
+        content: string;
+        confidence: number;
+        citations?: DebateCitation[];
+    }): DebateSession | null {
+        return this.agentCollaborationService.submitDebateArgument(options);
+    }
+
+    resolveDebateSession(sessionId: string): DebateSession | null {
+        return this.agentCollaborationService.resolveDebateSession(sessionId);
+    }
+
+    overrideDebateSession(
+        sessionId: string,
+        moderatorId: string,
+        decision: DebateSide | 'balanced',
+        reason?: string
+    ): DebateSession | null {
+        return this.agentCollaborationService.overrideDebateSession(sessionId, moderatorId, decision, reason);
+    }
+
+    getDebateSession(sessionId: string): DebateSession | null {
+        return this.agentCollaborationService.getDebateSession(sessionId);
+    }
+
+    getDebateHistory(taskId?: string): DebateSession[] {
+        return this.agentCollaborationService.getDebateHistory(taskId);
+    }
+
+    getDebateReplay(sessionId: string): DebateReplay | null {
+        return this.agentCollaborationService.getDebateReplay(sessionId);
+    }
+
+    generateDebateSummary(sessionId: string): string | null {
+        return this.agentCollaborationService.generateDebateSummary(sessionId);
+    }
+
+    getTeamworkAnalytics(): AgentTeamworkAnalytics {
+        return this.agentCollaborationService.getTeamworkAnalytics();
     }
 
     // ===== AGT-TPL: Template Methods =====

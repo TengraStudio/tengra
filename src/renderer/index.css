@@ -241,6 +241,27 @@
         --code-number: 30 80% 50%;
         --code-operator: 250 100% 65%;
 
+        /* Monaco Editor Tokens */
+        --editor-background: var(--background);
+        --editor-foreground: var(--foreground);
+        --editor-gutter-background: var(--background);
+        --editor-line-number: var(--muted-foreground);
+        --editor-line-number-active: var(--foreground);
+        --editor-cursor: var(--primary);
+        --editor-selection: var(--primary);
+        --editor-selection-inactive: var(--accent);
+        --editor-line-highlight: var(--card);
+        --editor-widget-background: var(--card);
+        --editor-widget-border: var(--border);
+        --editor-indent-guide: var(--border);
+        --editor-indent-guide-active: var(--ring);
+        --editor-token-comment: var(--code-comment);
+        --editor-token-keyword: var(--code-keyword);
+        --editor-token-string: var(--code-string);
+        --editor-token-number: var(--code-number);
+        --editor-token-type: var(--code-function);
+        --editor-token-invalid: var(--destructive);
+
         /* Glass/Overlay Colors */
         --glass-bg: 0 0% 100%;
         --glass-border: 0 0% 0%;
@@ -320,6 +341,27 @@
         --code-variable: 355 65% 65%;
         --code-number: 29 54% 61%;
         --code-operator: 190 100% 60%;
+
+        /* Monaco Editor Tokens */
+        --editor-background: var(--background);
+        --editor-foreground: var(--foreground);
+        --editor-gutter-background: var(--background);
+        --editor-line-number: var(--muted-foreground);
+        --editor-line-number-active: var(--foreground);
+        --editor-cursor: var(--primary);
+        --editor-selection: var(--primary);
+        --editor-selection-inactive: var(--accent);
+        --editor-line-highlight: var(--card);
+        --editor-widget-background: var(--card);
+        --editor-widget-border: var(--border);
+        --editor-indent-guide: var(--border);
+        --editor-indent-guide-active: var(--ring);
+        --editor-token-comment: var(--code-comment);
+        --editor-token-keyword: var(--code-keyword);
+        --editor-token-string: var(--code-string);
+        --editor-token-number: var(--code-number);
+        --editor-token-type: var(--code-function);
+        --editor-token-invalid: var(--destructive);
 
         /* Glass/Overlay Colors - Dark */
         --glass-bg: 0 0% 100%;

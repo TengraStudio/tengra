@@ -1,0 +1,232 @@
+import { AdvancedSemanticFragment } from '@shared/types/advanced-memory';
+import { EpisodicMemory } from '@shared/types/memory';
+import { format } from 'date-fns';
+import { Brain, History, MessageSquare } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/i18n';
+
+import { appLogger } from '../../../utils/renderer-logger';
+
+interface TimelineItem {
+    id: string;
+    type: 'episode' | 'fragment';
+    timestamp: number;
+    title: string;
+    content: string;
+    tags: string[];
+    importance?: number;
+    category?: string;
+}
+
+export const MemoryTimelineView: React.FC = () => {
+    const { t } = useTranslation();
+    const [items, setItems] = useState<TimelineItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'episode' | 'fragment'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [fragmentsRes, episodesRes] = await Promise.all([
+                window.electron.advancedMemory.getAllAdvancedMemories(),
+                window.electron.advancedMemory.getAllEpisodes()
+            ]);
+
+            const timelineItems: TimelineItem[] = [];
+
+            if (fragmentsRes.success && fragmentsRes.data) {
+                fragmentsRes.data.forEach((m: AdvancedSemanticFragment) => {
+                    if (m.status === 'confirmed') {
+                        timelineItems.push({
+                            id: m.id,
+                            type: 'fragment',
+                            timestamp: m.createdAt,
+                            title: m.category,
+                            content: m.content,
+                            tags: m.tags,
+                            importance: m.importance,
+                            category: m.category
+                        });
+                    }
+                });
+            }
+
+            if (episodesRes.success && episodesRes.data) {
+                episodesRes.data.forEach((e: EpisodicMemory) => {
+                    timelineItems.push({
+                        id: e.id,
+                        type: 'episode',
+                        timestamp: e.startDate || e.createdAt,
+                        title: e.title,
+                        content: e.summary,
+                        tags: e.participants || [],
+                    });
+                });
+            }
+
+            // Sort by timestamp descending
+            setItems(timelineItems.sort((a, b) => b.timestamp - a.timestamp));
+        } catch (error) {
+            appLogger.error('MemoryTimelineView', 'Failed to load timeline data', error as Error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
+
+    const filteredItems = useMemo(() => {
+        const normalized = searchQuery.trim().toLowerCase();
+        return items.filter(item => {
+            if (filter !== 'all' && item.type !== filter) {
+                return false;
+            }
+            if (!normalized) {
+                return true;
+            }
+            return (
+                item.title.toLowerCase().includes(normalized)
+                || item.content.toLowerCase().includes(normalized)
+                || item.tags.some(tag => tag.toLowerCase().includes(normalized))
+            );
+        });
+    }, [items, filter, searchQuery]);
+
+    const groupedItems = useMemo(() => {
+        const groups: Record<string, TimelineItem[]> = {};
+        filteredItems.forEach(item => {
+            const dateKey = format(item.timestamp, 'yyyy-MM-dd');
+            if (!groups[dateKey]) { groups[dateKey] = []; }
+            groups[dateKey].push(item);
+        });
+        return groups;
+    }, [filteredItems]);
+
+    return (
+        <div className="w-full h-full flex flex-col bg-background/30 rounded-2xl border border-white/5 overflow-hidden">
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-info/20 rounded-xl text-info">
+                        <History className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-bold">{t('memory.timelineView') || 'Memory Timeline'}</h2>
+                        <p className="text-[10px] text-muted-foreground">{items.length} total events</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Input
+                        value={searchQuery}
+                        onChange={event => setSearchQuery(event.target.value)}
+                        placeholder={t('memory.searchPlaceholder')}
+                        className="h-8 w-48 bg-background/50 border-white/10"
+                    />
+                    <div className="flex bg-background/50 p-1 rounded-lg border border-white/10">
+                        {(['all', 'episode', 'fragment'] as const).map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                    </div>
+                    {(filter !== 'all' || searchQuery.trim()) && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setFilter('all');
+                                setSearchQuery('');
+                            }}
+                        >
+                            {t('common.clear') || 'Clear'}
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-hide">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-muted-foreground">Reconstructing history...</span>
+                    </div>
+                ) : (
+                    Object.keys(groupedItems).length === 0 ? (
+                        <div className="flex h-full items-center justify-center">
+                            <p className="rounded-lg border border-white/10 bg-background/70 px-4 py-2 text-sm text-muted-foreground">
+                                {t('memory.emptyState') || 'No memories match the selected filters.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="relative border-l border-white/10 ml-4 space-y-12">
+                            {Object.entries(groupedItems).map(([date, dayItems]) => (
+                                <div key={date} className="relative">
+                                {/* Date Marker */}
+                                <div className="absolute -left-[53px] top-0 flex items-center gap-4">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                                    <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold whitespace-nowrap">
+                                        {format(new Date(date), 'MMMM d, yyyy')}
+                                    </div>
+                                </div>
+
+                                <div className="pt-8 space-y-6">
+                                    {dayItems.map(item => (
+                                        <div key={item.id} className="group relative transition-all hover:translate-x-1">
+                                            <div className="absolute -left-[37px] top-2 w-3 h-px bg-white/10 group-hover:bg-primary/40 group-hover:w-5 transition-all" />
+
+                                            <div className="bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all hover:bg-white/[0.08] shadow-sm hover:shadow-xl">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        {item.type === 'episode' ? (
+                                                            <div className="p-1.5 bg-warning/20 rounded-lg text-warning">
+                                                                <MessageSquare className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-1.5 bg-accent/20 rounded-lg text-accent">
+                                                                <Brain className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/60">
+                                                            {item.title}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] text-muted-foreground font-mono">
+                                                        {format(item.timestamp, 'HH:mm')}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-sm text-foreground/80 leading-relaxed mb-3">
+                                                    {item.content}
+                                                </p>
+
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {item.tags.map(tag => (
+                                                        <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 text-[9px] text-muted-foreground border border-white/5">
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                )}
+            </div>
+        </div>
+    );
+};

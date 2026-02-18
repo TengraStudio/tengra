@@ -14,6 +14,7 @@ interface UseWorkspaceManagerProps {
     project: Project;
     notify: (type: 'success' | 'error' | 'info', message: string) => void;
     logActivity: (title: string, detail?: string) => void;
+    t: (key: string) => string;
 }
 
 interface FileOpenEntry {
@@ -111,6 +112,15 @@ function useSSHOperations(
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
     mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>
 ) {
+    const MAX_CONNECT_RETRIES = 3;
+    const INITIAL_BACKOFF_MS = 400;
+
+    const waitFor = useCallback(async (delayMs: number) => {
+        await new Promise<void>(resolve => {
+            window.setTimeout(() => resolve(), delayMs);
+        });
+    }, []);
+
     const validateSSHMount = useCallback(
         (mount: WorkspaceMount): boolean => {
             if (!mount.ssh) {
@@ -142,24 +152,41 @@ function useSSHOperations(
             if (!sshConfig) {
                 return false;
             }
-            const result = await window.electron.ssh.connect({
-                id: mount.id,
-                name: mount.name,
-                host: sshConfig.host,
-                port: sshConfig.port ? Number(sshConfig.port) : 22,
-                username: sshConfig.username,
-                authType: sshConfig.authType ?? (sshConfig.privateKey ? 'key' : 'password'),
-                password: sshConfig.password,
-                privateKey: sshConfig.privateKey,
-                passphrase: sshConfig.passphrase,
-            });
-            if (!result.success) {
-                notify('error', result.error ?? 'SSH connection failed.');
-                return false;
+            let backoffMs = INITIAL_BACKOFF_MS;
+            let lastError = 'SSH connection failed.';
+            for (let attempt = 1; attempt <= MAX_CONNECT_RETRIES; attempt++) {
+                const result = await window.electron.ssh.connect({
+                    id: mount.id,
+                    name: mount.name,
+                    host: sshConfig.host,
+                    port: sshConfig.port ? Number(sshConfig.port) : 22,
+                    username: sshConfig.username,
+                    authType: sshConfig.authType ?? (sshConfig.privateKey ? 'key' : 'password'),
+                    password: sshConfig.password,
+                    privateKey: sshConfig.privateKey,
+                    passphrase: sshConfig.passphrase,
+                });
+                if (result.success) {
+                    if (attempt > 1) {
+                        notify('info', `SSH connected after ${attempt} attempts.`);
+                    }
+                    return true;
+                }
+
+                const diagnosticHint = result.diagnostics?.hint;
+                lastError = diagnosticHint
+                    ? `${result.error ?? 'SSH connection failed.'} ${diagnosticHint}`
+                    : result.error ?? 'SSH connection failed.';
+                if (attempt < MAX_CONNECT_RETRIES) {
+                    notify('info', `SSH connect retry ${attempt}/${MAX_CONNECT_RETRIES - 1}...`);
+                    await waitFor(backoffMs);
+                    backoffMs *= 2;
+                }
             }
-            return true;
+            notify('error', lastError);
+            return false;
         },
-        [mountStatus, notify, validateSSHMount]
+        [mountStatus, notify, validateSSHMount, waitFor]
     );
 
     return { ensureMountReady };
@@ -238,6 +265,45 @@ async function readFileContent(
     return readCodeFile(mount, filePath);
 }
 
+function normalizePath(path: string): string {
+    return path.replace(/\\/g, '/');
+}
+
+function trimTrailingSeparator(path: string): string {
+    return path.replace(/[\\/]+$/, '');
+}
+
+function getRelativePath(filePath: string, rootPath: string): string {
+    const normalizedFilePath = normalizePath(filePath);
+    const normalizedRootPath = trimTrailingSeparator(normalizePath(rootPath));
+
+    if (!normalizedRootPath) {
+        return filePath;
+    }
+
+    const lowerFilePath = normalizedFilePath.toLowerCase();
+    const lowerRootPath = normalizedRootPath.toLowerCase();
+
+    if (lowerFilePath === lowerRootPath) {
+        return filePath.split(/[\\/]/).pop() ?? filePath;
+    }
+
+    const rootWithSlash = `${lowerRootPath}/`;
+    if (lowerFilePath.startsWith(rootWithSlash)) {
+        return normalizedFilePath.slice(normalizedRootPath.length + 1);
+    }
+
+    return filePath.split(/[\\/]/).pop() ?? filePath;
+}
+
+function getDirectoryPath(filePath: string): string {
+    const lastSlashIndex = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+    if (lastSlashIndex <= 0) {
+        return filePath;
+    }
+    return filePath.slice(0, lastSlashIndex);
+}
+
 // Helper hook for file operations
 function useFileOperations(
     mounts: WorkspaceMount[],
@@ -259,6 +325,7 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Created file', path);
+                notify('success', 'File created.');
             } else {
                 notify('error', result.error ?? 'Failed to create file.');
             }
@@ -279,6 +346,7 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Created folder', path);
+                notify('success', 'Folder created.');
             } else {
                 notify('error', result.error ?? 'Failed to create folder.');
             }
@@ -306,6 +374,7 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Renamed entry', `${entry.name} -> ${newName}`);
+                notify('success', 'Entry renamed.');
             } else {
                 notify('error', result.error ?? 'Failed to rename.');
             }
@@ -330,6 +399,7 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Deleted entry', entry.path);
+                notify('success', 'Entry deleted.');
             } else {
                 notify('error', result.error ?? 'Failed to delete.');
             }
@@ -359,6 +429,7 @@ function useFileOperations(
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Moved entry', `${entry.path} -> ${newPath}`);
+                notify('success', 'Entry moved.');
             } else {
                 notify('error', result.error ?? 'Failed to move.');
             }
@@ -378,33 +449,142 @@ function useFileOperations(
 }
 
 // Helper hook for tab management
-function useTabManagement() {
-    const [openTabs, setOpenTabs] = useState<EditorTab[]>([]);
-    const [activeTabId, setActiveEditorTabId] = useState<string | null>(null);
+function sortTabsForDisplay(tabs: EditorTab[]): EditorTab[] {
+    const pinnedTabs = tabs.filter(tab => tab.isPinned);
+    const regularTabs = tabs.filter(tab => !tab.isPinned);
+    return [...pinnedTabs, ...regularTabs];
+}
+
+function findFallbackTabId(tabs: EditorTab[]): string | null {
+    const orderedTabs = sortTabsForDisplay(tabs);
+    return orderedTabs.length > 0 ? (orderedTabs[orderedTabs.length - 1]?.id ?? null) : null;
+}
+
+interface PersistedTabsState {
+    openTabs: EditorTab[];
+    activeTabId: string | null;
+}
+
+const getWorkspaceTabsStorageKey = (projectId: string): string =>
+    `workspace.tabs.state.v1:${projectId}`;
+
+const loadPersistedTabsState = (projectId: string): PersistedTabsState => {
+    try {
+        const raw = localStorage.getItem(getWorkspaceTabsStorageKey(projectId));
+        if (!raw) {
+            return { openTabs: [], activeTabId: null };
+        }
+        const parsed = JSON.parse(raw) as PersistedTabsState;
+        return {
+            openTabs: Array.isArray(parsed.openTabs) ? parsed.openTabs : [],
+            activeTabId: parsed.activeTabId ?? null,
+        };
+    } catch {
+        return { openTabs: [], activeTabId: null };
+    }
+};
+
+function useTabManagement(projectId: string) {
+    const persistedTabsState = useMemo(() => loadPersistedTabsState(projectId), [projectId]);
+    const [openTabs, setOpenTabs] = useState<EditorTab[]>(persistedTabsState.openTabs);
+    const [activeTabId, setActiveEditorTabId] = useState<string | null>(persistedTabsState.activeTabId);
     const [dashboardTab, setDashboardTab] = useState<WorkspaceDashboardTab>('overview');
+    const [activeProjectId, setActiveProjectId] = useState(projectId);
+
+    if (activeProjectId !== projectId) {
+        setActiveProjectId(projectId);
+        setOpenTabs(persistedTabsState.openTabs);
+        setActiveEditorTabId(persistedTabsState.activeTabId);
+        setDashboardTab(persistedTabsState.activeTabId ? 'editor' : 'overview');
+    }
 
     const activeTab = useMemo(
         () => openTabs.find(t => t.id === activeTabId) ?? null,
         [openTabs, activeTabId]
     );
 
+    const applyTabUpdate = useCallback(
+        (nextTabs: EditorTab[], preferredActiveTabId?: string | null) => {
+            setOpenTabs(nextTabs);
+            const currentTabStillOpen = Boolean(
+                activeTabId && nextTabs.some(tab => tab.id === activeTabId)
+            );
+            const preferredTabStillOpen = Boolean(
+                preferredActiveTabId && nextTabs.some(tab => tab.id === preferredActiveTabId)
+            );
+
+            const nextActiveTabId = preferredTabStillOpen
+                ? (preferredActiveTabId ?? null)
+                : currentTabStillOpen
+                  ? activeTabId
+                  : findFallbackTabId(nextTabs);
+
+            setActiveEditorTabId(nextActiveTabId);
+            if (!nextActiveTabId) {
+                setDashboardTab('overview');
+            }
+        },
+        [activeTabId]
+    );
+
     const closeTab = useCallback(
         (tabId: string) => {
             const tab = openTabs.find(t => t.id === tabId);
             if (tab && tab.content !== tab.savedContent) {
-                window.electron.log.warn(`Close without saving "${tab.name}"?`);
+                window.electron.log.warn('Unsaved tab close blocked. Save before closing.');
+                return;
             }
-            setOpenTabs(prev => prev.filter(t => t.id !== tabId));
-            if (activeTabId === tabId) {
-                const remainingTabs = openTabs.filter(t => t.id !== tabId);
-                const next = remainingTabs.pop();
-                setActiveEditorTabId(next?.id ?? null);
-                if (!next) {
-                    setDashboardTab('overview');
-                }
-            }
+            const nextTabs = openTabs.filter(t => t.id !== tabId);
+            applyTabUpdate(nextTabs);
         },
-        [activeTabId, openTabs]
+        [applyTabUpdate, openTabs]
+    );
+
+    const togglePinTab = useCallback((tabId: string) => {
+        setOpenTabs(prev =>
+            prev.map(tab => (tab.id === tabId ? { ...tab, isPinned: !tab.isPinned } : tab))
+        );
+    }, []);
+
+    const closeAllTabs = useCallback(() => {
+        const nextTabs = openTabs.filter(tab => tab.isPinned);
+        applyTabUpdate(nextTabs);
+    }, [applyTabUpdate, openTabs]);
+
+    const closeTabsToRight = useCallback(
+        (tabId: string) => {
+            const orderedTabs = sortTabsForDisplay(openTabs);
+            const tabIndex = orderedTabs.findIndex(tab => tab.id === tabId);
+            if (tabIndex < 0) {
+                return;
+            }
+            const closeableIds = new Set(
+                orderedTabs
+                    .slice(tabIndex + 1)
+                    .filter(tab => !tab.isPinned)
+                    .map(tab => tab.id)
+            );
+
+            if (closeableIds.size === 0) {
+                return;
+            }
+
+            const nextTabs = openTabs.filter(tab => !closeableIds.has(tab.id));
+            applyTabUpdate(nextTabs, tabId);
+        },
+        [applyTabUpdate, openTabs]
+    );
+
+    const closeOtherTabs = useCallback(
+        (tabId: string) => {
+            const selectedTab = openTabs.find(tab => tab.id === tabId);
+            if (!selectedTab) {
+                return;
+            }
+            const nextTabs = openTabs.filter(tab => tab.id === tabId || tab.isPinned);
+            applyTabUpdate(nextTabs, tabId);
+        },
+        [applyTabUpdate, openTabs]
     );
 
     const updateTabContent = useCallback(
@@ -417,12 +597,26 @@ function useTabManagement() {
         [activeTabId]
     );
 
+    useEffect(() => {
+        localStorage.setItem(
+            getWorkspaceTabsStorageKey(projectId),
+            JSON.stringify({
+                openTabs,
+                activeTabId,
+            } satisfies PersistedTabsState)
+        );
+    }, [activeTabId, openTabs, projectId]);
+
     return {
         openTabs,
         activeTabId,
         setActiveEditorTabId,
         activeTab,
         closeTab,
+        togglePinTab,
+        closeAllTabs,
+        closeTabsToRight,
+        closeOtherTabs,
         updateTabContent,
         dashboardTab,
         setDashboardTab,
@@ -439,7 +633,7 @@ function useTabManagement() {
  * - Tab management (open/close/save)
  * - Agent Council configuration
  */
-export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspaceManagerProps) {
+export function useWorkspaceManager({ project, notify, logActivity, t }: UseWorkspaceManagerProps) {
     const [mounts, setMounts] = useMountState(project);
     const mountStatus = useMountStatusSync(mounts);
     const { ensureMountReady } = useSSHOperations(notify, mountStatus);
@@ -458,11 +652,15 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
         setActiveEditorTabId,
         activeTab,
         closeTab,
+        togglePinTab,
+        closeAllTabs,
+        closeTabsToRight,
+        closeOtherTabs,
         updateTabContent,
         dashboardTab,
         setDashboardTab,
         setOpenTabs,
-    } = useTabManagement();
+    } = useTabManagement(project.id);
     const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig.enabled));
 
     const persistMounts = useCallback(
@@ -579,6 +777,7 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
                 savedContent: content,
                 type,
                 isDirty: false,
+                isPinned: false,
                 initialLine: entry.initialLine,
             };
             setOpenTabs(prev => [...prev, tab]);
@@ -630,6 +829,65 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
         notify('success', 'File saved.');
     }, [activeTabId, openTabs, mounts, ensureMountReady, notify, logActivity, setOpenTabs]);
 
+    const copyTabAbsolutePath = useCallback(
+        async (tabId: string) => {
+            const tab = openTabs.find(item => item.id === tabId);
+            if (!tab) {
+                return;
+            }
+            const result = await window.electron.clipboard.writeText(tab.path);
+            if (result.success) {
+                notify('success', t('workspace.pathCopied'));
+                logActivity('Copied tab path', tab.path);
+                return;
+            }
+            notify('error', t('workspace.pathCopyFailed'));
+        },
+        [logActivity, notify, openTabs, t]
+    );
+
+    const copyTabRelativePath = useCallback(
+        async (tabId: string) => {
+            const tab = openTabs.find(item => item.id === tabId);
+            if (!tab) {
+                return;
+            }
+            const mount = mounts.find(item => item.id === tab.mountId);
+            const relativePath = mount?.rootPath
+                ? getRelativePath(tab.path, mount.rootPath)
+                : tab.name;
+            const result = await window.electron.clipboard.writeText(relativePath);
+            if (result.success) {
+                notify('success', t('workspace.relativePathCopied'));
+                logActivity('Copied tab relative path', relativePath);
+                return;
+            }
+            notify('error', t('workspace.pathCopyFailed'));
+        },
+        [logActivity, mounts, notify, openTabs, t]
+    );
+
+    const revealTabInExplorer = useCallback(
+        (tabId: string): void => {
+            const tab = openTabs.find(item => item.id === tabId);
+            if (!tab) {
+                return;
+            }
+            const directoryPath = getDirectoryPath(tab.path);
+            const encodedPath = encodeURIComponent(directoryPath);
+            try {
+                window.electron.openExternal(`safe-file://${encodedPath}`);
+                notify('success', t('workspace.revealedInExplorer'));
+                logActivity('Revealed file in explorer', tab.path);
+                return;
+            } catch (error) {
+                window.electron.log.error('Reveal in explorer failed', error as Error);
+            }
+            notify('error', t('workspace.revealInExplorerFailed'));
+        },
+        [logActivity, notify, openTabs, t]
+    );
+
     return {
         mounts,
         mountStatus,
@@ -643,6 +901,13 @@ export function useWorkspaceManager({ project, notify, logActivity }: UseWorkspa
         openFile,
         saveActiveTab,
         closeTab,
+        togglePinTab,
+        closeAllTabs,
+        closeTabsToRight,
+        closeOtherTabs,
+        copyTabAbsolutePath,
+        copyTabRelativePath,
+        revealTabInExplorer,
         ensureMountReady,
         persistMounts,
         setOpenTabs,

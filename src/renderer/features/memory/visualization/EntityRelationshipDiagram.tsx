@@ -1,0 +1,169 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    Background,
+    Controls,
+    Edge,
+    MiniMap,
+    Node,
+    Panel,
+    ReactFlow,
+    useEdgesState,
+    useNodesState,
+} from '@xyflow/react';
+import { Database, RotateCcw } from 'lucide-react';
+
+import { useTranslation } from '@/i18n';
+import { appLogger } from '../../../utils/renderer-logger';
+
+import '@xyflow/react/dist/style.css';
+
+// Node type for Entities
+const EntityNode = ({ data }: { data: { name: string; type: string; properties: Record<string, string> } }) => {
+    return (
+        <div className="px-4 py-3 rounded-2xl border-2 border-primary/30 bg-background/90 backdrop-blur-xl shadow-2xl min-w-[200px]">
+            <div className="flex items-center gap-2 mb-2">
+                <div className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] uppercase font-bold">
+                    {data.type}
+                </div>
+                <div className="text-sm font-bold text-foreground truncate">{data.name}</div>
+            </div>
+            <div className="space-y-1.5">
+                {Object.entries(data.properties).map(([key, value]) => (
+                    <div key={key} className="flex flex-col gap-0.5 border-t border-white/5 pt-1.5 first:border-0 first:pt-0">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{key}</span>
+                        <span className="text-xs text-foreground/80 line-clamp-2">{value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const nodeTypes = {
+    entity: EntityNode,
+};
+
+export const EntityRelationshipDiagram: React.FC = () => {
+    const { t } = useTranslation();
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const result = await window.electron.advancedMemory.getAllEntityKnowledge();
+            if (result.success && result.data) {
+                const rawFacts = result.data;
+
+                // Group facts by entity Name
+                const entities: Record<string, { name: string; type: string; properties: Record<string, string> }> = {};
+
+                rawFacts.forEach(fact => {
+                    const key = fact.entityName;
+                    if (!entities[key]) {
+                        entities[key] = {
+                            name: fact.entityName,
+                            type: fact.entityType,
+                            properties: {},
+                        };
+                    }
+                    entities[key].properties[fact.key] = fact.value;
+                });
+
+                const entityList = Object.values(entities);
+                const radius = Math.max(300, entityList.length * 60);
+
+                const newNodes: Node[] = entityList.map((ent, i) => {
+                    const angle = (i / entityList.length) * 2 * Math.PI;
+                    return {
+                        id: ent.name,
+                        type: 'entity',
+                        position: {
+                            x: radius * Math.cos(angle),
+                            y: radius * Math.sin(angle),
+                        },
+                        data: ent,
+                    };
+                });
+
+                // Infer edges based on mentions of entity names in values
+                const newEdges: Edge[] = [];
+                entityList.forEach(sourceEnt => {
+                    Object.values(sourceEnt.properties).forEach(val => {
+                        entityList.forEach(targetEnt => {
+                            if (sourceEnt.name !== targetEnt.name && val.includes(targetEnt.name)) {
+                                const edgeId = `e-${sourceEnt.name}-${targetEnt.name}`;
+                                if (!newEdges.some(e => e.id === edgeId)) {
+                                    newEdges.push({
+                                        id: edgeId,
+                                        source: sourceEnt.name,
+                                        target: targetEnt.name,
+                                        animated: true,
+                                        style: { stroke: 'rgba(99, 102, 241, 0.4)', strokeWidth: 2 },
+                                    });
+                                }
+                            }
+                        });
+                    });
+                });
+
+                setNodes(newNodes);
+                setEdges(newEdges);
+            }
+        } catch (error) {
+            appLogger.error('EntityRelationshipDiagram', 'Failed to load entity data', error as Error);
+        } finally {
+            setLoading(false);
+        }
+    }, [setNodes, setEdges]);
+
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
+
+    return (
+        <div className="w-full h-full flex flex-col bg-background/50 relative overflow-hidden rounded-2xl border border-white/5">
+            {loading && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+                </div>
+            )}
+
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                nodeTypes={nodeTypes}
+                fitView
+                colorMode="dark"
+            >
+                <Background color="rgba(255,255,255,0.05)" gap={20} />
+                <Controls />
+                <MiniMap />
+
+                <Panel position="top-left" className="m-4">
+                    <div className="flex items-center gap-3 bg-background/80 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-xl">
+                        <div className="p-2 bg-success/20 rounded-xl text-success">
+                            <Database className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-bold">{t('memory.erDiagram') || 'Entity Diagram'}</h2>
+                            <p className="text-[10px] text-muted-foreground">{nodes.length} entities tracked</p>
+                        </div>
+                    </div>
+                </Panel>
+
+                <Panel position="top-right" className="m-4">
+                    <button
+                        onClick={() => void loadData()}
+                        className="p-2.5 bg-background/80 backdrop-blur-xl hover:bg-white/10 rounded-xl border border-white/10 transition-all text-muted-foreground hover:text-foreground shadow-lg"
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                    </button>
+                </Panel>
+            </ReactFlow>
+        </div>
+    );
+};

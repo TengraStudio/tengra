@@ -379,6 +379,96 @@ export interface ConsensusResult {
     resolutionMethod: 'unanimous' | 'majority' | 'arbitration' | 'manual';
 }
 
+// ===== AGENT-13: Debate Types =====
+
+export type DebateSide = 'pro' | 'con';
+
+export interface DebateCitation {
+    sourceId: string;
+    title?: string;
+    url?: string;
+    excerpt?: string;
+}
+
+export interface DebateArgument {
+    id: string;
+    agentId: string;
+    provider: string;
+    side: DebateSide;
+    content: string;
+    confidence: number;
+    qualityScore: number;
+    citations: DebateCitation[];
+    timestamp: number;
+}
+
+export interface DebateModeratorOverride {
+    moderatorId: string;
+    moderatorRole: 'human_moderator';
+    decision: DebateSide | 'balanced';
+    reason?: string;
+    timestamp: number;
+}
+
+export interface DebateConsensus {
+    detected: boolean;
+    winningSide?: DebateSide | 'balanced';
+    confidence: number;
+    rationale: string;
+}
+
+export interface DebateSession {
+    id: string;
+    taskId: string;
+    stepIndex: number;
+    topic: string;
+    status: 'open' | 'resolved';
+    arguments: DebateArgument[];
+    consensus: DebateConsensus;
+    summary?: string;
+    createdAt: number;
+    resolvedAt?: number;
+    moderatorOverride?: DebateModeratorOverride;
+}
+
+export interface DebateReplay {
+    session: DebateSession;
+    timeline: DebateArgument[];
+}
+
+// ===== AGENT-15: Teamwork Analytics Types =====
+
+export interface AgentTaskCompletionMetric {
+    agentId: string;
+    completedTasks: number;
+    failedTasks: number;
+    inProgressTasks: number;
+    averageTaskDurationMs: number;
+    completionRate: number;
+}
+
+export interface AgentHealthSignal {
+    agentId: string;
+    status: 'healthy' | 'warning' | 'critical';
+    failureRate: number;
+    averageConfidence: number;
+}
+
+export interface AgentTeamworkAnalytics {
+    perAgentMetrics: AgentTaskCompletionMetric[];
+    collaborationPatterns: {
+        votingParticipationRate: number;
+        debateParticipationRate: number;
+        consensusAlignmentRate: number;
+    };
+    efficiencyScores: Record<string, number>;
+    resourceAllocationInsights: string[];
+    healthSignals: AgentHealthSignal[];
+    comparisonReport: string;
+    productivityRecommendations: string[];
+    updatedAt: number;
+}
+
 // ===== AGT-TPL: Agent Template Types =====
 
 /** AGT-TPL-01: Template category */

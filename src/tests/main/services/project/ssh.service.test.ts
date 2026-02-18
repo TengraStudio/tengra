@@ -22,6 +22,11 @@ vi.mock('ssh2', () => ({
         connect: vi.fn(),
         end: vi.fn(),
         exec: vi.fn(),
+        forwardOut: vi.fn((_srcHost, _srcPort, _dstHost, _dstPort, callback) => callback(undefined, {
+            pipe: vi.fn().mockReturnThis()
+        })),
+        forwardIn: vi.fn((_host, _port, callback) => callback(undefined)),
+        unforwardIn: vi.fn((_host, _port, callback) => callback()),
         sftp: vi.fn(),
         shell: vi.fn()
     })),
@@ -33,7 +38,8 @@ vi.mock('fs', () => ({
         mkdir: vi.fn().mockResolvedValue(undefined),
         access: vi.fn().mockResolvedValue(undefined),
         readFile: vi.fn().mockResolvedValue('[]'),
-        writeFile: vi.fn().mockResolvedValue(undefined)
+        writeFile: vi.fn().mockResolvedValue(undefined),
+        appendFile: vi.fn().mockResolvedValue(undefined)
     }
 }));
 
@@ -90,6 +96,200 @@ describe('SSHService', () => {
                 expect.stringContaining('ssh-profiles.json'),
                 '[]'
             );
+        });
+
+        it('returns diagnostics when connection key cannot be loaded', async () => {
+            vi.mocked(fs.promises.readFile).mockRejectedValueOnce(new Error('ENOENT: missing key'));
+            const result = await service.connect({
+                id: 'diag-1',
+                name: 'Diag',
+                host: 'localhost',
+                port: 22,
+                username: 'user',
+                authType: 'key',
+                privateKey: '/tmp/missing-key',
+                connected: false
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.diagnostics?.category).toBe('key');
+            expect(result.diagnostics?.hint).toContain('SSH key');
+        });
+    });
+
+    describe('SSH key management', () => {
+        it('should generate managed key metadata', async () => {
+            const result = await service.generateManagedKey('My Key', 'secret-passphrase');
+            expect(result.key.name).toBe('My Key');
+            expect(result.key.algorithm).toBe('ed25519');
+            expect(result.key.hasPassphrase).toBe(true);
+            expect(result.privateKey).toContain('PRIVATE KEY');
+            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('ssh-keys.json'),
+                expect.any(String)
+            );
+        });
+
+        it('should import and list managed keys', async () => {
+            const generated = await service.generateManagedKey('Generated Key');
+            vi.mocked(fs.promises.readFile).mockImplementation(async (filePath) => {
+                if (String(filePath).includes('ssh-keys.json')) {
+                    const imported = {
+                        id: 'imported-id',
+                        name: 'Imported Key',
+                        algorithm: 'ed25519',
+                        publicKey: generated.publicKey,
+                        fingerprint: 'SHA256:test',
+                        privateKey: generated.privateKey,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                        rotationCount: 0
+                    };
+                    return JSON.stringify([imported]);
+                }
+                return '[]';
+            });
+            const keys = await service.listManagedKeys();
+            expect(keys).toHaveLength(1);
+            expect(keys[0].name).toBe('Imported Key');
+        });
+
+        it('should manage known hosts entries', async () => {
+            vi.mocked(fs.promises.readFile).mockImplementation(async (filePath) => {
+                if (String(filePath).includes('known_hosts')) {
+                    return 'example.com ssh-ed25519 AAAATESTKEY\n';
+                }
+                return '[]';
+            });
+            const hosts = await service.listKnownHosts();
+            expect(hosts).toEqual([{ host: 'example.com', keyType: 'ssh-ed25519', publicKey: 'AAAATESTKEY' }]);
+
+            const added = await service.addKnownHost({
+                host: 'host2.example.com',
+                keyType: 'ssh-ed25519',
+                publicKey: 'AAAATESTKEY2'
+            });
+            expect(added).toBe(true);
+            expect(fs.promises.appendFile).toHaveBeenCalled();
+
+            const removed = await service.removeKnownHost('example.com', 'ssh-ed25519');
+            expect(removed).toBe(true);
+            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('known_hosts'),
+                expect.any(String)
+            );
+        });
+    });
+
+    describe('Tunnel support', () => {
+        it('should create and close remote tunnel', async () => {
+            const mockConn = {
+                forwardIn: vi.fn((_host: string, _port: number, cb: (error?: Error) => void) => cb(undefined)),
+                unforwardIn: vi.fn((_host: string, _port: number, cb: () => void) => cb())
+            };
+            service['connections'].set('conn-id', mockConn as unknown as never);
+            const created = await service.createRemoteForward('conn-id', '0.0.0.0', 2222, '127.0.0.1', 22);
+            expect(created.success).toBe(true);
+            expect(created.forwardId).toBeDefined();
+            const closed = service.closePortForward(created.forwardId ?? '');
+            expect(closed).toBe(true);
+            expect(mockConn.unforwardIn).toHaveBeenCalled();
+        });
+
+        it('should save and list tunnel presets', async () => {
+            const preset = await service.saveTunnelPreset({
+                name: 'Web Tunnel',
+                type: 'local',
+                localHost: '127.0.0.1',
+                localPort: 8080,
+                remoteHost: '127.0.0.1',
+                remotePort: 80
+            });
+            expect(preset.name).toBe('Web Tunnel');
+            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('ssh-tunnel-presets.json'),
+                expect.any(String)
+            );
+        });
+    });
+
+    describe('SSH roadmap advanced features', () => {
+        it('should search remote files and persist search history', async () => {
+            service.executeCommand = vi.fn().mockResolvedValue({
+                stdout: '/home/user/file-a.txt\n/home/user/file-b.txt',
+                stderr: '',
+                code: 0
+            });
+            const results = await service.searchRemoteFiles('conn-id', 'file', { path: '/home/user', limit: 2 });
+            expect(results).toHaveLength(2);
+            expect(results[0].path).toContain('/home/user');
+            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+                expect.stringContaining('ssh-search-history.json'),
+                expect.any(String)
+            );
+        });
+
+        it('should reconnect and expose pool stats', async () => {
+            vi.spyOn(service, 'connect').mockResolvedValue({ success: true });
+            service['connectionDetails'].set('conn-id', {
+                id: 'conn-id',
+                name: 'Test',
+                host: 'localhost',
+                port: 22,
+                username: 'user',
+                authType: 'password',
+                connected: false
+            });
+            const reconnectResult = await service.reconnectConnection('conn-id');
+            expect(reconnectResult.success).toBe(true);
+            await service.acquireConnection('conn-id');
+            const stats = service.getConnectionPoolStats();
+            expect(stats[0].connectionId).toBe('conn-id');
+            await service.releaseConnection('conn-id');
+        });
+
+        it('should run transfer batch and return results', async () => {
+            vi.spyOn(service, 'uploadFile').mockResolvedValue(true);
+            vi.spyOn(service, 'downloadFile').mockResolvedValue(true);
+            const results = await service.runTransferBatch([
+                { id: '1', connectionId: 'conn-id', direction: 'upload', localPath: 'a', remotePath: '/tmp/a' },
+                { id: '2', connectionId: 'conn-id', direction: 'download', localPath: 'b', remotePath: '/tmp/b' }
+            ]);
+            expect(results).toEqual([true, true]);
+        });
+
+        it('should parse remote containers list', async () => {
+            service.executeCommand = vi.fn().mockResolvedValue({
+                stdout: 'abc123|node:20|Up 1 hour|dev-node',
+                stderr: '',
+                code: 0
+            });
+            const containers = await service.listRemoteContainers('conn-id');
+            expect(containers[0]).toMatchObject({ id: 'abc123', image: 'node:20' });
+        });
+
+        it('should save profile template and validate profile', async () => {
+            const template = await service.saveProfileTemplate({
+                name: 'Default Ubuntu',
+                username: 'ubuntu',
+                port: 22
+            });
+            expect(template.name).toBe('Default Ubuntu');
+            const validation = service.validateProfile({ host: '', username: '', port: 70000 });
+            expect(validation.valid).toBe(false);
+            expect(validation.errors.length).toBeGreaterThan(0);
+        });
+
+        it('should handle session recording lifecycle', () => {
+            const started = service.startSessionRecording('conn-id');
+            expect(started.connectionId).toBe('conn-id');
+            started.chunks.push('first line');
+            const search = service.searchSessionRecording('conn-id', 'first');
+            expect(search).toEqual(['first line']);
+            const exported = service.exportSessionRecording('conn-id');
+            expect(exported).toContain('first line');
+            const stopped = service.stopSessionRecording('conn-id');
+            expect(stopped?.endedAt).toBeDefined();
         });
     });
 

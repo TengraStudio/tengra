@@ -7,6 +7,10 @@ import { ActivityLog } from '../components/agent/ActivityStream';
 import { ExecutionPlan } from '../components/agent/ExecutionPlanView';
 import { ToolExecution } from '../components/agent/ToolTracking';
 
+import {
+    normalizeAgentEventPayload,
+    type NormalizedAgentEvent,
+} from './converters/agentEventNormalizer';
 import { AgentTaskStatus } from './useAgentTask';
 
 /**
@@ -67,6 +71,8 @@ interface EventData {
     currentModel?: string;
     errorType?: string;
 }
+
+const toEventData = (event: NormalizedAgentEvent): EventData => event.data as EventData;
 
 interface EventControllers {
     setStatus: React.Dispatch<React.SetStateAction<AgentTaskStatus>>;
@@ -381,13 +387,13 @@ export function useAgentEvents(props: UseAgentEventsProps) {
                 return;
             }
 
-            const dataObj = payload as { type?: string; data?: EventData };
-            if (!dataObj.type || !dataObj.data) {
+            const normalizedPayload = normalizeAgentEventPayload(payload);
+            if (!normalizedPayload) {
                 return;
             }
 
-            const type = dataObj.type;
-            const data = dataObj.data;
+            const type = normalizedPayload.type;
+            const data = toEventData(normalizedPayload);
             const currentProps = propsRef.current;
 
             // When a new task starts, immediately track its ID synchronously

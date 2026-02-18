@@ -29,6 +29,8 @@ interface WorkspaceMountItemProps {
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onTreeItemContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
     onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
+    expandedTreeNodes?: Record<string, boolean>;
+    onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
     t: (key: string) => string;
 }
 
@@ -140,6 +142,8 @@ interface VirtualizedRowProps {
     onEnsureMount?: (mount: WorkspaceMount) => Promise<boolean> | boolean;
     onContextMenu: (e: React.MouseEvent, entry: WorkspaceEntry) => void;
     onMove?: (entry: WorkspaceEntry, targetDirPath: string) => void;
+    expandedTreeNodes?: Record<string, boolean>;
+    onExpandedTreeNodeChange?: (nodeKey: string, expanded: boolean) => void;
     t: (key: string) => string;
 }
 
@@ -156,6 +160,8 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
     onEnsureMount,
     onContextMenu,
     onMove,
+    expandedTreeNodes,
+    onExpandedTreeNodeChange,
     t,
 }) => {
     const node = nodes[index];
@@ -175,6 +181,8 @@ const VirtualizedTreeRow: React.FC<RowComponentProps<VirtualizedRowProps>> = ({
                 onEnsureMount={onEnsureMount}
                 onContextMenu={onContextMenu}
                 onMove={onMove}
+                expandedTreeNodes={expandedTreeNodes}
+                onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                 t={t}
             />
         </div>
@@ -198,6 +206,8 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
     onEnsureMount,
     onTreeItemContextMenu,
     onMove,
+    expandedTreeNodes,
+    onExpandedTreeNodeChange,
     t,
 }) => {
     const showHeader = mountsCount > 1 || mount.type !== 'local';
@@ -217,6 +227,8 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
             onEnsureMount,
             onContextMenu: onTreeItemContextMenu,
             onMove,
+            expandedTreeNodes,
+            onExpandedTreeNodeChange,
             t,
         }),
         [
@@ -229,6 +241,8 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
             onEnsureMount,
             onTreeItemContextMenu,
             onMove,
+            expandedTreeNodes,
+            onExpandedTreeNodeChange,
             t,
         ]
     );
@@ -289,6 +303,8 @@ export const WorkspaceMountItem: React.FC<WorkspaceMountItemProps> = ({
                                 onEnsureMount={onEnsureMount}
                                 onContextMenu={onTreeItemContextMenu}
                                 onMove={onMove}
+                                expandedTreeNodes={expandedTreeNodes}
+                                onExpandedTreeNodeChange={onExpandedTreeNodeChange}
                                 t={t}
                             />
                         ))

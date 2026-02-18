@@ -20,7 +20,7 @@ export function useProjectWorkspaceController({
     const ps = useProjectState();
     const { notify, logActivity } = ps;
 
-    const wm = useWorkspaceManager({ project, notify, logActivity });
+    const wm = useWorkspaceManager({ project, notify, logActivity, t });
 
     useEffect(() => {
         const handleProgress = (_event: unknown, ...args: unknown[]) => {
