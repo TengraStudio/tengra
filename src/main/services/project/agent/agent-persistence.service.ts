@@ -199,18 +199,14 @@ export class AgentPersistenceService extends BaseService {
      */
     async updateTaskState(taskId: string, state: Partial<AgentTaskState>): Promise<void> {
         // AGENT-001-4: Use queue to prevent race conditions during concurrent updates
-        return new Promise((resolve, reject) => {
-            this.writeQueue = this.writeQueue.then(async () => {
-                try {
-                    await this.executeTaskUpdate(taskId, state);
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            }).catch(() => {
-                // Ensure queue continues
+        const queuedUpdate = this.writeQueue
+            .catch(() => undefined)
+            .then(async () => {
+                await this.executeTaskUpdate(taskId, state);
             });
-        });
+
+        this.writeQueue = queuedUpdate.catch(() => undefined);
+        return queuedUpdate;
     }
 
     private async executeTaskUpdate(taskId: string, state: Partial<AgentTaskState>): Promise<void> {

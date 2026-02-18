@@ -1,3 +1,4 @@
+import type { IpcContractVersionInfo } from '@shared/constants/ipc-contract';
 import type { IpcRendererEvent } from 'electron';
 
 // Marketplace model from database
@@ -311,6 +312,22 @@ export interface ElectronAPI {
         expired: number;
         revoked: number;
     }>;
+    exportCredentials: (options: {
+        provider?: string;
+        password: string;
+        expiresInHours?: number;
+    }) => Promise<{ success: boolean; payload?: string; checksum?: string; expiresAt?: number; error?: string }>;
+    importCredentials: (
+        payload: string,
+        password: string
+    ) => Promise<{ success: boolean; imported?: number; skipped?: number; expiresAt?: number; error?: string }>;
+    createMasterKeyBackup: (
+        passphrase: string
+    ) => Promise<{ success: boolean; backup?: string; error?: string }>;
+    restoreMasterKeyBackup: (
+        backupPayload: string,
+        passphrase: string
+    ) => Promise<{ success: boolean; error?: string }>;
     startAuthSession: (
         provider: string,
         accountId?: string,
@@ -1731,6 +1748,10 @@ export interface ElectronAPI {
             };
         }>;
     };
+    ipcContract: {
+        getVersion: () => Promise<IpcContractVersionInfo>;
+        isCompatible: () => Promise<boolean>;
+    };
 
     // Explicit ipcRenderer exposure for flexible components
     ipcRenderer: {
@@ -1819,6 +1840,22 @@ export interface ElectronAPI {
         getVotingSession: (
             sessionId: string
         ) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        listVotingSessions: (
+            taskId?: string
+        ) => Promise<import('@shared/types/project-agent').VotingSession[]>;
+        overrideVotingDecision: (payload: {
+            sessionId: string;
+            finalDecision: string;
+            reason?: string;
+        }) => Promise<import('@shared/types/project-agent').VotingSession | null>;
+        getVotingAnalytics: (
+            taskId?: string
+        ) => Promise<import('@shared/types/project-agent').VotingAnalytics>;
+        getVotingConfiguration: () => Promise<import('@shared/types/project-agent').VotingConfiguration>;
+        updateVotingConfiguration: (
+            patch: Partial<import('@shared/types/project-agent').VotingConfiguration>
+        ) => Promise<import('@shared/types/project-agent').VotingConfiguration>;
+        listVotingTemplates: () => Promise<import('@shared/types/project-agent').VotingTemplate[]>;
         buildConsensus: (
             outputs: Array<{ modelId: string; provider: string; output: string }>
         ) => Promise<import('@shared/types/project-agent').ConsensusResult>;

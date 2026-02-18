@@ -1,6 +1,7 @@
 import { MemoryCategory } from '@shared/types/advanced-memory';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Filter, Search } from 'lucide-react';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,28 @@ import {
 import { useTranslation } from '@/i18n';
 
 import { CATEGORY_CONFIG } from './constants';
+
+const MEMORY_SEARCH_HISTORY_KEY = 'memory-search-history';
+const MAX_MEMORY_SEARCH_HISTORY = 8;
+
+const getInitialSearchHistory = (): string[] => {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+    try {
+        const stored = window.localStorage.getItem(MEMORY_SEARCH_HISTORY_KEY);
+        if (!stored) {
+            return [];
+        }
+        const parsed = safeJsonParse<string[]>(stored, []);
+        return parsed
+            .filter((value): value is string => typeof value === 'string')
+            .slice(0, MAX_MEMORY_SEARCH_HISTORY);
+    } catch (error) {
+        window.electron.log.error('Failed to read memory search history', error as Error);
+        return [];
+    }
+};
 
 interface MemorySearchFilterProps {
     searchQuery: string;
@@ -31,17 +54,51 @@ export const MemorySearchFilter: React.FC<MemorySearchFilterProps> = ({
     onSearch
 }) => {
     const { t } = useTranslation();
+    const [searchHistory, setSearchHistory] = useState<string[]>(getInitialSearchHistory);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(MEMORY_SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
+        } catch (error) {
+            window.electron.log.error('Failed to persist memory search history', error as Error);
+        }
+    }, [searchHistory]);
+
+    const rememberSearch = useCallback(() => {
+        const normalizedQuery = searchQuery.trim();
+        if (normalizedQuery.length < 2) {
+            return;
+        }
+        setSearchHistory(previous => {
+            const deduped = previous.filter(item => item.toLowerCase() !== normalizedQuery.toLowerCase());
+            return [normalizedQuery, ...deduped].slice(0, MAX_MEMORY_SEARCH_HISTORY);
+        });
+    }, [searchQuery]);
+
+    const handleSubmit = useCallback((event: React.FormEvent) => {
+        event.preventDefault();
+        rememberSearch();
+        onSearch(event);
+    }, [onSearch, rememberSearch]);
+
     return (
         <div className="flex gap-4 items-center">
-            <form onSubmit={onSearch} className="flex gap-2 items-center flex-1">
+            <form onSubmit={handleSubmit} className="flex gap-2 items-center flex-1">
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                     <Input
+                        list="memory-search-suggestions"
                         placeholder={t('memory.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
+                        onBlur={rememberSearch}
                         className="pl-10 bg-muted/30 border-white/5"
                     />
+                    <datalist id="memory-search-suggestions">
+                        {searchHistory.map(query => (
+                            <option key={query} value={query} />
+                        ))}
+                    </datalist>
                 </div>
                 <Button type="submit" variant="secondary">{t('common.search')}</Button>
             </form>

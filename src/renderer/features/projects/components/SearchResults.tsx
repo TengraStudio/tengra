@@ -6,10 +6,50 @@ import { useTranslation } from '@/i18n';
 interface SearchResultsProps {
     results: FileSearchResult[];
     projectRoot: string;
+    searchQuery: string;
     onSelect: (path: string, line?: number) => void;
 }
 
-export const SearchResults: React.FC<SearchResultsProps> = ({ results, projectRoot, onSelect }) => {
+const renderHighlightedSnippet = (text: string, query: string): React.ReactNode => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+        return text;
+    }
+
+    const normalizedText = text.toLowerCase();
+    const fragments: React.ReactNode[] = [];
+    let startIndex = 0;
+    let matchCount = 0;
+
+    while (startIndex < text.length) {
+        const matchIndex = normalizedText.indexOf(normalizedQuery, startIndex);
+        if (matchIndex === -1) {
+            fragments.push(text.slice(startIndex));
+            break;
+        }
+
+        if (matchIndex > startIndex) {
+            fragments.push(text.slice(startIndex, matchIndex));
+        }
+
+        fragments.push(
+            <mark key={`match-${matchCount}`} className="bg-primary/20 text-foreground rounded px-0.5">
+                {text.slice(matchIndex, matchIndex + normalizedQuery.length)}
+            </mark>
+        );
+        startIndex = matchIndex + normalizedQuery.length;
+        matchCount += 1;
+    }
+
+    return fragments.length > 0 ? fragments : text;
+};
+
+export const SearchResults: React.FC<SearchResultsProps> = ({
+    results,
+    projectRoot,
+    searchQuery,
+    onSelect,
+}) => {
     const { t } = useTranslation();
 
     if (results.length === 0) {
@@ -41,7 +81,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, projectRo
                         )}
                     </div>
                     <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
-                        {res.text.trim()}
+                        {renderHighlightedSnippet(res.text.trim(), searchQuery)}
                     </div>
                 </div>
             ))}

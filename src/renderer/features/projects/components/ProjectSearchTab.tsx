@@ -43,7 +43,12 @@ export const ProjectSearchTab = ({
                 </button>
             </div>
             <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col p-2">
-                <SearchResults results={searchResults} projectRoot={projectRoot} onSelect={(path, line) => { void handleFileSelect(path, line); }} />
+                <SearchResults
+                    results={searchResults}
+                    projectRoot={projectRoot}
+                    searchQuery={searchQuery}
+                    onSelect={(path, line) => { void handleFileSelect(path, line); }}
+                />
             </div>
         </div>
     );

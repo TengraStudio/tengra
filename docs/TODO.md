@@ -50,13 +50,17 @@ This document contains a comprehensive list of tasks, improvements, and features
 Selected small/contained tasks that are realistic to ship quickly:
 
 ### ⏳ Pending Quick Wins
-- [ ] **UI-ACC-01**: Add title attributes to all sidebar interactive elements (DONE - verification needed)
-- [ ] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
-- [ ] **MKT-UI-03.6**: Implement search history for marketplace
+- [x] **UI-ACC-01**: Add title attributes to all sidebar interactive elements (DONE - verification needed)
+- [x] **CHAT-CLR-01**: Implement 'Clear All Chats' with confirmation (DONE)
+- [x] **MKT-UI-03.6**: Implement search history for marketplace
 - [ ] **SSH-07.5**: Implement profile testing for SSH
-- [ ] **MEM-06.4**: Add search suggestions for memory search
-- [ ] **IMG-02.1**: Store generated images with metadata
-- [ ] **IMG-04.5**: Add gallery search
+- [x] **MEM-06.4**: Add search suggestions for memory search
+- [x] **IMG-02.1**: Store generated images with metadata
+- [x] **IMG-04.5**: Add gallery search
+- [x] **DOC-09**: Create `.codex` directory and mirror core documentation
+- [x] **DOC-10**: Harden AI rules and MASTER_COMMANDMENTS with termination warnings
+- [x] **DOC-11**: Fix broken absolute paths in documentation hub
+- [x] **DOC-12**: Create `LINT_ISSUES.md` for tech debt tracking
 
 
 ---
@@ -67,38 +71,23 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Security & Authentication
 
-- [ ] **SEC-004**: Implement secure credential export
+- [x] **SEC-004**: Implement secure credential export
   - Description: Allow users to export their API keys securely
   - Sub-tasks:
-    - [ ] Add password-protected export feature
-    - [ ] Implement import with decryption
-    - [ ] Add audit log for credential exports
-    - [ ] Implement export expiration
-    - [ ] Add export format versioning
-    - [ ] Create export verification checksum
+    - [x] Add password-protected export feature
+    - [x] Implement import with decryption
+    - [x] Add audit log for credential exports
+    - [x] Implement export expiration
+    - [x] Add export format versioning
+    - [x] Create export verification checksum
 
-- [ ] **SEC-006**: Implement API key encryption at rest
+- [x] **SEC-006**: Implement API key encryption at rest
   - Location: `src/main/services/security/security.service.ts`
   - Sub-tasks:
-    - [ ] Use OS keychain for key storage
-    - [ ] Implement key derivation function
-    - [ ] Add key rotation mechanism
-    - [ ] Create secure key backup
-
-- [ ] **SEC-007**: Add security audit logging
-  - Location: `src/main/services/analysis/audit-log.service.ts`
-  - Sub-tasks:
-    - [ ] Log all API key accesses
-    - [ ] Log all file system operations
-  - Progress: Added authentication event logging integration in auth IPC, hash-chained integrity fields (`prevHash/hash`), integrity verification API, and retention-based rotation/pruning.
-
-- [ ] **SEC-009**: Add input sanitization for AI prompts
-  - Location: `src/main/services/llm/`
-  - Sub-tasks:
-    - [ ] Implement prompt injection detection
-    - [ ] Add HTML/JS sanitization
-    - [ ] Create prompt length limits
-    - [ ] Add suspicious pattern detection
+    - [x] Use OS keychain for key storage
+    - [x] Implement key derivation function
+    - [x] Add key rotation mechanism
+    - [x] Create secure key backup
 
 ---
 
@@ -107,7 +96,7 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### Marketplace System (VSCode-style Extensions)
 
 #### Infrastructure
-- [ ] **MKT-INFRA-01**: Design marketplace architecture
+- [x] **MKT-INFRA-01**: Design marketplace architecture
   - Define manifest schema (extension.json format)
   - Design discovery API endpoints
   - Plan versioning strategy (semver compatibility)
@@ -116,7 +105,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement extension conflict detection
   - Create extension compatibility matrix
 
-- [ ] **MKT-INFRA-02**: Create marketplace backend service
+- [x] **MKT-INFRA-02**: Create marketplace backend service
   - Location: `src/main/services/marketplace/`
   - Implement extension registry with search capability
   - Add version management and dependency resolution
@@ -126,7 +115,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add extension download tracking
   - Create extension update notification
 
-- [ ] **MKT-INFRA-03**: Implement extension loader/unloader with sandboxing
+- [x] **MKT-INFRA-03**: Implement extension loader/unloader with sandboxing
   - Location: `src/main/services/extension/`
   - Create isolated execution context for extensions
   - Implement hot-reload capability for development
@@ -136,7 +125,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create extension debugging interface
   - Add extension performance monitoring
 
-- [ ] **MKT-INFRA-04**: Add extension lifecycle management
+- [x] **MKT-INFRA-04**: Add extension lifecycle management
   - Install/Update/Remove operations
   - Enable/Disable toggle per extension
   - Handle extension dependencies
@@ -145,7 +134,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add extension backup before update
   - Create extension migration path
 
-- [ ] **MKT-INFRA-05**: Create extension permission system
+- [x] **MKT-INFRA-05**: Create extension permission system
   - File system access permissions
   - Network access permissions
   - IPC method whitelist
@@ -154,7 +143,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement permission revocation
   - Create permission audit log
 
-- [ ] **MKT-INFRA-06**: Implement extension update mechanism
+- [x] **MKT-INFRA-06**: Implement extension update mechanism
   - Automatic update checking
   - Background download and install
   - Update notification system
@@ -163,13 +152,13 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement delta updates
   - Add update verification
 
-- [ ] **MKT-INFRA-07**: Create extension storage service
+- [x] **MKT-INFRA-07**: Create extension storage service
   - Implement extension data isolation
   - Add extension storage quotas
   - Create extension data export
   - Add extension data migration
 
-- [ ] **MKT-INFRA-08**: Implement extension configuration system
+- [x] **MKT-INFRA-08**: Implement extension configuration system
   - Add extension settings schema
   - Create settings UI generation
   - Implement settings validation
@@ -409,7 +398,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create rotation presets
   - Add rotation testing
 
-- [ ] **AGENT-04**: Add agent checkpoint compression
+- [x] **AGENT-04**: Add agent checkpoint compression
   - Compress old checkpoints to save disk space
   - Implement incremental checkpoint storage
   - Add checkpoint cleanup policy
@@ -418,7 +407,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement checkpoint merge
   - Add checkpoint export
 
-- [ ] **AGENT-05**: Implement agent collaboration voting UI
+- [x] **AGENT-05**: Implement agent collaboration voting UI
   - Display voting sessions in real-time
   - Allow manual override of consensus decisions
   - Show model disagreement details
@@ -427,7 +416,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add voting configuration
   - Create voting templates
 
-- [ ] **AGENT-06**: Add agent task templates
+- [x] **AGENT-06**: Add agent task templates
   - Pre-defined task templates for common operations
   - Custom template creation
   - Template sharing between projects
@@ -436,7 +425,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add template validation
   - Create template builder
 
-- [ ] **AGENT-07**: Implement agent memory persistence
+- [x] **AGENT-07**: Implement agent memory persistence
   - Long-term memory storage
   - Cross-session memory retrieval
   - Memory importance scoring
@@ -445,7 +434,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add memory search
   - Create memory visualization
 
-- [ ] **AGENT-08**: Add agent performance metrics
+- [x] **AGENT-08**: Add agent performance metrics
   - Task completion rate tracking
   - Average execution time
   - Error rate monitoring
@@ -454,7 +443,7 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement performance comparison
   - Create performance reports
 
-- [ ] **AGENT-09**: Implement agent state machine visualization
+- [x] **AGENT-09**: Implement agent state machine visualization
   - Location: `src/main/services/project/agent/agent-state-machine.ts`
   - Create state transition diagram
   - Add real-time state updates
@@ -574,14 +563,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### LLM Service Improvements
 
 
-- [ ] **LLM-05**: Add multi-modal support improvements
-  - Image input preprocessing
-  - Audio transcription integration
-  - Video frame extraction
-  - Add file type detection ✅
-  - Implement size optimization ✅
-  - Add format conversion
-  - Create multi-modal preview
 
 
 
@@ -849,10 +830,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add context comments for translators
   - Implement translation memory
 
-- [ ] **I18N-05**: Add locale-specific AI behavior
-  - Model prompts in user's language
-  - Locale-aware responses
-  - Regional model preferences 
 
 ### Browser Extension
 
@@ -1253,34 +1230,58 @@ Selected small/contained tasks that are realistic to ship quickly:
 ## 🔍 Audit Backlog (Generated 2026-02-17)
 
 ### 🔐 Security Audit TODOs
-- [x] **AUD-SEC-003**: Add sender/origin verification to auth IPC handlers (`src/main/ipc/auth.ts`)
-- [x] **AUD-SEC-004**: Add sender/origin verification to files IPC handlers (`src/main/ipc/files.ts`)
-- [x] **AUD-SEC-005**: Add sender/origin verification to ssh IPC handlers (`src/main/ipc/ssh.ts`)
-- [x] **AUD-SEC-006**: Add sender/origin verification to process IPC handlers (`src/main/ipc/process.ts`)
-- [x] **AUD-SEC-007**: Add sender/origin verification to proxy IPC handlers (`src/main/ipc/proxy.ts`)
-- [x] **AUD-SEC-008**: Add sender/origin verification to mcp IPC handlers (`src/main/ipc/mcp.ts`)
-- [x] **AUD-SEC-009**: Add sender/origin verification to terminal IPC handlers (`src/main/ipc/terminal.ts`)
-- [x] **AUD-SEC-010**: Enforce allowed protocol allowlist for `openExternal` (`src/main/startup/window.ts`)
-- [x] **AUD-SEC-011**: Harden hidden cookie-capture BrowserWindow URL policy (`src/main/ipc/window.ts`)
-- [x] **AUD-SEC-012**: Enforce allowed roots before `shell.openPath` (`src/main/ipc/window.ts`)
-- [x] **AUD-SEC-013**: Redact sensitive URL query params in logs (`src/main/ipc/window.ts`)
-- [x] **AUD-SEC-014**: Fix allowed-root prefix confusion in safe-file protocol (`src/main/startup/protocols.ts`)
-- [x] **AUD-SEC-015**: Fix allowed-root prefix confusion in file system service (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-016**: Add symlink/junction escape checks to filesystem operations (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-017**: Validate path authorization in `fileExists` (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-018**: Validate path authorization in `extractStrings` (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-019**: Validate path authorization in `syncNote` (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-020**: Add source allowlist + integrity checks for remote downloads (`src/main/services/data/filesystem.service.ts`)
-- [x] **AUD-SEC-021**: Replace shell-string git execution with argument-safe process APIs (`src/main/services/project/git.service.ts`)
-- [x] **AUD-SEC-022**: Harden git-advanced shell interpolation handling (`src/main/ipc/git-advanced.ts`)
-- [x] **AUD-SEC-023**: Protect `/api/auth/token` behind strict local auth (`src/main/api/api-server.service.ts`)
-- [x] **AUD-SEC-024**: Bind API server explicitly to loopback only (`src/main/api/api-server.service.ts`)
-- [x] **AUD-SEC-025**: Require auth for all WebSocket connections (`src/main/api/api-server.service.ts`)
-- [x] **AUD-SEC-026**: Enforce strict OAuth state validation in Antigravity callback (`src/main/utils/local-auth-server.util.ts`)
-- [x] **AUD-SEC-027**: Enforce strict OAuth state validation in Claude callback (`src/main/utils/local-auth-server.util.ts`)
-- [x] **AUD-SEC-028**: Remove plaintext master-key fallback (`src/main/services/security/security.service.ts`)
-- [x] **AUD-SEC-029**: Encrypt SSH private keys at rest (`src/main/services/project/ssh.service.ts`)
-- [x] **AUD-SEC-030**: Stop returning sensitive SSH fields to renderer (`src/main/ipc/ssh.ts`)
+
+### 🔎 Newly Discovered Backlog (2026-02-17)
+
+#### Security Follow-ups
+- [x] **AUD-SEC-031**: Add defensive JSON parse + schema validation for API payload parsing (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-032**: Add strict Content-Security-Policy headers on API responses (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-033**: Restrict CORS origin handling to explicit allowlist (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-034**: Enforce HTTPS-only policy for cookie-capture URL allowlist (`src/main/ipc/window.ts`)
+- [x] **AUD-SEC-035**: Add per-IP + token combined rate limiting for local API (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-036**: Add websocket max payload/frame validation to prevent oversized messages (`src/main/api/api-server.service.ts`)
+- [x] **AUD-SEC-037**: Harden shell/spawn command validation in window shell actions (`src/main/ipc/window.ts`)
+- [x] **AUD-SEC-038**: Enforce mandatory checksum verification for all remote model downloads (`src/main/services/llm/model-downloader.service.ts`)
+
+#### Performance Follow-ups
+- [x] **AUD-PERF-031**: Replace JSON.stringify deep-equality checks with cheaper comparison strategy (`src/renderer/store/settings.store.ts`)
+- [x] **AUD-PERF-032**: Reduce repeated array lookups/find operations in terminal panel rendering (`src/renderer/features/terminal/components/TerminalPanelImplContent.tsx`)
+- [x] **AUD-PERF-033**: Collapse repeated log-level filtering passes into a single aggregation pass (`src/renderer/features/projects/components/ProjectLogsTab.tsx`)
+- [x] **AUD-PERF-034**: Batch and parallelize code-intelligence chunk embedding requests (`src/main/services/project/code-intelligence.service.ts`)
+- [x] **AUD-PERF-035**: Batch/debounce localStorage writes for titlebar history and quick actions (`src/renderer/components/layout/TitleBar.tsx`)
+- [x] **AUD-PERF-036**: Add bounded LRU/TTL policy for response cache growth control (`src/main/services/llm/response-cache.service.ts`)
+- [x] **AUD-PERF-037**: Add lazy pagination for large file lists in project scan results (`src/main/services/project/project.service.ts`)
+- [x] **AUD-PERF-038**: Use partial-failure tolerant parallel search strategy for context retrieval (`src/main/services/llm/context-retrieval.service.ts`)
+
+#### Test Coverage Follow-ups
+- [x] **AUD-TEST-001**: Add workflow service behavior tests for create/execute/delete lifecycle (`src/tests/main/services/workflow.service.test.ts`)
+- [x] **AUD-TEST-002**: Add workflow runner step execution + branching tests (`src/tests/main/services/workflow-runner.test.ts`)
+- [x] **AUD-TEST-003**: Add content service tests for scraping/search + error paths (`src/tests/main/services/external/content.service.test.ts`)
+- [x] **AUD-TEST-004**: Add market-research pipeline tests for deep analysis outputs (`src/tests/main/services/external/market-research.service.test.ts`)
+- [x] **AUD-TEST-005**: Add feature flag service tests for load/toggle/persist behavior (`src/tests/main/services/external/feature-flag.service.test.ts`)
+- [x] **AUD-TEST-006**: Add logo generation service tests for provider/model fallback logic (`src/tests/main/services/external/logo.service.test.ts`)
+- [x] **AUD-TEST-007**: Add pagespeed service tests for metric extraction and fallback behavior (`src/tests/main/services/analysis/pagespeed.service.test.ts`)
+- [x] **AUD-TEST-008**: Add file-change-tracker tests for diff persistence and metadata integrity (`src/tests/main/services/data/file-change-tracker.service.test.ts`)
+
+#### Reliability/Bug Follow-ups
+- [x] **AUD-BUG-001**: Fix malformed git log command flag (`log -n`) and add guard checks (`src/main/services/project/git.service.ts`)
+- [x] **AUD-BUG-002**: Add watcher cleanup lifecycle for filesystem watch handles (`src/main/services/data/file.service.ts`)
+- [x] **AUD-BUG-003**: Implement timeout enforcement path in queued request utility (`src/main/utils/request-queue.util.ts`)
+- [x] **AUD-BUG-004**: Add stream pipe error handling for file download writer failures (`src/main/services/data/file.service.ts`)
+- [x] **AUD-BUG-005**: Guard provider-rotation fallback when chain arrays are empty (`src/main/services/project/agent/agent-provider-rotation.service.ts`)
+- [x] **AUD-BUG-006**: Add robust queue error propagation in agent persistence write queue (`src/main/services/project/agent/agent-persistence.service.ts`)
+- [x] **AUD-BUG-007**: Validate edit line-range bounds before file patch application (`src/main/services/data/file.service.ts`)
+- [x] **AUD-BUG-008**: Enforce download state transition validation for active/persisted tasks (`src/main/services/llm/model-downloader.service.ts`)
+
+#### UX/Architecture Follow-ups
+- [x] **AUD-UX-026**: Add inline real-time validation feedback for project edit form (`src/renderer/features/projects/components/modals/EditProjectModal.tsx`)
+- [x] **AUD-UX-027**: Standardize tooltip delay and behavior across interactive UI surfaces (`src/renderer/components`)
+- [x] **AUD-UX-028**: Add highlighted match rendering for project/chat search result snippets (`src/renderer/features/projects/components`)
+- [x] **AUD-UX-029**: Improve keyboard navigation/ARIA for message action controls (`src/renderer/features/chat/components/MessageBubble.tsx`)
+- [x] **AUD-ARCH-021**: Reduce heavy callback prop drilling in project card surface via local context (`src/renderer/features/projects/components/ProjectCard.tsx`)
+- [x] **AUD-ARCH-022**: Add IPC contract versioning strategy for renderer-main compatibility (`src/main/ipc`)
+- [x] **AUD-ARCH-023**: Replace lazy service proxy hotspots with explicit dependency injection boundaries (`src/main/core/lazy-services.ts`)
+- [x] **AUD-ARCH-024**: Define and enforce cache invalidation strategy for LLM response cache (`src/main/services/llm/response-cache.service.ts`)
 
 ### ⚡ Performance Audit TODOs
 (All performance audit items completed)

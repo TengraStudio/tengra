@@ -3,16 +3,18 @@
 Thank you for your interest in contributing to Tandem! To maintain high code quality and safety, we follow strict guidelines.
 
 ## 👑 The Master Commandments
+> **CRITICAL**: Failure to adhere to these rules will result in immediate session termination. NO EXCEPTIONS.
 
-1.  **NO `console.log`**: Use `appLogger` for all logging.
-2.  **STRICT TYPES**: `any` and `unknown` are forbidden. Use explicit interfaces.
-3.  **NO SUPPRESSION**: `@ts-ignore` and `eslint-disable` are not allowed. Fix the root cause.
+1.  **NO `console.log`**: Use `appLogger` for all logging. Every log must have a service context.
+2.  **STRICT TYPES**: `any` and `unknown` are strictly forbidden. Use explicit interfaces and types.
+3.  **NO SUPPRESSION**: `@ts-ignore` and `eslint-disable` are NOT allowed. Fix the root cause.
 4.  **NASA POWER OF TEN**:
     - No recursion.
     - Fixed loop bounds.
-    - Short functions (max 150 lines).
+    - Short functions (max 60 lines preferred, 150 lines max).
     - Check all return values.
-5.  **BOY SCOUT RULE**: Leave the code cleaner. Every PR should fix at least one existing lint warning or type issue.
+5.  **BOY SCOUT RULE**: Mandatory. Leave the code cleaner. Every session MUST fix at least one existing lint warning or type issue.
+6.  **DOCS MIRRORING**: All documentation must be updated in `docs/` and mirrored to `.codex/`.
 
 ## 🛠 Development Workflow
 

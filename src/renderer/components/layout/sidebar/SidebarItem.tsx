@@ -60,11 +60,10 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
                 exit={{ opacity: 0, x: -4 }}
             />
         )}
-        <Tooltip content={label} side="right" delay={0} disabled={!isCollapsed}>
+        <Tooltip content={label} side="right" disabled={!isCollapsed}>
             <button
                 {...props}
                 onClick={onClick}
-                title={label}
                 aria-label={props['aria-label'] ?? label}
                 className={getButtonClassName(active, variant, isCollapsed, className)}
             >

@@ -61,6 +61,25 @@ export const webElectronMock: ElectronAPI = {
         expired: 0,
         revoked: 0,
     }),
+    exportCredentials: async (_options: { provider?: string; password: string; expiresInHours?: number }) => ({
+        success: true,
+        payload: '',
+        checksum: '',
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    }),
+    importCredentials: async (_payload: string, _password: string) => ({
+        success: true,
+        imported: 0,
+        skipped: 0,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    }),
+    createMasterKeyBackup: async (_passphrase: string) => ({
+        success: true,
+        backup: '',
+    }),
+    restoreMasterKeyBackup: async (_backupPayload: string, _passphrase: string) => ({
+        success: true,
+    }),
     startAuthSession: async (_provider: string, _accountId?: string, _source?: string) => ({ sessionId: '00000000-0000-0000-0000-000000000000' }),
     touchAuthSession: async (_sessionId: string) => ({ success: true }),
     endAuthSession: async (_sessionId: string) => ({ success: true }),
@@ -1171,6 +1190,10 @@ export const webElectronMock: ElectronAPI = {
             totals: { registered: 0, loaded: 0, loading: 0 },
         }),
     },
+    ipcContract: {
+        getVersion: async () => ({ version: 1, minRendererVersion: 1, minMainVersion: 1 }),
+        isCompatible: async () => true,
+    },
 
     ipcRenderer: {
         on:
@@ -1246,6 +1269,40 @@ export const webElectronMock: ElectronAPI = {
         }) => null,
         resolveVoting: async (_sessionId: string) => null,
         getVotingSession: async (_sessionId: string) => null,
+        listVotingSessions: async (_taskId?: string) => [],
+        overrideVotingDecision: async (_payload: {
+            sessionId: string;
+            finalDecision: string;
+            reason?: string;
+        }) => null,
+        getVotingAnalytics: async (_taskId?: string) => ({
+            totalSessions: 0,
+            pendingSessions: 0,
+            resolvedSessions: 0,
+            deadlockedSessions: 0,
+            averageVotesPerSession: 0,
+            averageConfidence: 0,
+            disagreementIndex: 0,
+            updatedAt: Date.now(),
+        }),
+        getVotingConfiguration: async () => ({
+            minimumVotes: 2,
+            deadlockThreshold: 0.9,
+            autoResolve: true,
+            autoResolveTimeoutMs: 60_000,
+        }),
+        updateVotingConfiguration: async (patch: {
+            minimumVotes?: number;
+            deadlockThreshold?: number;
+            autoResolve?: boolean;
+            autoResolveTimeoutMs?: number;
+        }) => ({
+            minimumVotes: patch.minimumVotes ?? 2,
+            deadlockThreshold: patch.deadlockThreshold ?? 0.9,
+            autoResolve: patch.autoResolve ?? true,
+            autoResolveTimeoutMs: patch.autoResolveTimeoutMs ?? 60_000,
+        }),
+        listVotingTemplates: async () => [],
         buildConsensus: async (_outputs: Array<{ modelId: string; provider: string; output: string }>) => ({
             agreed: false,
             resolutionMethod: 'manual' as const,

@@ -1,24 +1,33 @@
+import { IpcValue } from '@shared/types/common';
 import { CheckCircle2, Edit2, Power, Server, Shield, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { mcpMarketplaceClient } from '@/lib/mcp-marketplace-client';
+import { mcpMarketplaceClient,McpServerLike } from '@/lib/mcp-marketplace-client';
 import { cn } from '@/lib/utils';
 
-interface MCPServer {
-    id: string
-    name: string
-    command: string
-    args: string[]
-    description?: string
-    env?: Record<string, string>
-    enabled?: boolean
-    tools?: { name: string; description: string }[]
-    category?: string
-    publisher?: string
-    version?: string
-    isOfficial?: boolean
+interface MCPServer extends McpServerLike {
+    id: string;
+    name: string;
 }
+
+type McpSettingValue = string | number | boolean | null;
+
+interface McpSettingsField {
+    key: string;
+    type: 'string' | 'number' | 'integer' | 'boolean';
+    title?: string;
+    description?: string;
+    enum?: McpSettingValue[];
+    required: boolean;
+}
+
+const toIpcValueMap = (
+    values: Record<string, McpSettingValue>
+): Record<string, IpcValue> => {
+    const entries = Object.entries(values).map(([key, value]) => [key, value as IpcValue] as const);
+    return Object.fromEntries(entries);
+};
 
 interface ServerItemProps {
     server: MCPServer
@@ -74,7 +83,7 @@ const ServerItem: React.FC<ServerItemProps> = ({ server, t, handleToggle, handle
                         )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        {server.description ?? `${server.command} ${server.args.join(' ')}`}
+                        {server.description ?? `${server.command ?? ''} ${(server.args ?? []).join(' ')}`.trim()}
                     </p>
                     {server.publisher && (
                         <p className="text-xxs text-muted-foreground/60 mt-1">
@@ -164,15 +173,47 @@ export const MCPServersTab = () => {
     const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
     const [draftCommand, setDraftCommand] = useState('');
     const [draftVersion, setDraftVersion] = useState('');
+    const [draftSettingsValues, setDraftSettingsValues] = useState<Record<string, McpSettingValue>>({});
     const [versionHistory, setVersionHistory] = useState<string[]>([]);
+
+    const settingsFields = useMemo<McpSettingsField[]>(() => {
+        const schema = editingServer?.settingsSchema;
+        if (!schema?.properties) {
+            return [];
+        }
+        const requiredFields = schema.required ?? [];
+
+        return Object.entries(schema.properties).map(([key, fieldRecord]) => {
+            const fieldType = fieldRecord.type;
+            const normalizedType = fieldType === 'number' || fieldType === 'integer' || fieldType === 'boolean'
+                ? fieldType
+                : 'string';
+            const enumValues = fieldRecord.enum;
+
+            return {
+                key,
+                type: normalizedType,
+                title: fieldRecord.title,
+                description: fieldRecord.description,
+                enum: enumValues,
+                required: requiredFields.includes(key)
+            };
+        });
+    }, [editingServer]);
+
+    const updateDraftSetting = useCallback((key: string, value: McpSettingValue) => {
+        setDraftSettingsValues(previous => ({
+            ...previous,
+            [key]: value
+        }));
+    }, []);
 
     const loadServers = useCallback(async () => {
         try {
             setLoading(true);
             const result = await mcpMarketplaceClient.installed();
             if (result.success && result.servers) {
-                const servers = result.servers as unknown as MCPServer[];
-                setServers(servers);
+                setServers(result.servers);
             }
         } catch (error) {
             window.electron.log.error('Failed to load servers:', error);
@@ -245,8 +286,22 @@ export const MCPServersTab = () => {
 
     const handleEdit = useCallback(async (server: MCPServer) => {
         setEditingServer(server);
-        setDraftCommand([server.command, ...(server.args ?? [])].join(' ').trim());
+        setDraftCommand([server.command ?? '', ...(server.args ?? [])].join(' ').trim());
         setDraftVersion(server.version ?? '');
+        const nextValues: Record<string, McpSettingValue> = {};
+        if (server.settingsValues) {
+            for (const [key, value] of Object.entries(server.settingsValues)) {
+                if (
+                    typeof value === 'string' ||
+                    typeof value === 'number' ||
+                    typeof value === 'boolean' ||
+                    value === null
+                ) {
+                    nextValues[key] = value;
+                }
+            }
+        }
+        setDraftSettingsValues(nextValues);
         try {
             const result = await mcpMarketplaceClient.versionHistory(server.id);
             if (result.success && result.history) {
@@ -270,7 +325,8 @@ export const MCPServersTab = () => {
         try {
             const result = await mcpMarketplaceClient.updateConfig(editingServer.id, {
                 command: trimmed,
-                version: draftVersion.trim() || editingServer.version
+                version: draftVersion.trim() || editingServer.version,
+                settingsValues: toIpcValueMap(draftSettingsValues)
             });
             if (result.success) {
                 setEditingServer(null);
@@ -279,7 +335,7 @@ export const MCPServersTab = () => {
         } catch (error) {
             window.electron.log.error('Failed to update MCP server config:', error);
         }
-    }, [draftCommand, draftVersion, editingServer, loadServers]);
+    }, [draftCommand, draftSettingsValues, draftVersion, editingServer, loadServers]);
 
     const handleRollback = useCallback(async (targetVersion: string) => {
         if (!editingServer) {
@@ -465,6 +521,81 @@ export const MCPServersTab = () => {
                                 className="w-full bg-muted/30 border border-border/30 rounded-md px-3 py-2 text-sm"
                             />
                         </label>
+
+                        {settingsFields.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-medium text-muted-foreground">Extension Settings</p>
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {settingsFields.map(field => {
+                                        const currentValue = draftSettingsValues[field.key];
+                                        const label = field.title ?? field.key;
+                                        return (
+                                            <label key={field.key} className="block space-y-1">
+                                                <span className="text-xs text-muted-foreground">
+                                                    {label}
+                                                    {field.required ? ' *' : ''}
+                                                </span>
+                                                {field.type === 'boolean' ? (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentValue === true}
+                                                        onChange={event => updateDraftSetting(field.key, event.target.checked)}
+                                                        className="h-4 w-4 rounded border-border/40 bg-muted/40"
+                                                    />
+                                                ) : field.enum && field.enum.length > 0 ? (
+                                                    <select
+                                                        value={JSON.stringify(
+                                                            currentValue !== undefined ? currentValue : field.enum[0]
+                                                        )}
+                                                        onChange={event => {
+                                                            const parsedValue = JSON.parse(event.target.value) as McpSettingValue;
+                                                            updateDraftSetting(field.key, parsedValue);
+                                                        }}
+                                                        className="w-full bg-muted/30 border border-border/30 rounded-md px-3 py-2 text-sm"
+                                                    >
+                                                        {field.enum.map((optionValue, index) => (
+                                                            <option key={`${field.key}-${index}`} value={JSON.stringify(optionValue)}>
+                                                                {String(optionValue)}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type={field.type === 'number' || field.type === 'integer' ? 'number' : 'text'}
+                                                        value={
+                                                            currentValue === null || currentValue === undefined
+                                                                ? ''
+                                                                : String(currentValue)
+                                                        }
+                                                        onChange={event => {
+                                                            if (field.type === 'number' || field.type === 'integer') {
+                                                                const numberValue = Number(event.target.value);
+                                                                if (Number.isFinite(numberValue)) {
+                                                                    updateDraftSetting(
+                                                                        field.key,
+                                                                        field.type === 'integer'
+                                                                            ? Math.trunc(numberValue)
+                                                                            : numberValue
+                                                                    );
+                                                                } else if (event.target.value.length === 0) {
+                                                                    updateDraftSetting(field.key, null);
+                                                                }
+                                                                return;
+                                                            }
+                                                            updateDraftSetting(field.key, event.target.value);
+                                                        }}
+                                                        className="w-full bg-muted/30 border border-border/30 rounded-md px-3 py-2 text-sm"
+                                                    />
+                                                )}
+                                                {field.description && (
+                                                    <p className="text-[11px] text-muted-foreground/70">{field.description}</p>
+                                                )}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         {versionHistory.length > 0 && (
                             <div className="space-y-2">

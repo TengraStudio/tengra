@@ -1,6 +1,6 @@
 import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
-import { createLazyServiceProxy, lazyServiceRegistry } from '@main/core/lazy-services';
+import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency,lazyServiceRegistry } from '@main/core/lazy-services';
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -132,7 +132,7 @@ export interface Services {
     commandService: CommandService;
     databaseClientService: DatabaseClientService;
     databaseService: DatabaseService;
-    sshService: SSHService;
+    sshService: LazyServiceDependency<SSHService>;
     proxyService: ProxyService;
     copilotService: CopilotService;
     systemService: SystemService;
@@ -145,7 +145,7 @@ export interface Services {
     monitoringService: MonitoringService;
 
     embeddingService: EmbeddingService;
-    dockerService: DockerService;
+    dockerService: LazyServiceDependency<DockerService>;
     screenshotService: ScreenshotService;
 
     ollamaHealthService: ReturnType<typeof getOllamaHealthService>;
@@ -153,7 +153,7 @@ export interface Services {
     huggingFaceService: HuggingFaceService;
     projectService: ProjectService;
     terminalService: TerminalService;
-    logoService: LogoService;
+    logoService: LazyServiceDependency<LogoService>;
     processService: ProcessService;
     codeIntelligenceService: CodeIntelligenceService;
     contextRetrievalService: ContextRetrievalService;
@@ -163,7 +163,7 @@ export interface Services {
     memoryService: MemoryService;
     advancedMemoryService: AdvancedMemoryService;
     brainService: BrainService;
-    pageSpeedService: PageSpeedService;
+    pageSpeedService: LazyServiceDependency<PageSpeedService>;
     localImageService: LocalImageService;
     ruleService: RuleService;
     agentService: AgentService;
@@ -171,7 +171,7 @@ export interface Services {
     updateService: UpdateService;
     sentryService: SentryService;
     healthCheckService: HealthCheckService;
-    scannerService: ScannerService;
+    scannerService: LazyServiceDependency<ScannerService>;
     fileManagementService: FileManagementService;
     featureFlagService: FeatureFlagService;
     chatEventService: ChatEventService;
@@ -208,7 +208,7 @@ export interface Services {
     themeService: ThemeService;
     terminalProfileService: TerminalProfileService;
     terminalSmartService: TerminalSmartService;
-    marketplaceService: MarketplaceService;
+    marketplaceService: LazyServiceDependency<MarketplaceService>;
     modelDownloaderService: ModelDownloaderService;
     workflowService: WorkflowService;
 }
@@ -964,7 +964,7 @@ function buildServicesMap(
         commandService: container.resolve<CommandService>('commandService'),
         databaseClientService: container.resolve<DatabaseClientService>('databaseClientService'),
         databaseService: container.resolve<DatabaseService>('databaseService'),
-        sshService: createLazyServiceProxy<SSHService>('sshService'),
+        sshService: createLazyServiceDependency<SSHService>('sshService'),
         proxyService: container.resolve<ProxyService>('proxyService'),
         copilotService: container.resolve<CopilotService>('copilotService'),
         systemService: container.resolve<SystemService>('systemService'),
@@ -978,14 +978,14 @@ function buildServicesMap(
 
         embeddingService: container.resolve<EmbeddingService>('embeddingService'),
         utilityService: container.resolve<UtilityService>('utilityService'),
-        dockerService: createLazyServiceProxy<DockerService>('dockerService'),
+        dockerService: createLazyServiceDependency<DockerService>('dockerService'),
         screenshotService: container.resolve<ScreenshotService>('screenshotService'),
 
         llamaService: container.resolve<LlamaService>('llamaService'),
         huggingFaceService: container.resolve<HuggingFaceService>('huggingFaceService'),
         projectService: container.resolve<ProjectService>('projectService'),
         terminalService: container.resolve<TerminalService>('terminalService'),
-        logoService: createLazyServiceProxy<LogoService>('logoService'),
+        logoService: createLazyServiceDependency<LogoService>('logoService'),
         processService: container.resolve<ProcessService>('processService'),
         processManagerService: container.resolve<ProcessManagerService>('processManagerService'),
         codeIntelligenceService:
@@ -997,13 +997,13 @@ function buildServicesMap(
         memoryService: container.resolve<MemoryService>('memoryService'),
         advancedMemoryService: container.resolve<AdvancedMemoryService>('advancedMemoryService'),
         brainService: container.resolve<BrainService>('brainService'),
-        pageSpeedService: createLazyServiceProxy<PageSpeedService>('pageSpeedService'),
+        pageSpeedService: createLazyServiceDependency<PageSpeedService>('pageSpeedService'),
         ruleService: container.resolve<RuleService>('ruleService'),
         agentService: container.resolve<AgentService>('agentService'),
         updateService: container.resolve<UpdateService>('updateService'),
         sentryService: container.resolve<SentryService>('sentryService'),
         healthCheckService: getHealthCheckService(),
-        scannerService: createLazyServiceProxy<ScannerService>('scannerService'),
+        scannerService: createLazyServiceDependency<ScannerService>('scannerService'),
         fileManagementService: container.resolve<FileManagementService>('fileManagementService'),
         featureFlagService: container.resolve<FeatureFlagService>('featureFlagService'),
         chatEventService: container.resolve<ChatEventService>('chatEventService'),
@@ -1047,7 +1047,7 @@ function buildServicesMap(
         themeService: container.resolve<ThemeService>('themeService'),
         terminalProfileService: container.resolve<TerminalProfileService>('terminalProfileService'),
         terminalSmartService: container.resolve<TerminalSmartService>('terminalSmartService'),
-        marketplaceService: createLazyServiceProxy<MarketplaceService>('marketplaceService'),
+        marketplaceService: createLazyServiceDependency<MarketplaceService>('marketplaceService'),
         modelDownloaderService: container.resolve<ModelDownloaderService>('modelDownloaderService'),
         workflowService: container.resolve<WorkflowService>('workflowService'),
         apiServerService: null as unknown as ApiServerService, // Will be created in main.ts after ToolExecutor

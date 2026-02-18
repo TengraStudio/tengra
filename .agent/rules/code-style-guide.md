@@ -2,45 +2,51 @@
 trigger: always_on
 ---
 
-# 🚀 TANDEM AI AGENT: MASTER COMMANDMENTS
+# TANDEM AI AGENT: CODE STYLE GUIDE
 
-You are an expert software engineer working on **Tandem**. You MUST follow these rules without exception. "I forgot" is not an excuse.
+> **CRITICAL**: Read [AGENTS.md](../../AGENTS.md) completely before making any changes.
 
-## 🛑 THE NEVER-LIST (STRICT PROHIBITIONS)
-- **NEVER** use `any` or `unknown`. If you find them, fix them.
-- **NEVER** use `console.log`. Use `appLogger` only.
-- **NEVER** use `// @ts-ignore` or `// eslint-disable`.
-- **NEVER** use placeholders like `// ... rest of code`. Write the FULL logic.
-- **NEVER** delete a file to recreate it. Use `edit_file` with precise chunks.
-- **NEVER** use relative paths for internal modules. Use aliases (`@/`, `@main/`, `@shared/`).
-- **NEVER** commit or push without running `npm run build`, `npm run lint`, and `npm run type-check`.
+## Quick Start
 
-## 💎 THE ALWAYS-LIST (MANDATORY ACTIONS)
-- **ALWAYS** follow the **Boy Scout Rule**: Every edit MUST fix at least one existing lint warning or type issue in the file.
-- **ALWAYS** check `docs/AI_RULES.md` before starting a new domain.
-- **ALWAYS** utilize available **Skills** and **MCP Tools** (e.g., `core`, `git`, `project`) for specialized tasks.
-- **ALWAYS** follow NASA's Power of Ten rules (checked by ESLint).
-- **ALWAYS** use `useMemo` and `useCallback` for any computation or function in React components.
-- **ALWAYS** implement `dispose()` or cleanup for resources and effects.
-- **ALWAYS** batch IPC calls. Never call IPC in a loop.
-- **ALWAYS** update `docs/TODO.md` (mark `[x]`, DO NOT DELETE) and structured changelog source (`docs/changelog/data/changelog.entries.json`), then run `npm run changelog:sync`.
+1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
+2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
+3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
 
-## 🛠 REQUIRED WORKFLOW
-1.  **Understand**: Read the task and relevant code.
-2.  **Verify Rules**: Check if your plan violates any NASA or Tandem rules.
-3.  **Execute**: Make targeted, clean edits. No placeholders.
-4.  **Validate**: 
-    - `npm run build`
-    - `npm run lint`
-    - `npm run type-check`
-5.  **Document**: Update TODO and CHANGELOG.
-6.  **Deliver**: Submit your changes only after all checks pass.
+## Forbidden Actions
 
-## 📏 CODE STANDARDS
-- **Function Length**: Max 150 lines (ESLint enforced).
-- **Complexity**: Keep cyclomatic complexity low (< 10).
-- **Imports**: Sorted by `simple-import-sort`.
-- **Naming**: `kebab-case.service.ts`, `kebab-case.component.tsx`.
+- ❌ **NEVER** use `any` type
+- ❌ **NEVER** use `console.log` - Use `appLogger`
+- ❌ **NEVER** use `@ts-ignore` or `// eslint-disable`
+- ❌ **NEVER** delete entire files to edit them
+- ❌ **NEVER** use `while(true)` without bounds
+- ❌ **NEVER** hardcode user-facing strings
 
-> "Failure to follow these rules is a failure of the mission." - Tandem Command
+## Required Actions
+
+- ✅ **ALWAYS** run `npm run build && npm run lint` before committing
+- ✅ **ALWAYS** update `docs/TODO.md` after completing tasks
+- ✅ **ALWAYS** use `t('key')` for translations
+- ✅ **ALWAYS** check return values
+- ✅ **ALWAYS** handle Promise rejections
+- ✅ **ALWAYS** use JSDoc for public methods
+
+## NASA Power of Ten Rules
+
+1. No recursion
+2. Fixed loop bounds
+3. Short functions (max 60 lines)
+4. Check all return values
+5. Minimal variable scope
+
+## Workflow
+
+1. Read docs/AI_RULES.md
+2. Make changes
+3. `npm run build && npm run lint`
+4. Update docs/TODO.md (mark `[x]`, don't delete)
+5. Update `docs/changelog/data/changelog.entries.json`
+6. Run `npm run changelog:sync`
+7. Commit and push
+
+For complete details, see [AGENTS.md](../../AGENTS.md) and [docs/AI_RULES.md](../../docs/AI_RULES.md).
 

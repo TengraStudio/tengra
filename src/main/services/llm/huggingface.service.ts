@@ -477,7 +477,7 @@ export class HuggingFaceService extends BaseService {
      * Partial GGUF header parser to extract metadata like architecture and context length.
      * Only reads the necessary bytes from the start of the file.
      */
-    async getGGUFMetadata(filePath: string): Promise<{ architecture?: string; contextLength?: number; [key: string]: unknown }> {
+    async getGGUFMetadata(filePath: string): Promise<{ architecture?: string; contextLength?: number;[key: string]: unknown }> {
         const fs = await import('fs/promises');
         try {
             const handle = await fs.open(filePath, 'r');
@@ -1301,10 +1301,23 @@ export class HuggingFaceService extends BaseService {
         }
     }
 
+    /**
+     * AUD-SEC-038: Enforce mandatory checksum verification for all remote model downloads
+     * Returns false if no checksum is provided (mandatory verification)
+     */
     private async verifyHash(filePath: string, expectedSha256: string): Promise<boolean> {
-        if (!expectedSha256) {
-            return true;
+        // AUD-SEC-038: Mandatory checksum - reject if not provided
+        if (!expectedSha256 || expectedSha256.trim() === '') {
+            appLogger.warn('HuggingFaceService', 'Checksum verification failed: no checksum provided (mandatory for security)');
+            return false;
         }
+
+        // Validate checksum format (must be 64 hex characters for SHA256)
+        if (!/^[a-fA-F0-9]{64}$/.test(expectedSha256)) {
+            appLogger.warn('HuggingFaceService', 'Checksum verification failed: invalid SHA256 format');
+            return false;
+        }
+
         const fs = await import('fs');
         const { createHash } = await import('crypto');
 
@@ -1313,7 +1326,16 @@ export class HuggingFaceService extends BaseService {
             const stream = fs.createReadStream(filePath);
             stream.on('error', () => resolve(false));
             stream.on('data', (chunk) => hash.update(chunk));
-            stream.on('end', () => resolve(hash.digest('hex') === expectedSha256));
+            stream.on('end', () => {
+                const actualHash = hash.digest('hex');
+                if (actualHash !== expectedSha256) {
+                    appLogger.warn('HuggingFaceService', `Checksum mismatch: expected ${expectedSha256}, got ${actualHash}`);
+                    resolve(false);
+                } else {
+                    appLogger.info('HuggingFaceService', 'Checksum verification passed');
+                    resolve(true);
+                }
+            });
         });
     }
 

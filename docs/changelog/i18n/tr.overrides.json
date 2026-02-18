@@ -1,4 +1,25 @@
 {
+  "2026-02-18-docs-and-rules-hardening": {
+    "title": "Dokümantasyon Sertleştirme ve Codex Uygulaması",
+    "summary": "Kilitli bir .codex dokümantasyon dizini uygulandı ve uyumluluğu artırmak için yapay zeka ajan kuralları fesih uyarılarıyla sertleştirildi.",
+    "items": [
+      "- **Codex**: `.codex/` dizini oluşturuldu ve temel direktifler ile mimari için doküman aynalama (mirroring) uygulandı.",
+      "- **Kural Zorlama**: `MASTER_COMMANDMENTS.md` ve `AI_RULES.md` dosyaları açık fesih uyarıları ve sıfır tolerans politikalarıyla güncellendi.",
+      "- **Bakım**: Dokümantasyon merkezindeki bozuk mutlak yollar düzeltildi ve sistematik teknik borç takibi için `LINT_ISSUES.md` oluşturuldu.",
+      "- **Yapı**: `PROJECT_STRUCTURE.md`, yeni `.codex` ve `.agent` organizasyonel modellerini yansıtacak şekilde güncellendi."
+    ]
+  },
+  "2026-02-18-sec-llm-i18n-followup": {
+    "title": "SEC-007/009 + LLM-05 + I18N-05 Takip Güncellemesi",
+    "summary": "Denetim kaydı entegrasyonu ve multimodal/i18n takip iyileştirmeleri tamamlandı; ardından TODO düzenlendi ve güvensiz castler azaltıldı.",
+    "items": [
+      "- **SEC-007**: Ayarlar IPC akışına API anahtarı erişim denetim kaydı, dosya IPC akışına dosya işlemi denetim kaydı sarmalayıcıları eklendi.",
+      "- **SEC-009**: LLM istek yollarında prompt sanitizasyonu ve güvenlik doğrulaması kapsamı doğrulandı.",
+      "- **LLM-05**: Ses/video önizleme bağlamı ve daha zengin multimodal mesaj hazırlığı için ek yönetimi genişletildi.",
+      "- **I18N-05**: Yerel ayar odaklı yanıt yönlendirmesi ve yerel ayara göre varsayılan model seçimi geri dönüşü eklendi.",
+      "- **Bakım**: Tamamlanan TODO onay kutuları kaldırıldı ve kalan bazı `as unknown as` castleri daha güvenli tiplere indirildi."
+    ]
+  },
   "2026-02-18-aud-sec-completion": {
     "title": "AUD-SEC 003-030 Güvenlik Güçlendirmesi Tamamlandı",
     "summary": "IPC güven sınırları, dosya sistemi yol doğrulaması, API kimlik doğrulaması, OAuth callback akışları ve gizli anahtar yönetiminde güvenlik denetimi güçlendirmeleri tamamlandı.",

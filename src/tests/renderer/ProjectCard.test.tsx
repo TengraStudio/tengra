@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ProjectCard } from '@/features/projects/components/ProjectCard';
+import { ProjectCard, ProjectCardSurfaceProvider } from '@/features/projects/components/ProjectCard';
 
 describe('ProjectCard', () => {
     const t = (key: string) => key;
@@ -19,17 +19,20 @@ describe('ProjectCard', () => {
         const onSelect = vi.fn();
 
         render(
-            <ProjectCard
-                project={project}
-                index={0}
+            <ProjectCardSurfaceProvider
                 onSelect={onSelect}
-                showMenu={false}
-                setShowMenu={vi.fn()}
+                activeMenuId={null}
+                setActiveMenuId={vi.fn()}
                 onEdit={vi.fn()}
                 onDelete={vi.fn()}
                 onArchive={vi.fn()}
                 t={t}
-            />
+            >
+                <ProjectCard
+                    project={project}
+                    index={0}
+                />
+            </ProjectCardSurfaceProvider>
         );
 
         const card = screen.getByRole('button', { name: 'Orbit Project' });
@@ -42,17 +45,20 @@ describe('ProjectCard', () => {
         const setShowMenu = vi.fn();
 
         render(
-            <ProjectCard
-                project={project}
-                index={0}
+            <ProjectCardSurfaceProvider
                 onSelect={vi.fn()}
-                showMenu={true}
-                setShowMenu={setShowMenu}
+                activeMenuId={project.id}
+                setActiveMenuId={setShowMenu}
                 onEdit={vi.fn()}
                 onDelete={vi.fn()}
                 onArchive={onArchive}
                 t={t}
-            />
+            >
+                <ProjectCard
+                    project={project}
+                    index={0}
+                />
+            </ProjectCardSurfaceProvider>
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'projects.archiveProject' }));

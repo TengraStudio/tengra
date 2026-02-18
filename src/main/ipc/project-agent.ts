@@ -12,6 +12,7 @@ import {
     ModelRoutingRule,
     ProjectState,
     ProjectStep,
+    VotingConfiguration,
     VotingSession,
 } from '@shared/types/project-agent';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -333,6 +334,76 @@ export function registerProjectAgentIpc(
         validateString(sessionId, 'sessionId');
         return projectAgentService.getVotingSession(sessionId);
     }, null));
+
+    ipcMain.handle('project:list-voting-sessions', createSafeIpcHandler('project:list-voting-sessions', async (_, taskId?: string) => {
+        if (taskId !== undefined) {
+            validateString(taskId, 'taskId');
+        }
+        return projectAgentService.getVotingSessions(taskId);
+    }, []));
+
+    ipcMain.handle('project:override-voting', createSafeIpcHandler('project:override-voting', async (
+        _,
+        payload: { sessionId: string; finalDecision: string; reason?: string }
+    ) => {
+        validateString(payload.sessionId, 'sessionId');
+        validateString(payload.finalDecision, 'finalDecision');
+        return projectAgentService.overrideVotingDecision(
+            payload.sessionId,
+            payload.finalDecision,
+            payload.reason
+        );
+    }, null));
+
+    ipcMain.handle('project:get-voting-analytics', createSafeIpcHandler('project:get-voting-analytics', async (_, taskId?: string) => {
+        if (taskId !== undefined) {
+            validateString(taskId, 'taskId');
+        }
+        return projectAgentService.getVotingAnalytics(taskId);
+    }, {
+        totalSessions: 0,
+        pendingSessions: 0,
+        resolvedSessions: 0,
+        deadlockedSessions: 0,
+        averageVotesPerSession: 0,
+        averageConfidence: 0,
+        disagreementIndex: 0,
+        updatedAt: Date.now()
+    }));
+
+    ipcMain.handle('project:get-voting-config', createSafeIpcHandler('project:get-voting-config', async () => {
+        return projectAgentService.getVotingConfiguration();
+    }, {
+        minimumVotes: 2,
+        deadlockThreshold: 0.9,
+        autoResolve: true,
+        autoResolveTimeoutMs: 60_000
+    }));
+
+    ipcMain.handle('project:update-voting-config', createSafeIpcHandler('project:update-voting-config', async (
+        _,
+        patch: Partial<VotingConfiguration>
+    ) => {
+        if (patch.minimumVotes !== undefined) {
+            validateNumber(patch.minimumVotes, 'minimumVotes');
+        }
+        if (patch.deadlockThreshold !== undefined) {
+            validateNumber(patch.deadlockThreshold, 'deadlockThreshold');
+        }
+        if (patch.autoResolveTimeoutMs !== undefined) {
+            validateNumber(patch.autoResolveTimeoutMs, 'autoResolveTimeoutMs');
+        }
+        return projectAgentService.updateVotingConfiguration(patch);
+    }, {
+        minimumVotes: 2,
+        deadlockThreshold: 0.9,
+        autoResolve: true,
+        autoResolveTimeoutMs: 60_000
+    }));
+
+    ipcMain.handle('project:list-voting-templates', createSafeIpcHandler('project:list-voting-templates', async () => {
+        return projectAgentService.getVotingTemplates();
+    }, []));
 
     ipcMain.handle(
         'project:build-consensus',

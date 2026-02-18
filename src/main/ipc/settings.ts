@@ -53,6 +53,41 @@ export function registerSettingsIpc(options: {
     updateOllamaConnection: () => void | Promise<void>
 }) {
     const { settingsService, llmService, copilotService, auditLogService, updateOpenAIConnection, updateOllamaConnection } = options;
+    const sensitiveFields = [
+        { key: 'openai', label: 'OpenAI API key' },
+        { key: 'anthropic', label: 'Anthropic API key' },
+        { key: 'groq', label: 'Groq API key' },
+        { key: 'nvidia', label: 'NVIDIA API key' },
+        { key: 'github', label: 'GitHub token' },
+        { key: 'copilot', label: 'Copilot token' },
+        { key: 'proxy', label: 'Proxy key' }
+    ] as const;
+
+    function getSensitiveValue(settings: AppSettings, fieldKey: typeof sensitiveFields[number]['key']): string | undefined {
+        const providerSettings = settings[fieldKey] as Record<string, unknown> | undefined;
+        const keyCandidate = providerSettings?.['apiKey'] ?? providerSettings?.['token'] ?? providerSettings?.['key'];
+        return typeof keyCandidate === 'string' ? keyCandidate : undefined;
+    }
+
+    function getConfiguredApiKeyProviders(settings: AppSettings): string[] {
+        return sensitiveFields
+            .map(field => field.key)
+            .filter(fieldKey => {
+                const value = getSensitiveValue(settings, fieldKey);
+                return typeof value === 'string' && value.trim().length > 0;
+            });
+    }
+
+    async function logApiKeyReadAccess(settings: AppSettings, source: 'batch' | 'invoke') {
+        if (!auditLogService) { return; }
+        const providers = getConfiguredApiKeyProviders(settings);
+        if (providers.length === 0) { return; }
+        await auditLogService.logApiKeyAccess('settings.api-key.read', true, {
+            source,
+            providers,
+            providerCount: providers.length
+        });
+    }
 
     /**
      * Logs audit entries when sensitive settings fields (API keys) are modified.
@@ -60,15 +95,10 @@ export function registerSettingsIpc(options: {
     async function auditSensitiveChanges(newSettings: AppSettings, oldSettings: AppSettings, auditService: AuditLogService | undefined) {
         if (!auditService) { return; }
         const sensitiveChanges: string[] = [];
-        const fields = [
-            { key: 'openai', label: 'OpenAI API key' },
-            { key: 'anthropic', label: 'Anthropic API key' },
-            { key: 'groq', label: 'Groq API key' },
-            { key: 'proxy', label: 'Proxy key' }
-        ] as const;
+        const changedProviders: string[] = [];
 
-        for (const field of fields) {
-            checkSensitiveField(field, newSettings, oldSettings, sensitiveChanges);
+        for (const field of sensitiveFields) {
+            checkSensitiveField(field, newSettings, oldSettings, sensitiveChanges, changedProviders);
         }
 
         if (sensitiveChanges.length > 0) {
@@ -79,14 +109,28 @@ export function registerSettingsIpc(options: {
                 details: { changes: sensitiveChanges, changedFields: Object.keys(newSettings) }
             });
         }
+
+        for (const provider of changedProviders) {
+            await auditService.logApiKeyAccess('settings.api-key.updated', true, {
+                provider,
+                source: 'settings:save'
+            });
+        }
     }
 
-    function checkSensitiveField(field: { key: 'openai' | 'anthropic' | 'groq' | 'proxy'; label: string }, newSettings: AppSettings, oldSettings: AppSettings, changes: string[]) {
-        const newVal = (newSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (newSettings[field.key] as Record<string, unknown> | undefined)?.key;
-        const oldVal = (oldSettings[field.key] as Record<string, unknown> | undefined)?.apiKey ?? (oldSettings[field.key] as Record<string, unknown> | undefined)?.key;
+    function checkSensitiveField(
+        field: typeof sensitiveFields[number],
+        newSettings: AppSettings,
+        oldSettings: AppSettings,
+        changes: string[],
+        changedProviders: string[]
+    ) {
+        const newVal = getSensitiveValue(newSettings, field.key);
+        const oldVal = getSensitiveValue(oldSettings, field.key);
 
         if (typeof newVal === 'string' && newVal !== oldVal) {
             changes.push(`${field.label} updated`);
+            changedProviders.push(field.key);
         }
     }
 
@@ -101,28 +145,37 @@ export function registerSettingsIpc(options: {
     // Shared logic for saving settings (used by both batch and direct IPC)
     async function handleSaveSettingsImplementation(newSettings: AppSettings) {
         const oldSettings = settingsService.getSettings();
-        const finalSettings = await settingsService.saveSettings(newSettings);
-        syncStartupBehavior(finalSettings);
+        try {
+            const finalSettings = await settingsService.saveSettings(newSettings);
+            syncStartupBehavior(finalSettings);
 
-        await auditSensitiveChanges(newSettings, oldSettings, auditLogService);
+            await auditSensitiveChanges(newSettings, oldSettings, auditLogService);
 
-        void (async () => {
-            try {
-                await updateOllamaConnection();
-            } catch (error) {
-                appLogger.error('IPC', 'updateOllamaConnection failed:', error as Error);
-            }
-        })();
+            void (async () => {
+                try {
+                    await updateOllamaConnection();
+                } catch (error) {
+                    appLogger.error('IPC', 'updateOllamaConnection failed:', error as Error);
+                }
+            })();
 
-        updateServices(finalSettings, newSettings);
-        updateOpenAIConnection();
+            updateServices(finalSettings, newSettings);
+            updateOpenAIConnection();
 
-        return finalSettings;
+            return finalSettings;
+        } catch (error) {
+            await auditLogService?.logApiKeyAccess('settings.api-key.update-failed', false, {
+                reason: (error as Error).message
+            });
+            throw error;
+        }
     }
 
     // Register batchable settings handlers
     registerBatchableHandler('getSettings', async (): Promise<IpcValue> => {
-        return settingsService.getSettings();
+        const settings = settingsService.getSettings();
+        await logApiKeyReadAccess(settings, 'batch');
+        return settings;
     });
 
     // Validated batch handler
@@ -138,7 +191,9 @@ export function registerSettingsIpc(options: {
     registerBatchableHandler('saveSettings', validatedSaveHandler);
 
     ipcMain.handle('settings:get', createIpcHandler('settings:get', async () => {
-        return settingsService.getSettings();
+        const settings = settingsService.getSettings();
+        await logApiKeyReadAccess(settings, 'invoke');
+        return settings;
     }));
 
     ipcMain.handle('settings:save', createValidatedIpcHandler(

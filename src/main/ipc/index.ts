@@ -6,6 +6,7 @@ import { registerBrainIpcHandlers } from '@main/ipc/brain';
 import { registerChatIpc } from '@main/ipc/chat';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
+import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
@@ -52,18 +53,25 @@ import { BrowserWindow } from 'electron';
  * Registers all Inter-Process Communication handlers.
  * NASA Rule 5: Keep functions short. This function delegates to specific registers.
  */
-export function registerAllIpc(
+export async function registerAllIpc(
     mainWindowGetter: () => BrowserWindow | null,
     services: Services,
     mcpDispatcher: McpDispatcher,
     toolExecutor: ToolExecutor,
     allowedFileRoots: Set<string>
-): void {
+): Promise<void> {
     const getWin = mainWindowGetter;
+    const [logoService, sshService, dockerService, marketplaceService] = await Promise.all([
+        services.logoService.resolve(),
+        services.sshService.resolve(),
+        services.dockerService.resolve(),
+        services.marketplaceService.resolve(),
+    ]);
 
     // Window & System
     registerWindowIpc(getWin, allowedFileRoots);
     registerLazyServicesIpc();
+    registerContractIpc();
     registerProcessIpc(getWin, services.processService);
     setupProcessEvents(services.processService);
     registerLoggingIpc();
@@ -104,7 +112,7 @@ export function registerAllIpc(
         services.embeddingService,
         services.auditLogService
     );
-    registerFilesIpc(getWin, services.fileSystemService, allowedFileRoots);
+    registerFilesIpc(getWin, services.fileSystemService, allowedFileRoots, services.auditLogService);
     registerAuditIpc(services.auditLogService);
     registerPerformanceIpc(services.performanceService);
     registerMetricsIpc();
@@ -157,15 +165,15 @@ export function registerAllIpc(
     registerMultiModelIpc(services.multiModelComparisonService);
     registerSdCppIpc(services.localImageService);
     registerMarketplaceIpc({
-        marketplaceService: services.marketplaceService,
+        marketplaceService,
         rateLimitService: services.rateLimitService,
     });
 
     // Productivity & Tools
-    registerSshIpc(getWin, services.sshService, services.rateLimitService);
+    registerSshIpc(getWin, sshService, services.rateLimitService);
     registerProjectIpc(getWin, {
         projectService: services.projectService,
-        logoService: services.logoService,
+        logoService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
@@ -182,7 +190,7 @@ export function registerAllIpc(
         services.terminalService,
         services.terminalProfileService,
         services.terminalSmartService,
-        services.dockerService
+        dockerService
     );
 
     // External Integrations

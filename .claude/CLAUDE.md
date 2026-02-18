@@ -1,12 +1,12 @@
-# 👑 TANDEM AGENT COMMANDMENTS (CLAUDE EDITION)
+# TANDEM AGENT COMMANDMENTS (CLAUDE EDITION)
 
 > **STRICT ADHERENCE REQUIRED.** Failure to follow rules results in termination of the session.
 
 ## MANDATORY: Read Documentation First
 
-1.  Read the [.agent/rules/MASTER_COMMANDMENTS.md](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md)
-2.  Follow the [AI_RULES.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/AI_RULES.md)
-3.  Check [TODO.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/TODO.md) before every task.
+1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
+2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
+3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
 
 ## Quick Reference
 
@@ -24,7 +24,7 @@ npm run test         # Run tests
 2. Make changes
 3. `npm run build && npm run lint`
 4. Update docs/TODO.md (mark `[x]`, don't delete)
-5. Update `docs/changelog/data/changelog.entries.json` (+ `docs/changelog/i18n/tr.overrides.json` if needed)
+5. Update `docs/changelog/data/changelog.entries.json`
 6. Run `npm run changelog:sync`
 7. Commit and push
 
@@ -34,7 +34,10 @@ npm run test         # Run tests
 - `any` type - FORBIDDEN
 - `console.log` - Use `appLogger` instead
 - `@ts-ignore` - NEVER
+- `// eslint-disable` - NEVER
 - Full file deletion to edit
+- `while(true)` without bounds
+- Placeholders or TODO comments in code
 
 ### Protected Paths (Never Modify)
 - `.git/`
@@ -51,22 +54,23 @@ npm run test         # Run tests
 4. Check all return values
 5. Minimal variable scope
 
+### Type Safety
 - Strict types, no `any`
 - All public methods need JSDoc
+- Check all return values
+- Handle all Promise rejections
 
 ### Performance
-1. Lazy Loading: `React.lazy()` for heavy components.
-2. Memoization: `useMemo`/`useCallback` for computations.
-3. IPC Batching: Combine IPC calls to minimize overhead.
-4. Virtualization: Virtualize lists > 50 items.
-5. Lazy Services: Main services use lazy instantiation.
-6. Indexing: Mandatory indexes for query-critical fields.
-7. Disposal: Call `dispose()`/cleanup for all resources.
-8. Responsive: Use worker threads for blocking tasks.
-9. Lookups: Use `Map`/`Set` for collections.
-10. Tree Shaking: Use explicit library imports.
-11. UI Cost: `content-visibility: auto` where appropriate.
-12. State: Keep state local; avoid global UI state.
+1. Lazy Loading: `React.lazy()` for heavy components
+2. Memoization: `useMemo`/`useCallback` for computations
+3. IPC Batching: Combine IPC calls to minimize overhead
+4. Virtualization: Virtualize lists > 50 items
+5. Lazy Services: Main services use lazy instantiation
+6. Indexing: Mandatory indexes for query-critical fields
+7. Disposal: Call `dispose()`/cleanup for all resources
+8. Responsive: Use worker threads for blocking tasks
+9. Lookups: Use `Map`/`Set` for collections
+10. Tree Shaking: Use explicit library imports
 
 ### i18n
 - Never hardcode user-facing strings
@@ -93,16 +97,92 @@ src/
 ```typescript
 import { BaseService } from '@main/services/base.service'
 import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export class MyService extends BaseService {
-    constructor(private dep: Dependency) {
+    constructor(
+        private dependency1: Dependency1,
+        private dependency2: Dependency2
+    ) {
         super('MyService')
     }
-    
-    async myMethod(): Promise<Result> {
-        appLogger.info('MyService', 'Doing work...')
-        // implementation
+
+    async initialize(): Promise<void> {
+        appLogger.info('MyService', 'Initializing...')
+        // Initialization logic
+    }
+
+    async doWork(input: Input): Promise<Result> {
+        if (!input) {
+            throw new Error('Input is required')
+        }
+
+        try {
+            const result = await this.dependency1.process(input)
+            return { success: true, data: result }
+        } catch (error) {
+            appLogger.error('MyService', 'doWork failed', error as Error)
+            throw error
+        }
+    }
+
+    async dispose(): Promise<void> {
+        appLogger.info('MyService', 'Disposing...')
+        // Cleanup logic
     }
 }
 ```
 
+## IPC Handler Pattern
+
+```typescript
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
+
+export const registerMyHandler = createIpcHandler(
+    'my:action',
+    async (_event, param: string) => {
+        // Implementation
+        return result
+    }
+)
+```
+
+## Logging
+
+```typescript
+import { appLogger } from '@main/logging/logger'
+
+// Correct usage
+appLogger.info('ServiceName', 'Operation completed')
+appLogger.warn('ServiceName', 'Resource low', { remaining: 10 })
+appLogger.error('ServiceName', 'Operation failed', error as Error)
+appLogger.debug('ServiceName', 'Debug info', { data: someData })
+
+// NEVER use
+console.log('message')
+console.error('error')
+```
+
+## Error Handling
+
+```typescript
+try {
+    await riskyOperation()
+} catch (error) {
+    appLogger.error('ServiceName', 'Failed:', getErrorMessage(error))
+    throw error // Re-throw or handle appropriately
+}
+```
+
+## Checklist Before Committing
+
+- [ ] Code compiles without errors (`npm run build`)
+- [ ] No lint warnings (`npm run lint`)
+- [ ] No TypeScript errors (`npm run type-check`)
+- [ ] All tests pass (`npm run test`)
+- [ ] TODO.md updated
+- [ ] Changelog updated
+- [ ] No `any` types used
+- [ ] No `console.log` used
+- [ ] All public methods have JSDoc
+- [ ] User-facing strings use `t()`

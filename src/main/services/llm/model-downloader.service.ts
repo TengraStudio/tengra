@@ -66,6 +66,14 @@ interface ModelDownloaderDeps {
 
 type DownloadEmitter = (progress: ModelDownloadProgress) => void;
 type DownloadTaskState = 'queued' | 'running' | 'paused' | 'cancelled' | 'completed' | 'error';
+const ALLOWED_STATE_TRANSITIONS: Record<DownloadTaskState, readonly DownloadTaskState[]> = {
+    queued: ['running', 'paused', 'cancelled'],
+    running: ['paused', 'cancelled', 'completed', 'error'],
+    paused: ['queued', 'cancelled'],
+    cancelled: [],
+    completed: [],
+    error: [],
+};
 
 interface ActiveDownloadTask {
     downloadId: string;
@@ -185,7 +193,9 @@ export class ModelDownloaderService extends BaseService {
             return false;
         }
         if (task.state === 'queued') {
-            task.state = 'paused';
+            if (!this.transitionTaskState(task, 'paused', 'pause queued')) {
+                return false;
+            }
             this.emitProgress(task, {
                 downloadId: task.downloadId,
                 provider: task.provider,
@@ -201,7 +211,9 @@ export class ModelDownloaderService extends BaseService {
             return false;
         }
 
-        task.state = 'paused';
+        if (!this.transitionTaskState(task, 'paused', 'pause running')) {
+            return false;
+        }
         if (task.provider === 'huggingface') {
             task.abortController?.abort();
         } else {
@@ -226,7 +238,9 @@ export class ModelDownloaderService extends BaseService {
         }
 
         const previousState = task.state;
-        task.state = 'cancelled';
+        if (!this.transitionTaskState(task, 'cancelled', 'cancel')) {
+            return false;
+        }
         if (previousState === 'queued' || previousState === 'paused') {
             this.emitProgress(task, {
                 downloadId: task.downloadId,
@@ -265,7 +279,9 @@ export class ModelDownloaderService extends BaseService {
             return { success: false, provider: 'ollama', modelRef: '', error: 'Task is not paused' };
         }
 
-        task.state = 'queued';
+        if (!this.transitionTaskState(task, 'queued', 'resume')) {
+            return { success: false, provider: task.provider, modelRef: task.modelRef, error: 'Invalid state transition' };
+        }
         if (task.provider === 'huggingface') {
             task.abortController = new AbortController();
         }
@@ -305,6 +321,10 @@ export class ModelDownloaderService extends BaseService {
             const parsed = JSON.parse(raw) as { tasks?: PersistedDownloadTask[] };
             const tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
             for (const item of tasks) {
+                if (!this.isValidPersistedState(item.state)) {
+                    appLogger.warn(this.name, `Skipping persisted task with invalid state: ${String(item.state)}`);
+                    continue;
+                }
                 const request = item.request;
                 const modelRef = computeModelRef(request);
                 if (modelRef !== item.modelRef) {
@@ -345,6 +365,26 @@ export class ModelDownloaderService extends BaseService {
         } finally {
             this.isRestoring = false;
         }
+    }
+
+    private isValidPersistedState(state: unknown): state is PersistedDownloadTask['state'] {
+        return state === 'queued' || state === 'paused' || state === 'running';
+    }
+
+    private transitionTaskState(task: ActiveDownloadTask, nextState: DownloadTaskState, reason: string): boolean {
+        if (task.state === nextState) {
+            return true;
+        }
+        const allowedTransitions = ALLOWED_STATE_TRANSITIONS[task.state];
+        if (!allowedTransitions.includes(nextState)) {
+            appLogger.warn(
+                this.name,
+                `Invalid transition blocked (${task.downloadId}): ${task.state} -> ${nextState} (${reason})`
+            );
+            return false;
+        }
+        task.state = nextState;
+        return true;
     }
 
     private emitProgress(task: ActiveDownloadTask, progress: ModelDownloadProgress): void {
@@ -418,7 +458,9 @@ export class ModelDownloaderService extends BaseService {
             if (!this.canStart(task.provider)) {
                 continue;
             }
-            task.state = 'running';
+            if (!this.transitionTaskState(task, 'running', 'schedule')) {
+                continue;
+            }
             if (task.provider === 'huggingface' && (!task.abortController || task.abortController.signal.aborted)) {
                 task.abortController = new AbortController();
             }
@@ -453,7 +495,13 @@ export class ModelDownloaderService extends BaseService {
             return;
         }
         if (!result.success) {
-            task.state = 'error';
+            if (!this.transitionTaskState(task, 'error', 'run failure')) {
+                this.releaseSlot(task);
+                this.cleanupTask(task);
+                void this.persistQueue();
+                this.scheduleDownloads();
+                return;
+            }
             this.emitProgress(task, {
                 downloadId: task.downloadId,
                 provider: task.provider,
@@ -469,7 +517,13 @@ export class ModelDownloaderService extends BaseService {
             return;
         }
 
-        task.state = 'completed';
+        if (!this.transitionTaskState(task, 'completed', 'run success')) {
+            this.releaseSlot(task);
+            this.cleanupTask(task);
+            void this.persistQueue();
+            this.scheduleDownloads();
+            return;
+        }
         this.emitProgress(task, {
             downloadId: task.downloadId,
             provider: task.provider,
@@ -563,12 +617,23 @@ export class ModelDownloaderService extends BaseService {
                 message: 'Starting HuggingFace download',
             });
 
+            // AUD-SEC-038: Enforce mandatory checksum verification
+            // Require a valid SHA256 checksum before downloading
+            const checksum = file.oid;
+            if (!checksum || checksum.trim() === '' || !/^[a-fA-F0-9]{64}$/.test(checksum)) {
+                appLogger.error(this.name, `Missing or invalid checksum for HuggingFace download: ${modelRef}`);
+                return {
+                    success: false,
+                    error: 'Missing or invalid SHA256 checksum - download rejected for security',
+                };
+            }
+
             const downloadResult = await this.deps.huggingFaceService.downloadFile(
                 downloadUrl,
                 outputPath,
                 {
                     expectedSize: file.size,
-                    expectedSha256: file.oid || '',
+                    expectedSha256: checksum,
                     signal: task.abortController?.signal,
                     onProgress: (received, total) => {
                         if (task.state !== 'running') {

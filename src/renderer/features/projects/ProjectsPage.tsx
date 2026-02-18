@@ -11,7 +11,7 @@ import { Language, useTranslation } from '@/i18n';
 import { Message, Project, TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { ProjectCard } from './components/ProjectCard';
+import { ProjectCard, ProjectCardSurfaceProvider } from './components/ProjectCard';
 import { ProjectModals } from './components/ProjectModals';
 import { ProjectsHeader } from './components/ProjectsHeader';
 import { useProjectListStateMachine } from './hooks/useProjectListStateMachine';
@@ -266,22 +266,25 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 
                 {viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {sortedProjects.map((project, i) => (
-                            <ProjectCard
-                                key={project.id}
-                                project={project}
-                                index={i}
-                                onSelect={(p) => onSelectProject?.(p)}
-                                showMenu={showProjectMenu === project.id}
-                                setShowMenu={setShowProjectMenu}
-                                onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
-                                onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
-                                onArchive={(p) => sm.startArchive(p)}
-                                isSelected={sm.state.selectedProjectIds.has(project.id)}
-                                onToggleSelection={() => sm.toggleSelection(project.id)}
-                                t={t}
-                            />
-                        ))}
+                        <ProjectCardSurfaceProvider
+                            onSelect={(p) => onSelectProject?.(p)}
+                            activeMenuId={showProjectMenu}
+                            setActiveMenuId={setShowProjectMenu}
+                            onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
+                            onDelete={(p, e) => { setShowProjectMenu(null); sm.startDelete(p, e); }}
+                            onArchive={(p) => sm.startArchive(p)}
+                            t={t}
+                        >
+                            {sortedProjects.map((project, i) => (
+                                <ProjectCard
+                                    key={project.id}
+                                    project={project}
+                                    index={i}
+                                    isSelected={sm.state.selectedProjectIds.has(project.id)}
+                                    onToggleSelection={() => sm.toggleSelection(project.id)}
+                                />
+                            ))}
+                        </ProjectCardSurfaceProvider>
                         {sortedProjects.length === 0 && (
                             <div className="col-span-full py-12 text-center border-2 border-dashed border-border/30 rounded-xl">
                                 <Monitor className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />

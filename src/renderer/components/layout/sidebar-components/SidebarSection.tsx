@@ -2,6 +2,7 @@ import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Tooltip } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 
@@ -175,27 +176,29 @@ const SidebarCollapsedSection: React.FC<{
 
     return (
         <div className="relative">
-            <button
-                ref={buttonRef}
-                onClick={() => setIsOpen(!isOpen)}
-                className={cn(
-                    'w-full p-3 flex items-center justify-center',
-                    'rounded-lg transition-all duration-200',
-                    'hover:bg-muted/10 text-muted-foreground hover:text-foreground',
-                    isOpen && 'bg-muted/10 text-foreground'
-                )}
-                title={tooltip}
-            >
-                <div className="relative">
-                    {icon}
-                    {badge !== undefined && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground">
-                            {typeof badge === 'number' && badge > 9 ? '9+' : badge}
-                        </span>
+            <Tooltip content={tooltip} side="right" disabled={isOpen}>
+                <button
+                    ref={buttonRef}
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={cn(
+                        'w-full p-3 flex items-center justify-center',
+                        'rounded-lg transition-all duration-200',
+                        'hover:bg-muted/10 text-muted-foreground hover:text-foreground',
+                        isOpen && 'bg-muted/10 text-foreground'
                     )}
-                </div>
-                <ChevronRight className="w-3 h-3 ml-1 opacity-50" />
-            </button>
+                    aria-label={tooltip}
+                >
+                    <div className="relative">
+                        {icon}
+                        {badge !== undefined && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-xxxs font-bold flex items-center justify-center text-primary-foreground">
+                                {typeof badge === 'number' && badge > 9 ? '9+' : badge}
+                            </span>
+                        )}
+                    </div>
+                    <ChevronRight className="w-3 h-3 ml-1 opacity-50" />
+                </button>
+            </Tooltip>
 
             {/* Flyout Menu */}
             <AnimatePresence>

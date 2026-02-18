@@ -236,7 +236,7 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
             };
 
             const parsedArgs = argsSchema
-                ? parseWithLog('args', () => argsSchema.parse(args) as unknown as Args)
+                ? parseWithLog('args', () => argsSchema.parse(args) as Args)
                 : args;
             const finalArgs = normalizeArgs ? normalizeArgs(parsedArgs) : parsedArgs;
             const result = await handler(event, ...finalArgs);

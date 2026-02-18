@@ -7,63 +7,216 @@ Tandem is built with a multi-process, polyglot architecture designed to maximize
 Tandem utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
 
 ### Renderer Process (UI)
+
 The frontend is a React application that runs in a context-isolated environment. It has no direct access to the operating system or the Node.js runtime. This isolation is a critical security measure against remote code execution via malicious AI outputs.
 
+**Key Components:**
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling
+- **Framer Motion** for animations
+- **Monaco Editor** for code editing
+- **xterm.js** for terminal emulation
+
 ### Main Process (Orchestration)
+
 The Main process serves as the central hub. It manages the application's lifecycle, coordinates the service layer, and handles communication with external microservices. All high-level business logic resides here, including the agent council and workspace management.
 
+**Key Responsibilities:**
+- Service lifecycle management
+- IPC handler registration
+- Database initialization
+- Proxy process management
+- Native microservice coordination
+
 ### Inter-Process Communication (IPC)
+
 Communication between the Renderer and Main process occurs over a secure IPC bridge. We use a strictly whitelisted set of methods to ensure that the UI can only perform authorized actions.
+
+**IPC Categories:**
+| Category | Prefix | Examples |
+|----------|--------|----------|
+| Window/System | `window:`, `process:`, `health:` | Window controls, lifecycle events |
+| Auth/Security | `auth:`, `key-rotation:`, `audit:` | OAuth, token management |
+| AI/LLM | `chat:`, `ollama:`, `llama:`, `memory:` | Chat completions, model management |
+| Project | `project:`, `git:`, `terminal:`, `ssh:` | Project operations, version control |
+| Data | `db:`, `files:`, `backup:` | Database, filesystem, backup |
+| UI | `settings:`, `theme:`, `clipboard:` | User preferences |
 
 ## Service Oriented Architecture
 
 The Main process is organized into self-contained services, each responsible for a specific domain. These services are managed through a dependency injection container, which handles their initialization and lifecycle.
 
 ### Domain Breakdown
-- **Security and Auth**: Manages encryption, user accounts, and the secure storage of credentials.
-- **LLM Orchestration**: Handles the routing of requests to various AI providers and manages the concurrent execution of multiple models.
-- **Workspace Management**: Indexes the user's project, manages file operations, and provides context to the AI agents.
-- **Microservice Management**: Responsible for starting, stopping, and monitoring our specialized native binaries.
+
+#### Security Domain
+Manages encryption, user accounts, and secure credential storage.
+- **AuthService**: Multi-provider authentication (GitHub, Copilot)
+- **TokenService**: OAuth token lifecycle management
+- **SecurityService**: Cryptographic primitives and validation
+- **KeyRotationService**: API key rotation
+- **RateLimitService**: API rate limiting
+
+#### LLM Domain
+Handles AI model interactions and orchestration.
+- **LLMService**: Multi-provider LLM integration (OpenAI, Anthropic, Groq, NVIDIA, OpenCode)
+- **OllamaService**: Local Ollama model management
+- **HuggingFaceService**: HuggingFace model hub integration
+- **ModelRegistryService**: Model registration and discovery
+- **ModelFallbackService**: Fallback chain for availability
+- **EmbeddingService**: Text embedding for semantic search
+- **MemoryService**: Conversation memory management
+- **AdvancedMemoryService**: Vector-based semantic memory
+
+#### Project Domain
+Manages workspace and development tools.
+- **ProjectService**: Project management and workspace handling
+- **ProjectAgentService**: AI agent for project tasks
+- **CodeIntelligenceService**: Code analysis with embeddings
+- **GitService**: Git operations
+- **SSHService**: SSH connection management
+- **DockerService**: Docker container management
+- **TerminalService**: Terminal emulation with multiple backends
+
+#### Data Domain
+Handles all persistent storage.
+- **DatabaseService**: PGlite database management
+- **FileSystemService**: Secure file operations
+- **BackupService**: Backup and restore
+- **ChatEventService**: Chat event persistence
+
+#### Analysis Domain
+Metrics and monitoring.
+- **TelemetryService**: Usage telemetry
+- **PerformanceService**: Performance metrics
+- **AuditLogService**: Security audit logging
+- **SentryService**: Error reporting
 
 ## Native Microservices
 
 To handle tasks that require high performance or low-level networking capabilities, Tandem delegates work to specialized microservices.
 
 ### Go Proxy (CLIProxy-Embed)
+
 The Go proxy is the gateway for all external LLM communication. It manages:
-- **Request Routing**: Directing outgoing calls to the correct provider endpoint.
-- **Auth Injection**: Dynamically adding the required authentication headers to requests using tokens retrieved from the Main process.
-- **Streaming Optimization**: Buffering and forwarding model responses to the UI with minimal latency.
+- **Request Routing**: Directing outgoing calls to the correct provider endpoint
+- **Auth Injection**: Dynamically adding authentication headers
+- **Streaming Optimization**: Buffering and forwarding model responses
+- **Quota Management**: Provider-specific quota handling
 
 ### Rust Token Service
-This service is dedicated to the background maintenance of authentication tokens. It monitors the expiration of various credentials and executes refresh flows in the background, ensuring that the user's session remains active without manual intervention.
+
+Dedicated to background maintenance of authentication tokens:
+- Monitors token expiration
+- Executes refresh flows automatically
+- Ensures session continuity
 
 ## Secure Proxy Routing
 
-Tandem implements a "stateless" approach to credential handling. Tokens are stored in an encrypted database and only decrypted in memory when an outgoing request is initiated. The decrypted tokens are sent to the Go proxy over a localized HTTP interface, which is secured by a system-generated secret key. This design ensures that raw credentials never touch the disk in an unencrypted state.
+Tandem implements a "stateless" approach to credential handling:
+
+1. Tokens stored in encrypted database
+2. Decrypted only in memory during requests
+3. Sent to Go proxy over localized HTTP interface
+4. Secured by system-generated secret key
+
+This design ensures raw credentials never touch disk unencrypted.
 
 ## Data Persistence and Memory
 
 ### PGlite (PostgreSQL)
-We use an embedded version of PostgreSQL (PGlite) for all relational data. This provides a robust and scalable storage layer for user settings, chat histories, and project metadata.
+
+Embedded PostgreSQL for relational data:
+- User settings
+- Chat histories
+- Project metadata
+- Agent state
 
 ### Semantic Memory (Vector Search)
-For long-term agent memory, we utilize vector embeddings stored within our database. This allows the agent to perform semantic searches across the user's codebase, providing relevant context even for large and complex projects.
+
+Vector embeddings for long-term agent memory:
+- Semantic code search
+- Context retrieval
+- Knowledge persistence
 
 ## Agent Lifecycle
 
-1. **Task Decomposition**: When a user submits a complex request, the Planner agent breaks it down into a sequence of actionable steps.
-2. **Context Gathering**: The agent uses tools to read the relevant files, execute discovery commands, and pull information from the semantic memory.
-3. **Execution and Verification**: For each step, the Executor agent modifies code or performs system actions, followed by a verification step where the results are reviewed against the original plan.
-4. **Audit and Refinement**: A Critic agent reviews the final output to ensure it meets quality standards and doesn't introduce regressions.
+```mermaid
+sequenceDiagram
+    participant User
+    participant Planner
+    participant Executor
+    participant Critic
+    
+    User->>Planner: Submit request
+    Planner->>Planner: Decompose into steps
+    Planner->>Executor: Execute steps
+    Executor->>Executor: Gather context
+    Executor->>Executor: Modify code
+    Executor->>Critic: Submit results
+    Critic->>Critic: Review quality
+    Critic->>User: Return output
+```
+
+### Agent Types
+
+| Agent | Responsibility |
+|-------|----------------|
+| **Planner** | Task decomposition, step sequencing |
+| **Executor** | Code modification, system actions |
+| **Critic** | Quality review, regression prevention |
+
+## Architecture Patterns
+
+### Dependency Injection Container
+
+Factory-based service creation with lifecycle hooks:
+- Singleton scope for services
+- Transient scope for utilities
+- Automatic cleanup on shutdown
+
+### Circuit Breaker
+
+Resilience pattern for external service calls:
+- **CLOSED**: Normal operation
+- **OPEN**: Requests blocked, waiting for reset
+- **HALF_OPEN**: Testing recovery
+
+### Repository Pattern
+
+Data access abstraction:
+- `ChatRepository` - Chat persistence
+- `ProjectRepository` - Project data
+- `KnowledgeRepository` - Knowledge base
+- `SystemRepository` - System data
+
+### Event-Driven Architecture
+
+Loose coupling via EventBus:
+- Services emit events without knowing subscribers
+- Services subscribe to relevant events
+- Used for: `db:ready`, `db:error`, lifecycle events
+
+### Lazy Loading
+
+On-demand service creation:
+- Expensive services loaded when needed
+- Transparent proxy objects
+- Examples: DockerService, SSHService, ScannerService
 
 ## Architecture Decisions
 
 Formal decisions are tracked in `docs/adr/`:
 
-- `0001-electron-multi-process-architecture.md`
-- `0002-structured-changelog-source-of-truth.md`
-- `0003-service-oriented-main-process.md`
+- `0001-electron-multi-process-architecture.md` - Process isolation rationale
+- `0002-structured-changelog-source-of-truth.md` - Changelog management
+- `0003-service-oriented-main-process.md` - Service architecture
 
+## Security Measures
 
-
+1. **Path Security**: File operations restricted to allowed roots
+2. **Command Validation**: Shell commands validated before execution
+3. **Prompt Sanitization**: Prevents prompt injection attacks
+4. **Sender Validation**: IPC messages validated to come from main window
+5. **Certificate Error Blocking**: Prevents MITM attacks
+6. **Rate Limiting**: Prevents API abuse
+7. **Context Isolation**: Renderer process sandboxed from Node.js

@@ -1,5 +1,5 @@
 import { Download, FileText, Loader2, Minus, Puzzle, Search, Square, X } from 'lucide-react';
-import { type CSSProperties, ReactNode, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import changelogIndex from '@/data/changelog.index.json';
@@ -12,6 +12,16 @@ interface TitleBarProps {
     className?: string;
     onExtensionClick?: () => void;
 }
+
+interface SearchAnalytics {
+    lastQuery: string;
+    totalSearches: number;
+    lastSearchedAt: number;
+}
+
+const SEARCH_HISTORY_STORAGE_KEY = 'changelog.search.history';
+const SEARCH_ANALYTICS_STORAGE_KEY = 'changelog.search.analytics';
+const SEARCH_STORAGE_WRITE_DELAY_MS = 250;
 
 export function TitleBar({ children, leftContent, className, onExtensionClick }: TitleBarProps) {
     const translation = useTranslation();
@@ -27,7 +37,7 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     const [typeFilter, setTypeFilter] = useState<'all' | string>('all');
     const [searchHistory, setSearchHistory] = useState<string[]>(() => {
         try {
-            const raw = localStorage.getItem('changelog.search.history');
+            const raw = localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY);
             return raw ? JSON.parse(raw) as string[] : [];
         } catch {
             return [];
@@ -41,6 +51,61 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
     type AppRegionStyle = CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' };
     const dragStyle: AppRegionStyle = { WebkitAppRegion: 'drag' };
     const noDragStyle: AppRegionStyle = { WebkitAppRegion: 'no-drag' };
+    const searchStorageWriteTimerRef = useRef<number | null>(null);
+    const pendingSearchStorageRef = useRef<{
+        history: string[] | null;
+        analytics: SearchAnalytics | null;
+    }>({
+        history: null,
+        analytics: null,
+    });
+
+    const flushPendingSearchStorage = useCallback(() => {
+        const pending = pendingSearchStorageRef.current;
+        if (pending.history) {
+            localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(pending.history));
+            pending.history = null;
+        }
+        if (pending.analytics) {
+            localStorage.setItem(SEARCH_ANALYTICS_STORAGE_KEY, JSON.stringify(pending.analytics));
+            pending.analytics = null;
+        }
+    }, []);
+
+    const scheduleSearchStorageWrite = useCallback(
+        (updates: {
+            history?: string[];
+            analytics?: SearchAnalytics;
+        }) => {
+            const pending = pendingSearchStorageRef.current;
+            if (updates.history) {
+                pending.history = updates.history;
+            }
+            if (updates.analytics) {
+                pending.analytics = updates.analytics;
+            }
+
+            if (searchStorageWriteTimerRef.current !== null) {
+                window.clearTimeout(searchStorageWriteTimerRef.current);
+            }
+            searchStorageWriteTimerRef.current = window.setTimeout(() => {
+                flushPendingSearchStorage();
+                searchStorageWriteTimerRef.current = null;
+            }, SEARCH_STORAGE_WRITE_DELAY_MS);
+        },
+        [flushPendingSearchStorage]
+    );
+
+    useEffect(() => {
+        return () => {
+            if (searchStorageWriteTimerRef.current !== null) {
+                window.clearTimeout(searchStorageWriteTimerRef.current);
+                searchStorageWriteTimerRef.current = null;
+            }
+            flushPendingSearchStorage();
+        };
+    }, [flushPendingSearchStorage]);
+
     const changelogGroups = useMemo(() => {
         const grouped = new Map<string, ChangelogIndexEntry[]>();
 
@@ -156,23 +221,31 @@ export function TitleBar({ children, leftContent, className, onExtensionClick }:
         }
         const nextHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 12);
         setSearchHistory(nextHistory);
-        localStorage.setItem('changelog.search.history', JSON.stringify(nextHistory));
+        let totalSearches = 1;
+        const pendingAnalytics = pendingSearchStorageRef.current.analytics;
+        if (pendingAnalytics) {
+            totalSearches = pendingAnalytics.totalSearches + 1;
+        } else {
+            try {
+                const raw = localStorage.getItem(SEARCH_ANALYTICS_STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw) as { totalSearches?: number };
+                    totalSearches = (parsed.totalSearches ?? 0) + 1;
+                }
+            } catch {
+                // noop
+            }
+        }
 
-        const analytics = {
+        const analytics: SearchAnalytics = {
             lastQuery: query,
-            totalSearches: 1,
+            totalSearches,
             lastSearchedAt: Date.now(),
         };
-        try {
-            const raw = localStorage.getItem('changelog.search.analytics');
-            if (raw) {
-                const parsed = JSON.parse(raw) as { totalSearches?: number };
-                analytics.totalSearches = (parsed.totalSearches ?? 0) + 1;
-            }
-        } catch {
-            // noop
-        }
-        localStorage.setItem('changelog.search.analytics', JSON.stringify(analytics));
+        scheduleSearchStorageWrite({
+            history: nextHistory,
+            analytics,
+        });
     };
 
     const exportFilteredResults = () => {

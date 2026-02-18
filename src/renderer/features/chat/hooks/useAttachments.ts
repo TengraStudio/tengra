@@ -78,6 +78,9 @@ function mapAttachmentType(mimeType: string): Attachment['type'] {
     if (mimeType.startsWith('image/')) {
         return 'image';
     }
+    if (mimeType.startsWith('audio/')) {
+        return 'audio';
+    }
     if (mimeType.startsWith('video/')) {
         return 'video';
     }
@@ -88,6 +91,11 @@ function mapAttachmentType(mimeType: string): Attachment['type'] {
         return 'application';
     }
     return 'file';
+}
+
+async function resolveMimeType(file: File): Promise<string> {
+    const signatureType = await detectFileType(file);
+    return (signatureType ?? detectMimeType(file)).toLowerCase();
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -139,6 +147,101 @@ async function optimizeImageContent(file: File, mimeType: string): Promise<strin
         image.onerror = () => resolve(sourceDataUrl);
         image.src = sourceDataUrl;
     });
+}
+
+function extractVideoFramePreview(file: File): Promise<string | undefined> {
+    return new Promise(resolve => {
+        const objectUrl = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        const cleanup = () => URL.revokeObjectURL(objectUrl);
+        const fail = () => {
+            cleanup();
+            resolve(undefined);
+        };
+
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        video.onloadeddata = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.min(video.videoWidth || 640, MAX_IMAGE_DIMENSION));
+            canvas.height = Math.max(1, Math.min(video.videoHeight || 360, MAX_IMAGE_DIMENSION));
+            const context = canvas.getContext('2d');
+            if (!context) {
+                fail();
+                return;
+            }
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frame = canvas.toDataURL('image/jpeg', 0.8);
+            cleanup();
+            resolve(frame);
+        };
+        video.onerror = fail;
+        video.src = objectUrl;
+    });
+}
+
+function readAudioDurationSeconds(file: File): Promise<number | null> {
+    return new Promise(resolve => {
+        const objectUrl = URL.createObjectURL(file);
+        const audio = document.createElement('audio');
+        const cleanup = () => URL.revokeObjectURL(objectUrl);
+        audio.preload = 'metadata';
+        audio.onloadedmetadata = () => {
+            const duration = Number.isFinite(audio.duration) ? audio.duration : null;
+            cleanup();
+            resolve(duration);
+        };
+        audio.onerror = () => {
+            cleanup();
+            resolve(null);
+        };
+        audio.src = objectUrl;
+    });
+}
+
+async function buildAttachmentContent(
+    file: File,
+    mimeType: string,
+    attachmentType: Attachment['type']
+): Promise<{ content: string; preview?: string }> {
+    if (attachmentType === 'image') {
+        const optimized = await optimizeImageContent(file, mimeType);
+        return { content: optimized, preview: optimized };
+    }
+
+    if (attachmentType === 'video') {
+        const preview = await extractVideoFramePreview(file);
+        const content = `[Video attachment: ${file.name} (${mimeType})]\n${preview ? 'Preview frame extracted for multimodal analysis.' : 'Preview frame unavailable.'}`;
+        return { content, preview };
+    }
+
+    if (attachmentType === 'audio') {
+        const durationSeconds = await readAudioDurationSeconds(file);
+        const durationNote = durationSeconds !== null
+            ? `Duration: ${durationSeconds.toFixed(1)} seconds.`
+            : 'Duration unavailable.';
+        const content = `[Audio attachment: ${file.name} (${mimeType})]\n${durationNote}\nTranscription requested: summarize key spoken content when supported.`;
+        return { content };
+    }
+
+    const isTextLikeMime = mimeType.startsWith('text/')
+        || mimeType === 'application/json'
+        || mimeType === 'application/xml'
+        || mimeType === 'application/javascript';
+    if (isTextLikeMime) {
+        const rawText = await file.text();
+        if (mimeType === 'application/json') {
+            try {
+                return { content: JSON.stringify(JSON.parse(rawText), null, 2) };
+            } catch {
+                return { content: rawText };
+            }
+        }
+        return { content: rawText };
+    }
+
+    return { content: `[Attached file: ${file.name} (${mimeType})]` };
 }
 
 export async function validateDroppedFile(file: File): Promise<DropValidationResult> {
@@ -195,25 +298,24 @@ export const useAttachments = () => {
         }
 
         const id = generateId();
-        const mimeType = detectMimeType(file);
+        const mimeType = await resolveMimeType(file);
         const attachmentType = mapAttachmentType(mimeType);
         const newAttachment: Attachment = {
             id,
             name: file.name,
             type: attachmentType,
             size: file.size,
+            mimeType,
             status: 'uploading'
         };
         setAttachments(prev => [...prev, newAttachment]);
 
         try {
-            const content = attachmentType === 'image'
-                ? await optimizeImageContent(file, mimeType)
-                : await file.text();
+            const { content, preview } = await buildAttachmentContent(file, mimeType, attachmentType);
             setAttachments(prev =>
                 prev.map(a =>
                     a.id === id
-                        ? { ...a, status: 'ready', content, preview: attachmentType === 'image' ? content : undefined, file }
+                        ? { ...a, status: 'ready', content, preview, file }
                         : a
                 )
             );

@@ -26,11 +26,28 @@ export class ContextRetrievalService {
 
             const vector = await this.embedding.generateEmbedding(query);
 
-            // Parallel search
-            const [symbols, fragments] = await Promise.all([
+            // Parallel search with partial-failure tolerance
+            const [symbolsResult, fragmentsResult] = await Promise.allSettled([
                 this.db.searchCodeSymbols(vector, projectPath),
                 this.db.searchSemanticFragments(vector, limit, projectPath)
             ]);
+            const symbols =
+                symbolsResult.status === 'fulfilled' ? symbolsResult.value : [];
+            const fragments =
+                fragmentsResult.status === 'fulfilled' ? fragmentsResult.value : [];
+
+            if (symbolsResult.status === 'rejected') {
+                appLogger.warn(
+                    'ContextRetrieval',
+                    `Code symbol search failed: ${symbolsResult.reason instanceof Error ? symbolsResult.reason.message : String(symbolsResult.reason)}`
+                );
+            }
+            if (fragmentsResult.status === 'rejected') {
+                appLogger.warn(
+                    'ContextRetrieval',
+                    `Semantic fragment search failed: ${fragmentsResult.reason instanceof Error ? fragmentsResult.reason.message : String(fragmentsResult.reason)}`
+                );
+            }
 
             const contextParts: string[] = [];
             const sources: string[] = [];

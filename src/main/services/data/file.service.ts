@@ -1,6 +1,5 @@
 import { spawn } from 'child_process';
-import { watch } from 'fs';
-import { createWriteStream } from 'fs';
+import { createWriteStream, FSWatcher, watch } from 'fs';
 import * as fs from 'fs/promises';
 import * as https from 'https';
 import * as path from 'path';
@@ -15,6 +14,13 @@ export class FileManagementService {
     private readonly maxWriteBytes = 10 * 1024 * 1024;
     private readonly maxDownloadBytes = 100 * 1024 * 1024;
     private readonly allowedTextExtensions = new Set(['.md', '.txt', '.json', '.ts', '.tsx', '.js', '.jsx', '.yaml', '.yml', '.xml', '.html', '.css', '.scss']);
+    private readonly folderWatchers = new Map<string, FSWatcher>();
+
+    constructor() {
+        app.once('before-quit', () => {
+            this.closeAllWatchers();
+        });
+    }
 
     private sanitizePath(input: string): string {
         if (!input || input.includes('\0')) {
@@ -47,6 +53,21 @@ export class FileManagementService {
             appLogger.warn('file.service', `File quarantined: ${destination} (${reason})`);
         } catch (error) {
             appLogger.warn('file.service', `Failed to quarantine file ${filePath}: ${getErrorMessage(error as Error)}`);
+        }
+    }
+
+    private closeWatcher(dirPath: string): void {
+        const watcher = this.folderWatchers.get(dirPath);
+        if (!watcher) {
+            return;
+        }
+        watcher.close();
+        this.folderWatchers.delete(dirPath);
+    }
+
+    private closeAllWatchers(): void {
+        for (const dirPath of this.folderWatchers.keys()) {
+            this.closeWatcher(dirPath);
         }
     }
 
@@ -133,13 +154,24 @@ export class FileManagementService {
         }
     }
 
-    watchFolder(dir: string): ServiceResponse {
+    watchFolder(dir: string): ServiceResponse<{ close: () => void }> {
         try {
             const safeDir = this.sanitizePath(dir);
-            watch(safeDir, (eventType, filename) => {
-                appLogger.info('file.service', `Folder changed: ${eventType} on ${filename}`);
+            this.closeWatcher(safeDir);
+            const watcher = watch(safeDir, (eventType, filename) => {
+                const resolvedFilename = filename || '<unknown>';
+                appLogger.info('file.service', `Folder changed: ${eventType} on ${resolvedFilename}`);
             });
-            return { success: true, message: `Watching ${safeDir} for changes...` };
+            watcher.on('error', error => {
+                appLogger.error('file.service', `Watcher error for ${safeDir}`, error as Error);
+                this.closeWatcher(safeDir);
+            });
+            this.folderWatchers.set(safeDir, watcher);
+            return {
+                success: true,
+                message: `Watching ${safeDir} for changes...`,
+                data: { close: () => this.closeWatcher(safeDir) }
+            };
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
@@ -156,13 +188,42 @@ export class FileManagementService {
             }
 
             const file = createWriteStream(safeDestPath);
+            let settled = false;
             let receivedBytes = 0;
-            https.get(url, (response) => {
+            const resolveOnce = (result: ServiceResponse<{ path: string }>): void => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                resolve(result);
+            };
+            const cleanupPartialFile = (): void => {
+                file.destroy();
+                void fs.unlink(safeDestPath).catch(() => { /* ignore */ });
+            };
+
+            file.on('error', (error) => {
+                cleanupPartialFile();
+                resolveOnce({ success: false, error: getErrorMessage(error as Error) });
+            });
+
+            const request = https.get(url, (response) => {
+                response.on('error', (error) => {
+                    cleanupPartialFile();
+                    resolveOnce({ success: false, error: getErrorMessage(error as Error) });
+                });
+                if (response.statusCode && response.statusCode >= 400) {
+                    response.resume();
+                    cleanupPartialFile();
+                    resolveOnce({ success: false, error: `Download failed with status ${response.statusCode}` });
+                    return;
+                }
                 const contentLength = Number(response.headers['content-length'] ?? 0);
                 if (contentLength > this.maxDownloadBytes) {
                     response.destroy();
+                    cleanupPartialFile();
                     void this.quarantineFile(safeDestPath, 'download-size-limit');
-                    resolve({ success: false, error: 'Remote file exceeds download size limit' });
+                    resolveOnce({ success: false, error: 'Remote file exceeds download size limit' });
                     return;
                 }
                 response.on('data', chunk => {
@@ -174,11 +235,12 @@ export class FileManagementService {
                 response.pipe(file);
                 file.on('finish', () => {
                     file.close();
-                    resolve({ success: true, result: { path: safeDestPath } });
+                    resolveOnce({ success: true, result: { path: safeDestPath } });
                 });
-            }).on('error', (err) => {
-                fs.unlink(safeDestPath).catch(() => { /* ignore */ });
-                resolve({ success: false, error: err.message });
+            });
+            request.on('error', (error) => {
+                cleanupPartialFile();
+                resolveOnce({ success: false, error: getErrorMessage(error as Error) });
             });
         });
     }
@@ -190,13 +252,15 @@ export class FileManagementService {
             await this.ensureSizeWithinLimit(safeFilePath, this.maxReadBytes);
             const content = await fs.readFile(safeFilePath, 'utf8');
             const lines = content.split('\n');
-            const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine); // Apply from bottom to top to preserve indices
-
-            for (const edit of sortedEdits) {
-                if (edit.startLine < 1 || edit.endLine > lines.length || edit.startLine > edit.endLine) {
-                    return { success: false, error: `Invalid line range: ${edit.startLine}-${edit.endLine} (File has ${lines.length} lines)` };
+            const totalLines = lines.length;
+            for (const edit of edits) {
+                if (!this.isValidEditRange(edit.startLine, edit.endLine, totalLines)) {
+                    return { success: false, error: `Invalid line range: ${edit.startLine}-${edit.endLine} (File has ${totalLines} lines)` };
                 }
-
+            }
+            const sortedEdits = [...edits].sort((a, b) => b.startLine - a.startLine); // Apply from bottom to top to preserve indices
+ 
+            for (const edit of sortedEdits) {
                 // 1-based index to 0-based
                 const start = edit.startLine - 1;
                 const count = edit.endLine - edit.startLine + 1;
@@ -219,6 +283,14 @@ export class FileManagementService {
         } catch (e) {
             return { success: false, error: getErrorMessage(e as Error) };
         }
+    }
+
+    private isValidEditRange(startLine: number, endLine: number, totalLines: number): boolean {
+        return Number.isInteger(startLine)
+            && Number.isInteger(endLine)
+            && startLine >= 1
+            && endLine >= startLine
+            && endLine <= totalLines;
     }
 
     private async runProcess(command: string, args: string[]): Promise<void> {

@@ -470,6 +470,23 @@ export class UacRepository {
             .get<UacCheckpointRecord>(taskId);
     }
 
+    async trimCheckpoints(taskId: string, keepLatest: number): Promise<void> {
+        const safeKeepLatest = Math.max(1, Math.floor(keepLatest));
+        await this.db
+            .prepare(`
+                DELETE FROM uac_checkpoints
+                WHERE task_id = ?
+                  AND id NOT IN (
+                      SELECT id
+                      FROM uac_checkpoints
+                      WHERE task_id = ?
+                      ORDER BY created_at DESC
+                      LIMIT ?
+                  )
+            `)
+            .run(taskId, taskId, safeKeepLatest);
+    }
+
     async createPlanVersion(
         taskId: string,
         versionNumber: number,

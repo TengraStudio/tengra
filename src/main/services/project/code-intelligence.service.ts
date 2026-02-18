@@ -344,35 +344,44 @@ export class CodeIntelligenceService {
         // Chunk size ~500 chars, overlap 100
         const CHUNK_SIZE = 1000;
         const OVERLAP = 200;
+        const EMBEDDING_BATCH_SIZE = 4;
+        const chunks: string[] = [];
 
-        let start = 0;
-        while (start < content.length) {
+        for (let start = 0; start < content.length; start += (CHUNK_SIZE - OVERLAP)) {
             const end = Math.min(start + CHUNK_SIZE, content.length);
-            const chunk = content.substring(start, end);
+            chunks.push(content.substring(start, end));
+        }
 
-            // Generate embedding
-            try {
-                const vector = await this.embedding.generateEmbedding(chunk);
+        for (let index = 0; index < chunks.length; index += EMBEDDING_BATCH_SIZE) {
+            const batch = chunks.slice(index, index + EMBEDDING_BATCH_SIZE);
+            const batchResults = await Promise.allSettled(
+                batch.map(async chunk => {
+                    const vector = await this.embedding.generateEmbedding(chunk);
+                    const fragment: SemanticFragment = {
+                        id: crypto.randomUUID(),
+                        content: chunk,
+                        embedding: vector,
+                        source: 'file',
+                        sourceId: filePath,
+                        tags: ['code', path.extname(filePath)],
+                        importance: 0.5,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                        projectPath: rootPath
+                    };
 
-                const fragment: SemanticFragment = {
-                    id: crypto.randomUUID(),
-                    content: chunk,
-                    embedding: vector,
-                    source: 'file',
-                    sourceId: filePath,
-                    tags: ['code', path.extname(filePath)],
-                    importance: 0.5,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                    projectPath: rootPath
-                };
+                    await this.db.storeSemanticFragment(fragment);
+                })
+            );
 
-                await this.db.storeSemanticFragment(fragment);
-            } catch (e) {
-                appLogger.error('CodeIntelligenceService', `Failed to chunk/embed ${path.basename(filePath)}`, e as Error);
+            for (const result of batchResults) {
+                if (result.status === 'rejected') {
+                    const reason = result.reason instanceof Error
+                        ? result.reason
+                        : new Error(String(result.reason));
+                    appLogger.error('CodeIntelligenceService', `Failed to chunk/embed ${path.basename(filePath)}`, reason);
+                }
             }
-
-            start += (CHUNK_SIZE - OVERLAP);
         }
     }
 

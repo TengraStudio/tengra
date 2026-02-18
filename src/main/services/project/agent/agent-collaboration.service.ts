@@ -18,7 +18,10 @@ import {
     ProjectStep,
     StepModelConfig,
     TaskType,
+    VotingAnalytics,
+    VotingConfiguration,
     VotingSession,
+    VotingTemplate,
 } from '@shared/types/project-agent';
 
 /** Default model routing rules based on task type */
@@ -120,6 +123,36 @@ const TASK_TYPE_PATTERNS: Array<{ type: TaskType; patterns: RegExp[] }> = [
     },
 ];
 
+const DEFAULT_VOTING_CONFIGURATION: VotingConfiguration = {
+    minimumVotes: 2,
+    deadlockThreshold: 0.9,
+    autoResolve: true,
+    autoResolveTimeoutMs: 60_000
+};
+
+const DEFAULT_VOTING_TEMPLATES: VotingTemplate[] = [
+    {
+        id: 'risk-assessment',
+        name: 'Risk Assessment',
+        description: 'Use when models disagree on implementation safety.',
+        questionTemplate: 'Which option has the lowest regression risk?',
+        options: ['Option A', 'Option B', 'Option C'],
+        isBuiltIn: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    },
+    {
+        id: 'strategy-selection',
+        name: 'Strategy Selection',
+        description: 'Compare implementation strategies for a task.',
+        questionTemplate: 'Which strategy best fits the current codebase constraints?',
+        options: ['Conservative', 'Balanced', 'Aggressive'],
+        isBuiltIn: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    }
+];
+
 export interface AgentCollaborationDependencies {
     llm: LLMService;
 }
@@ -127,6 +160,8 @@ export interface AgentCollaborationDependencies {
 export class AgentCollaborationService extends BaseService {
     private routingRules: ModelRoutingRule[] = [...DEFAULT_ROUTING_RULES];
     private votingSessions: Map<string, VotingSession> = new Map();
+    private votingConfiguration: VotingConfiguration = { ...DEFAULT_VOTING_CONFIGURATION };
+    private votingTemplates: VotingTemplate[] = [...DEFAULT_VOTING_TEMPLATES];
 
     constructor(private deps: AgentCollaborationDependencies) {
         super('AgentCollaborationService');
@@ -384,6 +419,10 @@ Respond with a JSON object:
         if (!session || session.votes.length === 0) {
             return null;
         }
+        if (session.votes.length < this.votingConfiguration.minimumVotes) {
+            session.status = 'voting';
+            return session;
+        }
 
         // Count votes weighted by confidence
         const voteWeights = new Map<string, number>();
@@ -404,7 +443,7 @@ Respond with a JSON object:
 
         // Check for tie/deadlock
         const topDecisions = Array.from(voteWeights.entries())
-            .filter(([, weight]) => weight >= maxWeight * 0.9);
+            .filter(([, weight]) => weight >= maxWeight * this.votingConfiguration.deadlockThreshold);
 
         if (topDecisions.length > 1) {
             session.status = 'deadlocked';
@@ -412,6 +451,8 @@ Respond with a JSON object:
         } else {
             session.status = 'resolved';
             session.finalDecision = winner;
+            session.resolutionSource = 'automatic';
+            session.overrideReason = undefined;
             session.resolvedAt = Date.now();
             appLogger.info('AgentCollaboration', `Voting resolved: "${winner}"`);
         }
@@ -424,6 +465,105 @@ Respond with a JSON object:
      */
     getVotingSession(sessionId: string): VotingSession | null {
         return this.votingSessions.get(sessionId) ?? null;
+    }
+
+    /**
+     * Get all voting sessions, optionally filtered by task.
+     */
+    getVotingSessions(taskId?: string): VotingSession[] {
+        const sessions = Array.from(this.votingSessions.values());
+        const filtered = taskId ? sessions.filter(session => session.taskId === taskId) : sessions;
+        return filtered.sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    /**
+     * Manually override final decision for a voting session.
+     */
+    overrideVotingDecision(
+        sessionId: string,
+        finalDecision: string,
+        reason?: string
+    ): VotingSession | null {
+        const session = this.votingSessions.get(sessionId);
+        if (!session) {
+            return null;
+        }
+
+        session.status = 'resolved';
+        session.finalDecision = finalDecision;
+        session.resolutionSource = 'manual_override';
+        session.overrideReason = reason;
+        session.resolvedAt = Date.now();
+        appLogger.warn(
+            'AgentCollaboration',
+            `Voting manually overridden for ${sessionId}: "${finalDecision}"`
+        );
+        return session;
+    }
+
+    /**
+     * Aggregate voting analytics for active and historical sessions.
+     */
+    getVotingAnalytics(taskId?: string): VotingAnalytics {
+        const sessions = this.getVotingSessions(taskId);
+        if (sessions.length === 0) {
+            return {
+                totalSessions: 0,
+                pendingSessions: 0,
+                resolvedSessions: 0,
+                deadlockedSessions: 0,
+                averageVotesPerSession: 0,
+                averageConfidence: 0,
+                disagreementIndex: 0,
+                updatedAt: Date.now()
+            };
+        }
+
+        const totalVotes = sessions.reduce((sum, session) => sum + session.votes.length, 0);
+        const totalConfidence = sessions.reduce(
+            (sum, session) => sum + session.votes.reduce((voteSum, vote) => voteSum + vote.confidence, 0),
+            0
+        );
+        const disagreementSignals = sessions.filter(session => {
+            const uniqueDecisions = new Set(session.votes.map(vote => vote.decision));
+            return uniqueDecisions.size > 1 || session.status === 'deadlocked';
+        }).length;
+
+        return {
+            totalSessions: sessions.length,
+            pendingSessions: sessions.filter(session => session.status === 'pending' || session.status === 'voting').length,
+            resolvedSessions: sessions.filter(session => session.status === 'resolved').length,
+            deadlockedSessions: sessions.filter(session => session.status === 'deadlocked').length,
+            averageVotesPerSession: totalVotes / sessions.length,
+            averageConfidence: totalVotes > 0 ? totalConfidence / totalVotes : 0,
+            disagreementIndex: disagreementSignals / sessions.length,
+            updatedAt: Date.now()
+        };
+    }
+
+    getVotingConfiguration(): VotingConfiguration {
+        return { ...this.votingConfiguration };
+    }
+
+    updateVotingConfiguration(patch: Partial<VotingConfiguration>): VotingConfiguration {
+        this.votingConfiguration = {
+            ...this.votingConfiguration,
+            ...patch,
+            minimumVotes: Math.max(1, patch.minimumVotes ?? this.votingConfiguration.minimumVotes),
+            deadlockThreshold: Math.min(
+                1,
+                Math.max(0.5, patch.deadlockThreshold ?? this.votingConfiguration.deadlockThreshold)
+            ),
+            autoResolveTimeoutMs: Math.max(
+                10_000,
+                patch.autoResolveTimeoutMs ?? this.votingConfiguration.autoResolveTimeoutMs
+            )
+        };
+        return { ...this.votingConfiguration };
+    }
+
+    getVotingTemplates(): VotingTemplate[] {
+        return [...this.votingTemplates];
     }
 
     // ===== AGT-COL-04: Consensus Building =====

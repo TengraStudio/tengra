@@ -3,9 +3,10 @@ import { JsonObject, JsonValue } from '@/types/common';
 export interface Attachment {
     id: string
     name: string
-    type: 'image' | 'video' | 'file' | 'text' | 'application'
+    type: 'image' | 'video' | 'audio' | 'file' | 'text' | 'application'
     size: number
     status: 'uploading' | 'ready' | 'error'
+    mimeType?: string | undefined
     preview?: string | undefined
     file?: File | undefined
     content?: string | undefined

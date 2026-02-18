@@ -67,25 +67,53 @@ export const ProjectLogsTab: React.FC<ProjectLogsTabProps> = ({ projectPath, lan
         setLogs([]);
     }, []);
 
-    const filteredLogs = logs.filter(log => {
-        const matchesText = log.message.toLowerCase().includes(filter.toLowerCase());
-        const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
-        const matchesSource = sourceFilter === 'all' || log.source === sourceFilter;
-        return matchesText && matchesLevel && matchesSource;
-    });
+    const { filteredLogs, levelStats } = React.useMemo(() => {
+        const nextFilteredLogs: LogEntry[] = [];
+        const stats = {
+            total: 0,
+            error: 0,
+            warn: 0,
+            info: 0,
+            debug: 0,
+        };
+        const normalizedFilter = filter.toLowerCase();
+
+        for (const log of logs) {
+            const matchesText = log.message.toLowerCase().includes(normalizedFilter);
+            const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
+            const matchesSource = sourceFilter === 'all' || log.source === sourceFilter;
+            if (!matchesText || !matchesLevel || !matchesSource) {
+                continue;
+            }
+
+            nextFilteredLogs.push(log);
+            stats.total += 1;
+            switch (log.level) {
+                case 'error':
+                    stats.error += 1;
+                    break;
+                case 'warn':
+                    stats.warn += 1;
+                    break;
+                case 'debug':
+                    stats.debug += 1;
+                    break;
+                default:
+                    stats.info += 1;
+                    break;
+            }
+        }
+
+        return {
+            filteredLogs: nextFilteredLogs,
+            levelStats: stats,
+        };
+    }, [filter, levelFilter, logs, sourceFilter]);
 
     const availableSources = React.useMemo(
         () => Array.from(new Set(logs.map(log => log.source))).sort(),
         [logs]
     );
-
-    const levelStats = React.useMemo(() => ({
-        total: filteredLogs.length,
-        error: filteredLogs.filter(log => log.level === 'error').length,
-        warn: filteredLogs.filter(log => log.level === 'warn').length,
-        info: filteredLogs.filter(log => log.level === 'info').length,
-        debug: filteredLogs.filter(log => log.level === 'debug').length,
-    }), [filteredLogs]);
 
     const exportLogs = useCallback(() => {
         const content = filteredLogs

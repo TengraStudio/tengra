@@ -1,3 +1,6 @@
+import { createHash } from 'crypto';
+import { gunzipSync, gzipSync } from 'zlib';
+
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { AgentTaskState } from '@shared/types/agent-state';
@@ -24,6 +27,9 @@ const CHECKPOINT_TRIGGER_VALUES: AgentCheckpointTrigger[] = [
     'resume_restore'
 ];
 
+const CHECKPOINT_SNAPSHOT_PREFIX = 'gzip:';
+const MAX_CHECKPOINTS_PER_TASK = 200;
+
 export class AgentCheckpointService extends BaseService {
     constructor(private databaseService: DatabaseService) {
         super('AgentCheckpointService');
@@ -39,8 +45,31 @@ export class AgentCheckpointService extends BaseService {
         state: AgentTaskState,
         trigger: AgentCheckpointTrigger = 'manual_snapshot'
     ): Promise<string> {
+        if (trigger === 'auto_state_sync') {
+            const latestCheckpoint = await this.databaseService.uac.getLatestCheckpoint(taskId);
+            if (latestCheckpoint) {
+                const parsedLatest = this.parseSnapshot(
+                    latestCheckpoint.snapshot,
+                    latestCheckpoint.trigger,
+                    latestCheckpoint.created_at
+                );
+                const latestHash = this.createStateFingerprint(parsedLatest.state);
+                const nextHash = this.createStateFingerprint(state);
+                if (latestHash === nextHash) {
+                    return latestCheckpoint.id;
+                }
+            }
+        }
+
         const snapshot = this.serializeSnapshot(state, trigger);
-        return await this.databaseService.uac.createCheckpoint(taskId, stepIndex, trigger, snapshot);
+        const checkpointId = await this.databaseService.uac.createCheckpoint(
+            taskId,
+            stepIndex,
+            trigger,
+            snapshot
+        );
+        await this.databaseService.uac.trimCheckpoints(taskId, MAX_CHECKPOINTS_PER_TASK);
+        return checkpointId;
     }
 
     async getCheckpoints(taskId: string): Promise<AgentCheckpointItem[]> {
@@ -154,7 +183,9 @@ export class AgentCheckpointService extends BaseService {
             state
         };
 
-        return JSON.stringify(snapshot);
+        const serialized = JSON.stringify(snapshot);
+        const compressed = gzipSync(Buffer.from(serialized, 'utf8'));
+        return `${CHECKPOINT_SNAPSHOT_PREFIX}${compressed.toString('base64')}`;
     }
 
     private parseSnapshot(
@@ -162,7 +193,11 @@ export class AgentCheckpointService extends BaseService {
         fallbackTrigger: string,
         fallbackCreatedAt: number
     ): { trigger: AgentCheckpointTrigger; createdAt: number; state: AgentTaskState } {
-        const parsed = safeJsonParse<AgentCheckpointSnapshotV1 | AgentTaskState | null>(snapshotText, null);
+        const decodedSnapshot = this.decodeSnapshot(snapshotText);
+        const parsed = safeJsonParse<AgentCheckpointSnapshotV1 | AgentTaskState | null>(
+            decodedSnapshot,
+            null
+        );
         if (!parsed) {
             throw new Error('Invalid checkpoint snapshot payload');
         }
@@ -180,6 +215,20 @@ export class AgentCheckpointService extends BaseService {
             createdAt: fallbackCreatedAt,
             state: this.hydrateStateDates(parsed)
         };
+    }
+
+    private decodeSnapshot(snapshotText: string): string {
+        if (!snapshotText.startsWith(CHECKPOINT_SNAPSHOT_PREFIX)) {
+            return snapshotText;
+        }
+
+        const compressedPayload = snapshotText.slice(CHECKPOINT_SNAPSHOT_PREFIX.length);
+        try {
+            const compressed = Buffer.from(compressedPayload, 'base64');
+            return gunzipSync(compressed).toString('utf8');
+        } catch (error) {
+            throw new Error(`Invalid compressed checkpoint snapshot: ${(error as Error).message}`);
+        }
     }
 
     private isSnapshotEnvelope(value: AgentCheckpointSnapshotV1 | AgentTaskState): value is AgentCheckpointSnapshotV1 {
@@ -234,5 +283,15 @@ export class AgentCheckpointService extends BaseService {
                 endedAt: providerAttempt.endedAt ? new Date(providerAttempt.endedAt) : undefined
             }))
         };
+    }
+
+    private createStateFingerprint(state: AgentTaskState): string {
+        const serialized = JSON.stringify(state, (_key, value) => {
+            if (value instanceof Date) {
+                return value.toISOString();
+            }
+            return value;
+        });
+        return createHash('sha256').update(serialized).digest('hex');
     }
 }

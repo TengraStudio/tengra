@@ -462,6 +462,30 @@ function TerminalPanelContentImpl({
         activeTabIdRef.current = activeTabId;
     }, [activeTabId]);
 
+    const tabById = useMemo(() => {
+        const lookup = new Map<string, TerminalTab>();
+        for (const tab of tabs) {
+            lookup.set(tab.id, tab);
+        }
+        return lookup;
+    }, [tabs]);
+
+    const shellNameById = useMemo(() => {
+        const lookup = new Map<string, string>();
+        for (const shell of availableShells) {
+            lookup.set(shell.id, shell.name);
+        }
+        return lookup;
+    }, [availableShells]);
+
+    const backendNameById = useMemo(() => {
+        const lookup = new Map<string, string>();
+        for (const backend of availableBackends) {
+            lookup.set(backend.id, backend.name);
+        }
+        return lookup;
+    }, [availableBackends]);
+
     const setTerminalInstance = useTrackedCallback((id: string, terminal: XTerm | null) => {
         if (terminal) {
             terminalInstancesRef.current[id] = terminal;
@@ -490,10 +514,8 @@ function TerminalPanelContentImpl({
             const id = Math.random().toString(36).substring(2, 9);
             const effectiveBackendId =
                 backendId ?? resolveDefaultBackendId(availableBackends) ?? 'node-pty';
-            const shellName = availableShells.find(s => s.id === type)?.name ?? type;
-            const backendName = availableBackends.find(
-                backend => backend.id === effectiveBackendId
-            )?.name;
+            const shellName = shellNameById.get(type) ?? type;
+            const backendName = backendNameById.get(effectiveBackendId);
             const similarCount =
                 tabs.filter(
                     tab => tab.type === type && (tab.backendId ?? 'node-pty') === effectiveBackendId
@@ -526,10 +548,11 @@ function TerminalPanelContentImpl({
         },
         [
             availableBackends,
-            availableShells,
+            backendNameById,
             projectPath,
             setTabs,
             setActiveTabId,
+            shellNameById,
             tabs,
             resolveDefaultBackendId,
         ]
@@ -1593,9 +1616,9 @@ function TerminalPanelContentImpl({
         if (!activeTabId) {
             return 'bash';
         }
-        const tab = tabs.find(t => t.id === activeTabId);
+        const tab = tabById.get(activeTabId);
         return tab?.type ?? 'bash';
-    }, [activeTabId, tabs]);
+    }, [activeTabId, tabById]);
 
     const handleAiExplainError = useTrackedCallback(
         async (issue: TerminalSemanticIssue) => {
@@ -2054,15 +2077,40 @@ function TerminalPanelContentImpl({
         [activeTabId, splitView]
     );
 
-    const selectableBackends = availableBackends.filter(backend => backend.available);
-    const integratedBackend = selectableBackends.find(backend => backend.id === 'node-pty');
-    const launchableExternalBackends = selectableBackends.filter(
-        backend => backend.id !== 'node-pty'
-    );
     const resolvedDefaultBackendId = resolveDefaultBackendId(availableBackends);
-    const defaultBackendName =
-        selectableBackends.find(backend => backend.id === resolvedDefaultBackendId)?.name ??
-        'Unknown';
+    const {
+        selectableBackends,
+        integratedBackend,
+        launchableExternalBackends,
+        defaultBackendName,
+    } = useMemo(() => {
+        const selectable: typeof availableBackends = [];
+        const launchable: typeof availableBackends = [];
+        let integrated: (typeof availableBackends)[number] | undefined;
+        let defaultName = 'Unknown';
+
+        for (const backend of availableBackends) {
+            if (!backend.available) {
+                continue;
+            }
+            selectable.push(backend);
+            if (backend.id === 'node-pty') {
+                integrated = backend;
+            } else {
+                launchable.push(backend);
+            }
+            if (backend.id === resolvedDefaultBackendId) {
+                defaultName = backend.name;
+            }
+        }
+
+        return {
+            selectableBackends: selectable,
+            integratedBackend: integrated,
+            launchableExternalBackends: launchable,
+            defaultBackendName: defaultName,
+        };
+    }, [availableBackends, resolvedDefaultBackendId]);
     const isLoadingLaunchOptions = isLoadingShells || isLoadingBackends;
     const hasRemoteConnections = remoteSshProfiles.length > 0 || remoteDockerContainers.length > 0;
     const splitPresetOptions = useMemo(
@@ -2086,6 +2134,9 @@ function TerminalPanelContentImpl({
             .join('')
             .slice(-24000)
         : '';
+    const activeRecordingLabel = activeRecordingTabId
+        ? tabById.get(activeRecordingTabId)?.name ?? activeRecordingTabId
+        : null;
 
     return (
         <motion.div
@@ -2359,10 +2410,7 @@ function TerminalPanelContentImpl({
                             t,
                             hasActiveSession,
                             activeRecordingTabId,
-                            activeRecordingLabel: activeRecordingTabId
-                                ? tabs.find(tab => tab.id === activeRecordingTabId)?.name ??
-                                activeRecordingTabId
-                                : null,
+                            activeRecordingLabel,
                             recordings,
                             selectedRecordingId,
                             selectedRecording,

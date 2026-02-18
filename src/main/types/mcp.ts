@@ -12,6 +12,31 @@ export interface MCPServerConfig {
     args?: string[]
     env?: Record<string, string>
     enabled: boolean
+    capabilities?: string[]
+    dependencies?: string[]
+    conflictsWith?: string[]
+    sandbox?: {
+        enabled?: boolean
+        maxMemoryMb?: number
+        maxCpuPercent?: number
+    }
+    storage?: {
+        dataPath?: string
+        quotaMb?: number
+        migrationVersion?: number
+    }
+    updatePolicy?: {
+        channel?: 'stable' | 'beta' | 'alpha'
+        autoUpdate?: boolean
+        scheduleCron?: string
+        signatureSha256?: string
+        lastCheckedAt?: number
+        lastUpdatedAt?: number
+    }
+    settingsSchema?: Record<string, JsonValue>
+    settingsValues?: Record<string, JsonValue>
+    settingsVersion?: number
+    integrityHash?: string
 }
 
 export interface MCPTool {

@@ -8,6 +8,7 @@ import { registerChatIpc } from '@main/ipc/chat';
 import { registerClipboardIpc } from '@main/ipc/clipboard';
 import { registerCodeIntelligenceIpc } from '@main/ipc/code-intelligence';
 import { registerCollaborationIpc } from '@main/ipc/collaboration';
+import { registerContractIpc } from '@main/ipc/contract';
 import { registerDbIpc } from '@main/ipc/db';
 import { registerDialogIpc } from '@main/ipc/dialog';
 import { registerExportIpc } from '@main/ipc/export';
@@ -57,18 +58,25 @@ import { registerBatchIpc } from '@main/utils/ipc-batch.util';
 import { setIpcEventBus } from '@main/utils/ipc-wrapper.util';
 import { BrowserWindow } from 'electron';
 
-export function registerIpcHandlers(
+export async function registerIpcHandlers(
     services: Services,
     toolExecutor: ToolExecutor,
     getMainWindow: () => BrowserWindow | null,
     allowedFileRoots: Set<string>,
     mcpDispatcher: McpDispatcher
-) {
+): Promise<void> {
     setIpcEventBus(services.eventBusService);
+    const [logoService, sshService, dockerService, marketplaceService] = await Promise.all([
+        services.logoService.resolve(),
+        services.sshService.resolve(),
+        services.dockerService.resolve(),
+        services.marketplaceService.resolve(),
+    ]);
 
     // Registers
     registerWindowIpc(getMainWindow, allowedFileRoots);
     registerLazyServicesIpc();
+    registerContractIpc();
     registerModelRegistryIpc(services.modelRegistryService, services.rateLimitService);
     registerModelDownloaderIpc(services.modelDownloaderService);
     registerAuditIpc(services.auditLogService);
@@ -122,7 +130,7 @@ export function registerIpcHandlers(
 
     registerProjectIpc(getMainWindow, {
         projectService: services.projectService,
-        logoService: services.logoService,
+        logoService,
         codeIntelligenceService: services.codeIntelligenceService,
         jobSchedulerService: services.jobSchedulerService,
         databaseService: services.databaseService,
@@ -143,6 +151,7 @@ export function registerIpcHandlers(
         settingsService: services.settingsService,
         llmService: services.llmService,
         copilotService: services.copilotService,
+        auditLogService: services.auditLogService,
         updateOpenAIConnection: () => {
             const mainWindow = getMainWindow();
             if (mainWindow) {
@@ -166,8 +175,8 @@ export function registerIpcHandlers(
         },
     });
 
-    registerSshIpc(getMainWindow, services.sshService, services.rateLimitService);
-    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots);
+    registerSshIpc(getMainWindow, sshService, services.rateLimitService);
+    registerFilesIpc(getMainWindow, services.fileSystemService, allowedFileRoots, services.auditLogService);
     registerHFModelIpc(services.llmService, services.huggingFaceService);
     registerMultiModelIpc(services.multiModelComparisonService);
     registerCollaborationIpc(services.modelCollaborationService);
@@ -190,7 +199,7 @@ export function registerIpcHandlers(
         services.terminalService,
         services.terminalProfileService,
         services.terminalSmartService,
-        services.dockerService
+        dockerService
     );
 
     registerDialogIpc(getMainWindow);
@@ -224,7 +233,7 @@ export function registerIpcHandlers(
 
     // Marketplace
     registerMarketplaceIpc({
-        marketplaceService: services.marketplaceService,
+        marketplaceService,
         rateLimitService: services.rateLimitService,
     });
 

@@ -22,7 +22,50 @@ let state: SettingsStoreState = {
     isLoading: true
 };
 
-const deepEqual = (obj1: JsonValue, obj2: JsonValue) => JSON.stringify(obj1) === JSON.stringify(obj2);
+const isObjectValue = (value: JsonValue): value is Record<string, JsonValue | undefined> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const deepEqual = (obj1: JsonValue, obj2: JsonValue): boolean => {
+    if (obj1 === obj2) {
+        return true;
+    }
+
+    if (obj1 === null || obj2 === null) {
+        return false;
+    }
+
+    if (Array.isArray(obj1) || Array.isArray(obj2)) {
+        if (!Array.isArray(obj1) || !Array.isArray(obj2) || obj1.length !== obj2.length) {
+            return false;
+        }
+
+        for (let index = 0; index < obj1.length; index += 1) {
+            if (!deepEqual(obj1[index] ?? null, obj2[index] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    if (!isObjectValue(obj1) || !isObjectValue(obj2)) {
+        return false;
+    }
+
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+
+    for (const key of keys1) {
+        if (!(key in obj2) || !deepEqual(obj1[key] ?? null, obj2[key] ?? null)) {
+            return false;
+        }
+    }
+
+    return true;
+};
 
 function emit(): void {
     for (const listener of listeners) {

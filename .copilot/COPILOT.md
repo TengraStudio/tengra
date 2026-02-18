@@ -1,12 +1,12 @@
-# 👑 TANDEM AGENT COMMANDMENTS (COPILOT EDITION)
+# TANDEM AGENT COMMANDMENTS (COPILOT EDITION)
 
 > **STRICT ADHERENCE REQUIRED.** Failure to follow rules results in termination of the session.
 
 ## MANDATORY: Read Documentation First
 
-1.  Read the [.agent/rules/MASTER_COMMANDMENTS.md](file:///c:/Users/agnes/Desktop/projects/orbit/.agent/rules/MASTER_COMMANDMENTS.md)
-2.  Follow the [AI_RULES.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/AI_RULES.md)
-3.  Check [TODO.md](file:///c:/Users/agnes/Desktop/projects/orbit/docs/TODO.md) before every task.
+1. Read [AGENTS.md](../../AGENTS.md) - Complete project guide
+2. Read [docs/AI_RULES.md](../../docs/AI_RULES.md) - Comprehensive coding standards
+3. Check [docs/TODO.md](../../docs/TODO.md) - Current tasks and priorities
 
 ## Quick Reference
 
@@ -19,115 +19,148 @@ npm run type-check   # TypeScript validation
 npm run test         # Run tests
 ```
 
-### Required Workflow
-1. Read docs/AI_RULES.md before starting
-2. Make code changes
-3. Run: npm run build && npm run lint && npm run type-check
-4. If errors, fix and repeat step 3
-5. Update docs/TODO.md (mark [x] complete, NEVER delete items)
-6. Update `docs/changelog/data/changelog.entries.json` (+ TR locale overrides if needed)
-7. Run `npm run changelog:sync`
-8. Commit with conventional message format
-9. Push to repository
+### Workflow
+1. Read docs/AI_RULES.md
+2. Make changes
+3. `npm run build && npm run lint`
+4. Update docs/TODO.md (mark `[x]`, don't delete)
+5. Update `docs/changelog/data/changelog.entries.json`
+6. Run `npm run changelog:sync`
+7. Commit and push
 
 ## Forbidden Actions
 
 ### Never Use
-- `any` type in TypeScript - FORBIDDEN
-- `unknown` type - FORBIDDEN
+- `any` type - FORBIDDEN
 - `console.log` - Use `appLogger` instead
-- `@ts-ignore` or `eslint-disable` - NEVER
-- Full file deletion to edit - Use targeted edits only
+- `@ts-ignore` - NEVER
+- `// eslint-disable` - NEVER
+- Full file deletion to edit
+- `while(true)` without bounds
+- Placeholders or TODO comments in code
 
 ### Protected Paths (Never Modify)
-- `.git/` - Git internals
-- `node_modules/` - Dependencies
-- `vendor/` - Third-party code
-- `.env`, `.env.local` - Environment secrets
-- `*.key`, `*.pem` - Cryptographic keys
+- `.git/`
+- `node_modules/`
+- `vendor/`
+- `.env`, `.env.local`
 
 ## Code Standards
 
 ### NASA Power of Ten Rules
-1. No recursion - Use iteration instead
-2. Fixed loop bounds - All loops must have a verifiable upper bound
-3. Short functions - Maximum 60 lines per function
-4. Check all return values - Never ignore function results
-5. Minimal variable scope - Use const, prefer smallest scope
+1. No recursion
+2. Fixed loop bounds
+3. Short functions (max 60 lines)
+4. Check all return values
+5. Minimal variable scope
 
-### TypeScript Requirements
-- All public methods need JSDoc comments
-- Prefer interfaces for object types
+### Type Safety
+- Strict types, no `any`
+- All public methods need JSDoc
+- Check all return values
+- Handle all Promise rejections
 
-### Performance Standards
-1.  **Lazy Loading**: Use `React.lazy()` for heavy components.
-2.  **Memoization**: Mandatory `useMemo`/`useCallback` for computations.
-3.  **IPC Batching**: Combine IPC calls to minimize overhead.
-4.  **Virtualization**: Always virtualize lists exceeding 50 items.
-5.  **Lazy Services**: Main services must follow lazy instantiation patterns.
-6.  **Database Indexing**: Mandatory indexes for all query-critical fields.
-7.  **Resource Disposal**: Strictly implement and call `dispose()`/cleanup.
-8.  **Responsive Main**: Never block the main process; use worker threads.
-9.  **Lookup Efficiency**: Use `Map`/`Set` for collections/high-freq lookups.
-10. **Tree Shaking**: Use explicit imports for all library functions.
-11. **Off-screen Layout**: Use `content-visibility: auto` where appropriate.
-12. **State Hygiene**: Avoid unnecessary global state; keep state local.
+### Performance
+1. Lazy Loading: `React.lazy()` for heavy components
+2. Memoization: `useMemo`/`useCallback` for computations
+3. IPC Batching: Combine IPC calls to minimize overhead
+4. Virtualization: Virtualize lists > 50 items
+5. Lazy Services: Main services use lazy instantiation
+6. Indexing: Mandatory indexes for query-critical fields
+7. Disposal: Call `dispose()`/cleanup for all resources
 
-### i18n Requirements
+### i18n
 - Never hardcode user-facing strings
-- Use t('key') for all translations
-- Update both en.ts and tr.ts when adding keys
+- Use `t('key')` for translations
+- Update both `en.ts` and `tr.ts`
 
 ## Project Structure
 
 ```
 src/
 ├── main/           # Electron main process
-│   ├── services/   # Backend services (organized by domain)
+│   ├── services/   # Backend services (by domain)
 │   ├── ipc/        # IPC handlers
 │   └── mcp/        # MCP tools
 ├── renderer/       # React frontend
 │   ├── features/   # Feature modules
-│   └── components/ # Reusable UI components
-├── shared/         # Shared types and utilities
-└── tests/          # All test files
+│   └── components/ # UI components
+├── shared/         # Shared types/utils
+└── tests/          # All tests
 ```
 
 ## Service Pattern
 
-All services must extend BaseService:
-
 ```typescript
 import { BaseService } from '@main/services/base.service'
 import { appLogger } from '@main/logging/logger'
+import { getErrorMessage } from '@shared/utils/error.util'
 
 export class MyService extends BaseService {
-    constructor(private dependency: Dependency) {
+    constructor(
+        private dependency1: Dependency1,
+        private dependency2: Dependency2
+    ) {
         super('MyService')
     }
-    
+
     async initialize(): Promise<void> {
         appLogger.info('MyService', 'Initializing...')
     }
-    
-    async myMethod(): Promise<Result> {
+
+    async doWork(input: Input): Promise<Result> {
+        if (!input) {
+            throw new Error('Input is required')
+        }
+
         try {
-            // implementation
+            const result = await this.dependency1.process(input)
+            return { success: true, data: result }
         } catch (error) {
-            appLogger.error('MyService', 'Method failed', error as Error)
+            appLogger.error('MyService', 'doWork failed', error as Error)
             throw error
         }
     }
 }
 ```
 
-## Enforcement
+## IPC Handler Pattern
 
-If you realize you have violated any of these rules:
-1. Stop the current action immediately.
-2. Re-read the relevant rule section.
-3. Correct the violation before proceeding.
-4. Log the violation to logs/agent-violations.log with a brief description.
+```typescript
+import { createIpcHandler } from '@main/utils/ipc-wrapper.util'
 
-For complete details, see docs/AI_RULES.md.
+export const registerMyHandler = createIpcHandler(
+    'my:action',
+    async (_event, param: string) => {
+        // Implementation
+        return result
+    }
+)
+```
 
+## Logging
+
+```typescript
+import { appLogger } from '@main/logging/logger'
+
+// Correct usage
+appLogger.info('ServiceName', 'Operation completed')
+appLogger.warn('ServiceName', 'Resource low', { remaining: 10 })
+appLogger.error('ServiceName', 'Operation failed', error as Error)
+
+// NEVER use
+console.log('message')
+```
+
+## Checklist Before Committing
+
+- [ ] Code compiles without errors (`npm run build`)
+- [ ] No lint warnings (`npm run lint`)
+- [ ] No TypeScript errors (`npm run type-check`)
+- [ ] All tests pass (`npm run test`)
+- [ ] TODO.md updated
+- [ ] Changelog updated
+- [ ] No `any` types used
+- [ ] No `console.log` used
+- [ ] All public methods have JSDoc
+- [ ] User-facing strings use `t()`

@@ -1,25 +1,53 @@
 import { Archive, ArrowRight, Calendar, MoreVertical, Pencil, Terminal, Trash2 } from 'lucide-react';
-import React, { memo } from 'react';
+import React, { createContext, memo, useContext } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types';
 
-interface ProjectCardProps {
-    project: Project
-    index: number
+interface ProjectCardSurfaceContextValue {
+    activeMenuId: string | null
+    setActiveMenuId: (id: string | null) => void
     onSelect: (project: Project) => void
-    showMenu: boolean
-    setShowMenu: (id: string | null) => void
     onEdit: (project: Project, e: React.MouseEvent) => void
     onDelete: (project: Project, e: React.MouseEvent) => void
     onArchive: (project: Project) => void
-    isSelected?: boolean
-    onToggleSelection?: () => void
     t: (key: string) => string
 }
 
-const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void; t: (key: string) => string }> = ({ isSelected, onToggle, t }) => (
+const ProjectCardSurfaceContext = createContext<ProjectCardSurfaceContextValue | null>(null);
+
+function useProjectCardSurfaceContext(): ProjectCardSurfaceContextValue {
+    const context = useContext(ProjectCardSurfaceContext);
+    if (!context) {
+        throw new Error('ProjectCard must be used within ProjectCardSurfaceProvider');
+    }
+    return context;
+}
+
+export interface ProjectCardSurfaceProviderProps extends ProjectCardSurfaceContextValue {
+    children: React.ReactNode
+}
+
+export const ProjectCardSurfaceProvider: React.FC<ProjectCardSurfaceProviderProps> = ({
+    children,
+    ...value
+}) => (
+    <ProjectCardSurfaceContext.Provider value={value}>
+        {children}
+    </ProjectCardSurfaceContext.Provider>
+);
+
+interface ProjectCardProps {
+    project: Project
+    index: number
+    isSelected?: boolean
+    onToggleSelection?: () => void
+}
+
+const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () => void }> = ({ isSelected, onToggle }) => {
+    const { t } = useProjectCardSurfaceContext();
+    return (
     <button
         type="button"
         aria-label={t('common.select')}
@@ -44,24 +72,28 @@ const ProjectSelectionCheckbox: React.FC<{ isSelected?: boolean; onToggle?: () =
             )}
         </div>
     </button>
-);
+    );
+};
 
-const ProjectCardMenu: React.FC<{
-    project: Project
-    showMenu: boolean
-    setShowMenu: (id: string | null) => void
-    onEdit: (project: Project, e: React.MouseEvent) => void
-    onDelete: (project: Project, e: React.MouseEvent) => void
-    onArchive: (project: Project) => void
-    t: (key: string) => string
-}> = ({ project, showMenu, setShowMenu, onEdit, onDelete, onArchive, t }) => (
-    <div className="relative">
+const ProjectCardMenu: React.FC<{ project: Project }> = ({ project }) => {
+    const {
+        activeMenuId,
+        setActiveMenuId,
+        onEdit,
+        onDelete,
+        onArchive,
+        t
+    } = useProjectCardSurfaceContext();
+    const showMenu = activeMenuId === project.id;
+
+    return (
+        <div className="relative">
         <button
             type="button"
             aria-label={t('common.more') || 'More options'}
             onClick={(e) => {
                 e.stopPropagation();
-                setShowMenu(showMenu ? null : project.id);
+                setActiveMenuId(showMenu ? null : project.id);
             }}
             className={cn(
                 "p-1.5 rounded-md hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors",
@@ -73,7 +105,7 @@ const ProjectCardMenu: React.FC<{
 
         {showMenu && (
             <>
-                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(null); }} />
+                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); }} />
                 <div
                     className="absolute right-0 top-full mt-1 w-40 bg-card border border-border/50 rounded-lg shadow-xl z-50 py-1"
                     onClick={(e) => e.stopPropagation()}
@@ -88,7 +120,7 @@ const ProjectCardMenu: React.FC<{
                     </button>
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onArchive(project); setShowMenu(null); }}
+                        onClick={(e) => { e.stopPropagation(); onArchive(project); setActiveMenuId(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/20 transition-colors text-left"
                     >
                         <Archive className="w-3.5 h-3.5 text-success" />
@@ -106,7 +138,8 @@ const ProjectCardMenu: React.FC<{
             </>
         )}
     </div>
-);
+    );
+};
 
 const ProjectCardInfo: React.FC<{ project: Project }> = ({ project }) => (
     <div>
@@ -119,8 +152,10 @@ const ProjectCardInfo: React.FC<{ project: Project }> = ({ project }) => (
     </div>
 );
 
-const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string }> = ({ project, t }) => (
-    <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
+const ProjectCardFooter: React.FC<{ project: Project }> = ({ project }) => {
+    const { t } = useProjectCardSurfaceContext();
+    return (
+        <div className="pt-4 border-t border-border/40 mt-auto flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
             {new Date(project.createdAt).toLocaleDateString()}
@@ -129,11 +164,14 @@ const ProjectCardFooter: React.FC<{ project: Project; t: (key: string) => string
             {project.status === 'active' ? t('common.active') : project.status}
         </span>
     </div>
-);
+    );
+};
 
 export const ProjectCard = memo<ProjectCardProps>(({
-    project, index, onSelect, showMenu, setShowMenu, onEdit, onDelete, onArchive, isSelected, onToggleSelection, t
+    project, index, isSelected, onToggleSelection
 }) => {
+    const { onSelect } = useProjectCardSurfaceContext();
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -154,7 +192,7 @@ export const ProjectCard = memo<ProjectCardProps>(({
                 isSelected ? "border-primary/50 bg-primary/5" : "hover:border-foreground/20"
             )}
         >
-            <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} t={t} />
+            <ProjectSelectionCheckbox isSelected={isSelected} onToggle={onToggleSelection} />
 
             <div className="flex items-start justify-between">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary overflow-hidden shadow-inner border border-border/50 ml-6">
@@ -170,20 +208,12 @@ export const ProjectCard = memo<ProjectCardProps>(({
                         <ArrowRight className="w-5 h-5 text-muted-foreground -rotate-44 group-hover:rotate-0 transition-transform duration-300" />
                     </div>
 
-                    <ProjectCardMenu
-                        project={project}
-                        showMenu={showMenu}
-                        setShowMenu={setShowMenu}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onArchive={onArchive}
-                        t={t}
-                    />
+                    <ProjectCardMenu project={project} />
                 </div>
             </div>
 
             <ProjectCardInfo project={project} />
-            <ProjectCardFooter project={project} t={t} />
+            <ProjectCardFooter project={project} />
         </motion.div>
     );
 });

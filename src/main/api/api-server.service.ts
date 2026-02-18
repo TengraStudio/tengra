@@ -11,6 +11,50 @@ import { Message, MessageContentPart } from '@shared/types/chat';
 import { JsonObject, JsonValue } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { WebSocketServer } from 'ws';
+import { z } from 'zod';
+
+// AUD-SEC-031: Schema validation for API payloads
+const ToolExecuteSchema = z.object({
+    toolName: z.string().min(1).max(256).regex(/^[a-zA-Z0-9._-]+$/, 'Invalid toolName format'),
+    args: z.record(z.string(), z.unknown()).optional()
+});
+
+const ChatMessageSchema = z.object({
+    role: z.enum(['user', 'assistant', 'system', 'tool']),
+    content: z.union([z.string(), z.array(z.unknown())]).optional(),
+    id: z.string().optional(),
+    timestamp: z.union([z.string(), z.number()]).optional(),
+    images: z.array(z.string()).optional()
+});
+
+const ChatRequestSchema = z.object({
+    messages: z.array(ChatMessageSchema).min(1).max(100),
+    model: z.string().max(128).optional(),
+    provider: z.string().max(64).optional()
+});
+
+const VisionAnalyzeSchema = z.object({
+    image: z.string().min(1),
+    prompt: z.string().min(1).max(32768),
+    model: z.string().max(128).optional(),
+    provider: z.string().max(64).optional()
+});
+
+// AUD-SEC-033: Explicit CORS allowlist
+const CORS_ALLOWED_ORIGINS = new Set([
+    'chrome-extension://',
+    'moz-extension://',
+    'http://localhost',
+    'http://127.0.0.1'
+]);
+
+// AUD-SEC-036: WebSocket limits
+const WS_MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+
+// AUD-SEC-035: Rate limit tracking per IP+token
+const ipTokenRequestCounts = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 100; // per window per IP+token
 
 /**
  * Configuration options for the API server.
@@ -83,8 +127,11 @@ export class ApiServerService extends BaseService {
             // Create HTTP server
             this.httpServer = createServer((req, res) => void this.handleRequest(req, res));
 
-            // Create WebSocket server
-            this.wsServer = new WebSocketServer({ server: this.httpServer });
+            // AUD-SEC-036: Create WebSocket server with max payload validation
+            this.wsServer = new WebSocketServer({
+                server: this.httpServer,
+                maxPayload: WS_MAX_PAYLOAD_SIZE
+            });
             this.setupWebSocket();
 
             // Start listening
@@ -165,13 +212,24 @@ export class ApiServerService extends BaseService {
             return;
         }
 
-        // SEC-009-3: API Rate Limiting
-        // Use auth token as key if available, otherwise IP? Actually just use a global 'api' bucket for now
-        // or per-token if we had multiple. Since we generate one token per session, it's effectively per-session.
-        // Let's use a shared 'api:request' bucket to protect the server generally, 
-        // effectively limiting the extension's call rate.
+        // AUD-SEC-035: Per-IP + token combined rate limiting
+        const clientIp = req.socket.remoteAddress?.replace('::ffff:', '') ?? 'unknown';
+        const token = this.extractTokenFromRequest(req) ?? 'anonymous';
+        const rateLimitKey = `${clientIp}:${token}`;
+
+        if (!this.checkIpTokenRateLimit(rateLimitKey)) {
+            appLogger.warn(this.name, `Rate limit exceeded for ${clientIp}`);
+            this.sendJson(res, 429, {
+                success: false,
+                error: 'Too Many Requests',
+                message: 'Rate limit exceeded'
+            });
+            return;
+        }
+
+        // SEC-009-3: API Rate Limiting (global fallback)
         if (!this.options.rateLimitService.tryAcquire('api:request')) {
-            appLogger.warn(this.name, `API rate limit exceeded`);
+            appLogger.warn(this.name, `Global API rate limit exceeded`);
             this.sendJson(res, 429, {
                 success: false,
                 error: 'Too Many Requests',
@@ -372,17 +430,22 @@ export class ApiServerService extends BaseService {
 
     /**
      * Set CORS headers
+     * AUD-SEC-033: Restrict CORS origin handling to explicit allowlist
      */
     private setCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
         const origin = req.headers.origin;
 
-        if (origin?.startsWith('chrome-extension://') || origin?.startsWith('moz-extension://')) {
-            res.setHeader('Access-Control-Allow-Origin', origin);
-        } else if (origin?.match(/^http:\/\/(localhost|127\.0\.0\.1)/)) {
-            // Allow localhost for development
-            res.setHeader('Access-Control-Allow-Origin', origin);
+        // AUD-SEC-033: Check against explicit allowlist
+        if (origin) {
+            const isAllowed = Array.from(CORS_ALLOWED_ORIGINS).some(allowed =>
+                origin.startsWith(allowed)
+            );
+
+            if (isAllowed) {
+                res.setHeader('Access-Control-Allow-Origin', origin);
+            }
+            // Deny all other origins by not setting the header
         }
-        // Deny all other origins by not setting the header
 
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -390,11 +453,36 @@ export class ApiServerService extends BaseService {
     }
 
     /**
-     * Send JSON response
+     * AUD-SEC-032: Add strict Content-Security-Policy headers on API responses
      */
     private sendJson(res: ServerResponse, status: number, data: JsonObject): void {
-        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.writeHead(status, {
+            'Content-Type': 'application/json',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY'
+        });
         res.end(JSON.stringify(data));
+    }
+
+    /**
+     * AUD-SEC-035: Check per-IP + token combined rate limiting
+     */
+    private checkIpTokenRateLimit(key: string): boolean {
+        const now = Date.now();
+        const record = ipTokenRequestCounts.get(key);
+
+        if (!record || now > record.resetTime) {
+            ipTokenRequestCounts.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+            return true;
+        }
+
+        if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
+            return false;
+        }
+
+        record.count++;
+        return true;
     }
 
     /**
@@ -472,35 +560,38 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle tool execute endpoint
+     * AUD-SEC-031: Added schema validation
      */
     private async handleToolExecute(req: IncomingMessage, res: ServerResponse): Promise<void> {
         try {
             const body = await this.readBody(req);
-            const { toolName, args } = body as {
-                toolName?: string;
-                args?: JsonObject;
-            };
 
-            if (!toolName) {
+            // AUD-SEC-031: Schema validation
+            const parseResult = ToolExecuteSchema.safeParse(body);
+            if (!parseResult.success) {
                 this.sendJson(res, 400, {
                     success: false,
-                    error: 'Missing toolName parameter'
+                    error: 'Invalid request body',
+                    details: parseResult.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }))
                 });
                 return;
             }
 
-            // SEC-008-2: Validate tool name format (alphanumeric, dots, hyphens, underscores only)
-            if (!/^[a-zA-Z0-9._-]+$/.test(toolName)) {
-                this.sendJson(res, 400, {
-                    success: false,
-                    error: 'Invalid toolName format. Only alphanumeric characters, dots, hyphens, and underscores allowed.'
-                });
-                return;
-            }
+            const { toolName, args } = parseResult.data;
 
             appLogger.info(this.name, `Executing tool: ${toolName}`);
 
-            const result = await this.options.toolExecutor.execute(toolName, args ?? {});
+            // Convert Record<string, unknown> to JsonObject
+            const jsonArgs: JsonObject = {};
+            if (args) {
+                for (const [key, value] of Object.entries(args)) {
+                    if (value !== undefined) {
+                        jsonArgs[key] = value as JsonValue;
+                    }
+                }
+            }
+
+            const result = await this.options.toolExecutor.execute(toolName, jsonArgs);
 
             const responseBody = {
                 success: true,
@@ -519,34 +610,24 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle chat message endpoint
+     * AUD-SEC-031: Added schema validation
      */
     private async handleChatMessage(req: IncomingMessage, res: ServerResponse): Promise<void> {
         try {
             const body = await this.readBody(req);
-            const { messages, model, provider } = body as {
-                messages?: JsonValue;
-                model?: string;
-                provider?: string;
-            };
 
-            if (!messages || !Array.isArray(messages)) {
+            // AUD-SEC-031: Schema validation
+            const parseResult = ChatRequestSchema.safeParse(body);
+            if (!parseResult.success) {
                 this.sendJson(res, 400, {
                     success: false,
-                    error: 'Missing or invalid messages parameter'
+                    error: 'Invalid request body',
+                    details: parseResult.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }))
                 });
                 return;
             }
 
-            // SEC-008-3: Validate message structure
-            try {
-                this.validateChatMessages(messages as JsonValue[]);
-            } catch (error) {
-                this.sendJson(res, 400, {
-                    success: false,
-                    error: (error as Error).message
-                });
-                return;
-            }
+            const { messages, model, provider } = parseResult.data;
 
             const selectedModel = model ?? 'gpt-4o';
             const detectedProvider = this.detectProvider(selectedModel, provider);
@@ -581,6 +662,7 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle chat stream endpoint
+     * AUD-SEC-031: Added schema validation
      */
     private async handleChatStream(req: IncomingMessage, res: ServerResponse): Promise<void> {
         // SEC-009-4: Add timeout for streaming
@@ -592,32 +674,20 @@ export class ApiServerService extends BaseService {
 
         try {
             const body = await this.readBody(req);
-            const { messages, model, provider } = body as {
-                messages?: JsonValue;
-                model?: string;
-                provider?: string;
-            };
 
-            if (!messages || !Array.isArray(messages)) {
+            // AUD-SEC-031: Schema validation
+            const parseResult = ChatRequestSchema.safeParse(body);
+            if (!parseResult.success) {
                 clearTimeout(timeoutId);
                 this.sendJson(res, 400, {
                     success: false,
-                    error: 'Missing or invalid messages parameter'
+                    error: 'Invalid request body',
+                    details: parseResult.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }))
                 });
                 return;
             }
 
-            // SEC-008-3: Validate message structure
-            try {
-                this.validateChatMessages(messages as JsonValue[]);
-            } catch (error) {
-                clearTimeout(timeoutId);
-                this.sendJson(res, 400, {
-                    success: false,
-                    error: (error as Error).message
-                });
-                return;
-            }
+            const { messages, model, provider } = parseResult.data;
 
             const selectedModel = model ?? 'gpt-4o';
             const detectedProvider = this.detectProvider(selectedModel, provider);
@@ -748,29 +818,28 @@ export class ApiServerService extends BaseService {
 
     /**
      * Handle vision analysis (screenshot + AI vision model)
+     * AUD-SEC-031: Added schema validation
      */
     private async handleVisionAnalyze(req: IncomingMessage, res: ServerResponse): Promise<void> {
         try {
             const bodyData = await this.readBody(req);
+
+            // AUD-SEC-031: Schema validation
+            const parseResult = VisionAnalyzeSchema.safeParse(bodyData);
+            if (!parseResult.success) {
+                this.sendJson(res, 400, {
+                    error: 'Bad Request',
+                    details: parseResult.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }))
+                });
+                return;
+            }
+
             const {
                 image,
                 prompt,
                 model = 'gpt-4o',
                 provider
-            } = bodyData as {
-                image?: string;
-                prompt?: string;
-                model?: string;
-                provider?: string;
-            };
-
-            if (!image || !prompt) {
-                this.sendJson(res, 400, {
-                    error: 'Bad Request',
-                    message: 'Missing image or prompt'
-                });
-                return;
-            }
+            } = parseResult.data;
 
             // Auto-detect provider if not specified
             const detectedProvider = this.detectProvider(model, provider);

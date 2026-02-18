@@ -6,6 +6,34 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { useModelSelection } from './useModelSelection';
 
+const LOCALE_MODEL_HINTS: Record<string, string[]> = {
+    tr: ['gpt-4o', 'claude', 'qwen'],
+    ar: ['gpt-4o', 'claude', 'qwen'],
+    de: ['gpt-4o', 'claude', 'llama'],
+    es: ['gpt-4o', 'claude', 'llama'],
+    fr: ['gpt-4o', 'claude', 'llama'],
+    ja: ['gpt-4o', 'claude', 'qwen'],
+    zh: ['qwen', 'deepseek', 'glm', 'gpt-4o'],
+};
+
+function pickLocalePreferredModel(models: ModelInfo[], locale: string): { provider: string; model: string } | null {
+    const hints = LOCALE_MODEL_HINTS[locale] ?? [];
+    for (const hint of hints) {
+        const preferred = models.find(model => {
+            const id = model.id?.toLowerCase() ?? '';
+            return id.includes(hint);
+        });
+        if (preferred?.id && preferred.provider) {
+            return { provider: preferred.provider, model: preferred.id };
+        }
+    }
+
+    const firstValidModel = models.find(model => model.id && model.provider);
+    return firstValidModel?.id && firstValidModel.provider
+        ? { provider: firstValidModel.provider, model: firstValidModel.id }
+        : null;
+}
+
 export function useModelManager(
     appSettings: AppSettings | null,
     setAppSettings: (settings: AppSettings) => void
@@ -62,7 +90,18 @@ export function useModelManager(
 
     useEffect(() => {
         const defaultModel = appSettings?.general.defaultModel;
+        const locale = appSettings?.general.language ?? 'en';
         if (!defaultModel) {
+            if (selectedModels.length > 0 || selectedModel !== '' || models.length === 0) {
+                return;
+            }
+            const preferred = pickLocalePreferredModel(models, locale);
+            if (!preferred) {
+                return;
+            }
+            setSelectedModel(preferred.model);
+            setSelectedProvider(preferred.provider);
+            setSelectedModels([preferred]);
             return;
         }
 
@@ -84,6 +123,8 @@ export function useModelManager(
     }, [
         appSettings?.general.defaultModel,
         appSettings?.general.lastProvider,
+        appSettings?.general.language,
+        models,
         selectedModel,
         selectedProvider,
         selectedModels.length,

@@ -1,6 +1,7 @@
-﻿import { Calendar, ExternalLink, FolderOpen, Image, Info, LucideIcon, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { Calendar, ExternalLink, FolderOpen, Image, Info, LucideIcon, RefreshCw, Search, Sparkles, Trash2 } from 'lucide-react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { Input } from '@/components/ui/input';
 import { Language, useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { appLogger } from '@/utils/renderer-logger';
@@ -190,6 +191,7 @@ export function GalleryView({ language }: GalleryViewProps) {
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const loadImages = useCallback(async () => {
         setLoading(true);
@@ -235,20 +237,45 @@ export function GalleryView({ language }: GalleryViewProps) {
         }
     }, []);
 
+    const filteredImages = useMemo(() => {
+        const normalizedQuery = searchQuery.trim().toLowerCase();
+        if (!normalizedQuery) {
+            return images;
+        }
+        return images.filter(img => {
+            const nameMatch = img.name.toLowerCase().includes(normalizedQuery);
+            const promptMatch = img.metadata?.prompt?.toLowerCase().includes(normalizedQuery) ?? false;
+            const modelMatch = img.metadata?.model?.toLowerCase().includes(normalizedQuery) ?? false;
+            const seedMatch = String(img.metadata?.seed ?? '').includes(normalizedQuery);
+            return nameMatch || promptMatch || modelMatch || seedMatch;
+        });
+    }, [images, searchQuery]);
+
     return (
         <div className="h-full flex flex-col">
             <div className="p-4 border-b border-border/20 flex items-center justify-between bg-muted/5">
                 <div className="flex items-center gap-3">
                     <h3 className="text-foreground font-medium">{t('gallery.title')}</h3>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: images.length })}</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{t('gallery.imageCount', { count: filteredImages.length })}</span>
                 </div>
-                <button
-                    onClick={() => void loadImages()}
-                    className="p-1.5 hover:bg-muted/20 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                    title={t('gallery.refresh')}
-                >
-                    <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                        <Input
+                            value={searchQuery}
+                            onChange={event => setSearchQuery(event.target.value)}
+                            placeholder={t('gallery.searchPlaceholder')}
+                            className="pl-9 h-8 bg-muted/20 border-border/30"
+                        />
+                    </div>
+                    <button
+                        onClick={() => void loadImages()}
+                        className="p-1.5 hover:bg-muted/20 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        title={t('gallery.refresh')}
+                    >
+                        <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                    </button>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
@@ -258,9 +285,14 @@ export function GalleryView({ language }: GalleryViewProps) {
                         <p>{t('gallery.noImages')}</p>
                         <p className="text-xs mt-1">{t('gallery.emptyState')}</p>
                     </div>
+                ) : filteredImages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                        <Search className="w-12 h-12 mb-3 opacity-20" />
+                        <p>{t('gallery.noResults')}</p>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {images.map((img) => (
+                        {filteredImages.map((img) => (
                             <GalleryCard
                                 key={img.path}
                                 img={img}

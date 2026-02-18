@@ -1,4 +1,5 @@
 import {
+    AudioLines,
     File as FileIcon,
     FileCode,
     FileText,
@@ -9,6 +10,7 @@ import {
     Send,
     Sparkles,
     Square,
+    Video,
     X,
 } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
@@ -255,8 +257,14 @@ const AttachmentList: React.FC<{
     t: (key: string, options?: Record<string, string | number>) => string;
 }> = ({ attachments, onRemove, t }) => {
     const getFileIcon = (type: string) => {
-        if (type.startsWith('image/')) {
+        if (type === 'image') {
             return <ImageIcon size={14} />;
+        }
+        if (type === 'video') {
+            return <Video size={14} />;
+        }
+        if (type === 'audio') {
+            return <AudioLines size={14} />;
         }
         if (type.includes('text') || type.includes('json') || type.includes('md')) {
             return <FileText size={14} />;
@@ -281,16 +289,24 @@ const AttachmentList: React.FC<{
                             key={i}
                             className="group relative flex items-center gap-2 bg-muted/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground pr-8"
                         >
-                            <span
-                                className={cn(
-                                    'p-1.5 rounded-md',
-                                    att.type.startsWith('image/')
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'bg-accent/20 text-accent-foreground'
-                                )}
-                            >
-                                {getFileIcon(att.type)}
-                            </span>
+                            {(att.type === 'image' || att.type === 'video') && typeof att.preview === 'string' ? (
+                                <img
+                                    src={att.preview}
+                                    alt={t('input.attachmentPreview')}
+                                    className="w-8 h-8 rounded-md object-cover border border-border/50"
+                                />
+                            ) : (
+                                <span
+                                    className={cn(
+                                        'p-1.5 rounded-md',
+                                        att.type === 'image' || att.type === 'video'
+                                            ? 'bg-primary/20 text-primary'
+                                            : 'bg-accent/20 text-accent-foreground'
+                                    )}
+                                >
+                                    {getFileIcon(att.type)}
+                                </span>
+                            )}
                             <span className="truncate max-w-[150px]">{att.name}</span>
                             <span className="text-neutral text-xxs">
                                 ({(att.size / 1024).toFixed(1)} {t('common.kb')})

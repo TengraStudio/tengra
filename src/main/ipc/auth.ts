@@ -2,6 +2,10 @@ import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import {
     accountIdSchema,
     authTokenDataSchema,
+    backupPassphraseSchema,
+    backupPayloadSchema,
+    credentialExportOptionsSchema,
+    credentialImportSchema,
     providerSchema,
     sessionIdSchema,
     sessionLimitSchema
@@ -10,7 +14,11 @@ import { appLogger } from '@main/logging/logger';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
-import { AuthService, TokenData } from '@main/services/security/auth.service';
+import {
+    AuthService,
+    CredentialExportOptions,
+    TokenData
+} from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
 import { createIpcHandler as baseCreateIpcHandler, createValidatedIpcHandler as baseCreateValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
@@ -224,6 +232,90 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
 
     ipcMain.handle('auth:get-token-analytics', createIpcHandler('auth:get-token-analytics', async (_event, provider?: string) => {
         return await authService.getTokenAnalytics(provider);
+    }));
+
+    ipcMain.handle('auth:export-credentials', createValidatedIpcHandler('auth:export-credentials', async (
+        _event,
+        options: CredentialExportOptions
+    ) => {
+        try {
+            const exported = await authService.exportCredentials(options);
+            await auditLogService?.logAuthenticationEvent('auth.export-credentials', true, {
+                provider: options.provider,
+                expiresAt: exported.expiresAt
+            });
+            return { success: true, ...exported };
+        } catch (error) {
+            await auditLogService?.logAuthenticationEvent('auth.export-credentials', false, {
+                provider: options.provider,
+                error: getErrorMessage(error as Error)
+            });
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }, {
+        argsSchema: z.tuple([credentialExportOptionsSchema]),
+        schemaVersion: 1
+    }));
+
+    ipcMain.handle('auth:import-credentials', createValidatedIpcHandler('auth:import-credentials', async (
+        _event,
+        payload: { payload: string; password: string }
+    ) => {
+        try {
+            const result = await authService.importCredentials(payload.payload, payload.password);
+            await auditLogService?.logAuthenticationEvent('auth.import-credentials', true, {
+                imported: result.imported,
+                skipped: result.skipped
+            });
+            return { success: true, ...result };
+        } catch (error) {
+            await auditLogService?.logAuthenticationEvent('auth.import-credentials', false, {
+                error: getErrorMessage(error as Error)
+            });
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }, {
+        argsSchema: z.tuple([credentialImportSchema]),
+        schemaVersion: 1
+    }));
+
+    ipcMain.handle('auth:create-master-key-backup', createValidatedIpcHandler('auth:create-master-key-backup', async (
+        _event,
+        passphrase: string
+    ) => {
+        try {
+            const backup = authService.createMasterKeyBackup(passphrase);
+            await auditLogService?.logAuthenticationEvent('auth.create-master-key-backup', true);
+            return { success: true, backup };
+        } catch (error) {
+            await auditLogService?.logAuthenticationEvent('auth.create-master-key-backup', false, {
+                error: getErrorMessage(error as Error)
+            });
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }, {
+        argsSchema: z.tuple([backupPassphraseSchema]),
+        schemaVersion: 1
+    }));
+
+    ipcMain.handle('auth:restore-master-key-backup', createValidatedIpcHandler('auth:restore-master-key-backup', async (
+        _event,
+        backupPayload: string,
+        passphrase: string
+    ) => {
+        try {
+            authService.restoreMasterKeyBackup(backupPayload, passphrase);
+            await auditLogService?.logAuthenticationEvent('auth.restore-master-key-backup', true);
+            return { success: true };
+        } catch (error) {
+            await auditLogService?.logAuthenticationEvent('auth.restore-master-key-backup', false, {
+                error: getErrorMessage(error as Error)
+            });
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }, {
+        argsSchema: z.tuple([backupPayloadSchema, backupPassphraseSchema]),
+        schemaVersion: 1
     }));
 
     ipcMain.handle('auth:start-session', createValidatedIpcHandler('auth:start-session', async (

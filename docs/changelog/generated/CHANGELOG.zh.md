@@ -57,6 +57,17 @@
 - **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
 - **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
 
+### Documentation Hardening and Codex Implementation
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.
+
+- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.
+- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.
+- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
+- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
+
 ### LLM Security Hardening & Performance Optimization
 
 - **Type**: feature
@@ -68,6 +79,18 @@
 - **DEBT-01**: Cleaned up obsolete feature flags.
 - **DEBT-06**: Reduced bundle size via lazy loading.
 - **Testing**: Added unit tests for security validation.
+
+### SEC-007/009 + LLM-05 + I18N-05 Follow-up
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.
+
+- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.
+- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.
+- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.
+- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.
+- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.
 
 ### Sidebar Enhancements: Accessibility and Clear History
 

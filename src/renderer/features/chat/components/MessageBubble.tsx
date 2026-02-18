@@ -170,6 +170,35 @@ const ResponseProgress = () => (
     </div>
 );
 
+const handleToolbarArrowNavigation = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+        return;
+    }
+
+    const controls = Array.from(
+        event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])')
+    );
+    if (controls.length === 0) {
+        return;
+    }
+
+    const activeIndex = controls.findIndex(control => control === document.activeElement);
+    let nextIndex = activeIndex >= 0 ? activeIndex : 0;
+
+    if (event.key === 'ArrowDown') {
+        nextIndex = (nextIndex + 1) % controls.length;
+    } else if (event.key === 'ArrowUp') {
+        nextIndex = (nextIndex - 1 + controls.length) % controls.length;
+    } else if (event.key === 'Home') {
+        nextIndex = 0;
+    } else if (event.key === 'End') {
+        nextIndex = controls.length - 1;
+    }
+
+    controls[nextIndex]?.focus();
+    event.preventDefault();
+};
+
 const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
     <div className="w-[300px] h-[300px] rounded-xl bg-accent/30 border border-border/50 flex flex-col items-center justify-center gap-4 relative overflow-hidden group/skel">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-slide-shimmer" />
@@ -277,11 +306,13 @@ const CopyButton = memo(({ text, t }: { text: string; t: TranslationFn }) => {
     };
     return (
         <button
+            type="button"
             onClick={() => {
                 void handleCopy();
             }}
             className="p-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground"
             title={t('messageBubble.copy')}
+            aria-label={t('messageBubble.copy')}
         >
             {copied ? (
                 <Check className="w-3.5 h-3.5 text-success" />
@@ -296,6 +327,7 @@ CopyButton.displayName = 'CopyButton';
 const BookmarkButton = memo(
     ({ active, onClick, t }: { active: boolean; onClick: () => void; t: TranslationFn }) => (
         <button
+            type="button"
             onClick={onClick}
             className={cn(
                 'p-1.5 hover:bg-accent/50 rounded-md transition-all duration-300',
@@ -304,6 +336,8 @@ const BookmarkButton = memo(
                     : 'text-muted-foreground hover:text-foreground'
             )}
             title={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
+            aria-label={active ? t('messageBubble.removeBookmark') : t('messageBubble.addBookmark')}
+            aria-pressed={active}
         >
             <Bookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} />
         </button>
@@ -323,6 +357,7 @@ const RatingButtons = memo(
     }) => (
         <div className="flex items-center gap-1 border-s border-border/50 ps-2 ms-1">
             <button
+                type="button"
                 onClick={() => onRate(rating === 1 ? 0 : 1)}
                 className={cn(
                     'p-1.5 rounded-md transition-all duration-200',
@@ -331,10 +366,13 @@ const RatingButtons = memo(
                         : 'text-muted-foreground hover:text-success hover:bg-success/5'
                 )}
                 title={t('messageBubble.goodAnswer')}
+                aria-label={t('messageBubble.goodAnswer')}
+                aria-pressed={rating === 1}
             >
                 <ThumbsUp className={cn('w-3.5 h-3.5', rating === 1 && 'fill-current')} />
             </button>
             <button
+                type="button"
                 onClick={() => onRate(rating === -1 ? 0 : -1)}
                 className={cn(
                     'p-1.5 rounded-md transition-all duration-200',
@@ -343,6 +381,8 @@ const RatingButtons = memo(
                         : 'text-muted-foreground hover:text-destructive hover:bg-destructive/5'
                 )}
                 title={t('messageBubble.badAnswer')}
+                aria-label={t('messageBubble.badAnswer')}
+                aria-pressed={rating === -1}
             >
                 <ThumbsDown className={cn('w-3.5 h-3.5', rating === -1 && 'fill-current')} />
             </button>
@@ -448,17 +488,21 @@ const CodeBlock = memo(
                     <div className="flex items-center gap-1.5">
                         {isSpeaking ? (
                             <button
+                                type="button"
                                 onClick={onStop}
                                 className="p-1 px-1.5 hover:bg-accent/50 rounded-md transition-colors text-primary"
                                 title={t('messageBubble.stop')}
+                                aria-label={t('messageBubble.stop')}
                             >
                                 <VolumeX className="w-3.5 h-3.5" />
                             </button>
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => onSpeak?.(codeString)}
                                 className="p-1 px-1.5 hover:bg-accent/50 rounded-md transition-colors text-muted-foreground hover:text-foreground"
                                 title={t('messageBubble.speakAloud')}
+                                aria-label={t('messageBubble.speakAloud')}
                             >
                                 <Volume2 className="w-3.5 h-3.5" />
                             </button>
@@ -894,20 +938,30 @@ const MessageActions = memo(
         onRegenerate?: () => void;
         t: TranslationFn;
     }) => (
-        <div className="absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 transition-all duration-200">
+        <div
+            className="absolute start-full ms-4 top-0 flex flex-col gap-1 opacity-0 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100 transition-all duration-200"
+            role="toolbar"
+            aria-label={t('messageBubble.actions')}
+            aria-orientation="vertical"
+            onKeyDown={handleToolbarArrowNavigation}
+        >
             {isSpeaking ? (
                 <button
+                    type="button"
                     onClick={onStop}
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-primary transition-all border border-border/50 backdrop-blur-sm"
                     title={t('messageBubble.stop')}
+                    aria-label={t('messageBubble.stop')}
                 >
                     <VolumeX className="w-3.5 h-3.5" />
                 </button>
             ) : (
                 <button
+                    type="button"
                     onClick={() => onSpeak?.(displayContent)}
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
                     title={t('messageBubble.speakAloud')}
+                    aria-label={t('messageBubble.speakAloud')}
                 >
                     <Volume2 className="w-3.5 h-3.5" />
                 </button>
@@ -920,26 +974,37 @@ const MessageActions = memo(
             />
             {onRegenerate && (
                 <button
+                    type="button"
                     onClick={onRegenerate}
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
                     title={t('messageBubble.regenerate')}
+                    aria-label={t('messageBubble.regenerate')}
                 >
                     <RotateCcw className="w-3.5 h-3.5" />
                 </button>
             )}
             <div className="relative group/react">
                 <button
+                    type="button"
                     className="p-1.5 bg-muted/20 hover:bg-muted/40 rounded-lg text-muted-foreground hover:text-foreground transition-all border border-border/50 backdrop-blur-sm"
                     title={t('messageBubble.react')}
+                    aria-label={t('messageBubble.react')}
+                    aria-haspopup="true"
                 >
                     <Smile className="w-3.5 h-3.5" />
                 </button>
-                <div className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 origin-bottom">
+                <div
+                    className="absolute bottom-full mb-2 bg-popover border border-border/50 rounded-full px-2 py-1 shadow-xl flex gap-1 opacity-0 group-hover/react:opacity-100 group-focus-within/react:opacity-100 pointer-events-none group-hover/react:pointer-events-auto group-focus-within/react:pointer-events-auto transition-all scale-90 group-hover/react:scale-100 group-focus-within/react:scale-100 origin-bottom"
+                    role="group"
+                    aria-label={t('messageBubble.emojiReactions')}
+                >
                     {['👍', '👎', '❤️', '🎉', '🚀'].map(emoji => (
                         <button
+                            type="button"
                             key={emoji}
                             onClick={() => onReact?.(emoji)}
                             className="hover:scale-125 transition-transform text-sm p-1"
+                            aria-label={emoji}
                         >
                             {emoji}
                         </button>

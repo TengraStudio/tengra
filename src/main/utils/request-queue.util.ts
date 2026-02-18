@@ -147,21 +147,33 @@ export class RequestQueue {
     /**
      * Execute a single request with timeout
      */
-    private async executeRequest<T>(request: QueuedRequest<T>) {
+    private async executeRequest<T>(request: QueuedRequest<T>): Promise<void> {
+        if (!Number.isFinite(this.options.timeoutMs) || this.options.timeoutMs <= 0) {
+            request.reject(new Error('Request timeout configuration must be greater than 0'));
+            return;
+        }
+
+        let timeoutHandle: NodeJS.Timeout | undefined;
         try {
-            const result = await Promise.race([
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                timeoutHandle = setTimeout(
+                    () => reject(new Error(`Request timeout after ${this.options.timeoutMs}ms`)),
+                    this.options.timeoutMs
+                );
+            });
+
+            const result = await Promise.race<T | never>([
                 request.fn(),
-                new Promise<never>((_, reject) =>
-                    setTimeout(
-                        () => reject(new Error('Request timeout')),
-                        this.options.timeoutMs
-                    )
-                )
+                timeoutPromise
             ]);
 
-            request.resolve(result as T);
+            request.resolve(result);
         } catch (error) {
-            request.reject(getErrorMessage(error as Error));
+            request.reject(error instanceof Error ? error : new Error(getErrorMessage(error as Error)));
+        } finally {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+            }
         }
     }
 

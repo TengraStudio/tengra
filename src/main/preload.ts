@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 // Increase max listeners for ipcRenderer to handle multiple terminal/process streams
 ipcRenderer.setMaxListeners(60);
 import { McpMarketplaceServer } from '@main/services/mcp/mcp-marketplace.service';
+import { type IpcContractVersionInfo,isIpcContractCompatible } from '@shared/constants/ipc-contract';
 import {
     AgentDefinition,
     AgentStartOptions,
@@ -50,7 +51,7 @@ import {
     PendingMemory,
     RecallContext,
 } from '@shared/types/advanced-memory';
-import { ConsensusResult, ModelRoutingRule, VotingSession } from '@shared/types/project-agent';
+import { ConsensusResult, ModelRoutingRule, VotingConfiguration, VotingSession, VotingTemplate } from '@shared/types/project-agent';
 import { isProjectState } from '@shared/utils/type-guards.util';
 
 import { createAuthBridge } from './preload/domains/auth.preload';
@@ -1544,6 +1545,22 @@ export interface ElectronAPI {
         expired: number;
         revoked: number;
     }>;
+    exportCredentials: (options: {
+        provider?: string;
+        password: string;
+        expiresInHours?: number;
+    }) => Promise<{ success: boolean; payload?: string; checksum?: string; expiresAt?: number; error?: string }>;
+    importCredentials: (
+        payload: string,
+        password: string
+    ) => Promise<{ success: boolean; imported?: number; skipped?: number; expiresAt?: number; error?: string }>;
+    createMasterKeyBackup: (
+        passphrase: string
+    ) => Promise<{ success: boolean; backup?: string; error?: string }>;
+    restoreMasterKeyBackup: (
+        backupPayload: string,
+        passphrase: string
+    ) => Promise<{ success: boolean; error?: string }>;
     startAuthSession: (provider: string, accountId?: string, source?: string) => Promise<{ sessionId: string }>;
     touchAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
     endAuthSession: (sessionId: string) => Promise<{ success: boolean }>;
@@ -1622,6 +1639,10 @@ export interface ElectronAPI {
                 loading: number;
             };
         }>;
+    };
+    ipcContract: {
+        getVersion: () => Promise<IpcContractVersionInfo>;
+        isCompatible: () => Promise<boolean>;
     };
 
     // Backup & Restore
@@ -1887,6 +1908,16 @@ export interface ElectronAPI {
         }) => Promise<VotingSession | null>;
         resolveVoting: (sessionId: string) => Promise<VotingSession | null>;
         getVotingSession: (sessionId: string) => Promise<VotingSession | null>;
+        listVotingSessions: (taskId?: string) => Promise<VotingSession[]>;
+        overrideVotingDecision: (payload: {
+            sessionId: string;
+            finalDecision: string;
+            reason?: string;
+        }) => Promise<VotingSession | null>;
+        getVotingAnalytics: (taskId?: string) => Promise<import('@shared/types/project-agent').VotingAnalytics>;
+        getVotingConfiguration: () => Promise<VotingConfiguration>;
+        updateVotingConfiguration: (patch: Partial<VotingConfiguration>) => Promise<VotingConfiguration>;
+        listVotingTemplates: () => Promise<VotingTemplate[]>;
         buildConsensus: (outputs: Array<{ modelId: string; provider: string; output: string }>) => Promise<ConsensusResult>;
         getTemplates: (category?: AgentTemplateCategory) => Promise<AgentTemplate[]>;
         getTemplate: (id: string) => Promise<AgentTemplate | null>;
@@ -1981,6 +2012,17 @@ const api: ElectronAPI = {
         options?: { revokeAccess?: boolean; revokeRefresh?: boolean; revokeSession?: boolean }
     ) => ipcRenderer.invoke('auth:revoke-account-token', accountId, options),
     getTokenAnalytics: (provider?: string) => ipcRenderer.invoke('auth:get-token-analytics', provider),
+    exportCredentials: (options: {
+        provider?: string;
+        password: string;
+        expiresInHours?: number;
+    }) => ipcRenderer.invoke('auth:export-credentials', options),
+    importCredentials: (payload: string, password: string) =>
+        ipcRenderer.invoke('auth:import-credentials', { payload, password }),
+    createMasterKeyBackup: (passphrase: string) =>
+        ipcRenderer.invoke('auth:create-master-key-backup', passphrase),
+    restoreMasterKeyBackup: (backupPayload: string, passphrase: string) =>
+        ipcRenderer.invoke('auth:restore-master-key-backup', backupPayload, passphrase),
     startAuthSession: (provider: string, accountId?: string, source?: string) =>
         ipcRenderer.invoke('auth:start-session', provider, accountId, source),
     touchAuthSession: (sessionId: string) =>
@@ -2975,6 +3017,13 @@ const api: ElectronAPI = {
     lazyServices: {
         getStatus: () => ipcRenderer.invoke('lazy:get-status')
     },
+    ipcContract: {
+        getVersion: () => ipcRenderer.invoke('ipc:contract:get'),
+        isCompatible: async () => {
+            const contractInfo = await ipcRenderer.invoke('ipc:contract:get') as IpcContractVersionInfo;
+            return isIpcContractCompatible(contractInfo);
+        },
+    },
 
     backup: {
         create: options => ipcRenderer.invoke('backup:create', options),
@@ -3098,6 +3147,12 @@ const api: ElectronAPI = {
         requestVotes: payload => ipcRenderer.invoke('project:request-votes', payload),
         resolveVoting: sessionId => ipcRenderer.invoke('project:resolve-voting', sessionId),
         getVotingSession: sessionId => ipcRenderer.invoke('project:get-voting-session', sessionId),
+        listVotingSessions: taskId => ipcRenderer.invoke('project:list-voting-sessions', taskId),
+        overrideVotingDecision: payload => ipcRenderer.invoke('project:override-voting', payload),
+        getVotingAnalytics: taskId => ipcRenderer.invoke('project:get-voting-analytics', taskId),
+        getVotingConfiguration: () => ipcRenderer.invoke('project:get-voting-config'),
+        updateVotingConfiguration: patch => ipcRenderer.invoke('project:update-voting-config', patch),
+        listVotingTemplates: () => ipcRenderer.invoke('project:list-voting-templates'),
         buildConsensus: outputs => ipcRenderer.invoke('project:build-consensus', outputs),
         getTemplates: category => ipcRenderer.invoke('project:get-templates', category),
         getTemplate: id => ipcRenderer.invoke('project:get-template', id),

@@ -120,6 +120,27 @@ class LazyServiceRegistry {
 export const lazyServiceRegistry = new LazyServiceRegistry();
 
 /**
+ * Explicit lazy dependency boundary used by consumers that should opt into
+ * controlled async resolution rather than transparent proxies.
+ */
+export interface LazyServiceDependency<T extends object> {
+    serviceName: string;
+    resolve: () => Promise<T>;
+    isLoaded: () => boolean;
+}
+
+/**
+ * Creates an explicit lazy dependency handle for dependency injection boundaries.
+ */
+export function createLazyServiceDependency<T extends object>(serviceName: string): LazyServiceDependency<T> {
+    return {
+        serviceName,
+        resolve: () => lazyServiceRegistry.get<T>(serviceName),
+        isLoaded: () => lazyServiceRegistry.isLoaded(serviceName),
+    };
+}
+
+/**
  * Creates a Proxy that lazily loads a service on first property access.
  * Any method call on the proxy will trigger async service loading and then
  * forward the call to the real service instance.

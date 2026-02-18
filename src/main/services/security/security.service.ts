@@ -10,6 +10,25 @@ import { ServiceResponse } from '@shared/types';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeStorage } from 'electron';
 
+interface MasterKeyBackupPayload {
+    schemaVersion: 'security-key-backup-v1';
+    createdAt: number;
+    salt: string;
+    iv: string;
+    authTag: string;
+    encryptedKey: string;
+    checksum: string;
+}
+
+const MASTER_KEY_BACKUP_SCHEMA_VERSION = 'security-key-backup-v1';
+const MASTER_KEY_BACKUP_MIN_PASSPHRASE = 12;
+const MASTER_KEY_BACKUP_SCRYPT_OPTIONS: crypto.ScryptOptions = {
+    N: 16384,
+    r: 8,
+    p: 1,
+    maxmem: 32 * 1024 * 1024
+};
+
 export class SecurityService extends BaseService implements ISecurityService {
     private masterKey: Buffer | null = null;
     private readonly keyPath: string;
@@ -171,6 +190,123 @@ export class SecurityService extends BaseService implements ISecurityService {
         } catch (e) {
             this.logError(`Hash generation failed for algorithm ${algorithm}`, e);
             return { success: false, error: getErrorMessage(e) };
+        }
+    }
+
+    /**
+     * Derives a deterministic backup encryption key from the provided passphrase.
+     *
+     * @param passphrase - Backup passphrase used to encrypt the key material.
+     * @param salt - Random salt value encoded into backup payload.
+     * @returns Derived AES-256 key material.
+     */
+    private deriveMasterKeyBackupKey(passphrase: string, salt: Buffer): Buffer {
+        return crypto.scryptSync(passphrase, salt, 32, MASTER_KEY_BACKUP_SCRYPT_OPTIONS);
+    }
+
+    /**
+     * Creates a password-protected backup of the master encryption key.
+     *
+     * @param passphrase - Backup passphrase used to encrypt the key material.
+     * @returns Encrypted backup payload string.
+     */
+    createEncryptedMasterKeyBackup(passphrase: string): ServiceResponse<{ backup: string }> {
+        if (!this.masterKey) {
+            return { success: false, error: 'Master key is not initialized' };
+        }
+        if (passphrase.length < MASTER_KEY_BACKUP_MIN_PASSPHRASE) {
+            return {
+                success: false,
+                error: `Passphrase must be at least ${MASTER_KEY_BACKUP_MIN_PASSPHRASE} characters`
+            };
+        }
+
+        try {
+            const salt = crypto.randomBytes(16);
+            const iv = crypto.randomBytes(12);
+            const key = this.deriveMasterKeyBackupKey(passphrase, salt);
+            const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+            const encrypted = Buffer.concat([
+                cipher.update(this.masterKey),
+                cipher.final()
+            ]);
+            const authTag = cipher.getAuthTag();
+            const checksum = crypto.createHash('sha256').update(this.masterKey).digest('hex');
+            const payload: MasterKeyBackupPayload = {
+                schemaVersion: MASTER_KEY_BACKUP_SCHEMA_VERSION,
+                createdAt: Date.now(),
+                salt: salt.toString('base64'),
+                iv: iv.toString('base64'),
+                authTag: authTag.toString('base64'),
+                encryptedKey: encrypted.toString('base64'),
+                checksum
+            };
+            return { success: true, result: { backup: JSON.stringify(payload) } };
+        } catch (error) {
+            this.logError('Master key backup creation failed', error);
+            return { success: false, error: getErrorMessage(error as Error) };
+        }
+    }
+
+    /**
+     * Restores master encryption key from an encrypted backup payload.
+     *
+     * @param backupPayload - Backup payload created by createEncryptedMasterKeyBackup.
+     * @param passphrase - Passphrase used for backup encryption.
+     * @returns Success response when key is restored and persisted.
+     */
+    restoreMasterKeyBackup(backupPayload: string, passphrase: string): ServiceResponse {
+        if (!backupPayload) {
+            return { success: false, error: 'Backup payload is required' };
+        }
+        if (passphrase.length < MASTER_KEY_BACKUP_MIN_PASSPHRASE) {
+            return {
+                success: false,
+                error: `Passphrase must be at least ${MASTER_KEY_BACKUP_MIN_PASSPHRASE} characters`
+            };
+        }
+
+        let parsed: MasterKeyBackupPayload;
+        try {
+            parsed = JSON.parse(backupPayload) as MasterKeyBackupPayload;
+        } catch (error) {
+            return { success: false, error: `Invalid backup payload: ${getErrorMessage(error as Error)}` };
+        }
+
+        if (
+            parsed.schemaVersion !== MASTER_KEY_BACKUP_SCHEMA_VERSION ||
+            !parsed.salt ||
+            !parsed.iv ||
+            !parsed.authTag ||
+            !parsed.encryptedKey ||
+            !parsed.checksum
+        ) {
+            return { success: false, error: 'Backup payload schema mismatch' };
+        }
+
+        try {
+            const salt = Buffer.from(parsed.salt, 'base64');
+            const iv = Buffer.from(parsed.iv, 'base64');
+            const authTag = Buffer.from(parsed.authTag, 'base64');
+            const encryptedKey = Buffer.from(parsed.encryptedKey, 'base64');
+            const key = this.deriveMasterKeyBackupKey(passphrase, salt);
+            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+            decipher.setAuthTag(authTag);
+            const decrypted = Buffer.concat([
+                decipher.update(encryptedKey),
+                decipher.final()
+            ]);
+            const checksum = crypto.createHash('sha256').update(decrypted).digest('hex');
+            if (checksum !== parsed.checksum) {
+                return { success: false, error: 'Master key backup checksum verification failed' };
+            }
+
+            this.masterKey = decrypted;
+            this.saveMasterKeyEncrypted();
+            return { success: true };
+        } catch (error) {
+            this.logError('Master key backup restore failed', error);
+            return { success: false, error: getErrorMessage(error as Error) };
         }
     }
 

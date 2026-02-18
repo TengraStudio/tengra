@@ -1,41 +1,13 @@
-import { Check, Download, Plug, Search, Settings, Shield, Star } from 'lucide-react';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
+import { Check, Download, Plug, Search, Settings, Shield, Star, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
-import { mcpMarketplaceClient } from '@/lib/mcp-marketplace-client';
+import { mcpMarketplaceClient,McpServerLike } from '@/lib/mcp-marketplace-client';
 import { cn } from '@/lib/utils';
 
-interface McpMarketplaceServer {
-    id: string;
-    name: string;
-    description: string;
-    publisher: string;
-    version?: string;
-    categories?: string[];
-    tags?: string[];
-    repository?: string;
-    npmPackage?: string;
-    command?: string;
-    license?: string;
-    downloads?: number;
-    rating?: number;
-    isOfficial?: boolean;
-}
-
-interface MCPServerConfig {
-    id: string;
-    name: string;
-    command: string;
-    args: string[];
-    description?: string;
-    env?: Record<string, string>;
-    enabled?: boolean;
-    tools?: { name: string; description: string }[];
-    category?: string;
-    publisher?: string;
-    version?: string;
-    isOfficial?: boolean;
-}
+type McpMarketplaceServer = McpServerLike;
+type MCPServerConfig = McpServerLike;
 
 const CATEGORIES = [
     { id: 'all', labelKey: 'mcp.categories.all', icon: Plug },
@@ -187,7 +159,7 @@ const ToolDetailModal = ({
                     </div>
                     <p className="text-xs text-muted-foreground">
                         {t('mcp.byAuthor', {
-                            author: tool.publisher,
+                            author: tool.publisher ?? 'Unknown',
                             version: tool.version ?? '1.0.0',
                         })}
                     </p>
@@ -269,6 +241,8 @@ const ToolDetailModal = ({
 );
 
 const ITEMS_PER_PAGE = 24;
+const SEARCH_HISTORY_STORAGE_KEY = 'mcp-marketplace-search-history';
+const MAX_SEARCH_HISTORY = 8;
 
 export const MCPStore: React.FC<{
     onInstall?: (id: string) => void;
@@ -283,6 +257,7 @@ export const MCPStore: React.FC<{
     const [installedServers, setInstalledServers] = useState<MCPServerConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
     // Load marketplace servers
     const loadMarketplace = useCallback(async () => {
@@ -290,9 +265,7 @@ export const MCPStore: React.FC<{
             setLoading(true);
             const result = await mcpMarketplaceClient.list();
             if (result.success && result.servers) {
-                // Properly cast from IpcValue[] to McpMarketplaceServer[]
-                const servers = result.servers as unknown as McpMarketplaceServer[];
-                setMarketplaceServers(servers);
+                setMarketplaceServers(result.servers);
             }
         } catch (error) {
             window.electron.log.error('Failed to load marketplace', error as Error);
@@ -306,9 +279,7 @@ export const MCPStore: React.FC<{
         try {
             const result = await mcpMarketplaceClient.installed();
             if (result.success && result.servers) {
-                // Properly cast from IpcValue[] to MCPServerConfig[]
-                const servers = result.servers as unknown as MCPServerConfig[];
-                setInstalledServers(servers);
+                setInstalledServers(result.servers);
             }
         } catch (error) {
             window.electron.log.error('Failed to load installed servers', error as Error);
@@ -319,6 +290,30 @@ export const MCPStore: React.FC<{
         void loadMarketplace();
         void loadInstalled();
     }, [loadMarketplace, loadInstalled]);
+
+    useEffect(() => {
+        try {
+            const stored = window.localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY);
+            if (!stored) {
+                return;
+            }
+            const parsed = safeJsonParse<string[]>(stored, []);
+            const normalized = parsed
+                .filter((value): value is string => typeof value === 'string')
+                .slice(0, MAX_SEARCH_HISTORY);
+            setSearchHistory(normalized);
+        } catch (error) {
+            window.electron.log.error('Failed to read marketplace search history', error as Error);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(searchHistory));
+        } catch (error) {
+            window.electron.log.error('Failed to persist marketplace search history', error as Error);
+        }
+    }, [searchHistory]);
 
     const handleInstall = useCallback(
         async (serverId: string) => {
@@ -349,6 +344,23 @@ export const MCPStore: React.FC<{
         },
         [loadInstalled, onUninstall]
     );
+
+    const addSearchHistoryEntry = useCallback((query: string) => {
+        const normalizedQuery = query.trim();
+        if (normalizedQuery.length < 2) {
+            return;
+        }
+        setSearchHistory(previous => {
+            const deduped = previous.filter(
+                entry => entry.toLowerCase() !== normalizedQuery.toLowerCase()
+            );
+            return [normalizedQuery, ...deduped].slice(0, MAX_SEARCH_HISTORY);
+        });
+    }, []);
+
+    const clearSearchHistory = useCallback(() => {
+        setSearchHistory([]);
+    }, []);
 
     const installedIds = useMemo(
         () => new Set(installedServers.map(s => s.id)),
@@ -415,9 +427,36 @@ export const MCPStore: React.FC<{
                         placeholder={t('mcp.searchTools')}
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
+                        onKeyDown={event => {
+                            if (event.key === 'Enter') {
+                                addSearchHistoryEntry(searchQuery);
+                            }
+                        }}
+                        onBlur={() => addSearchHistoryEntry(searchQuery)}
                         className="w-full bg-muted/30 border border-border/30 rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
                     />
                 </div>
+                {searchHistory.length > 0 && (
+                    <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-1">
+                        {searchHistory.map(entry => (
+                            <button
+                                key={entry}
+                                onClick={() => setSearchQuery(entry)}
+                                className="rounded-full border border-border/40 bg-muted/20 px-2 py-1 text-xs text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                            >
+                                {entry}
+                            </button>
+                        ))}
+                        <button
+                            onClick={clearSearchHistory}
+                            title={t('common.clear')}
+                            aria-label={t('common.clear')}
+                            className="rounded-full border border-border/40 bg-muted/20 p-1 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                        >
+                            <X className="h-3 w-3" />
+                        </button>
+                    </div>
+                )}
                 <div className="flex gap-2 overflow-x-auto pb-1">
                     {CATEGORIES.map(({ id, labelKey, icon: Icon }) => (
                         <button

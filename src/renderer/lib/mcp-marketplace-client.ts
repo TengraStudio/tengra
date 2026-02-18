@@ -3,6 +3,18 @@ import { z } from 'zod';
 
 import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
+const IpcValueSchema = z.custom<IpcValue>();
+const SettingsFieldSchema = z.object({
+    type: z.enum(['string', 'number', 'integer', 'boolean']).optional(),
+    enum: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+    title: z.string().optional(),
+    description: z.string().optional()
+});
+const SettingsSchema = z.object({
+    type: z.literal('object').optional(),
+    properties: z.record(z.string(), SettingsFieldSchema).optional(),
+    required: z.array(z.string()).optional()
+});
 const ServerSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -10,11 +22,46 @@ const ServerSchema = z.object({
     publisher: z.string().optional(),
     version: z.string().optional(),
     categories: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    repository: z.string().optional(),
+    npmPackage: z.string().optional(),
+    license: z.string().optional(),
+    downloads: z.number().optional(),
+    rating: z.number().optional(),
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
     enabled: z.boolean().optional(),
     category: z.string().optional(),
-    isOfficial: z.boolean().optional()
+    isOfficial: z.boolean().optional(),
+    capabilities: z.array(z.string()).optional(),
+    dependencies: z.array(z.string()).optional(),
+    conflictsWith: z.array(z.string()).optional(),
+    sandbox: z.object({
+        enabled: z.boolean().optional(),
+        maxMemoryMb: z.number().optional(),
+        maxCpuPercent: z.number().optional()
+    }).optional(),
+    storage: z.object({
+        dataPath: z.string().optional(),
+        quotaMb: z.number().optional(),
+        migrationVersion: z.number().optional()
+    }).optional(),
+    updatePolicy: z.object({
+        channel: z.enum(['stable', 'beta', 'alpha']).optional(),
+        autoUpdate: z.boolean().optional(),
+        scheduleCron: z.string().optional(),
+        signatureSha256: z.string().optional(),
+        lastCheckedAt: z.number().optional(),
+        lastUpdatedAt: z.number().optional()
+    }).optional(),
+    settingsSchema: SettingsSchema.optional(),
+    settingsValues: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+    settingsVersion: z.number().optional(),
+    integrityHash: z.string().optional(),
+    tools: z.array(z.object({
+        name: z.string(),
+        description: z.string().optional()
+    })).optional()
 });
 
 const SuccessResponseSchema = z.object({
@@ -33,7 +80,6 @@ const HistoryResponseSchema = z.object({
     history: z.array(z.string()).optional(),
     error: z.string().optional()
 });
-const IpcValueSchema = z.custom<IpcValue>();
 
 export type McpServerLike = z.infer<typeof ServerSchema>;
 

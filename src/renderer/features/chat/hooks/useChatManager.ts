@@ -229,9 +229,15 @@ export function useChatManager(options: UseChatManagerOptions) {
         }
 
         const timestamp = Date.now();
-        const imageInputs = readyAttachments
-            .filter(att => att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/'))
-            .map(att => att.content as string);
+        const imageInputs = readyAttachments.flatMap(att => {
+            if (att.type === 'image' && typeof att.content === 'string' && att.content.startsWith('data:image/')) {
+                return [att.content];
+            }
+            if (att.type === 'video' && typeof att.preview === 'string' && att.preview.startsWith('data:image/')) {
+                return [att.preview];
+            }
+            return [];
+        });
         const attachmentContext = buildAttachmentPromptContext(readyAttachments);
         const mergedContent = hasInputText
             ? `${content}${attachmentContext}`

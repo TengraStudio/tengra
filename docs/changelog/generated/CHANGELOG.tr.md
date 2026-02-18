@@ -57,6 +57,17 @@
 - **Oturum ve Gezinme**: Oturum kilidi için başlangıç odağı/Escape davranışı ve kenar çubuğu etkinlik alanlarında roving klavye gezinmesi eklendi.
 - **Başlık Çubuğu/Hızlı Eylemler**: Eksik etiketler, değişiklik günlüğü filtre etiketleri ve hızlı eylemler için klavye keşfedilebilirliği eklendi.
 
+### Dokümantasyon Sertleştirme ve Codex Uygulaması
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Kilitli bir .codex dokümantasyon dizini uygulandı ve uyumluluğu artırmak için yapay zeka ajan kuralları fesih uyarılarıyla sertleştirildi.
+
+- **Codex**: `.codex/` dizini oluşturuldu ve temel direktifler ile mimari için doküman aynalama (mirroring) uygulandı.
+- **Kural Zorlama**: `MASTER_COMMANDMENTS.md` ve `AI_RULES.md` dosyaları açık fesih uyarıları ve sıfır tolerans politikalarıyla güncellendi.
+- **Bakım**: Dokümantasyon merkezindeki bozuk mutlak yollar düzeltildi ve sistematik teknik borç takibi için `LINT_ISSUES.md` oluşturuldu.
+- **Yapı**: `PROJECT_STRUCTURE.md`, yeni `.codex` ve `.agent` organizasyonel modellerini yansıtacak şekilde güncellendi.
+
 ### LLM Güvenliği Güçlendirme ve Performans Optimizasyonu
 
 - **Type**: feature
@@ -68,6 +79,18 @@
 - **DEBT-01**: Yapılandırma katmanını basitleştirmek için kullanılmayan özellik bayrakları (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) temizlendi.
 - **DEBT-06**: `CommandPalette`, `QuickActionBar` ve `ExtensionInstallPrompt` gibi ağır UI bileşenleri için tembel yükleme uygulanarak başlangıç paket boyutu düşürüldü.
 - **Test**: Güvenlik doğrulama mantığı için kapsamlı birim testleri eklendi.
+
+### SEC-007/009 + LLM-05 + I18N-05 Takip Güncellemesi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Denetim kaydı entegrasyonu ve multimodal/i18n takip iyileştirmeleri tamamlandı; ardından TODO düzenlendi ve güvensiz castler azaltıldı.
+
+- **SEC-007**: Ayarlar IPC akışına API anahtarı erişim denetim kaydı, dosya IPC akışına dosya işlemi denetim kaydı sarmalayıcıları eklendi.
+- **SEC-009**: LLM istek yollarında prompt sanitizasyonu ve güvenlik doğrulaması kapsamı doğrulandı.
+- **LLM-05**: Ses/video önizleme bağlamı ve daha zengin multimodal mesaj hazırlığı için ek yönetimi genişletildi.
+- **I18N-05**: Yerel ayar odaklı yanıt yönlendirmesi ve yerel ayara göre varsayılan model seçimi geri dönüşü eklendi.
+- **Bakım**: Tamamlanan TODO onay kutuları kaldırıldı ve kalan bazı `as unknown as` castleri daha güvenli tiplere indirildi.
 
 ### Kenar Çubuğu İyileştirmeleri: Erişilebilirlik ve Geçmişi Temizle
 

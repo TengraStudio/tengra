@@ -57,6 +57,17 @@
 - **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
 - **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
 
+### Documentation Hardening and Codex Implementation
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.
+
+- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.
+- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.
+- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
+- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
+
 ### LLM Security Hardening & Performance Optimization
 
 - **Type**: feature
@@ -68,6 +79,21 @@
 - **DEBT-01**: Cleaned up obsolete feature flags (`new_agent_engine`, `event_sourcing_ui`, `experimental_models`) to streamline the configuration layer.
 - **DEBT-06**: Reduced initial bundle size by implementing lazy loading for heavy UI components like `CommandPalette`, `QuickActionBar`, and `ExtensionInstallPrompt`.
 - **Testing**: Added comprehensive unit tests for the security validation logic.
+
+### SEC-007/009 + LLM-05 + I18N-05 Follow-up
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Completed security/export hardening, agent collaboration/state visualization improvements, and MCP marketplace infrastructure upgrades while reducing unsafe casts.
+
+- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.
+- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.
+- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.
+- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.
+- **SEC-004/006**: Added password-protected credential export/import and encrypted master-key backup/restore with checksum validation.
+- **AGENT-04/05/09**: Added compressed checkpoint retention + dedup sync logic, voting analytics/override/config APIs, and integrated voting/state machine panels into ProjectAgentView.
+- **MKT-INFRA-01..08**: Expanded marketplace server metadata, dependency/conflict validation, update integrity verification, storage isolation/quota environment wiring, and schema-driven MCP configuration editing.
+- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.
 
 ### Sidebar Enhancements: Accessibility and Clear History
 

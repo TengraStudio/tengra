@@ -1,3 +1,9 @@
+import {
+    IPC_CONTRACT_MIN_MAIN_VERSION,
+    IPC_CONTRACT_VERSION,
+    type IpcContractVersionInfo,
+    isIpcContractCompatible,
+} from '@shared/constants/ipc-contract';
 import { IpcValue } from '@shared/types/common';
 import { z, ZodError, ZodType } from 'zod';
 
@@ -5,6 +11,12 @@ const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_BASE_DELAY_MS = 150;
 const DEFAULT_MAX_DELAY_MS = 1500;
 const JITTER_FACTOR = 0.2;
+const ipcContractInfoSchema = z.object({
+    version: z.number().int().nonnegative(),
+    minRendererVersion: z.number().int().nonnegative(),
+    minMainVersion: z.number().int().nonnegative(),
+});
+let contractCompatibilityPromise: Promise<void> | null = null;
 
 export interface IpcContractEntry<Args extends readonly IpcValue[] = readonly IpcValue[], Response = unknown> {
     args: Args;
@@ -69,6 +81,32 @@ function ensureElectronApi(): void {
     }
 }
 
+function formatContractMismatch(info: IpcContractVersionInfo): string {
+    return `Incompatible IPC contract: renderer v${IPC_CONTRACT_VERSION} (requires main >= v${IPC_CONTRACT_MIN_MAIN_VERSION}), main v${info.version} (requires renderer >= v${info.minRendererVersion})`;
+}
+
+async function ensureIpcContractCompatibility(): Promise<void> {
+    if (contractCompatibilityPromise) {
+        return contractCompatibilityPromise;
+    }
+
+    contractCompatibilityPromise = (async () => {
+        try {
+            const rawContractInfo = window.electron.ipcContract?.getVersion
+                ? await window.electron.ipcContract.getVersion()
+                : await window.electron.ipcRenderer.invoke('ipc:contract:get');
+            const contractInfo = ipcContractInfoSchema.parse(rawContractInfo);
+            if (!isIpcContractCompatible(contractInfo)) {
+                throw new Error(formatContractMismatch(contractInfo));
+            }
+        } catch (error) {
+            throw new Error(`IPC contract negotiation failed: ${getErrorMessage(error)}`);
+        }
+    })();
+
+    return contractCompatibilityPromise;
+}
+
 function getRetryDelay(attempt: number, baseDelayMs: number, maxDelayMs: number): number {
     const exponential = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
     const jitter = exponential * JITTER_FACTOR * Math.random();
@@ -100,6 +138,7 @@ export async function invokeIpc<T>(
     } = options;
 
     ensureElectronApi();
+    await ensureIpcContractCompatibility();
 
     const normalizedArgs = argsSchema ? argsSchema.parse(args) : args;
     let lastError: unknown;

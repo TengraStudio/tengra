@@ -83,6 +83,17 @@ export const authTokenDataSchema = z.object({
 
 export const sessionIdSchema = z.string().uuid();
 export const sessionLimitSchema = z.number().int().min(1).max(100);
+export const credentialExportOptionsSchema = z.object({
+    provider: providerSchema.optional(),
+    password: z.string().min(12).max(256),
+    expiresInHours: z.number().int().min(1).max(168).optional()
+});
+export const credentialImportSchema = z.object({
+    payload: z.string().min(32).max(5_000_000),
+    password: z.string().min(12).max(256)
+});
+export const backupPassphraseSchema = z.string().min(12).max(256);
+export const backupPayloadSchema = z.string().min(32).max(5_000_000);
 
 // --- Tools Schemas ---
 

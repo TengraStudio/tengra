@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-17T23:41:13.534Z",
+  "generatedAt": "2026-02-18T11:35:00.595Z",
   "locales": [
     "en",
     "tr",
@@ -520,6 +520,105 @@
       }
     },
     {
+      "id": "2026-02-18-docs-and-rules-hardening",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "docs",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Documentation",
+        "AI Rules",
+        "Codex"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "tr": {
+          "title": "Dokümantasyon Sertleştirme ve Codex Uygulaması",
+          "summary": "Kilitli bir .codex dokümantasyon dizini uygulandı ve uyumluluğu artırmak için yapay zeka ajan kuralları fesih uyarılarıyla sertleştirildi.",
+          "items": [
+            "- **Codex**: `.codex/` dizini oluşturuldu ve temel direktifler ile mimari için doküman aynalama (mirroring) uygulandı.",
+            "- **Kural Zorlama**: `MASTER_COMMANDMENTS.md` ve `AI_RULES.md` dosyaları açık fesih uyarıları ve sıfır tolerans politikalarıyla güncellendi.",
+            "- **Bakım**: Dokümantasyon merkezindeki bozuk mutlak yollar düzeltildi ve sistematik teknik borç takibi için `LINT_ISSUES.md` oluşturuldu.",
+            "- **Yapı**: `PROJECT_STRUCTURE.md`, yeni `.codex` ve `.agent` organizasyonel modellerini yansıtacak şekilde güncellendi."
+          ]
+        },
+        "de": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "fr": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "es": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "ja": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "zh": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        },
+        "ar": {
+          "title": "Documentation Hardening and Codex Implementation",
+          "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+          "items": [
+            "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
+            "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
+            "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
+            "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-llm-security-v2",
       "date": "2026-02-18",
       "channel": "stable",
@@ -624,6 +723,121 @@
             "- **DEBT-01**: Cleaned up obsolete feature flags.",
             "- **DEBT-06**: Reduced bundle size via lazy loading.",
             "- **Testing**: Added unit tests for security validation."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-18-sec-llm-i18n-followup",
+      "date": "2026-02-18",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AuditLogService",
+        "Settings IPC",
+        "Files IPC",
+        "LLMService",
+        "ChatInput",
+        "Attachments",
+        "I18N"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed security/export hardening, agent collaboration/state visualization improvements, and MCP marketplace infrastructure upgrades while reducing unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **SEC-004/006**: Added password-protected credential export/import and encrypted master-key backup/restore with checksum validation.",
+            "- **AGENT-04/05/09**: Added compressed checkpoint retention + dedup sync logic, voting analytics/override/config APIs, and integrated voting/state machine panels into ProjectAgentView.",
+            "- **MKT-INFRA-01..08**: Expanded marketplace server metadata, dependency/conflict validation, update integrity verification, storage isolation/quota environment wiring, and schema-driven MCP configuration editing.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "tr": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Takip Güncellemesi",
+          "summary": "Denetim kaydı entegrasyonu ve multimodal/i18n takip iyileştirmeleri tamamlandı; ardından TODO düzenlendi ve güvensiz castler azaltıldı.",
+          "items": [
+            "- **SEC-007**: Ayarlar IPC akışına API anahtarı erişim denetim kaydı, dosya IPC akışına dosya işlemi denetim kaydı sarmalayıcıları eklendi.",
+            "- **SEC-009**: LLM istek yollarında prompt sanitizasyonu ve güvenlik doğrulaması kapsamı doğrulandı.",
+            "- **LLM-05**: Ses/video önizleme bağlamı ve daha zengin multimodal mesaj hazırlığı için ek yönetimi genişletildi.",
+            "- **I18N-05**: Yerel ayar odaklı yanıt yönlendirmesi ve yerel ayara göre varsayılan model seçimi geri dönüşü eklendi.",
+            "- **Bakım**: Tamamlanan TODO onay kutuları kaldırıldı ve kalan bazı `as unknown as` castleri daha güvenli tiplere indirildi."
+          ]
+        },
+        "de": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "fr": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "es": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "ja": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "zh": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+          ]
+        },
+        "ar": {
+          "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+          "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
+          "items": [
+            "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
+            "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
+            "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
+            "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
+            "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
           ]
         }
       }

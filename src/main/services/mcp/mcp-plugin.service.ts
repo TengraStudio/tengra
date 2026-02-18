@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 import { ExternalMcpPlugin } from '@main/mcp/external-plugin';
 import { IMcpPlugin, InternalMcpPlugin } from '@main/mcp/plugin-base';
 import { buildMcpServices } from '@main/mcp/registry';
@@ -22,6 +25,42 @@ export class McpPluginService extends BaseService {
         super('McpPluginService');
     }
 
+    private getStorageRootPath(): string {
+        const settingsDirectory = path.dirname(this.settingsService.getSettingsPath());
+        return path.join(settingsDirectory, 'mcp-storage');
+    }
+
+    private resolveServerStoragePath(serverId: string, configuredPath?: string): string {
+        const safeServerId = serverId.replace(/[^a-zA-Z0-9-_]/g, '-');
+        const storageRoot = this.getStorageRootPath();
+        const normalizedConfiguredPath = configuredPath?.replace(/^\.+[\\/]/, '');
+        const resolvedPath = normalizedConfiguredPath
+            ? path.resolve(storageRoot, normalizedConfiguredPath)
+            : path.join(storageRoot, safeServerId);
+        const normalizedStorageRoot = path.resolve(storageRoot);
+        if (!resolvedPath.startsWith(normalizedStorageRoot)) {
+            throw new Error(`Invalid MCP storage path for server: ${serverId}`);
+        }
+        fs.mkdirSync(resolvedPath, { recursive: true });
+        return resolvedPath;
+    }
+
+    private buildPluginEnvironment(
+        serverConfig: {
+            id: string;
+            env?: Record<string, string>;
+            storage?: { dataPath?: string; quotaMb?: number };
+        }
+    ): Record<string, string> {
+        const storagePath = this.resolveServerStoragePath(serverConfig.id, serverConfig.storage?.dataPath);
+        const storageQuotaMb = serverConfig.storage?.quotaMb ?? 256;
+        return {
+            ...(serverConfig.env ?? {}),
+            TANDEM_MCP_STORAGE_PATH: storagePath,
+            TANDEM_MCP_STORAGE_QUOTA_MB: String(storageQuotaMb)
+        };
+    }
+
     override async initialize(): Promise<void> {
         this.logInfo('Initializing MCP Plugin Architecture...');
 
@@ -39,7 +78,11 @@ export class McpPluginService extends BaseService {
             const plugin = new ExternalMcpPlugin(config.name, config.description ?? '', {
                 command: config.command,
                 args: config.args,
-                env: config.env
+                env: this.buildPluginEnvironment({
+                    id: config.id,
+                    env: config.env,
+                    storage: config.storage
+                })
             });
             this.plugins.set(plugin.name, plugin);
         }
@@ -125,6 +168,44 @@ export class McpPluginService extends BaseService {
         );
     }
 
+    private calculateDirectorySizeBytes(directoryPath: string): number {
+        if (!fs.existsSync(directoryPath)) {
+            return 0;
+        }
+
+        const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
+        let total = 0;
+        for (const entry of entries) {
+            const entryPath = path.join(directoryPath, entry.name);
+            if (entry.isDirectory()) {
+                total += this.calculateDirectorySizeBytes(entryPath);
+                continue;
+            }
+            total += fs.statSync(entryPath).size;
+        }
+        return total;
+    }
+
+    private ensureStorageQuota(
+        serverConfig: {
+            id: string;
+            storage?: { dataPath?: string; quotaMb?: number };
+        },
+        actionName: string
+    ): void {
+        if (!this.isSensitiveAction(actionName)) {
+            return;
+        }
+        const storagePath = this.resolveServerStoragePath(serverConfig.id, serverConfig.storage?.dataPath);
+        const quotaBytes = (serverConfig.storage?.quotaMb ?? 256) * 1024 * 1024;
+        const usageBytes = this.calculateDirectorySizeBytes(storagePath);
+        if (usageBytes > quotaBytes) {
+            throw new Error(
+                `Storage quota exceeded for ${serverConfig.id}: ${(usageBytes / (1024 * 1024)).toFixed(2)}MB / ${serverConfig.storage?.quotaMb ?? 256}MB`
+            );
+        }
+    }
+
     async listPermissionRequests() {
         const settings = this.settingsService.getSettings();
         return settings.mcpPermissionRequests ?? [];
@@ -179,6 +260,15 @@ export class McpPluginService extends BaseService {
         // If it's a user server, check if it's enabled
         if (serverConfig && !serverConfig.enabled) {
             return { success: false, error: `Plugin '${pluginName}' is disabled. Enable it in Settings > MCP.` };
+        }
+        if (serverConfig) {
+            this.ensureStorageQuota(
+                {
+                    id: serverConfig.id,
+                    storage: serverConfig.storage
+                },
+                actionName
+            );
         }
 
         const permissionKey = this.permissionKey(pluginName, actionName);
@@ -235,7 +325,16 @@ export class McpPluginService extends BaseService {
             throw new Error(`Plugin '${name}' already exists.`);
         }
 
-        const plugin = new ExternalMcpPlugin(name, description, { command, args, env });
+        const storage = { dataPath: `mcp-storage/${name}`, quotaMb: 256, migrationVersion: 1 };
+        const plugin = new ExternalMcpPlugin(name, description, {
+            command,
+            args,
+            env: this.buildPluginEnvironment({
+                id: name,
+                env,
+                storage
+            })
+        });
         await plugin.initialize();
         this.plugins.set(name, plugin);
 
@@ -248,6 +347,7 @@ export class McpPluginService extends BaseService {
             command,
             args,
             env,
+            storage,
             enabled: false,
             tools: []
         }];

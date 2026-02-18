@@ -119,6 +119,7 @@ export const ProjectDashboardTabsContent: React.FC<ProjectDashboardTabsProps> = 
                 <SearchResults
                     results={searchResults}
                     projectRoot={projectRoot}
+                    searchQuery={searchQuery}
                     onSelect={(path, line) => { void handleFileSelect(path, line); }}
                     t={t}
                 />

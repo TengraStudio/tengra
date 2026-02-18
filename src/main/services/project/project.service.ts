@@ -20,6 +20,17 @@ export interface ProjectIssue {
     line: number
 }
 
+export interface ProjectFilesPageMeta {
+    offset: number
+    limit: number
+    total: number
+    hasMore: boolean
+}
+
+export interface ProjectFilesPageResult extends ProjectFilesPageMeta {
+    files: string[]
+}
+
 export interface ProjectAnalysis {
     type: 'node' | 'python' | 'rust' | 'go' | 'cpp' | 'java' | 'php' | 'csharp' | 'unknown' | string
     frameworks: string[]
@@ -28,6 +39,7 @@ export interface ProjectAnalysis {
     stats: ProjectStats
     languages: Record<string, number>
     files: string[]
+    filesPage?: ProjectFilesPageMeta
     monorepo?: {
         type: 'npm' | 'yarn' | 'pnpm' | 'lerna' | 'turbo' | 'rush' | 'unknown';
         packages: string[];
@@ -43,6 +55,9 @@ import { BaseService } from '@main/services/base.service';
 export class ProjectService extends BaseService {
     private watchers: Map<string, import('fs').FSWatcher> = new Map();
     private analysisCache: Map<string, { data: ProjectAnalysis; timestamp: number }> = new Map();
+    private fileListCache: Map<string, { files: string[]; timestamp: number }> = new Map();
+    private readonly ANALYSIS_CACHE_TTL_MS = 300000;
+    private readonly PROJECT_FILES_PAGE_SIZE = 1000;
 
     constructor() {
         super('ProjectService');
@@ -92,6 +107,7 @@ export class ProjectService extends BaseService {
         }
         this.watchers.clear();
         this.analysisCache.clear();
+        this.fileListCache.clear();
     }
 
     async stopWatch(rootPath: string) {
@@ -117,7 +133,7 @@ export class ProjectService extends BaseService {
 
         // Cache Check (5 min TTL)
         const cached = this.analysisCache.get(rootPath);
-        if (cached !== undefined && (Date.now() - cached.timestamp < 300000)) {
+        if (cached !== undefined && (Date.now() - cached.timestamp < this.ANALYSIS_CACHE_TTL_MS)) {
             this.logDebug('Returning cached project analysis for:', rootPath);
             return cached.data;
         }
@@ -135,6 +151,7 @@ export class ProjectService extends BaseService {
         const monorepo = await this.detectMonorepo(rootPath, files);
         const todos = await this.findTodos(rootPath, files);
         const issues = await this.findIssues(rootPath, files);
+        const initialFilePage = this.paginateFiles(files, 0, this.PROJECT_FILES_PAGE_SIZE);
 
         this.logInfo(`Analysis complete in ${Date.now() - runStart}ms`);
 
@@ -145,14 +162,60 @@ export class ProjectService extends BaseService {
             devDependencies,
             stats,
             languages,
-            files: files.slice(0, 1000), // Limit file list for performance in IPC
+            files: initialFilePage.files,
+            filesPage: {
+                offset: initialFilePage.offset,
+                limit: initialFilePage.limit,
+                total: initialFilePage.total,
+                hasMore: initialFilePage.hasMore
+            },
             monorepo,
             todos,
             issues
         };
 
-        this.analysisCache.set(rootPath, { data: analysis, timestamp: Date.now() });
+        const timestamp = Date.now();
+        this.analysisCache.set(rootPath, { data: analysis, timestamp });
+        this.fileListCache.set(rootPath, { files, timestamp });
         return analysis;
+    }
+
+    /**
+     * Returns a lazily paginated file list for previously scanned project analysis results.
+     * @param rootPath The absolute path to the project root.
+     * @param offset Starting offset for pagination.
+     * @param limit Number of files to return.
+     */
+    async getProjectFilePage(rootPath: string, offset = 0, limit = this.PROJECT_FILES_PAGE_SIZE): Promise<ProjectFilesPageResult> {
+        if (process.platform === 'win32' && rootPath.startsWith('/') && rootPath.charAt(2) === ':') {
+            rootPath = rootPath.slice(1);
+        }
+        rootPath = path.resolve(rootPath);
+
+        const cachedFiles = this.fileListCache.get(rootPath);
+        const isCacheValid = cachedFiles !== undefined &&
+            (Date.now() - cachedFiles.timestamp < this.ANALYSIS_CACHE_TTL_MS);
+        let files = cachedFiles?.files;
+
+        if (!files || !isCacheValid) {
+            files = await this.scanFiles(rootPath, rootPath);
+            this.fileListCache.set(rootPath, { files, timestamp: Date.now() });
+        }
+
+        return this.paginateFiles(files, offset, limit);
+    }
+
+    private paginateFiles(files: string[], offset: number, limit: number): ProjectFilesPageResult {
+        const safeOffset = Math.max(0, Math.floor(offset));
+        const safeLimit = Math.max(1, Math.floor(limit));
+        const pagedFiles = files.slice(safeOffset, safeOffset + safeLimit);
+        return {
+            files: pagedFiles,
+            offset: safeOffset,
+            limit: safeLimit,
+            total: files.length,
+            hasMore: safeOffset + safeLimit < files.length
+        };
     }
 
     private async detectMonorepo(rootPath: string, files: string[]): Promise<ProjectAnalysis['monorepo'] | undefined> {

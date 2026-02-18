@@ -1,5 +1,6 @@
 import { BaseService } from '@main/services/base.service';
 import { MultiLevelCache } from '@main/utils/cache.util';
+import { JsonValue } from '@shared/types/common';
 import axios from 'axios';
 
 /**
@@ -20,6 +21,20 @@ export interface McpMarketplaceServer {
     downloads?: number
     rating?: number
     isOfficial?: boolean
+    capabilities?: string[]
+    dependencies?: string[]
+    conflictsWith?: string[]
+    settingsSchema?: Record<string, JsonValue>
+    settingsVersion?: number
+    updatePolicy?: {
+        channel?: 'stable' | 'beta' | 'alpha'
+        autoUpdate?: boolean
+        scheduleCron?: string
+        signatureSha256?: string
+    }
+    storage?: {
+        quotaMb?: number
+    }
 }
 
 /**
@@ -304,7 +319,13 @@ export class McpMarketplaceService extends BaseService {
                                 repository: pkg.repository?.url ?? `https://github.com/modelcontextprotocol/servers/tree/main/src/${dir.name}`,
                                 license: pkg.license,
                                 categories: this.inferCategories(dir.name, pkg.description),
-                                isOfficial: true
+                                isOfficial: true,
+                                capabilities: this.inferCategories(dir.name, pkg.description),
+                                dependencies: [],
+                                conflictsWith: [],
+                                settingsVersion: 1,
+                                updatePolicy: { channel: 'stable', autoUpdate: true },
+                                storage: { quotaMb: 256 }
                             };
                             return server;
                         } catch (error) {

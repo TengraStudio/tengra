@@ -16,6 +16,8 @@ import {
 } from '@xyflow/react';
 
 import { AnimatedEdge } from './components/AnimatedEdge';
+import { AgentStateMachinePanel } from './AgentStateMachinePanel';
+import { AgentVotingPanel } from './AgentVotingPanel';
 
 /** Canvas node shape from database */
 interface CanvasNodeRecord {
@@ -63,6 +65,7 @@ const PLAN_NODE_Y_OFFSET_PX = 420;
 const PLAN_NODE_LANE_SPACING_PX = 260;
 const PLAN_NODE_X_STEP_DRIFT_PX = 18;
 const PLAN_NODE_Y_STEP_SPACING_PX = 170;
+const MAX_STATE_HISTORY_ENTRIES = 30;
 
 const getPlanNodeId = (taskNodeId: string, stepId: string) => `plan-node-${taskNodeId}-${stepId}`;
 const getPlanEdgeId = (source: string, target: string) => `plan-edge-${source}-${target}`;
@@ -524,8 +527,23 @@ const InternalProjectAgentView: React.FC = () => {
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [latestProjectState, setLatestProjectState] = useState<ProjectState | null>(null);
+    const [stateHistory, setStateHistory] = useState<
+        Array<{ status: ProjectState['status']; timestamp: number }>
+    >([]);
     const { screenToFlowPosition, updateNodeData, getNodes } = useReactFlow();
     const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const pushStateHistory = useCallback((status: ProjectState['status']) => {
+        setStateHistory(previous => {
+            const last = previous[previous.length - 1];
+            if (last?.status === status) {
+                return previous;
+            }
+            return [...previous, { status, timestamp: Date.now() }].slice(
+                -MAX_STATE_HISTORY_ENTRIES
+            );
+        });
+    }, []);
     const syncPlanNodesForTask = useCallback(
         (taskNodeId: string, plan?: ProjectState['plan']) => {
             const taskNode = getNodes().find((n: Node) => n.id === taskNodeId);
@@ -653,6 +671,8 @@ const InternalProjectAgentView: React.FC = () => {
                     window.electron.projectAgent.getCanvasEdges(),
                     window.electron.projectAgent.getStatus(),
                 ]);
+                setLatestProjectState(projectState);
+                pushStateHistory(projectState.status);
 
                 let nodesToSet: Node[] = [];
 
@@ -741,7 +761,7 @@ const InternalProjectAgentView: React.FC = () => {
         };
 
         void loadCanvas();
-    }, [setNodes, setEdges]);
+    }, [setNodes, setEdges, pushStateHistory]);
 
     // Save nodes and edges when they change (debounced)
     useEffect(() => {
@@ -800,6 +820,16 @@ const InternalProjectAgentView: React.FC = () => {
     }, [nodes, edges, isLoaded]);
 
     useProjectAgentState(setNodes, isLoaded, updateNodeData, getNodes, syncPlanNodesForTask);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.projectAgent.onUpdate((projectState: ProjectState) => {
+            setLatestProjectState(projectState);
+            pushStateHistory(projectState.status);
+        });
+        return () => {
+            unsubscribe();
+        };
+    }, [pushStateHistory]);
 
     const onConnect = useCallback(
         (params: Connection) =>
@@ -904,6 +934,17 @@ const InternalProjectAgentView: React.FC = () => {
                 />
                 <CommandCenter onAddNode={onAddNode} />
             </ReactFlow>
+
+            <div
+                className="absolute right-4 top-4 z-20 w-[360px] max-h-[calc(100%-2rem)] space-y-3 overflow-y-auto"
+                onClick={event => event.stopPropagation()}
+            >
+                <AgentStateMachinePanel
+                    currentStatus={latestProjectState?.status ?? 'idle'}
+                    stateHistory={stateHistory}
+                />
+                <AgentVotingPanel taskId={latestProjectState?.taskId} />
+            </div>
 
             <AnimatePresence>
                 {menu && (

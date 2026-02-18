@@ -1,3 +1,10 @@
+import {
+    createCipheriv,
+    createDecipheriv,
+    createHash,
+    randomBytes,
+    scryptSync
+} from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -71,6 +78,53 @@ export interface TokenAnalytics {
     revoked: number
 }
 
+export interface CredentialExportOptions {
+    provider?: string
+    password: string
+    expiresInHours?: number
+}
+
+export interface CredentialImportResult {
+    imported: number
+    skipped: number
+    expiresAt: number
+}
+
+interface CredentialExportAccount {
+    id: string
+    provider: string
+    email?: string
+    displayName?: string
+    avatarUrl?: string
+    accessToken?: string
+    refreshToken?: string
+    sessionToken?: string
+    expiresAt?: number
+    scope?: string
+    isActive: boolean
+    metadata?: JsonObject
+    createdAt: number
+    updatedAt: number
+}
+
+interface CredentialExportPayload {
+    schemaVersion: 'credentials-export-v1'
+    createdAt: number
+    expiresAt: number
+    accounts: CredentialExportAccount[]
+}
+
+interface CredentialExportPackage {
+    schemaVersion: 'credentials-export-package-v1'
+    createdAt: number
+    expiresAt: number
+    salt: string
+    iv: string
+    authTag: string
+    checksum: string
+    encryptedPayload: string
+}
+
 interface AuthSession {
     id: string
     provider: string
@@ -79,6 +133,12 @@ interface AuthSession {
     lastSeenAt: number
     source?: string
 }
+
+const CREDENTIAL_EXPORT_PAYLOAD_SCHEMA_VERSION = 'credentials-export-v1';
+const CREDENTIAL_EXPORT_PACKAGE_SCHEMA_VERSION = 'credentials-export-package-v1';
+const EXPORT_PASSWORD_MIN_LENGTH = 12;
+const DEFAULT_EXPORT_EXPIRY_HOURS = 24;
+const MAX_EXPORT_EXPIRY_HOURS = 168;
 
 /**
  * AuthService - Simplified multi-account authentication service.
@@ -538,6 +598,27 @@ export class AuthService extends BaseService {
         return this.decrypt(encryptedValue);
     }
 
+    /**
+     * Creates encrypted backup payload for master key recovery.
+     */
+    createMasterKeyBackup(passphrase: string): string {
+        const result = this.securityService.createEncryptedMasterKeyBackup(passphrase);
+        if (!result.success || !result.result?.backup) {
+            throw new Error(result.error ?? 'Failed to create master key backup');
+        }
+        return result.result.backup;
+    }
+
+    /**
+     * Restores master key from encrypted backup payload.
+     */
+    restoreMasterKeyBackup(backupPayload: string, passphrase: string): void {
+        const result = this.securityService.restoreMasterKeyBackup(backupPayload, passphrase);
+        if (!result.success) {
+            throw new Error(result.error ?? 'Failed to restore master key backup');
+        }
+    }
+
 
 
     // --- Query Methods ---
@@ -749,6 +830,124 @@ export class AuthService extends BaseService {
         };
     }
 
+    /**
+     * Exports linked account credentials as an encrypted payload.
+     */
+    async exportCredentials(
+        options: CredentialExportOptions
+    ): Promise<{ payload: string; checksum: string; expiresAt: number }> {
+        this.validateExportPassword(options.password);
+        const expiresInHours = this.normalizeExportExpiryHours(options.expiresInHours);
+        const now = Date.now();
+        const expiresAt = now + expiresInHours * 60 * 60 * 1000;
+        const provider = options.provider ? this.normalizeProvider(options.provider) : undefined;
+        const accounts = provider
+            ? await this.databaseService.getLinkedAccounts(provider)
+            : await this.databaseService.getLinkedAccounts();
+        const exportableAccounts = accounts
+            .map(account => this.toCredentialExportAccount(account))
+            .filter(account => account.accessToken || account.refreshToken || account.sessionToken);
+
+        if (exportableAccounts.length === 0) {
+            throw new Error('No linked credentials available for export');
+        }
+
+        const payload: CredentialExportPayload = {
+            schemaVersion: CREDENTIAL_EXPORT_PAYLOAD_SCHEMA_VERSION,
+            createdAt: now,
+            expiresAt,
+            accounts: exportableAccounts
+        };
+        const serializedPayload = JSON.stringify(payload);
+        const checksum = this.computeChecksum(serializedPayload);
+        const encrypted = this.encryptCredentialPayload(serializedPayload, options.password);
+        const packagePayload: CredentialExportPackage = {
+            schemaVersion: CREDENTIAL_EXPORT_PACKAGE_SCHEMA_VERSION,
+            createdAt: now,
+            expiresAt,
+            checksum,
+            ...encrypted
+        };
+
+        return {
+            payload: JSON.stringify(packagePayload),
+            checksum,
+            expiresAt
+        };
+    }
+
+    /**
+     * Imports linked account credentials from an encrypted export payload.
+     */
+    async importCredentials(payloadText: string, password: string): Promise<CredentialImportResult> {
+        this.validateExportPassword(password);
+        const bundle = this.parseCredentialExportPackage(payloadText);
+        if (Date.now() > bundle.expiresAt) {
+            throw new Error('Credential export package has expired');
+        }
+
+        const serializedPayload = this.decryptCredentialPayload(bundle, password);
+        const checksum = this.computeChecksum(serializedPayload);
+        if (checksum !== bundle.checksum) {
+            throw new Error('Credential export checksum verification failed');
+        }
+
+        const payload = this.parseCredentialExportPayload(serializedPayload);
+        if (Date.now() > payload.expiresAt) {
+            throw new Error('Credential export payload has expired');
+        }
+
+        let imported = 0;
+        let skipped = 0;
+
+        for (const account of payload.accounts) {
+            if (!account.provider || !account.id) {
+                skipped += 1;
+                appLogger.warn('AuthService', 'Skipping credential import entry with missing provider/id');
+                continue;
+            }
+            if (!account.accessToken && !account.refreshToken && !account.sessionToken) {
+                skipped += 1;
+                appLogger.warn(
+                    'AuthService',
+                    `Skipping credential import entry without tokens: ${account.provider}/${account.id}`
+                );
+                continue;
+            }
+
+            try {
+                await this.linkAccountWithId(account.provider, account.id, {
+                    accessToken: account.accessToken,
+                    refreshToken: account.refreshToken,
+                    sessionToken: account.sessionToken,
+                    expiresAt: account.expiresAt,
+                    email: account.email,
+                    displayName: account.displayName,
+                    avatarUrl: account.avatarUrl,
+                    scope: account.scope,
+                    metadata: account.metadata
+                });
+                if (account.isActive) {
+                    await this.setActiveAccount(account.provider, account.id);
+                }
+                imported += 1;
+            } catch (error) {
+                skipped += 1;
+                appLogger.error(
+                    'AuthService',
+                    `Failed to import account ${account.provider}/${account.id}`,
+                    error as Error
+                );
+            }
+        }
+
+        if (imported === 0 && skipped > 0) {
+            throw new Error('Credential import failed for all accounts');
+        }
+
+        return { imported, skipped, expiresAt: payload.expiresAt };
+    }
+
     startSession(provider: string, accountId?: string, source?: string): string {
         const normalized = this.normalizeProvider(provider);
         const id = uuidv4();
@@ -837,6 +1036,145 @@ export class AuthService extends BaseService {
             if (!oldest) { break; }
             this.sessions.delete(oldest.id);
         }
+    }
+
+    private toCredentialExportAccount(account: LinkedAccount): CredentialExportAccount {
+        return {
+            id: account.id,
+            provider: account.provider,
+            email: account.email,
+            displayName: account.displayName,
+            avatarUrl: account.avatarUrl,
+            accessToken: this.decrypt(account.accessToken),
+            refreshToken: this.decrypt(account.refreshToken),
+            sessionToken: this.decrypt(account.sessionToken),
+            expiresAt: account.expiresAt,
+            scope: account.scope,
+            isActive: account.isActive,
+            metadata: account.metadata,
+            createdAt: account.createdAt,
+            updatedAt: account.updatedAt
+        };
+    }
+
+    private parseCredentialExportPackage(payloadText: string): CredentialExportPackage {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(payloadText);
+        } catch (error) {
+            throw new Error(`Invalid credential export package JSON: ${getErrorMessage(error as Error)}`);
+        }
+
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Invalid credential export package');
+        }
+
+        const pkg = parsed as Partial<CredentialExportPackage>;
+        if (
+            pkg.schemaVersion !== CREDENTIAL_EXPORT_PACKAGE_SCHEMA_VERSION ||
+            !pkg.salt ||
+            !pkg.iv ||
+            !pkg.authTag ||
+            !pkg.encryptedPayload ||
+            !pkg.checksum ||
+            typeof pkg.expiresAt !== 'number'
+        ) {
+            throw new Error('Credential export package schema mismatch');
+        }
+
+        return pkg as CredentialExportPackage;
+    }
+
+    private parseCredentialExportPayload(serializedPayload: string): CredentialExportPayload {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(serializedPayload);
+        } catch (error) {
+            throw new Error(`Invalid credential export payload JSON: ${getErrorMessage(error as Error)}`);
+        }
+
+        if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Invalid credential export payload');
+        }
+
+        const payload = parsed as Partial<CredentialExportPayload>;
+        if (
+            payload.schemaVersion !== CREDENTIAL_EXPORT_PAYLOAD_SCHEMA_VERSION ||
+            typeof payload.expiresAt !== 'number' ||
+            !Array.isArray(payload.accounts)
+        ) {
+            throw new Error('Credential export payload schema mismatch');
+        }
+        return payload as CredentialExportPayload;
+    }
+
+    private encryptCredentialPayload(
+        payload: string,
+        password: string
+    ): Pick<CredentialExportPackage, 'salt' | 'iv' | 'authTag' | 'encryptedPayload'> {
+        const salt = randomBytes(16);
+        const iv = randomBytes(12);
+        const key = this.deriveExportKey(password, salt);
+        const cipher = createCipheriv('aes-256-gcm', key, iv);
+        const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+        const authTag = cipher.getAuthTag();
+
+        return {
+            salt: salt.toString('base64'),
+            iv: iv.toString('base64'),
+            authTag: authTag.toString('base64'),
+            encryptedPayload: encrypted.toString('base64')
+        };
+    }
+
+    private decryptCredentialPayload(bundle: CredentialExportPackage, password: string): string {
+        const salt = Buffer.from(bundle.salt, 'base64');
+        const iv = Buffer.from(bundle.iv, 'base64');
+        const authTag = Buffer.from(bundle.authTag, 'base64');
+        const encryptedPayload = Buffer.from(bundle.encryptedPayload, 'base64');
+        const key = this.deriveExportKey(password, salt);
+
+        try {
+            const decipher = createDecipheriv('aes-256-gcm', key, iv);
+            decipher.setAuthTag(authTag);
+            const decrypted = Buffer.concat([
+                decipher.update(encryptedPayload),
+                decipher.final()
+            ]);
+            return decrypted.toString('utf8');
+        } catch (error) {
+            throw new Error(
+                `Failed to decrypt credential export package: ${getErrorMessage(error as Error)}`
+            );
+        }
+    }
+
+    private deriveExportKey(password: string, salt: Buffer): Buffer {
+        return scryptSync(password, salt, 32);
+    }
+
+    private computeChecksum(content: string): string {
+        return createHash('sha256').update(content, 'utf8').digest('hex');
+    }
+
+    private validateExportPassword(password: string): void {
+        if (password.length < EXPORT_PASSWORD_MIN_LENGTH) {
+            throw new Error(`Export password must be at least ${EXPORT_PASSWORD_MIN_LENGTH} characters`);
+        }
+    }
+
+    private normalizeExportExpiryHours(expiresInHours?: number): number {
+        if (expiresInHours === undefined) {
+            return DEFAULT_EXPORT_EXPIRY_HOURS;
+        }
+        if (!Number.isFinite(expiresInHours)) {
+            throw new Error('Export expiration must be a finite number');
+        }
+        const normalized = Math.floor(expiresInHours);
+        if (normalized < 1 || normalized > MAX_EXPORT_EXPIRY_HOURS) {
+            throw new Error(`Export expiration must be between 1 and ${MAX_EXPORT_EXPIRY_HOURS} hours`);
+        }
+        return normalized;
     }
 
     private async checkAndUpgradeEncryption(account: LinkedAccount): Promise<void> {

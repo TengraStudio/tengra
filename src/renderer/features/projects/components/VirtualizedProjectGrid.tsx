@@ -7,7 +7,7 @@ import { Project } from '@shared/types/project';
 import React, { useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { ProjectCard } from './ProjectCard';
+import { ProjectCard, ProjectCardSurfaceProvider } from './ProjectCard';
 
 interface VirtualizedProjectGridProps {
     projects: Project[]
@@ -25,6 +25,7 @@ interface VirtualizedProjectGridProps {
     }
     itemsPerRow?: number
     itemHeight?: number
+    t?: (key: string) => string
 }
 
 export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
@@ -34,7 +35,8 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
     setShowProjectMenu,
     projectStateMachine: sm,
     itemsPerRow = 3,
-    itemHeight = 280
+    itemHeight = 280,
+    t = (key: string) => key
 }) => {
     // Create rows of projects for virtualization
     const projectRows = useMemo(() => {
@@ -58,21 +60,8 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
                         key={project.id}
                         project={project}
                         index={index * itemsPerRow + i}
-                        onSelect={(p) => onSelectProject?.(p)}
-                        showMenu={showProjectMenu === project.id}
-                        setShowMenu={setShowProjectMenu}
-                        onEdit={(p, e) => { 
-                            setShowProjectMenu(null);
-                            sm.startEdit(p, e); 
-                        }}
-                        onDelete={(p, e) => { 
-                            setShowProjectMenu(null);
-                            sm.startDelete(p, e); 
-                        }}
-                        onArchive={(p) => sm.startArchive(p)}
                         isSelected={sm.state.selectedProjectIds.has(project.id)}
                         onToggleSelection={() => sm.toggleSelection(project.id)}
-                        t={(key: string) => key} // Add required t prop
                     />
                 ))}
                 {/* Fill empty slots in the last row */}
@@ -88,13 +77,29 @@ export const VirtualizedProjectGrid: React.FC<VirtualizedProjectGridProps> = ({
     }
 
     return (
-        <Virtuoso
-            style={{ height: '70vh' }}
-            totalCount={projectRows.length}
-            itemContent={renderRow}
-            overscan={2}
-            data={projectRows}
-        />
+        <ProjectCardSurfaceProvider
+            onSelect={(project) => onSelectProject?.(project)}
+            activeMenuId={showProjectMenu}
+            setActiveMenuId={setShowProjectMenu}
+            onEdit={(project, event) => {
+                setShowProjectMenu(null);
+                sm.startEdit(project, event);
+            }}
+            onDelete={(project, event) => {
+                setShowProjectMenu(null);
+                sm.startDelete(project, event);
+            }}
+            onArchive={(project) => sm.startArchive(project)}
+            t={t}
+        >
+            <Virtuoso
+                style={{ height: '70vh' }}
+                totalCount={projectRows.length}
+                itemContent={renderRow}
+                overscan={2}
+                data={projectRows}
+            />
+        </ProjectCardSurfaceProvider>
     );
 };
 

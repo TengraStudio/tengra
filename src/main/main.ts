@@ -74,6 +74,12 @@ app.whenReady().then(async () => {
     const mcpDispatcher = new McpDispatcher(new Set<string>(), services.settingsService, services.mcpPluginService);
     await services.mcpPluginService.initialize();
     await services.mcpMarketplaceService.initialize();
+    const [dockerService, sshService, scannerService, pageSpeedService] = await Promise.all([
+        services.dockerService.resolve(),
+        services.sshService.resolve(),
+        services.scannerService.resolve(),
+        services.pageSpeedService.resolve(),
+    ]);
 
     const toolExecutor = new ToolExecutor({
         fileSystem: services.fileSystemService,
@@ -84,9 +90,9 @@ app.whenReady().then(async () => {
         system: services.systemService,
         network: services.networkService,
         notification: services.notificationService,
-        docker: services.dockerService,
-        ssh: services.sshService,
-        scanner: services.scannerService,
+        docker: dockerService,
+        ssh: sshService,
+        scanner: scannerService,
         embedding: services.embeddingService,
         utility: services.utilityService,
         content: services.contentService,
@@ -98,7 +104,7 @@ app.whenReady().then(async () => {
         mcp: mcpDispatcher,
         llm: services.llmService,
         memory: services.memoryService,
-        pageSpeed: services.pageSpeedService,
+        pageSpeed: pageSpeedService,
         localImage: services.localImageService
     });
 
@@ -121,7 +127,7 @@ app.whenReady().then(async () => {
     await apiServerService.initialize();
 
     // Register IPC & Lifecycle
-    registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
+    await registerIpcHandlers(services, toolExecutor, getMainWindow, allowedFileRoots, mcpDispatcher);
     registerLifecycleHandlers(services.settingsService);
 
     // Configure Auto-Start

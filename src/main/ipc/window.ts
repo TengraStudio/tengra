@@ -9,7 +9,7 @@ import { getErrorMessage } from '@shared/utils/error.util';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { z } from 'zod';
 
-import { commandSchema, cwdSchema,urlSchema } from './validation';
+import { commandSchema, cwdSchema, urlSchema } from './validation';
 
 const COMPACT_WIDTH = 400;
 const COMPACT_HEIGHT = 600;
@@ -23,10 +23,9 @@ const SENSITIVE_QUERY_KEYS = new Set([
     'token', 'access_token', 'refresh_token', 'code', 'state', 'sessionkey', 'session_key',
     'apikey', 'api_key', 'authorization', 'password', 'passphrase'
 ]);
-const COOKIE_CAPTURE_ALLOWED_PROTOCOLS = new Set(['https:', 'http:']);
+// AUD-SEC-034: Enforce HTTPS-only policy for cookie-capture URL allowlist
+// Only HTTPS is allowed for remote hosts; HTTP only for localhost
 const COOKIE_CAPTURE_ALLOWED_HOSTS = new Set([
-    'localhost',
-    '127.0.0.1',
     'accounts.google.com',
     'claude.ai',
     'api.anthropic.com',
@@ -76,13 +75,26 @@ function redactUrlForLogs(rawUrl: string): string {
     }
 }
 
+/**
+ * AUD-SEC-034: Enforce HTTPS-only policy for cookie-capture URL allowlist
+ * Only HTTPS is allowed for remote hosts; HTTP only for localhost
+ */
 function isCookieCaptureUrlAllowed(rawUrl: string): boolean {
     try {
         const parsed = new URL(rawUrl);
-        if (!COOKIE_CAPTURE_ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+        const host = parsed.hostname.toLowerCase();
+
+        // Check for localhost with HTTP or HTTPS
+        if (host === 'localhost' || host === '127.0.0.1') {
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        }
+
+        // All other hosts must use HTTPS only
+        if (parsed.protocol !== 'https:') {
             return false;
         }
-        const host = parsed.hostname.toLowerCase();
+
+        // Check against allowed hosts list
         return COOKIE_CAPTURE_ALLOWED_HOSTS.has(host)
             || host.endsWith('.claude.ai')
             || host.endsWith('.anthropic.com')
@@ -360,19 +372,42 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
     ipcMain.handle('shell:openTerminal', createValidatedIpcHandler('shell:openTerminal', async (event, command: string) => {
         validateSender(event);
         if (process.platform === 'win32') {
-            // Sanitize command - remove shell metacharacters to prevent injection
-            // Block: pipes, redirects, semicolons, backticks, $(), newlines
-            const sanitized = command
-                .replace(/[&|><;`$(){}[\]\n\r]/g, '')
-                .replace(/\$\([^)]*\)/g, '') // Remove $(...) substitution
-                .trim();
+            // AUD-SEC-037: Hardened shell command validation
+            // Strict allowlist of safe characters only
+            const MAX_COMMAND_LENGTH = 1024;
 
-            if (!sanitized) {
-                appLogger.warn('WindowIPC', 'Command was empty after sanitization');
+            if (command.length > MAX_COMMAND_LENGTH) {
+                appLogger.warn('WindowIPC', 'Command exceeds maximum length');
                 return false;
             }
 
-            spawn('cmd', ['/k', sanitized], { shell: false });
+            // Only allow alphanumeric, spaces, dashes, underscores, forward/back slashes, colons, and dots
+            // This is a very restrictive allowlist
+            const allowedPattern = /^[a-zA-Z0-9\s\-_./\\:]+$/;
+            if (!allowedPattern.test(command)) {
+                appLogger.warn('WindowIPC', `Command contains forbidden characters: ${command}`);
+                return false;
+            }
+
+            // Block dangerous patterns even if they pass the allowlist
+            const dangerousPatterns = [
+                /\b(rm|del|format|fdisk|mkfs|dd|shutdown|reboot|halt|poweroff)\b/i,
+                /\b(reg|registry|regedit|regsvr32)\b/i,
+                /\b(net|netsh|ipconfig|route|arp)\b/i,
+                /\b(taskkill|tasklist|wmic|powershell|pwsh|cmd|command)\b/i,
+                /\b(curl|wget|nc|netcat|telnet|ftp|tftp)\b/i,
+                /\b(python|perl|ruby|node|npm|npx|yarn|pnpm)\b/i,
+                /\b(git\s+push|git\s+reset|git\s+clean|git\s+checkout)\b/i,
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (pattern.test(command)) {
+                    appLogger.warn('WindowIPC', `Command contains dangerous pattern: ${command}`);
+                    return false;
+                }
+            }
+
+            spawn('cmd', ['/k', command], { shell: false });
         } else {
             // Basic fallback for Linux/Mac
             appLogger.warn(
@@ -388,6 +423,29 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
 
     ipcMain.handle('shell:runCommand', createValidatedIpcHandler('shell:runCommand', async (event, command: string, args: string[], cwd?: string) => {
         validateSender(event);
+
+        // AUD-SEC-037: Hardened command validation
+        const MAX_COMMAND_LENGTH = 256;
+        const MAX_ARGS_COUNT = 50;
+        const MAX_ARG_LENGTH = 1024;
+
+        if (command.length > MAX_COMMAND_LENGTH) {
+            appLogger.warn('WindowIPC', 'Command exceeds maximum length');
+            return { stdout: '', stderr: 'Command too long', code: 1, error: 'Command validation failed' };
+        }
+
+        if (args.length > MAX_ARGS_COUNT) {
+            appLogger.warn('WindowIPC', 'Too many arguments');
+            return { stdout: '', stderr: 'Too many arguments', code: 1, error: 'Command validation failed' };
+        }
+
+        for (const arg of args) {
+            if (arg.length > MAX_ARG_LENGTH) {
+                appLogger.warn('WindowIPC', 'Argument exceeds maximum length');
+                return { stdout: '', stderr: 'Argument too long', code: 1, error: 'Command validation failed' };
+            }
+        }
+
         return new Promise(resolve => {
             const resolvedCommand = resolveWindowsCommand(command);
             appLogger.info('WindowIPC', `Running command: ${resolvedCommand} ${args.join(' ')}`);

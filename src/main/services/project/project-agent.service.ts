@@ -22,7 +22,10 @@ import {
     ProjectState,
     ProjectStep,
     RollbackCheckpointResult,
+    VotingAnalytics,
+    VotingConfiguration,
     VotingSession,
+    VotingTemplate,
 } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -717,6 +720,34 @@ export class ProjectAgentService extends BaseService {
 
     getVotingSession(sessionId: string): VotingSession | null {
         return this.agentCollaborationService.getVotingSession(sessionId);
+    }
+
+    getVotingSessions(taskId?: string): VotingSession[] {
+        return this.agentCollaborationService.getVotingSessions(taskId);
+    }
+
+    overrideVotingDecision(
+        sessionId: string,
+        finalDecision: string,
+        reason?: string
+    ): VotingSession | null {
+        return this.agentCollaborationService.overrideVotingDecision(sessionId, finalDecision, reason);
+    }
+
+    getVotingAnalytics(taskId?: string): VotingAnalytics {
+        return this.agentCollaborationService.getVotingAnalytics(taskId);
+    }
+
+    getVotingConfiguration(): VotingConfiguration {
+        return this.agentCollaborationService.getVotingConfiguration();
+    }
+
+    updateVotingConfiguration(patch: Partial<VotingConfiguration>): VotingConfiguration {
+        return this.agentCollaborationService.updateVotingConfiguration(patch);
+    }
+
+    getVotingTemplates(): VotingTemplate[] {
+        return this.agentCollaborationService.getVotingTemplates();
     }
 
     async buildConsensus(

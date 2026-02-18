@@ -98,15 +98,25 @@ export class GitService {
     }
 
     async getLog(cwd: string, count: number = 10) {
-        const { stdout } = await this.execute(`log - n ${count} --pretty=format: "%h|%s|%an|%cI"`, cwd);
+        const safeCwd = cwd?.trim();
+        if (!safeCwd) {
+            return [];
+        }
+
+        const safeCount = Number.isFinite(count) && count > 0 ? Math.floor(count) : 10;
+        const { stdout } = await this.executeArgs(['log', '-n', `${safeCount}`, '--pretty=format:%h|%s|%an|%cI'], safeCwd);
         if (!stdout) { return []; }
 
         return stdout.split('\n')
             .filter(line => line.trim())
             .map(line => {
-                const [hash, message, author, date] = line.split('|');
+                const [hash = '', message = '', author = '', date = ''] = line.split('|');
+                if (!hash || !date) {
+                    return null;
+                }
                 return { hash, message, author, date };
-            });
+            })
+            .filter((entry): entry is { hash: string; message: string; author: string; date: string } => entry !== null);
     }
 
     async getBranches(cwd: string) {

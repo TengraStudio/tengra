@@ -151,7 +151,22 @@ export class AgentProviderRotationService extends BaseService {
      */
     async getInitialProvider(userSelectedProvider?: string, projectId: string = DEFAULT_PROJECT_ID): Promise<ProviderConfig> {
         const chain = this.getFallbackChain(projectId);
-        const provider = userSelectedProvider ?? chain.cloud[0];
+        const provider = userSelectedProvider?.trim() || chain.cloud[0];
+        if (!provider) {
+            const localProvider = await this.getLocalProviderFromChain(chain);
+            if (localProvider) {
+                return localProvider;
+            }
+            throw new Error('No providers available in fallback chain');
+        }
+
+        if (chain.local.includes(provider)) {
+            const localProvider = await this.getLocalProviderFromChain({ cloud: [], local: [provider] });
+            if (localProvider) {
+                return localProvider;
+            }
+            throw new Error(`Local provider ${provider} is not available`);
+        }
 
         // SEC-013-2: Verify access
         const isAuthorized = await this.verifyProviderAccess(provider);
@@ -205,7 +220,7 @@ export class AgentProviderRotationService extends BaseService {
         }
 
         // Step 3: Try local inference
-        const localProvider = await this.getLocalProvider();
+        const localProvider = await this.getLocalProviderFromChain(chain);
         if (localProvider) {
             this.logInfo('Falling back to local inference');
             return localProvider;
@@ -293,6 +308,17 @@ export class AgentProviderRotationService extends BaseService {
      * Get local inference provider
      * Checks if Ollama is available
      */
+    private async getLocalProviderFromChain(chain: FallbackChain): Promise<ProviderConfig | null> {
+        if (chain.local.length === 0) {
+            return null;
+        }
+        if (chain.local.includes('ollama')) {
+            return await this.getLocalProvider();
+        }
+        this.logDebug('No supported local providers found in fallback chain');
+        return null;
+    }
+
     private async getLocalProvider(): Promise<ProviderConfig | null> {
         const isOllamaAvailable = await this.checkOllamaAvailability();
 

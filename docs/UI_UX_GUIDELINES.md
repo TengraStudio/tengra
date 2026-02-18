@@ -47,4 +47,3 @@ We utilize Framer Motion for most UI transitions.
 
 - **Gradients**: Use multi-step gradients for a more premium look.
 - **Shadows**: Prefer soft, multi-layered shadows over harsh borders.
-- **Glassmorphism**: Use `backdrop-filter: blur()` on overlays and sidebar elements to maintain context while focusing on the foreground.

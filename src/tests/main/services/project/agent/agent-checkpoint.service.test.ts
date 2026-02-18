@@ -1,3 +1,5 @@
+import { gzipSync } from 'zlib';
+
 import { AgentCheckpointService } from '@main/services/project/agent/agent-checkpoint.service';
 import { AgentTaskState } from '@shared/types/agent-state';
 import { ProjectStep } from '@shared/types/project-agent';
@@ -84,6 +86,7 @@ const createMockTaskState = (): AgentTaskState => ({
 describe('AgentCheckpointService', () => {
     const mockUac = {
         createCheckpoint: vi.fn(),
+        trimCheckpoints: vi.fn(),
         getCheckpoints: vi.fn(),
         getCheckpoint: vi.fn(),
         getLatestCheckpoint: vi.fn(),
@@ -160,6 +163,32 @@ describe('AgentCheckpointService', () => {
             'pre_rollback',
             expect.any(String)
         );
+        expect(mockUac.trimCheckpoints).toHaveBeenCalledWith('task-123', 200);
+    });
+
+    it('skips duplicate auto_state_sync checkpoint snapshots', async () => {
+        const state = createMockTaskState();
+        const snapshotPayload = JSON.stringify({
+            schemaVersion: 1,
+            trigger: 'auto_state_sync',
+            createdAt: 1739008800000,
+            state
+        });
+        const snapshot = `gzip:${gzipSync(Buffer.from(snapshotPayload, 'utf8')).toString('base64')}`;
+
+        mockUac.getLatestCheckpoint.mockResolvedValue({
+            id: 'cp-existing',
+            task_id: 'task-123',
+            step_index: 2,
+            trigger: 'auto_state_sync',
+            snapshot,
+            created_at: 1739008800000
+        });
+
+        const checkpointId = await service.saveCheckpoint('task-123', 2, state, 'auto_state_sync');
+        expect(checkpointId).toBe('cp-existing');
+        expect(mockUac.createCheckpoint).not.toHaveBeenCalled();
+        expect(mockUac.trimCheckpoints).not.toHaveBeenCalled();
     });
 
     it('creates monotonically increasing plan versions', async () => {

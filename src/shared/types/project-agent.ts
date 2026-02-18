@@ -333,8 +333,39 @@ export interface VotingSession {
     votes: ModelVote[];
     status: 'pending' | 'voting' | 'resolved' | 'deadlocked';
     finalDecision?: string;
+    resolutionSource?: 'automatic' | 'manual_override';
+    overrideReason?: string;
     createdAt: number;
     resolvedAt?: number;
+}
+
+export interface VotingAnalytics {
+    totalSessions: number;
+    pendingSessions: number;
+    resolvedSessions: number;
+    deadlockedSessions: number;
+    averageVotesPerSession: number;
+    averageConfidence: number;
+    disagreementIndex: number;
+    updatedAt: number;
+}
+
+export interface VotingConfiguration {
+    minimumVotes: number;
+    deadlockThreshold: number;
+    autoResolve: boolean;
+    autoResolveTimeoutMs: number;
+}
+
+export interface VotingTemplate {
+    id: string;
+    name: string;
+    description?: string;
+    questionTemplate: string;
+    options: string[];
+    isBuiltIn: boolean;
+    createdAt: number;
+    updatedAt: number;
 }
 
 /** AGT-COL-04: Consensus result from multiple model outputs */

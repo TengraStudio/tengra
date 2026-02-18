@@ -1,8 +1,11 @@
+import { createHash } from 'crypto';
+
 import { appLogger } from '@main/logging/logger';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
+import { JsonValue } from '@shared/types/common';
 import { MCPServerConfig } from '@shared/types/settings';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
@@ -18,6 +21,18 @@ const ServerIdSchema = z.string().trim().min(1).max(120);
 const CategorySchema = z.string().trim().min(1).max(120);
 const QuerySchema = z.string().trim().min(1).max(500);
 const VersionSchema = z.string().trim().min(1).max(64);
+const MarketplaceValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+const SettingsFieldSchema = z.object({
+    type: z.enum(['string', 'number', 'integer', 'boolean']).optional(),
+    enum: z.array(MarketplaceValueSchema).optional(),
+    title: z.string().trim().max(120).optional(),
+    description: z.string().trim().max(400).optional()
+});
+const SettingsSchema = z.object({
+    type: z.literal('object').optional(),
+    properties: z.record(z.string(), SettingsFieldSchema).optional(),
+    required: z.array(z.string().trim().min(1).max(120)).max(128).optional()
+});
 const MarketplacePatchSchema = z.object({
     name: z.string().trim().min(1).max(120).optional(),
     command: z.string().trim().min(1).max(2048).optional(),
@@ -28,6 +43,31 @@ const MarketplacePatchSchema = z.object({
     publisher: z.string().trim().max(120).optional(),
     version: z.string().trim().max(64).optional(),
     isOfficial: z.boolean().optional(),
+    capabilities: z.array(z.string().trim().min(1).max(120)).max(64).optional(),
+    dependencies: z.array(ServerIdSchema).max(64).optional(),
+    conflictsWith: z.array(ServerIdSchema).max(64).optional(),
+    sandbox: z.object({
+        enabled: z.boolean().optional(),
+        maxMemoryMb: z.number().int().positive().max(65536).optional(),
+        maxCpuPercent: z.number().int().min(1).max(100).optional()
+    }).optional(),
+    storage: z.object({
+        dataPath: z.string().trim().min(1).max(260).optional(),
+        quotaMb: z.number().int().positive().max(1048576).optional(),
+        migrationVersion: z.number().int().positive().max(100000).optional()
+    }).optional(),
+    updatePolicy: z.object({
+        channel: z.enum(['stable', 'beta', 'alpha']).optional(),
+        autoUpdate: z.boolean().optional(),
+        scheduleCron: z.string().trim().max(120).optional(),
+        signatureSha256: z.string().trim().regex(/^[a-fA-F0-9]{64}$/).optional(),
+        lastCheckedAt: z.number().int().nonnegative().optional(),
+        lastUpdatedAt: z.number().int().nonnegative().optional()
+    }).optional(),
+    settingsSchema: SettingsSchema.optional(),
+    settingsValues: z.record(z.string(), MarketplaceValueSchema).optional(),
+    settingsVersion: z.number().int().positive().max(100000).optional(),
+    integrityHash: z.string().trim().regex(/^[a-fA-F0-9]{64}$/).optional(),
     tools: z.array(
         z.object({
             name: z.string().trim().min(1),
@@ -38,6 +78,116 @@ const MarketplacePatchSchema = z.object({
 
 const getErrorMessage = (error: Error): string =>
     error instanceof Error ? error.message : String(error);
+
+const isJsonObject = (value: JsonValue | undefined): value is Record<string, JsonValue> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const computeIntegrityHash = (server: Pick<MCPServerConfig, 'id' | 'name' | 'command' | 'args' | 'version'>): string => {
+    const payload = JSON.stringify({
+        id: server.id,
+        name: server.name,
+        command: server.command,
+        args: server.args ?? [],
+        version: server.version ?? '0.0.0'
+    });
+    return createHash('sha256').update(payload).digest('hex');
+};
+
+const validateSettingsValues = (
+    schemaValue: JsonValue | undefined,
+    valuesValue: JsonValue | undefined
+): void => {
+    if (!schemaValue || !valuesValue) {
+        return;
+    }
+
+    if (!isJsonObject(schemaValue) || !isJsonObject(valuesValue)) {
+        throw new Error('Invalid extension settings payload');
+    }
+
+    const propertiesValue = schemaValue.properties;
+    const requiredValue = schemaValue.required;
+    if (!isJsonObject(propertiesValue)) {
+        return;
+    }
+
+    const requiredFields = Array.isArray(requiredValue)
+        ? requiredValue.filter((field): field is string => typeof field === 'string')
+        : [];
+    for (const fieldName of requiredFields) {
+        if (!(fieldName in valuesValue)) {
+            throw new Error(`Missing required setting: ${fieldName}`);
+        }
+    }
+
+    for (const [fieldName, fieldDefValue] of Object.entries(propertiesValue)) {
+        if (!(fieldName in valuesValue)) {
+            continue;
+        }
+        if (!isJsonObject(fieldDefValue)) {
+            continue;
+        }
+
+        const fieldType = typeof fieldDefValue.type === 'string' ? fieldDefValue.type : undefined;
+        const currentValue = valuesValue[fieldName];
+        const isValidType =
+            fieldType === undefined ||
+            (fieldType === 'string' && typeof currentValue === 'string') ||
+            (fieldType === 'number' && typeof currentValue === 'number') ||
+            (fieldType === 'integer' && typeof currentValue === 'number' && Number.isInteger(currentValue)) ||
+            (fieldType === 'boolean' && typeof currentValue === 'boolean');
+        if (!isValidType) {
+            throw new Error(`Invalid setting type for ${fieldName}`);
+        }
+
+        if (Array.isArray(fieldDefValue.enum) && fieldDefValue.enum.length > 0) {
+            const enumMatches = fieldDefValue.enum.some(entry => entry === currentValue);
+            if (!enumMatches) {
+                throw new Error(`Invalid enum setting value for ${fieldName}`);
+            }
+        }
+    }
+};
+
+const ensureInstallableServerConfig = (serverConfig: MCPServerConfig, existingServers: MCPServerConfig[]): void => {
+    const installedIds = new Set(existingServers.map(server => server.id));
+    const missingDependencies = (serverConfig.dependencies ?? []).filter(dep => !installedIds.has(dep));
+    if (missingDependencies.length > 0) {
+        throw new Error(`Missing dependencies: ${missingDependencies.join(', ')}`);
+    }
+
+    const conflictingIds = (serverConfig.conflictsWith ?? []).filter(conflictId => installedIds.has(conflictId));
+    if (conflictingIds.length > 0) {
+        throw new Error(`Conflict detected with installed servers: ${conflictingIds.join(', ')}`);
+    }
+
+    const reverseConflicts = existingServers
+        .filter(server => (server.conflictsWith ?? []).includes(serverConfig.id))
+        .map(server => server.id);
+    if (reverseConflicts.length > 0) {
+        throw new Error(`Installed server conflict detected: ${reverseConflicts.join(', ')}`);
+    }
+};
+
+const ensureServerCanBeEnabled = (targetServer: MCPServerConfig, allServers: MCPServerConfig[]): void => {
+    const enabledIds = new Set(allServers.filter(server => server.enabled).map(server => server.id));
+    const missingDependencies = (targetServer.dependencies ?? []).filter(dep => !enabledIds.has(dep));
+    if (missingDependencies.length > 0) {
+        throw new Error(`Enable blocked by missing enabled dependencies: ${missingDependencies.join(', ')}`);
+    }
+
+    const activeConflicts = (targetServer.conflictsWith ?? []).filter(conflictId => enabledIds.has(conflictId));
+    if (activeConflicts.length > 0) {
+        throw new Error(`Enable blocked by conflict: ${activeConflicts.join(', ')}`);
+    }
+
+    const reverseConflicts = allServers
+        .filter(server => server.enabled && (server.conflictsWith ?? []).includes(targetServer.id))
+        .map(server => server.id);
+    if (reverseConflicts.length > 0) {
+        throw new Error(`Enable blocked by existing reverse conflict: ${reverseConflicts.join(', ')}`);
+    }
+};
 
 const createMarketplaceHandler = <T extends Record<string, unknown>, Args extends unknown[] = unknown[]>(
     name: string,
@@ -103,6 +253,9 @@ export function registerMcpMarketplaceHandlers(
         }
 
         const { command, args } = parseCommand(server.command);
+        if (!command) {
+            throw new Error('Server command is missing from marketplace metadata');
+        }
 
         const serverConfig: MCPServerConfig = {
             id: server.id,
@@ -115,6 +268,28 @@ export function registerMcpMarketplaceHandlers(
             publisher: server.publisher,
             version: server.version,
             isOfficial: server.isOfficial,
+            capabilities: server.capabilities ?? server.categories ?? [],
+            dependencies: server.dependencies ?? [],
+            conflictsWith: server.conflictsWith ?? [],
+            sandbox: {
+                enabled: true,
+                maxMemoryMb: 256,
+                maxCpuPercent: 50
+            },
+            storage: {
+                dataPath: `mcp-storage/${server.id}`,
+                quotaMb: server.storage?.quotaMb ?? 256,
+                migrationVersion: 1
+            },
+            updatePolicy: {
+                channel: server.updatePolicy?.channel ?? 'stable',
+                autoUpdate: server.updatePolicy?.autoUpdate ?? true,
+                scheduleCron: server.updatePolicy?.scheduleCron,
+                signatureSha256: server.updatePolicy?.signatureSha256
+            },
+            settingsSchema: server.settingsSchema,
+            settingsValues: {},
+            settingsVersion: server.settingsVersion ?? 1,
             installedAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -125,6 +300,17 @@ export function registerMcpMarketplaceHandlers(
         if (existing.some(s => s.id === serverId)) {
             throw new Error('Server already installed');
         }
+        ensureInstallableServerConfig(serverConfig, existing);
+        validateSettingsValues(
+            serverConfig.settingsSchema as JsonValue | undefined,
+            serverConfig.settingsValues as JsonValue | undefined
+        );
+        const integrityHash = computeIntegrityHash(serverConfig);
+        serverConfig.integrityHash = integrityHash;
+        serverConfig.updatePolicy = {
+            ...serverConfig.updatePolicy,
+            signatureSha256: serverConfig.updatePolicy?.signatureSha256 ?? integrityHash
+        };
 
         const versionHistory = settings.mcpServerVersionHistory ?? {};
         versionHistory[serverId] = [
@@ -144,6 +330,12 @@ export function registerMcpMarketplaceHandlers(
     ipcMain.handle('mcp:marketplace:uninstall', createMarketplaceHandler('mcp:marketplace:uninstall', async (serverId: string) => {
         const settings = settingsService.getSettings();
         const existing = settings.mcpUserServers ?? [];
+        const dependents = existing
+            .filter(server => (server.dependencies ?? []).includes(serverId))
+            .map(server => server.id);
+        if (dependents.length > 0) {
+            throw new Error(`Cannot uninstall server; required by: ${dependents.join(', ')}`);
+        }
         const filtered = existing.filter(s => s.id !== serverId);
 
         if (filtered.length === existing.length) {
@@ -185,6 +377,13 @@ export function registerMcpMarketplaceHandlers(
     ipcMain.handle('mcp:marketplace:toggle', createMarketplaceHandler('mcp:marketplace:toggle', async (serverId: string, enabled: boolean) => {
         const settings = settingsService.getSettings();
         const existing = settings.mcpUserServers ?? [];
+        const serverToToggle = existing.find(server => server.id === serverId);
+        if (!serverToToggle) {
+            throw new Error('Server not found');
+        }
+        if (enabled) {
+            ensureServerCanBeEnabled(serverToToggle, existing);
+        }
 
         const updated = existing.map(s =>
             s.id === serverId ? { ...s, enabled } : s
@@ -224,7 +423,7 @@ export function registerMcpMarketplaceHandlers(
                 return s;
             }
             const commandInput = patch.command ? parseCommand(patch.command) : { command: s.command, args: s.args };
-            return {
+            const mergedServer: MCPServerConfig = {
                 ...s,
                 ...patch,
                 command: commandInput.command,
@@ -232,6 +431,37 @@ export function registerMcpMarketplaceHandlers(
                 previousVersion: s.version,
                 updatedAt: Date.now()
             };
+            validateSettingsValues(
+                mergedServer.settingsSchema as JsonValue | undefined,
+                mergedServer.settingsValues as JsonValue | undefined
+            );
+            ensureInstallableServerConfig(
+                mergedServer,
+                existing.filter(existingServer => existingServer.id !== serverId)
+            );
+            if (mergedServer.enabled) {
+                ensureServerCanBeEnabled(
+                    mergedServer,
+                    existing
+                        .filter(existingServer => existingServer.id !== serverId)
+                        .concat(mergedServer)
+                );
+            }
+
+            const computedIntegrityHash = computeIntegrityHash(mergedServer);
+            if (patch.integrityHash && patch.integrityHash !== computedIntegrityHash) {
+                throw new Error('Integrity verification failed');
+            }
+            mergedServer.integrityHash = computedIntegrityHash;
+            mergedServer.updatePolicy = {
+                channel: mergedServer.updatePolicy?.channel ?? 'stable',
+                autoUpdate: mergedServer.updatePolicy?.autoUpdate ?? true,
+                scheduleCron: mergedServer.updatePolicy?.scheduleCron,
+                signatureSha256: mergedServer.updatePolicy?.signatureSha256 ?? computedIntegrityHash,
+                lastCheckedAt: mergedServer.updatePolicy?.lastCheckedAt,
+                lastUpdatedAt: Date.now()
+            };
+            return mergedServer;
         });
 
         await settingsService.saveSettings({

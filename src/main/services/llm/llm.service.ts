@@ -11,11 +11,11 @@ import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { TokenService } from '@main/services/security/token.service';
 import { ConfigService } from '@main/services/system/config.service';
 import { SettingsService } from '@main/services/system/settings.service';
-import { ChatMessage, OpenAIResponse, ToolCall } from '@main/types/llm.types';
+import { ChatMessage, ContentPart, OpenAIResponse, ToolCall } from '@main/types/llm.types';
 import { MessageNormalizer } from '@main/utils/message-normalizer.util';
 import { sanitizePrompt, validatePromptSafety } from '@main/utils/prompt-sanitizer.util';
 import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
-import { Message, SystemMode, ToolDefinition } from '@shared/types/chat';
+import { Message, MessageContentPart, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
 import { ApiError, AuthenticationError, NetworkError, ValidationError } from '@shared/utils/error.util';
@@ -176,19 +176,16 @@ export class LLMService {
 
                 // Handle multimodal content
                 if (Array.isArray(msg.content)) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const content = msg.content as any[];
+                    const content = msg.content as Array<ContentPart | MessageContentPart>;
 
                     const sanitizedContent = content.map(part => {
-                        if (typeof part === 'string') { return checkContent(part); }
-                        if (typeof part === 'object' && part && 'type' in part && part.type === 'text' && 'text' in part) {
-                            return { ...part, text: checkContent(part.text as string) };
+                        if (part.type === 'text' && typeof part.text === 'string') {
+                            return { ...part, text: checkContent(part.text) };
                         }
                         return part;
                     });
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return { ...msg, content: sanitizedContent } as any;
+                    return { ...msg, content: sanitizedContent };
                 }
             }
             return msg;
@@ -205,18 +202,47 @@ export class LLMService {
 
         if (lang === 'en') { return messages; }
 
-        const instructions: Record<string, string> = {
-            tr: 'Respond in Turkish.',
-            ar: 'Respond in Arabic.',
-            de: 'Respond in German.',
-            es: 'Respond in Spanish.',
-            fr: 'Respond in French.',
-            ja: 'Respond in Japanese.',
-            zh: 'Respond in Chinese.',
+        const localeInstructions: Record<string, { language: string; localeStyle: string; modelPreference: string }> = {
+            tr: {
+                language: 'Respond in Turkish.',
+                localeStyle: 'Use Turkish terminology, metric units, and examples relevant to Turkiye.',
+                modelPreference: 'Prefer model behaviors that provide strong Turkish fluency when equivalent options exist.'
+            },
+            ar: {
+                language: 'Respond in Arabic.',
+                localeStyle: 'Use Modern Standard Arabic with region-neutral phrasing unless the user requests a dialect.',
+                modelPreference: 'Prefer model behaviors that provide strong Arabic fluency when equivalent options exist.'
+            },
+            de: {
+                language: 'Respond in German.',
+                localeStyle: 'Use German formatting conventions and terminology suitable for DACH users.',
+                modelPreference: 'Prefer model behaviors that provide strong German fluency when equivalent options exist.'
+            },
+            es: {
+                language: 'Respond in Spanish.',
+                localeStyle: 'Use neutral Spanish phrasing and locale-aware units/date formats.',
+                modelPreference: 'Prefer model behaviors that provide strong Spanish fluency when equivalent options exist.'
+            },
+            fr: {
+                language: 'Respond in French.',
+                localeStyle: 'Use French terminology and locale-appropriate formatting conventions.',
+                modelPreference: 'Prefer model behaviors that provide strong French fluency when equivalent options exist.'
+            },
+            ja: {
+                language: 'Respond in Japanese.',
+                localeStyle: 'Use natural Japanese register with locale-appropriate honorific-neutral business style by default.',
+                modelPreference: 'Prefer model behaviors that provide strong Japanese fluency when equivalent options exist.'
+            },
+            zh: {
+                language: 'Respond in Chinese.',
+                localeStyle: 'Use Simplified Chinese and locale-aware terminology unless the user requests otherwise.',
+                modelPreference: 'Prefer model behaviors that provide strong Chinese fluency when equivalent options exist.'
+            },
         };
 
-        const instruction = instructions[lang];
-        if (!instruction) { return messages; }
+        const selectedLocale = localeInstructions[lang];
+        if (!selectedLocale) { return messages; }
+        const instruction = `${selectedLocale.language} ${selectedLocale.localeStyle} ${selectedLocale.modelPreference}`;
 
         const result = [...messages];
         const systemMsgIndex = result.findIndex(m => m.role === 'system');
@@ -700,7 +726,7 @@ export class LLMService {
                 messages as Message[],
                 async (p, m, ms, t, opts) => {
                     const res = await this.executeChatRoute(p, m, ms, t, opts as { temperature?: number, projectRoot?: string });
-                    return { content: res.content, role: 'assistant', reasoning: res.reasoning_content } as unknown as Message;
+                    return { content: res.content, role: 'assistant', reasoning: res.reasoning_content } as Message;
                 },
                 tools,
                 options as Record<string, unknown>

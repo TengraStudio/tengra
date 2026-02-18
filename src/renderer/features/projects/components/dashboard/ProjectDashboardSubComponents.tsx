@@ -5,11 +5,46 @@ import { Virtuoso } from 'react-virtuoso';
 interface SearchResultsProps {
     results: FileSearchResult[];
     projectRoot: string;
+    searchQuery: string;
     onSelect: (path: string, line?: number) => void;
     t: (key: string) => string;
 }
 
-export function SearchResults({ results, projectRoot, onSelect, t }: SearchResultsProps) {
+function renderHighlightedSnippet(text: string, query: string) {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+        return text;
+    }
+
+    const normalizedText = text.toLowerCase();
+    const fragments: Array<string | JSX.Element> = [];
+    let startIndex = 0;
+    let matchCount = 0;
+
+    while (startIndex < text.length) {
+        const matchIndex = normalizedText.indexOf(normalizedQuery, startIndex);
+        if (matchIndex === -1) {
+            fragments.push(text.slice(startIndex));
+            break;
+        }
+
+        if (matchIndex > startIndex) {
+            fragments.push(text.slice(startIndex, matchIndex));
+        }
+
+        fragments.push(
+            <mark key={`match-${matchCount}`} className="bg-primary/20 text-foreground rounded px-0.5">
+                {text.slice(matchIndex, matchIndex + normalizedQuery.length)}
+            </mark>
+        );
+        startIndex = matchIndex + normalizedQuery.length;
+        matchCount += 1;
+    }
+
+    return fragments.length > 0 ? fragments : text;
+}
+
+export function SearchResults({ results, projectRoot, searchQuery, onSelect, t }: SearchResultsProps) {
     if (results.length === 0) {
         return (
             <div className="text-center text-muted-foreground mt-10">
@@ -38,7 +73,7 @@ export function SearchResults({ results, projectRoot, onSelect, t }: SearchResul
                         )}
                     </div>
                     <div className="text-sm text-muted-foreground font-mono line-clamp-1 opacity-80 group-hover:opacity-100">
-                        {res.text.trim()}
+                        {renderHighlightedSnippet(res.text.trim(), searchQuery)}
                     </div>
                 </div>
             )}
