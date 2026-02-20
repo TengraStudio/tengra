@@ -8,8 +8,14 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import type { ModelInfo } from '@/features/models/utils/model-fetcher';
 import { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { SettingsTabContent } from '@/features/settings/components';
+import {
+    normalizeSettingsSearchQuery,
+    settingsPageErrorCodes,
+    validateSettingsPayload
+} from '@/features/settings/utils/settings-page-validation';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
 
 import { ManualSessionModal } from './components/ManualSessionModal';
 
@@ -24,6 +30,30 @@ export interface SettingsPageProps {
     searchQuery?: string
 }
 
+const SETTINGS_PAGE_RETRY_ATTEMPTS = 2;
+const SETTINGS_PAGE_RETRY_DELAY_MS = 120;
+
+async function waitForSettingsPageRetry(): Promise<void> {
+    await new Promise(resolve => {
+        setTimeout(resolve, SETTINGS_PAGE_RETRY_DELAY_MS);
+    });
+}
+
+async function withSettingsPageRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < SETTINGS_PAGE_RETRY_ATTEMPTS; attempt += 1) {
+        try {
+            return await operation();
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            if (attempt < SETTINGS_PAGE_RETRY_ATTEMPTS - 1) {
+                await waitForSettingsPageRetry();
+            }
+        }
+    }
+    throw (lastError ?? new Error('Settings page operation failed'));
+}
+
 export function SettingsPage({
     installedModels,
     proxyModels,
@@ -33,7 +63,7 @@ export function SettingsPage({
     searchQuery: controlledSearchQuery
 }: SettingsPageProps) {
     const {
-        settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
@@ -46,7 +76,12 @@ export function SettingsPage({
     const { t } = useTranslation(settings?.general.language ?? 'tr');
 
     // Search query is controlled from the global app header.
-    const searchQuery = controlledSearchQuery ?? '';
+    const normalizedSearchQuery = useMemo(
+        () => normalizeSettingsSearchQuery(controlledSearchQuery ?? ''),
+        [controlledSearchQuery]
+    );
+    const hasInvalidSearchQuery = (controlledSearchQuery ?? '').trim() !== '' && normalizedSearchQuery === '';
+    const searchQuery = normalizedSearchQuery;
 
     // Define tabs with icons for filtering and sidebar
     const allTabs = useMemo(() => [
@@ -57,6 +92,7 @@ export function SettingsPage({
         { id: 'statistics', label: t('settings.tabs.statistics'), icon: BarChart, category: 'Insights' },
         { id: 'personas', label: t('settings.tabs.personas'), icon: Users, category: 'Customization' },
         { id: 'speech', label: t('settings.tabs.speech'), icon: Mic, category: 'Interaction' },
+        { id: 'voice', label: t('voice.interfaceTitle'), icon: Mic, category: 'Interaction' },
         { id: 'developer', label: t('settings.tabs.developer'), icon: Code, category: 'Tools' },
         { id: 'advanced', label: t('settings.tabs.advanced'), icon: Shield, category: 'Security' },
         { id: 'mcp-servers', label: t('settings.tabs.mcpServers'), icon: Server, category: 'Infrastructure' },
@@ -76,25 +112,82 @@ export function SettingsPage({
     const [showResetConfirm, setShowResetConfirm] = useState(false);
 
     const handleFactoryReset = useCallback(async () => {
-        await window.electron.saveSettings({
+        const startedAt = Date.now();
+        const resetPayload = {
             ollama: { url: 'http://localhost:11434' },
-            general: { language: 'tr', theme: 'dark', resolution: '1920x1080', fontSize: 14 },
+            embeddings: { provider: 'none' as const },
+            general: { language: 'tr' as const, theme: 'dark', resolution: '1920x1080', fontSize: 14, onboardingCompleted: false },
             proxy: { enabled: true, url: 'http://127.0.0.1:8317', key: '' }
-        });
-        window.location.reload();
-    }, []);
+        };
+
+        if (!validateSettingsPayload(resetPayload)) {
+            setStatusMessage('errors.unexpected');
+            recordSettingsPageHealthEvent({
+                channel: 'settings.factoryReset',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withSettingsPageRetry(() => window.electron.saveSettings(resetPayload));
+            recordSettingsPageHealthEvent({
+                channel: 'settings.factoryReset',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+            window.location.reload();
+        } catch {
+            setStatusMessage('errors.unexpected');
+            recordSettingsPageHealthEvent({
+                channel: 'settings.factoryReset',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.factoryResetFailed,
+            });
+        }
+    }, [setStatusMessage]);
 
     const onResetClick = useCallback(() => {
         setShowResetConfirm(true);
     }, []);
 
     const loadSettings = useCallback(async () => {
-        const data = await window.electron.getSettings();
-        void setSettings(data);
-    }, [setSettings]);
+        const startedAt = Date.now();
+        try {
+            const data = await withSettingsPageRetry(() => window.electron.getSettings());
+            if (!validateSettingsPayload(data)) {
+                setStatusMessage('errors.unexpected');
+                recordSettingsPageHealthEvent({
+                    channel: 'settings.load',
+                    status: 'validation-failure',
+                    durationMs: Date.now() - startedAt,
+                    errorCode: settingsPageErrorCodes.validation,
+                });
+                return;
+            }
+
+            await setSettings(data);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.load',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setStatusMessage('errors.unexpected');
+            recordSettingsPageHealthEvent({
+                channel: 'settings.load',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.loadFailed,
+            });
+        }
+    }, [setSettings, setStatusMessage]);
 
     const sharedProps = useMemo(() => ({
-        settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
@@ -102,9 +195,9 @@ export function SettingsPage({
         editingPersonaId, setEditingPersonaId, personaDraft, setPersonaDraft, handleSavePersona, handleDeletePersona,
         linkedAccounts, deviceCodeModal, closeDeviceCodeModal,
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
-        t, onRefreshModels, loadSettings, setIsLoading: (_v: boolean) => { }, onReset: handleFactoryReset
+        t, onRefreshModels, loadSettings, setIsLoading: (_value: boolean) => { }, onReset: handleFactoryReset
     }), [
-        settings, setSettings, isLoading, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
+        settings, setSettings, isLoading, settingsUiState, lastErrorCode, statusMessage, setStatusMessage, authBusy, authMessage, isOllamaRunning, authStatus,
         updateGeneral, updateSpeech, handleSave, startOllama, checkOllama, refreshAuthStatus,
         connectGitHubProfile, connectCopilot, connectBrowserProvider, disconnectProvider,
         statsLoading, statsPeriod, setStatsPeriod, statsData, quotaData, copilotQuota, codexUsage, claudeQuota, setReloadTrigger,
@@ -114,6 +207,16 @@ export function SettingsPage({
         manualSessionModal, setManualSessionModal, handleSaveClaudeSession,
         t, onRefreshModels, loadSettings, handleFactoryReset
     ]);
+
+    const renderedStatusMessage = useMemo(() => {
+        if (statusMessage.trim() === '') {
+            return '';
+        }
+        if (statusMessage.includes('.')) {
+            return t(statusMessage);
+        }
+        return statusMessage;
+    }, [statusMessage, t]);
 
     return (
         <div className="settings-container">
@@ -127,15 +230,25 @@ export function SettingsPage({
                                     : t('settings.noResults')}
                             </div>
                         )}
-                        {statusMessage && (
+                        {renderedStatusMessage !== '' && (
                             <div className="mb-6 px-4 py-2 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold animate-in fade-in slide-in-from-top-2 flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                                {statusMessage}
+                                {renderedStatusMessage}
                             </div>
                         )}
-                        <div className="hidden">[DEBUG: BUILD VERSION 2026-01-19-01]</div>
-
-                        {searchQuery && !isActiveTabVisible ? (
+                        {isLoading && settings === null ? (
+                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
+                                {t('common.loading')}
+                            </div>
+                        ) : settingsUiState === 'failure' ? (
+                            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
+                                {t('errors.unexpected')} ({lastErrorCode ?? settingsPageErrorCodes.saveFailed})
+                            </div>
+                        ) : settings === null ? (
+                            <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
+                                {t('settings.noResults')}
+                            </div>
+                        ) : (searchQuery && !isActiveTabVisible) || hasInvalidSearchQuery ? (
                             <div className="rounded-xl border border-border/60 bg-card/60 p-6 text-sm text-muted-foreground">
                                 {t('settings.noResults')}
                             </div>

@@ -1,6 +1,10 @@
 import { Archive, Download, LayoutGrid, List, Plus, Search, Trash2 } from 'lucide-react';
 import React from 'react';
 
+import { Language } from '@/i18n';
+
+import { ProjectsPageHealthIndicator } from './ProjectsPageHealthIndicator';
+
 interface ProjectsHeaderProps {
     title: string
     subtitle: string
@@ -21,19 +25,21 @@ interface ProjectsHeaderProps {
     onListPresetChange: (preset: string) => void
     onExportList: () => void
     t: (key: string, options?: Record<string, string | number>) => string
+    language: Language
 }
 
 export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
     title, subtitle, newProjectLabel, searchPlaceholder, searchQuery, setSearchQuery, onNewProject,
     selectedCount, totalCount, onToggleSelectAll, onBulkDelete, onBulkArchive,
-    viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t
+    viewMode, onViewModeChange, listPreset, onListPresetChange, onExportList, t, language
 }) => {
     return (
         <>
             <div className="flex items-end justify-between border-b border-border/40 pb-6">
                 <div>
-                    <h1 className="text-3xl font-light tracking-tight text-foreground">
+                    <h1 className="text-3xl font-light tracking-tight text-foreground flex items-center gap-4">
                         {title}
+                        <ProjectsPageHealthIndicator language={language} />
                     </h1>
                     <p className="text-muted-foreground mt-2 font-light">
                         {subtitle}

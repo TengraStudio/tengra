@@ -1,5 +1,19 @@
 # 更新日志
 
+## [2026-02-20]
+
+### Voice-First Interface Implementation (UI-11)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.
+
+- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.
+- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.
+- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.
+- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.
+- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions.
+
 ## [2026-02-18]
 
 ### Advanced Memory Versioning & Sharing (MEM-03/07/08)

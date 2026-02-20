@@ -109,6 +109,8 @@ export interface SSHProfileTestResult {
     authMethod: 'password' | 'key';
     message: string;
     error?: string;
+    errorCode?: string;
+    uiState?: 'ready' | 'failure' | 'empty';
 }
 
 export interface SSHRemoteSearchRequest {

@@ -78,7 +78,9 @@ export const tr = {
         "select": "Seçme",
         "more": "Daha",
         "kb_one": "bilgi bankası",
-        "continue": "Devam etmek"
+        "continue": "Devam etmek",
+        "healthy": "Sağlıklı",
+        "degraded": "Düşük Performans"
     },
     "loading": {
         "codeEditor": "Kod editörü yükleniyor",
@@ -500,7 +502,10 @@ export const tr = {
         "dangerZone": "Tehlikeli Bölge",
         "consensusThreshold": "Uzlaşma Eşiği",
         "councilAI": "Konsey AI",
-        "councilAIDesc": "Konseye katılacak ajanları seçin."
+        "councilAIDesc": "Konseye katılacak ajanları seçin.",
+        "systemHealth": "Sistem Sağlığı",
+        "healthStatus": "Sağlık Durumu",
+        "totalFailures": "Toplam Hata"
     },
     "projectWizard": {
         "title": "Proje Sihirbazı",

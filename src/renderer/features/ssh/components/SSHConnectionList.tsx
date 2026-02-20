@@ -15,7 +15,7 @@ interface SSHConnectionListProps {
     onSelect: (id: string) => void
     onConnect: (conn: SSHConnection) => void
     onDisconnect: (id: string) => void
-    onDelete: (id: string, e: React.MouseEvent) => void
+    onDeleteRequest: (id: string) => void
     onAdd: () => void
     t: (key: string, params?: Record<string, string | number>) => string
     /** Optional: height of the list container for virtualization */
@@ -28,7 +28,7 @@ interface RowProps {
     onSelect: (id: string) => void
     onConnect: (conn: SSHConnection) => void
     onDisconnect: (id: string) => void
-    onDelete: (id: string, e: React.MouseEvent) => void
+    onDeleteRequest: (id: string) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -41,7 +41,7 @@ const ConnectionCard = memo(({
     onSelect,
     onConnect,
     onDisconnect,
-    onDelete,
+    onDeleteRequest,
     t
 }: {
     conn: SSHConnection
@@ -49,7 +49,7 @@ const ConnectionCard = memo(({
     onSelect: (id: string) => void
     onConnect: (conn: SSHConnection) => void
     onDisconnect: (id: string) => void
-    onDelete: (id: string, e: React.MouseEvent) => void
+    onDeleteRequest: (id: string) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }) => (
     <div
@@ -93,7 +93,10 @@ const ConnectionCard = memo(({
                         {t('ssh.connect')}
                     </button>
                     <button
-                        onClick={(e) => onDelete(conn.id, e)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteRequest(conn.id);
+                        }}
                         className="text-xs px-2 py-0.5 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded transition-colors"
                         title={t('ssh.deleteProfile')}
                     >
@@ -117,7 +120,7 @@ const ConnectionRow = ({
     onSelect,
     onConnect,
     onDisconnect,
-    onDelete,
+    onDeleteRequest,
     t
 }: RowComponentProps<RowProps> & { index: number; style: CSSProperties }) => {
     const conn = connections[index];
@@ -130,7 +133,7 @@ const ConnectionRow = ({
                 onSelect={onSelect}
                 onConnect={onConnect}
                 onDisconnect={onDisconnect}
-                onDelete={onDelete}
+                onDeleteRequest={onDeleteRequest}
                 t={t}
             />
         </div>
@@ -143,7 +146,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
     onSelect,
     onConnect,
     onDisconnect,
-    onDelete,
+    onDeleteRequest,
     onAdd,
     t,
     listHeight = LIST_HEIGHT
@@ -155,9 +158,9 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
         onSelect,
         onConnect,
         onDisconnect,
-        onDelete,
+        onDeleteRequest,
         t
-    }), [connections, selectedId, onSelect, onConnect, onDisconnect, onDelete, t]);
+    }), [connections, selectedId, onSelect, onConnect, onDisconnect, onDeleteRequest, t]);
 
     // PERF-001-2: Use virtualization for large lists
     const shouldVirtualize = connections.length > VIRTUALIZATION_THRESHOLD;
@@ -199,7 +202,7 @@ export const SSHConnectionList: React.FC<SSHConnectionListProps> = ({
                             onSelect={onSelect}
                             onConnect={onConnect}
                             onDisconnect={onDisconnect}
-                            onDelete={onDelete}
+                            onDeleteRequest={onDeleteRequest}
                             t={t}
                         />
                     ))

@@ -13,7 +13,8 @@ export type SettingsCategory =
     | 'mcp-servers'
     | 'mcp-marketplace'
     | 'images'
-    | 'usage-limits';
+    | 'usage-limits'
+    | 'voice';
 
 export type DetailedStats = Awaited<ReturnType<Window['electron']['db']['getDetailedStats']>>
 export type AuthStatusState = { codex: boolean; claude: boolean; antigravity: boolean; copilot?: boolean }

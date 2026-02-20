@@ -1,12 +1,43 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { useSettings } from '@/context/SettingsContext';
+import {
+    settingsPageErrorCodes,
+    validateSettingsPayload
+} from '@/features/settings/utils/settings-page-validation';
+import { recordSettingsPageHealthEvent } from '@/store/settings-page-health.store';
 import { AppSettings } from '@/types';
 
 import { useLinkedAccounts } from './useLinkedAccounts';
 import { useSettingsAuth } from './useSettingsAuth';
 import { useSettingsPersonas } from './useSettingsPersonas';
 import { useSettingsStats } from './useSettingsStats';
+
+type SettingsLogicUiState = 'ready' | 'failure';
+
+const SETTINGS_RETRY_ATTEMPTS = 2;
+const SETTINGS_RETRY_DELAY_MS = 120;
+
+async function waitForRetry(): Promise<void> {
+    await new Promise(resolve => {
+        setTimeout(resolve, SETTINGS_RETRY_DELAY_MS);
+    });
+}
+
+async function withRetry<T>(operation: () => Promise<T>, attempts = SETTINGS_RETRY_ATTEMPTS): Promise<T> {
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+            return await operation();
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            if (attempt < attempts - 1) {
+                await waitForRetry();
+            }
+        }
+    }
+    throw (lastError ?? new Error('Settings operation failed'));
+}
 
 export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => void) {
     const { settings, updateSettings } = useSettings();
@@ -20,6 +51,8 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
 
     const [isLoading, setIsLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
+    const [settingsUiState, setSettingsUiState] = useState<SettingsLogicUiState>('ready');
+    const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);
 
     // Sub-hooks - linkedAccounts created first so auth can trigger refresh
     const linkedAccounts = useLinkedAccounts();
@@ -35,27 +68,121 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
 
     // Handlers
     const handleSave = useCallback(async (newSettings?: AppSettings) => {
+        const startedAt = Date.now();
         const toSave = newSettings ?? settings;
-        if (!toSave) { return; }
+        if (!toSave || !validateSettingsPayload(toSave)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            setStatusMessage('errors.unexpected');
+            recordSettingsPageHealthEvent({
+                channel: 'settings.save',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
         setIsLoading(true);
         try {
-            await updateSettings(toSave, true);
+            await withRetry(() => updateSettings(toSave, true), SETTINGS_RETRY_ATTEMPTS);
             onRefreshModels?.(true);
-            setStatusMessage('Kaydedildi!');
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            setStatusMessage('common.success');
             setTimeout(() => setStatusMessage(''), 2000);
-        } finally { setIsLoading(false); }
+            recordSettingsPageHealthEvent({
+                channel: 'settings.save',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            setStatusMessage('errors.unexpected');
+            recordSettingsPageHealthEvent({
+                channel: 'settings.save',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }, [settings, updateSettings, onRefreshModels]);
 
     const updateGeneral = useCallback(async (patch: Partial<AppSettings['general']>) => {
         if (!settings) { return; }
+        const startedAt = Date.now();
         const updated = { ...settings, general: { ...settings.general, ...patch } };
-        await updateSettings(updated, true);
+        if (!validateSettingsPayload(updated)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        }
     }, [settings, updateSettings]);
 
     const updateSpeech = useCallback(async (patch: Partial<NonNullable<AppSettings['speech']>>) => {
         if (!settings) { return; }
+        const startedAt = Date.now();
         const updated = { ...settings, speech: { ...settings.speech, ...patch } } as AppSettings;
-        await updateSettings(updated, true);
+        if (!validateSettingsPayload(updated)) {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.validation);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.validation,
+            });
+            return;
+        }
+
+        try {
+            await withRetry(() => updateSettings(updated, true), SETTINGS_RETRY_ATTEMPTS);
+            setSettingsUiState('ready');
+            setLastErrorCode(null);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+        } catch {
+            setSettingsUiState('failure');
+            setLastErrorCode(settingsPageErrorCodes.saveFailed);
+            recordSettingsPageHealthEvent({
+                channel: 'settings.update',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: settingsPageErrorCodes.saveFailed,
+            });
+        }
     }, [settings, updateSettings]);
 
     // Benchmark (Kept local as it is simple)
@@ -85,6 +212,8 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         isLoading,
         statusMessage: exposedStatusMessage,
         setStatusMessage,
+        settingsUiState,
+        lastErrorCode,
 
         // Auth
         authMessage: auth.authMessage,
@@ -126,7 +255,7 @@ export function useSettingsLogic(onRefreshModels?: (bypassCache?: boolean) => vo
         isDirty: false
     }), [
         settings, setSettings, isLoading, exposedStatusMessage, auth,
-        linkedAccounts, updateGeneral, updateSpeech, handleSave,
+        linkedAccounts, updateGeneral, updateSpeech, handleSave, settingsUiState, lastErrorCode,
         stats, benchmarkResult, isBenchmarking, handleRunBenchmark, personas
     ]);
 }

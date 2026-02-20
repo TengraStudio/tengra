@@ -16,3 +16,4 @@ export * from '@renderer/features/settings/components/SettingsSearch';
 export * from '@renderer/features/settings/components/SettingsTabContent';
 export * from '@renderer/features/settings/components/SpeechTab';
 export * from '@renderer/features/settings/components/StatisticsTab';
+export * from '@renderer/features/settings/components/VoiceSettingsTab';

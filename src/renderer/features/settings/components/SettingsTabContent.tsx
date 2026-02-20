@@ -15,7 +15,8 @@ import {
     ModelUsageLimitsTab,
     PersonasTab,
     SpeechTab,
-    StatisticsTab
+    StatisticsTab,
+    VoiceSettingsTab
 } from '@/features/settings/components';
 
 import { SettingsSharedProps } from '../types';
@@ -76,7 +77,8 @@ export const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
             <div className="h-[75vh] min-h-[500px] border border-white/5 rounded-2xl overflow-hidden bg-black/20">
                 <GalleryView language={sharedProps.settings?.general.language ?? 'tr'} />
             </div>
-        )
+        ),
+        voice: <VoiceSettingsTab {...sharedProps} />
     };
 
     return <>{tabMap[activeTab] ?? null}</>;

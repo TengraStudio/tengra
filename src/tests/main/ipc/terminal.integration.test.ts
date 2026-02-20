@@ -319,6 +319,13 @@ describe('Terminal IPC Integration', () => {
         );
     });
 
+    it('returns [] for empty search query', async () => {
+        const handler = ipcMainHandlers.get('terminal:searchScrollback')!;
+        const result = await handler(mockEvent, 'term-1', '   ', { limit: 10 });
+        expect(result).toEqual([]);
+        expect(mockTerminalService.searchSessionScrollback).not.toHaveBeenCalled();
+    });
+
     it('exports and imports terminal session payloads', async () => {
         const exportHandler = ipcMainHandlers.get('terminal:exportSession')!;
         const importHandler = ipcMainHandlers.get('terminal:importSession')!;

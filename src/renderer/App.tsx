@@ -14,6 +14,8 @@ import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
 import { DetachedTerminalWindow } from '@renderer/features/terminal/components/DetachedTerminalWindow';
+import { VoiceOverlay } from '@renderer/features/voice/components/VoiceOverlay';
+import { useVoiceActions } from '@renderer/features/voice/hooks/useVoiceActions';
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts';
@@ -119,6 +121,9 @@ function MainApp() {
     } = appState;
     const breakpoint = useBreakpoint();
     const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
+
+    // Initialize global voice actions
+    useVoiceActions();
     const [showExtensionModal, setShowExtensionModal] = useState(false);
     const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => {
         // Show prompt only on first run if language wasn't explicitly selected
@@ -459,6 +464,7 @@ function MainApp() {
                     canUseBiometric={sessionTimeout.canUseBiometric}
                     onUnlock={sessionTimeout.unlock}
                 />
+                <VoiceOverlay />
             </div>
         </ErrorBoundary>
     );

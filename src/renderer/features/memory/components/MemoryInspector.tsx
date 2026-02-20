@@ -13,24 +13,23 @@ import { AdvancedSemanticFragment, MemoryCategory, MemoryVersion, PendingMemory 
 import { BarChart3 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { appLogger } from '../../../utils/renderer-logger';
-
-import { LoadingState } from '@/components/ui/LoadingState';
 import { Card } from '@/components/ui/card';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { useTranslation } from '@/i18n';
 
+import { appLogger } from '../../../utils/renderer-logger';
 import { useAddModal, useEditModal, useMemory } from '../hooks/useMemory';
+import { MemoryVisualization } from '../visualization/MemoryVisualization';
 
 import { AddMemoryModal } from './AddMemoryModal';
 import { ConfirmedMemoriesList } from './ConfirmedMemoriesList';
 import { EditMemoryModal } from './EditMemoryModal';
 import { ErrorDisplay, MemoryHeader, StatsOverview } from './MemoryHeaderAndStats';
+import { MemoryHistoryPanel } from './MemoryHistoryPanel';
 import { MemorySearchFilter } from './MemorySearchFilter';
 import { PendingMemoriesList } from './PendingMemoriesList';
-import { MemoryHistoryPanel } from './MemoryHistoryPanel';
 import { StatsPanel } from './StatsPanelComponent';
 import { TabNavigation } from './TabNavigation';
-import { MemoryVisualization } from '../visualization/MemoryVisualization';
 
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
 

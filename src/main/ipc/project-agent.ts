@@ -6,13 +6,13 @@ import { IpcValue, JsonObject } from '@shared/types/common';
 import {
     AgentProfile,
     AgentStartOptions,
+    AgentTemplate,
+    AgentTemplateCategory,
+    AgentTemplateExport,
     DebateCitation,
     DebateReplay,
     DebateSession,
     DebateSide,
-    AgentTemplate,
-    AgentTemplateCategory,
-    AgentTemplateExport,
     ModelRoutingRule,
     ProjectState,
     ProjectStep,
@@ -57,6 +57,52 @@ function validateNumber(value: unknown, name: string): number {
         throw new Error(`${name} must be a valid number`);
     }
     return value;
+}
+
+function normalizeStartOptions(value: unknown): AgentStartOptions {
+    const payload = asRecord(value);
+    const task = payload.task;
+    if (typeof task !== 'string' || task.trim().length === 0) {
+        throw new Error('task must be a non-empty string');
+    }
+    if (task.length > 4000) {
+        throw new Error('task exceeds maximum length');
+    }
+
+    const normalized: AgentStartOptions = {
+        task: task.trim(),
+        nodeId: typeof payload.nodeId === 'string' ? payload.nodeId : undefined,
+        priority:
+            payload.priority === 'low'
+            || payload.priority === 'normal'
+            || payload.priority === 'high'
+            || payload.priority === 'critical'
+                ? payload.priority
+                : undefined,
+        model: (() => {
+            const model = asRecord(payload.model);
+            return (typeof model.provider === 'string' && typeof model.model === 'string')
+                ? { provider: model.provider, model: model.model }
+                : undefined;
+        })(),
+        projectId: typeof payload.projectId === 'string' ? payload.projectId : undefined,
+        agentProfileId: typeof payload.agentProfileId === 'string' ? payload.agentProfileId : undefined,
+        attachments: Array.isArray(payload.attachments)
+            ? payload.attachments
+                .map(item => asRecord(item))
+                .filter(item => typeof item.name === 'string' && typeof item.path === 'string' && typeof item.size === 'number')
+                .map(item => ({ name: item.name as string, path: item.path as string, size: item.size as number }))
+            : undefined,
+        systemMode:
+            payload.systemMode === 'fast'
+            || payload.systemMode === 'thinking'
+            || payload.systemMode === 'architect'
+                ? payload.systemMode
+                : undefined,
+        budgetLimitUsd: typeof payload.budgetLimitUsd === 'number' ? payload.budgetLimitUsd : undefined,
+        locale: typeof payload.locale === 'string' ? payload.locale : undefined
+    };
+    return normalized;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -143,7 +189,8 @@ export function registerProjectAgentIpc(
         }
     });
     ipcMain.handle('project:start', createSafeIpcHandler('project:start', async (_, options: AgentStartOptions) => {
-        await projectAgentService.start(options);
+        const normalizedOptions = normalizeStartOptions(options);
+        await projectAgentService.start(normalizedOptions);
     }, undefined));
 
     ipcMain.handle('project:stop', createSafeIpcHandler('project:stop', async (_, payload?: { taskId?: string }) => {
@@ -155,7 +202,8 @@ export function registerProjectAgentIpc(
     }, undefined));
 
     ipcMain.handle('project:plan', createSafeIpcHandler('project:plan', async (_, options: AgentStartOptions) => {
-        await projectAgentService.generatePlan(options);
+        const normalizedOptions = normalizeStartOptions(options);
+        await projectAgentService.generatePlan(normalizedOptions);
     }, undefined));
 
     ipcMain.handle(

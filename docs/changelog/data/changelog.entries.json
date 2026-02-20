@@ -4,6 +4,50 @@
   "generatedAt": "2026-02-18T14:03:53.304Z",
   "entries": [
     {
+      "id": "2026-02-20-voice-first-interface-ui-11",
+      "date": "2026-02-20",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "VoiceSettingsTab",
+        "VoiceService",
+        "useVoice",
+        "VoiceOverlay"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Voice-First Interface Implementation (UI-11)",
+          "summary": "Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.",
+          "items": [
+            "- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.",
+            "- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.",
+            "- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.",
+            "- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.",
+            "- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions."
+          ]
+        },
+        "tr": {
+          "title": "Ses Öncelikli Arayüz Uygulaması (UI-11)",
+          "summary": "Özel bir ayarlar sekmesi, genel sesli eylemler ve gerçek zamanlı görsel geri bildirim içeren kapsamlı bir sesli kontrol sistemi uygulandı.",
+          "items": [
+            "- **Ses Ayarları**: Uyandırma kelimeleri, konuşma sentezi ve özel komutları yapılandırmak için yeni bir sekme eklendi.",
+            "- **Ses Katmanı**: Gerçek zamanlı konuşmadan metne dönüştürme ve durum bildirimi için görsel bir geri bildirim sistemi uygulandı.",
+            "- **Sesli Geri Bildirim**: Sesle tetiklenen eylemler ve sistem durumu için sesli onay eklendi.",
+            "- **Eller Serbest Gezinme**: Uygulama genelinde sesli olaylar aracılığıyla gezinme ve komut yürütme etkinleştirildi.",
+            "- **Özel Komutlar**: Sistem eylemlerine eşlenen kullanıcı tanımlı sesli ifadeler için destek eklendi."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-18-advanced-memory-features",
       "date": "2026-02-18",
       "channel": "stable",

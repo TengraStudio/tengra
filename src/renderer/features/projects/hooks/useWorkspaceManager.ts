@@ -9,6 +9,11 @@ import {
     WorkspaceEntry,
     WorkspaceMount,
 } from '@/types';
+import { recordProjectsPageHealthEvent } from '@/store/projects-page-health.store';
+import {
+    validateWorkspaceMountForm,
+    workspaceMountErrorCodes,
+} from '../utils/workspace-mount-validation';
 
 interface UseWorkspaceManagerProps {
     project: Project;
@@ -52,7 +57,7 @@ function useMountState(project: Project): [WorkspaceMount[], (mounts: WorkspaceM
             Array.isArray(project.mounts) && project.mounts.length > 0
                 ? project.mounts
                 : project.path
-                  ? [
+                    ? [
                         {
                             id: `local-${project.id}`,
                             name: 'Local',
@@ -60,7 +65,7 @@ function useMountState(project: Project): [WorkspaceMount[], (mounts: WorkspaceM
                             rootPath: project.path,
                         },
                     ]
-                  : [];
+                    : [];
 
         if (JSON.stringify(nextMounts) !== JSON.stringify(mounts)) {
             setMounts(nextMounts);
@@ -110,7 +115,8 @@ function useMountStatusSync(
 // Helper hook for SSH operations
 function useSSHOperations(
     notify: (type: 'success' | 'error' | 'info', message: string) => void,
-    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>
+    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>,
+    t: (key: string) => string
 ) {
     const MAX_CONNECT_RETRIES = 3;
     const INITIAL_BACKOFF_MS = 400;
@@ -124,16 +130,16 @@ function useSSHOperations(
     const validateSSHMount = useCallback(
         (mount: WorkspaceMount): boolean => {
             if (!mount.ssh) {
-                notify('error', 'SSH config is missing.');
+                notify('error', t('errors.unexpected'));
                 return false;
             }
             if (!mount.ssh.host || !mount.ssh.username) {
-                notify('error', 'SSH config is missing.');
+                notify('error', t('errors.unexpected'));
                 return false;
             }
             return true;
         },
-        [notify]
+        [notify, t]
     );
 
     const ensureMountReady = useCallback(
@@ -153,7 +159,7 @@ function useSSHOperations(
                 return false;
             }
             let backoffMs = INITIAL_BACKOFF_MS;
-            let lastError = 'SSH connection failed.';
+            let lastError = t('errors.unexpected');
             for (let attempt = 1; attempt <= MAX_CONNECT_RETRIES; attempt++) {
                 const result = await window.electron.ssh.connect({
                     id: mount.id,
@@ -175,8 +181,8 @@ function useSSHOperations(
 
                 const diagnosticHint = result.diagnostics?.hint;
                 lastError = diagnosticHint
-                    ? `${result.error ?? 'SSH connection failed.'} ${diagnosticHint}`
-                    : result.error ?? 'SSH connection failed.';
+                    ? `${result.error ?? t('errors.unexpected')} ${diagnosticHint}`
+                    : result.error ?? t('errors.unexpected');
                 if (attempt < MAX_CONNECT_RETRIES) {
                     notify('info', `SSH connect retry ${attempt}/${MAX_CONNECT_RETRIES - 1}...`);
                     await waitFor(backoffMs);
@@ -186,7 +192,7 @@ function useSSHOperations(
             notify('error', lastError);
             return false;
         },
-        [mountStatus, notify, validateSSHMount, waitFor]
+        [mountStatus, notify, t, validateSSHMount, waitFor]
     );
 
     return { ensureMountReady };
@@ -394,8 +400,8 @@ function useFileOperations(
                         ? await window.electron.deleteDirectory(entry.path)
                         : await window.electron.deleteFile(entry.path)
                     : entry.isDirectory
-                      ? await window.electron.ssh.deleteDir(mount.id, entry.path)
-                      : await window.electron.ssh.deleteFile(mount.id, entry.path);
+                        ? await window.electron.ssh.deleteDir(mount.id, entry.path)
+                        : await window.electron.ssh.deleteFile(mount.id, entry.path);
             if (result.success) {
                 setRefreshSignal(s => s + 1);
                 logActivity('Deleted entry', entry.path);
@@ -516,8 +522,8 @@ function useTabManagement(projectId: string) {
             const nextActiveTabId = preferredTabStillOpen
                 ? (preferredActiveTabId ?? null)
                 : currentTabStillOpen
-                  ? activeTabId
-                  : findFallbackTabId(nextTabs);
+                    ? activeTabId
+                    : findFallbackTabId(nextTabs);
 
             setActiveEditorTabId(nextActiveTabId);
             if (!nextActiveTabId) {
@@ -636,7 +642,7 @@ function useTabManagement(projectId: string) {
 export function useWorkspaceManager({ project, notify, logActivity, t }: UseWorkspaceManagerProps) {
     const [mounts, setMounts] = useMountState(project);
     const mountStatus = useMountStatusSync(mounts);
-    const { ensureMountReady } = useSSHOperations(notify, mountStatus);
+    const { ensureMountReady } = useSSHOperations(notify, mountStatus, t);
     const {
         createFile,
         createFolder,
@@ -664,16 +670,30 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
     const [councilEnabled, setCouncilEnabled] = useState(Boolean(project.councilConfig.enabled));
 
     const persistMounts = useCallback(
-        async (nextMounts: WorkspaceMount[]) => {
+        async (nextMounts: WorkspaceMount[]): Promise<boolean> => {
+            const startedAt = Date.now();
             setMounts(nextMounts);
             try {
                 await window.electron.db.updateProject(project.id, { mounts: nextMounts });
+                recordProjectsPageHealthEvent({
+                    channel: 'workspace.persistMounts',
+                    status: 'success',
+                    durationMs: Date.now() - startedAt,
+                });
+                return true;
             } catch (error) {
                 window.electron.log.error('Failed to save mounts', error);
-                notify('error', 'Failed to save mounts.');
+                notify('error', t('errors.unexpected'));
+                recordProjectsPageHealthEvent({
+                    channel: 'workspace.persistMounts',
+                    status: 'failure',
+                    durationMs: Date.now() - startedAt,
+                    errorCode: workspaceMountErrorCodes.persistFailed,
+                });
+                return false;
             }
         },
-        [project.id, notify, setMounts]
+        [project.id, notify, setMounts, t]
     );
 
     const [mountForm, setMountForm] = useState<MountForm>({
@@ -687,30 +707,79 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
         password: '',
         privateKey: '',
         passphrase: '',
+        saveProfile: false,
     });
 
     const addMount = useCallback(async () => {
+        const startedAt = Date.now();
+        const validation = validateWorkspaceMountForm(mountForm);
+        if (!validation.success) {
+            notify('error', t(validation.messageKey ?? 'errors.unexpected'));
+            recordProjectsPageHealthEvent({
+                channel: 'workspace.addMount',
+                status: 'validation-failure',
+                errorCode: validation.errorCode,
+            });
+            return;
+        }
+
         const newMount: WorkspaceMount = {
             id: `mount-${Date.now()}`,
-            name:
-                mountForm.name || (mountForm.type === 'local' ? 'Local' : mountForm.host || 'SSH'),
+            name: mountForm.name || (mountForm.type === 'local' ? 'Local' : mountForm.host || 'SSH'),
             type: mountForm.type,
             rootPath: mountForm.rootPath,
             ssh:
                 mountForm.type === 'ssh'
                     ? {
-                          host: mountForm.host || '',
-                          port: parseInt(mountForm.port) || 22,
-                          username: mountForm.username || '',
-                          authType: mountForm.authType,
-                          password: mountForm.password,
-                          privateKey: mountForm.privateKey,
-                          passphrase: mountForm.passphrase,
-                      }
+                        host: mountForm.host || '',
+                        port: validation.parsedPort,
+                        username: mountForm.username || '',
+                        authType: mountForm.authType,
+                        password: mountForm.password,
+                        privateKey: mountForm.privateKey,
+                        passphrase: mountForm.passphrase,
+                    }
                     : undefined,
         };
+
+        // Save profile if requested
+        if (mountForm.type === 'ssh' && mountForm.saveProfile) {
+            try {
+                await window.electron.ssh.saveProfile({
+                    name: mountForm.name || mountForm.host || 'SSH',
+                    host: mountForm.host || '',
+                    port: validation.parsedPort,
+                    username: mountForm.username || '',
+                    authType: mountForm.authType,
+                    password: mountForm.password,
+                    privateKey: mountForm.privateKey,
+                    passphrase: mountForm.passphrase,
+                });
+                notify('success', t('workspaceModals.profileSaved'));
+            } catch (error) {
+                window.electron.log.error('Failed to save SSH profile', error);
+                notify('error', t('errors.unexpected'));
+                recordProjectsPageHealthEvent({
+                    channel: 'workspace.addMount',
+                    status: 'failure',
+                    errorCode: workspaceMountErrorCodes.profileSaveFailed,
+                    durationMs: Date.now() - startedAt,
+                });
+            }
+        }
+
         const nextMounts = [...mounts, newMount];
-        await persistMounts(nextMounts);
+        const persisted = await persistMounts(nextMounts);
+        if (!persisted) {
+            recordProjectsPageHealthEvent({
+                channel: 'workspace.addMount',
+                status: 'failure',
+                errorCode: workspaceMountErrorCodes.persistFailed,
+                durationMs: Date.now() - startedAt,
+            });
+            return;
+        }
+
         setMountForm({
             type: 'local',
             name: '',
@@ -722,8 +791,99 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
             password: '',
             privateKey: '',
             passphrase: '',
+            saveProfile: false,
         });
-    }, [mountForm, mounts, persistMounts]);
+        recordProjectsPageHealthEvent({
+            channel: 'workspace.addMount',
+            status: 'success',
+            durationMs: Date.now() - startedAt,
+        });
+    }, [mountForm, mounts, notify, persistMounts, t]);
+
+    const testConnection = useCallback(async (form: MountForm) => {
+        const validation = validateWorkspaceMountForm({ ...form, type: 'ssh' });
+        if (!validation.success) {
+            recordProjectsPageHealthEvent({
+                channel: 'workspace.testConnection',
+                status: 'validation-failure',
+                errorCode: validation.errorCode,
+            });
+            return {
+                success: false,
+                latencyMs: 0,
+                authMethod: form.authType,
+                message: t(validation.messageKey ?? 'errors.unexpected'),
+                errorCode: validation.errorCode,
+                uiState: 'failure' as const,
+            };
+        }
+        const startedAt = Date.now();
+        const maxAttempts = 2;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                const result = await window.electron.ssh.testProfile({
+                    host: form.host,
+                    port: validation.parsedPort,
+                    username: form.username,
+                    authType: form.authType,
+                    password: form.password,
+                    privateKey: form.privateKey,
+                    passphrase: form.passphrase,
+                });
+
+                if (result.success) {
+                    recordProjectsPageHealthEvent({
+                        channel: 'workspace.testConnection',
+                        status: 'success',
+                        durationMs: Date.now() - startedAt,
+                    });
+                    return { ...result, uiState: 'ready' as const };
+                }
+                if (attempt === maxAttempts) {
+                    recordProjectsPageHealthEvent({
+                        channel: 'workspace.testConnection',
+                        status: 'failure',
+                        durationMs: Date.now() - startedAt,
+                        errorCode: workspaceMountErrorCodes.testFailed,
+                    });
+                    return {
+                        ...result,
+                        errorCode: workspaceMountErrorCodes.testFailed,
+                        uiState: 'failure' as const,
+                    };
+                }
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    recordProjectsPageHealthEvent({
+                        channel: 'workspace.testConnection',
+                        status: 'failure',
+                        durationMs: Date.now() - startedAt,
+                        errorCode: workspaceMountErrorCodes.testFailed,
+                    });
+                    return {
+                        success: false,
+                        latencyMs: 0,
+                        authMethod: form.authType,
+                        message: t('errors.unexpected'),
+                        error: message,
+                        errorCode: workspaceMountErrorCodes.testFailed,
+                        uiState: 'failure' as const,
+                    };
+                }
+            }
+        }
+
+        return {
+            success: false,
+            latencyMs: 0,
+            authMethod: form.authType,
+            message: t('errors.unexpected'),
+            errorCode: workspaceMountErrorCodes.testFailed,
+            uiState: 'failure' as const,
+        };
+    }, [t]);
 
     const pickLocalFolder = useCallback(async () => {
         const result = await window.electron.selectDirectory();
@@ -813,10 +973,10 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
             mount.type === 'local'
                 ? await window.electron.writeFile(activeTabData.path, activeTabData.content)
                 : await window.electron.ssh.writeFile(
-                      mount.id,
-                      activeTabData.path,
-                      activeTabData.content
-                  );
+                    mount.id,
+                    activeTabData.path,
+                    activeTabData.content
+                );
 
         if (!result.success) {
             notify('error', result.error ?? 'Save failed.');
@@ -924,6 +1084,7 @@ export function useWorkspaceManager({ project, notify, logActivity, t }: UseWork
         setMountForm,
         addMount,
         pickLocalFolder,
+        testConnection,
     };
 }
 

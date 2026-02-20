@@ -1,126 +1,115 @@
-/**
- * Integration tests for Advanced Memory IPC handlers
- */
-import { ipcMain } from 'electron';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { registerAdvancedMemoryIpc } from '@main/ipc/advanced-memory';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const handlers = new Map<string, (...args: unknown[]) => Promise<unknown>>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn(),
-        removeHandler: vi.fn()
+        handle: vi.fn((channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
+            handlers.set(channel, handler);
+        })
+    }
+}));
+
+vi.mock('@main/logging/logger', () => ({
+    appLogger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn()
+    }
+}));
+
+vi.mock('@main/utils/ipc-wrapper.util', () => ({
+    createIpcHandler: (
+        _name: string,
+        handler: (...args: any[]) => Promise<any>,
+        options?: { onError?: (error: Error) => unknown }
+    ) => async (event: unknown, ...args: unknown[]) => {
+        try {
+            return await handler(event, ...args);
+        } catch (error: any) {
+            if (options?.onError) {
+                return options.onError(error);
+            }
+            throw error;
+        }
     }
 }));
 
 describe('Advanced Memory IPC Handlers', () => {
-    let registeredHandlers: Map<string, unknown>;
-
-    beforeEach(() => {
-        registeredHandlers = new Map();
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, handler: unknown) => {
-            registeredHandlers.set(channel, handler);
-        });
+    const buildService = () => ({
+        getPendingMemories: vi.fn(() => []),
+        confirmPendingMemory: vi.fn(async () => ({ id: 'p1' })),
+        rejectPendingMemory: vi.fn(async () => undefined),
+        rememberExplicit: vi.fn(async () => ({ id: 'm1' })),
+        recall: vi.fn(async () => ({ memories: [], totalMatches: 0 })),
+        searchMemoriesHybrid: vi.fn(async () => [{ id: 'm1' }]),
+        getSearchAnalytics: vi.fn(() => ({ totalQueries: 1, semanticQueries: 0, textQueries: 0, hybridQueries: 1, averageResults: 1, topQueries: [] })),
+        getSearchHistory: vi.fn(() => []),
+        getSearchSuggestions: vi.fn(() => []),
+        exportMemories: vi.fn(async () => ({ count: 0, memories: [] })),
+        importMemories: vi.fn(async () => ({ imported: 0, pendingImported: 0, skipped: 0, errors: [] })),
+        getStatistics: vi.fn(async () => ({ total: 0 })),
+        runDecayMaintenance: vi.fn(async () => undefined),
+        recategorizeMemories: vi.fn(async () => undefined),
+        extractAndStageFromMessage: vi.fn(async () => []),
+        deleteMemory: vi.fn(async () => true),
+        deleteMemories: vi.fn(async () => ({ deleted: 0, failed: [] })),
+        editMemory: vi.fn(async () => null),
+        archiveMemory: vi.fn(async () => true),
+        archiveMemories: vi.fn(async () => ({ archived: 0, failed: [] })),
+        restoreMemory: vi.fn(async () => true),
+        getMemory: vi.fn(async () => null),
+        shareMemoryWithProject: vi.fn(async () => null),
+        createSharedNamespace: vi.fn(() => ({ id: 'ns-1' })),
+        syncSharedNamespace: vi.fn(async () => ({ namespaceId: 'ns-1', synced: 0, skipped: 0, conflicts: [], updatedAt: Date.now() })),
+        getSharedNamespaceAnalytics: vi.fn(async () => ({ namespaceId: 'ns-1', projectCount: 0, memoryCount: 0, lastSyncedAt: null, topContributors: [] })),
+        searchAcrossProjects: vi.fn(async () => []),
+        getMemoryHistory: vi.fn(async () => []),
+        rollbackMemory: vi.fn(async () => null),
+        getAllEntityFacts: vi.fn(async () => []),
+        getAllEpisodes: vi.fn(async () => []),
+        getAllAdvancedMemories: vi.fn(async () => [])
     });
 
-    afterEach(() => {
+    beforeEach(() => {
+        handlers.clear();
         vi.clearAllMocks();
     });
 
-    describe('advancedMemory:getPending', () => {
-        it('should return pending memories', async () => {
-            const mockPending = [
-                { id: 'pending-1', content: 'Test memory 1', requiresUserValidation: true },
-                { id: 'pending-2', content: 'Test memory 2', requiresUserValidation: false }
-            ];
+    it('registers and runs core advanced-memory handlers', async () => {
+        const service = buildService();
+        registerAdvancedMemoryIpc(service as never);
 
-            const handler = async () => {
-                return { success: true, data: mockPending };
-            };
-            registeredHandlers.set('advancedMemory:getPending', handler);
+        const pendingResult = await handlers.get('advancedMemory:getPending')?.({});
+        expect(pendingResult).toEqual({ success: true, data: [] });
 
-            const result = await (registeredHandlers.get('advancedMemory:getPending') as () => Promise<unknown>)();
-
-            expect(result).toEqual({
-                success: true,
-                data: mockPending
-            });
-        });
+        const confirmResult = await handlers.get('advancedMemory:confirm')?.({}, 'p1');
+        expect(confirmResult).toEqual({ success: true, data: { id: 'p1' } });
+        expect(service.confirmPendingMemory).toHaveBeenCalledWith('p1', 'user', undefined);
     });
 
-    describe('advancedMemory:confirm', () => {
-        it('should confirm a pending memory', async () => {
-            const handler = async (_: unknown, id: string) => {
-                return { success: true, data: { id, content: 'Confirmed memory' } };
-            };
-            registeredHandlers.set('advancedMemory:confirm', handler);
+    it('normalizes invalid search inputs and avoids service call on empty query', async () => {
+        const service = buildService();
+        registerAdvancedMemoryIpc(service as never);
+        const searchHandler = handlers.get('advancedMemory:search');
 
-            const result = await (registeredHandlers.get('advancedMemory:confirm') as (event: unknown, id: string) => Promise<unknown>)({}, 'pending-1');
+        const empty = await searchHandler?.({}, '   ', -100);
+        expect(empty).toEqual({ success: true, data: [] });
+        expect(service.searchMemoriesHybrid).not.toHaveBeenCalled();
 
-            expect(result).toHaveProperty('success', true);
-        });
+        await searchHandler?.({}, '  release notes ', 9999);
+        expect(service.searchMemoriesHybrid).toHaveBeenCalledWith('release notes', 200);
     });
 
-    describe('advancedMemory:reject', () => {
-        it('should reject a pending memory', async () => {
-            const handler = async (_: unknown) => {
-                return { success: true };
-            };
-            registeredHandlers.set('advancedMemory:reject', handler);
+    it('normalizes export args and forwards bounded limits', async () => {
+        const service = buildService();
+        registerAdvancedMemoryIpc(service as never);
+        const exportHandler = handlers.get('advancedMemory:export');
 
-            const result = await (registeredHandlers.get('advancedMemory:reject') as (event: unknown, _id: string) => Promise<unknown>)({}, 'pending-1');
-
-            expect(result).toEqual({ success: true });
-        });
-    });
-
-    describe('advancedMemory:remember', () => {
-        it('should create an explicit memory', async () => {
-            const handler = async (_: unknown, content: string) => {
-                return { success: true, data: { id: 'mem-new', content } };
-            };
-            registeredHandlers.set('advancedMemory:remember', handler);
-
-            const result = await (registeredHandlers.get('advancedMemory:remember') as (event: unknown, content: string) => Promise<unknown>)({}, 'Important fact');
-
-            expect(result).toHaveProperty('success', true);
-        });
-    });
-
-    describe('advancedMemory:recall', () => {
-        it('should recall memories by context', async () => {
-            const handler = async () => {
-                return { success: true, data: { memories: [], totalMatches: 0 } };
-            };
-            registeredHandlers.set('advancedMemory:recall', handler);
-
-            const result = await (registeredHandlers.get('advancedMemory:recall') as () => Promise<unknown>)();
-
-            expect(result).toHaveProperty('success', true);
-        });
-    });
-
-    describe('advancedMemory:getStats', () => {
-        it('should return memory statistics', async () => {
-            const handler = async () => {
-                return { success: true, data: { totalMemories: 10, pendingCount: 2 } };
-            };
-            registeredHandlers.set('advancedMemory:getStats', handler);
-
-            const result = await (registeredHandlers.get('advancedMemory:getStats') as () => Promise<unknown>)();
-
-            expect(result).toHaveProperty('success', true);
-        });
-    });
-
-    describe('advancedMemory:delete', () => {
-        it('should delete a memory', async () => {
-            const handler = async (_: unknown) => {
-                return { success: true };
-            };
-            registeredHandlers.set('advancedMemory:delete', handler);
-
-            const result = await (registeredHandlers.get('advancedMemory:delete') as (event: unknown, _id: string) => Promise<unknown>)({}, 'mem-1');
-
-            expect(result).toEqual({ success: true });
-        });
+        await exportHandler?.({}, '   ', 0);
+        expect(service.exportMemories).toHaveBeenCalledWith(undefined, 1);
     });
 });
+

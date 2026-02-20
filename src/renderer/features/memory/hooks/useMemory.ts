@@ -8,6 +8,14 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+import { recordMemoryInspectorHealthEvent } from '@/store/memory-inspector-health.store';
+
+import {
+    memoryInspectorErrorCodes,
+    parseAndValidateMemoryImportPayload,
+    validateMemoryId,
+    validateMemorySearchQuery,
+} from '../utils/memory-inspector-validation';
 
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
 
@@ -20,6 +28,7 @@ interface UseMemoryReturn {
     contextPreview: AdvancedSemanticFragment[];
     isLoading: boolean;
     error: string | null;
+    lastErrorCode: string | null;
 
     // Setters
     setPendingMemories: React.Dispatch<React.SetStateAction<PendingMemory[]>>;
@@ -47,66 +56,175 @@ interface UseMemoryReturn {
 
 export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryReturn {
     const { t } = useTranslation();
+    const unexpectedMessage = t('errors.unexpected');
+    const exportFailedMessage = t('memory.errors.exportFailed');
+    const importFailedMessage = t('memory.errors.importFailed');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastErrorCode, setLastErrorCode] = useState<string | null>(null);
     const [pendingMemories, setPendingMemories] = useState<PendingMemory[]>([]);
     const [confirmedMemories, setConfirmedMemories] = useState<AdvancedSemanticFragment[]>([]);
     const [stats, setStats] = useState<MemoryStatistics | null>(null);
     const [searchAnalytics, setSearchAnalytics] = useState<MemorySearchAnalytics | null>(null);
     const [contextPreview, setContextPreview] = useState<AdvancedSemanticFragment[]>([]);
 
+    const setHookError = useCallback((errorCode: string, message: string) => {
+        setLastErrorCode(errorCode);
+        setError(message);
+    }, []);
+
     const loadData = useCallback(async () => {
+        const startedAt = Date.now();
         setIsLoading(true);
         setError(null);
-        try {
-            const [pendingRes, statsRes, analyticsRes, contextRes] = await Promise.all([
-                window.electron.advancedMemory.getPending(),
-                window.electron.advancedMemory.getStats(),
-                window.electron.advancedMemory.getSearchAnalytics(),
-                window.electron.advancedMemory.recall({
-                    query: searchQuery,
-                    limit: 8,
-                    includeArchived: activeTab === 'archived'
-                })
-            ]);
+        setLastErrorCode(null);
 
-            if (pendingRes.success) { setPendingMemories(pendingRes.data); }
-            if (statsRes.success && statsRes.data) { setStats(statsRes.data); }
-            if (analyticsRes.success) { setSearchAnalytics(analyticsRes.data); }
-            if (contextRes.success) { setContextPreview(contextRes.data.memories); }
-
-            if (searchQuery) {
-                const searchRes = await window.electron.advancedMemory.search(searchQuery, 50);
-                if (searchRes.success) { setConfirmedMemories(searchRes.data); }
-            } else {
-                const recallRes = await window.electron.advancedMemory.recall({
-                    query: '',
-                    limit: 100,
-                    includeArchived: activeTab === 'archived'
-                });
-                if (recallRes.success) { setConfirmedMemories(recallRes.data.memories); }
-            }
-        } catch (err) {
-            setError(String(err));
-        } finally {
+        if (!validateMemorySearchQuery(searchQuery)) {
+            const errorCode = memoryInspectorErrorCodes.validation;
+            setHookError(errorCode, unexpectedMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.loadData',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
             setIsLoading(false);
+            return;
         }
-    }, [searchQuery, activeTab]);
 
-    useEffect(() => { void loadData(); }, [loadData]);
+        const maxAttempts = 2;
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                const [pendingRes, statsRes, analyticsRes, contextRes] = await Promise.all([
+                    window.electron.advancedMemory.getPending(),
+                    window.electron.advancedMemory.getStats(),
+                    window.electron.advancedMemory.getSearchAnalytics(),
+                    window.electron.advancedMemory.recall({
+                        query: searchQuery,
+                        limit: 8,
+                        includeArchived: activeTab === 'archived'
+                    })
+                ]);
+
+                if (pendingRes.success) { setPendingMemories(pendingRes.data); }
+                if (statsRes.success && statsRes.data) { setStats(statsRes.data); }
+                if (analyticsRes.success) { setSearchAnalytics(analyticsRes.data); }
+                if (contextRes.success) { setContextPreview(contextRes.data.memories); }
+
+                if (searchQuery) {
+                    const searchRes = await window.electron.advancedMemory.search(searchQuery, 50);
+                    if (searchRes.success) { setConfirmedMemories(searchRes.data); }
+                } else {
+                    const recallRes = await window.electron.advancedMemory.recall({
+                        query: '',
+                        limit: 100,
+                        includeArchived: activeTab === 'archived'
+                    });
+                    if (recallRes.success) { setConfirmedMemories(recallRes.data.memories); }
+                }
+
+                recordMemoryInspectorHealthEvent({
+                    channel: 'memory.loadData',
+                    status: 'success',
+                    durationMs: Date.now() - startedAt,
+                });
+                setIsLoading(false);
+                return;
+            } catch (err) {
+                if (attempt === maxAttempts) {
+                    const errorCode = memoryInspectorErrorCodes.loadFailed;
+                    setHookError(errorCode, String(err));
+                    recordMemoryInspectorHealthEvent({
+                        channel: 'memory.loadData',
+                        status: 'failure',
+                        durationMs: Date.now() - startedAt,
+                        errorCode,
+                    });
+                }
+            }
+        }
+        setIsLoading(false);
+    }, [activeTab, searchQuery, setHookError, unexpectedMessage]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            void loadData();
+        }, 0);
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [loadData]);
+
+    const recordOperationFailure = useCallback((errorCode: string, message: string, startedAt: number) => {
+        setHookError(errorCode, message);
+        recordMemoryInspectorHealthEvent({
+            channel: 'memory.operation',
+            status: 'failure',
+            durationMs: Date.now() - startedAt,
+            errorCode,
+        });
+    }, [setHookError]);
 
     const handleConfirm = useCallback(async (id: string) => {
+        const startedAt = Date.now();
+        if (!validateMemoryId(id)) {
+            const errorCode = memoryInspectorErrorCodes.validation;
+            setHookError(errorCode, unexpectedMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
+            return;
+        }
         const res = await window.electron.advancedMemory.confirm(id);
         if (res.success) {
             setPendingMemories(prev => prev.filter(p => p.id !== id));
             void loadData();
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+            return;
         }
-    }, [loadData]);
+        recordOperationFailure(
+            memoryInspectorErrorCodes.operationFailed,
+            unexpectedMessage,
+            startedAt
+        );
+    }, [loadData, recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleReject = useCallback(async (id: string) => {
+        const startedAt = Date.now();
+        if (!validateMemoryId(id)) {
+            const errorCode = memoryInspectorErrorCodes.validation;
+            setHookError(errorCode, unexpectedMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
+            return;
+        }
         const res = await window.electron.advancedMemory.reject(id);
-        if (res.success) { setPendingMemories(prev => prev.filter(p => p.id !== id)); }
-    }, []);
+        if (res.success) {
+            setPendingMemories(prev => prev.filter(p => p.id !== id));
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+            return;
+        }
+        recordOperationFailure(
+            memoryInspectorErrorCodes.operationFailed,
+            unexpectedMessage,
+            startedAt
+        );
+    }, [recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleConfirmAll = useCallback(async () => {
         const res = await window.electron.advancedMemory.confirmAll();
@@ -124,12 +242,35 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     }, [loadData]);
 
     const handleDelete = useCallback(async (id: string, setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+        const startedAt = Date.now();
+        if (!validateMemoryId(id)) {
+            const errorCode = memoryInspectorErrorCodes.validation;
+            setHookError(errorCode, unexpectedMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
+            return;
+        }
         const res = await window.electron.advancedMemory.delete(id);
         if (res.success) {
             setConfirmedMemories(prev => prev.filter(m => m.id !== id));
             setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+            return;
         }
-    }, []);
+        recordOperationFailure(
+            memoryInspectorErrorCodes.operationFailed,
+            unexpectedMessage,
+            startedAt
+        );
+    }, [recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleDeleteSelected = useCallback(async (selectedIds: Set<string>, setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>) => {
         if (selectedIds.size === 0) { return; }
@@ -158,9 +299,17 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     }, [loadData]);
 
     const handleExport = useCallback(async () => {
+        const startedAt = Date.now();
         const exportRes = await window.electron.advancedMemory.export(searchQuery || undefined, 500);
         if (!exportRes.success || !exportRes.data) {
-            setError(exportRes.error ?? t('memory.errors.exportFailed'));
+            const errorCode = memoryInspectorErrorCodes.operationFailed;
+            setHookError(errorCode, exportRes.error ?? exportFailedMessage);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.operation',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
             return;
         }
 
@@ -174,34 +323,60 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         anchor.click();
         document.body.removeChild(anchor);
         URL.revokeObjectURL(url);
-    }, [searchQuery, t]);
+        recordMemoryInspectorHealthEvent({
+            channel: 'memory.operation',
+            status: 'success',
+            durationMs: Date.now() - startedAt,
+        });
+    }, [exportFailedMessage, searchQuery, setHookError]);
 
     const handleImport = useCallback(async (fileContent: string, replaceExisting: boolean) => {
+        const startedAt = Date.now();
+        const validation = parseAndValidateMemoryImportPayload(fileContent, replaceExisting);
+        if (!validation.success) {
+            const message = validation.messageKey === 'memory.errors.importFailed'
+                ? importFailedMessage
+                : unexpectedMessage;
+            setHookError(validation.errorCode, message);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.import',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: validation.errorCode,
+            });
+            return;
+        }
         try {
-            const parsed = JSON.parse(fileContent) as {
-                memories?: Array<Partial<AdvancedSemanticFragment>>;
-                pendingMemories?: Array<Partial<PendingMemory>>;
-            } | Array<Partial<AdvancedSemanticFragment>>;
-
-            const payload = Array.isArray(parsed)
-                ? { memories: parsed, replaceExisting }
-                : {
-                    memories: parsed.memories ?? [],
-                    pendingMemories: parsed.pendingMemories ?? [],
-                    replaceExisting
-                };
-
-            const importRes = await window.electron.advancedMemory.import(payload);
+            const importRes = await window.electron.advancedMemory.import(validation.payload);
             if (!importRes.success) {
-                setError(importRes.error ?? t('memory.errors.importFailed'));
+                const errorCode = memoryInspectorErrorCodes.importFailed;
+                setHookError(errorCode, importRes.error ?? importFailedMessage);
+                recordMemoryInspectorHealthEvent({
+                    channel: 'memory.import',
+                    status: 'failure',
+                    durationMs: Date.now() - startedAt,
+                    errorCode,
+                });
                 return;
             }
 
             await loadData();
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.import',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
         } catch (importError) {
-            setError(`${t('memory.errors.importFailed')}: ${String(importError)}`);
+            const errorCode = memoryInspectorErrorCodes.importFailed;
+            setHookError(errorCode, `${importFailedMessage}: ${String(importError)}`);
+            recordMemoryInspectorHealthEvent({
+                channel: 'memory.import',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode,
+            });
         }
-    }, [loadData, t]);
+    }, [importFailedMessage, loadData, setHookError, unexpectedMessage]);
 
     const handleShare = useCallback(async (memoryId: string, targetProjectId: string) => {
         const res = await window.electron.advancedMemory.shareWithProject(memoryId, targetProjectId);
@@ -224,7 +399,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
     }, [loadData]);
 
     return {
-        pendingMemories, confirmedMemories, stats, searchAnalytics, contextPreview, isLoading, error,
+        pendingMemories, confirmedMemories, stats, searchAnalytics, contextPreview, isLoading, error, lastErrorCode,
         setPendingMemories, setConfirmedMemories, loadData,
         handleConfirm, handleReject, handleConfirmAll, handleRejectAll, handleRunDecay,
         handleDelete, handleDeleteSelected, handleArchive, handleArchiveSelected, handleRestore,

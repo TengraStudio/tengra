@@ -56,6 +56,8 @@ const searchOptionsSchema = z.object({
     limit: z.number().int().min(1).max(1000).optional()
 }).optional();
 
+const searchQuerySchema = z.string().trim().min(1).max(500);
+
 const exportSearchOptionsSchema = z.object({
     regex: z.boolean().optional(),
     caseSensitive: z.boolean().optional(),
@@ -696,7 +698,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
                 defaultValue: [],
                 argsSchema: z.tuple([
                     sessionIdSchema,
-                    z.string(),
+                    searchQuerySchema,
                     searchOptionsSchema
                 ])
             }
@@ -769,7 +771,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
                 defaultValue: { success: false, error: 'export failed' },
                 argsSchema: z.tuple([
                     sessionIdSchema,
-                    z.string(),
+                    searchQuerySchema,
                     exportSearchOptionsSchema
                 ])
             }

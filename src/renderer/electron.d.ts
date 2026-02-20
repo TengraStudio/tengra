@@ -99,6 +99,13 @@ import {
     PendingMemory,
     RecallContext,
 } from '@/shared/types/advanced-memory';
+import {
+    VoiceCommand,
+    VoiceInfo,
+    VoiceRecognitionResult,
+    VoiceSettings,
+    VoiceSynthesisOptions,
+} from '@/shared/types/voice';
 
 export interface FileEntry {
     name: string;
@@ -1362,6 +1369,8 @@ export interface ElectronAPI {
             authMethod: 'password' | 'key';
             message: string;
             error?: string;
+            errorCode?: string;
+            uiState?: 'ready' | 'failure' | 'empty';
         }>;
         startSessionRecording: (connectionId: string) => Promise<SSHSessionRecording>;
         stopSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
@@ -2229,6 +2238,53 @@ export interface ElectronAPI {
         delete: (id: string) => Promise<void>;
         execute: (id: string, context?: Record<string, unknown>) => Promise<import('@shared/types/workflow.types').WorkflowExecutionResult>;
         triggerManual: (triggerId: string, context?: Record<string, unknown>) => Promise<void>;
+    };
+
+    voice: {
+        getSettings: () => Promise<VoiceSettings>;
+        updateSettings: (settings: Partial<VoiceSettings>) => Promise<{ success: boolean; settings: VoiceSettings }>;
+        getCommands: () => Promise<VoiceCommand[]>;
+        addCommand: (command: VoiceCommand) => Promise<{ success: boolean; command: VoiceCommand }>;
+        removeCommand: (commandId: string) => Promise<{ success: boolean }>;
+        processTranscript: (transcript: string) => Promise<{
+            success: boolean;
+            result: VoiceRecognitionResult;
+            command: VoiceCommand | null;
+        }>;
+        executeCommand: (command: VoiceCommand) => Promise<{ success: boolean; action: string }>;
+        getVoices: () => Promise<VoiceInfo[]>;
+        synthesize: (options: VoiceSynthesisOptions) => Promise<{ success: boolean }>;
+    };
+
+    extension: {
+        getAll: () => Promise<{
+            success: boolean;
+            extensions: Array<{
+                manifest: import('@shared/types/extension').ExtensionManifest;
+                status: import('@shared/types/extension').ExtensionStatus;
+            }>;
+        }>;
+        get: (extensionId: string) => Promise<{
+            success: boolean;
+            extension?: {
+                manifest: import('@shared/types/extension').ExtensionManifest;
+                status: import('@shared/types/extension').ExtensionStatus;
+            };
+        }>;
+        install: (extensionPath: string) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
+        uninstall: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        activate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        deactivate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        devStart: (options: import('@shared/types/extension').ExtensionDevOptions) => Promise<{ success: boolean; error?: string }>;
+        devStop: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        devReload: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        test: (options: import('@shared/types/extension').ExtensionTestOptions) => Promise<import('@shared/types/extension').ExtensionTestResult>;
+        publish: (options: import('@shared/types/extension').ExtensionPublishOptions) => Promise<import('@shared/types/extension').ExtensionPublishResult>;
+        getProfile: (extensionId: string) => Promise<{
+            success: boolean;
+            profile?: import('@shared/types/extension').ExtensionProfileData;
+        }>;
+        validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
     };
 }
 

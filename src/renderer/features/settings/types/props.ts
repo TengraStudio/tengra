@@ -13,6 +13,8 @@ export interface SettingsSharedProps {
     settings: AppSettings | null
     setSettings: (s: AppSettings | null) => Promise<void>
     isLoading: boolean
+    settingsUiState: 'ready' | 'failure'
+    lastErrorCode: string | null
     statusMessage: string
     setStatusMessage: (m: string) => void
     authBusy: string | null

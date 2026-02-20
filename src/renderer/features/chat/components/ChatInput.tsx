@@ -105,7 +105,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                 e.preventDefault();
                 const hasContent = ctrl.input.trim() !== '' || ctrl.attachments.length > 0;
                 if (!ctrl.isLoading && hasContent) {
-                    void ctrl.sendMessage();
+                    void ctrl.sendMessageWithTelemetry();
                 }
             }
         };
@@ -143,6 +143,23 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     onRemove={ctrl.removeAttachment}
                     t={ctrl.t}
                 />
+                {ctrl.lastError && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="mb-2 px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-xs flex items-center justify-between gap-2"
+                    >
+                        <span>{ctrl.t(ctrl.lastError.messageKey)}</span>
+                        <button
+                            type="button"
+                            onClick={ctrl.clearLastError}
+                            className="p-1 rounded hover:bg-destructive/20 transition-colors"
+                            aria-label={ctrl.t('common.close')}
+                        >
+                            <X size={12} aria-hidden="true" />
+                        </button>
+                    </div>
+                )}
 
                 <PromptCommandMenu
                     show={ctrl.showCommandMenu && ctrl.filteredPrompts.length > 0}
@@ -159,7 +176,7 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                     t={ctrl.t}
                 />
 
-                <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
+	                <div className="relative flex items-end gap-2 bg-muted/30 border border-border/50 rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
                     <div className="flex items-center justify-center gap-1.5 px-1 py-0.5">
                         <div className="relative">
                             <button
@@ -232,14 +249,19 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
                         aria-haspopup="listbox"
                     />
 
-                    <EnhanceButton ctrl={ctrl} />
-                    <SendButton ctrl={ctrl} />
-                </div>
-                <p id="chat-input-hint" className="sr-only">
-                    Press Enter to send, Shift plus Enter for a new line, and type slash to open prompt suggestions.
-                </p>
-            </div>
-        );
+	                    <EnhanceButton ctrl={ctrl} />
+	                    <SendButton ctrl={ctrl} />
+	                </div>
+                {ctrl.input.trim() === '' && ctrl.attachments.length === 0 && (
+                    <p className="text-xxs text-muted-foreground mt-1 px-1">
+                        {ctrl.t('input.placeholder.default')}
+                    </p>
+                )}
+	                <p id="chat-input-hint" className="sr-only">
+	                    {ctrl.t('input.promptSuggestions')}
+	                </p>
+	            </div>
+	        );
     },
     (prevProps, nextProps) => {
         return (
@@ -445,13 +467,13 @@ const SendButton: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => {
     return (
         <button
             type="button"
-            onClick={
-                isLoading
-                    ? ctrl.stopGeneration
-                    : () => {
-                        void ctrl.sendMessage();
-                    }
-            }
+	            onClick={
+	                isLoading
+	                    ? ctrl.stopGeneration
+	                    : () => {
+	                        void ctrl.sendMessageWithTelemetry();
+	                    }
+	            }
             disabled={!isLoading && !hasContent}
             className={btnClass}
             aria-label={isLoading ? ctrl.t('common.stop') : ctrl.t('common.send')}

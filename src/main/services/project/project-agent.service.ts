@@ -11,10 +11,10 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
-    AgentTeamworkAnalytics,
     AgentProfile,
     AgentStartOptions,
     AgentTaskHistoryItem,
+    AgentTeamworkAnalytics,
     AgentTemplate,
     AgentTemplateCategory,
     AgentTemplateExport,

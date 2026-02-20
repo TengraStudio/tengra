@@ -20,6 +20,21 @@ import { ipcMain } from 'electron';
 
 const LOG_TAG = 'AdvancedMemoryIPC';
 
+const normalizeSearchLimit = (limit?: number): number => {
+    if (typeof limit !== 'number' || !Number.isFinite(limit)) {
+        return 10;
+    }
+    return Math.max(1, Math.min(200, Math.floor(limit)));
+};
+
+const normalizeOptionalQuery = (query?: string): string | undefined => {
+    if (typeof query !== 'string') {
+        return undefined;
+    }
+    const trimmed = query.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+};
+
 export function registerAdvancedMemoryIpc(advancedMemoryService: AdvancedMemoryService): void {
     registerPendingHandlers(advancedMemoryService);
     registerExplicitHandlers(advancedMemoryService);
@@ -122,7 +137,11 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
     }, { onError: (error) => ({ success: false, error: String(error), data: { memories: [], totalMatches: 0 } }) }));
 
     ipcMain.handle('advancedMemory:search', createIpcHandler('advancedMemory:search', async (_event, query: string, limit?: number) => {
-        const memories = await advancedMemoryService.searchMemoriesHybrid(query, limit ?? 10);
+        const normalizedQuery = normalizeOptionalQuery(query);
+        if (!normalizedQuery) {
+            return { success: true, data: [] };
+        }
+        const memories = await advancedMemoryService.searchMemoriesHybrid(normalizedQuery, normalizeSearchLimit(limit));
         return { success: true, data: memories };
     }, { onError: (error) => ({ success: false, error: String(error), data: [] }) }));
 
@@ -160,7 +179,7 @@ function registerRecallHandlers(advancedMemoryService: AdvancedMemoryService): v
         query?: string,
         limit?: number
     ) => {
-        const exported = await advancedMemoryService.exportMemories(query, limit ?? 200);
+        const exported = await advancedMemoryService.exportMemories(normalizeOptionalQuery(query), normalizeSearchLimit(limit));
         return { success: true, data: exported };
     }, { onError: (error) => ({ success: false, error: String(error) }) }));
 

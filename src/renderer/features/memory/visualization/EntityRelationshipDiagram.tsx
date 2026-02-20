@@ -1,4 +1,3 @@
-import React, { useCallback, useEffect, useState } from 'react';
 import {
     Background,
     Controls,
@@ -11,8 +10,10 @@ import {
     useNodesState,
 } from '@xyflow/react';
 import { Database, RotateCcw } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
+
 import { appLogger } from '../../../utils/renderer-logger';
 
 import '@xyflow/react/dist/style.css';

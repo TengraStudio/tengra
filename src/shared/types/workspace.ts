@@ -66,6 +66,8 @@ export interface MountForm {
     password: string
     privateKey: string
     passphrase: string
+    saveProfile?: boolean
 }
+
 
 

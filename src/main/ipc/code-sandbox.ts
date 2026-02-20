@@ -28,34 +28,34 @@ const LanguagesResponseSchema = z.object({
 });
 
 const JS_BLOCKED_PATTERNS = [
-    'process.',
-    'require(',
-    'import ',
-    'child_process',
-    'fs.',
-    'net.',
-    'http.'
+    /\bprocess\b/i,
+    /\brequire\s*\(/i,
+    /\bimport\s+/i,
+    /\bchild_process\b/i,
+    /\bfs\b/i,
+    /\bnet\b/i,
+    /\bhttp\b/i,
+    /\bhttps\b/i
 ];
 
 const PYTHON_BLOCKED_PATTERNS = [
-    'import os',
-    'import subprocess',
-    'import socket',
-    '__import__',
-    'open('
+    /\bimport\s+os\b/i,
+    /\bimport\s+subprocess\b/i,
+    /\bimport\s+socket\b/i,
+    /__import__/i,
+    /\bopen\s*\(/i
 ];
 
 const SHELL_BLOCKED_PATTERNS = [
-    'rm -rf',
-    'format ',
-    'shutdown',
-    'reg delete',
-    'del /f /s /q'
+    /\brm\s+-rf\b/i,
+    /\bformat\b/i,
+    /\bshutdown\b/i,
+    /\breg\s+delete\b/i,
+    /\bdel\s+\/f\s+\/s\s+\/q\b/i
 ];
 
-const containsBlockedPattern = (code: string, patterns: string[]): boolean => {
-    const normalized = code.toLowerCase();
-    return patterns.some(pattern => normalized.includes(pattern));
+const containsBlockedPattern = (code: string, patterns: RegExp[]): boolean => {
+    return patterns.some(pattern => pattern.test(code));
 };
 
 const executeJavascriptSandbox = async (

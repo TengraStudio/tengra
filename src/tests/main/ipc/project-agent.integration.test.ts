@@ -81,6 +81,13 @@ describe('Project Agent IPC Handlers', () => {
             expect(mockProjectAgentService.start).toHaveBeenCalledWith(options);
         });
 
+        it('should reject invalid start payload', async () => {
+            const handler = registeredHandlers.get('project:start');
+            const result = await handler({} as IpcMainInvokeEvent, { task: '   ' });
+            expect(mockProjectAgentService.start).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+        });
+
         it('should stop a project agent task', async () => {
             const handler = registeredHandlers.get('project:stop');
             await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });

@@ -1,5 +1,19 @@
 # Değişiklik Günlüğü
 
+## [2026-02-20]
+
+### Ses Öncelikli Arayüz Uygulaması (UI-11)
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Özel bir ayarlar sekmesi, genel sesli eylemler ve gerçek zamanlı görsel geri bildirim içeren kapsamlı bir sesli kontrol sistemi uygulandı.
+
+- **Ses Ayarları**: Uyandırma kelimeleri, konuşma sentezi ve özel komutları yapılandırmak için yeni bir sekme eklendi.
+- **Ses Katmanı**: Gerçek zamanlı konuşmadan metne dönüştürme ve durum bildirimi için görsel bir geri bildirim sistemi uygulandı.
+- **Sesli Geri Bildirim**: Sesle tetiklenen eylemler ve sistem durumu için sesli onay eklendi.
+- **Eller Serbest Gezinme**: Uygulama genelinde sesli olaylar aracılığıyla gezinme ve komut yürütme etkinleştirildi.
+- **Özel Komutlar**: Sistem eylemlerine eşlenen kullanıcı tanımlı sesli ifadeler için destek eklendi.
+
 ## [2026-02-18]
 
 ### Gelişmiş Bellek Versiyonlama ve Paylaşım (MEM-03/07/08)

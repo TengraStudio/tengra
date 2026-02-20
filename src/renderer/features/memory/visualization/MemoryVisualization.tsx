@@ -1,8 +1,10 @@
+import { Database, History, Maximize2,Network } from 'lucide-react';
 import React, { useState } from 'react';
+
 import { useTranslation } from '@/i18n';
-import { Network, Database, History, Maximize2 } from 'lucide-react';
-import { MemoryGraphView } from './MemoryGraphView';
+
 import { EntityRelationshipDiagram } from './EntityRelationshipDiagram';
+import { MemoryGraphView } from './MemoryGraphView';
 import { MemoryTimelineView } from './MemoryTimelineView';
 
 type VizTab = 'graph' | 'entities' | 'timeline';

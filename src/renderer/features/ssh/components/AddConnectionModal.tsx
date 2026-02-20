@@ -1,6 +1,13 @@
 
 import React, { useState } from 'react';
 
+export interface SSHProfileTestUIResult {
+    success: boolean;
+    message: string;
+    errorCode?: string;
+    uiState: 'ready' | 'failure';
+}
+
 interface AddConnectionModalProps {
     isOpen: boolean
     onClose: () => void
@@ -18,6 +25,7 @@ interface AddConnectionModalProps {
     setShouldSaveProfile: (val: boolean) => void
     isConnecting: boolean
     onConnect: () => void
+    onTestProfile: () => Promise<SSHProfileTestUIResult>
 }
 
 export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
@@ -29,34 +37,25 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     shouldSaveProfile,
     setShouldSaveProfile,
     isConnecting,
-    onConnect
+    onConnect,
+    onTestProfile
 }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [testMessage, setTestMessage] = useState('');
+    const [testState, setTestState] = useState<'ready' | 'failure' | null>(null);
 
     const handleTestProfile = async () => {
         setIsTesting(true);
         setTestMessage('');
+        setTestState(null);
         try {
-            const result = await window.electron.ssh.testProfile({
-                id: 'test-profile',
-                name: newConnection.name ?? 'Test Profile',
-                host: newConnection.host,
-                port: newConnection.port,
-                username: newConnection.username,
-                password: newConnection.password,
-                privateKey: newConnection.privateKey,
-                authType: newConnection.privateKey ? 'key' : 'password',
-                status: 'connecting'
-            });
-            if (result.success) {
-                setTestMessage(t('ssh.profileTestSuccess', { latency: result.latencyMs }));
-            } else {
-                setTestMessage(t('ssh.profileTestFailed', { error: result.error ?? 'Unknown error' }));
-            }
+            const result = await onTestProfile();
+            setTestMessage(result.message);
+            setTestState(result.uiState);
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error';
+            const message = error instanceof Error ? error.message : t('ssh.unknownError');
             setTestMessage(t('ssh.profileTestFailed', { error: message }));
+            setTestState('failure');
         } finally {
             setIsTesting(false);
         }
@@ -146,8 +145,8 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                         {isConnecting ? t('ssh.connecting') : t('ssh.connect')}
                     </button>
                 </div>
-                {testMessage && (
-                    <div className="text-xs mt-2 text-muted-foreground">
+                {testMessage !== '' && (
+                    <div className={`text-xs mt-2 ${testState === 'failure' ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {testMessage}
                     </div>
                 )}

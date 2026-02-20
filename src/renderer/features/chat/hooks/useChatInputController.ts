@@ -1,11 +1,40 @@
 import { useCallback, useMemo, useState } from 'react';
+import { z } from 'zod';
 
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
 import { useModel } from '@/context/ModelContext';
 import { useTranslation } from '@/i18n';
+import { recordChatHealthEvent } from '@/store/chat-health.store';
 import { Prompt } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
+
+const CHAT_INPUT_MAX_LENGTH = 12000;
+const CHAT_INPUT_SCHEMA = z.string().max(CHAT_INPUT_MAX_LENGTH);
+const CHAT_INPUT_ERROR = {
+    INPUT_VALIDATION: {
+        code: 'CHAT_INPUT_VALIDATION_ERROR',
+        messageKey: 'errors.unexpected'
+    },
+    SEND_BLOCKED: {
+        code: 'CHAT_SEND_BLOCKED',
+        messageKey: 'errors.unexpected'
+    },
+    SEND_FAILED: {
+        code: 'CHAT_SEND_FAILED',
+        messageKey: 'errors.unexpected'
+    },
+    ENHANCE_FAILED: {
+        code: 'CHAT_ENHANCE_FAILED',
+        messageKey: 'errors.unexpected'
+    }
+} as const;
+
+type ChatInputErrorState = {
+    code: string;
+    messageKey: string;
+    uiState: 'failure';
+} | null;
 
 function usePromptCommands(prompts: Prompt[], input: string, setInput: (v: string) => void) {
     const [showCommandMenu, setShowCommandMenu] = useState(false);
@@ -82,7 +111,35 @@ export function useChatInputController() {
 
     const [isDragging, setIsDragging] = useState(false);
     const [isEnhancing, setIsEnhancing] = useState(false);
-    const cmd = usePromptCommands(prompts, input, setInput);
+    const [lastError, setLastError] = useState<ChatInputErrorState>(null);
+
+    const clearLastError = useCallback(() => {
+        setLastError(null);
+    }, []);
+
+    const updateInput = useCallback((nextValue: string) => {
+        const normalized = nextValue.replace(/\r\n/g, '\n');
+        const parsed = CHAT_INPUT_SCHEMA.safeParse(normalized);
+        if (!parsed.success) {
+            setInput(normalized.slice(0, CHAT_INPUT_MAX_LENGTH));
+            setLastError({
+                code: CHAT_INPUT_ERROR.INPUT_VALIDATION.code,
+                messageKey: CHAT_INPUT_ERROR.INPUT_VALIDATION.messageKey,
+                uiState: 'failure'
+            });
+            recordChatHealthEvent({
+                channel: 'chat.input',
+                status: 'validation-failure',
+                errorCode: CHAT_INPUT_ERROR.INPUT_VALIDATION.code
+            });
+            return;
+        }
+
+        setInput(parsed.data);
+        setLastError(null);
+    }, [setInput]);
+
+    const cmd = usePromptCommands(prompts, input, updateInput);
 
     const getOllamaEnhanceModel = useCallback(async () => {
         const running = await window.electron.isOllamaRunning();
@@ -130,9 +187,12 @@ export function useChatInputController() {
             let text = res.content.trim();
             if (text.startsWith('"') && text.endsWith('"')) { text = text.slice(1, -1); }
             else if (text.startsWith("'") && text.endsWith("'")) { text = text.slice(1, -1); }
-            setInput(text);
+            updateInput(text);
+            setLastError(null);
+            return true;
         }
-    }, [input, setInput, t]);
+        return false;
+    }, [input, updateInput, t]);
 
     const getEnhanceModel = useCallback(async () => {
         const ollama = await getOllamaEnhanceModel();
@@ -143,15 +203,92 @@ export function useChatInputController() {
     const handleEnhancePrompt = useCallback(async () => {
         if (input.trim() === '' || isEnhancing || isLoading) { return; }
         setIsEnhancing(true);
+        const startedAt = Date.now();
         try {
             const { model, provider } = await getEnhanceModel();
-            if (model) { await callEnhanceLlm(model, provider); }
+            if (!model) {
+                throw new Error('Enhance model unavailable');
+            }
+            let enhanced = false;
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+                try {
+                    enhanced = await callEnhanceLlm(model, provider);
+                    if (enhanced) { break; }
+                } catch (error) {
+                    if (attempt === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+            if (!enhanced) {
+                throw new Error('Enhance response was empty');
+            }
+            setLastError(null);
+            recordChatHealthEvent({
+                channel: 'chat.enhance',
+                status: 'success',
+                durationMs: Date.now() - startedAt
+            });
         } catch (error) {
             appLogger.error('ChatInput', 'Failed to enhance prompt', error as Error);
+            setLastError({
+                code: CHAT_INPUT_ERROR.ENHANCE_FAILED.code,
+                messageKey: CHAT_INPUT_ERROR.ENHANCE_FAILED.messageKey,
+                uiState: 'failure'
+            });
+            recordChatHealthEvent({
+                channel: 'chat.enhance',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: CHAT_INPUT_ERROR.ENHANCE_FAILED.code
+            });
         } finally {
             setIsEnhancing(false);
         }
     }, [input, isEnhancing, isLoading, getEnhanceModel, callEnhanceLlm]);
+
+    const sendMessageWithTelemetry = useCallback(async () => {
+        const hasContent = input.trim() !== '' || attachments.length > 0;
+        if (!hasContent || isLoading) {
+            setLastError({
+                code: CHAT_INPUT_ERROR.SEND_BLOCKED.code,
+                messageKey: CHAT_INPUT_ERROR.SEND_BLOCKED.messageKey,
+                uiState: 'failure'
+            });
+            recordChatHealthEvent({
+                channel: 'chat.send',
+                status: 'validation-failure',
+                errorCode: CHAT_INPUT_ERROR.SEND_BLOCKED.code
+            });
+            return;
+        }
+
+        const startedAt = Date.now();
+        try {
+            await sendMessage();
+            setLastError(null);
+            recordChatHealthEvent({
+                channel: 'chat.send',
+                status: 'success',
+                durationMs: Date.now() - startedAt
+            });
+        } catch (error) {
+            appLogger.error('ChatInput', 'Failed to send message', error as Error);
+            setLastError({
+                code: CHAT_INPUT_ERROR.SEND_FAILED.code,
+                messageKey: CHAT_INPUT_ERROR.SEND_FAILED.messageKey,
+                uiState: 'failure'
+            });
+            recordChatHealthEvent({
+                channel: 'chat.send',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: CHAT_INPUT_ERROR.SEND_FAILED.code
+            });
+        }
+    }, [attachments.length, input, isLoading, sendMessage]);
 
     const onDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault(); e.stopPropagation();
@@ -161,13 +298,15 @@ export function useChatInputController() {
     }, [processFile]);
 
     return {
-        input, setInput, attachments, removeAttachment, processFile,
-        isLoading, sendMessage, stopGeneration, isListening, startListening, stopListening,
+        input, setInput: updateInput, attachments, removeAttachment, processFile,
+        isLoading, sendMessage, sendMessageWithTelemetry, stopGeneration, isListening, startListening, stopListening,
         contextTokens, selectedModel, selectedProvider, selectedModels,
         handleSelectModel, removeSelectedModel, groupedModels, setIsModelMenuOpen,
         toggleFavorite, isFavorite, appSettings, quotas, codexUsage, claudeQuota,
         language, t, isDragging, setIsDragging, isEnhancing, handleEnhancePrompt, onDrop,
+        lastError, clearLastError,
         systemMode, setSystemMode,
+        chatInputMaxLength: CHAT_INPUT_MAX_LENGTH,
         getModelReasoningLevel, setModelReasoningLevel,
         ...cmd
     };

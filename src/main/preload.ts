@@ -57,16 +57,16 @@ import {
 import {
     AdvancedSemanticFragment,
     MemoryCategory,
-    SharedMemoryAnalytics,
-    SharedMemoryNamespace,
-    SharedMemorySyncRequest,
-    SharedMemorySyncResult,
     MemoryImportResult,
     MemorySearchAnalytics,
     MemorySearchHistoryEntry,
     MemoryStatistics,
     PendingMemory,
     RecallContext,
+    SharedMemoryAnalytics,
+    SharedMemoryNamespace,
+    SharedMemorySyncRequest,
+    SharedMemorySyncResult,
 } from '@shared/types/advanced-memory';
 import {
     AgentTeamworkAnalytics,
@@ -921,42 +921,48 @@ export interface ElectronAPI {
             createdAt: number;
             updatedAt: number;
         }>;
-        listNotes: () => Promise<{ notes: Array<{
-            id: string;
-            title: string;
-            transcript: string;
-            summary: string;
-            keyPoints: string[];
-            actionItems: string[];
-            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
-            speakers: string[];
-            createdAt: number;
-            updatedAt: number;
-        }> }>;
-        getNote: (noteId: string) => Promise<{ note: {
-            id: string;
-            title: string;
-            transcript: string;
-            summary: string;
-            keyPoints: string[];
-            actionItems: string[];
-            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
-            speakers: string[];
-            createdAt: number;
-            updatedAt: number;
-        } | null }>;
-        searchNotes: (payload: { query: string; limit?: number }) => Promise<{ notes: Array<{
-            id: string;
-            title: string;
-            transcript: string;
-            summary: string;
-            keyPoints: string[];
-            actionItems: string[];
-            highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
-            speakers: string[];
-            createdAt: number;
-            updatedAt: number;
-        }> }>;
+        listNotes: () => Promise<{
+            notes: Array<{
+                id: string;
+                title: string;
+                transcript: string;
+                summary: string;
+                keyPoints: string[];
+                actionItems: string[];
+                highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+                speakers: string[];
+                createdAt: number;
+                updatedAt: number;
+            }>
+        }>;
+        getNote: (noteId: string) => Promise<{
+            note: {
+                id: string;
+                title: string;
+                transcript: string;
+                summary: string;
+                keyPoints: string[];
+                actionItems: string[];
+                highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+                speakers: string[];
+                createdAt: number;
+                updatedAt: number;
+            } | null
+        }>;
+        searchNotes: (payload: { query: string; limit?: number }) => Promise<{
+            notes: Array<{
+                id: string;
+                title: string;
+                transcript: string;
+                summary: string;
+                keyPoints: string[];
+                actionItems: string[];
+                highlights: Array<{ timestampSec: number; text: string; speaker: string }>;
+                speakers: string[];
+                createdAt: number;
+                updatedAt: number;
+            }>
+        }>;
         deleteNote: (noteId: string) => Promise<{ deleted: boolean }>;
     };
 
@@ -1478,6 +1484,8 @@ export interface ElectronAPI {
             authMethod: 'password' | 'key';
             message: string;
             error?: string;
+            errorCode?: string;
+            uiState?: 'ready' | 'failure' | 'empty';
         }>;
         startSessionRecording: (connectionId: string) => Promise<SSHSessionRecording>;
         stopSessionRecording: (connectionId: string) => Promise<SSHSessionRecording | null>;
@@ -1592,6 +1600,10 @@ export interface ElectronAPI {
     // Files
     readPdf: (path: string) => Promise<{ success: boolean; text?: string; error?: string }>;
     selectDirectory: () => Promise<{ success: boolean; path?: string }>;
+    selectFile: (options?: {
+        title?: string;
+        filters?: { name: string; extensions: string[] }[];
+    }) => Promise<{ success: boolean; path?: string }>;
     listDirectory: (
         path: string
     ) => Promise<{ success: boolean; files?: FileEntry[]; error?: string }>;
@@ -2364,6 +2376,35 @@ export interface ElectronAPI {
         dismissWarning: () => Promise<{ success: boolean; error?: string }>;
         getStatus: () => Promise<{ installed: boolean; shouldShowWarning: boolean }>;
         setInstalled: (installed: boolean) => Promise<{ success: boolean; error?: string }>;
+        // Extension SDK APIs (MKT-DEV-01)
+        getAll: () => Promise<{
+            success: boolean;
+            extensions: Array<{
+                manifest: import('@shared/types/extension').ExtensionManifest;
+                status: import('@shared/types/extension').ExtensionStatus;
+            }>;
+        }>;
+        get: (extensionId: string) => Promise<{
+            success: boolean;
+            extension?: {
+                manifest: import('@shared/types/extension').ExtensionManifest;
+                status: import('@shared/types/extension').ExtensionStatus;
+            };
+        }>;
+        install: (extensionPath: string) => Promise<{ success: boolean; extensionId?: string; error?: string }>;
+        uninstall: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        activate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        deactivate: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        devStart: (options: import('@shared/types/extension').ExtensionDevOptions) => Promise<{ success: boolean; error?: string }>;
+        devStop: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        devReload: (extensionId: string) => Promise<{ success: boolean; error?: string }>;
+        test: (options: import('@shared/types/extension').ExtensionTestOptions) => Promise<import('@shared/types/extension').ExtensionTestResult>;
+        publish: (options: import('@shared/types/extension').ExtensionPublishOptions) => Promise<import('@shared/types/extension').ExtensionPublishResult>;
+        getProfile: (extensionId: string) => Promise<{
+            success: boolean;
+            profile?: import('@shared/types/extension').ExtensionProfileData;
+        }>;
+        validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
     };
 }
 
@@ -3056,6 +3097,9 @@ const api: ElectronAPI = {
 
     readPdf: path => ipcRenderer.invoke('files:readPdf', path),
     selectDirectory: () => ipcRenderer.invoke('files:selectDirectory'),
+    selectFile: (options?: { title?: string; filters?: { name: string; extensions: string[] }[] }) =>
+        ipcRenderer.invoke('files:selectFile', options),
+
     listDirectory: path => ipcRenderer.invoke('files:listDirectory', path),
     readFile: path => ipcRenderer.invoke('files:readFile', path),
     writeFile: (
@@ -3696,6 +3740,20 @@ const api: ElectronAPI = {
         getStatus: () => ipcRenderer.invoke('extension:getStatus'),
         setInstalled: (installed: boolean) =>
             ipcRenderer.invoke('extension:setInstalled', installed),
+        // Extension SDK APIs (MKT-DEV-01)
+        getAll: () => ipcRenderer.invoke('extension:get-all'),
+        get: (extensionId: string) => ipcRenderer.invoke('extension:get', extensionId),
+        install: (extensionPath: string) => ipcRenderer.invoke('extension:install', extensionPath),
+        uninstall: (extensionId: string) => ipcRenderer.invoke('extension:uninstall', extensionId),
+        activate: (extensionId: string) => ipcRenderer.invoke('extension:activate', extensionId),
+        deactivate: (extensionId: string) => ipcRenderer.invoke('extension:deactivate', extensionId),
+        devStart: (options: unknown) => ipcRenderer.invoke('extension:dev-start', options),
+        devStop: (extensionId: string) => ipcRenderer.invoke('extension:dev-stop', extensionId),
+        devReload: (extensionId: string) => ipcRenderer.invoke('extension:dev-reload', extensionId),
+        test: (options: unknown) => ipcRenderer.invoke('extension:test', options),
+        publish: (options: unknown) => ipcRenderer.invoke('extension:publish', options),
+        getProfile: (extensionId: string) => ipcRenderer.invoke('extension:get-profile', extensionId),
+        validate: (manifest: unknown) => ipcRenderer.invoke('extension:validate', manifest),
     },
     sdCpp: {
         getStatus: () => ipcRenderer.invoke('sd-cpp:getStatus'),

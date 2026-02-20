@@ -1,5 +1,4 @@
 import { registerProjectIpc } from '@main/ipc/project';
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Electron ipcMain

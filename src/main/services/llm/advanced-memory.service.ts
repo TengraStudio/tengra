@@ -26,11 +26,6 @@ import {
     MemoryScoreFactors,
     MemorySearchAnalytics,
     MemorySearchHistoryEntry,
-    SharedMemoryAnalytics,
-    SharedMemoryMergeConflict,
-    SharedMemoryNamespace,
-    SharedMemorySyncRequest,
-    SharedMemorySyncResult,
     MemorySource,
     MemoryStatistics,
     MemoryStatus,
@@ -38,6 +33,11 @@ import {
     PendingMemory,
     RecallContext,
     RecallResult,
+    SharedMemoryAnalytics,
+    SharedMemoryMergeConflict,
+    SharedMemoryNamespace,
+    SharedMemorySyncRequest,
+    SharedMemorySyncResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
 import { JsonObject } from '@shared/types/common';
