@@ -18,11 +18,19 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      app: ${{ steps.filter.outputs.app }}
-      docs: ${{ steps.filter.outputs.docs }}
+      app: ${{ steps.dependabot.outputs.app || steps.filter.outputs.app }}
+      docs: ${{ steps.dependabot.outputs.docs || steps.filter.outputs.docs }}
     steps:
-    - uses: actions/checkout@v4
+    - id: dependabot
+      if: github.actor == 'dependabot[bot]'
+      run: |
+        echo "app=true" >> "$GITHUB_OUTPUT"
+        echo "docs=true" >> "$GITHUB_OUTPUT"
+
+    - if: github.actor != 'dependabot[bot]'
+      uses: actions/checkout@v4
     - id: filter
+      if: github.actor != 'dependabot[bot]'
       uses: dorny/paths-filter@v3
       with:
         filters: |
