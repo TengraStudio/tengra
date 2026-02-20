@@ -30,6 +30,13 @@ export const useAgentHandlers = ({
         }
     }, []);
 
+    const createAttachmentId = useCallback(() => {
+        if (typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        return Math.random().toString(36);
+    }, []);
+
     const clearAttachedFiles = useCallback(() => {
         setAttachedFiles(prev => {
             prev.forEach(revokePreviewUrl);
@@ -70,7 +77,7 @@ export const useAgentHandlers = ({
             const file = files[i];
             const isImage = file.type.startsWith('image/');
             newFiles.push({
-                id: Math.random().toString(36),
+                id: createAttachmentId(),
                 name: file.name,
                 path: (file as { path?: string }).path ?? '',
                 type: isImage ? 'image' : 'file',
@@ -82,7 +89,7 @@ export const useAgentHandlers = ({
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-    }, []);
+    }, [createAttachmentId]);
 
     const toggleProvider = useCallback((provider: string) => {
         setExpandedProviders(prev => {
