@@ -1,9 +1,10 @@
+import { describe, expect, it } from 'vitest';
+
 import {
     validateWorkspaceMountForm,
     workspaceMountErrorCodes,
 } from '@/features/projects/utils/workspace-mount-validation';
 import { MountForm } from '@/types';
-import { describe, expect, it } from 'vitest';
 
 const baseSshForm: MountForm = {
     type: 'ssh',

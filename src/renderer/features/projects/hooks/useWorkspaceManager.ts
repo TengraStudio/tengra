@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { recordProjectsPageHealthEvent } from '@/store/projects-page-health.store';
 import {
     EditorTab,
     MountForm,
@@ -9,7 +10,7 @@ import {
     WorkspaceEntry,
     WorkspaceMount,
 } from '@/types';
-import { recordProjectsPageHealthEvent } from '@/store/projects-page-health.store';
+
 import {
     validateWorkspaceMountForm,
     workspaceMountErrorCodes,

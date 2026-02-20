@@ -3,24 +3,24 @@
  * MKT-DEV-01: Extension SDK/templates/CLI
  */
 
-import { JsonValue, JsonObject } from '@shared/types/common';
+import { JsonObject,JsonValue } from '@shared/types/common';
 import {
-    ExtensionManifest,
-    ExtensionContext,
-    ExtensionState,
-    ExtensionLogger,
-    ExtensionConfigAccessor,
     Disposable,
     ExtensionCommand,
+    ExtensionConfigAccessor,
+    ExtensionContext,
+    ExtensionLogger,
+    ExtensionManifest,
+    ExtensionState,
     ExtensionTool,
     ExtensionView,
-    ViewProvider,
     InputBoxOptions,
     QuickPickItem,
     QuickPickOptions,
-    TerminalOptions,
     Terminal,
+    TerminalOptions,
     TextDocumentContentProvider,
+    ViewProvider,
 } from '@shared/types/extension';
 
 /** Create a disposable from a callback */
@@ -192,8 +192,12 @@ export function compareVersions(a: string, b: string): number {
     for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
         const aVal = aParts[i] || 0;
         const bVal = bParts[i] || 0;
-        if (aVal > bVal) return 1;
-        if (aVal < bVal) return -1;
+        if (aVal > bVal) {
+            return 1;
+        }
+        if (aVal < bVal) {
+            return -1;
+        }
     }
 
     return 0;
@@ -202,8 +206,12 @@ export function compareVersions(a: string, b: string): number {
 /** Check if version satisfies a range */
 export function satisfiesVersion(version: string, range: string): boolean {
     // Simple implementation: supports exact version and ^ ranges
-    if (range === '*') return true;
-    if (range === version) return true;
+    if (range === '*') {
+        return true;
+    }
+    if (range === version) {
+        return true;
+    }
 
     if (range.startsWith('^')) {
         const minVersion = range.slice(1);
@@ -351,8 +359,18 @@ export class ExtensionAPIImpl {
     }
 
     async showInput(options: InputBoxOptions): Promise<string | undefined> {
-        // This would be implemented by the host application
-        return prompt(options.prompt || '') || undefined;
+        // Headless fallback: we can only return provided defaults when host UI input is unavailable.
+        if (typeof options.value === 'string') {
+            const validationError = options.validateInput?.(options.value);
+            if (validationError) {
+                this.context.logger.warn(`showInput validation failed: ${validationError}`);
+                return undefined;
+            }
+            return options.value;
+        }
+
+        this.context.logger.warn('showInput is unavailable in the current host context');
+        return undefined;
     }
 
     async showQuickPick(items: QuickPickItem[], _options?: QuickPickOptions): Promise<QuickPickItem | undefined> {

@@ -1,10 +1,11 @@
+import { describe, expect, it } from 'vitest';
+
 import {
     memoryInspectorErrorCodes,
     parseAndValidateMemoryImportPayload,
     validateMemoryId,
     validateMemorySearchQuery,
 } from '@/features/memory/utils/memory-inspector-validation';
-import { describe, expect, it } from 'vitest';
 
 describe('memory inspector validation', () => {
     it('validates memory ids', () => {

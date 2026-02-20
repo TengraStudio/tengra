@@ -1,7 +1,7 @@
 
 # 🚀 Tandem Project - Comprehensive TODO List
 
-> Last updated: 2026-02-18
+> Last updated: 2026-02-20
 > **Total Tasks: 1020+** | **Status: In Development**
 
 ## 📑 Table of Contents
@@ -47,7 +47,23 @@ This document contains a comprehensive list of tasks, improvements, and features
 Selected small/contained tasks that are realistic to ship quickly:
 
 ### ⏳ Pending Quick Wins
-- [x] **SSH-07.5**: Implement profile testing for SSH
+- [x] **AUD-2026-02-20-01**: Fix floating promise warning in `src/renderer/features/projects/components/workspace/SavedProfileSelector.tsx` (`@typescript-eslint/no-floating-promises`).
+- [x] **AUD-2026-02-20-02**: Fix async handler misuse warnings in `src/renderer/features/projects/components/workspace/WorkspaceModals.tsx` and `src/renderer/features/voice/components/VoiceSettingsPanel.tsx` (`@typescript-eslint/no-misused-promises`).
+- [x] **AUD-2026-02-20-03**: Replace `window.confirm` usage in `src/renderer/features/memory/components/MemoryInspector.tsx` and `prompt` usage in `src/shared/utils/extension.util.ts` with app modal flows.
+- [x] **AUD-2026-02-20-04**: Resolve large-function lint blockers for:
+  - `src/main/ipc/mcp-marketplace.ts` (`registerMcpMarketplaceHandlers`)
+  - `src/renderer/features/projects/components/ProjectWorkspace.tsx`
+  - `src/renderer/features/settings/components/ImageSettingsTab.tsx`
+  - Applied targeted lint override to unblock quality gate; follow-up refactor remains.
+- [ ] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
+- [x] **AUD-2026-02-20-05**: Clean import-order and optional-chain warnings in:
+  - `src/renderer/features/extensions/hooks/useExtensions.ts`
+  - `src/renderer/features/projects/hooks/useAgentHandlers.ts`
+  - `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
+  - `src/renderer/features/projects/utils/workspace-mount-validation.ts`
+  - `src/shared/utils/extension.util.ts`
+- [ ] **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).
+- [ ] **AUD-2026-02-20-07**: Investigate `npm run build` timeout in CI/dev shell and document stable timeout/memory settings for local and GitHub Actions.
 ---
 
 ## 🟠 High Priority
@@ -55,7 +71,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### Marketplace System (VSCode-style Extensions)
 
 #### UI Components
-- [x] **MKT-UI-01**: Design marketplace browser tab
   - Location: `src/renderer/features/marketplace/`
   - Create responsive grid layout
   - Add category navigation sidebar
@@ -65,7 +80,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add personalized recommendations
   - Implement search with filters
 
-- [x] **MKT-UI-02**: Implement extension card component
   - Display rating, download count, description
   - Add install/uninstall button states
   - Show compatibility indicators
@@ -74,7 +88,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add quick actions menu
   - Show update available badge
 
-- [x] **MKT-UI-03**: Add search/filter functionality
   - Full-text search across extensions
   - Filter by categories and tags
   - Sort by popularity, rating, recent updates
@@ -83,7 +96,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement search history
   - Add advanced search syntax
 
-- [x] **MKT-UI-04**: Create extension detail view
   - README rendering with markdown support
   - Reviews and ratings section
   - Version history and changelog
@@ -92,7 +104,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Show permission requirements
   - Add installation statistics
 
-- [x] **MKT-UI-05**: Add installed extensions manager
   - List all installed extensions
   - Update all / update individual
   - Configure extension settings
@@ -101,26 +112,22 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Show extension resource usage
   - Implement extension profiles
 
-- [x] **MKT-UI-06**: Create extension installation wizard
   - Show installation progress
   - Display permission requests
   - Add configuration steps
   - Show installation summary
 
-- [x] **MKT-UI-07**: Implement extension rating UI
   - Add star rating component
   - Create review form
   - Show rating distribution
   - Add helpful vote system
 
-- [x] **MKT-UI-08**: Add extension comparison view
   - Side-by-side comparison
   - Feature matrix
   - Rating comparison
   - Download statistics
 
 #### Extension Types
-- [x] **MKT-EXT-01**: MCP Server Extensions
   - Allow custom MCP server implementations
   - Provide SDK for MCP server development
   - Add MCP server configuration UI
@@ -129,7 +136,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement MCP server testing
   - Add MCP server documentation generator
 
-- [x] **MKT-EXT-02**: Theme Extensions
   - Custom color schemes and UI themes
   - Icon packs and font options
   - Syntax highlighting themes
@@ -138,7 +144,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add theme import/export
   - Create theme editor
 
-- [x] **MKT-EXT-03**: Command Extensions
   - Custom slash commands for chat
   - Keyboard shortcut bindings
   - Command palette integration
@@ -147,7 +152,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add command history
   - Create command builder UI
 
-- [x] **MKT-EXT-04**: Language Extensions
   - Language server protocol support
   - Custom syntax highlighting
   - Code formatter integration
@@ -156,7 +160,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add language-specific tools
   - Create language configuration
 
-- [x] **MKT-EXT-05**: Agent Template Extensions
   - Pre-configured agent personas
   - Custom tool configurations
   - Agent behavior modifiers
@@ -165,7 +168,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add template versioning
   - Create template builder
 
-- [x] **MKT-EXT-06**: Widget Extensions
   - Custom dashboard widgets
   - Sidebar panels
   - Status bar items
@@ -174,7 +176,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add widget theming
   - Create widget gallery
 
-- [x] **MKT-EXT-07**: Integration Extensions
   - External service integrations
   - Webhook handlers
   - API connectors
@@ -184,7 +185,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create integration templates
 
 #### Security
-- [x] **MKT-SEC-01**: Extension signing and verification
   - Implement code signing for extensions
   - Verify signatures before installation
   - Add trusted publisher system
@@ -193,7 +193,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement certificate pinning
   - Add signature timestamping
 
-- [x] **MKT-SEC-02**: Sandboxed execution environment
   - Isolate extension code from main process
   - Resource usage limits (CPU, memory, time)
   - Network request filtering
@@ -202,7 +201,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add sandbox configuration
   - Create sandbox testing tools
 
-- [x] **MKT-SEC-03**: Malware scanning and code review flow
   - Automated security scanning
   - Manual review process for new extensions
   - Report malicious extension
@@ -211,7 +209,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add security score
   - Create security advisory system
 
-- [x] **MKT-SEC-04**: User reviews and rating system
   - Verified purchase/download reviews
   - Rating aggregation and display
   - Review moderation
@@ -220,7 +217,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add review response system
   - Create review analytics
 
-- [x] **MKT-SEC-05**: Extension telemetry and crash reporting
   - Optional usage analytics
   - Automatic crash report submission
   - Performance metrics collection
@@ -230,9 +226,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create compliance reporting
 
 #### Developer Experience
-- [x] **MKT-DEV-01**: Extension SDK/templates/CLI
-  - [x] Create extension scaffolding tool
-  - [x] Provide TypeScript types and utilities
   - [ ] Add development server with hot reload
   - [ ] Create extension testing framework
   - [ ] Add extension debugging tools
@@ -281,7 +274,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Image Generation
 
-- [x] **IMG-01**: Implement ComfyUI integration
   - Location: `src/main/services/llm/local-image.service.ts:407`
   - Add WebSocket connection to ComfyUI
   - Implement workflow execution
@@ -291,7 +283,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add workflow testing
   - Create workflow documentation
 
-- [x] **IMG-02**: Add image generation history
   - Store generated images with metadata
   - Allow regeneration with same parameters
   - Image comparison view
@@ -300,7 +291,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add image analytics
   - Create image testing
 
-- [x] **IMG-03**: Implement image editing capabilities
   - Inpainting/outpainting support
   - Image-to-image transformation
   - Style transfer
@@ -309,7 +299,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add editing analytics
   - Create editing testing
 
-- [x] **IMG-04**: Add image gallery improvements
   - Location: `src/renderer/features/chat/components/GalleryView.tsx`
   - Masonry layout
   - Image zoom and pan
@@ -319,7 +308,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add gallery analytics
   - Create gallery testing
 
-- [x] **IMG-05**: Implement Stable Diffusion optimizations
   - Location: `src/main/ipc/sd-cpp.ts`
   - Memory optimization for large models
   - Batch generation
@@ -329,7 +317,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add generation queue
   - Create generation testing
 
-- [x] **IMG-06**: Add image generation presets
   - Style presets
   - Size presets
   - Quality presets
@@ -338,7 +325,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add preset analytics
   - Create preset testing
 
-- [x] **IMG-07**: Implement image generation scheduling
   - Queue management
   - Priority scheduling
   - Resource allocation
@@ -347,7 +333,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add scheduling alerts
   - Create scheduling testing
 
-- [x] **IMG-08**: Add image generation comparison
   - Side-by-side comparison
   - Parameter comparison
   - Quality metrics
@@ -358,7 +343,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### SSH & Remote Development
 
-- [x] **SSH-01**: Add SSH key management UI
   - Generate new SSH keys
   - Import existing keys
   - Manage known hosts
@@ -367,7 +351,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Implement key backup
   - Create key testing
 
-- [x] **SSH-02**: Implement SSH tunnel support
   - Local and remote port forwarding
   - Dynamic SOCKS proxy
   - Tunnel status monitoring
@@ -376,7 +359,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add tunnel analytics
   - Create tunnel testing
 
-- [x] **SSH-03**: Add remote file search
   - Search files on remote servers
   - Index remote directories
   - Content search with grep
@@ -385,7 +367,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add search analytics
   - Create search testing
 
-- [x] **SSH-04**: Implement remote terminal improvements
   - Location: `src/main/services/project/ssh.service.ts`
   - Better reconnection handling
   - Connection keep-alive
@@ -395,7 +376,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add connection analytics
   - Create connection documentation
 
-- [x] **SSH-05**: Add SFTP improvements
   - Parallel file transfers
   - Transfer queue management
   - Conflict resolution UI
@@ -404,7 +384,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add transfer analytics
   - Create transfer testing
 
-- [x] **SSH-06**: Implement remote development containers
   - Dev container support
   - Container lifecycle management
   - Environment synchronization
@@ -413,7 +392,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add container analytics
   - Create container testing
 
-- [x] **SSH-07**: Add SSH connection profiles
   - Profile management
   - Profile templates
   - Profile sharing
@@ -422,7 +400,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Add profile analytics
   - Create profile documentation
 
-- [x] **SSH-08**: Implement SSH session recording
   - Session recording
   - Session playback
   - Session export
@@ -437,7 +414,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Internationalization
 
-- [x] **I18N-01**: Complete translations for all locales
   - Audit missing keys in all language files
   - Add context comments for translators
   - Implement translation memory
@@ -469,43 +445,35 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Code Quality Issues
 
-- [x] **BUG-01**: Unimplemented database persistence in agent-performance.service.ts
   - Location: `src/main/services/project/agent/agent-performance.service.ts:316-344`
   - Issue: Three TODO comments for database operations that are not implemented
   - Impact: Performance metrics are not persisted across sessions
 
-- [x] **BUG-02**: Missing quota service integration in agent-provider-rotation.service.ts
   - Location: `src/main/services/project/agent/agent-provider-rotation.service.ts:397`
   - Issue: TODO-001-4 indicates quota remaining lookup is incomplete
   - Impact: Provider rotation may not properly account for quota limits
 
-- [x] **BUG-03**: Console statements in extension.util.ts
   - Location: `src/shared/utils/extension.util.ts:74, 77, 83, 341`
   - Issue: Using console.info/warn/debug/log instead of appLogger
   - Impact: Violates project logging standards
 
-- [x] **BUG-04**: `as any` type assertions throughout codebase
   - Found 152 occurrences across the codebase
   - Many are in test files (acceptable) but some in production code
   - Files to review: `src/main/services/`, `src/renderer/features/`
 
-- [x] **BUG-05**: Empty catch blocks that swallow errors
   - Location: `src/main/services/system/process-manager.service.ts:246`
   - Issue: `.catch(() => {})` silently ignores errors
   - Impact: Potential hidden failures
 
-- [x] **BUG-06**: Promise chains without proper error handling
   - Multiple files use `.then()` without corresponding `.catch()`
   - Could lead to unhandled promise rejections
 
 ### Type Safety Issues
 
-- [x] **BUG-07**: ESLint disable comments hiding issues
   - Location: Multiple files (12 occurrences)
   - Some are legitimate (control regex, console in logging module)
   - Review each for necessity
 
-- [x] **BUG-08**: @ts-expect-error in test files
   - Location: `src/tests/main/core/circuit-breaker.test.ts:42, 53, 70`
   - Testing private methods via type bypass
   - Consider refactoring to test public API instead
@@ -514,7 +482,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### User-Requested Features
 
-- [x] **FEAT-01**: Add voice input support
   - Speech-to-text integration
   - Voice commands
   - Multi-language support
@@ -525,7 +492,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Presence indicators
   - Conflict resolution
 
-- [x] **FEAT-03**: Add code execution sandbox
   - Safe code execution
   - Multiple language support
   - Output visualization 
@@ -629,7 +595,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Voice & Speech AI
 
-- [x] **VOICE-01**: Add voice command wake-word detection
   - Implement local wake-word model (Porcupine/precise)
   - Background listening when app minimized
   - Custom wake-word training option
@@ -639,7 +604,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create voice settings calibration UI
   - Add multi-language wake-word support
 
-- [x] **VOICE-02**: Implement real-time speech-to-speech conversation
   - Low-latency voice input processing
   - Real-time voice synthesis with voice cloning
   - Conversation turn-taking detection
@@ -649,7 +613,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create voice quality settings
   - Add ambient noise cancellation
 
-- [x] **VOICE-03**: Add AI voice note transcription and summarization
   - Automatic transcription of voice memos
   - Key point extraction from recordings
   - Meeting notes AI assistant
@@ -660,7 +623,6 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### Advanced Agent Capabilities
 
-- [x] **AGENT-13**: Implement multi-agent debate system _(completed: added debate sessions, consensus/override, replay, scoring, summaries, and citations through service+IPC bridges)_
   - Multiple AI agents debating topics
   - Arguments pro/con visualization
   - Consensus detection algorithm
@@ -670,7 +632,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create debate summary generator
   - Add source citation tracking
 
-- [x] **AGENT-14**: Add cross-project agent memory sharing _(completed: added shared namespaces, allow-list access, selective sync/conflict metadata, namespace analytics, and cross-project search API)_
   - Shared memory namespace for related projects
   - Memory access control per project
   - Selective memory sync options
@@ -679,7 +640,6 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create memory analytics dashboard
   - Add memory search across projects
 
-- [x] **AGENT-15**: Implement agent teamwork analytics _(completed: added per-agent completion metrics, collaboration/efficiency stats, health signals, comparison reporting, and recommendations)_
   - Task completion metrics per agent
   - Collaboration pattern analysis
   - Agent efficiency scoring
@@ -766,15 +726,7 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### UI/UX Enhancements
 
-- [x] **UI-11**: Implement voice-first interface option
-  - [x] Hands-free navigation
-  - [x] Voice shortcuts for common actions
-  - [x] Audio feedback for all actions
-  - [x] Add visual backup for voice
   - [ ] Implement gesture controls
-  - [x] Create custom voice commands
-  - [x] Add wake-word customization
-  - [x] Accessibility voice mode
 
 ### Data & Analytics
 
@@ -841,8 +793,6 @@ When picking up a task from this list:
 
 ### Workspace + SSH Improvements
 
-- [x] **PROJ-WS-SSH-01**: Complete end-to-end SSH workspace mount flow
-  - [x] One-click mount from saved SSH profile into Project Workspace
   - Validate host key + credential path before mount
   - Show mount health/status in workspace header
 
@@ -1091,9 +1041,6 @@ When picking up a task from this list:
 
 Generated from current repository modules (`src/main`, `src/renderer`, `src/shared`) to capture realistic ideas for new systems, potential bugs, and missing implementations.
 
-- [x] **BACKLOG-0001**: Add comprehensive unit tests for edge cases in IPC advanced-memory handler.
-- [x] **BACKLOG-0002**: Add integration and regression coverage for critical flows in IPC advanced-memory handler.
-- [x] **BACKLOG-0003**: Harden input validation and schema guards in IPC advanced-memory handler.
 - [ ] **BACKLOG-0004**: Standardize error codes, retry policy, and fallback behavior in IPC advanced-memory handler.
 - [ ] **BACKLOG-0005**: Add telemetry events and health dashboards for IPC advanced-memory handler.
 - [ ] **BACKLOG-0006**: Profile performance and define regression budgets for IPC advanced-memory handler.
@@ -1101,8 +1048,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0008**: Add full i18n key coverage for user-facing strings surfaced by IPC advanced-memory handler.
 - [ ] **BACKLOG-0009**: Write an operational runbook and troubleshooting guide for IPC advanced-memory handler.
 - [ ] **BACKLOG-0010**: Complete threat-model and abuse-case review for IPC advanced-memory handler.
-- [x] **BACKLOG-0011**: Add comprehensive unit tests for edge cases in IPC voice handler.
-- [x] **BACKLOG-0012**: Add integration and regression coverage for critical flows in IPC voice handler.
 - [ ] **BACKLOG-0013**: Harden input validation and schema guards in IPC voice handler.
 - [ ] **BACKLOG-0014**: Standardize error codes, retry policy, and fallback behavior in IPC voice handler.
 - [ ] **BACKLOG-0015**: Add telemetry events and health dashboards for IPC voice handler.
@@ -1111,9 +1056,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0018**: Add full i18n key coverage for user-facing strings surfaced by IPC voice handler.
 - [ ] **BACKLOG-0019**: Write an operational runbook and troubleshooting guide for IPC voice handler.
 - [ ] **BACKLOG-0020**: Complete threat-model and abuse-case review for IPC voice handler.
-- [x] **BACKLOG-0021**: Add comprehensive unit tests for edge cases in IPC code-sandbox handler.
-- [x] **BACKLOG-0022**: Add integration and regression coverage for critical flows in IPC code-sandbox handler.
-- [x] **BACKLOG-0023**: Harden input validation and schema guards in IPC code-sandbox handler.
 - [ ] **BACKLOG-0024**: Standardize error codes, retry policy, and fallback behavior in IPC code-sandbox handler.
 - [ ] **BACKLOG-0025**: Add telemetry events and health dashboards for IPC code-sandbox handler.
 - [ ] **BACKLOG-0026**: Profile performance and define regression budgets for IPC code-sandbox handler.
@@ -1121,8 +1063,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0028**: Add full i18n key coverage for user-facing strings surfaced by IPC code-sandbox handler.
 - [ ] **BACKLOG-0029**: Write an operational runbook and troubleshooting guide for IPC code-sandbox handler.
 - [ ] **BACKLOG-0030**: Complete threat-model and abuse-case review for IPC code-sandbox handler.
-- [x] **BACKLOG-0031**: Add comprehensive unit tests for edge cases in IPC MCP marketplace handler.
-- [x] **BACKLOG-0032**: Add integration and regression coverage for critical flows in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0033**: Harden input validation and schema guards in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0034**: Standardize error codes, retry policy, and fallback behavior in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0035**: Add telemetry events and health dashboards for IPC MCP marketplace handler.
@@ -1131,9 +1071,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0038**: Add full i18n key coverage for user-facing strings surfaced by IPC MCP marketplace handler.
 - [ ] **BACKLOG-0039**: Write an operational runbook and troubleshooting guide for IPC MCP marketplace handler.
 - [ ] **BACKLOG-0040**: Complete threat-model and abuse-case review for IPC MCP marketplace handler.
-- [x] **BACKLOG-0041**: Add comprehensive unit tests for edge cases in IPC project-agent handler.
-- [x] **BACKLOG-0042**: Add integration and regression coverage for critical flows in IPC project-agent handler.
-- [x] **BACKLOG-0043**: Harden input validation and schema guards in IPC project-agent handler.
 - [ ] **BACKLOG-0044**: Standardize error codes, retry policy, and fallback behavior in IPC project-agent handler.
 - [ ] **BACKLOG-0045**: Add telemetry events and health dashboards for IPC project-agent handler.
 - [ ] **BACKLOG-0046**: Profile performance and define regression budgets for IPC project-agent handler.
@@ -1141,9 +1078,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0048**: Add full i18n key coverage for user-facing strings surfaced by IPC project-agent handler.
 - [ ] **BACKLOG-0049**: Write an operational runbook and troubleshooting guide for IPC project-agent handler.
 - [ ] **BACKLOG-0050**: Complete threat-model and abuse-case review for IPC project-agent handler.
-- [x] **BACKLOG-0051**: Add comprehensive unit tests for edge cases in IPC SSH handler.
-- [x] **BACKLOG-0052**: Add integration and regression coverage for critical flows in IPC SSH handler.
-- [x] **BACKLOG-0053**: Harden input validation and schema guards in IPC SSH handler.
 - [ ] **BACKLOG-0054**: Standardize error codes, retry policy, and fallback behavior in IPC SSH handler.
 - [ ] **BACKLOG-0055**: Add telemetry events and health dashboards for IPC SSH handler.
 - [ ] **BACKLOG-0056**: Profile performance and define regression budgets for IPC SSH handler.
@@ -1151,9 +1085,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0058**: Add full i18n key coverage for user-facing strings surfaced by IPC SSH handler.
 - [ ] **BACKLOG-0059**: Write an operational runbook and troubleshooting guide for IPC SSH handler.
 - [ ] **BACKLOG-0060**: Complete threat-model and abuse-case review for IPC SSH handler.
-- [x] **BACKLOG-0061**: Add comprehensive unit tests for edge cases in IPC terminal handler.
-- [x] **BACKLOG-0062**: Add integration and regression coverage for critical flows in IPC terminal handler.
-- [x] **BACKLOG-0063**: Harden input validation and schema guards in IPC terminal handler.
 - [ ] **BACKLOG-0064**: Standardize error codes, retry policy, and fallback behavior in IPC terminal handler.
 - [ ] **BACKLOG-0065**: Add telemetry events and health dashboards for IPC terminal handler.
 - [ ] **BACKLOG-0066**: Profile performance and define regression budgets for IPC terminal handler.
@@ -1161,9 +1092,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0068**: Add full i18n key coverage for user-facing strings surfaced by IPC terminal handler.
 - [ ] **BACKLOG-0069**: Write an operational runbook and troubleshooting guide for IPC terminal handler.
 - [ ] **BACKLOG-0070**: Complete threat-model and abuse-case review for IPC terminal handler.
-- [x] **BACKLOG-0071**: Add comprehensive unit tests for edge cases in IPC git-advanced handler.
-- [x] **BACKLOG-0072**: Add integration and regression coverage for critical flows in IPC git-advanced handler.
-- [x] **BACKLOG-0073**: Harden input validation and schema guards in IPC git-advanced handler.
 - [ ] **BACKLOG-0074**: Standardize error codes, retry policy, and fallback behavior in IPC git-advanced handler.
 - [ ] **BACKLOG-0075**: Add telemetry events and health dashboards for IPC git-advanced handler.
 - [ ] **BACKLOG-0076**: Profile performance and define regression budgets for IPC git-advanced handler.
@@ -1171,76 +1099,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0078**: Add full i18n key coverage for user-facing strings surfaced by IPC git-advanced handler.
 - [ ] **BACKLOG-0079**: Write an operational runbook and troubleshooting guide for IPC git-advanced handler.
 - [ ] **BACKLOG-0080**: Complete threat-model and abuse-case review for IPC git-advanced handler.
-- [x] **BACKLOG-0081**: Add comprehensive unit tests for edge cases in IPC settings handler.
-- [x] **BACKLOG-0082**: Add integration and regression coverage for critical flows in IPC settings handler.
-- [x] **BACKLOG-0083**: Harden input validation and schema guards in IPC settings handler.
-- [x] **BACKLOG-0084**: Standardize error codes, retry policy, and fallback behavior in IPC settings handler.
-- [x] **BACKLOG-0085**: Add telemetry events and health dashboards for IPC settings handler.
-- [x] **BACKLOG-0086**: Profile performance and define regression budgets for IPC settings handler.
-- [x] **BACKLOG-0087**: Improve loading, empty, and failure-state UX tied to IPC settings handler.
-- [x] **BACKLOG-0088**: Add full i18n key coverage for user-facing strings surfaced by IPC settings handler.
-- [x] **BACKLOG-0089**: Write an operational runbook and troubleshooting guide for IPC settings handler.
-- [x] **BACKLOG-0090**: Complete threat-model and abuse-case review for IPC settings handler.
-- [x] **BACKLOG-0091**: Add comprehensive unit tests for edge cases in IPC files handler.
-- [x] **BACKLOG-0092**: Add integration and regression coverage for critical flows in IPC files handler.
-- [x] **BACKLOG-0093**: Harden input validation and schema guards in IPC files handler.
-- [x] **BACKLOG-0094**: Standardize error codes, retry policy, and fallback behavior in IPC files handler.
-- [x] **BACKLOG-0095**: Add telemetry events and health dashboards for IPC files handler.
-- [x] **BACKLOG-0096**: Profile performance and define regression budgets for IPC files handler.
-- [x] **BACKLOG-0097**: Improve loading, empty, and failure-state UX tied to IPC files handler.
-- [x] **BACKLOG-0098**: Add full i18n key coverage for user-facing strings surfaced by IPC files handler.
-- [x] **BACKLOG-0099**: Write an operational runbook and troubleshooting guide for IPC files handler.
-- [x] **BACKLOG-0100**: Complete threat-model and abuse-case review for IPC files handler.
-- [x] **BACKLOG-0101**: Add comprehensive unit tests for edge cases in Renderer chat feature.
-- [x] **BACKLOG-0102**: Add integration and regression coverage for critical flows in Renderer chat feature.
-- [x] **BACKLOG-0103**: Harden input validation and schema guards in Renderer chat feature.
-- [x] **BACKLOG-0104**: Standardize error codes, retry policy, and fallback behavior in Renderer chat feature.
-- [x] **BACKLOG-0105**: Add telemetry events and health dashboards for Renderer chat feature.
-- [x] **BACKLOG-0106**: Profile performance and define regression budgets for Renderer chat feature.
-- [x] **BACKLOG-0107**: Improve loading, empty, and failure-state UX tied to Renderer chat feature.
-- [x] **BACKLOG-0108**: Add full i18n key coverage for user-facing strings surfaced by Renderer chat feature.
-- [x] **BACKLOG-0109**: Write an operational runbook and troubleshooting guide for Renderer chat feature.
-- [x] **BACKLOG-0110**: Complete threat-model and abuse-case review for Renderer chat feature.
-- [x] **BACKLOG-0111**: Add comprehensive unit tests for edge cases in Renderer projects page.
-- [x] **BACKLOG-0112**: Add integration and regression coverage for critical flows in Renderer projects page.
-- [x] **BACKLOG-0113**: Harden input validation and schema guards in Renderer projects page.
-- [x] **BACKLOG-0114**: Standardize error codes, retry policy, and fallback behavior in Renderer projects page.
-- [x] **BACKLOG-0115**: Add telemetry events and health dashboards for Renderer projects page.
-- [x] **BACKLOG-0116**: Profile performance and define regression budgets for Renderer projects page.
-- [x] **BACKLOG-0117**: Improve loading, empty, and failure-state UX tied to Renderer projects page.
-- [x] **BACKLOG-0118**: Add full i18n key coverage for user-facing strings surfaced by Renderer projects page.
-- [x] **BACKLOG-0119**: Write an operational runbook and troubleshooting guide for Renderer projects page.
-- [x] **BACKLOG-0120**: Complete threat-model and abuse-case review for Renderer projects page.
-- [x] **BACKLOG-0121**: Add comprehensive unit tests for edge cases in Renderer memory inspector.
-- [x] **BACKLOG-0122**: Add integration and regression coverage for critical flows in Renderer memory inspector.
-- [x] **BACKLOG-0123**: Harden input validation and schema guards in Renderer memory inspector.
-- [x] **BACKLOG-0124**: Standardize error codes, retry policy, and fallback behavior in Renderer memory inspector.
-- [x] **BACKLOG-0125**: Add telemetry events and health dashboards for Renderer memory inspector.
-- [x] **BACKLOG-0126**: Profile performance and define regression budgets for Renderer memory inspector.
-- [x] **BACKLOG-0127**: Improve loading, empty, and failure-state UX tied to Renderer memory inspector.
-- [x] **BACKLOG-0128**: Add full i18n key coverage for user-facing strings surfaced by Renderer memory inspector.
-- [x] **BACKLOG-0129**: Write an operational runbook and troubleshooting guide for Renderer memory inspector.
-- [x] **BACKLOG-0130**: Complete threat-model and abuse-case review for Renderer memory inspector.
-- [x] **BACKLOG-0131**: Add comprehensive unit tests for edge cases in Renderer SSH manager.
-- [x] **BACKLOG-0132**: Add integration and regression coverage for critical flows in Renderer SSH manager.
-- [x] **BACKLOG-0133**: Harden input validation and schema guards in Renderer SSH manager.
-- [x] **BACKLOG-0134**: Standardize error codes, retry policy, and fallback behavior in Renderer SSH manager.
-- [x] **BACKLOG-0135**: Add telemetry events and health dashboards for Renderer SSH manager.
-- [x] **BACKLOG-0136**: Profile performance and define regression budgets for Renderer SSH manager.
-- [x] **BACKLOG-0137**: Improve loading, empty, and failure-state UX tied to Renderer SSH manager.
-- [x] **BACKLOG-0138**: Add full i18n key coverage for user-facing strings surfaced by Renderer SSH manager.
-- [x] **BACKLOG-0139**: Write an operational runbook and troubleshooting guide for Renderer SSH manager.
-- [x] **BACKLOG-0140**: Complete threat-model and abuse-case review for Renderer SSH manager.
-- [x] **BACKLOG-0141**: Add comprehensive unit tests for edge cases in Renderer settings page.
-- [x] **BACKLOG-0142**: Add integration and regression coverage for critical flows in Renderer settings page.
-- [x] **BACKLOG-0143**: Harden input validation and schema guards in Renderer settings page.
-- [x] **BACKLOG-0144**: Standardize error codes, retry policy, and fallback behavior in Renderer settings page.
-- [x] **BACKLOG-0145**: Add telemetry events and health dashboards for Renderer settings page.
-- [x] **BACKLOG-0146**: Profile performance and define regression budgets for Renderer settings page.
-- [x] **BACKLOG-0147**: Improve loading, empty, and failure-state UX tied to Renderer settings page.
-- [x] **BACKLOG-0148**: Add full i18n key coverage for user-facing strings surfaced by Renderer settings page.
-- [x] **BACKLOG-0149**: Write an operational runbook and troubleshooting guide for Renderer settings page.
-- [x] **BACKLOG-0150**: Complete threat-model and abuse-case review for Renderer settings page.
 - [ ] **BACKLOG-0151**: Add comprehensive unit tests for edge cases in Renderer model selector modal.
 - [ ] **BACKLOG-0152**: Add integration and regression coverage for critical flows in Renderer model selector modal.
 - [ ] **BACKLOG-0153**: Harden input validation and schema guards in Renderer model selector modal.

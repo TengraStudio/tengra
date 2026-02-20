@@ -1,10 +1,10 @@
+import { SSHProfileTestResult } from '@shared/types/ssh';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useWorkspaceManager } from '@/features/projects/hooks/useWorkspaceManager';
 import { Project } from '@/types';
-import { SSHProfileTestResult } from '@shared/types/ssh';
 import { webElectronMock } from '@/web-bridge';
 
 const projectFixture: Project = {

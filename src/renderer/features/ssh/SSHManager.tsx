@@ -170,27 +170,23 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                             durationMs: Date.now() - startedAt,
                             errorCode: sshManagerErrorCodes.saveProfileFailed,
                         });
-                    } else {
-                        const saved = await window.electron.ssh.saveProfile({
-                            id: result.id,
-                            name: validated.normalized.name ?? validated.normalized.host,
-                            host: validated.normalized.host,
-                            port: validated.normalized.port,
-                            username: validated.normalized.username,
-                            password: validated.normalized.password,
-                            privateKey: validated.normalized.privateKey,
-                            authType: validated.normalized.privateKey ? 'key' : 'password',
-                            status: 'disconnected',
+                    } else if (!await window.electron.ssh.saveProfile({
+                        id: result.id,
+                        name: validated.normalized.name ?? validated.normalized.host,
+                        host: validated.normalized.host,
+                        port: validated.normalized.port,
+                        username: validated.normalized.username,
+                        password: validated.normalized.password,
+                        privateKey: validated.normalized.privateKey,
+                        authType: validated.normalized.privateKey ? 'key' : 'password',
+                        status: 'disconnected',
+                    })) {
+                        recordSSHManagerHealthEvent({
+                            channel: 'ssh.connect',
+                            status: 'failure',
+                            durationMs: Date.now() - startedAt,
+                            errorCode: sshManagerErrorCodes.saveProfileFailed,
                         });
-
-                        if (!saved) {
-                            recordSSHManagerHealthEvent({
-                                channel: 'ssh.connect',
-                                status: 'failure',
-                                durationMs: Date.now() - startedAt,
-                                errorCode: sshManagerErrorCodes.saveProfileFailed,
-                            });
-                        }
                     }
                 }
 

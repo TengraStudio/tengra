@@ -242,7 +242,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
                                 placeholder={t('workspaceModals.privateKey')}
                             />
                             <button
-                                onClick={pickKeyFile}
+                                onClick={() => { void pickKeyFile(); }}
                                 className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-foreground text-xs font-medium"
                             >
                                 {t('workspaceModals.pick')}
@@ -277,7 +277,7 @@ const SSHMountForm: React.FC<SSHMountFormProps> = ({
 
             <div className="pt-2">
                 <button
-                    onClick={handleTest}
+                    onClick={() => { void handleTest(); }}
                     disabled={testing || !mountForm.host || !mountForm.username}
                     className={cn(
                         "w-full py-2 rounded-lg text-xs font-semibold transition-all border",

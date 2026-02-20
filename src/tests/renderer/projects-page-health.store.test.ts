@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
     __resetProjectsPageHealthForTests,
     getProjectsPageHealthSnapshot,
     recordProjectsPageHealthEvent,
 } from '@/store/projects-page-health.store';
-import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('projects-page-health.store', () => {
     beforeEach(() => {

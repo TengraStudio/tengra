@@ -25,7 +25,7 @@ export const useAgentHandlers = ({
     const attachedFilesRef = useRef<AttachedFile[]>([]);
 
     const revokePreviewUrl = useCallback((file: AttachedFile) => {
-        if (file.preview && file.preview.startsWith('blob:')) {
+        if (file.preview?.startsWith('blob:')) {
             URL.revokeObjectURL(file.preview);
         }
     }, []);

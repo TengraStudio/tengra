@@ -14,6 +14,7 @@ import { BarChart3 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Card } from '@/components/ui/card';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { useTranslation } from '@/i18n';
 
@@ -157,11 +158,15 @@ function useMemoryInspectorLogic(
     activeTab: TabType,
     categoryFilter: MemoryCategory | 'all'
 ) {
-    const { t } = useTranslation();
     const memoryData = useMemory(searchQuery, activeTab);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [inspectingHistoryId, setInspectingHistoryId] = useState<string | null>(null);
     const [historyData, setHistoryData] = useState<MemoryVersion[]>([]);
+    const [pendingShare, setPendingShare] = useState<{
+        memoryId: string;
+        projectId: string;
+        projectTitle: string;
+    } | null>(null);
 
     useEffect(() => {
         const frame = requestAnimationFrame(() => {
@@ -203,18 +208,35 @@ function useMemoryInspectorLogic(
 
             const targetProject = activeProjects.find(p => p.id !== 'current'); // Mock logic
             if (targetProject) {
-                // SAFETY: Using native confirm for critical action until custom UI modal is ready, 
-                // but following project rules to minimize hardcoded strings.
-                const confirmed = window.confirm(t('memory.share.confirm', { project: targetProject.title }) || `Share this memory with project "${targetProject.title}"?`);
-                if (confirmed) {
-                    await memoryData.handleShare(id, targetProject.id);
-                    appLogger.info('MemoryInspector', 'Memory shared successfully');
-                }
+                setPendingShare({
+                    memoryId: id,
+                    projectId: targetProject.id,
+                    projectTitle: targetProject.title,
+                });
             }
         } catch (error) {
             appLogger.error('MemoryInspector', 'Failed to share', error as Error);
         }
-    }, [memoryData, t]);
+    }, []);
+
+    const confirmShare = useCallback(async () => {
+        if (!pendingShare) {
+            return;
+        }
+
+        try {
+            await memoryData.handleShare(pendingShare.memoryId, pendingShare.projectId);
+            appLogger.info('MemoryInspector', 'Memory shared successfully');
+        } catch (error) {
+            appLogger.error('MemoryInspector', 'Failed to share', error as Error);
+        } finally {
+            setPendingShare(null);
+        }
+    }, [memoryData, pendingShare]);
+
+    const cancelShare = useCallback(() => {
+        setPendingShare(null);
+    }, []);
 
     const filteredConfirmed = useMemo(
         () => filterConfirmedMemories(memoryData.confirmedMemories, categoryFilter, activeTab),
@@ -261,7 +283,10 @@ function useMemoryInspectorLogic(
         historyData,
         handleShowHistory,
         handleRollback,
-        handleShare
+        handleShare,
+        pendingShare,
+        confirmShare,
+        cancelShare
     };
 }
 
@@ -288,7 +313,10 @@ export const MemoryInspector: React.FC = () => {
         historyData,
         handleShowHistory,
         handleRollback,
-        handleShare
+        handleShare,
+        pendingShare,
+        confirmShare,
+        cancelShare
     } = useMemoryInspectorLogic(searchQuery, activeTab, categoryFilter);
 
     const editModal = useEditModal();
@@ -428,6 +456,16 @@ export const MemoryInspector: React.FC = () => {
                 editModal={editModal}
                 addModal={addModal}
                 loadData={memoryData.loadData}
+            />
+            <ConfirmationModal
+                isOpen={pendingShare !== null}
+                onClose={cancelShare}
+                onConfirm={() => { void confirmShare(); }}
+                title={t('common.confirm')}
+                message={pendingShare?.projectTitle ?? ''}
+                confirmLabel={t('common.confirm')}
+                cancelText={t('common.cancel')}
+                variant="info"
             />
         </div>
     );

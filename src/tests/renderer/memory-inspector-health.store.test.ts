@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
     __resetMemoryInspectorHealthForTests,
     getMemoryInspectorHealthSnapshot,
     recordMemoryInspectorHealthEvent,
 } from '@/store/memory-inspector-health.store';
-import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('memory-inspector-health.store', () => {
     beforeEach(() => {

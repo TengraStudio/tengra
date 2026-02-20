@@ -1,96 +1,93 @@
 import { registerVoiceIpc } from '@main/ipc/voice';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const ipcMainHandlers = new Map<string, (...args: any[]) => any>();
+type IpcHandler = (...args: unknown[]) => unknown | Promise<unknown>;
+const ipcMainHandlers = new Map<string, IpcHandler>();
 
 vi.mock('electron', () => ({
     ipcMain: {
-        handle: vi.fn((channel, handler) => {
+        handle: vi.fn((channel: string, handler: IpcHandler) => {
             ipcMainHandlers.set(channel, handler);
         }),
         removeHandler: vi.fn()
     }
 }));
 
-vi.mock('@main/utils/ipc-wrapper.util', () => ({
-    createValidatedIpcHandler: (
-        _name: string,
-        handler: (...args: any[]) => any,
-        options?: { argsSchema?: { parse: (args: unknown[]) => unknown[] }; defaultValue?: unknown }
-    ) => async (event: unknown, ...args: unknown[]) => {
-        try {
-            const parsedArgs = options?.argsSchema ? options.argsSchema.parse(args) : args;
-            const result = await handler(event, ...(parsedArgs as unknown[]));
-            return { success: true, data: result };
-        } catch (error: any) {
-            if (options && Object.prototype.hasOwnProperty.call(options, 'defaultValue')) {
-                return options.defaultValue;
-            }
-            return { success: false, error: error.message ?? 'Validation failed' };
-        }
-    }
-}));
-
 describe('Voice IPC Handlers', () => {
-    beforeEach(() => {
-        ipcMainHandlers.clear();
-        vi.clearAllMocks();
+    beforeAll(() => {
         registerVoiceIpc();
     });
 
-    it('detects wake words and intents', async () => {
-        const handler = ipcMainHandlers.get('voice:wake-word-detect');
-        const result = await handler?.({}, {
-            transcript: 'Hey Tandem open settings',
-            wakeWord: 'hey tandem'
-        });
-        expect(result.success).toBe(true);
-        expect(result.data.activated).toBe(true);
-        expect(result.data.intent).toBe('open_settings');
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    it('handles voice session lifecycle', async () => {
-        const startHandler = ipcMainHandlers.get('voice:session-start');
-        const utteranceHandler = ipcMainHandlers.get('voice:session-utterance');
-        const endHandler = ipcMainHandlers.get('voice:session-end');
-
-        const started = await startHandler?.({}, { wakeWord: 'hey tandem', locale: 'en-US' });
-        expect(started.success).toBe(true);
-        const sessionId = started.data.id;
-
-        const utterance = await utteranceHandler?.({}, {
-            sessionId,
-            transcript: 'hey tandem stop speaking',
-            assistantSpeaking: true
+    it('processes transcript and matches a built-in command', async () => {
+        const handler = ipcMainHandlers.get('voice:process-transcript');
+        expect(handler).toBeDefined();
+        const result = await handler?.({}, 'tandem open settings');
+        expect(result).toMatchObject({
+            success: true,
+            command: { id: 'nav-settings' },
         });
-        expect(utterance.success).toBe(true);
-        expect(utterance.data.interruptAssistant).toBe(true);
-        expect(utterance.data.intent).toBe('stop_speaking');
-
-        const ended = await endHandler?.({}, sessionId);
-        expect(ended).toMatchObject({ success: true, data: { success: true } });
     });
 
-    it('creates and searches voice notes', async () => {
-        const createHandler = ipcMainHandlers.get('voice:note-create');
-        const searchHandler = ipcMainHandlers.get('voice:note-search');
-        const deleteHandler = ipcMainHandlers.get('voice:note-delete');
+    it('handles listening and speaking lifecycle', async () => {
+        const setListeningHandler = ipcMainHandlers.get('voice:set-listening');
+        const synthesizeHandler = ipcMainHandlers.get('voice:synthesize');
+        const stopSpeakingHandler = ipcMainHandlers.get('voice:stop-speaking');
 
-        const created = await createHandler?.({}, {
-            title: 'Sprint notes',
-            transcript: 'We should finalize release notes. Next step is running smoke tests.'
+        expect(setListeningHandler).toBeDefined();
+        expect(synthesizeHandler).toBeDefined();
+        expect(stopSpeakingHandler).toBeDefined();
+
+        const listeningStarted = await setListeningHandler?.({}, true);
+        expect(listeningStarted).toMatchObject({ success: true });
+
+        const speakingStarted = await synthesizeHandler?.({}, { text: 'hello world' });
+        expect(speakingStarted).toMatchObject({ success: true });
+
+        const speakingStopped = await stopSpeakingHandler?.({});
+        expect(speakingStopped).toMatchObject({ success: true });
+
+        const listeningStopped = await setListeningHandler?.({}, false);
+        expect(listeningStopped).toMatchObject({ success: true });
+    });
+
+    it('creates, updates, and removes voice commands', async () => {
+        const addHandler = ipcMainHandlers.get('voice:add-command');
+        const updateHandler = ipcMainHandlers.get('voice:update-command');
+        const removeHandler = ipcMainHandlers.get('voice:remove-command');
+        const listHandler = ipcMainHandlers.get('voice:get-commands');
+
+        expect(addHandler).toBeDefined();
+        expect(updateHandler).toBeDefined();
+        expect(removeHandler).toBeDefined();
+        expect(listHandler).toBeDefined();
+
+        const command = {
+            id: 'custom-open-help',
+            phrase: 'open help',
+            aliases: ['show help'],
+            action: { type: 'navigate', target: 'help' },
+            category: 'custom',
+            description: 'Open help panel',
+            enabled: true,
+        } as const;
+
+        const created = await addHandler?.({}, command);
+        expect(created).toMatchObject({ success: true, command: { id: 'custom-open-help' } });
+
+        const updated = await updateHandler?.({}, {
+            ...command,
+            aliases: ['show help', 'help panel'],
         });
-        expect(created.success).toBe(true);
-        expect(created.data.summary.length).toBeGreaterThan(0);
-        expect(created.data.actionItems.length).toBeGreaterThan(0);
+        expect(updated).toMatchObject({ success: true, command: { id: 'custom-open-help' } });
 
-        const found = await searchHandler?.({}, { query: 'release' });
-        expect(found.success).toBe(true);
-        expect(found.data.notes.length).toBeGreaterThan(0);
+        const listed = await listHandler?.({});
+        expect(listed).toMatchObject({ success: true });
 
-        const deleted = await deleteHandler?.({}, created.data.id);
-        expect(deleted.success).toBe(true);
-        expect(deleted.data.deleted).toBe(true);
+        const removed = await removeHandler?.({}, 'custom-open-help');
+        expect(removed).toMatchObject({ success: true });
     });
 });
-

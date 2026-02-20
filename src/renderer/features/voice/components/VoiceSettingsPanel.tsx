@@ -3,8 +3,8 @@
  * UI-11: Voice-first interface option
  */
 
-import { VoiceCommand, VoiceInfo,VoiceSettings } from '@shared/types/voice';
-import { useEffect,useState } from 'react';
+import { VoiceCommand, VoiceInfo, VoiceSettings } from '@shared/types/voice';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,13 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
         await updateSettings({ [key]: value });
     };
 
+    const handleSettingChangeSafe = <K extends keyof VoiceSettings>(
+        key: K,
+        value: VoiceSettings[K]
+    ) => {
+        void handleSettingChange(key, value);
+    };
+
     /** Add a new custom command */
     const handleAddCommand = async () => {
         if (!newCommandPhrase || !newCommandAction) {
@@ -104,7 +111,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </span>
                         <Switch
                             checked={localSettings.enabled}
-                            onCheckedChange={(checked) => handleSettingChange('enabled', checked)}
+                            onCheckedChange={(checked) => handleSettingChangeSafe('enabled', checked)}
                         />
                     </div>
                 </CardContent>
@@ -122,7 +129,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </label>
                         <Input
                             value={localSettings.wakeWord}
-                            onChange={(e) => handleSettingChange('wakeWord', e.target.value)}
+                            onChange={(e) => handleSettingChangeSafe('wakeWord', e.target.value)}
                             placeholder="tandem"
                         />
                     </div>
@@ -132,7 +139,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </span>
                         <Switch
                             checked={localSettings.continuousListening}
-                            onCheckedChange={(checked) => handleSettingChange('continuousListening', checked)}
+                            onCheckedChange={(checked) => handleSettingChangeSafe('continuousListening', checked)}
                         />
                     </div>
                 </CardContent>
@@ -151,7 +158,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </label>
                         <Select
                             value={localSettings.synthesisVoice}
-                            onValueChange={(value) => handleSettingChange('synthesisVoice', value)}
+                            onValueChange={(value) => handleSettingChangeSafe('synthesisVoice', value)}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder={t('voice.settings.selectVoice')} />
@@ -177,7 +184,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                             max="2"
                             step="0.1"
                             value={localSettings.speechRate}
-                            onChange={(e) => handleSettingChange('speechRate', parseFloat(e.target.value))}
+                            onChange={(e) => handleSettingChangeSafe('speechRate', parseFloat(e.target.value))}
                             className="w-full"
                         />
                     </div>
@@ -193,7 +200,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                             max="2"
                             step="0.1"
                             value={localSettings.speechPitch}
-                            onChange={(e) => handleSettingChange('speechPitch', parseFloat(e.target.value))}
+                            onChange={(e) => handleSettingChangeSafe('speechPitch', parseFloat(e.target.value))}
                             className="w-full"
                         />
                     </div>
@@ -209,7 +216,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                             max="1"
                             step="0.1"
                             value={localSettings.speechVolume}
-                            onChange={(e) => handleSettingChange('speechVolume', parseFloat(e.target.value))}
+                            onChange={(e) => handleSettingChangeSafe('speechVolume', parseFloat(e.target.value))}
                             className="w-full"
                         />
                     </div>
@@ -228,7 +235,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </span>
                         <Switch
                             checked={localSettings.audioFeedback}
-                            onCheckedChange={(checked) => handleSettingChange('audioFeedback', checked)}
+                            onCheckedChange={(checked) => handleSettingChangeSafe('audioFeedback', checked)}
                         />
                     </div>
                     <div className="flex items-center justify-between">
@@ -237,7 +244,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </span>
                         <Switch
                             checked={localSettings.visualFeedback}
-                            onCheckedChange={(checked) => handleSettingChange('visualFeedback', checked)}
+                            onCheckedChange={(checked) => handleSettingChangeSafe('visualFeedback', checked)}
                         />
                     </div>
                     <div className="flex items-center justify-between">
@@ -246,7 +253,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         </span>
                         <Switch
                             checked={localSettings.accessibilityMode}
-                            onCheckedChange={(checked) => handleSettingChange('accessibilityMode', checked)}
+                            onCheckedChange={(checked) => handleSettingChangeSafe('accessibilityMode', checked)}
                         />
                     </div>
                 </CardContent>
@@ -276,7 +283,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => removeCommand(command.id)}
+                                        onClick={() => { void removeCommand(command.id); }}
                                     >
                                         ✕
                                     </Button>
@@ -298,7 +305,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                             placeholder={t('voice.settings.commandAction')}
                             className="flex-1"
                         />
-                        <Button onClick={handleAddCommand}>
+                        <Button onClick={() => { void handleAddCommand(); }}>
                             {t('common.add')}
                         </Button>
                     </div>

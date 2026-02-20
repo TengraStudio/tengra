@@ -3,17 +3,17 @@
  * MKT-DEV-01: Extension SDK/templates/CLI
  */
 
-import { useState, useEffect, useCallback } from 'react';
 import {
-    ExtensionManifest,
-    ExtensionStatus,
     ExtensionDevOptions,
+    ExtensionManifest,
     ExtensionProfileData,
-    ExtensionTestOptions,
-    ExtensionTestResult,
     ExtensionPublishOptions,
     ExtensionPublishResult,
+    ExtensionStatus,
+    ExtensionTestOptions,
+    ExtensionTestResult,
 } from '@shared/types/extension';
+import { useCallback, useEffect, useState } from 'react';
 
 /** Extension info for display */
 interface ExtensionInfo {
@@ -59,7 +59,7 @@ export function useExtensions(): UseExtensionsReturn {
 
         try {
             const result = await window.electron.extension?.getAll();
-            if (result && result.success) {
+            if (result?.success) {
                 setState({
                     extensions: result.extensions,
                     loading: false,
@@ -85,7 +85,7 @@ export function useExtensions(): UseExtensionsReturn {
     const install = useCallback(async (extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> => {
         try {
             const result = await window.electron.extension?.install(extensionPath);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -98,7 +98,7 @@ export function useExtensions(): UseExtensionsReturn {
     const uninstall = useCallback(async (extensionId: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.uninstall(extensionId);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -111,7 +111,7 @@ export function useExtensions(): UseExtensionsReturn {
     const activate = useCallback(async (extensionId: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.activate(extensionId);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -124,7 +124,7 @@ export function useExtensions(): UseExtensionsReturn {
     const deactivate = useCallback(async (extensionId: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.deactivate(extensionId);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -137,7 +137,7 @@ export function useExtensions(): UseExtensionsReturn {
     const startDev = useCallback(async (options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.devStart(options);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -150,7 +150,7 @@ export function useExtensions(): UseExtensionsReturn {
     const stopDev = useCallback(async (extensionId: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.devStop(extensionId);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -163,7 +163,7 @@ export function useExtensions(): UseExtensionsReturn {
     const reload = useCallback(async (extensionId: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const result = await window.electron.extension?.devReload(extensionId);
-            if (result && result.success) {
+            if (result?.success) {
                 await refresh();
             }
             return result ?? { success: false, error: 'Extension API not available' };
@@ -177,7 +177,7 @@ export function useExtensions(): UseExtensionsReturn {
         try {
             const result = await window.electron.extension?.test(options);
             return result ?? { success: false, passed: 0, failed: 0, skipped: 0, duration: 0 };
-        } catch (error) {
+        } catch {
             return { success: false, passed: 0, failed: 0, skipped: 0, duration: 0 };
         }
     }, []);
@@ -187,7 +187,7 @@ export function useExtensions(): UseExtensionsReturn {
         try {
             const result = await window.electron.extension?.publish(options);
             return result ?? { success: false, extensionId: '', version: '' };
-        } catch (error) {
+        } catch {
             return { success: false, extensionId: '', version: '' };
         }
     }, []);
@@ -197,7 +197,7 @@ export function useExtensions(): UseExtensionsReturn {
         try {
             const result = await window.electron.extension?.getProfile(extensionId);
             return result ?? { success: false };
-        } catch (error) {
+        } catch {
             return { success: false };
         }
     }, []);
@@ -207,13 +207,13 @@ export function useExtensions(): UseExtensionsReturn {
         let mounted = true;
 
         async function loadExtensions() {
-            if (!mounted) return;
+            if (!mounted) {return;}
             setState((prev) => ({ ...prev, loading: true, error: null }));
 
             try {
                 const result = await window.electron.extension?.getAll();
-                if (!mounted) return;
-                if (result && result.success) {
+                if (!mounted) {return;}
+                if (result?.success) {
                     setState({
                         extensions: result.extensions,
                         loading: false,
@@ -227,7 +227,7 @@ export function useExtensions(): UseExtensionsReturn {
                     });
                 }
             } catch (error) {
-                if (!mounted) return;
+                if (!mounted) {return;}
                 setState({
                     extensions: [],
                     loading: false,

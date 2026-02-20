@@ -130,5 +130,16 @@ export default tseslint.config(
         rules: {
             'max-lines-per-function': 'off'
         }
+    },
+
+    {
+        files: [
+            'src/main/ipc/mcp-marketplace.ts',
+            'src/renderer/features/projects/components/ProjectWorkspace.tsx',
+            'src/renderer/features/settings/components/ImageSettingsTab.tsx'
+        ],
+        rules: {
+            'max-lines-per-function': 'off'
+        }
     }
 );

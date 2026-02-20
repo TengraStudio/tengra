@@ -39,7 +39,7 @@ export const SavedProfileSelector: React.FC<SavedProfileSelectorProps> = ({ onSe
                 }
             }
         };
-        fetchProfiles();
+        void fetchProfiles();
         return () => {
             isMounted = false;
         };

@@ -374,7 +374,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     initialLine,
     appLanguage,
 }) => {
-    const { isLight, theme } = useTheme();
+    const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
     const editorRef = useRef<MonacoEditorInstance | null>(null);
     const monacoRef = useRef<Monaco | null>(null);
@@ -392,7 +392,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             return isLight ? 'vs' : 'vs-dark';
         }
         return applyMonacoTheme(monacoComponents.monaco, isLight);
-    }, [monacoComponents, isLight, theme]);
+    }, [monacoComponents, isLight]);
 
     const editorOptions = useMemo(
         (): editor.IStandaloneEditorConstructionOptions => ({
