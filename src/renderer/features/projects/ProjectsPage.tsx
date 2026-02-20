@@ -264,6 +264,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     }
                     onExportList={exportProjectsList}
                     t={t}
+                    language={language}
                 />
 
                 {viewMode === 'grid' ? (
@@ -397,6 +398,8 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                     onProjectCreated={(...args) => {
                         void sm.executeCreate(...args).then((success: boolean) => {
                             if (success) { setShowWizard(false); }
+                        }).catch(error => {
+                            appLogger.error('ProjectsPage', 'Project creation failed', error as Error);
                         });
                     }}
                     language={language}

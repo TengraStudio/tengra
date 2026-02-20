@@ -103,7 +103,13 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                     {tunnels.map(tunnel => (
                         <div key={tunnel.id} className="flex items-center justify-between border border-border rounded px-2 py-1">
                             <div className="text-xs">{tunnel.type} {tunnel.localHost}:{tunnel.localPort} → {tunnel.remoteHost}:{tunnel.remotePort}</div>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void window.electron.ssh.closeTunnel(tunnel.id).then(() => loadData()); }}>{t('ssh.closeTunnel')}</button>
+                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => {
+                                void window.electron.ssh.closeTunnel(tunnel.id)
+                                    .then(() => loadData())
+                                    .catch((error: Error) => {
+                                        appLogger.error('SSHTunnels', 'Failed to close tunnel', error);
+                                    });
+                            }}>{t('ssh.closeTunnel')}</button>
                         </div>
                     ))}
                     {tunnels.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noTunnels')}</div> : null}
@@ -127,7 +133,13 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
                             >
                                 {preset.name}
                             </button>
-                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => { void window.electron.ssh.deleteTunnelPreset(preset.id).then(() => loadData()); }}>{t('common.delete')}</button>
+                            <button className="secondary-btn text-xs px-2 py-1" onClick={() => {
+                                void window.electron.ssh.deleteTunnelPreset(preset.id)
+                                    .then(() => loadData())
+                                    .catch((error: Error) => {
+                                        appLogger.error('SSHTunnels', 'Failed to delete tunnel preset', error);
+                                    });
+                            }}>{t('common.delete')}</button>
                         </div>
                     ))}
                     {presets.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noTunnelPresets')}</div> : null}

@@ -31,9 +31,7 @@ interface RotationPreference {
 const DEFAULT_PROJECT_ID = '__default__';
 const DEFAULT_ROTATION_STRATEGY: RotationStrategy = 'provider_priority';
 
-/**
- * TODO-001-4: Quota provider callback type for cross-domain access
- */
+/** Quota provider callback type for cross-domain quota access. */
 export type QuotaProvider = (provider: string) => Promise<number | undefined>;
 
 /**
@@ -54,7 +52,7 @@ export class AgentProviderRotationService extends BaseService {
         lastUsedAt?: Date;
     }> = new Map();
 
-    /** TODO-001-4: Optional quota provider callback for cross-domain quota access */
+    /** Optional quota provider callback for cross-domain quota access. */
     private quotaProvider: QuotaProvider | null = null;
     private projectRotationPreferences: Map<string, RotationPreference> = new Map();
 
@@ -90,8 +88,8 @@ export class AgentProviderRotationService extends BaseService {
     }
 
     /**
-     * TODO-001-4: Set quota provider callback for cross-domain quota access
-     * This allows the proxy/quota service to inject its quota lookup
+     * Set quota provider callback for cross-domain quota access.
+     * This allows the proxy/quota service to inject its quota lookup.
      */
     setQuotaProvider(provider: QuotaProvider): void {
         this.quotaProvider = provider;
@@ -99,8 +97,8 @@ export class AgentProviderRotationService extends BaseService {
     }
 
     /**
-     * TODO-001-4: Get quota remaining for a provider
-     * Returns undefined if quota service is not available or provider not found
+     * Get quota remaining for a provider.
+     * Returns undefined if quota service is not available or provider not found.
      */
     async getQuotaRemaining(provider: string): Promise<number | undefined> {
         if (!this.quotaProvider) {
@@ -394,7 +392,6 @@ export class AgentProviderRotationService extends BaseService {
 
             const model = await this.getDefaultModelForProvider(account.provider);
             if (model) {
-                // TODO-001-4: Get quota remaining from quota service if available
                 const quotaRemaining = await this.getQuotaRemaining(account.provider);
                 models.push({
                     provider: account.provider,

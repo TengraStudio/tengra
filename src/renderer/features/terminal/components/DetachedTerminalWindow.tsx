@@ -7,6 +7,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { useTheme } from '@/hooks/useTheme';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     TerminalIpcContract,
@@ -82,12 +83,16 @@ export function DetachedTerminalWindow() {
 
         term.onData((data) => {
             if (!isExitedRef.current) {
-                void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [sessionId, data], { responseSchema: terminalWriteResponseSchema });
+                void invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [sessionId, data], { responseSchema: terminalWriteResponseSchema }).catch((error) => {
+                    appLogger.warn('DetachedTerminalWindow', 'Failed to write terminal input', error as Error);
+                });
             }
         });
         term.onResize((size) => {
             if (!isExitedRef.current) {
-                void invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [sessionId, size.cols, size.rows], { responseSchema: terminalResizeResponseSchema });
+                void invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [sessionId, size.cols, size.rows], { responseSchema: terminalResizeResponseSchema }).catch((error) => {
+                    appLogger.warn('DetachedTerminalWindow', 'Failed to resize detached terminal', error as Error);
+                });
             }
         });
 
@@ -104,11 +109,15 @@ export function DetachedTerminalWindow() {
             }
         });
 
-        void invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [sessionId], { responseSchema: terminalReadBufferResponseSchema }).then((buffer) => {
-            if (buffer && terminalRef.current) {
-                terminalRef.current.write(buffer);
-            }
-        });
+        void invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [sessionId], { responseSchema: terminalReadBufferResponseSchema })
+            .then((buffer) => {
+                if (buffer && terminalRef.current) {
+                    terminalRef.current.write(buffer);
+                }
+            })
+            .catch(error => {
+                appLogger.warn('DetachedTerminalWindow', 'Failed to load terminal buffer', error as Error);
+            });
 
         return () => {
             window.removeEventListener('resize', onResize);
@@ -137,7 +146,9 @@ export function DetachedTerminalWindow() {
             return;
         }
         const handleBeforeUnload = () => {
-            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionId], { responseSchema: terminalKillResponseSchema });
+            void invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionId], { responseSchema: terminalKillResponseSchema }).catch((error) => {
+                appLogger.warn('DetachedTerminalWindow', 'Failed to kill detached terminal on unload', error as Error);
+            });
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {

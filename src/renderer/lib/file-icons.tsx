@@ -339,9 +339,6 @@ export function FileIcon({ fileName, className = 'w-4 h-4', size = 16 }: { fileN
                     labelColor={color}
                     glyphColor="rgba(255,255,255,0.8)"
                     {...(defaultStyle ?? {})}
-                    // @ts-expect-error - ReactFileIcon width prop typing
-                    width={size}
-                    height={size}
                 />
             </div>
         </div>

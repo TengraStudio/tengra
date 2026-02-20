@@ -24,7 +24,9 @@ export function buildCloudStorageServer(deps: McpDeps): McpService {
                 description: 'Fetch public object metadata from a cloud URL',
                 handler: async ({ url }) => {
                     const safeUrl = validateUrl(url, ['https:']);
-                    return deps.web.fetchJson(`https://r.jina.ai/http://${new URL(safeUrl).host}${new URL(safeUrl).pathname}`);
+                    const parsedUrl = new URL(safeUrl);
+                    const proxiedUrl = `https://r.jina.ai/${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}`;
+                    return deps.web.fetchJson(proxiedUrl);
                 }
             },
             {
@@ -43,4 +45,3 @@ export function buildCloudStorageServer(deps: McpDeps): McpService {
         ], 'cloud-storage', deps.auditLog)
     };
 }
-

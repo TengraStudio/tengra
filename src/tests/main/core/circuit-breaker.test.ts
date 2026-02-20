@@ -13,6 +13,14 @@ describe('CircuitBreaker', () => {
         breaker = new CircuitBreaker(options);
     });
 
+    const openCircuit = async (): Promise<void> => {
+        const failingAction = vi.fn().mockRejectedValue(new Error('fail'));
+        for (let i = 0; i < 3; i++) {
+            await expect(breaker.execute(failingAction)).rejects.toThrow('fail');
+        }
+        expect(breaker.getState()).toBe(CircuitState.OPEN);
+    };
+
     it('should start in CLOSED state', () => {
         expect(breaker.getState()).toBe(CircuitState.CLOSED);
     });
@@ -29,7 +37,7 @@ describe('CircuitBreaker', () => {
 
         // Fail 3 times
         for (let i = 0; i < 3; i++) {
-            try { await breaker.execute(action); } catch { }
+            await expect(breaker.execute(action)).rejects.toThrow('fail');
         }
 
         expect(breaker.getState()).toBe(CircuitState.OPEN);
@@ -38,9 +46,7 @@ describe('CircuitBreaker', () => {
     it('should block requests when OPEN', async () => {
         const action = vi.fn().mockResolvedValue('success');
 
-        // Force open
-        // @ts-expect-error - transitionTo is private
-        breaker.transitionTo(CircuitState.OPEN);
+        await openCircuit();
 
         await expect(breaker.execute(action)).rejects.toThrow(/OPEN/);
         expect(action).not.toHaveBeenCalled();
@@ -49,9 +55,7 @@ describe('CircuitBreaker', () => {
     it('should transition to HALF_OPEN after timeout', async () => {
         const action = vi.fn().mockResolvedValue('success');
 
-        // Force open
-        // @ts-expect-error - transitionTo is private
-        breaker.transitionTo(CircuitState.OPEN);
+        await openCircuit();
 
         // Wait for timeout
         await new Promise(r => setTimeout(r, 110));
@@ -66,12 +70,10 @@ describe('CircuitBreaker', () => {
     it('should reopen if HALF_OPEN fails', async () => {
         const action = vi.fn().mockRejectedValue(new Error('fail'));
 
-        // Force open then wait
-        // @ts-expect-error - transitionTo is private
-        breaker.transitionTo(CircuitState.OPEN);
+        await openCircuit();
         await new Promise(r => setTimeout(r, 110));
 
-        try { await breaker.execute(action); } catch { }
+        await expect(breaker.execute(action)).rejects.toThrow('fail');
 
         expect(breaker.getState()).toBe(CircuitState.OPEN);
     });

@@ -559,7 +559,12 @@ export class FileSystemService {
             https
                 .get(url, (response: import('http').IncomingMessage) => {
                     if (response.statusCode && response.statusCode >= 400) {
-                        fs.unlink(destPath).catch(() => { });
+                        void fs.unlink(destPath).catch(error => {
+                            appLogger.warn(
+                                'FileSystemService',
+                                `Failed to clean up download target after HTTP error: ${getErrorMessage(error)}`
+                            );
+                        });
                         resolve({ success: false, error: `Download failed with status ${response.statusCode}` });
                         return;
                     }
@@ -571,7 +576,12 @@ export class FileSystemService {
                                 const algorithm = options.algorithm ?? 'sha256';
                                 const digest = createHash(algorithm).update(content).digest('hex');
                                 if (digest.toLowerCase() !== options.checksum?.toLowerCase()) {
-                                    void fs.unlink(destPath).catch(() => { });
+                                    void fs.unlink(destPath).catch(error => {
+                                        appLogger.warn(
+                                            'FileSystemService',
+                                            `Failed to clean up download target after checksum mismatch: ${getErrorMessage(error)}`
+                                        );
+                                    });
                                     resolve({ success: false, error: 'Checksum validation failed' });
                                     return;
                                 }
@@ -585,7 +595,12 @@ export class FileSystemService {
                     });
                 })
                 .on('error', (err: Error) => {
-                    fs.unlink(destPath).catch(() => { });
+                    void fs.unlink(destPath).catch(error => {
+                        appLogger.warn(
+                            'FileSystemService',
+                            `Failed to clean up download target after network error: ${getErrorMessage(error)}`
+                        );
+                    });
                     resolve({ success: false, error: err.message });
                 });
         });

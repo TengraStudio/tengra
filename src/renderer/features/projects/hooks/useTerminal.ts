@@ -6,6 +6,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { invokeTypedIpc } from '@/lib/ipc-client';
 import { getTerminalTheme } from '@/lib/terminal-theme';
 import { useSettingsStore } from '@/store/settings.store';
+import { appLogger } from '@/utils/renderer-logger';
 
 import {
     terminalCreateResponseSchema,
@@ -251,17 +252,22 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
                     }
 
                     if (pidRef.current) {
-                        invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, data], { responseSchema: terminalWriteResponseSchema }).catch(() => { });
+                        invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [pidRef.current, data], { responseSchema: terminalWriteResponseSchema }).catch(error => {
+                            appLogger.warn('ProjectsUseTerminal', 'Failed to write terminal input', error as Error);
+                        });
                     }
                 });
 
                 term.onResize(({ cols, rows }) => {
                     if (pidRef.current) {
-                        invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(() => { });
+                        invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [pidRef.current, cols, rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
+                            appLogger.warn('ProjectsUseTerminal', 'Failed to resize terminal', error as Error);
+                        });
                     }
                 });
 
-            } catch {
+            } catch (error) {
+                appLogger.error('ProjectsUseTerminal', 'Failed to initialize terminal', error as Error);
                 term.write(`\r\n\x1b[31mFailed to start terminal\x1b[0m\r\n`);
             }
         };
@@ -282,7 +288,9 @@ export function useTerminal(cwd?: string, projectId?: string, t?: (key: string) 
             if (terminalId) {
                 initializedTerminals.delete(terminalId);
                 initializingTerminals.delete(terminalId);
-                invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [terminalId], { responseSchema: terminalKillResponseSchema }).catch(() => { });
+                invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [terminalId], { responseSchema: terminalKillResponseSchema }).catch(error => {
+                    appLogger.warn('ProjectsUseTerminal', 'Failed to kill terminal during cleanup', error as Error);
+                });
             }
             if (cleanupsRef.current.data) { cleanupsRef.current.data(); }
             if (cleanupsRef.current.exit) { cleanupsRef.current.exit(); }

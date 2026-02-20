@@ -168,18 +168,22 @@ export const TerminalSession = memo(
                     if (containerRef.current?.offsetParent) {
                         fitAddon.fit();
                     }
-                } catch {
-                    /* ignore */
+                } catch (error) {
+                    appLogger.warn('TerminalSession', 'Fit addon failed during session setup', error as Error);
                 }
                 const res = await initializeBackend(term);
                 if (!res) {
                     return false;
                 }
                 term.onResize(s => {
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [tab.id, s.cols, s.rows], { responseSchema: terminalResizeResponseSchema }).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:resize'>('terminal:resize', [tab.id, s.cols, s.rows], { responseSchema: terminalResizeResponseSchema }).catch(error => {
+                        appLogger.warn('TerminalSession', 'Failed to resize terminal session', error as Error);
+                    });
                 });
                 term.onData(d => {
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [tab.id, d], { responseSchema: terminalWriteResponseSchema }).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:write'>('terminal:write', [tab.id, d], { responseSchema: terminalWriteResponseSchema }).catch(error => {
+                        appLogger.warn('TerminalSession', 'Failed to write terminal session data', error as Error);
+                    });
                 });
                 const buf = await invokeTypedIpc<TerminalIpcContract, 'terminal:readBuffer'>('terminal:readBuffer', [tab.id], { responseSchema: terminalReadBufferResponseSchema }).catch(() => null);
                 if (buf) {
@@ -242,12 +246,16 @@ export const TerminalSession = memo(
             isActiveRef.current = false;
             void setupSession(term, fitAddon).then(s => {
                 isActiveRef.current = s;
+            }).catch(error => {
+                appLogger.error('TerminalSession', 'Terminal session setup failed', error as Error);
             });
             return () => {
                 isInitializedRef.current = false;
                 if (isActiveRef.current && sessionIdRef.current) {
                     initializedTerminals.delete(tab.id);
-                    invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionIdRef.current], { responseSchema: terminalKillResponseSchema }).catch(() => { });
+                    invokeTypedIpc<TerminalIpcContract, 'terminal:kill'>('terminal:kill', [sessionIdRef.current], { responseSchema: terminalKillResponseSchema }).catch(error => {
+                        appLogger.warn('TerminalSession', 'Failed to kill terminal session during cleanup', error as Error);
+                    });
                 }
                 initializingTerminals.delete(tab.id);
                 term.dispose();

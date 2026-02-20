@@ -1,4 +1,5 @@
 import { BaseService } from '@main/services/base.service';
+import { DatabaseService } from '@main/services/data/database.service';
 import { AgentPerformanceMetrics } from '@shared/types/project-agent';
 
 /**
@@ -9,7 +10,7 @@ export class AgentPerformanceService extends BaseService {
     private metricsMap: Map<string, AgentPerformanceMetrics> = new Map();
     private resourceMonitorInterval?: NodeJS.Timeout;
 
-    constructor() {
+    constructor(private readonly databaseService?: DatabaseService) {
         super('AgentPerformanceService');
     }
 
@@ -299,12 +300,6 @@ export class AgentPerformanceService extends BaseService {
     }
 
     /**
-     * AGENT-08: Database Persistence Methods
-     * Note: These methods are placeholders for future database integration.
-     * To implement, inject DatabaseService in constructor and use uac_performance_metrics table.
-     */
-
-    /**
      * Save metrics to database for persistence
      */
     public async saveMetrics(taskId: string): Promise<void> {
@@ -313,24 +308,40 @@ export class AgentPerformanceService extends BaseService {
             this.logWarn(`No metrics found for task ${taskId}`);
             return;
         }
-        // TODO: Implement database persistence
-        // const metricsJson = JSON.stringify(metrics);
-        // await this.databaseService.uac.savePerformanceMetrics(taskId, metricsJson);
-        this.logInfo(`Metrics saved for task ${taskId} (in-memory only)`);
+
+        if (!this.databaseService) {
+            this.logWarn(
+                `Database service unavailable; metrics for task ${taskId} remain in memory only`
+            );
+            return;
+        }
+
+        const metricsJson = JSON.stringify(metrics);
+        await this.databaseService.uac.savePerformanceMetrics(taskId, metricsJson);
+        this.logInfo(`Metrics persisted for task ${taskId}`);
     }
 
     /**
      * Load metrics from database
      */
     public async loadMetrics(taskId: string): Promise<AgentPerformanceMetrics | null> {
-        // TODO: Implement database loading
-        // const record = await this.databaseService.uac.getPerformanceMetrics(taskId);
-        // if (record) {
-        //     const metrics = JSON.parse(record.metrics_json);
-        //     this.metricsMap.set(taskId, metrics);
-        //     return metrics;
-        // }
-        return this.metricsMap.get(taskId) ?? null;
+        const inMemoryMetrics = this.metricsMap.get(taskId);
+        if (inMemoryMetrics) {
+            return inMemoryMetrics;
+        }
+
+        if (!this.databaseService) {
+            return null;
+        }
+
+        const record = await this.databaseService.uac.getPerformanceMetrics(taskId);
+        if (!record) {
+            return null;
+        }
+
+        const parsed = JSON.parse(record.metrics_json) as AgentPerformanceMetrics;
+        this.metricsMap.set(taskId, parsed);
+        return parsed;
     }
 
     /**
@@ -338,12 +349,21 @@ export class AgentPerformanceService extends BaseService {
      */
     public async getMetricsHistory(
         taskId: string,
-        _limit: number = 10
+        limit: number = 10
     ): Promise<AgentPerformanceMetrics[]> {
-        // TODO: Implement database history query
-        // const records = await this.databaseService.uac.getPerformanceMetricsHistory(taskId, limit);
-        // return records.map(r => JSON.parse(r.metrics_json));
-        const current = this.metricsMap.get(taskId);
-        return current ? [current] : [];
+        const inMemoryMetrics = this.metricsMap.get(taskId);
+
+        if (!this.databaseService) {
+            return inMemoryMetrics ? [inMemoryMetrics] : [];
+        }
+
+        const records = await this.databaseService.uac.getPerformanceMetricsHistory(taskId, limit);
+        const history = records.map(record => JSON.parse(record.metrics_json) as AgentPerformanceMetrics);
+
+        if (history.length === 0 && inMemoryMetrics) {
+            return [inMemoryMetrics];
+        }
+
+        return history;
     }
 }

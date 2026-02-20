@@ -230,14 +230,14 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Create compliance reporting
 
 #### Developer Experience
-- [ ] **MKT-DEV-01**: Extension SDK/templates/CLI
-  - Create extension scaffolding tool
-  - Provide TypeScript types and utilities
-  - Add development server with hot reload
-  - Create extension testing framework
-  - Add extension debugging tools
-  - Implement extension profiling
-  - Add extension documentation generator
+- [x] **MKT-DEV-01**: Extension SDK/templates/CLI
+  - [x] Create extension scaffolding tool
+  - [x] Provide TypeScript types and utilities
+  - [ ] Add development server with hot reload
+  - [ ] Create extension testing framework
+  - [ ] Add extension debugging tools
+  - [ ] Implement extension profiling
+  - [ ] Add extension documentation generator
 
 - [ ] **MKT-DEV-02**: Extension developer documentation
   - Getting started guide
@@ -464,6 +464,51 @@ Selected small/contained tasks that are realistic to ship quickly:
   - Evaluate feasibility for Electron
   - Identify components for migration
   - Performance benchmarking
+
+## 🐛 Potential Bugs to Fix
+
+### Code Quality Issues
+
+- [x] **BUG-01**: Unimplemented database persistence in agent-performance.service.ts
+  - Location: `src/main/services/project/agent/agent-performance.service.ts:316-344`
+  - Issue: Three TODO comments for database operations that are not implemented
+  - Impact: Performance metrics are not persisted across sessions
+
+- [x] **BUG-02**: Missing quota service integration in agent-provider-rotation.service.ts
+  - Location: `src/main/services/project/agent/agent-provider-rotation.service.ts:397`
+  - Issue: TODO-001-4 indicates quota remaining lookup is incomplete
+  - Impact: Provider rotation may not properly account for quota limits
+
+- [x] **BUG-03**: Console statements in extension.util.ts
+  - Location: `src/shared/utils/extension.util.ts:74, 77, 83, 341`
+  - Issue: Using console.info/warn/debug/log instead of appLogger
+  - Impact: Violates project logging standards
+
+- [x] **BUG-04**: `as any` type assertions throughout codebase
+  - Found 152 occurrences across the codebase
+  - Many are in test files (acceptable) but some in production code
+  - Files to review: `src/main/services/`, `src/renderer/features/`
+
+- [x] **BUG-05**: Empty catch blocks that swallow errors
+  - Location: `src/main/services/system/process-manager.service.ts:246`
+  - Issue: `.catch(() => {})` silently ignores errors
+  - Impact: Potential hidden failures
+
+- [x] **BUG-06**: Promise chains without proper error handling
+  - Multiple files use `.then()` without corresponding `.catch()`
+  - Could lead to unhandled promise rejections
+
+### Type Safety Issues
+
+- [x] **BUG-07**: ESLint disable comments hiding issues
+  - Location: Multiple files (12 occurrences)
+  - Some are legitimate (control regex, console in logging module)
+  - Review each for necessity
+
+- [x] **BUG-08**: @ts-expect-error in test files
+  - Location: `src/tests/main/core/circuit-breaker.test.ts:42, 53, 70`
+  - Testing private methods via type bypass
+  - Consider refactoring to test public API instead
 
 ## 📝 Feature Requests
 
@@ -721,15 +766,15 @@ Selected small/contained tasks that are realistic to ship quickly:
 
 ### UI/UX Enhancements
 
-- [ ] **UI-11**: Implement voice-first interface option
-  - Hands-free navigation
-  - Voice shortcuts for common actions
-  - Audio feedback for all actions
-  - Add visual backup for voice
-  - Implement gesture controls
-  - Create custom voice commands
-  - Add wake-word customization
-  - Accessibility voice mode
+- [x] **UI-11**: Implement voice-first interface option
+  - [x] Hands-free navigation
+  - [x] Voice shortcuts for common actions
+  - [x] Audio feedback for all actions
+  - [x] Add visual backup for voice
+  - [ ] Implement gesture controls
+  - [x] Create custom voice commands
+  - [x] Add wake-word customization
+  - [x] Accessibility voice mode
 
 ### Data & Analytics
 
@@ -796,8 +841,8 @@ When picking up a task from this list:
 
 ### Workspace + SSH Improvements
 
-- [ ] **PROJ-WS-SSH-01**: Complete end-to-end SSH workspace mount flow
-  - One-click mount from saved SSH profile into Project Workspace
+- [x] **PROJ-WS-SSH-01**: Complete end-to-end SSH workspace mount flow
+  - [x] One-click mount from saved SSH profile into Project Workspace
   - Validate host key + credential path before mount
   - Show mount health/status in workspace header
 
@@ -1046,9 +1091,9 @@ When picking up a task from this list:
 
 Generated from current repository modules (`src/main`, `src/renderer`, `src/shared`) to capture realistic ideas for new systems, potential bugs, and missing implementations.
 
-- [ ] **BACKLOG-0001**: Add comprehensive unit tests for edge cases in IPC advanced-memory handler.
-- [ ] **BACKLOG-0002**: Add integration and regression coverage for critical flows in IPC advanced-memory handler.
-- [ ] **BACKLOG-0003**: Harden input validation and schema guards in IPC advanced-memory handler.
+- [x] **BACKLOG-0001**: Add comprehensive unit tests for edge cases in IPC advanced-memory handler.
+- [x] **BACKLOG-0002**: Add integration and regression coverage for critical flows in IPC advanced-memory handler.
+- [x] **BACKLOG-0003**: Harden input validation and schema guards in IPC advanced-memory handler.
 - [ ] **BACKLOG-0004**: Standardize error codes, retry policy, and fallback behavior in IPC advanced-memory handler.
 - [ ] **BACKLOG-0005**: Add telemetry events and health dashboards for IPC advanced-memory handler.
 - [ ] **BACKLOG-0006**: Profile performance and define regression budgets for IPC advanced-memory handler.
@@ -1056,8 +1101,8 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0008**: Add full i18n key coverage for user-facing strings surfaced by IPC advanced-memory handler.
 - [ ] **BACKLOG-0009**: Write an operational runbook and troubleshooting guide for IPC advanced-memory handler.
 - [ ] **BACKLOG-0010**: Complete threat-model and abuse-case review for IPC advanced-memory handler.
-- [ ] **BACKLOG-0011**: Add comprehensive unit tests for edge cases in IPC voice handler.
-- [ ] **BACKLOG-0012**: Add integration and regression coverage for critical flows in IPC voice handler.
+- [x] **BACKLOG-0011**: Add comprehensive unit tests for edge cases in IPC voice handler.
+- [x] **BACKLOG-0012**: Add integration and regression coverage for critical flows in IPC voice handler.
 - [ ] **BACKLOG-0013**: Harden input validation and schema guards in IPC voice handler.
 - [ ] **BACKLOG-0014**: Standardize error codes, retry policy, and fallback behavior in IPC voice handler.
 - [ ] **BACKLOG-0015**: Add telemetry events and health dashboards for IPC voice handler.
@@ -1066,9 +1111,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0018**: Add full i18n key coverage for user-facing strings surfaced by IPC voice handler.
 - [ ] **BACKLOG-0019**: Write an operational runbook and troubleshooting guide for IPC voice handler.
 - [ ] **BACKLOG-0020**: Complete threat-model and abuse-case review for IPC voice handler.
-- [ ] **BACKLOG-0021**: Add comprehensive unit tests for edge cases in IPC code-sandbox handler.
-- [ ] **BACKLOG-0022**: Add integration and regression coverage for critical flows in IPC code-sandbox handler.
-- [ ] **BACKLOG-0023**: Harden input validation and schema guards in IPC code-sandbox handler.
+- [x] **BACKLOG-0021**: Add comprehensive unit tests for edge cases in IPC code-sandbox handler.
+- [x] **BACKLOG-0022**: Add integration and regression coverage for critical flows in IPC code-sandbox handler.
+- [x] **BACKLOG-0023**: Harden input validation and schema guards in IPC code-sandbox handler.
 - [ ] **BACKLOG-0024**: Standardize error codes, retry policy, and fallback behavior in IPC code-sandbox handler.
 - [ ] **BACKLOG-0025**: Add telemetry events and health dashboards for IPC code-sandbox handler.
 - [ ] **BACKLOG-0026**: Profile performance and define regression budgets for IPC code-sandbox handler.
@@ -1076,8 +1121,8 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0028**: Add full i18n key coverage for user-facing strings surfaced by IPC code-sandbox handler.
 - [ ] **BACKLOG-0029**: Write an operational runbook and troubleshooting guide for IPC code-sandbox handler.
 - [ ] **BACKLOG-0030**: Complete threat-model and abuse-case review for IPC code-sandbox handler.
-- [ ] **BACKLOG-0031**: Add comprehensive unit tests for edge cases in IPC MCP marketplace handler.
-- [ ] **BACKLOG-0032**: Add integration and regression coverage for critical flows in IPC MCP marketplace handler.
+- [x] **BACKLOG-0031**: Add comprehensive unit tests for edge cases in IPC MCP marketplace handler.
+- [x] **BACKLOG-0032**: Add integration and regression coverage for critical flows in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0033**: Harden input validation and schema guards in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0034**: Standardize error codes, retry policy, and fallback behavior in IPC MCP marketplace handler.
 - [ ] **BACKLOG-0035**: Add telemetry events and health dashboards for IPC MCP marketplace handler.
@@ -1086,9 +1131,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0038**: Add full i18n key coverage for user-facing strings surfaced by IPC MCP marketplace handler.
 - [ ] **BACKLOG-0039**: Write an operational runbook and troubleshooting guide for IPC MCP marketplace handler.
 - [ ] **BACKLOG-0040**: Complete threat-model and abuse-case review for IPC MCP marketplace handler.
-- [ ] **BACKLOG-0041**: Add comprehensive unit tests for edge cases in IPC project-agent handler.
-- [ ] **BACKLOG-0042**: Add integration and regression coverage for critical flows in IPC project-agent handler.
-- [ ] **BACKLOG-0043**: Harden input validation and schema guards in IPC project-agent handler.
+- [x] **BACKLOG-0041**: Add comprehensive unit tests for edge cases in IPC project-agent handler.
+- [x] **BACKLOG-0042**: Add integration and regression coverage for critical flows in IPC project-agent handler.
+- [x] **BACKLOG-0043**: Harden input validation and schema guards in IPC project-agent handler.
 - [ ] **BACKLOG-0044**: Standardize error codes, retry policy, and fallback behavior in IPC project-agent handler.
 - [ ] **BACKLOG-0045**: Add telemetry events and health dashboards for IPC project-agent handler.
 - [ ] **BACKLOG-0046**: Profile performance and define regression budgets for IPC project-agent handler.
@@ -1096,9 +1141,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0048**: Add full i18n key coverage for user-facing strings surfaced by IPC project-agent handler.
 - [ ] **BACKLOG-0049**: Write an operational runbook and troubleshooting guide for IPC project-agent handler.
 - [ ] **BACKLOG-0050**: Complete threat-model and abuse-case review for IPC project-agent handler.
-- [ ] **BACKLOG-0051**: Add comprehensive unit tests for edge cases in IPC SSH handler.
-- [ ] **BACKLOG-0052**: Add integration and regression coverage for critical flows in IPC SSH handler.
-- [ ] **BACKLOG-0053**: Harden input validation and schema guards in IPC SSH handler.
+- [x] **BACKLOG-0051**: Add comprehensive unit tests for edge cases in IPC SSH handler.
+- [x] **BACKLOG-0052**: Add integration and regression coverage for critical flows in IPC SSH handler.
+- [x] **BACKLOG-0053**: Harden input validation and schema guards in IPC SSH handler.
 - [ ] **BACKLOG-0054**: Standardize error codes, retry policy, and fallback behavior in IPC SSH handler.
 - [ ] **BACKLOG-0055**: Add telemetry events and health dashboards for IPC SSH handler.
 - [ ] **BACKLOG-0056**: Profile performance and define regression budgets for IPC SSH handler.
@@ -1106,9 +1151,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0058**: Add full i18n key coverage for user-facing strings surfaced by IPC SSH handler.
 - [ ] **BACKLOG-0059**: Write an operational runbook and troubleshooting guide for IPC SSH handler.
 - [ ] **BACKLOG-0060**: Complete threat-model and abuse-case review for IPC SSH handler.
-- [ ] **BACKLOG-0061**: Add comprehensive unit tests for edge cases in IPC terminal handler.
-- [ ] **BACKLOG-0062**: Add integration and regression coverage for critical flows in IPC terminal handler.
-- [ ] **BACKLOG-0063**: Harden input validation and schema guards in IPC terminal handler.
+- [x] **BACKLOG-0061**: Add comprehensive unit tests for edge cases in IPC terminal handler.
+- [x] **BACKLOG-0062**: Add integration and regression coverage for critical flows in IPC terminal handler.
+- [x] **BACKLOG-0063**: Harden input validation and schema guards in IPC terminal handler.
 - [ ] **BACKLOG-0064**: Standardize error codes, retry policy, and fallback behavior in IPC terminal handler.
 - [ ] **BACKLOG-0065**: Add telemetry events and health dashboards for IPC terminal handler.
 - [ ] **BACKLOG-0066**: Profile performance and define regression budgets for IPC terminal handler.
@@ -1116,9 +1161,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0068**: Add full i18n key coverage for user-facing strings surfaced by IPC terminal handler.
 - [ ] **BACKLOG-0069**: Write an operational runbook and troubleshooting guide for IPC terminal handler.
 - [ ] **BACKLOG-0070**: Complete threat-model and abuse-case review for IPC terminal handler.
-- [ ] **BACKLOG-0071**: Add comprehensive unit tests for edge cases in IPC git-advanced handler.
-- [ ] **BACKLOG-0072**: Add integration and regression coverage for critical flows in IPC git-advanced handler.
-- [ ] **BACKLOG-0073**: Harden input validation and schema guards in IPC git-advanced handler.
+- [x] **BACKLOG-0071**: Add comprehensive unit tests for edge cases in IPC git-advanced handler.
+- [x] **BACKLOG-0072**: Add integration and regression coverage for critical flows in IPC git-advanced handler.
+- [x] **BACKLOG-0073**: Harden input validation and schema guards in IPC git-advanced handler.
 - [ ] **BACKLOG-0074**: Standardize error codes, retry policy, and fallback behavior in IPC git-advanced handler.
 - [ ] **BACKLOG-0075**: Add telemetry events and health dashboards for IPC git-advanced handler.
 - [ ] **BACKLOG-0076**: Profile performance and define regression budgets for IPC git-advanced handler.
@@ -1126,76 +1171,76 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0078**: Add full i18n key coverage for user-facing strings surfaced by IPC git-advanced handler.
 - [ ] **BACKLOG-0079**: Write an operational runbook and troubleshooting guide for IPC git-advanced handler.
 - [ ] **BACKLOG-0080**: Complete threat-model and abuse-case review for IPC git-advanced handler.
-- [ ] **BACKLOG-0081**: Add comprehensive unit tests for edge cases in IPC settings handler.
-- [ ] **BACKLOG-0082**: Add integration and regression coverage for critical flows in IPC settings handler.
-- [ ] **BACKLOG-0083**: Harden input validation and schema guards in IPC settings handler.
-- [ ] **BACKLOG-0084**: Standardize error codes, retry policy, and fallback behavior in IPC settings handler.
-- [ ] **BACKLOG-0085**: Add telemetry events and health dashboards for IPC settings handler.
-- [ ] **BACKLOG-0086**: Profile performance and define regression budgets for IPC settings handler.
-- [ ] **BACKLOG-0087**: Improve loading, empty, and failure-state UX tied to IPC settings handler.
-- [ ] **BACKLOG-0088**: Add full i18n key coverage for user-facing strings surfaced by IPC settings handler.
-- [ ] **BACKLOG-0089**: Write an operational runbook and troubleshooting guide for IPC settings handler.
-- [ ] **BACKLOG-0090**: Complete threat-model and abuse-case review for IPC settings handler.
-- [ ] **BACKLOG-0091**: Add comprehensive unit tests for edge cases in IPC files handler.
-- [ ] **BACKLOG-0092**: Add integration and regression coverage for critical flows in IPC files handler.
-- [ ] **BACKLOG-0093**: Harden input validation and schema guards in IPC files handler.
-- [ ] **BACKLOG-0094**: Standardize error codes, retry policy, and fallback behavior in IPC files handler.
-- [ ] **BACKLOG-0095**: Add telemetry events and health dashboards for IPC files handler.
-- [ ] **BACKLOG-0096**: Profile performance and define regression budgets for IPC files handler.
-- [ ] **BACKLOG-0097**: Improve loading, empty, and failure-state UX tied to IPC files handler.
-- [ ] **BACKLOG-0098**: Add full i18n key coverage for user-facing strings surfaced by IPC files handler.
-- [ ] **BACKLOG-0099**: Write an operational runbook and troubleshooting guide for IPC files handler.
-- [ ] **BACKLOG-0100**: Complete threat-model and abuse-case review for IPC files handler.
-- [ ] **BACKLOG-0101**: Add comprehensive unit tests for edge cases in Renderer chat feature.
-- [ ] **BACKLOG-0102**: Add integration and regression coverage for critical flows in Renderer chat feature.
-- [ ] **BACKLOG-0103**: Harden input validation and schema guards in Renderer chat feature.
-- [ ] **BACKLOG-0104**: Standardize error codes, retry policy, and fallback behavior in Renderer chat feature.
-- [ ] **BACKLOG-0105**: Add telemetry events and health dashboards for Renderer chat feature.
-- [ ] **BACKLOG-0106**: Profile performance and define regression budgets for Renderer chat feature.
-- [ ] **BACKLOG-0107**: Improve loading, empty, and failure-state UX tied to Renderer chat feature.
-- [ ] **BACKLOG-0108**: Add full i18n key coverage for user-facing strings surfaced by Renderer chat feature.
-- [ ] **BACKLOG-0109**: Write an operational runbook and troubleshooting guide for Renderer chat feature.
-- [ ] **BACKLOG-0110**: Complete threat-model and abuse-case review for Renderer chat feature.
-- [ ] **BACKLOG-0111**: Add comprehensive unit tests for edge cases in Renderer projects page.
-- [ ] **BACKLOG-0112**: Add integration and regression coverage for critical flows in Renderer projects page.
-- [ ] **BACKLOG-0113**: Harden input validation and schema guards in Renderer projects page.
-- [ ] **BACKLOG-0114**: Standardize error codes, retry policy, and fallback behavior in Renderer projects page.
-- [ ] **BACKLOG-0115**: Add telemetry events and health dashboards for Renderer projects page.
-- [ ] **BACKLOG-0116**: Profile performance and define regression budgets for Renderer projects page.
-- [ ] **BACKLOG-0117**: Improve loading, empty, and failure-state UX tied to Renderer projects page.
-- [ ] **BACKLOG-0118**: Add full i18n key coverage for user-facing strings surfaced by Renderer projects page.
-- [ ] **BACKLOG-0119**: Write an operational runbook and troubleshooting guide for Renderer projects page.
-- [ ] **BACKLOG-0120**: Complete threat-model and abuse-case review for Renderer projects page.
-- [ ] **BACKLOG-0121**: Add comprehensive unit tests for edge cases in Renderer memory inspector.
-- [ ] **BACKLOG-0122**: Add integration and regression coverage for critical flows in Renderer memory inspector.
-- [ ] **BACKLOG-0123**: Harden input validation and schema guards in Renderer memory inspector.
-- [ ] **BACKLOG-0124**: Standardize error codes, retry policy, and fallback behavior in Renderer memory inspector.
-- [ ] **BACKLOG-0125**: Add telemetry events and health dashboards for Renderer memory inspector.
-- [ ] **BACKLOG-0126**: Profile performance and define regression budgets for Renderer memory inspector.
-- [ ] **BACKLOG-0127**: Improve loading, empty, and failure-state UX tied to Renderer memory inspector.
-- [ ] **BACKLOG-0128**: Add full i18n key coverage for user-facing strings surfaced by Renderer memory inspector.
-- [ ] **BACKLOG-0129**: Write an operational runbook and troubleshooting guide for Renderer memory inspector.
-- [ ] **BACKLOG-0130**: Complete threat-model and abuse-case review for Renderer memory inspector.
-- [ ] **BACKLOG-0131**: Add comprehensive unit tests for edge cases in Renderer SSH manager.
-- [ ] **BACKLOG-0132**: Add integration and regression coverage for critical flows in Renderer SSH manager.
-- [ ] **BACKLOG-0133**: Harden input validation and schema guards in Renderer SSH manager.
-- [ ] **BACKLOG-0134**: Standardize error codes, retry policy, and fallback behavior in Renderer SSH manager.
-- [ ] **BACKLOG-0135**: Add telemetry events and health dashboards for Renderer SSH manager.
-- [ ] **BACKLOG-0136**: Profile performance and define regression budgets for Renderer SSH manager.
-- [ ] **BACKLOG-0137**: Improve loading, empty, and failure-state UX tied to Renderer SSH manager.
-- [ ] **BACKLOG-0138**: Add full i18n key coverage for user-facing strings surfaced by Renderer SSH manager.
-- [ ] **BACKLOG-0139**: Write an operational runbook and troubleshooting guide for Renderer SSH manager.
-- [ ] **BACKLOG-0140**: Complete threat-model and abuse-case review for Renderer SSH manager.
-- [ ] **BACKLOG-0141**: Add comprehensive unit tests for edge cases in Renderer settings page.
-- [ ] **BACKLOG-0142**: Add integration and regression coverage for critical flows in Renderer settings page.
-- [ ] **BACKLOG-0143**: Harden input validation and schema guards in Renderer settings page.
-- [ ] **BACKLOG-0144**: Standardize error codes, retry policy, and fallback behavior in Renderer settings page.
-- [ ] **BACKLOG-0145**: Add telemetry events and health dashboards for Renderer settings page.
-- [ ] **BACKLOG-0146**: Profile performance and define regression budgets for Renderer settings page.
-- [ ] **BACKLOG-0147**: Improve loading, empty, and failure-state UX tied to Renderer settings page.
-- [ ] **BACKLOG-0148**: Add full i18n key coverage for user-facing strings surfaced by Renderer settings page.
-- [ ] **BACKLOG-0149**: Write an operational runbook and troubleshooting guide for Renderer settings page.
-- [ ] **BACKLOG-0150**: Complete threat-model and abuse-case review for Renderer settings page.
+- [x] **BACKLOG-0081**: Add comprehensive unit tests for edge cases in IPC settings handler.
+- [x] **BACKLOG-0082**: Add integration and regression coverage for critical flows in IPC settings handler.
+- [x] **BACKLOG-0083**: Harden input validation and schema guards in IPC settings handler.
+- [x] **BACKLOG-0084**: Standardize error codes, retry policy, and fallback behavior in IPC settings handler.
+- [x] **BACKLOG-0085**: Add telemetry events and health dashboards for IPC settings handler.
+- [x] **BACKLOG-0086**: Profile performance and define regression budgets for IPC settings handler.
+- [x] **BACKLOG-0087**: Improve loading, empty, and failure-state UX tied to IPC settings handler.
+- [x] **BACKLOG-0088**: Add full i18n key coverage for user-facing strings surfaced by IPC settings handler.
+- [x] **BACKLOG-0089**: Write an operational runbook and troubleshooting guide for IPC settings handler.
+- [x] **BACKLOG-0090**: Complete threat-model and abuse-case review for IPC settings handler.
+- [x] **BACKLOG-0091**: Add comprehensive unit tests for edge cases in IPC files handler.
+- [x] **BACKLOG-0092**: Add integration and regression coverage for critical flows in IPC files handler.
+- [x] **BACKLOG-0093**: Harden input validation and schema guards in IPC files handler.
+- [x] **BACKLOG-0094**: Standardize error codes, retry policy, and fallback behavior in IPC files handler.
+- [x] **BACKLOG-0095**: Add telemetry events and health dashboards for IPC files handler.
+- [x] **BACKLOG-0096**: Profile performance and define regression budgets for IPC files handler.
+- [x] **BACKLOG-0097**: Improve loading, empty, and failure-state UX tied to IPC files handler.
+- [x] **BACKLOG-0098**: Add full i18n key coverage for user-facing strings surfaced by IPC files handler.
+- [x] **BACKLOG-0099**: Write an operational runbook and troubleshooting guide for IPC files handler.
+- [x] **BACKLOG-0100**: Complete threat-model and abuse-case review for IPC files handler.
+- [x] **BACKLOG-0101**: Add comprehensive unit tests for edge cases in Renderer chat feature.
+- [x] **BACKLOG-0102**: Add integration and regression coverage for critical flows in Renderer chat feature.
+- [x] **BACKLOG-0103**: Harden input validation and schema guards in Renderer chat feature.
+- [x] **BACKLOG-0104**: Standardize error codes, retry policy, and fallback behavior in Renderer chat feature.
+- [x] **BACKLOG-0105**: Add telemetry events and health dashboards for Renderer chat feature.
+- [x] **BACKLOG-0106**: Profile performance and define regression budgets for Renderer chat feature.
+- [x] **BACKLOG-0107**: Improve loading, empty, and failure-state UX tied to Renderer chat feature.
+- [x] **BACKLOG-0108**: Add full i18n key coverage for user-facing strings surfaced by Renderer chat feature.
+- [x] **BACKLOG-0109**: Write an operational runbook and troubleshooting guide for Renderer chat feature.
+- [x] **BACKLOG-0110**: Complete threat-model and abuse-case review for Renderer chat feature.
+- [x] **BACKLOG-0111**: Add comprehensive unit tests for edge cases in Renderer projects page.
+- [x] **BACKLOG-0112**: Add integration and regression coverage for critical flows in Renderer projects page.
+- [x] **BACKLOG-0113**: Harden input validation and schema guards in Renderer projects page.
+- [x] **BACKLOG-0114**: Standardize error codes, retry policy, and fallback behavior in Renderer projects page.
+- [x] **BACKLOG-0115**: Add telemetry events and health dashboards for Renderer projects page.
+- [x] **BACKLOG-0116**: Profile performance and define regression budgets for Renderer projects page.
+- [x] **BACKLOG-0117**: Improve loading, empty, and failure-state UX tied to Renderer projects page.
+- [x] **BACKLOG-0118**: Add full i18n key coverage for user-facing strings surfaced by Renderer projects page.
+- [x] **BACKLOG-0119**: Write an operational runbook and troubleshooting guide for Renderer projects page.
+- [x] **BACKLOG-0120**: Complete threat-model and abuse-case review for Renderer projects page.
+- [x] **BACKLOG-0121**: Add comprehensive unit tests for edge cases in Renderer memory inspector.
+- [x] **BACKLOG-0122**: Add integration and regression coverage for critical flows in Renderer memory inspector.
+- [x] **BACKLOG-0123**: Harden input validation and schema guards in Renderer memory inspector.
+- [x] **BACKLOG-0124**: Standardize error codes, retry policy, and fallback behavior in Renderer memory inspector.
+- [x] **BACKLOG-0125**: Add telemetry events and health dashboards for Renderer memory inspector.
+- [x] **BACKLOG-0126**: Profile performance and define regression budgets for Renderer memory inspector.
+- [x] **BACKLOG-0127**: Improve loading, empty, and failure-state UX tied to Renderer memory inspector.
+- [x] **BACKLOG-0128**: Add full i18n key coverage for user-facing strings surfaced by Renderer memory inspector.
+- [x] **BACKLOG-0129**: Write an operational runbook and troubleshooting guide for Renderer memory inspector.
+- [x] **BACKLOG-0130**: Complete threat-model and abuse-case review for Renderer memory inspector.
+- [x] **BACKLOG-0131**: Add comprehensive unit tests for edge cases in Renderer SSH manager.
+- [x] **BACKLOG-0132**: Add integration and regression coverage for critical flows in Renderer SSH manager.
+- [x] **BACKLOG-0133**: Harden input validation and schema guards in Renderer SSH manager.
+- [x] **BACKLOG-0134**: Standardize error codes, retry policy, and fallback behavior in Renderer SSH manager.
+- [x] **BACKLOG-0135**: Add telemetry events and health dashboards for Renderer SSH manager.
+- [x] **BACKLOG-0136**: Profile performance and define regression budgets for Renderer SSH manager.
+- [x] **BACKLOG-0137**: Improve loading, empty, and failure-state UX tied to Renderer SSH manager.
+- [x] **BACKLOG-0138**: Add full i18n key coverage for user-facing strings surfaced by Renderer SSH manager.
+- [x] **BACKLOG-0139**: Write an operational runbook and troubleshooting guide for Renderer SSH manager.
+- [x] **BACKLOG-0140**: Complete threat-model and abuse-case review for Renderer SSH manager.
+- [x] **BACKLOG-0141**: Add comprehensive unit tests for edge cases in Renderer settings page.
+- [x] **BACKLOG-0142**: Add integration and regression coverage for critical flows in Renderer settings page.
+- [x] **BACKLOG-0143**: Harden input validation and schema guards in Renderer settings page.
+- [x] **BACKLOG-0144**: Standardize error codes, retry policy, and fallback behavior in Renderer settings page.
+- [x] **BACKLOG-0145**: Add telemetry events and health dashboards for Renderer settings page.
+- [x] **BACKLOG-0146**: Profile performance and define regression budgets for Renderer settings page.
+- [x] **BACKLOG-0147**: Improve loading, empty, and failure-state UX tied to Renderer settings page.
+- [x] **BACKLOG-0148**: Add full i18n key coverage for user-facing strings surfaced by Renderer settings page.
+- [x] **BACKLOG-0149**: Write an operational runbook and troubleshooting guide for Renderer settings page.
+- [x] **BACKLOG-0150**: Complete threat-model and abuse-case review for Renderer settings page.
 - [ ] **BACKLOG-0151**: Add comprehensive unit tests for edge cases in Renderer model selector modal.
 - [ ] **BACKLOG-0152**: Add integration and regression coverage for critical flows in Renderer model selector modal.
 - [ ] **BACKLOG-0153**: Harden input validation and schema guards in Renderer model selector modal.
@@ -1546,5 +1591,9 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - [ ] **BACKLOG-0498**: Add full i18n key coverage for user-facing strings surfaced by DatabaseService.
 - [ ] **BACKLOG-0499**: Write an operational runbook and troubleshooting guide for DatabaseService.
 - [ ] **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
+
+
+
+
 
 

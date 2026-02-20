@@ -1,5 +1,5 @@
 import { Check, Plus, RefreshCw, User, Users } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,17 +17,12 @@ export const AccountManager: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
-    useEffect(() => {
-        void loadAccounts();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const showMessage = (text: string, type: 'success' | 'error') => {
         setMessage({ text, type });
         setTimeout(() => setMessage(null), 3000);
     };
 
-    const loadAccounts = async () => {
+    const loadAccounts = useCallback(async () => {
         try {
             // Use batching to load accounts and active account in one call
             const { accounts, activeAccount } = await CommonBatches.loadAuthState();
@@ -37,7 +32,11 @@ export const AccountManager: React.FC = () => {
             appLogger.error('AccountManager', 'Failed to load accounts', error as Error);
             showMessage(t('accounts.loadFailed'), 'error');
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadAccounts();
+    }, [loadAccounts]);
 
     const handleCreateAccount = async () => {
         if (!newAccountName.trim()) { return; }

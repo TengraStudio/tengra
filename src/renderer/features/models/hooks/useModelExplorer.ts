@@ -3,6 +3,8 @@ import { parsePulls } from '@renderer/features/models/utils/explorer-utils';
 import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { appLogger } from '@/utils/renderer-logger';
+
 interface UseModelExplorerProps {
     onRefreshModels?: (bypassCache?: boolean) => void;
     installedModels: ModelInfo[];
@@ -84,13 +86,19 @@ export function useModelExplorer({ onRefreshModels, installedModels }: UseModelE
         void window.electron.getLibraryModels().then((libs) => {
             const typedLibs = libs.map(l => ({ ...l, provider: 'ollama' as const, pulls: undefined }));
             setOllamaLibrary(typedLibs);
+        }).catch(error => {
+            appLogger.error('useModelExplorer', 'Failed to load model library', error as Error);
         });
-        void window.electron.llama.getModelsDir().then(setModelsDir);
+        void window.electron.llama.getModelsDir().then(setModelsDir).catch(error => {
+            appLogger.error('useModelExplorer', 'Failed to load models directory', error as Error);
+        });
 
         window.electron.huggingface.onDownloadProgress((p) => {
             setDownloading(prev => ({ ...prev, [p.filename]: { received: p.received, total: p.total } }));
         });
-        void window.electron.huggingface.getWatchlist().then((ids) => setWatchlist(new Set(ids)));
+        void window.electron.huggingface.getWatchlist().then((ids) => setWatchlist(new Set(ids))).catch(error => {
+            appLogger.error('useModelExplorer', 'Failed to load Hugging Face watchlist', error as Error);
+        });
 
         window.electron.onPullProgress((progress) => {
             if (progress.status === 'success') {

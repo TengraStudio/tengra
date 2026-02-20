@@ -301,7 +301,11 @@ const useTerminalInstance = (
                 setupTerminalDataHandler(term, { historyRef, historyIndexRef, currentInputRef }, pidRef, addToHistory);
 
                 term.onResize(({ cols, rows }) => {
-                    if (pidRef.current) { window.electron.terminal.resize(pidRef.current, cols, rows).catch(() => { }); }
+                    if (pidRef.current) {
+                        window.electron.terminal.resize(pidRef.current, cols, rows).catch(error => {
+                            appLogger.warn('TerminalComponent', 'Failed to resize terminal', error as Error);
+                        });
+                    }
                 });
             } catch (error) {
                 term.write(`\r\n\x1b[31m${t('projectDashboard.terminalFailedStart')}\x1b[0m\r\n`);

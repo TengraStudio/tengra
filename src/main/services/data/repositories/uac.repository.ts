@@ -71,6 +71,13 @@ export interface UacPlanVersionRecord {
     created_at: number;
 }
 
+export interface UacPerformanceMetricsRecord {
+    id: string;
+    task_id: string;
+    metrics_json: string;
+    created_at: number;
+}
+
 /** AGT-PLN-03: Plan pattern record for learning from past plans */
 export interface UacPlanPatternRecord {
     id: string;
@@ -752,5 +759,36 @@ export class UacRepository {
                 LIMIT ?
             `)
             .all<UacPlanPatternRecord>(limit);
+    }
+
+    async savePerformanceMetrics(taskId: string, metricsJson: string): Promise<string> {
+        const id = uuidv4();
+        const now = Date.now();
+        await this.db
+            .prepare(
+                `INSERT INTO uac_performance_metrics (id, task_id, metrics_json, created_at) VALUES (?, ?, ?, ?)`
+            )
+            .run(id, taskId, metricsJson, now);
+        return id;
+    }
+
+    async getPerformanceMetrics(taskId: string): Promise<UacPerformanceMetricsRecord | undefined> {
+        return this.db
+            .prepare(
+                `SELECT * FROM uac_performance_metrics WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`
+            )
+            .get<UacPerformanceMetricsRecord>(taskId);
+    }
+
+    async getPerformanceMetricsHistory(
+        taskId: string,
+        limit: number = 10
+    ): Promise<UacPerformanceMetricsRecord[]> {
+        const safeLimit = Math.max(1, Math.floor(limit));
+        return this.db
+            .prepare(
+                `SELECT * FROM uac_performance_metrics WHERE task_id = ? ORDER BY created_at DESC LIMIT ?`
+            )
+            .all<UacPerformanceMetricsRecord>(taskId, safeLimit);
     }
 }

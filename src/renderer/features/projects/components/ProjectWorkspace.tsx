@@ -29,6 +29,7 @@ import {
     WorkspaceDashboardTab,
     WorkspaceEntry,
 } from '@/types';
+import { appLogger } from '@/utils/renderer-logger';
 
 // Types are now shared from @/types
 
@@ -644,7 +645,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 onApply={(logoPath: string) => {
                     void handleUpdateProject({ logo: logoPath }).then(() =>
                         ps.setShowLogoModal(false)
-                    );
+                    ).catch(error => {
+                        appLogger.error('ProjectWorkspace', 'Failed to apply generated logo', error as Error);
+                    });
                 }}
                 language={language}
             />

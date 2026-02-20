@@ -61,58 +61,59 @@ export const LogoGeneratorModal: React.FC<LogoGeneratorModalProps> = ({
 
     useEffect(() => {
         let mounted = true;
-        if (isOpen) {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            (async () => {
+        const loadModels = async (): Promise<void> => {
+            if (!mounted) {
+                return;
+            }
+            setLoadingModels(true);
+            try {
+                const allModels = await window.electron.modelRegistry.getAllModels();
                 if (!mounted) {
                     return;
                 }
-                setLoadingModels(true);
-                try {
-                    const allModels = await window.electron.modelRegistry.getAllModels();
-                    if (!mounted) {
-                        return;
-                    }
-                    const hasAntigravity = await window.electron.hasLinkedAccount('antigravity');
-                    const hasOpenAI =
-                        (await window.electron.hasLinkedAccount('openai')) ||
-                        (await window.electron.hasLinkedAccount('codex'));
-                    const hasNvidia = await window.electron.hasLinkedAccount('nvidia');
+                const hasAntigravity = await window.electron.hasLinkedAccount('antigravity');
+                const hasOpenAI =
+                    (await window.electron.hasLinkedAccount('openai')) ||
+                    (await window.electron.hasLinkedAccount('codex'));
+                const hasNvidia = await window.electron.hasLinkedAccount('nvidia');
 
-                    const providerAllowed = (providerRaw: string) => {
-                        const provider = providerRaw.toLowerCase();
-                        if (provider === 'ollama') {
-                            return true;
-                        }
-                        if (provider === 'antigravity' || provider === 'google') {
-                            return hasAntigravity;
-                        }
-                        if (provider === 'openai' || provider === 'codex') {
-                            return hasOpenAI;
-                        }
-                        if (provider === 'nvidia') {
-                            return hasNvidia;
-                        }
-                        return false;
-                    };
+                const providerAllowed = (providerRaw: string) => {
+                    const provider = providerRaw.toLowerCase();
+                    if (provider === 'ollama') {
+                        return true;
+                    }
+                    if (provider === 'antigravity' || provider === 'google') {
+                        return hasAntigravity;
+                    }
+                    if (provider === 'openai' || provider === 'codex') {
+                        return hasOpenAI;
+                    }
+                    if (provider === 'nvidia') {
+                        return hasNvidia;
+                    }
+                    return false;
+                };
 
-                    const imageModels = allModels.filter(
-                        m =>
-                            m.capabilities?.image_generation &&
-                            providerAllowed(m.provider ?? '')
-                    );
-                    setModels(imageModels);
-                    if (imageModels.length > 0 && !model) {
-                        setModel(imageModels[0].id);
-                    }
-                } catch (err) {
-                    appLogger.error('LogoGeneratorModal', 'Failed to load models', err as Error);
-                } finally {
-                    if (mounted) {
-                        setLoadingModels(false);
-                    }
+                const imageModels = allModels.filter(
+                    m =>
+                        m.capabilities?.image_generation &&
+                        providerAllowed(m.provider ?? '')
+                );
+                setModels(imageModels);
+                if (imageModels.length > 0 && !model) {
+                    setModel(imageModels[0].id);
                 }
-            })();
+            } catch (err) {
+                appLogger.error('LogoGeneratorModal', 'Failed to load models', err as Error);
+            } finally {
+                if (mounted) {
+                    setLoadingModels(false);
+                }
+            }
+        };
+
+        if (isOpen) {
+            void loadModels();
         }
         return () => {
             mounted = false;

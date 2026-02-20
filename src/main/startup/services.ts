@@ -739,7 +739,11 @@ function registerProjectServices() {
         dbs => new AgentTemplateService({ database: dbs as DatabaseService }),
         ['databaseService']
     );
-    container.register('agentPerformanceService', () => new AgentPerformanceService());
+    container.register(
+        'agentPerformanceService',
+        dbs => new AgentPerformanceService(dbs as DatabaseService),
+        ['databaseService']
+    );
     container.register(
         'projectAgentService',
         (...deps) => {

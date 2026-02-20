@@ -21,7 +21,8 @@ import type {
     SSHSessionRecording,
     SSHSystemStats,
     SSHTransferTask,
-    SSHTunnelPreset} from '@/types/ssh';
+    SSHTunnelPreset
+} from '@/types/ssh';
 
 // Mock Electron API for Web/Standalone development
 export const webElectronMock: ElectronAPI = {
@@ -37,7 +38,7 @@ export const webElectronMock: ElectronAPI = {
     githubLogin: async (_appId?: 'profile' | 'copilot') => ({
         device_code: '123',
         user_code: 'ABC',
-        verification_uri: 'http://locahost',
+        verification_uri: 'http://localhost',
         expires_in: 900,
         interval: 5,
     }),
@@ -1727,6 +1728,126 @@ export const webElectronMock: ElectronAPI = {
             logs: ['Mock execution started', 'Mock step 1 completed', 'Workflow finished successfully'],
         } as WorkflowExecutionResult),
         triggerManual: async (_triggerId: string, _context?: Record<string, unknown>) => { },
+    },
+    voice: {
+        getSettings: async () => ({
+            enabled: false,
+            wakeWord: 'tandem',
+            customWakeWords: [],
+            recognitionLanguage: 'en-US',
+            synthesisVoice: '',
+            speechRate: 1.0,
+            speechPitch: 1.0,
+            speechVolume: 0.8,
+            audioFeedback: true,
+            visualFeedback: true,
+            accessibilityMode: false,
+            shortcuts: [],
+            customCommands: [],
+            continuousListening: false,
+            silenceTimeout: 1500,
+        }),
+        updateSettings: async (_settings: Partial<import('@shared/types/voice').VoiceSettings>) => ({
+            success: true,
+            settings: {
+                enabled: false,
+                wakeWord: 'tandem',
+                customWakeWords: [],
+                recognitionLanguage: 'en-US',
+                synthesisVoice: '',
+                speechRate: 1.0,
+                speechPitch: 1.0,
+                speechVolume: 0.8,
+                audioFeedback: true,
+                visualFeedback: true,
+                accessibilityMode: false,
+                shortcuts: [],
+                customCommands: [],
+                continuousListening: false,
+                silenceTimeout: 1500,
+            },
+        }),
+        getCommands: async () => [],
+        addCommand: async (command: import('@shared/types/voice').VoiceCommand) => ({
+            success: true,
+            command,
+        }),
+        removeCommand: async (_commandId: string) => ({ success: true }),
+        processTranscript: async (transcript: string) => ({
+            success: true,
+            result: {
+                success: true,
+                transcript,
+                confidence: 1.0,
+                isFinal: true,
+                timestamp: Date.now(),
+            },
+            command: null,
+        }),
+        executeCommand: async (command: import('@shared/types/voice').VoiceCommand) => ({
+            success: true,
+            action: command.action.type,
+        }),
+        getVoices: async () => [],
+        synthesize: async (_options: import('@shared/types/voice').VoiceSynthesisOptions) => ({
+            success: true,
+        }),
+    },
+    extension: {
+        getAll: async () => ({
+            success: true,
+            extensions: [],
+        }),
+        get: async (_extensionId: string) => ({
+            success: false,
+        }),
+        install: async (_extensionPath: string) => ({
+            success: false,
+            error: 'Extension installation not available in web mode',
+        }),
+        uninstall: async (_extensionId: string) => ({
+            success: false,
+            error: 'Extension uninstallation not available in web mode',
+        }),
+        activate: async (_extensionId: string) => ({
+            success: false,
+            error: 'Extension activation not available in web mode',
+        }),
+        deactivate: async (_extensionId: string) => ({
+            success: false,
+            error: 'Extension deactivation not available in web mode',
+        }),
+        devStart: async (_options: import('@shared/types/extension').ExtensionDevOptions) => ({
+            success: false,
+            error: 'Extension development not available in web mode',
+        }),
+        devStop: async (_extensionId: string) => ({
+            success: false,
+            error: 'Extension development not available in web mode',
+        }),
+        devReload: async (_extensionId: string) => ({
+            success: false,
+            error: 'Extension development not available in web mode',
+        }),
+        test: async (_options: import('@shared/types/extension').ExtensionTestOptions) => ({
+            success: false,
+            passed: 0,
+            failed: 0,
+            skipped: 0,
+            duration: 0,
+        }),
+        publish: async (_options: import('@shared/types/extension').ExtensionPublishOptions) => ({
+            success: false,
+            extensionId: '',
+            version: '',
+        }),
+        getProfile: async (_extensionId: string) => ({
+            success: false,
+        }),
+        validate: async (_manifest: unknown) => ({
+            valid: true,
+            errors: [],
+        }),
     },
 };
 

@@ -243,7 +243,12 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                                 resolve();
                             }
                         })
-                        .catch(() => {});
+                        .catch(error => {
+                            appLogger.warn(
+                                'ProcessManager',
+                                `Port discovery check failed for ${options.name}: ${getErrorMessage(error)}`
+                            );
+                        });
 
                     attempts++;
                     if (attempts >= maxAttempts) {

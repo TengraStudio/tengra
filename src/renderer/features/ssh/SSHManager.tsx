@@ -3,38 +3,81 @@ import { PackageManager } from '@renderer/features/ssh/PackageManager';
 import { SFTPBrowser } from '@renderer/features/ssh/SFTPBrowser';
 import { SSHLogs } from '@renderer/features/ssh/SSHLogs';
 import { StatsDashboard } from '@renderer/features/ssh/StatsDashboard';
+import { SSHProfileTestResult } from '@shared/types/ssh';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import {
+    SSHConnectionFormInput,
+    sshManagerErrorCodes,
+    validateSSHConnectionForm
+} from '@/features/ssh/utils/ssh-manager-validation';
 import { Language, useTranslation } from '@/i18n';
+import { recordSSHManagerHealthEvent } from '@/store/ssh-manager-health.store';
 import { SSHConnection } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
-import { AddConnectionModal } from './components/AddConnectionModal';
+import { AddConnectionModal, SSHProfileTestUIResult } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';
 import { SSHKeyManagement } from './components/SSHKeyManagement';
-import { SSHTunnels } from './components/SSHTunnels';
 import { SSHTerminal } from './components/SSHTerminal';
+import { SSHTunnels } from './components/SSHTunnels';
 import { useSSHConnections } from './hooks/useSSHConnections';
 
 interface SSHManagerProps { isOpen: boolean; onClose: () => void; language: Language; }
-interface SSHProfile { name?: string; host: string; port: number; username: string; password?: string; privateKey?: string; }
+type SSHTabId =
+    | 'terminal'
+    | 'dashboard'
+    | 'files'
+    | 'packages'
+    | 'logs'
+    | 'management'
+    | 'keys'
+    | 'tunnels';
 
-const SSHTabs: React.FC<{ activeTab: string, onTabChange: (id: string) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
+type SSHProfile = SSHConnectionFormInput;
+interface SSHConnectResult {
+    success: boolean;
+    error?: string;
+    id?: string;
+}
+
+const CONNECT_RETRY_ATTEMPTS = 2;
+const CONNECT_RETRY_DELAY_MS = 150;
+
+const SSHTabs: React.FC<{ activeTab: SSHTabId, onTabChange: (id: SSHTabId) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
     <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
         {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
-            <button key={tab.id} onClick={() => { onTabChange(tab.id); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
+            <button key={tab.id} onClick={() => { onTabChange(tab.id as SSHTabId); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
         ))}
     </div>
 );
 
+async function waitForRetry(): Promise<void> {
+    await new Promise(resolve => {
+        setTimeout(resolve, CONNECT_RETRY_DELAY_MS);
+    });
+}
+
 export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
     const { t } = useTranslation(language);
-    const { connections, isConnecting, setIsConnecting, selectedConnectionId, setSelectedConnectionId, loadConnections } = useSSHConnections(isOpen);
+    const {
+        connections,
+        isConnecting,
+        setIsConnecting,
+        isLoadingConnections,
+        selectedConnectionId,
+        setSelectedConnectionId,
+        uiState,
+        lastErrorCode,
+        loadConnections,
+        updateConnectionStatus,
+    } = useSSHConnections(isOpen);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newConnection, setNewConnection] = useState<SSHProfile>({ name: '', host: '', port: 22, username: '', password: '', privateKey: '' });
     const [shouldSaveProfile, setShouldSaveProfile] = useState(false);
     const [terminalOutput, setTerminalOutput] = useState('');
-    const [activeTab, setActiveTab] = useState('terminal');
+    const [activeTab, setActiveTab] = useState<SSHTabId>('terminal');
+    const [pendingDeleteProfileId, setPendingDeleteProfileId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isOpen) {
@@ -49,53 +92,411 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         window.electron.ssh.onShellData(ed => {
             setTerminalOutput(p => { return p + ed.data; });
         });
+
+        return () => {
+            window.electron.ssh.removeAllListeners();
+        };
     }, [isOpen]);
 
-    const handleAddConnection = useCallback(async () => {
-        setIsConnecting(true);
-        setTerminalOutput(`${t('ssh.connecting')} ${newConnection.host}...\n`);
-        const res = await window.electron.ssh.connect({ ...newConnection, privateKey: newConnection.privateKey ?? undefined });
-        setIsConnecting(false);
-        if (res.success) {
-            setTerminalOutput(p => { return p + `${t('ssh.connected', { host: newConnection.host })}\n`; });
-            setShowAddModal(false);
-            if (shouldSaveProfile) {
-                await window.electron.ssh.saveProfile({ ...newConnection, id: res.id ?? '', name: newConnection.name ?? newConnection.host }).catch((err: Error) => {
-                    appLogger.error('SSHManager', 'Failed to save profile', err);
-                });
+    const appendTerminalLine = useCallback((line: string) => {
+        setTerminalOutput(previous => `${previous}${line}\n`);
+    }, []);
+
+    const runConnectWithRetry = useCallback(async (
+        payload: SSHConnectionFormInput
+    ): Promise<SSHConnectResult> => {
+        let lastErrorMessage = t('ssh.unknownError');
+
+        for (let attempt = 0; attempt < CONNECT_RETRY_ATTEMPTS; attempt += 1) {
+            try {
+                const result = await window.electron.ssh.connect({
+                    ...payload,
+                    authType: payload.privateKey ? 'key' : 'password',
+                    password: payload.password,
+                    privateKey: payload.privateKey,
+                } as SSHConnection);
+
+                if (result.success) {
+                    return result;
+                }
+                lastErrorMessage = result.error ?? t('ssh.unknownError');
+            } catch (error) {
+                lastErrorMessage = error instanceof Error ? error.message : t('ssh.unknownError');
             }
-            await loadConnections().catch((err: Error) => {
-                appLogger.error('SSHManager', 'Failed to load connections', err);
-            });
-        } else {
-            setTerminalOutput(p => { return p + `${t('ssh.connectionError', { error: res.error ?? 'Unknown' })}\n`; });
+
+            if (attempt < CONNECT_RETRY_ATTEMPTS - 1) {
+                await waitForRetry();
+            }
         }
-    }, [newConnection, shouldSaveProfile, t, setIsConnecting, loadConnections]);
+
+        return {
+            success: false,
+            error: lastErrorMessage,
+        };
+    }, [t]);
+
+    const handleAddConnection = useCallback(async () => {
+        const validated = validateSSHConnectionForm(newConnection);
+        if (!validated.success) {
+            appendTerminalLine(t('ssh.connectionError', { error: t('ssh.unknownError') }));
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.connect',
+                status: 'validation-failure',
+                errorCode: validated.errorCode,
+            });
+            return;
+        }
+
+        const startedAt = Date.now();
+        setIsConnecting(true);
+        appendTerminalLine(`${t('ssh.connecting')} ${validated.normalized.host}...`);
+
+        try {
+            const result = await runConnectWithRetry(validated.normalized);
+            if (result.success) {
+                appendTerminalLine(t('ssh.connected', { host: validated.normalized.host }));
+                setShowAddModal(false);
+                recordSSHManagerHealthEvent({
+                    channel: 'ssh.connect',
+                    status: 'success',
+                    durationMs: Date.now() - startedAt,
+                });
+
+                if (shouldSaveProfile) {
+                    if (!result.id) {
+                        recordSSHManagerHealthEvent({
+                            channel: 'ssh.connect',
+                            status: 'failure',
+                            durationMs: Date.now() - startedAt,
+                            errorCode: sshManagerErrorCodes.saveProfileFailed,
+                        });
+                    } else {
+                        const saved = await window.electron.ssh.saveProfile({
+                            id: result.id,
+                            name: validated.normalized.name ?? validated.normalized.host,
+                            host: validated.normalized.host,
+                            port: validated.normalized.port,
+                            username: validated.normalized.username,
+                            password: validated.normalized.password,
+                            privateKey: validated.normalized.privateKey,
+                            authType: validated.normalized.privateKey ? 'key' : 'password',
+                            status: 'disconnected',
+                        });
+
+                        if (!saved) {
+                            recordSSHManagerHealthEvent({
+                                channel: 'ssh.connect',
+                                status: 'failure',
+                                durationMs: Date.now() - startedAt,
+                                errorCode: sshManagerErrorCodes.saveProfileFailed,
+                            });
+                        }
+                    }
+                }
+
+                await loadConnections().catch((error: Error) => {
+                    appLogger.error('SSHManager', 'Failed to load connections', error);
+                });
+                return;
+            }
+
+            appendTerminalLine(t('ssh.connectionError', { error: result.error ?? t('ssh.unknownError') }));
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.connect',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: sshManagerErrorCodes.connectFailed,
+            });
+        } catch (error) {
+            const normalizedError = error instanceof Error ? error : new Error(String(error));
+            appLogger.error('SSHManager', 'Connection flow failed', normalizedError);
+            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.connect',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: sshManagerErrorCodes.connectFailed,
+            });
+        } finally {
+            setIsConnecting(false);
+        }
+    }, [appendTerminalLine, loadConnections, newConnection, runConnectWithRetry, setIsConnecting, shouldSaveProfile, t]);
 
     const handleAddConnectionWrapper = useCallback(() => {
         void handleAddConnection();
     }, [handleAddConnection]);
 
-    const handleConnect = useCallback((c: SSHConnection) => {
-        void window.electron.ssh.connect(c).then(() => {
-            void loadConnections();
+    const handleTestProfile = useCallback(async (): Promise<SSHProfileTestUIResult> => {
+        const validated = validateSSHConnectionForm(newConnection);
+        const startedAt = Date.now();
+
+        if (!validated.success) {
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.testProfile',
+                status: 'validation-failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: validated.errorCode,
+            });
+            return {
+                success: false,
+                message: t('ssh.profileTestFailed', { error: t('ssh.unknownError') }),
+                errorCode: validated.errorCode,
+                uiState: 'failure',
+            };
+        }
+
+        for (let attempt = 0; attempt < CONNECT_RETRY_ATTEMPTS; attempt += 1) {
+            try {
+                const result = await window.electron.ssh.testProfile({
+                    id: 'test-profile',
+                    host: validated.normalized.host,
+                    port: validated.normalized.port,
+                    username: validated.normalized.username,
+                    password: validated.normalized.password,
+                    privateKey: validated.normalized.privateKey,
+                    authType: validated.normalized.privateKey ? 'key' : 'password',
+                    status: 'connecting',
+                });
+
+                const typedResult = result as SSHProfileTestResult;
+                if (typedResult.success) {
+                    recordSSHManagerHealthEvent({
+                        channel: 'ssh.testProfile',
+                        status: 'success',
+                        durationMs: Date.now() - startedAt,
+                    });
+                    return {
+                        success: true,
+                        message: t('ssh.profileTestSuccess', { latency: typedResult.latencyMs }),
+                        uiState: typedResult.uiState === 'failure' ? 'failure' : 'ready',
+                        errorCode: typedResult.errorCode,
+                    };
+                }
+
+                if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
+                    const failedError = typedResult.error ?? t('ssh.unknownError');
+                    recordSSHManagerHealthEvent({
+                        channel: 'ssh.testProfile',
+                        status: 'failure',
+                        durationMs: Date.now() - startedAt,
+                        errorCode: typedResult.errorCode ?? sshManagerErrorCodes.testFailed,
+                    });
+                    return {
+                        success: false,
+                        message: t('ssh.profileTestFailed', { error: failedError }),
+                        errorCode: typedResult.errorCode ?? sshManagerErrorCodes.testFailed,
+                        uiState: typedResult.uiState === 'ready' ? 'ready' : 'failure',
+                    };
+                }
+            } catch (error) {
+                if (attempt === CONNECT_RETRY_ATTEMPTS - 1) {
+                    const message = error instanceof Error ? error.message : t('ssh.unknownError');
+                    recordSSHManagerHealthEvent({
+                        channel: 'ssh.testProfile',
+                        status: 'failure',
+                        durationMs: Date.now() - startedAt,
+                        errorCode: sshManagerErrorCodes.testFailed,
+                    });
+                    return {
+                        success: false,
+                        message: t('ssh.profileTestFailed', { error: message }),
+                        errorCode: sshManagerErrorCodes.testFailed,
+                        uiState: 'failure',
+                    };
+                }
+            }
+            await waitForRetry();
+        }
+
+        recordSSHManagerHealthEvent({
+            channel: 'ssh.testProfile',
+            status: 'failure',
+            durationMs: Date.now() - startedAt,
+            errorCode: sshManagerErrorCodes.testFailed,
         });
-    }, [loadConnections]);
+        return {
+            success: false,
+            message: t('ssh.profileTestFailed', { error: t('ssh.unknownError') }),
+            errorCode: sshManagerErrorCodes.testFailed,
+            uiState: 'failure',
+        };
+    }, [newConnection, t]);
+
+    const handleConnect = useCallback((c: SSHConnection) => {
+        const startedAt = Date.now();
+        setIsConnecting(true);
+        void runConnectWithRetry({
+            host: c.host,
+            port: c.port,
+            username: c.username,
+            password: c.password,
+            privateKey: c.privateKey,
+            name: c.name,
+        }).then(result => {
+            if (result.success) {
+                recordSSHManagerHealthEvent({
+                    channel: 'ssh.connect',
+                    status: 'success',
+                    durationMs: Date.now() - startedAt,
+                });
+                void loadConnections();
+                return;
+            }
+
+            updateConnectionStatus(c.id, 'error', result.error ?? t('ssh.unknownError'));
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.connect',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: sshManagerErrorCodes.connectFailed,
+            });
+        }).catch(error => {
+            const normalizedError = error instanceof Error ? error : new Error(String(error));
+            appLogger.error('SSHManager', 'Connect failed unexpectedly', normalizedError);
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.connect',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: sshManagerErrorCodes.connectFailed,
+            });
+        }).finally(() => {
+            setIsConnecting(false);
+        });
+    }, [loadConnections, runConnectWithRetry, setIsConnecting, t, updateConnectionStatus]);
 
     const handleDisconnect = useCallback((id: string) => {
-        void window.electron.ssh.disconnect(id);
-        setTerminalOutput(p => { return p + `${t('ssh.disconnected')}\n`; });
-    }, [t]);
+        void window.electron.ssh.disconnect(id).catch(error => {
+            const normalizedError = error instanceof Error ? error : new Error(String(error));
+            appLogger.error('SSHManager', 'Disconnect failed', normalizedError);
+        });
+        appendTerminalLine(t('ssh.disconnected'));
+    }, [appendTerminalLine, t]);
 
-    const handleDelete = useCallback((id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        // eslint-disable-next-line no-alert
-        if (window.confirm(t('ssh.confirmDelete'))) {
-            void window.electron.ssh.deleteProfile(id).then(() => {
-                void loadConnections();
-            });
+    const handleDeleteRequest = useCallback((id: string) => {
+        setPendingDeleteProfileId(id);
+    }, []);
+
+    const handleCancelDelete = useCallback(() => {
+        setPendingDeleteProfileId(null);
+    }, []);
+
+    const handleConfirmDelete = useCallback(() => {
+        if (!pendingDeleteProfileId) {
+            return;
         }
-    }, [loadConnections, t]);
+
+        const startedAt = Date.now();
+        const profileId = pendingDeleteProfileId;
+        void window.electron.ssh.deleteProfile(profileId).then(success => {
+            if (!success) {
+                recordSSHManagerHealthEvent({
+                    channel: 'ssh.deleteProfile',
+                    status: 'failure',
+                    durationMs: Date.now() - startedAt,
+                    errorCode: sshManagerErrorCodes.deleteProfileFailed,
+                });
+                appendTerminalLine(t('ssh.connectionError', { error: t('ssh.unknownError') }));
+                return;
+            }
+
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.deleteProfile',
+                status: 'success',
+                durationMs: Date.now() - startedAt,
+            });
+            setPendingDeleteProfileId(null);
+            void loadConnections();
+        }).catch(error => {
+            const normalizedError = error instanceof Error ? error : new Error(String(error));
+            appLogger.error('SSHManager', 'Delete profile failed', normalizedError);
+            recordSSHManagerHealthEvent({
+                channel: 'ssh.deleteProfile',
+                status: 'failure',
+                durationMs: Date.now() - startedAt,
+                errorCode: sshManagerErrorCodes.deleteProfileFailed,
+            });
+            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+        });
+    }, [appendTerminalLine, loadConnections, pendingDeleteProfileId, t]);
+
+    const handleTerminalExecute = useCallback((command: string) => {
+        if (!selectedConnectionId) {
+            appendTerminalLine(t('ssh.noServerConnected'));
+            return;
+        }
+        void window.electron.ssh.shellWrite(selectedConnectionId, `${command}\n`).catch(error => {
+            const normalizedError = error instanceof Error ? error : new Error(String(error));
+            appLogger.error('SSHManager', 'Shell write failed', normalizedError);
+            appendTerminalLine(t('ssh.connectionError', { error: normalizedError.message }));
+        });
+    }, [appendTerminalLine, selectedConnectionId, t]);
+
+    const renderMainContent = () => {
+        if (isLoadingConnections) {
+            return (
+                <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
+                    {t('ssh.loading')}
+                </div>
+            );
+        }
+
+        if (uiState === 'failure') {
+            return (
+                <div className="flex h-full items-center justify-center bg-background text-destructive">
+                    {t('ssh.connectionError', { error: lastErrorCode ?? t('ssh.unknownError') })}
+                </div>
+            );
+        }
+
+        if (uiState === 'empty' && activeTab !== 'keys' && activeTab !== 'terminal') {
+            return (
+                <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
+                    {t('ssh.selectConnection')}
+                </div>
+            );
+        }
+
+        if (activeTab === 'terminal') {
+            return (
+                <SSHTerminal
+                    terminalOutput={terminalOutput}
+                    t={t}
+                    onExecute={handleTerminalExecute}
+                    selectedConnectionId={selectedConnectionId}
+                />
+            );
+        }
+
+        if (activeTab === 'keys') {
+            return <SSHKeyManagement t={t} />;
+        }
+
+        if (!selectedConnectionId) {
+            return (
+                <div className="flex h-full items-center justify-center bg-background text-muted-foreground">
+                    {t('ssh.selectConnection')}
+                </div>
+            );
+        }
+
+        if (activeTab === 'tunnels') {
+            return <SSHTunnels connectionId={selectedConnectionId} t={t} />;
+        }
+        if (activeTab === 'dashboard') {
+            return <StatsDashboard connectionId={selectedConnectionId} />;
+        }
+        if (activeTab === 'packages') {
+            return <PackageManager connectionId={selectedConnectionId} />;
+        }
+        if (activeTab === 'logs') {
+            return <SSHLogs connectionId={selectedConnectionId} active />;
+        }
+        if (activeTab === 'management') {
+            return <NginxWizard connectionId={selectedConnectionId} language={language} />;
+        }
+
+        return <SFTPBrowser connectionId={selectedConnectionId} />;
+    };
 
     if (!isOpen) {
         return null;
@@ -106,33 +507,48 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             <div className="modal-content ssh-manager bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden" style={{ width: '800px', height: '600px', display: 'flex', flexDirection: 'column' }}>
                 <div className="modal-header"><h2>{t('ssh.title')}</h2><button className="close-btn" onClick={onClose}>×</button></div>
                 <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                    <SSHConnectionList connections={connections} selectedId={selectedConnectionId} onSelect={setSelectedConnectionId} onConnect={handleConnect} onDisconnect={handleDisconnect} onDelete={handleDelete} onAdd={() => { setShowAddModal(true); }} t={t} />
+                    <div className="relative">
+                        <SSHConnectionList
+                            connections={connections}
+                            selectedId={selectedConnectionId}
+                            onSelect={setSelectedConnectionId}
+                            onConnect={handleConnect}
+                            onDisconnect={handleDisconnect}
+                            onDeleteRequest={handleDeleteRequest}
+                            onAdd={() => { setShowAddModal(true); }}
+                            t={t}
+                        />
+                        {pendingDeleteProfileId ? (
+                            <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-destructive/30 bg-background/95 p-3 text-xs shadow-lg">
+                                <div className="mb-2 text-muted-foreground">{t('ssh.confirmDelete')}</div>
+                                <div className="flex gap-2">
+                                    <button className="secondary-btn flex-1" onClick={handleCancelDelete}>
+                                        {t('common.cancel')}
+                                    </button>
+                                    <button className="primary-btn flex-1" onClick={handleConfirmDelete}>
+                                        {t('common.delete')}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <SSHTabs activeTab={activeTab} onTabChange={setActiveTab} t={t} />
-                        <div className="flex-1 overflow-hidden">
-                            {activeTab === 'terminal' ? (
-                                <SSHTerminal terminalOutput={terminalOutput} t={t} onExecute={cmd => { if (selectedConnectionId) { void window.electron.ssh.shellWrite(selectedConnectionId, cmd + '\n'); } else { setTerminalOutput(p => { return p + `${t('ssh.noServerConnected')}\n`; }); } }} selectedConnectionId={selectedConnectionId} />
-                            ) : activeTab === 'keys' ? (
-                                <SSHKeyManagement t={t} />
-                            ) : activeTab === 'tunnels' && selectedConnectionId ? (
-                                <SSHTunnels connectionId={selectedConnectionId} t={t} />
-                            ) : !selectedConnectionId ? (
-                                <div className="flex-1 h-full flex items-center justify-center bg-background text-muted-foreground">{t('ssh.selectConnection')}</div>
-                            ) : activeTab === 'dashboard' ? (
-                                <StatsDashboard connectionId={selectedConnectionId} />
-                            ) : activeTab === 'packages' ? (
-                                <PackageManager connectionId={selectedConnectionId} />
-                            ) : activeTab === 'logs' ? (
-                                <SSHLogs connectionId={selectedConnectionId} active />
-                            ) : activeTab === 'management' ? (
-                                <NginxWizard connectionId={selectedConnectionId} language={language} />
-                            ) : (
-                                <SFTPBrowser connectionId={selectedConnectionId} />
-                            )}
-                        </div>
+                        <div className="flex-1 overflow-hidden">{renderMainContent()}</div>
                     </div>
                 </div>
-                <AddConnectionModal isOpen={showAddModal} onClose={() => { setShowAddModal(false); }} t={t} newConnection={newConnection} setNewConnection={setNewConnection} shouldSaveProfile={shouldSaveProfile} setShouldSaveProfile={setShouldSaveProfile} isConnecting={isConnecting} onConnect={handleAddConnectionWrapper} />
+                <AddConnectionModal
+                    isOpen={showAddModal}
+                    onClose={() => { setShowAddModal(false); }}
+                    t={t}
+                    newConnection={newConnection}
+                    setNewConnection={setNewConnection}
+                    shouldSaveProfile={shouldSaveProfile}
+                    setShouldSaveProfile={setShouldSaveProfile}
+                    isConnecting={isConnecting}
+                    onConnect={handleAddConnectionWrapper}
+                    onTestProfile={handleTestProfile}
+                />
             </div>
         </div>
     );
