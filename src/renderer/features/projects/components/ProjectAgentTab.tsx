@@ -99,7 +99,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
         userPrompt,
         setUserPrompt,
         attachedFiles,
-        setAttachedFiles,
+        removeAttachedFile,
         expandedProviders,
         isInterruptModalOpen,
         setIsInterruptModalOpen,
@@ -277,7 +277,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
                     setUserPrompt={setUserPrompt}
                     isLoading={isLoading}
                     attachedFiles={attachedFiles}
-                    removeFile={id => setAttachedFiles(f => f.filter(x => x.id !== id))}
+                    removeFile={removeAttachedFile}
                     onStartTask={() => {
                         void handleStart(selectedModel);
                     }}

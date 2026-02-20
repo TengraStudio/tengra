@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AttachedFile, ModelOption } from '../components/agent/TaskInputForm';
 
@@ -22,6 +22,30 @@ export const useAgentHandlers = ({
     const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
     const [isInterruptModalOpen, setIsInterruptModalOpen] = useState(false);
     const [interruptReason, setInterruptReason] = useState('');
+    const attachedFilesRef = useRef<AttachedFile[]>([]);
+
+    const revokePreviewUrl = useCallback((file: AttachedFile) => {
+        if (file.preview && file.preview.startsWith('blob:')) {
+            URL.revokeObjectURL(file.preview);
+        }
+    }, []);
+
+    const clearAttachedFiles = useCallback(() => {
+        setAttachedFiles(prev => {
+            prev.forEach(revokePreviewUrl);
+            return [];
+        });
+    }, [revokePreviewUrl]);
+
+    const removeAttachedFile = useCallback((id: string) => {
+        setAttachedFiles(prev => {
+            const fileToRemove = prev.find(file => file.id === id);
+            if (fileToRemove) {
+                revokePreviewUrl(fileToRemove);
+            }
+            return prev.filter(file => file.id !== id);
+        });
+    }, [revokePreviewUrl]);
 
     const handleStart = useCallback(async (selectedModel: ModelOption | null) => {
         if (!selectedModel) {
@@ -31,9 +55,9 @@ export const useAgentHandlers = ({
         const taskId = await startTask(userPrompt, attachedFiles, selectedModel);
         if (taskId) {
             setUserPrompt('');
-            setAttachedFiles([]);
+            clearAttachedFiles();
         }
-    }, [userPrompt, attachedFiles, startTask]);
+    }, [userPrompt, attachedFiles, startTask, clearAttachedFiles]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>, fileInputRef: React.RefObject<HTMLInputElement>) => {
         const files = e.target.files;
@@ -100,9 +124,18 @@ export const useAgentHandlers = ({
         };
     }, [selectedTaskId]);
 
+    useEffect(() => {
+        attachedFilesRef.current = attachedFiles;
+    }, [attachedFiles]);
+
+    useEffect(() => () => {
+        attachedFilesRef.current.forEach(revokePreviewUrl);
+    }, [revokePreviewUrl]);
+
     return {
         userPrompt, setUserPrompt,
         attachedFiles, setAttachedFiles,
+        removeAttachedFile,
         showModelDropdown, setShowModelDropdown,
         expandedProviders,
         isInterruptModalOpen, setIsInterruptModalOpen,
