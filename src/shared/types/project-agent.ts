@@ -1,5 +1,6 @@
 import type { AgentTaskState } from './agent-state';
 import { Message } from './chat';
+export * from '../schemas/council.schema';
 
 export interface AgentProfile {
     id: string;
@@ -311,6 +312,79 @@ export interface ModelRoutingRule {
     provider: string;
     model: string;
     priority: number; // Higher priority = preferred
+}
+
+/** AGT-COL-05: Collaboration intent for inter-agent protocol */
+export type AgentCollaborationIntent =
+    | 'REQUEST_HELP'
+    | 'SHARE_CONTEXT'
+    | 'PROPOSE_CHANGE'
+    | 'BLOCKER_REPORT';
+
+/** AGT-COL-05: Message priority level */
+export type AgentCollaborationPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+/** AGT-COL-05: Collaboration message transport channel */
+export type AgentCollaborationChannel = 'private' | 'group';
+
+/** AGT-COL-05: Structured inter-agent message */
+export interface AgentCollaborationMessage {
+    id: string;
+    taskId: string;
+    stageId: string;
+    fromAgentId: string;
+    toAgentId?: string;
+    channel: AgentCollaborationChannel;
+    intent: AgentCollaborationIntent;
+    priority: AgentCollaborationPriority;
+    payload: Record<string, string | number | boolean | null>;
+    createdAt: number;
+    expiresAt?: number;
+}
+
+export type WorkerAvailabilityStatus = 'available' | 'busy' | 'offline';
+
+export interface WorkerAvailabilityRecord {
+    taskId: string;
+    agentId: string;
+    status: WorkerAvailabilityStatus;
+    availableAt?: number;
+    lastActiveAt: number;
+    reason?: string;
+    skills: string[];
+    contextReadiness: number;
+    completedStages: number;
+    failedStages: number;
+}
+
+export interface HelperCandidateScore {
+    taskId: string;
+    stageId: string;
+    agentId: string;
+    score: number;
+    skillMatch: number;
+    contextReadiness: number;
+    idleBonus: number;
+    rationale: string[];
+}
+
+export interface HelperHandoffPackage {
+    taskId: string;
+    stageId: string;
+    ownerAgentId: string;
+    helperAgentId: string;
+    contextSummary: string;
+    acceptanceCriteria: string[];
+    constraints: string[];
+    generatedAt: number;
+}
+
+export interface HelperMergeGateDecision {
+    accepted: boolean;
+    verdict: 'ACCEPT' | 'REVISE' | 'REJECT';
+    reasons: string[];
+    requiredFixes: string[];
+    reviewedAt: number;
 }
 
 /** AGT-COL-03: Vote for a decision */

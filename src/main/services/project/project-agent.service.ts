@@ -11,6 +11,9 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { AgentEventRecord, TaskMetrics } from '@shared/types/agent-state';
 import {
+    AgentCollaborationIntent,
+    AgentCollaborationMessage,
+    AgentCollaborationPriority,
     AgentProfile,
     AgentStartOptions,
     AgentTaskHistoryItem,
@@ -23,6 +26,9 @@ import {
     DebateReplay,
     DebateSession,
     DebateSide,
+    HelperCandidateScore,
+    HelperHandoffPackage,
+    HelperMergeGateDecision,
     ModelRoutingRule,
     ProjectState,
     ProjectStep,
@@ -31,6 +37,7 @@ import {
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
+    WorkerAvailabilityRecord,
 } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
@@ -169,6 +176,7 @@ export class ProjectAgentService extends BaseService {
                         this.taskAgentAssignments.set(task.id, restoredAgentId);
                         // Restore state
                         await executor.restoreStateFromDB();
+                        await this.restoreCollaborationMessagesForTask(task.id);
                     }
                 }
             }
@@ -215,7 +223,8 @@ export class ProjectAgentService extends BaseService {
                 if (agentId) {
                     this.agentCollaborationService.recordAgentTaskProgress({
                         agentId,
-                        status: 'in_progress'
+                        status: 'in_progress',
+                        taskId
                     });
                 }
                 return;
@@ -232,7 +241,8 @@ export class ProjectAgentService extends BaseService {
                     this.agentCollaborationService.recordAgentTaskProgress({
                         agentId,
                         status: payload.status === 'completed' ? 'completed' : 'failed',
-                        durationMs
+                        durationMs,
+                        taskId
                     });
                 }
                 void this.drainExecutionQueue();
@@ -332,7 +342,8 @@ export class ProjectAgentService extends BaseService {
         this.agentPerformanceService.initializeMetrics(taskId);
         this.agentCollaborationService.recordAgentTaskProgress({
             agentId: taskAgentId,
-            status: 'in_progress'
+            status: 'in_progress',
+            taskId
         });
         const executor = await this.getOrCreateExecutor(taskId, options);
         const canStartNow = await this.scheduleExecutionStart(taskId, options.priority);
@@ -373,7 +384,8 @@ export class ProjectAgentService extends BaseService {
         this.agentPerformanceService.initializeMetrics(taskId);
         this.agentCollaborationService.recordAgentTaskProgress({
             agentId: taskAgentId,
-            status: 'in_progress'
+            status: 'in_progress',
+            taskId
         });
         const executor = await this.getOrCreateExecutor(taskId, options);
         await executor.generatePlan();
@@ -630,6 +642,145 @@ export class ProjectAgentService extends BaseService {
         throw new Error(`Unable to save snapshot for task ${taskId}`);
     }
 
+    async handleQuotaExhaustedInterrupt(input: {
+        taskId: string;
+        stageId?: string;
+        provider: string;
+        model: string;
+        reason?: string;
+        autoSwitch?: boolean;
+    }): Promise<{
+        success: boolean;
+        interruptId: string;
+        checkpointId?: string;
+        blockedByQuota: boolean;
+        switched: boolean;
+        selectedFallback?: { provider: string; model: string };
+        availableFallbacks: Array<{ provider: string; model: string }>;
+        message: string;
+    }> {
+        const interruptId = `${input.taskId}:${Date.now()}`;
+        const reason = input.reason ?? 'quota_exhausted';
+        let checkpointId: string | undefined;
+
+        try {
+            checkpointId = await this.saveSnapshot(input.taskId);
+        } catch {
+            // Continue even if checkpoint save fails; caller still needs fallback data.
+        }
+
+        await this.databaseService.uac.addLog(
+            input.taskId,
+            'system',
+            JSON.stringify({
+                type: 'QUOTA_EXHAUSTED',
+                interruptId,
+                stageId: input.stageId ?? null,
+                provider: input.provider,
+                model: input.model,
+                reason,
+                checkpointId: checkpointId ?? null,
+                timestamp: Date.now()
+            })
+        );
+
+        const availableModels = await this.getAvailableModels();
+        const availableFallbacks = availableModels
+            .filter(item => item.provider !== input.provider || item.id !== input.model)
+            .map(item => ({ provider: item.provider, model: item.id }));
+
+        if (availableFallbacks.length === 0) {
+            const task = await this.databaseService.uac.getTask(input.taskId);
+            if (task) {
+                const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
+                metadata['blockedByQuota'] = true;
+                metadata['lastQuotaInterruptId'] = interruptId;
+                await this.databaseService.uac.updateTaskMetadata(input.taskId, metadata);
+            }
+            await this.databaseService.uac.updateTaskStatus(input.taskId, 'paused');
+            return {
+                success: true,
+                interruptId,
+                checkpointId,
+                blockedByQuota: true,
+                switched: false,
+                availableFallbacks,
+                message: 'No eligible fallback model/account found. Task paused for user action.'
+            };
+        }
+
+        if (input.autoSwitch === false) {
+            return {
+                success: true,
+                interruptId,
+                checkpointId,
+                blockedByQuota: false,
+                switched: false,
+                availableFallbacks,
+                message: 'Fallback candidates prepared. Waiting for manual user selection.'
+            };
+        }
+
+        const selectedFallback = availableFallbacks[0];
+        let resumedFromCheckpoint = false;
+        if (checkpointId) {
+            try {
+                await this.resumeFromCheckpoint(checkpointId);
+                resumedFromCheckpoint = true;
+            } catch {
+                resumedFromCheckpoint = false;
+            }
+        }
+
+        const switched = await this.selectModel(
+            input.taskId,
+            selectedFallback.provider,
+            selectedFallback.model
+        );
+        let resumed = false;
+        if (switched) {
+            try {
+                resumed = await this.resumeTask(input.taskId);
+            } catch {
+                resumed = false;
+            }
+        }
+
+        await this.databaseService.uac.addLog(
+            input.taskId,
+            'system',
+            JSON.stringify({
+                type: 'FORCED_MODEL_SWITCH',
+                interruptId,
+                previous: { provider: input.provider, model: input.model },
+                next: selectedFallback,
+                switched,
+                resumedFromCheckpoint,
+                resumed,
+                timestamp: Date.now()
+            })
+        );
+
+        return {
+            success: true,
+            interruptId,
+            checkpointId,
+            blockedByQuota: false,
+            switched,
+            selectedFallback: switched ? selectedFallback : undefined,
+            availableFallbacks,
+            message: switched
+                ? resumed
+                    ? resumedFromCheckpoint
+                        ? 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
+                        : 'Quota exhaustion handled via automatic fallback switch and resume.'
+                    : resumedFromCheckpoint
+                        ? 'Fallback switched after checkpoint restore, but resume did not start.'
+                        : 'Quota exhaustion handled via automatic fallback switch.'
+                : 'Fallback switch attempt failed. Manual intervention required.'
+        };
+    }
+
     // --- Profile Management ---
 
     async getProfiles(): Promise<AgentProfile[]> {
@@ -863,6 +1014,117 @@ export class ProjectAgentService extends BaseService {
 
     getTeamworkAnalytics(): AgentTeamworkAnalytics {
         return this.agentCollaborationService.getTeamworkAnalytics();
+    }
+
+    async sendCollaborationMessage(input: {
+        taskId: string;
+        stageId: string;
+        fromAgentId: string;
+        toAgentId?: string;
+        intent: AgentCollaborationIntent;
+        priority?: AgentCollaborationPriority;
+        payload: Record<string, string | number | boolean | null>;
+        expiresAt?: number;
+    }): Promise<AgentCollaborationMessage> {
+        const message = this.agentCollaborationService.sendCollaborationMessage(input);
+        await this.databaseService.uac.addCollaborationMessage(message);
+        return message;
+    }
+
+    registerWorkerAvailability(input: {
+        taskId: string;
+        agentId: string;
+        status: 'available' | 'busy' | 'offline';
+        reason?: string;
+        skills?: string[];
+        contextReadiness?: number;
+    }): WorkerAvailabilityRecord {
+        return this.agentCollaborationService.registerWorkerAvailability(input);
+    }
+
+    listAvailableWorkers(taskId: string): WorkerAvailabilityRecord[] {
+        return this.agentCollaborationService.listAvailableWorkers(taskId);
+    }
+
+    scoreHelperCandidates(input: {
+        taskId: string;
+        stageId: string;
+        requiredSkills: string[];
+        blockedAgentIds?: string[];
+        contextReadinessOverrides?: Record<string, number>;
+    }): HelperCandidateScore[] {
+        return this.agentCollaborationService.scoreHelperCandidates(input);
+    }
+
+    generateHelperHandoffPackage(input: {
+        taskId: string;
+        stageId: string;
+        ownerAgentId: string;
+        helperAgentId: string;
+        stageGoal: string;
+        acceptanceCriteria: string[];
+        constraints: string[];
+        contextNotes?: string;
+    }): HelperHandoffPackage {
+        return this.agentCollaborationService.generateHelperHandoffPackage(input);
+    }
+
+    reviewHelperMergeGate(input: {
+        acceptanceCriteria: string[];
+        constraints: string[];
+        helperOutput: string;
+        reviewerNotes?: string;
+    }): HelperMergeGateDecision {
+        return this.agentCollaborationService.evaluateHelperMergeGate(input);
+    }
+
+    async getCollaborationMessages(input: {
+        taskId: string;
+        stageId?: string;
+        agentId?: string;
+        includeExpired?: boolean;
+    }): Promise<AgentCollaborationMessage[]> {
+        await this.ensureCollaborationMessagesLoaded(input.taskId);
+        return this.agentCollaborationService.getCollaborationMessages(input);
+    }
+
+    async cleanupExpiredCollaborationMessages(taskId?: string): Promise<number> {
+        await this.ensureCollaborationMessagesLoaded(taskId);
+        const removedFromMemory = this.agentCollaborationService.cleanupExpiredCollaborationMessages(taskId);
+        const removedFromDb = await this.databaseService.uac.deleteExpiredCollaborationMessages(taskId);
+        return Math.max(removedFromMemory, removedFromDb);
+    }
+
+    private async ensureCollaborationMessagesLoaded(taskId?: string): Promise<void> {
+        if (!taskId) {
+            return;
+        }
+        const existing = this.agentCollaborationService.getCollaborationMessages({
+            taskId,
+            includeExpired: true
+        });
+        if (existing.length > 0) {
+            return;
+        }
+        await this.restoreCollaborationMessagesForTask(taskId);
+    }
+
+    private async restoreCollaborationMessagesForTask(taskId: string): Promise<void> {
+        const rows = await this.databaseService.uac.getCollaborationMessages(taskId);
+        const messages: AgentCollaborationMessage[] = rows.map(row => ({
+            id: row.id,
+            taskId: row.task_id,
+            stageId: row.stage_id,
+            fromAgentId: row.from_agent_id,
+            toAgentId: row.to_agent_id,
+            channel: row.channel,
+            intent: row.intent as AgentCollaborationIntent,
+            priority: row.priority as AgentCollaborationPriority,
+            payload: safeJsonParse<Record<string, string | number | boolean | null>>(row.payload_json, {}),
+            createdAt: row.created_at,
+            expiresAt: row.expires_at
+        }));
+        this.agentCollaborationService.restoreCollaborationMessages(taskId, messages);
     }
 
     // ===== AGT-TPL: Template Methods =====

@@ -1,4 +1,14 @@
 {
+  "2026-02-23-council-ipc-typescript-fixes": {
+    "title": "Council IPC 及项目代理 TypeScript 解决方案",
+    "summary": "解决了在Council IPC、项目代理模式、Web桥和集成测试套件中阻塞构建管道的全面TypeScript类型错误。",
+    "items": [
+      "- **Council IPC 类型**：为`AgentStreamEventSchema`添加了适当的类型注释，以纠正验证问题。",
+      "- **Electron 桥接**：在安全的IPC预加载脚本中为代码探索方法添加了适当的类型注释。",
+      "- **Web 桥接模拟**：从Web独立/测试模拟API表面删除了不存在的`generateProjectDocumentation`引用。",
+      "- **集成测试**：修复了在`ThemeService`恢复和启动套件中缺少类型初始化和变量作用域的问题。"
+    ]
+  },
   "2026-02-23-monitoring-telemetry-theme-test-fixes": {
     "title": "监控、遥测和主题服务测试可靠性修复",
     "summary": "解决了测试不一致问题，并提高了监控、遥测和主题服务的模拟可靠性。",

@@ -40,6 +40,9 @@ const agentEventDataSchema = z
     .passthrough();
 
 const agentEventEnvelopeSchema = z.object({
+    v: z.literal('v1').optional(),
+    dedupeKey: z.string().optional(),
+    emittedAt: z.number().optional(),
     type: z.string(),
     data: agentEventDataSchema,
 });

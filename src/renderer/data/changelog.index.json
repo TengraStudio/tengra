@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-23T00:35:16.653Z",
+  "generatedAt": "2026-02-23T02:32:30.415Z",
   "locales": [
     "en",
     "tr",
@@ -117,6 +117,106 @@
             "- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.",
             "- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).",
             "- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-23-council-ipc-typescript-fixes",
+      "date": "2026-02-23",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Council IPC",
+        "Project Agent",
+        "Typescript",
+        "Preload"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "tr": {
+          "title": "Council IPC ve Proje Ajanı TypeScript Çözümü",
+          "summary": "Council IPC, proje ajanı şemaları, web köprüsü ve entegrasyon test takımları genelinde derleme sürecini engelleyen kapsamlı TypeScript türü hataları çözüldü.",
+          "items": [
+            "- **Council IPC Türleri**: Doğrulama sorunlarını düzeltmek için `AgentStreamEventSchema`'ya uygun tür ek açıklamaları eklendi.",
+            "- **Electron Köprüsü**: Güvenli IPC ön yükleme betiğinde kod keşfetme yöntemleri için uygun tür ek açıklamaları eklendi.",
+            "- **Web Köprüsü Mockları**: Web Bağımsız/Test mock API yüzeyinden var olmayan `generateProjectDocumentation` referansları kaldırıldı.",
+            "- **Entegrasyon Testleri**: `ThemeService` kurtarma ve başlatma takımlarında eksik tür başlatmaları ve değişken kapsamları düzeltildi."
+          ]
+        },
+        "de": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "fr": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "es": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "ja": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "zh": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        },
+        "ar": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
           ]
         }
       }

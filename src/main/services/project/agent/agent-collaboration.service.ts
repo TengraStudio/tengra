@@ -8,14 +8,24 @@
  */
 
 import { randomUUID } from 'crypto';
-import { z } from 'zod';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import {
+    DebateArgumentSchema,
+    ModelRoutingRuleSchema,
+    VotingSessionSchema
+} from '@shared/schemas/agent-collaboration.schema';
+import {
+    AgentCollaborationIntent,
+    AgentCollaborationMessage,
+    AgentCollaborationPriority,
     AgentTeamworkAnalytics,
     ConsensusResult,
+    HelperCandidateScore,
+    HelperHandoffPackage,
+    HelperMergeGateDecision,
     DebateArgument,
     DebateCitation,
     DebateConsensus,
@@ -26,16 +36,13 @@ import {
     ProjectStep,
     StepModelConfig,
     TaskType,
+    WorkerAvailabilityRecord,
     VotingAnalytics,
     VotingConfiguration,
     VotingSession,
     VotingTemplate,
 } from '@shared/types/project-agent';
-import {
-    DebateArgumentSchema,
-    ModelRoutingRuleSchema,
-    VotingSessionSchema
-} from '@shared/schemas/agent-collaboration.schema';
+import { z } from 'zod';
 
 /** Standardized error for agent collaboration */
 export class AgentCollaborationError extends Error {
@@ -178,6 +185,18 @@ const DEFAULT_VOTING_TEMPLATES: VotingTemplate[] = [
     }
 ];
 
+const AGENT_COLLABORATION_INTENTS: readonly AgentCollaborationIntent[] = [
+    'REQUEST_HELP',
+    'SHARE_CONTEXT',
+    'PROPOSE_CHANGE',
+    'BLOCKER_REPORT'
+];
+
+const MAX_COLLABORATION_PAYLOAD_KEYS = 32;
+const MAX_COLLABORATION_STRING_LENGTH = 4000;
+const COLLABORATION_LOOP_WINDOW_MS = 5 * 60 * 1000;
+const COLLABORATION_LOOP_THRESHOLD = 3;
+
 export interface AgentCollaborationDependencies {
     llm: LLMService;
 }
@@ -186,8 +205,10 @@ export class AgentCollaborationService extends BaseService {
     private routingRules: ModelRoutingRule[] = [...DEFAULT_ROUTING_RULES];
     private votingSessions: Map<string, VotingSession> = new Map();
     private debateSessions: Map<string, DebateSession> = new Map();
+    private collaborationMessages = new Map<string, AgentCollaborationMessage[]>();
     private votingConfiguration: VotingConfiguration = { ...DEFAULT_VOTING_CONFIGURATION };
     private votingTemplates: VotingTemplate[] = [...DEFAULT_VOTING_TEMPLATES];
+    private workerAvailability = new Map<string, Map<string, WorkerAvailabilityRecord>>();
     private agentTaskStats = new Map<string, {
         completedTasks: number;
         failedTasks: number;
@@ -326,8 +347,8 @@ export class AgentCollaborationService extends BaseService {
         question: string,
         options: string[]
     ): VotingSession {
-        if (!taskId) throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
-        if (options.length < 2) throw new AgentCollaborationError('At least 2 options required', 'INVALID_OPTIONS');
+        if (!taskId) {throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');}
+        if (options.length < 2) {throw new AgentCollaborationError('At least 2 options required', 'INVALID_OPTIONS');}
 
         const session: VotingSession = {
             id: randomUUID(),
@@ -540,7 +561,7 @@ Respond with a JSON object:
             throw new AgentCollaborationError(`Voting session ${sessionId} not found`, 'VOTING_SESSION_NOT_FOUND');
         }
 
-        if (!finalDecision) throw new AgentCollaborationError('finalDecision is required', 'MISSING_DECISION');
+        if (!finalDecision) {throw new AgentCollaborationError('finalDecision is required', 'MISSING_DECISION');}
 
         session.status = 'resolved';
         session.finalDecision = finalDecision;
@@ -688,8 +709,8 @@ Respond with a JSON object:
     // ===== AGENT-13: Multi-Agent Debate =====
 
     createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
-        if (!taskId) throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
-        if (!topic) throw new AgentCollaborationError('topic is required', 'MISSING_TOPIC');
+        if (!taskId) {throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');}
+        if (!topic) {throw new AgentCollaborationError('topic is required', 'MISSING_TOPIC');}
 
         const session: DebateSession = {
             id: randomUUID(),
@@ -829,9 +850,12 @@ Respond with a JSON object:
         status: 'in_progress' | 'completed' | 'failed';
         durationMs?: number;
         confidence?: number;
+        taskId?: string;
+        reason?: string;
+        skills?: string[];
     }): void {
         const { agentId, status, durationMs, confidence } = options;
-        if (!agentId) throw new AgentCollaborationError('agentId is required', 'MISSING_AGENT_ID');
+        if (!agentId) {throw new AgentCollaborationError('agentId is required', 'MISSING_AGENT_ID');}
 
         const stats = this.getAgentTaskStats(agentId);
         if (status === 'in_progress') {
@@ -853,6 +877,197 @@ Respond with a JSON object:
             stats.totalConfidence += confidence;
             stats.confidenceSamples++;
         }
+
+        if (options.taskId) {
+            if (status === 'in_progress') {
+                this.registerWorkerAvailability({
+                    taskId: options.taskId,
+                    agentId,
+                    status: 'busy',
+                    reason: options.reason ?? 'Task in progress',
+                    skills: options.skills ?? []
+                });
+            } else {
+                this.registerWorkerAvailability({
+                    taskId: options.taskId,
+                    agentId,
+                    status: 'available',
+                    reason: options.reason ?? (status === 'completed' ? 'Task completed' : 'Task failed'),
+                    skills: options.skills ?? []
+                });
+            }
+        }
+    }
+
+    registerWorkerAvailability(input: {
+        taskId: string;
+        agentId: string;
+        status: 'available' | 'busy' | 'offline';
+        reason?: string;
+        skills?: string[];
+        contextReadiness?: number;
+    }): WorkerAvailabilityRecord {
+        if (!input.taskId) {
+            throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
+        }
+        if (!input.agentId) {
+            throw new AgentCollaborationError('agentId is required', 'MISSING_AGENT_ID');
+        }
+
+        const perTask = this.workerAvailability.get(input.taskId) ?? new Map<string, WorkerAvailabilityRecord>();
+        const previous = perTask.get(input.agentId);
+        const now = Date.now();
+        const nextRecord: WorkerAvailabilityRecord = {
+            taskId: input.taskId,
+            agentId: input.agentId,
+            status: input.status,
+            availableAt: input.status === 'available' ? (previous?.availableAt ?? now) : undefined,
+            lastActiveAt: now,
+            reason: input.reason,
+            skills: input.skills ?? previous?.skills ?? [],
+            contextReadiness: input.contextReadiness ?? previous?.contextReadiness ?? 0.5,
+            completedStages: previous?.completedStages ?? 0,
+            failedStages: previous?.failedStages ?? 0,
+        };
+
+        if (input.status === 'available' && input.reason?.toLowerCase().includes('completed')) {
+            nextRecord.completedStages += 1;
+        }
+        if (input.status === 'available' && input.reason?.toLowerCase().includes('failed')) {
+            nextRecord.failedStages += 1;
+        }
+
+        perTask.set(input.agentId, nextRecord);
+        this.workerAvailability.set(input.taskId, perTask);
+        return nextRecord;
+    }
+
+    listAvailableWorkers(taskId: string): WorkerAvailabilityRecord[] {
+        const perTask = this.workerAvailability.get(taskId);
+        if (!perTask) {
+            return [];
+        }
+        return Array.from(perTask.values())
+            .filter(record => record.status === 'available')
+            .sort((left, right) => (right.availableAt ?? 0) - (left.availableAt ?? 0));
+    }
+
+    scoreHelperCandidates(input: {
+        taskId: string;
+        stageId: string;
+        requiredSkills: string[];
+        blockedAgentIds?: string[];
+        contextReadinessOverrides?: Record<string, number>;
+    }): HelperCandidateScore[] {
+        const available = this.listAvailableWorkers(input.taskId);
+        const blocked = new Set(input.blockedAgentIds ?? []);
+        const requiredSkillSet = new Set(input.requiredSkills.map(skill => skill.toLowerCase()));
+
+        const scored = available
+            .filter(candidate => !blocked.has(candidate.agentId))
+            .map(candidate => {
+                const candidateSkills = candidate.skills.map(skill => skill.toLowerCase());
+                const matchedSkills = candidateSkills.filter(skill => requiredSkillSet.has(skill)).length;
+                const skillMatch = requiredSkillSet.size === 0 ? 1 : matchedSkills / requiredSkillSet.size;
+                const contextReadiness = Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        input.contextReadinessOverrides?.[candidate.agentId] ?? candidate.contextReadiness
+                    )
+                );
+                const idleMs = Date.now() - (candidate.availableAt ?? candidate.lastActiveAt);
+                const idleBonus = Math.max(0, Math.min(1, idleMs / (15 * 60 * 1000)));
+                const score = Number((skillMatch * 0.5 + contextReadiness * 0.35 + idleBonus * 0.15).toFixed(4));
+                const rationale = [
+                    `skillMatch=${skillMatch.toFixed(2)}`,
+                    `contextReadiness=${contextReadiness.toFixed(2)}`,
+                    `idleBonus=${idleBonus.toFixed(2)}`,
+                ];
+                return {
+                    taskId: input.taskId,
+                    stageId: input.stageId,
+                    agentId: candidate.agentId,
+                    score,
+                    skillMatch,
+                    contextReadiness,
+                    idleBonus,
+                    rationale,
+                } satisfies HelperCandidateScore;
+            })
+            .sort((left, right) => right.score - left.score);
+
+        return scored;
+    }
+
+    generateHelperHandoffPackage(input: {
+        taskId: string;
+        stageId: string;
+        ownerAgentId: string;
+        helperAgentId: string;
+        stageGoal: string;
+        acceptanceCriteria: string[];
+        constraints: string[];
+        contextNotes?: string;
+    }): HelperHandoffPackage {
+        const contextSummaryParts = [
+            `Stage goal: ${input.stageGoal}`,
+            input.contextNotes ? `Context: ${input.contextNotes}` : '',
+            `Owner: ${input.ownerAgentId}`,
+            `Helper: ${input.helperAgentId}`,
+        ].filter(Boolean);
+
+        return {
+            taskId: input.taskId,
+            stageId: input.stageId,
+            ownerAgentId: input.ownerAgentId,
+            helperAgentId: input.helperAgentId,
+            contextSummary: contextSummaryParts.join(' | '),
+            acceptanceCriteria: [...input.acceptanceCriteria],
+            constraints: [...input.constraints],
+            generatedAt: Date.now(),
+        };
+    }
+
+    evaluateHelperMergeGate(input: {
+        acceptanceCriteria: string[];
+        constraints: string[];
+        helperOutput: string;
+        reviewerNotes?: string;
+    }): HelperMergeGateDecision {
+        const normalizedOutput = input.helperOutput.toLowerCase();
+        const failedAcceptance = input.acceptanceCriteria.filter(criteria => {
+            const token = criteria.trim().toLowerCase();
+            return token.length > 0 && !normalizedOutput.includes(token);
+        });
+        const violatedConstraints = input.constraints.filter(constraint => {
+            const token = constraint.trim().toLowerCase();
+            return token.length > 0 && normalizedOutput.includes(`violate:${token}`);
+        });
+
+        const reasons: string[] = [];
+        const requiredFixes: string[] = [];
+
+        if (failedAcceptance.length > 0) {
+            reasons.push('Some acceptance criteria are not satisfied in helper output.');
+            requiredFixes.push(...failedAcceptance.map(item => `Address acceptance criteria: ${item}`));
+        }
+        if (violatedConstraints.length > 0) {
+            reasons.push('Helper output appears to violate one or more constraints.');
+            requiredFixes.push(...violatedConstraints.map(item => `Resolve constraint violation: ${item}`));
+        }
+        if (input.reviewerNotes && input.reviewerNotes.trim().length > 0) {
+            reasons.push(`Reviewer notes: ${input.reviewerNotes.trim()}`);
+        }
+
+        const hasHardFailure = failedAcceptance.length > 0 || violatedConstraints.length > 0;
+        return {
+            accepted: !hasHardFailure,
+            verdict: hasHardFailure ? 'REVISE' : 'ACCEPT',
+            reasons: hasHardFailure ? reasons : ['Helper contribution passed merge gate checks.'],
+            requiredFixes,
+            reviewedAt: Date.now(),
+        };
     }
 
     getTeamworkAnalytics(): AgentTeamworkAnalytics {
@@ -913,6 +1128,211 @@ Respond with a JSON object:
             productivityRecommendations: this.createProductivityRecommendations(healthSignals),
             updatedAt: Date.now()
         };
+    }
+
+    createCollaborationMessage(input: {
+        taskId: string;
+        stageId: string;
+        fromAgentId: string;
+        toAgentId?: string;
+        intent: AgentCollaborationIntent;
+        priority?: AgentCollaborationPriority;
+        payload: Record<string, string | number | boolean | null>;
+        expiresAt?: number;
+    }): AgentCollaborationMessage {
+        this.validateCollaborationIntent(input.intent);
+
+        if (!input.taskId) {
+            throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
+        }
+        if (!input.stageId) {
+            throw new AgentCollaborationError('stageId is required', 'MISSING_STAGE_ID');
+        }
+        if (!input.fromAgentId) {
+            throw new AgentCollaborationError('fromAgentId is required', 'MISSING_AGENT_ID');
+        }
+
+        return {
+            id: randomUUID(),
+            taskId: input.taskId,
+            stageId: input.stageId,
+            fromAgentId: input.fromAgentId,
+            toAgentId: input.toAgentId,
+            channel: input.toAgentId ? 'private' : 'group',
+            intent: input.intent,
+            priority: input.priority ?? 'normal',
+            payload: input.payload,
+            createdAt: Date.now(),
+            expiresAt: input.expiresAt
+        };
+    }
+
+    sendCollaborationMessage(input: {
+        taskId: string;
+        stageId: string;
+        fromAgentId: string;
+        toAgentId?: string;
+        intent: AgentCollaborationIntent;
+        priority?: AgentCollaborationPriority;
+        payload: Record<string, string | number | boolean | null>;
+        expiresAt?: number;
+    }): AgentCollaborationMessage {
+        this.validateCollaborationPayload(input.payload);
+        this.enforceCollaborationAntiLoop(input);
+        const message = this.createCollaborationMessage(input);
+        const taskMessages = this.collaborationMessages.get(message.taskId) ?? [];
+        this.collaborationMessages.set(message.taskId, [...taskMessages, message]);
+        return message;
+    }
+
+    getCollaborationMessages(options: {
+        taskId: string;
+        stageId?: string;
+        agentId?: string;
+        includeExpired?: boolean;
+    }): AgentCollaborationMessage[] {
+        const allTaskMessages = this.collaborationMessages.get(options.taskId) ?? [];
+        const now = Date.now();
+
+        return allTaskMessages.filter(message => {
+            if (!options.includeExpired && message.expiresAt !== undefined && message.expiresAt <= now) {
+                return false;
+            }
+            if (options.stageId && message.stageId !== options.stageId) {
+                return false;
+            }
+            if (!options.agentId) {
+                return true;
+            }
+            if (message.channel === 'group') {
+                return true;
+            }
+            return message.fromAgentId === options.agentId || message.toAgentId === options.agentId;
+        });
+    }
+
+    cleanupExpiredCollaborationMessages(taskId?: string): number {
+        const now = Date.now();
+        let removedCount = 0;
+        const targetTaskIds = taskId
+            ? [taskId]
+            : Array.from(this.collaborationMessages.keys());
+
+        for (const currentTaskId of targetTaskIds) {
+            const currentMessages = this.collaborationMessages.get(currentTaskId);
+            if (!currentMessages || currentMessages.length === 0) {
+                continue;
+            }
+            const filtered = currentMessages.filter(
+                message => message.expiresAt === undefined || message.expiresAt > now
+            );
+            removedCount += currentMessages.length - filtered.length;
+            if (filtered.length === 0) {
+                this.collaborationMessages.delete(currentTaskId);
+            } else {
+                this.collaborationMessages.set(currentTaskId, filtered);
+            }
+        }
+
+        return removedCount;
+    }
+
+    restoreCollaborationMessages(
+        taskId: string,
+        messages: AgentCollaborationMessage[]
+    ): void {
+        this.collaborationMessages.set(taskId, [...messages]);
+    }
+
+    private validateCollaborationIntent(intent: AgentCollaborationIntent): void {
+        if (!AGENT_COLLABORATION_INTENTS.includes(intent)) {
+            throw new AgentCollaborationError(
+                `Unsupported collaboration intent: ${intent}`,
+                'INVALID_COLLABORATION_INTENT',
+                { intent }
+            );
+        }
+    }
+
+    private validateCollaborationPayload(
+        payload: Record<string, string | number | boolean | null>
+    ): void {
+        const keys = Object.keys(payload);
+        if (keys.length > MAX_COLLABORATION_PAYLOAD_KEYS) {
+            throw new AgentCollaborationError(
+                `Collaboration payload has too many keys (${keys.length})`,
+                'COLLABORATION_PAYLOAD_TOO_LARGE',
+                { keyCount: keys.length }
+            );
+        }
+
+        for (const [key, value] of Object.entries(payload)) {
+            if (key.length > 120) {
+                throw new AgentCollaborationError(
+                    `Collaboration payload key is too long (${key.length})`,
+                    'COLLABORATION_PAYLOAD_KEY_TOO_LONG',
+                    { key }
+                );
+            }
+            if (typeof value === 'string' && value.length > MAX_COLLABORATION_STRING_LENGTH) {
+                throw new AgentCollaborationError(
+                    `Collaboration payload value for "${key}" is too long (${value.length})`,
+                    'COLLABORATION_PAYLOAD_VALUE_TOO_LONG',
+                    { key, length: value.length }
+                );
+            }
+        }
+    }
+
+    private enforceCollaborationAntiLoop(input: {
+        taskId: string;
+        fromAgentId: string;
+        toAgentId?: string;
+        intent: AgentCollaborationIntent;
+        payload: Record<string, string | number | boolean | null>;
+    }): void {
+        const recent = this.collaborationMessages.get(input.taskId) ?? [];
+        const now = Date.now();
+        const signature = this.buildCollaborationSignature(input);
+        let repeatedCount = 0;
+
+        for (let index = recent.length - 1; index >= 0; index -= 1) {
+            const message = recent[index];
+            if (now - message.createdAt > COLLABORATION_LOOP_WINDOW_MS) {
+                break;
+            }
+            const messageSignature = this.buildCollaborationSignature({
+                taskId: message.taskId,
+                fromAgentId: message.fromAgentId,
+                toAgentId: message.toAgentId,
+                intent: message.intent,
+                payload: message.payload
+            });
+            if (messageSignature === signature) {
+                repeatedCount += 1;
+                if (repeatedCount >= COLLABORATION_LOOP_THRESHOLD) {
+                    throw new AgentCollaborationError(
+                        'Repeated collaboration request detected; escalation required',
+                        'COLLABORATION_LOOP_DETECTED',
+                        { taskId: input.taskId, intent: input.intent, repeatedCount }
+                    );
+                }
+            }
+        }
+    }
+
+    private buildCollaborationSignature(input: {
+        taskId: string;
+        fromAgentId: string;
+        toAgentId?: string;
+        intent: AgentCollaborationIntent;
+        payload: Record<string, string | number | boolean | null>;
+    }): string {
+        const payloadEntries = Object.entries(input.payload)
+            .sort((left, right) => left[0].localeCompare(right[0]))
+            .map(([key, value]) => `${key}:${String(value)}`)
+            .join('|');
+        return `${input.taskId}::${input.fromAgentId}::${input.toAgentId ?? 'group'}::${input.intent}::${payloadEntries}`;
     }
 
     private getAgentTaskStats(agentId: string): {

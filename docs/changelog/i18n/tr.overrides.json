@@ -1,4 +1,14 @@
 {
+  "2026-02-23-council-ipc-typescript-fixes": {
+    "title": "Council IPC ve Proje Ajanı TypeScript Çözümü",
+    "summary": "Council IPC, proje ajanı şemaları, web köprüsü ve entegrasyon test takımları genelinde derleme sürecini engelleyen kapsamlı TypeScript türü hataları çözüldü.",
+    "items": [
+      "- **Council IPC Türleri**: Doğrulama sorunlarını düzeltmek için `AgentStreamEventSchema`'ya uygun tür ek açıklamaları eklendi.",
+      "- **Electron Köprüsü**: Güvenli IPC ön yükleme betiğinde kod keşfetme yöntemleri için uygun tür ek açıklamaları eklendi.",
+      "- **Web Köprüsü Mockları**: Web Bağımsız/Test mock API yüzeyinden var olmayan `generateProjectDocumentation` referansları kaldırıldı.",
+      "- **Entegrasyon Testleri**: `ThemeService` kurtarma ve başlatma takımlarında eksik tür başlatmaları ve değişken kapsamları düzeltildi."
+    ]
+  },
   "2026-02-23-monitoring-telemetry-theme-test-fixes": {
     "title": "İzleme, Telemetri ve Tema Servisi Test Güvenilirliği Düzeltmeleri",
     "summary": "İzleme, Telemetri ve Tema servisleri için test tutarsızlıkları giderildi ve mock güvenilirliği artırıldı.",

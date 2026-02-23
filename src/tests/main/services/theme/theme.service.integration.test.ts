@@ -38,7 +38,8 @@ describe('ThemeService Integration Tests', () => {
         // Setup mocks
         vi.mocked(fs.access).mockResolvedValue(undefined);
         vi.mocked(fs.readFile).mockImplementation(async (filePath) => {
-            if (filePath.includes('black')) {
+            const pathStr = String(filePath);
+            if (pathStr.includes('black')) {
                 return JSON.stringify({
                     id: 'black',
                     name: 'black',
@@ -48,7 +49,7 @@ describe('ThemeService Integration Tests', () => {
                     colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
                 });
             }
-            if (filePath.includes('white')) {
+            if (pathStr.includes('white')) {
                 return JSON.stringify({
                     id: 'white',
                     name: 'white',
@@ -241,9 +242,10 @@ describe('ThemeService Integration Tests', () => {
         it('should recover from corrupt theme file during load', async () => {
             // Setup: simulate corrupt theme file
             vi.mocked(fs.readdir).mockResolvedValueOnce(['black.theme.json', 'white.theme.json', 'corrupt.theme.json'] as any);
-            vi.mocked(fs.readFile).mockImplementation(async (filePath: string) => {
-                if (filePath.includes('corrupt')) return 'not valid json {{{';
-                if (filePath.includes('black')) return JSON.stringify({ id: 'black', name: 'black', displayName: 'Black', version: '1.0.0', type: 'dark', colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });
+            vi.mocked(fs.readFile).mockImplementation(async (filePath) => {
+                const pathStr = String(filePath);
+                if (pathStr.includes('corrupt')) return 'not valid json {{{';
+                if (pathStr.includes('black')) return JSON.stringify({ id: 'black', name: 'black', displayName: 'Black', version: '1.0.0', type: 'dark', colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });
                 return JSON.stringify({ id: 'white', name: 'white', displayName: 'White', version: '1.0.0', type: 'light', colors: { background: '0 0% 100%', foreground: '0 0% 0%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });
             });
 
@@ -271,6 +273,49 @@ describe('ThemeService Integration Tests', () => {
 });
 
 describe('Concurrent Operations', () => {
+    let themeService: ThemeService;
+
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        const tempDir = path.join(os.tmpdir(), `theme-concurrent-test-${Date.now()}`);
+        await fs.mkdir(tempDir, { recursive: true });
+
+        vi.mocked(fs.access).mockResolvedValue(undefined);
+        vi.mocked(fs.readFile).mockImplementation(async filePath => {
+            const pathStr = String(filePath);
+            if (pathStr.includes('black')) {
+                return JSON.stringify({
+                    id: 'black',
+                    name: 'black',
+                    displayName: 'Black',
+                    version: '1.0.0',
+                    type: 'dark',
+                    colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
+                });
+            }
+            return JSON.stringify({
+                id: 'white',
+                name: 'white',
+                displayName: 'White',
+                version: '1.0.0',
+                type: 'light',
+                colors: { background: '0 0% 100%', foreground: '0 0% 0%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' }
+            });
+        });
+        vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+        vi.mocked(fs.readdir).mockResolvedValue(['black.theme.json', 'white.theme.json'] as never);
+        vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+        vi.mocked(fs.unlink).mockResolvedValue(undefined);
+        vi.mocked(fs.rename).mockResolvedValue(undefined);
+
+        const { DataService } = await import('@main/services/data/data.service');
+        const dataService = new DataService();
+        vi.mocked(dataService.getPath).mockReturnValue(tempDir);
+
+        themeService = new ThemeService(dataService);
+        await themeService.initialize();
+    });
+
     it('should handle multiple simultaneous install operations', async () => {
         const themes = Array.from({ length: 5 }, (_, i) => ({
             id: `concurrent-${i}`,
@@ -302,7 +347,7 @@ describe('Concurrent Operations', () => {
         }));
 
         const results = await Promise.all(themes.map(t => themeService.installTheme(t)));
-        results.forEach(result => expect(typeof result).toBe('boolean'));
+        results.forEach((result: boolean) => expect(typeof result).toBe('boolean'));
     });
 
     it('should handle mixed success/failure operations', async () => {

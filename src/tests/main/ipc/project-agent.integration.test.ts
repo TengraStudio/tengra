@@ -24,6 +24,17 @@ interface MockProjectAgentService extends Partial<ProjectAgentService> {
     start: Mock;
     stop: Mock;
     getStatus: Mock;
+    generatePlan: Mock;
+    approveCurrentPlan: Mock;
+    rejectCurrentPlan: Mock;
+    pauseTask: Mock;
+    resumeTask: Mock;
+    getTaskEvents: Mock;
+    registerWorkerAvailability: Mock;
+    listAvailableWorkers: Mock;
+    scoreHelperCandidates: Mock;
+    generateHelperHandoffPackage: Mock;
+    reviewHelperMergeGate: Mock;
     approveStep: Mock;
     resumeFromCheckpoint: Mock;
     getCurrentTaskId: Mock;
@@ -56,6 +67,42 @@ describe('Project Agent IPC Handlers', () => {
             start: vi.fn().mockResolvedValue(undefined),
             stop: vi.fn().mockResolvedValue(undefined),
             getStatus: vi.fn().mockResolvedValue({ status: 'idle', currentTask: '' }),
+            generatePlan: vi.fn().mockResolvedValue(undefined),
+            approveCurrentPlan: vi.fn().mockResolvedValue(true),
+            rejectCurrentPlan: vi.fn().mockResolvedValue(true),
+            pauseTask: vi.fn().mockResolvedValue(undefined),
+            resumeTask: vi.fn().mockResolvedValue(true),
+            getTaskEvents: vi.fn().mockResolvedValue({ success: true, events: [{ type: 'agent:state_changed' }] }),
+            registerWorkerAvailability: vi.fn().mockReturnValue({
+                taskId: 'task-123',
+                agentId: 'agent-1',
+                status: 'available',
+                availableAt: Date.now(),
+                lastActiveAt: Date.now(),
+                skills: ['typescript'],
+                contextReadiness: 0.7,
+                completedStages: 1,
+                failedStages: 0
+            }),
+            listAvailableWorkers: vi.fn().mockReturnValue([]),
+            scoreHelperCandidates: vi.fn().mockReturnValue([]),
+            generateHelperHandoffPackage: vi.fn().mockReturnValue({
+                taskId: 'task-123',
+                stageId: 'S1',
+                ownerAgentId: 'owner',
+                helperAgentId: 'helper',
+                contextSummary: 'summary',
+                acceptanceCriteria: [],
+                constraints: [],
+                generatedAt: Date.now()
+            }),
+            reviewHelperMergeGate: vi.fn().mockReturnValue({
+                accepted: true,
+                verdict: 'ACCEPT',
+                reasons: ['ok'],
+                requiredFixes: [],
+                reviewedAt: Date.now()
+            }),
             approveStep: vi.fn().mockResolvedValue(undefined),
             resumeFromCheckpoint: vi.fn().mockResolvedValue(true),
             getCurrentTaskId: vi.fn().mockReturnValue('task-123')
@@ -95,7 +142,7 @@ describe('Project Agent IPC Handlers', () => {
             const handler = getRequiredHandler('project:start');
             const result = await handler({} as IpcMainInvokeEvent, { task: '   ' });
             expect(mockProjectAgentService.start).not.toHaveBeenCalled();
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ taskId: '' });
         });
 
         it('should stop a project agent task', async () => {
@@ -133,39 +180,118 @@ describe('Project Agent IPC Handlers', () => {
     });
 
     describe('Legacy Compatibility', () => {
-        it('should handle project-agent:start-task', async () => {
-            const handler = getRequiredHandler('project-agent:start-task');
-            const result = await handler({} as IpcMainInvokeEvent, { description: 'Legacy task' }) as {
-                success: boolean;
-                taskId?: string;
-                uiState?: string;
-            };
+        it('should keep old project-agent channels unregistered', () => {
+            expect(registeredHandlers.has('project-agent:start-task')).toBe(false);
+            expect(registeredHandlers.has('project-agent:health')).toBe(false);
+        });
+    });
 
-            expect(mockProjectAgentService.start).toHaveBeenCalled();
-            expect(result.success).toBe(true);
-            expect(result.taskId).toBe('task-123');
-            expect(result.uiState).toBe('ready');
+    describe('Council IPC Handlers', () => {
+        it('should generate council plan', async () => {
+            const handler = getRequiredHandler('project:council-generate-plan');
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123', task: 'Build feature' });
+
+            expect(mockProjectAgentService.generatePlan).toHaveBeenCalled();
+            expect(result).toEqual({ success: true });
         });
 
-        it('should expose project-agent health dashboard', async () => {
-            const handler = getRequiredHandler('project-agent:health');
-            const result = await handler({} as IpcMainInvokeEvent);
-            expect(result).toMatchObject({
-                success: true,
-                data: {
-                    status: expect.any(String),
-                    budgets: {
-                        fastMs: 45,
-                        standardMs: 140,
-                        heavyMs: 320
-                    },
-                    metrics: {
-                        totalCalls: expect.any(Number),
-                        totalFailures: expect.any(Number),
-                        totalRetries: expect.any(Number)
-                    }
-                }
-            });
+        it('should get council proposal', async () => {
+            const handler = getRequiredHandler('project:council-get-proposal');
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.getStatus).toHaveBeenCalledWith('task-123');
+            expect(result).toEqual({ success: true, plan: [] });
+        });
+
+        it('should approve council proposal', async () => {
+            const handler = getRequiredHandler('project:council-approve-proposal');
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.approveCurrentPlan).toHaveBeenCalledWith('task-123');
+            expect(result).toEqual({ success: true, error: undefined });
+        });
+
+        it('should reject council proposal', async () => {
+            const handler = getRequiredHandler('project:council-reject-proposal');
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123', reason: 'Need revision' });
+
+            expect(mockProjectAgentService.rejectCurrentPlan).toHaveBeenCalledWith('task-123', 'Need revision');
+            expect(result).toEqual({ success: true, error: undefined });
+        });
+
+        it('should start, pause and resume council execution', async () => {
+            const startHandler = getRequiredHandler('project:council-start-execution');
+            const pauseHandler = getRequiredHandler('project:council-pause-execution');
+            const resumeHandler = getRequiredHandler('project:council-resume-execution');
+
+            const startResult = await startHandler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+            const pauseResult = await pauseHandler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+            const resumeResult = await resumeHandler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.resumeTask).toHaveBeenCalledWith('task-123');
+            expect(mockProjectAgentService.pauseTask).toHaveBeenCalledWith('task-123');
+            expect(startResult).toEqual({ success: true, error: undefined });
+            expect(pauseResult).toEqual({ success: true });
+            expect(resumeResult).toEqual({ success: true, error: undefined });
+        });
+
+        it('should get council timeline', async () => {
+            const handler = getRequiredHandler('project:council-get-timeline');
+            const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.getTaskEvents).toHaveBeenCalledWith('task-123');
+            expect(result).toEqual({ success: true, events: [{ type: 'agent:state_changed' }] });
+        });
+
+        it('should register worker availability', async () => {
+            const handler = getRequiredHandler('project:council-register-worker-availability');
+            const payload = { taskId: 'task-123', agentId: 'agent-1', status: 'available' as const };
+            await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.registerWorkerAvailability).toHaveBeenCalledWith(payload);
+        });
+
+        it('should list available workers', async () => {
+            const handler = getRequiredHandler('project:council-list-available-workers');
+            await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
+
+            expect(mockProjectAgentService.listAvailableWorkers).toHaveBeenCalledWith('task-123');
+        });
+
+        it('should score helper candidates', async () => {
+            const handler = getRequiredHandler('project:council-score-helper-candidates');
+            const payload = { taskId: 'task-123', stageId: 'S1', requiredSkills: ['typescript'] };
+            await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.scoreHelperCandidates).toHaveBeenCalledWith(payload);
+        });
+
+        it('should generate helper handoff package', async () => {
+            const handler = getRequiredHandler('project:council-generate-helper-handoff');
+            const payload = {
+                taskId: 'task-123',
+                stageId: 'S1',
+                ownerAgentId: 'owner',
+                helperAgentId: 'helper',
+                stageGoal: 'Implement feature',
+                acceptanceCriteria: ['tests pass'],
+                constraints: ['no regressions']
+            };
+            await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.generateHelperHandoffPackage).toHaveBeenCalledWith(payload);
+        });
+
+        it('should review helper merge gate', async () => {
+            const handler = getRequiredHandler('project:council-review-helper-merge');
+            const payload = {
+                acceptanceCriteria: ['tests pass'],
+                constraints: ['no regressions'],
+                helperOutput: 'tests pass and no regressions'
+            };
+            await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.reviewHelperMergeGate).toHaveBeenCalledWith(payload);
         });
     });
 });

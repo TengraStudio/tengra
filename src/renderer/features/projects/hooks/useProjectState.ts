@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     pushNotification,
@@ -30,6 +30,7 @@ export function useProjectState() {
     const [entryName, setEntryName] = useState('');
 
     const activeNotifications = useNotificationCenterStore(snapshot => snapshot.active);
+    const recentQuotaInterruptKeysRef = useRef<Set<string>>(new Set());
     const notifications = useMemo(
         () =>
             activeNotifications.map(notification => ({
@@ -45,6 +46,41 @@ export function useProjectState() {
         setAgentPanelWidthState(persistedProjectShell.agentPanelWidth);
         setTerminalHeightState(persistedProjectShell.terminalHeight);
     }, [persistedProjectShell]);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.projectAgent.onQuotaInterrupt(payload => {
+            const dedupeKey = payload.dedupeKey ?? payload.interruptId;
+            if (recentQuotaInterruptKeysRef.current.has(dedupeKey)) {
+                return;
+            }
+            recentQuotaInterruptKeysRef.current.add(dedupeKey);
+            if (recentQuotaInterruptKeysRef.current.size > 200) {
+                const oldest = recentQuotaInterruptKeysRef.current.values().next().value;
+                if (oldest) {
+                    recentQuotaInterruptKeysRef.current.delete(oldest);
+                }
+            }
+
+            const baseMessage = payload.message.trim();
+            const selectedInfo = payload.selectedFallback
+                ? ` (${payload.selectedFallback.provider}/${payload.selectedFallback.model})`
+                : '';
+            const finalMessage = payload.blockedByQuota
+                ? `Quota interrupt: ${baseMessage}`
+                : payload.switched
+                    ? `Quota interrupt resolved via fallback${selectedInfo}: ${baseMessage}`
+                    : `Quota interrupt: ${baseMessage}`;
+
+            pushNotification({
+                type: payload.blockedByQuota ? 'error' : 'warning',
+                title: 'Model Quota Interrupt',
+                message: finalMessage,
+                source: 'project-agent',
+            });
+        });
+
+        return unsubscribe;
+    }, []);
 
     const setSidebarCollapsed = useCallback((collapsed: boolean) => {
         setSidebarCollapsedState(collapsed);

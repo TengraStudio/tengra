@@ -258,10 +258,16 @@ export interface ElectronAPI {
             success: boolean;
             filePath: string;
             format: 'markdown' | 'jsdoc-comments';
-            content: string;
-            symbolCount: number;
+            classSymbols: number;
+            longLineCount: number;
+            todoLikeCount: number;
+            consoleUsageCount: number;
+            averageComplexity: number;
+            securityIssueCount: number;
+            topSecurityFindings: Array<{ file: string; line: number; rule: string; snippet: string }>;
+            highestComplexityFiles: Array<{ file: string; complexity: number }>;
+            qualityScore: number;
             generatedAt: string;
-            error?: string;
         }>;
         generateProjectDocumentation: (
             rootPath: string,
@@ -2280,11 +2286,42 @@ export interface ElectronAPI {
         generatePlan: (options: AgentStartOptions) => Promise<void>;
         approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
         stop: (taskId?: string) => Promise<void>;
+        pauseTask: (taskId: string) => Promise<{ success: boolean }>;
+        resumeTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+        saveSnapshot: (
+            taskId: string
+        ) => Promise<{ success: boolean; checkpointId?: string }>;
+        approveCurrentPlan: (
+            taskId: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        rejectCurrentPlan: (
+            taskId: string,
+            reason?: string
+        ) => Promise<{ success: boolean; error?: string }>;
         createPullRequest: (
             taskId?: string
         ) => Promise<{ success: boolean; url?: string; error?: string }>;
         resetState: () => Promise<void>;
         getStatus: (taskId?: string) => Promise<ProjectState>;
+        getTaskMessages: (
+            taskId: string
+        ) => Promise<{ success: boolean; messages?: Message[] }>;
+        getTaskEvents: (
+            taskId: string
+        ) => Promise<{ success: boolean; events?: import('@shared/types/agent-state').AgentEventRecord[] }>;
+        getTaskTelemetry: (
+            taskId: string
+        ) => Promise<{ success: boolean; telemetry?: import('@shared/types/agent-state').TaskMetrics[] }>;
+        getTaskHistory: (
+            projectId?: string
+        ) => Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]>;
+        deleteTask: (
+            taskId: string
+        ) => Promise<{ success: boolean; error?: string }>;
+        getAvailableModels: () => Promise<{
+            success: boolean;
+            models: Array<{ id: string; name: string; provider: string }>;
+        }>;
         retryStep: (index: number, taskId?: string) => Promise<void>;
         selectModel: (payload: {
             taskId: string;
@@ -2378,6 +2415,74 @@ export interface ElectronAPI {
         getDebateReplay: (sessionId: string) => Promise<DebateReplay | null>;
         generateDebateSummary: (sessionId: string) => Promise<string | null>;
         getTeamworkAnalytics: () => Promise<AgentTeamworkAnalytics | null>;
+        councilSendMessage: (payload: {
+            taskId: string;
+            stageId: string;
+            fromAgentId: string;
+            toAgentId?: string;
+            intent: import('@shared/types/project-agent').AgentCollaborationIntent;
+            priority?: import('@shared/types/project-agent').AgentCollaborationPriority;
+            payload: Record<string, string | number | boolean | null>;
+            expiresAt?: number;
+        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage | null>;
+        councilGetMessages: (payload: {
+            taskId: string;
+            stageId?: string;
+            agentId?: string;
+            includeExpired?: boolean;
+        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage[]>;
+        councilCleanupExpiredMessages: (taskId?: string) => Promise<{ success: boolean; removed: number }>;
+        councilHandleQuotaInterrupt: (payload: {
+            taskId: string;
+            stageId?: string;
+            provider: string;
+            model: string;
+            reason?: string;
+            autoSwitch?: boolean;
+        }) => Promise<{
+            success: boolean;
+            interruptId: string;
+            checkpointId?: string;
+            blockedByQuota: boolean;
+            switched: boolean;
+            selectedFallback?: { provider: string; model: string };
+            availableFallbacks: Array<{ provider: string; model: string }>;
+            message: string;
+        } | null>;
+        councilRegisterWorkerAvailability: (payload: {
+            taskId: string;
+            agentId: string;
+            status: 'available' | 'busy' | 'offline';
+            reason?: string;
+            skills?: string[];
+            contextReadiness?: number;
+        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord | null>;
+        councilListAvailableWorkers: (payload: {
+            taskId: string;
+        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord[]>;
+        councilScoreHelperCandidates: (payload: {
+            taskId: string;
+            stageId: string;
+            requiredSkills: string[];
+            blockedAgentIds?: string[];
+            contextReadinessOverrides?: Record<string, number>;
+        }) => Promise<import('@shared/types/project-agent').HelperCandidateScore[]>;
+        councilGenerateHelperHandoff: (payload: {
+            taskId: string;
+            stageId: string;
+            ownerAgentId: string;
+            helperAgentId: string;
+            stageGoal: string;
+            acceptanceCriteria: string[];
+            constraints: string[];
+            contextNotes?: string;
+        }) => Promise<import('@shared/types/project-agent').HelperHandoffPackage | null>;
+        councilReviewHelperMerge: (payload: {
+            acceptanceCriteria: string[];
+            constraints: string[];
+            helperOutput: string;
+            reviewerNotes?: string;
+        }) => Promise<import('@shared/types/project-agent').HelperMergeGateDecision>;
         getTemplates: (category?: AgentTemplateCategory) => Promise<AgentTemplate[]>;
         getTemplate: (id: string) => Promise<AgentTemplate | null>;
         saveTemplate: (template: AgentTemplate) => Promise<{ success: boolean; template: AgentTemplate }>;
@@ -2395,6 +2500,31 @@ export interface ElectronAPI {
             error?: string;
         }>;
         onUpdate: (callback: (state: ProjectState) => void) => () => void;
+        onQuotaInterrupt: (callback: (payload: {
+            success: boolean;
+            interruptId: string;
+            checkpointId?: string;
+            blockedByQuota: boolean;
+            switched: boolean;
+            selectedFallback?: { provider: string; model: string };
+            availableFallbacks: Array<{ provider: string; model: string }>;
+            message: string;
+            v?: 'v1';
+            dedupeKey?: string;
+            emittedAt?: number;
+        }) => void) => () => void;
+        // ===== MARCH1-IPC-001: Council Protocol =====
+        council: {
+            generatePlan: (taskId: string, task: string) => Promise<{ success: boolean; error?: string }>;
+            getProposal: (taskId: string) => Promise<{ success: boolean; plan?: ProjectStep[]; error?: string }>;
+            approveProposal: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            rejectProposal: (taskId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+            startExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            pauseExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            resumeExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            getTimeline: (taskId: string) => Promise<{ success: boolean; events?: Array<Record<string, unknown>>; error?: string }>;
+        };
+        // ============================================
         // Canvas persistence
         saveCanvasNodes: (
             nodes: Array<{
@@ -2544,9 +2674,9 @@ function normalizeOrchestratorHistory(value: IpcValue): Message[] {
         const rawRole = historyRecord['role'];
         const role: Message['role'] =
             rawRole === 'system' ||
-            rawRole === 'user' ||
-            rawRole === 'assistant' ||
-            rawRole === 'tool'
+                rawRole === 'user' ||
+                rawRole === 'assistant' ||
+                rawRole === 'tool'
                 ? rawRole
                 : 'assistant';
         const rawContent = historyRecord['content'];
@@ -2621,33 +2751,33 @@ const api: ElectronAPI = {
         ipcRenderer.invoke('auth:get-session-timeout'),
 
     code: {
-        scanTodos: rootPath => ipcRenderer.invoke('code:scanTodos', rootPath),
-        findSymbols: (rootPath, query) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
-        findDefinition: (rootPath, symbol) =>
+        scanTodos: (rootPath: string) => ipcRenderer.invoke('code:scanTodos', rootPath),
+        findSymbols: (rootPath: string, query: string) => ipcRenderer.invoke('code:findSymbols', rootPath, query),
+        findDefinition: (rootPath: string, symbol: string) =>
             ipcRenderer.invoke('code:findDefinition', rootPath, symbol),
-        findReferences: (rootPath, symbol) =>
+        findReferences: (rootPath: string, symbol: string) =>
             ipcRenderer.invoke('code:findReferences', rootPath, symbol),
-        findImplementations: (rootPath, symbol) =>
+        findImplementations: (rootPath: string, symbol: string) =>
             ipcRenderer.invoke('code:findImplementations', rootPath, symbol),
-        getSymbolRelationships: (rootPath, symbol, maxItems) =>
+        getSymbolRelationships: (rootPath: string, symbol: string, maxItems?: number) =>
             ipcRenderer.invoke('code:getSymbolRelationships', rootPath, symbol, maxItems),
-        getFileOutline: filePath => ipcRenderer.invoke('code:getFileOutline', filePath),
-        previewRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
+        getFileOutline: (filePath: string) => ipcRenderer.invoke('code:getFileOutline', filePath),
+        previewRenameSymbol: (rootPath: string, symbol: string, newSymbol: string, maxFiles?: number) =>
             ipcRenderer.invoke('code:previewRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
-        applyRenameSymbol: (rootPath, symbol, newSymbol, maxFiles) =>
+        applyRenameSymbol: (rootPath: string, symbol: string, newSymbol: string, maxFiles?: number) =>
             ipcRenderer.invoke('code:applyRenameSymbol', rootPath, symbol, newSymbol, maxFiles),
-        generateFileDocumentation: (filePath, format) =>
+        generateFileDocumentation: (filePath: string, format?: string) =>
             ipcRenderer.invoke('code:generateFileDocumentation', filePath, format),
-        generateProjectDocumentation: (rootPath, maxFiles) =>
+        generateProjectDocumentation: (rootPath: string, maxFiles?: number) =>
             ipcRenderer.invoke('code:generateProjectDocumentation', rootPath, maxFiles),
-        analyzeQuality: (rootPath, maxFiles) =>
+        analyzeQuality: (rootPath: string, maxFiles?: number) =>
             ipcRenderer.invoke('code:analyzeQuality', rootPath, maxFiles),
-        searchFiles: (rootPath, query, projectId, isRegex) =>
+        searchFiles: (rootPath: string, query: string, projectId?: string, isRegex?: boolean) =>
             ipcRenderer.invoke('code:searchFiles', rootPath, query, projectId, isRegex),
-        indexProject: (rootPath, projectId) =>
+        indexProject: (rootPath: string, projectId: string) =>
             ipcRenderer.invoke('code:indexProject', rootPath, projectId),
-        queryIndexedSymbols: query => ipcRenderer.invoke('code:queryIndexedSymbols', query),
-        getSymbolAnalytics: rootPath => ipcRenderer.invoke('code:getSymbolAnalytics', rootPath),
+        queryIndexedSymbols: (query: string) => ipcRenderer.invoke('code:queryIndexedSymbols', query),
+        getSymbolAnalytics: (rootPath: string) => ipcRenderer.invoke('code:getSymbolAnalytics', rootPath),
     },
 
     getProxyModels: () => ipcRenderer.invoke('proxy:getModels'),
@@ -3824,9 +3954,21 @@ const api: ElectronAPI = {
         generatePlan: options => ipcRenderer.invoke('project:plan', options),
         approvePlan: (plan, taskId) => ipcRenderer.invoke('project:approve', { plan, taskId }),
         stop: taskId => ipcRenderer.invoke('project:stop', { taskId }),
+        pauseTask: taskId => ipcRenderer.invoke('project:pause-task', { taskId }),
+        resumeTask: taskId => ipcRenderer.invoke('project:resume-task', { taskId }),
+        saveSnapshot: taskId => ipcRenderer.invoke('project:save-snapshot', { taskId }),
+        approveCurrentPlan: taskId => ipcRenderer.invoke('project:approve-current-plan', { taskId }),
+        rejectCurrentPlan: (taskId, reason) =>
+            ipcRenderer.invoke('project:reject-current-plan', { taskId, reason }),
         createPullRequest: taskId => ipcRenderer.invoke('project:create-pr', { taskId }),
         resetState: () => ipcRenderer.invoke('project:reset-state'),
         getStatus: taskId => ipcRenderer.invoke('project:get-status', { taskId }),
+        getTaskMessages: taskId => ipcRenderer.invoke('project:get-messages', { taskId }),
+        getTaskEvents: taskId => ipcRenderer.invoke('project:get-events', { taskId }),
+        getTaskTelemetry: taskId => ipcRenderer.invoke('project:get-telemetry', { taskId }),
+        getTaskHistory: projectId => ipcRenderer.invoke('project:get-task-history', { projectId }),
+        deleteTask: taskId => ipcRenderer.invoke('project:delete-task', { taskId }),
+        getAvailableModels: () => ipcRenderer.invoke('project:get-available-models'),
         retryStep: (index, taskId) => ipcRenderer.invoke('project:retry-step', { index, taskId }),
         selectModel: payload => ipcRenderer.invoke('project:select-model', payload),
         // AGT-HIL: Human-in-the-Loop step actions
@@ -3871,6 +4013,34 @@ const api: ElectronAPI = {
         getDebateReplay: sessionId => ipcRenderer.invoke('project:get-debate-replay', sessionId),
         generateDebateSummary: sessionId => ipcRenderer.invoke('project:generate-debate-summary', sessionId),
         getTeamworkAnalytics: () => ipcRenderer.invoke('project:get-teamwork-analytics'),
+        councilSendMessage: payload => ipcRenderer.invoke('project:council-send-message', payload),
+        councilGetMessages: payload => ipcRenderer.invoke('project:council-get-messages', payload),
+        councilCleanupExpiredMessages: taskId =>
+            ipcRenderer.invoke('project:council-cleanup-expired-messages', { taskId }),
+        councilHandleQuotaInterrupt: payload =>
+            ipcRenderer.invoke('project:council-handle-quota-interrupt', payload),
+        councilRegisterWorkerAvailability: payload =>
+            ipcRenderer.invoke('project:council-register-worker-availability', payload),
+        councilListAvailableWorkers: payload =>
+            ipcRenderer.invoke('project:council-list-available-workers', payload),
+        councilScoreHelperCandidates: payload =>
+            ipcRenderer.invoke('project:council-score-helper-candidates', payload),
+        councilGenerateHelperHandoff: payload =>
+            ipcRenderer.invoke('project:council-generate-helper-handoff', payload),
+        councilReviewHelperMerge: payload =>
+            ipcRenderer.invoke('project:council-review-helper-merge', payload),
+        // ===== MARCH1-IPC-001: Council Protocol =====
+        council: {
+            generatePlan: (taskId, task) => ipcRenderer.invoke('project:council-generate-plan', { taskId, task }),
+            getProposal: taskId => ipcRenderer.invoke('project:council-get-proposal', { taskId }),
+            approveProposal: taskId => ipcRenderer.invoke('project:council-approve-proposal', { taskId }),
+            rejectProposal: (taskId, reason) => ipcRenderer.invoke('project:council-reject-proposal', { taskId, reason }),
+            startExecution: taskId => ipcRenderer.invoke('project:council-start-execution', { taskId }),
+            pauseExecution: taskId => ipcRenderer.invoke('project:council-pause-execution', { taskId }),
+            resumeExecution: taskId => ipcRenderer.invoke('project:council-resume-execution', { taskId }),
+            getTimeline: taskId => ipcRenderer.invoke('project:council-get-timeline', { taskId }),
+        },
+        // ============================================
         getTemplates: category => ipcRenderer.invoke('project:get-templates', category),
         getTemplate: id => ipcRenderer.invoke('project:get-template', id),
         saveTemplate: template => ipcRenderer.invoke('project:save-template', template),
@@ -3887,6 +4057,71 @@ const api: ElectronAPI = {
             ipcRenderer.on('project:update', listener);
             return () => ipcRenderer.removeListener('project:update', listener);
         },
+        onQuotaInterrupt: callback => {
+            const listener = (_event: IpcRendererEvent, payload: unknown) => {
+                if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+                    return;
+                }
+                const candidate = payload as Record<string, unknown>;
+                if (
+                    typeof candidate['success'] === 'boolean'
+                    && typeof candidate['interruptId'] === 'string'
+                    && typeof candidate['blockedByQuota'] === 'boolean'
+                    && typeof candidate['switched'] === 'boolean'
+                    && typeof candidate['message'] === 'string'
+                    && Array.isArray(candidate['availableFallbacks'])
+                ) {
+                    callback({
+                        success: candidate['success'],
+                        interruptId: candidate['interruptId'],
+                        checkpointId: typeof candidate['checkpointId'] === 'string'
+                            ? candidate['checkpointId']
+                            : undefined,
+                        blockedByQuota: candidate['blockedByQuota'],
+                        switched: candidate['switched'],
+                        selectedFallback: (
+                            typeof candidate['selectedFallback'] === 'object'
+                            && candidate['selectedFallback'] !== null
+                            && !Array.isArray(candidate['selectedFallback'])
+                            && typeof (candidate['selectedFallback'] as Record<string, unknown>)['provider'] === 'string'
+                            && typeof (candidate['selectedFallback'] as Record<string, unknown>)['model'] === 'string'
+                        )
+                            ? {
+                                provider: (candidate['selectedFallback'] as Record<string, unknown>)['provider'] as string,
+                                model: (candidate['selectedFallback'] as Record<string, unknown>)['model'] as string
+                            }
+                            : undefined,
+                        availableFallbacks: (candidate['availableFallbacks'] as unknown[])
+                            .map(item => {
+                                if (
+                                    typeof item === 'object'
+                                    && item !== null
+                                    && !Array.isArray(item)
+                                    && typeof (item as Record<string, unknown>)['provider'] === 'string'
+                                    && typeof (item as Record<string, unknown>)['model'] === 'string'
+                                ) {
+                                    return {
+                                        provider: (item as Record<string, unknown>)['provider'] as string,
+                                        model: (item as Record<string, unknown>)['model'] as string
+                                    };
+                                }
+                                return null;
+                            })
+                            .filter((item): item is { provider: string; model: string } => item !== null),
+                        message: candidate['message'],
+                        v: candidate['v'] === 'v1' ? 'v1' : undefined,
+                        dedupeKey: typeof candidate['dedupeKey'] === 'string'
+                            ? candidate['dedupeKey']
+                            : undefined,
+                        emittedAt: typeof candidate['emittedAt'] === 'number'
+                            ? candidate['emittedAt']
+                            : undefined,
+                    });
+                }
+            };
+            ipcRenderer.on('project:quota-interrupt', listener);
+            return () => ipcRenderer.removeListener('project:quota-interrupt', listener);
+        },
         // Canvas persistence
         saveCanvasNodes: nodes => ipcRenderer.invoke('project:save-canvas-nodes', nodes),
         getCanvasNodes: () => ipcRenderer.invoke('project:get-canvas-nodes'),
@@ -3894,7 +4129,7 @@ const api: ElectronAPI = {
         saveCanvasEdges: edges => ipcRenderer.invoke('project:save-canvas-edges', edges),
         getCanvasEdges: () => ipcRenderer.invoke('project:get-canvas-edges'),
         deleteCanvasEdge: id => ipcRenderer.invoke('project:delete-canvas-edge', id),
-        health: () => ipcRenderer.invoke('project-agent:health'),
+        health: () => ipcRenderer.invoke('project:health'),
     },
     orchestrator: {
         start: (task: string, projectId?: string) =>

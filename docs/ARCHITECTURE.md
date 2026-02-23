@@ -165,6 +165,28 @@ sequenceDiagram
 | **Executor** | Code modification, system actions |
 | **Critic** | Quality review, regression prevention |
 
+## Council Execution Architecture (March 1 Scope)
+
+The council system is frozen around six explicit components:
+
+| Component | Responsibility | Explicitly Not Allowed |
+|-----------|----------------|------------------------|
+| President | Approval gate, stage transitions, reassignment, escalation | Direct stage execution |
+| Planner | Stage graph, dependencies, acceptance criteria | Runtime routing or execution |
+| Router | Model/account selection + deterministic fallback | Plan approval or execution-state mutation |
+| Worker | Stage-bounded execution and blocker reporting | Scope/plan mutation |
+| Reviewer | Acceptance validation and fix/escalation verdict | Ownership reassignment |
+| Recovery | Crash/restart state restoration from checkpoints | Plan structure edits |
+
+Failure-domain ownership:
+- Planning failures: Planner -> President.
+- Quota/provider routing failures: Router -> President.
+- Stage execution failures: Worker -> Reviewer -> President.
+- Validation failures: Reviewer-managed bounded retry, then President escalation.
+- Crash/resume failures: Recovery -> President intervention.
+
+Reference ADR: `docs/adr/ADR-2026-03-01-council-execution-model.md`.
+
 ## Architecture Patterns
 
 ### Dependency Injection Container

@@ -2075,11 +2075,36 @@ export interface ElectronAPI {
         generatePlan: (options: AgentStartOptions) => Promise<void>;
         approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
         stop: (taskId?: string) => Promise<void>;
+        pauseTask: (taskId: string) => Promise<{ success: boolean }>;
+        resumeTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+        saveSnapshot: (taskId: string) => Promise<{ success: boolean; checkpointId?: string }>;
+        approveCurrentPlan: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+        rejectCurrentPlan: (
+            taskId: string,
+            reason?: string
+        ) => Promise<{ success: boolean; error?: string }>;
         createPullRequest: (
             taskId?: string
         ) => Promise<{ success: boolean; url?: string; error?: string }>;
         resetState: () => Promise<void>;
         getStatus: (taskId?: string) => Promise<ProjectState>;
+        getTaskMessages: (
+            taskId: string
+        ) => Promise<{ success: boolean; messages?: Message[] }>;
+        getTaskEvents: (
+            taskId: string
+        ) => Promise<{ success: boolean; events?: import('@shared/types/agent-state').AgentEventRecord[] }>;
+        getTaskTelemetry: (
+            taskId: string
+        ) => Promise<{ success: boolean; telemetry?: import('@shared/types/agent-state').TaskMetrics[] }>;
+        getTaskHistory: (
+            projectId?: string
+        ) => Promise<import('@shared/types/project-agent').AgentTaskHistoryItem[]>;
+        deleteTask: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+        getAvailableModels: () => Promise<{
+            success: boolean;
+            models: Array<{ id: string; name: string; provider: string }>;
+        }>;
         retryStep: (index: number, taskId?: string) => Promise<void>;
         selectModel: (payload: {
             taskId: string;
@@ -2195,6 +2220,74 @@ export interface ElectronAPI {
         ) => Promise<import('@shared/types/project-agent').DebateReplay | null>;
         generateDebateSummary: (sessionId: string) => Promise<string | null>;
         getTeamworkAnalytics: () => Promise<import('@shared/types/project-agent').AgentTeamworkAnalytics | null>;
+        councilSendMessage: (payload: {
+            taskId: string;
+            stageId: string;
+            fromAgentId: string;
+            toAgentId?: string;
+            intent: import('@shared/types/project-agent').AgentCollaborationIntent;
+            priority?: import('@shared/types/project-agent').AgentCollaborationPriority;
+            payload: Record<string, string | number | boolean | null>;
+            expiresAt?: number;
+        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage | null>;
+        councilGetMessages: (payload: {
+            taskId: string;
+            stageId?: string;
+            agentId?: string;
+            includeExpired?: boolean;
+        }) => Promise<import('@shared/types/project-agent').AgentCollaborationMessage[]>;
+        councilCleanupExpiredMessages: (taskId?: string) => Promise<{ success: boolean; removed: number }>;
+        councilHandleQuotaInterrupt: (payload: {
+            taskId: string;
+            stageId?: string;
+            provider: string;
+            model: string;
+            reason?: string;
+            autoSwitch?: boolean;
+        }) => Promise<{
+            success: boolean;
+            interruptId: string;
+            checkpointId?: string;
+            blockedByQuota: boolean;
+            switched: boolean;
+            selectedFallback?: { provider: string; model: string };
+            availableFallbacks: Array<{ provider: string; model: string }>;
+            message: string;
+        } | null>;
+        councilRegisterWorkerAvailability: (payload: {
+            taskId: string;
+            agentId: string;
+            status: 'available' | 'busy' | 'offline';
+            reason?: string;
+            skills?: string[];
+            contextReadiness?: number;
+        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord | null>;
+        councilListAvailableWorkers: (payload: {
+            taskId: string;
+        }) => Promise<import('@shared/types/project-agent').WorkerAvailabilityRecord[]>;
+        councilScoreHelperCandidates: (payload: {
+            taskId: string;
+            stageId: string;
+            requiredSkills: string[];
+            blockedAgentIds?: string[];
+            contextReadinessOverrides?: Record<string, number>;
+        }) => Promise<import('@shared/types/project-agent').HelperCandidateScore[]>;
+        councilGenerateHelperHandoff: (payload: {
+            taskId: string;
+            stageId: string;
+            ownerAgentId: string;
+            helperAgentId: string;
+            stageGoal: string;
+            acceptanceCriteria: string[];
+            constraints: string[];
+            contextNotes?: string;
+        }) => Promise<import('@shared/types/project-agent').HelperHandoffPackage | null>;
+        councilReviewHelperMerge: (payload: {
+            acceptanceCriteria: string[];
+            constraints: string[];
+            helperOutput: string;
+            reviewerNotes?: string;
+        }) => Promise<import('@shared/types/project-agent').HelperMergeGateDecision>;
         getTemplates: (
             category?: import('@shared/types/project-agent').AgentTemplateCategory
         ) => Promise<import('@shared/types/project-agent').AgentTemplate[]>;
@@ -2229,6 +2322,31 @@ export interface ElectronAPI {
             error?: string;
         }>;
         onUpdate: (callback: (state: ProjectState) => void) => () => void;
+        onQuotaInterrupt: (callback: (payload: {
+            success: boolean;
+            interruptId: string;
+            checkpointId?: string;
+            blockedByQuota: boolean;
+            switched: boolean;
+            selectedFallback?: { provider: string; model: string };
+            availableFallbacks: Array<{ provider: string; model: string }>;
+            message: string;
+            v?: 'v1';
+            dedupeKey?: string;
+            emittedAt?: number;
+        }) => void) => () => void;
+        // ===== MARCH1-IPC-001: Council Protocol =====
+        council: {
+            generatePlan: (taskId: string, task: string) => Promise<{ success: boolean; error?: string }>;
+            getProposal: (taskId: string) => Promise<{ success: boolean; plan?: ProjectStep[]; error?: string }>;
+            approveProposal: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            rejectProposal: (taskId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+            startExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            pauseExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            resumeExecution: (taskId: string) => Promise<{ success: boolean; error?: string }>;
+            getTimeline: (taskId: string) => Promise<{ success: boolean; events?: Array<Record<string, unknown>>; error?: string }>;
+        };
+        // ============================================
         // Canvas persistence
         saveCanvasNodes: (
             nodes: Array<{

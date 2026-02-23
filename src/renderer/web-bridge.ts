@@ -158,7 +158,10 @@ export const webElectronMock: ElectronAPI = {
             symbolCount: 0,
             generatedAt: new Date().toISOString(),
         }),
-        generateProjectDocumentation: async (_rootPath: string, _maxFiles?: number) => ({
+        generateProjectDocumentation: async (
+            _rootPath: string,
+            _maxFiles?: number
+        ) => ({
             success: true,
             filePath: _rootPath,
             format: 'markdown' as const,
@@ -1153,7 +1156,6 @@ export const webElectronMock: ElectronAPI = {
     searchFiles: async (_rootPath: string, _pattern: string) => ({ success: true, matches: [] }),
     saveFile: async (_content: string, _filename: string) => ({ success: true, path: '' }),
     exportChatToPdf: async (_chatId: string, _title: string) => ({ success: true, path: '' }),
-
     // Export
     exportMarkdown: async (_content: string, _filePath: string) => ({ success: true }),
     exportPDF: async (_htmlContent: string, _filePath: string) => ({ success: true }),
@@ -1539,9 +1541,20 @@ export const webElectronMock: ElectronAPI = {
         generatePlan: async (_options: unknown) => { },
         approvePlan: async (_plan: string[] | unknown[], _taskId?: string) => { },
         stop: async (_taskId?: string) => { },
+        pauseTask: async (_taskId: string) => ({ success: true }),
+        resumeTask: async (_taskId: string) => ({ success: true }),
+        saveSnapshot: async (_taskId: string) => ({ success: true, checkpointId: 'mock-checkpoint' }),
+        approveCurrentPlan: async (_taskId: string) => ({ success: true }),
+        rejectCurrentPlan: async (_taskId: string, _reason?: string) => ({ success: true }),
         createPullRequest: async (_taskId?: string) => ({ success: false, error: 'Not available in web mode' }),
         resetState: async () => { },
         getStatus: async (_taskId?: string) => null,
+        getTaskMessages: async (_taskId: string) => ({ success: true, messages: [] }),
+        getTaskEvents: async (_taskId: string) => ({ success: true, events: [] }),
+        getTaskTelemetry: async (_taskId: string) => ({ success: true, telemetry: [] }),
+        getTaskHistory: async (_projectId?: string) => [],
+        deleteTask: async (_taskId: string) => ({ success: true }),
+        getAvailableModels: async () => ({ success: true, models: [] }),
         retryStep: async (_index: number, _taskId?: string) => { },
         selectModel: async (_payload: { taskId: string; provider: string; model: string }) => ({
             success: true
@@ -1702,6 +1715,110 @@ export const webElectronMock: ElectronAPI = {
             productivityRecommendations: [],
             updatedAt: Date.now()
         }),
+        councilSendMessage: async (payload: {
+            taskId: string;
+            stageId: string;
+            fromAgentId: string;
+            toAgentId?: string;
+            intent: 'REQUEST_HELP' | 'SHARE_CONTEXT' | 'PROPOSE_CHANGE' | 'BLOCKER_REPORT';
+            priority?: 'low' | 'normal' | 'high' | 'urgent';
+            payload: Record<string, string | number | boolean | null>;
+            expiresAt?: number;
+        }) => ({
+            id: 'mock-collab-message',
+            taskId: payload.taskId,
+            stageId: payload.stageId,
+            fromAgentId: payload.fromAgentId,
+            toAgentId: payload.toAgentId,
+            channel: payload.toAgentId ? 'private' as const : 'group' as const,
+            intent: payload.intent,
+            priority: payload.priority ?? 'normal',
+            payload: payload.payload,
+            createdAt: Date.now(),
+            expiresAt: payload.expiresAt
+        }),
+        councilGetMessages: async (_payload: {
+            taskId: string;
+            stageId?: string;
+            agentId?: string;
+            includeExpired?: boolean;
+        }) => [],
+        councilCleanupExpiredMessages: async (_taskId?: string) => ({ success: true, removed: 0 }),
+        councilHandleQuotaInterrupt: async (payload: {
+            taskId: string;
+            stageId?: string;
+            provider: string;
+            model: string;
+            reason?: string;
+            autoSwitch?: boolean;
+        }) => ({
+            success: true,
+            interruptId: `mock-interrupt-${Date.now()}`,
+            checkpointId: 'mock-checkpoint',
+            blockedByQuota: false,
+            switched: Boolean(payload.autoSwitch ?? true),
+            selectedFallback: { provider: 'openai', model: 'gpt-4o' },
+            availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+            message: 'Mock quota interrupt handled.'
+        }),
+        councilRegisterWorkerAvailability: async (payload: {
+            taskId: string;
+            agentId: string;
+            status: 'available' | 'busy' | 'offline';
+            reason?: string;
+            skills?: string[];
+            contextReadiness?: number;
+        }) => ({
+            taskId: payload.taskId,
+            agentId: payload.agentId,
+            status: payload.status,
+            availableAt: payload.status === 'available' ? Date.now() : undefined,
+            lastActiveAt: Date.now(),
+            reason: payload.reason,
+            skills: payload.skills ?? [],
+            contextReadiness: payload.contextReadiness ?? 0.5,
+            completedStages: 0,
+            failedStages: 0,
+        }),
+        councilListAvailableWorkers: async (_payload: { taskId: string }) => [],
+        councilScoreHelperCandidates: async (_payload: {
+            taskId: string;
+            stageId: string;
+            requiredSkills: string[];
+            blockedAgentIds?: string[];
+            contextReadinessOverrides?: Record<string, number>;
+        }) => [],
+        councilGenerateHelperHandoff: async (payload: {
+            taskId: string;
+            stageId: string;
+            ownerAgentId: string;
+            helperAgentId: string;
+            stageGoal: string;
+            acceptanceCriteria: string[];
+            constraints: string[];
+            contextNotes?: string;
+        }) => ({
+            taskId: payload.taskId,
+            stageId: payload.stageId,
+            ownerAgentId: payload.ownerAgentId,
+            helperAgentId: payload.helperAgentId,
+            contextSummary: payload.contextNotes ?? payload.stageGoal,
+            acceptanceCriteria: payload.acceptanceCriteria,
+            constraints: payload.constraints,
+            generatedAt: Date.now()
+        }),
+        councilReviewHelperMerge: async (_payload: {
+            acceptanceCriteria: string[];
+            constraints: string[];
+            helperOutput: string;
+            reviewerNotes?: string;
+        }) => ({
+            accepted: true,
+            verdict: 'ACCEPT' as const,
+            reasons: ['Mock gate accepted helper output.'],
+            requiredFixes: [],
+            reviewedAt: Date.now()
+        }),
         getTemplates: async (_category?: unknown) => [],
         getTemplate: async (_id: string) => null,
         saveTemplate: async _template => ({ success: true, template: _template }),
@@ -1713,6 +1830,29 @@ export const webElectronMock: ElectronAPI = {
             values: Record<string, string | number | boolean>;
         }) => ({ success: false, error: 'Not available in web mode' }),
         onUpdate: (_callback: (state: unknown) => void) => () => { },
+        onQuotaInterrupt: (_callback: (payload: {
+            success: boolean;
+            interruptId: string;
+            checkpointId?: string;
+            blockedByQuota: boolean;
+            switched: boolean;
+            selectedFallback?: { provider: string; model: string };
+            availableFallbacks: Array<{ provider: string; model: string }>;
+            message: string;
+            v?: 'v1';
+            dedupeKey?: string;
+            emittedAt?: number;
+        }) => void) => () => { },
+        council: {
+            generatePlan: async (_taskId: string, _task: string) => ({ success: true }),
+            getProposal: async (_taskId: string) => ({ success: true, plan: [] }),
+            approveProposal: async (_taskId: string) => ({ success: true }),
+            rejectProposal: async (_taskId: string, _reason?: string) => ({ success: true }),
+            startExecution: async (_taskId: string) => ({ success: true }),
+            pauseExecution: async (_taskId: string) => ({ success: true }),
+            resumeExecution: async (_taskId: string) => ({ success: true }),
+            getTimeline: async (_taskId: string) => ({ success: true, events: [] }),
+        },
         // Canvas persistence stubs
         saveCanvasNodes: async (_nodes: unknown[]) => { },
         getCanvasNodes: async () => [],

@@ -35,14 +35,7 @@ export const useAgentHistory = (project: Project) => {
 
     const loadTaskHistory = useCallback(async () => {
         try {
-            const result = await window.electron.batch.invoke([
-                {
-                    channel: 'project-agent:get-task-history',
-                    args: [{ projectId: project.path }], // Use project.path instead of project.id
-                },
-            ]);
-            const tasks = result.results[0]
-                .data as import('@shared/types/project-agent').AgentTaskHistoryItem[];
+            const tasks = await window.electron.projectAgent.getTaskHistory(project.path);
 
             if (Array.isArray(tasks)) {
                 const history: TaskHistoryItem[] = tasks.map(task => ({
@@ -72,13 +65,7 @@ export const useAgentHistory = (project: Project) => {
     const deleteTask = useCallback(
         async (taskId: string) => {
             try {
-                const batchResult = await window.electron.batch.invoke([
-                    {
-                        channel: 'project-agent:delete-task',
-                        args: [{ taskId }],
-                    },
-                ]);
-                const result = batchResult.results[0].data as { success: boolean; error?: string };
+                const result = await window.electron.projectAgent.deleteTask(taskId);
                 if (result.success) {
                     await loadTaskHistory();
                     return true;

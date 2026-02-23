@@ -54,13 +54,338 @@ Deadline note: This block is the must-ship scope for **March 1, 2026**.
   - ( ) On app relaunch, restore active tasks and continue from last consistent checkpoint.
   - ( ) Validate rollback/resume path with integration tests.
 - ( ) **MARCH1-RESUME-002**: Continue execution after quota exhaustion.
-  - ( ) Detect quota exhaustion as a first-class interrupt reason.
-  - ( ) Auto-switch to next eligible account/model and continue step/task without losing state.
-  - ( ) Surface user notification for every forced provider/model switch.
+  - (x) Detect quota exhaustion as a first-class interrupt reason.
+  - (x) Auto-switch to next eligible account/model and continue step/task (auto-resume attempt after switch).
+  - (x) Surface user notification baseline: emit `project:quota-interrupt` event to renderer on forced switch.
+  - (x) Surface in-app user notification UI for every forced provider/model switch.
+  - (x) Emit structured `QUOTA_EXHAUSTED` interrupt (`taskId`, `stageId`, `provider`, `model`, `reason`, `timestamp`).
+  - (x) Take immediate checkpoint on interrupt before any routing action.
+  - (x) Compute deterministic fallback chain from user-approved model/account set.
+  - (x) Continue from same stage checkpoint (no full-plan restart).
+  - (x) If no fallback candidate exists, mark task as `blocked_by_quota` and require user action.
+  - (x) Persist interrupt + switch decisions to timeline/audit logs.
+  - ( ) Add integration test: quota exhaustion -> checkpoint -> auto switch -> same-stage continuation.
 - ( ) **MARCH1-QUALITY-001**: Stabilize project-agent operational gaps blocking March 1 launch.
-  - ( ) Replace stubbed `saveSnapshot` behavior with real checkpoint persistence return values.
-  - ( ) Replace stubbed telemetry/events endpoints with backed data for task diagnostics.
-  - ( ) Ensure orchestrator/council IPC surface is actively wired in renderer or remove dead paths.
+  - (x) Replace stubbed `saveSnapshot` behavior with real checkpoint persistence return values.
+  - (x) Replace stubbed telemetry/events endpoints with backed data for task diagnostics.
+  - (x) Ensure orchestrator/council IPC surface is actively wired in renderer or remove dead paths.
+
+### March 1 Detailed Execution Plan (Project System)
+
+- ( ) **MARCH1-CHAT-IMPLEMENTATION-001**: AI chat system (workspace integrated) full implementation.
+  - ( ) Define transport contract:
+    - ( ) Finalize request schema for `chat:stream` (`taskId`, `projectId`, `messages`, `model`, `temperature`, `tools`).
+    - ( ) Finalize stream event schema (`start`, `chunk`, `tool_call`, `tool_result`, `done`, `error`, `cancelled`).
+    - ( ) Add strict response validation and typed bridge updates in preload + renderer.
+  - ( ) Implement backend chat runtime:
+    - ( ) Add provider adapter selection (OpenAI/Anthropic/Ollama/Copilot).
+    - ( ) Add timeout, retry, and cancellation token handling per provider call.
+    - ( ) Persist chat events incrementally to DB for crash-safe recovery.
+  - ( ) Implement renderer chat UX:
+    - ( ) Stream tokens in real-time with stable scroll behavior.
+    - ( ) Add `Cancel`, `Retry`, `Switch Model` actions on active/failed messages.
+    - ( ) Show provider/model badge and latency/cost metadata per message.
+  - ( ) Recovery and resume:
+    - ( ) On app restart, restore unfinished streams as `interrupted`.
+    - ( ) Allow user to continue interrupted thread from last persisted message.
+  - ( ) Tests and release gate:
+    - ( ) Unit tests for stream state machine.
+    - ( ) Integration tests for cancellation/retry/provider fallback.
+    - ( ) Manual QA checklist for 5 scenarios (normal, timeout, quota end, provider down, app restart).
+
+- ( ) **MARCH1-COUNCIL-IMPLEMENTATION-001**: Council President orchestration system end-to-end.
+  - ( ) Planning phase:
+    - ( ) Generate plan with explicit stages, dependencies, and acceptance criteria.
+    - ( ) Estimate token/time budget per stage.
+    - ( ) Produce candidate model/account routing for each stage.
+  - ( ) User approval phase (mandatory):
+    - ( ) Render pre-execution approval screen showing:
+      - ( ) Stage list and expected outputs.
+      - ( ) Selected models/accounts and fallback chain.
+      - ( ) Estimated cost/time and risk notes.
+    - ( ) Add `Approve` / `Reject` / `Edit Constraints` actions.
+    - ( ) Block execution unless user approves exact plan version.
+  - ( ) Execution phase:
+    - ( ) Assign stages to agent workers.
+    - ( ) Track per-worker heartbeat and progress.
+    - ( ) Enable dynamic reassignment when worker finishes early.
+    - ( ) Enable worker-to-worker coordination channel.
+  - ( ) Supervision phase:
+    - ( ) Council President validates each worker output against acceptance criteria.
+    - ( ) Auto-request fix if criteria fail.
+    - ( ) Escalate to user if repeated failures exceed threshold.
+  - ( ) Persistence phase:
+    - ( ) Persist plan version, assignment map, and live stage state at each transition.
+    - ( ) Persist council chat/decision logs for audit and resume.
+
+- ( ) **MARCH1-QUOTA-ROUTING-001**: Quota-aware model/account routing implementation.
+  - ( ) Build quota snapshot service:
+    - ( ) Read linked accounts and live remaining quota.
+    - ( ) Normalize quotas to comparable units (token/time/request).
+  - ( ) Build routing algorithm:
+    - ( ) Primary strategy: highest quota + capability match.
+    - ( ) Tie-breakers: latency, reliability score, price.
+    - ( ) Deterministic fallback order if primary fails.
+  - ( ) Runtime failover:
+    - ( ) Detect quota exhaustion as typed interrupt event.
+    - ( ) Auto-switch to next eligible model/account.
+    - ( ) Resume same stage without losing context/state.
+  - ( ) User control:
+    - ( ) Respect user `allowedModels` / `blockedModels`.
+    - ( ) Show forced switch notification with reason and selected fallback.
+
+- ( ) **MARCH1-MULTI-AGENT-TEAMWORK-001**: Multi-agent collaboration features.
+  - ( ) Implement agent bus:
+    - ( ) Structured inter-agent message format (`from`, `to`, `taskId`, `stageId`, `intent`, `payload`).
+    - ( ) Priority lanes for blocker/help messages.
+  - ( ) Implement help protocol:
+    - ( ) Early-finishing worker requests pending stage queue.
+    - ( ) Council President reassigns subtask with clear acceptance criteria.
+    - ( ) Merge helper output with original owner output via reviewer agent.
+  - ( ) Implement conflict protocol:
+    - ( ) If agent outputs disagree, trigger debate/reviewer step.
+    - ( ) Store rationale and final resolution in timeline.
+
+- ( ) **MARCH1-STATE-RECOVERY-001**: Crash-safe state and continuation.
+  - ( ) Persist state checkpoints on every critical transition:
+    - ( ) plan_created, plan_approved, stage_started, stage_completed, reassigned, model_switched, error_raised.
+  - ( ) Startup recovery flow:
+    - ( ) Detect unfinished tasks.
+    - ( ) Reconstruct in-memory queues and worker ownership.
+    - ( ) Continue from last consistent checkpoint.
+  - ( ) Recovery validation:
+    - ( ) Integration test: close app mid-stage, reopen, continue.
+    - ( ) Integration test: quota exhaustion -> fallback -> continue.
+    - ( ) Integration test: provider outage -> reroute -> continue.
+
+### March 1 Expanded Backlog (Meclis Sistemi - Detailed)
+
+- (x) **MARCH1-ARCH-001**: Council architecture freeze and boundaries.
+  - (x) Finalize component boundaries: President, Planner, Router, Worker, Reviewer, Recovery.
+  - (x) Define responsibilities and no-overlap rules per component.
+  - (x) Add architecture decision record (ADR) for council execution model.
+  - (x) Define failure domains and fallback ownership.
+
+- (x) **MARCH1-DATA-001**: Database schema for council/task lifecycle.
+  - (x) Add `council_plans` table (planVersion, userConstraints, estimatedCost, approvedAt).
+  - (x) Add `council_plan_stages` table (stageId, dependencies, assignedAgent, status, acceptanceJson).
+  - (x) Add `council_assignments` table (agentId, stageId, assignedAt, reassignedFrom).
+  - (x) Add `council_decisions` table (decisionType, reason, actor, createdAt).
+  - (x) Add `council_interrupts` table (quota_exhausted, provider_down, timeout, crash_resume).
+  - (x) Add DB indexes for `taskId`, `status`, `updatedAt`, `stageId`.
+
+- ( ) **MARCH1-DATA-002**: Event sourcing and timeline durability.
+  - ( ) Define canonical event types (`PLAN_CREATED`, `PLAN_APPROVED`, `STAGE_STARTED`, `MODEL_SWITCHED`, `TASK_RESUMED`).
+  - ( ) Persist immutable event log with sequence numbers.
+  - ( ) Implement replay mechanism to reconstruct state from events.
+  - ( ) Add compaction/snapshot policy for long-running tasks.
+
+- ( ) **MARCH1-IPC-001**: Council IPC contract completion.
+  - ( ) Add `project:council-generate-plan`.
+  - ( ) Add `project:council-get-proposal`.
+  - ( ) Add `project:council-approve-proposal`.
+  - ( ) Add `project:council-reject-proposal`.
+  - ( ) Add `project:council-start-execution`.
+  - ( ) Add `project:council-pause-execution`.
+  - ( ) Add `project:council-resume-execution`.
+  - ( ) Add `project:council-get-timeline`.
+  - ( ) Add typed preload bridge and renderer API wrappers for all channels.
+
+- (x) **MARCH1-IPC-002**: Streaming and event contract hardening.
+  - (x) Standardize event payload schemas with versioning (`v1`, `v2` compatibility policy).
+  - (x) Add max event frequency throttle for high-volume streams.
+  - (x) Add event deduplication key to prevent duplicate UI updates after resume.
+  - (x) Add IPC integration tests for every council endpoint.
+
+- (x) **MARCH1-UX-APPROVAL-001**: Pre-execution approval UX (zorunlu onay ekranı).
+  - (x) Build "Execution Proposal" panel with plan stages and dependencies graph.
+  - (x) Show selected model/account per stage with fallback chain visibility.
+  - (x) Show quota impact and estimated finish time.
+  - (x) Add explicit confirmation checkbox ("I approve this plan and model usage").
+  - (x) Disable run button until explicit approval.
+  - (x) Save rejected proposals with rejection reason history.
+
+- (x) **MARCH1-UX-RUNTIME-001**: Live runtime monitoring UX.
+  - (x) Build live assignment board (which agent is working on which stage).
+  - (x) Build agent health panel (heartbeat, last output time, failure count).
+  - (x) Add "forced reroute" notification center entries.
+  - (x) Add timeline filters (stage, agent, model, interrupt type).
+  - (x) Add "manual intervention" action button per blocked stage.
+
+- ( ) **MARCH1-AGENT-PROTOCOL-001**: Agent-to-agent communication protocol.
+  - (x) Define intents (`REQUEST_HELP`, `SHARE_CONTEXT`, `PROPOSE_CHANGE`, `BLOCKER_REPORT`).
+  - (x) Define message priority and expiry policy.
+  - (x) Implement routed private channel (agent-to-agent) and group channel (all workers).
+  - (x) Add transcript tracking + moderation baseline rules (in-memory channel log, payload size/length limits).
+  - (x) Add anti-loop rule: repeated same request > N times triggers President intervention.
+  - (x) Persist collaboration transcript to DB and restore on restart.
+
+- (x) **MARCH1-ASSIST-001**: Early-finish helper flow.
+  - (x) Detect idle/finished workers and register availability.
+  - (x) Implement helper assignment scoring (skill match + context readiness).
+  - (x) Implement helper handoff package generator (context summary + acceptance criteria + constraints).
+  - (x) Implement merge-review gate before helper contribution is accepted.
+
+- ( ) **MARCH1-QUOTA-ENGINE-002**: Real quota engine and account governance.
+  - ( ) Pull quota status from all linked accounts at planning and runtime checkpoints.
+  - ( ) Add quota freshness timeout; stale quota must trigger refresh before routing.
+  - ( ) Implement account lock when provider reports hard-limit reached.
+  - ( ) Implement account cooldown for transient rate limits.
+  - ( ) Add user-facing policy toggle: "Prefer cheapest" vs "Prefer highest quota" vs "Prefer fastest".
+
+- ( ) **MARCH1-MODEL-GOV-001**: User model governance (kullanıcı model seçimi).
+  - ( ) Add per-task model allowlist UI.
+  - ( ) Add per-task model denylist UI.
+  - ( ) Add provider-level hard disable switches.
+  - ( ) Enforce governance on planner + router + runtime fallback layers.
+  - ( ) Emit audit log when governance blocks a candidate model.
+
+- ( ) **MARCH1-VALIDATION-001**: Worker output verification and enforcement.
+  - ( ) Add stage-level acceptance validator templates.
+  - ( ) Add reviewer retry policy (`maxRetriesPerStage`).
+  - ( ) Add structured fail report format (`failureType`, `evidence`, `suggestedFix`).
+  - ( ) Add escalation threshold to President/user after repeated reviewer failures.
+
+- ( ) **MARCH1-RECOVERY-OPS-001**: Recovery orchestration on app crash/close.
+  - ( ) Persist in-flight context every N seconds and on every major transition.
+  - ( ) On startup, run recovery scanner for unfinished tasks.
+  - ( ) Reconcile DB state vs in-memory cache; choose authoritative source by sequence id.
+  - ( ) Resume execution with deterministic ordering of pending stages.
+  - ( ) Show "Recovered Session" banner with summary of resumed actions.
+
+- ( ) **MARCH1-RECOVERY-OPS-002**: Quota exhaustion continuation path.
+  - ( ) Trigger `QUOTA_EXHAUSTED` interrupt with structured metadata.
+  - ( ) Persist interrupted stage context snapshot immediately.
+  - ( ) Route to next eligible account/model from deterministic fallback chain.
+  - ( ) Continue same stage and tag timeline with `forced_model_switch`.
+  - ( ) Notify user with before/after model-account details.
+
+- ( ) **MARCH1-SECURITY-001**: Security and guardrails for multi-agent execution.
+  - ( ) Validate tool-call allowlist per stage and per model.
+  - ( ) Prevent agent cross-task data leakage (task isolation checks).
+  - ( ) Redact secrets from inter-agent and user-visible transcripts.
+  - ( ) Add prompt injection detection for external tool/web content.
+  - ( ) Add security audit log for privileged actions.
+
+- ( ) **MARCH1-OBS-001**: Observability and operational metrics.
+  - ( ) Add metrics: stage duration, reassignment count, fallback count, success/failure rates.
+  - ( ) Add per-model reliability dashboard data feed.
+  - ( ) Add cost telemetry per task and per stage.
+  - ( ) Add alert thresholds for repeated fallback and repeated reviewer failures.
+  - ( ) Add "time-to-first-plan" and "time-to-first-output" KPIs.
+
+- ( ) **MARCH1-TEST-001**: Scenario-based E2E testing matrix.
+  - ( ) Happy path: plan -> approval -> execution -> completion.
+  - ( ) Reject flow: proposal rejected -> regenerate -> approve.
+  - ( ) Quota-end flow: model switch and continuation.
+  - ( ) Provider-down flow: reroute and continuation.
+  - ( ) Crash flow: close app mid-stage and resume.
+  - ( ) Multi-agent help flow: helper joins and merge accepted.
+  - ( ) Governance flow: blocked model rejected and alternate chosen.
+
+- ( ) **MARCH1-RELEASE-001**: Release readiness and fallback plan for March 1.
+  - ( ) Define minimum shippable feature set (must-have vs can-slip).
+  - ( ) Add feature flags for council modules (planning, routing, teamwork, recovery).
+  - ( ) Add kill-switch for unstable providers/models.
+  - ( ) Prepare rollback procedure and on-call playbook.
+  - ( ) Final go/no-go checklist with owners and deadlines.
+
+### Prompt Templates (Directly Usable)
+
+- (x) **MARCH1-PROMPTS-001**: Add production prompt pack for council architecture.
+  - (x) Council President (System Prompt):
+```text
+You are the Council President for a multi-agent coding system.
+Goal: deliver the user's requested outcome with minimum risk and approved cost.
+Rules:
+1) Before execution, create a stage-by-stage plan with acceptance criteria per stage.
+2) Select model/account per stage using quota + capability + user constraints.
+3) Present plan, routing, fallbacks, and estimated cost/time to user.
+4) Do not execute until explicit approval is received.
+5) During execution, supervise workers, validate outputs, and reassign idle workers.
+6) If quota/provider fails, switch to next eligible option and continue from checkpoint.
+7) Persist every major transition for crash-safe recovery.
+Output format (JSON):
+{
+  "planVersion": "string",
+  "stages": [{ "id": "S1", "goal": "...", "acceptance": ["..."], "dependsOn": [] }],
+  "routing": [{ "stageId": "S1", "model": "...", "account": "...", "fallback": ["...", "..."] }],
+  "estimates": { "tokens": 0, "costUsd": 0, "durationMin": 0 },
+  "requiresUserApproval": true
+}
+```
+  - (x) Planner Agent (System Prompt):
+```text
+You are the Planner Agent.
+Convert user request into atomic executable stages.
+For each stage provide:
+- objective
+- inputs
+- output contract
+- acceptance checks
+- risk notes
+Hard constraints:
+- no hidden assumptions
+- explicit dependencies
+- each stage must be independently testable
+Output strict JSON only.
+```
+  - (x) Quota Router Agent (System Prompt):
+```text
+You are the Quota Router Agent.
+Given stage requirements and account/model quota snapshot:
+1) pick best model/account by capability + remaining quota + reliability.
+2) produce deterministic fallback chain.
+3) explain why rejected candidates were not selected.
+Respect user allow/deny model list strictly.
+Output strict JSON:
+{ "selected": {...}, "fallbacks": [...], "rejections": [...] }
+```
+  - (x) Worker Agent (System Prompt):
+```text
+You are a Worker Agent.
+Execute assigned stage only.
+Do not change scope without asking Council President.
+Return:
+1) result
+2) files changed
+3) tests run
+4) known limitations
+If blocked, emit BLOCKED report with exact reason and requested help.
+```
+  - (x) Reviewer Agent (System Prompt):
+```text
+You are a Reviewer Agent.
+Validate worker output against stage acceptance criteria.
+Return verdict:
+- PASS
+- FAIL_WITH_FIXES
+- ESCALATE_TO_USER
+Include concrete evidence and minimal fix list.
+```
+  - (x) Helper Agent (System Prompt):
+```text
+You are a Helper Agent.
+You assist a primary worker when reassigned.
+Do not override ownership; produce merge-ready sub-results with clear boundaries.
+Return exact handoff notes for the primary worker.
+```
+  - (x) Recovery Agent (System Prompt):
+```text
+You are a Recovery Agent.
+Given checkpoint state after crash/interruption:
+1) detect last consistent transition
+2) rebuild pending queue and active ownership
+3) produce safe resume plan
+Never repeat completed irreversible actions.
+Output strict JSON with resume steps.
+```
+
+- (x) **MARCH1-PROMPTS-002**: Add operator prompts (user-facing control actions).
+  - (x) Approve plan prompt text.
+  - (x) Reject plan prompt text with required reason.
+  - (x) Manual model override prompt text.
+  - (x) Continue after fallback confirmation prompt text.
 
 ---
 

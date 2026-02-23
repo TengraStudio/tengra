@@ -14,6 +14,17 @@
 - **NASA Uyumluluğu**: Daha iyi bakım yapılabilirlik ve güvenilirlik için çekirdek servis yöntemleri yeniden yapılandırıldı (Power of Ten Kuralı #3).
 - **I18N**: Tüm ajan iş birliği ve kontrol noktası durum mesajları için tam İngilizce ve Türkçe yerelleştirme eklendi.
 
+### Council IPC ve Proje Ajanı TypeScript Çözümü
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Council IPC, proje ajanı şemaları, web köprüsü ve entegrasyon test takımları genelinde derleme sürecini engelleyen kapsamlı TypeScript türü hataları çözüldü.
+
+- **Council IPC Türleri**: Doğrulama sorunlarını düzeltmek için `AgentStreamEventSchema`'ya uygun tür ek açıklamaları eklendi.
+- **Electron Köprüsü**: Güvenli IPC ön yükleme betiğinde kod keşfetme yöntemleri için uygun tür ek açıklamaları eklendi.
+- **Web Köprüsü Mockları**: Web Bağımsız/Test mock API yüzeyinden var olmayan `generateProjectDocumentation` referansları kaldırıldı.
+- **Entegrasyon Testleri**: `ThemeService` kurtarma ve başlatma takımlarında eksik tür başlatmaları ve değişken kapsamları düzeltildi.
+
 ### İzleme, Telemetri ve Tema Servisi Test Güvenilirliği Düzeltmeleri
 
 - **Type**: fix

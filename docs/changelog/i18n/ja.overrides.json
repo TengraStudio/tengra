@@ -1,4 +1,14 @@
 {
+  "2026-02-23-council-ipc-typescript-fixes": {
+    "title": "Council IPC と Project Agent TypeScript の解決",
+    "summary": "Council IPC、プロジェクトエージェントのスキーマ、Webブリッジ、統合テストスイート全体でビルドパイプラインをブロックする包括的なTypeScriptの型エラーを解決しました。",
+    "items": [
+      "- **Council IPC Types**: 検証の問題を修正するために、`AgentStreamEventSchema`に適切な型注釈を追加しました。",
+      "- **Electron Bridge**: 安全なIPCプリロードスクリプトのコード探索メソッドに適切な型注釈を追加しました。",
+      "- **Web Bridge Mocks**: Webスタンドアロン/テスト用モックAPIの表面から、存在しない`generateProjectDocumentation`の参照を削除しました。",
+      "- **Integration Tests**: `ThemeService`の回復とスタートアップスイートに不足している型の初期化と変数のスコープを修正しました。"
+    ]
+  },
   "2026-02-23-monitoring-telemetry-theme-test-fixes": {
     "title": "監視、テレメトリ、およびテーマサービスのテスト信頼性の修正",
     "summary": "モニタリング、テレメトリ、およびテーマサービスのテストの不整合を解決し、モックの信頼性を向上させました。",

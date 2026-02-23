@@ -93,18 +93,20 @@ export const ModelSelectionModal: React.FC<ModelSelectionModalProps> = ({
         setIsLoading(true);
         setError(null);
         try {
-            const result = await window.electron.batch.invoke([{
-                channel: 'project-agent:get-available-models',
-                args: []
-            }]);
-            const data = result.results[0].data as { success: boolean; models?: ProviderConfig[]; error?: string };
+            const data = await window.electron.projectAgent.getAvailableModels();
             if (data.success && data.models) {
-                setAvailableModels(data.models);
-                if (data.models.length > 0) {
-                    setSelectedModel(data.models[0]);
+                const mappedModels: ProviderConfig[] = data.models.map(model => ({
+                    provider: model.provider,
+                    model: model.name,
+                    accountIndex: 0,
+                    status: 'active'
+                }));
+                setAvailableModels(mappedModels);
+                if (mappedModels.length > 0) {
+                    setSelectedModel(mappedModels[0]);
                 }
             } else {
-                setError(data.error ?? 'Failed to load models');
+                setError('Failed to load models');
             }
         } catch (err) {
             setError('Connection failed');

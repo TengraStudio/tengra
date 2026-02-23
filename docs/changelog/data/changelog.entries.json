@@ -4,6 +4,37 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-23-council-ipc-typescript-fixes",
+      "date": "2026-02-23",
+      "channel": "stable",
+      "type": "fix",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Council IPC",
+        "Project Agent",
+        "Typescript",
+        "Preload"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Council IPC and Project Agent TypeScript Resolution",
+          "summary": "Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.",
+          "items": [
+            "- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.",
+            "- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.",
+            "- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.",
+            "- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-23-monitoring-telemetry-theme-test-fixes",
       "date": "2026-02-23",
       "channel": "stable",

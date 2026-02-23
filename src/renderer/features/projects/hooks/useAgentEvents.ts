@@ -1,7 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { z } from 'zod';
-
-import { invokeTypedIpc, type IpcContractMap } from '@/lib/ipc-client';
 
 import { ActivityLog } from '../components/agent/ActivityStream';
 import { ExecutionPlan } from '../components/agent/ExecutionPlanView';
@@ -31,13 +28,6 @@ interface UseAgentEventsProps {
     currentPlanStepsCount: number;
     setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-type AgentEventsIpcContract = IpcContractMap & {
-    'project-agent:subscribe-events': {
-        args: [];
-        response: { success: boolean };
-    };
-};
 
 interface EventData {
     taskId: string;
@@ -360,6 +350,7 @@ export function useAgentEvents(props: UseAgentEventsProps) {
     const activeTaskIdRef = useRef<string | null>(null);
     // Track if component is mounted to prevent state updates after unmount
     const isMountedRef = useRef<boolean>(true);
+    const recentEventDedupeKeysRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         propsRef.current = props;
@@ -373,14 +364,6 @@ export function useAgentEvents(props: UseAgentEventsProps) {
         // Mark as mounted
         isMountedRef.current = true;
 
-        void invokeTypedIpc<AgentEventsIpcContract, 'project-agent:subscribe-events'>(
-            'project-agent:subscribe-events',
-            [],
-            {
-                responseSchema: z.object({ success: z.boolean() })
-            }
-        );
-
         const unsubscribe = window.electron.onAgentEvent((payload: unknown) => {
             // Prevent state updates if component is unmounted
             if (!isMountedRef.current) {
@@ -390,6 +373,20 @@ export function useAgentEvents(props: UseAgentEventsProps) {
             const normalizedPayload = normalizeAgentEventPayload(payload);
             if (!normalizedPayload) {
                 return;
+            }
+
+            if (normalizedPayload.dedupeKey) {
+                if (recentEventDedupeKeysRef.current.has(normalizedPayload.dedupeKey)) {
+                    return;
+                }
+                recentEventDedupeKeysRef.current.add(normalizedPayload.dedupeKey);
+                if (recentEventDedupeKeysRef.current.size > 500) {
+                    const iterator = recentEventDedupeKeysRef.current.values();
+                    const oldest = iterator.next().value;
+                    if (oldest) {
+                        recentEventDedupeKeysRef.current.delete(oldest);
+                    }
+                }
             }
 
             const type = normalizedPayload.type;
@@ -417,6 +414,7 @@ export function useAgentEvents(props: UseAgentEventsProps) {
         return () => {
             // Mark as unmounted before unsubscribing
             isMountedRef.current = false;
+            recentEventDedupeKeysRef.current.clear();
             unsubscribe();
         };
     }, []);

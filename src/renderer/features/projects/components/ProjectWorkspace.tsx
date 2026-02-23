@@ -465,6 +465,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 />
 
                 <WorkspaceSidebar
+                    projectId={project.id}
                     showAgentPanel={ps.showAgentPanel}
                     agentPanelWidth={ps.agentPanelWidth}
                     setAgentPanelWidth={ps.setAgentPanelWidth}

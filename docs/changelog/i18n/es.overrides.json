@@ -1,4 +1,14 @@
 {
+  "2026-02-23-council-ipc-typescript-fixes": {
+    "title": "Resolución de TypeScript de Council IPC y Project Agent",
+    "summary": "Se resolvieron los errores integrales de tipo TypeScript que bloqueaban la canalización de compilación en Council IPC, esquemas de agente de proyecto, web-bridge y conjuntos de pruebas de integración.",
+    "items": [
+      "- **Tipos IPC de Council**: Se agregaron anotaciones de tipo adecuadas a `AgentStreamEventSchema` para corregir problemas de validación.",
+      "- **Puente Electron**: Se agregaron anotaciones de tipo adecuadas para los métodos de exploración de código en el script de precarga IPC seguro.",
+      "- **Mocks de puente web**: Se eliminaron las referencias a `generateProjectDocumentation` inexistentes de la superficie de la API web independiente/de prueba simulada.",
+      "- **Pruebas de integración**: Se corrigieron las inicializaciones de tipo faltantes y los alcances de variables en los conjuntos de recuperación e inicio de `ThemeService`."
+    ]
+  },
   "2026-02-23-monitoring-telemetry-theme-test-fixes": {
     "title": "Correcciones de confiabilidad de pruebas de servicio de monitoreo, telemetría y temas",
     "summary": "Se resolvieron las inconsistencias de las pruebas y se mejoró la confiabilidad de los mocks para los servicios de monitoreo, telemetría y temas.",

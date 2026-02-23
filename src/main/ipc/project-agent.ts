@@ -1,10 +1,9 @@
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
-import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
-import { withRetry } from '@main/utils/ipc-retry.util';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
-import { IpcValue, JsonObject } from '@shared/types/common';
 import {
+    AgentCollaborationIntent,
+    AgentCollaborationPriority,
     AgentProfile,
     AgentStartOptions,
     AgentTemplate,
@@ -20,8 +19,7 @@ import {
     VotingConfiguration,
     VotingSession,
 } from '@shared/types/project-agent';
-import { getErrorMessage } from '@shared/utils/error.util';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 
 interface CanvasNode {
     id: string;
@@ -38,329 +36,6 @@ interface CanvasEdge {
     targetHandle?: string;
 }
 
-interface LegacyStartTaskPayload {
-    projectId?: string;
-    description?: string;
-    files?: Array<{ name?: string; path?: string }>;
-    provider?: string;
-    model?: string;
-    nodeId?: string;
-}
-
-type ProjectAgentUiState = 'ready' | 'empty' | 'failure';
-
-const PROJECT_AGENT_ERROR_CODE = {
-    VALIDATION: 'PROJECT_AGENT_VALIDATION_ERROR',
-    OPERATION_FAILED: 'PROJECT_AGENT_OPERATION_FAILED',
-    TRANSIENT: 'PROJECT_AGENT_TRANSIENT_ERROR'
-} as const;
-
-const PROJECT_AGENT_MESSAGE_KEY = {
-    VALIDATION_FAILED: 'errors.unexpected',
-    OPERATION_FAILED: 'errors.unexpected'
-} as const;
-
-const PROJECT_AGENT_PERFORMANCE_BUDGET_MS = {
-    FAST: 45,
-    STANDARD: 140,
-    HEAVY: 320
-} as const;
-
-const MAX_PROJECT_AGENT_TELEMETRY_EVENTS = 250;
-
-interface ProjectAgentLegacyChannelMetrics {
-    calls: number;
-    failures: number;
-    retries: number;
-    validationFailures: number;
-    budgetExceededCount: number;
-    lastDurationMs: number;
-    lastErrorCode: string | null;
-}
-
-interface ProjectAgentLegacyTelemetryEvent {
-    channel: string;
-    event: 'success' | 'failure' | 'retry' | 'validation-failure';
-    timestamp: number;
-    durationMs?: number;
-    code?: string;
-}
-
-const projectAgentLegacyTelemetry = {
-    totalCalls: 0,
-    totalFailures: 0,
-    totalRetries: 0,
-    validationFailures: 0,
-    budgetExceededCount: 0,
-    lastErrorCode: null as string | null,
-    channels: {} as Record<string, ProjectAgentLegacyChannelMetrics>,
-    events: [] as ProjectAgentLegacyTelemetryEvent[]
-};
-
-const getProjectAgentLegacyChannelMetric = (channel: string): ProjectAgentLegacyChannelMetrics => {
-    if (!projectAgentLegacyTelemetry.channels[channel]) {
-        projectAgentLegacyTelemetry.channels[channel] = {
-            calls: 0,
-            failures: 0,
-            retries: 0,
-            validationFailures: 0,
-            budgetExceededCount: 0,
-            lastDurationMs: 0,
-            lastErrorCode: null
-        };
-    }
-    return projectAgentLegacyTelemetry.channels[channel];
-};
-
-const trackProjectAgentLegacyEvent = (
-    channel: string,
-    event: ProjectAgentLegacyTelemetryEvent['event'],
-    details: { durationMs?: number; code?: string } = {}
-): void => {
-    projectAgentLegacyTelemetry.events = [...projectAgentLegacyTelemetry.events, {
-        channel,
-        event,
-        timestamp: Date.now(),
-        durationMs: details.durationMs,
-        code: details.code
-    }].slice(-MAX_PROJECT_AGENT_TELEMETRY_EVENTS);
-};
-
-const isProjectAgentLegacyValidationFailure = (error: Error): boolean => {
-    const message = getErrorMessage(error).toLowerCase();
-    return message.includes('required')
-        || message.includes('must be')
-        || message.includes('invalid')
-        || message.includes('non-empty');
-};
-
-const isProjectAgentLegacyRetryableError = (error: Error): boolean => {
-    const message = getErrorMessage(error).toLowerCase();
-    return message.includes('timeout')
-        || message.includes('temporar')
-        || message.includes('busy')
-        || message.includes('econnreset')
-        || message.includes('econnrefused')
-        || message.includes('network');
-};
-
-const getProjectAgentLegacyBudgetForChannel = (channel: string): number => {
-    if (
-        channel.endsWith(':get-status')
-        || channel.endsWith(':get-messages')
-        || channel.endsWith(':get-events')
-        || channel.endsWith(':get-task-history')
-        || channel.endsWith(':get-available-models')
-        || channel.endsWith(':health')
-    ) {
-        return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.FAST;
-    }
-    if (
-        channel.endsWith(':pause-task')
-        || channel.endsWith(':resume-task')
-        || channel.endsWith(':approve-plan')
-        || channel.endsWith(':reject-plan')
-        || channel.endsWith(':delete-task')
-        || channel.endsWith(':select-model')
-    ) {
-        return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.STANDARD;
-    }
-    return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.HEAVY;
-};
-
-const buildProjectAgentLegacyErrorPayload = (
-    error: Error
-): { error: string; errorCode: string; messageKey: string; retryable: boolean } => {
-    const validationFailure = isProjectAgentLegacyValidationFailure(error);
-    const retryable = !validationFailure && isProjectAgentLegacyRetryableError(error);
-    return {
-        error: getErrorMessage(error),
-        errorCode: validationFailure
-            ? PROJECT_AGENT_ERROR_CODE.VALIDATION
-            : retryable
-                ? PROJECT_AGENT_ERROR_CODE.TRANSIENT
-                : PROJECT_AGENT_ERROR_CODE.OPERATION_FAILED,
-        messageKey: validationFailure
-            ? PROJECT_AGENT_MESSAGE_KEY.VALIDATION_FAILED
-            : PROJECT_AGENT_MESSAGE_KEY.OPERATION_FAILED,
-        retryable
-    };
-};
-
-const trackProjectAgentLegacySuccess = (channel: string, durationMs: number): void => {
-    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
-    projectAgentLegacyTelemetry.totalCalls += 1;
-    channelMetric.calls += 1;
-    channelMetric.lastDurationMs = durationMs;
-    const budgetMs = getProjectAgentLegacyBudgetForChannel(channel);
-    if (durationMs > budgetMs) {
-        projectAgentLegacyTelemetry.budgetExceededCount += 1;
-        channelMetric.budgetExceededCount += 1;
-    }
-    trackProjectAgentLegacyEvent(channel, 'success', { durationMs });
-};
-
-const trackProjectAgentLegacyFailure = (
-    channel: string,
-    durationMs: number,
-    errorCode: string,
-    validationFailure: boolean
-): void => {
-    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
-    projectAgentLegacyTelemetry.totalCalls += 1;
-    projectAgentLegacyTelemetry.totalFailures += 1;
-    projectAgentLegacyTelemetry.lastErrorCode = errorCode;
-    channelMetric.calls += 1;
-    channelMetric.failures += 1;
-    channelMetric.lastDurationMs = durationMs;
-    channelMetric.lastErrorCode = errorCode;
-
-    if (validationFailure) {
-        projectAgentLegacyTelemetry.validationFailures += 1;
-        channelMetric.validationFailures += 1;
-        trackProjectAgentLegacyEvent(channel, 'validation-failure', { durationMs, code: errorCode });
-        return;
-    }
-
-    trackProjectAgentLegacyEvent(channel, 'failure', { durationMs, code: errorCode });
-};
-
-const trackProjectAgentLegacyRetries = (channel: string, count: number): void => {
-    if (count <= 0) {
-        return;
-    }
-    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
-    projectAgentLegacyTelemetry.totalRetries += count;
-    channelMetric.retries += count;
-    for (let index = 0; index < count; index += 1) {
-        trackProjectAgentLegacyEvent(channel, 'retry', { code: PROJECT_AGENT_ERROR_CODE.TRANSIENT });
-    }
-};
-
-const inferProjectAgentLegacyUiState = (result: Record<string, unknown>): ProjectAgentUiState => {
-    const explicitUiState = result.uiState;
-    if (explicitUiState === 'ready' || explicitUiState === 'empty' || explicitUiState === 'failure') {
-        return explicitUiState;
-    }
-    if (result.success === false) {
-        return 'failure';
-    }
-    const candidates: unknown[] = [result.events, result.messages, result.telemetry, result.data];
-    for (const candidate of candidates) {
-        if (Array.isArray(candidate)) {
-            return candidate.length === 0 ? 'empty' : 'ready';
-        }
-    }
-    return 'ready';
-};
-
-const createProjectAgentLegacyHealthPayload = () => {
-    const errorRate = projectAgentLegacyTelemetry.totalCalls === 0
-        ? 0
-        : projectAgentLegacyTelemetry.totalFailures / projectAgentLegacyTelemetry.totalCalls;
-    const status = errorRate > 0.05 || projectAgentLegacyTelemetry.budgetExceededCount > 0
-        ? 'degraded'
-        : 'healthy';
-
-    return {
-        status,
-        uiState: status === 'healthy' ? 'ready' : 'failure',
-        budgets: {
-            fastMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.FAST,
-            standardMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.STANDARD,
-            heavyMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.HEAVY
-        },
-        metrics: {
-            ...projectAgentLegacyTelemetry,
-            errorRate
-        }
-    };
-};
-
-const createLegacyProjectAgentHandler = (
-    channel: string,
-    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<unknown>
-) => {
-    return async (event: IpcMainInvokeEvent, ...args: IpcValue[]): Promise<unknown> => {
-        const startedAt = Date.now();
-        const retryResult = await withRetry(
-            async () => await handler(event, ...args),
-            {
-                maxRetries: 1,
-                initialDelayMs: 50,
-                maxDelayMs: 220,
-                backoffMultiplier: 2,
-                jitter: false,
-                operationName: channel,
-                isRetryable: error => isProjectAgentLegacyRetryableError(
-                    error instanceof Error ? error : new Error(getErrorMessage(error))
-                )
-            }
-        );
-
-        trackProjectAgentLegacyRetries(channel, Math.max(0, retryResult.attempts - 1));
-
-        if (!retryResult.success) {
-            const error = retryResult.error ?? new Error('Legacy project agent IPC operation failed');
-            const payload = buildProjectAgentLegacyErrorPayload(error);
-            trackProjectAgentLegacyFailure(
-                channel,
-                Date.now() - startedAt,
-                payload.errorCode,
-                payload.errorCode === PROJECT_AGENT_ERROR_CODE.VALIDATION
-            );
-            return {
-                success: false,
-                ...payload,
-                uiState: 'failure',
-                fallbackUsed: true
-            };
-        }
-
-        const durationMs = Date.now() - startedAt;
-        const result = retryResult.result;
-        if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
-            const resultRecord = result as Record<string, unknown>;
-            const uiState = inferProjectAgentLegacyUiState(resultRecord);
-            if (resultRecord.success === false) {
-                const error = new Error(
-                    typeof resultRecord.error === 'string'
-                        ? resultRecord.error
-                        : 'Legacy project agent IPC operation failed'
-                );
-                const payload = buildProjectAgentLegacyErrorPayload(error);
-                trackProjectAgentLegacyFailure(
-                    channel,
-                    durationMs,
-                    payload.errorCode,
-                    payload.errorCode === PROJECT_AGENT_ERROR_CODE.VALIDATION
-                );
-                return {
-                    ...resultRecord,
-                    ...payload,
-                    uiState: 'failure',
-                    fallbackUsed: true
-                };
-            }
-            trackProjectAgentLegacySuccess(channel, durationMs);
-            return {
-                ...resultRecord,
-                uiState
-            };
-        }
-
-        trackProjectAgentLegacySuccess(channel, durationMs);
-        return result;
-    };
-};
-
-const registerLegacyProjectAgentHandler = (
-    channel: string,
-    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<unknown>
-): void => {
-    registerBatchableHandler(channel, createLegacyProjectAgentHandler(channel, handler));
-};
-
 function validateString(value: unknown, name: string): string {
     if (typeof value !== 'string' || value.trim().length === 0) {
         throw new Error(`${name} must be a non-empty string`);
@@ -374,6 +49,28 @@ function validateNumber(value: unknown, name: string): number {
     }
     return value;
 }
+
+const AGENT_COLLABORATION_INTENTS: readonly AgentCollaborationIntent[] = [
+    'REQUEST_HELP',
+    'SHARE_CONTEXT',
+    'PROPOSE_CHANGE',
+    'BLOCKER_REPORT'
+];
+
+const AGENT_COLLABORATION_PRIORITIES: readonly AgentCollaborationPriority[] = [
+    'low',
+    'normal',
+    'high',
+    'urgent'
+];
+
+const PROJECT_UPDATE_THROTTLE_MS = 50;
+const STREAM_EVENT_VERSION = 'v1' as const;
+let councilEventSequence = 0;
+
+const createEventDedupeKey = (prefix: string, taskId: string, sequence: number): string => {
+    return `${STREAM_EVENT_VERSION}:${prefix}:${taskId}:${Date.now()}:${sequence}`;
+};
 
 function normalizeStartOptions(value: unknown): AgentStartOptions {
     const payload = asRecord(value);
@@ -390,9 +87,9 @@ function normalizeStartOptions(value: unknown): AgentStartOptions {
         nodeId: typeof payload.nodeId === 'string' ? payload.nodeId : undefined,
         priority:
             payload.priority === 'low'
-            || payload.priority === 'normal'
-            || payload.priority === 'high'
-            || payload.priority === 'critical'
+                || payload.priority === 'normal'
+                || payload.priority === 'high'
+                || payload.priority === 'critical'
                 ? payload.priority
                 : undefined,
         model: (() => {
@@ -411,8 +108,8 @@ function normalizeStartOptions(value: unknown): AgentStartOptions {
             : undefined,
         systemMode:
             payload.systemMode === 'fast'
-            || payload.systemMode === 'thinking'
-            || payload.systemMode === 'architect'
+                || payload.systemMode === 'thinking'
+                || payload.systemMode === 'architect'
                 ? payload.systemMode
                 : undefined,
         budgetLimitUsd: typeof payload.budgetLimitUsd === 'number' ? payload.budgetLimitUsd : undefined,
@@ -426,39 +123,6 @@ function asRecord(value: unknown): Record<string, unknown> {
         return value as Record<string, unknown>;
     }
     return {};
-}
-
-function getPayload<T>(value: unknown): T {
-    return asRecord(value) as T;
-}
-
-function toJsonValue(value: unknown): IpcValue {
-    if (value === null) {
-        return null;
-    }
-    if (value === undefined) {
-        return undefined;
-    }
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-        return value;
-    }
-    if (Array.isArray(value)) {
-        return value.map(item => {
-            const normalized = toJsonValue(item);
-            return normalized === undefined ? null : normalized;
-        });
-    }
-    if (typeof value === 'object') {
-        const normalizedObject: JsonObject = {};
-        for (const [key, entryValue] of Object.entries(value)) {
-            const normalized = toJsonValue(entryValue);
-            if (normalized !== undefined) {
-                normalizedObject[key] = normalized;
-            }
-        }
-        return normalizedObject;
-    }
-    return String(value);
 }
 
 /**
@@ -477,32 +141,65 @@ export function registerProjectAgentIpc(
     // Forward project updates to renderer
     const eventBus = projectAgentService.eventBus;
     let lastStatus: ProjectState['status'] = 'idle';
+    let updateSequence = 0;
+    let queuedState: ProjectState | null = null;
+    let updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const emitAgentEvent = (
+        windowInstance: BrowserWindow,
+        type: string,
+        data: Record<string, string | number | boolean | undefined>
+    ): void => {
+        const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
+        updateSequence += 1;
+        windowInstance.webContents.send('agent-event', {
+            v: STREAM_EVENT_VERSION,
+            dedupeKey: createEventDedupeKey(type, currentTaskId, updateSequence),
+            emittedAt: Date.now(),
+            type,
+            data,
+        });
+    };
+
+    const flushProjectUpdate = (): void => {
+        updateTimer = null;
+        const state = queuedState;
+        queuedState = null;
+        if (!state) {
+            return;
+        }
+
+        const win = getMainWindow();
+        if (!win || win.isDestroyed()) {
+            return;
+        }
+
+        win.webContents.send('project:update', state);
+        const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
+        if (currentTaskId && state.status === 'running' && lastStatus !== 'running') {
+            emitAgentEvent(win, 'agent:task_started', {
+                taskId: currentTaskId,
+                description: state.currentTask,
+            });
+        }
+
+        emitAgentEvent(win, 'agent:state_changed', {
+            taskId: currentTaskId,
+            state: state.status,
+        });
+        lastStatus = state.status;
+    };
+
+    const scheduleProjectUpdateFlush = (): void => {
+        if (updateTimer) {
+            return;
+        }
+        updateTimer = setTimeout(flushProjectUpdate, PROJECT_UPDATE_THROTTLE_MS);
+    };
 
     eventBus.on('project:update', (state: ProjectState) => {
-        const win = getMainWindow();
-        if (win && !win.isDestroyed()) {
-            win.webContents.send('project:update', state);
-
-            const currentTaskId = projectAgentService.getCurrentTaskId() ?? '';
-            if (currentTaskId && state.status === 'running' && lastStatus !== 'running') {
-                win.webContents.send('agent-event', {
-                    type: 'agent:task_started',
-                    data: {
-                        taskId: currentTaskId,
-                        description: state.currentTask,
-                    },
-                });
-            }
-
-            win.webContents.send('agent-event', {
-                type: 'agent:state_changed',
-                data: {
-                    taskId: currentTaskId,
-                    state: state.status,
-                },
-            });
-            lastStatus = state.status;
-        }
+        queuedState = state;
+        scheduleProjectUpdateFlush();
     });
     ipcMain.handle('project:start', createSafeIpcHandler('project:start', async (_, options: AgentStartOptions) => {
         const normalizedOptions = normalizeStartOptions(options);
@@ -513,6 +210,30 @@ export function registerProjectAgentIpc(
     ipcMain.handle('project:stop', createSafeIpcHandler('project:stop', async (_, payload?: { taskId?: string }) => {
         await projectAgentService.stop(payload?.taskId);
     }, undefined));
+
+    ipcMain.handle('project:pause-task', createSafeIpcHandler('project:pause-task', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        await projectAgentService.pauseTask(payload.taskId);
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle('project:resume-task', createSafeIpcHandler('project:resume-task', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.resumeTask(payload.taskId);
+        return {
+            success,
+            error: success ? undefined : 'Failed to resume task'
+        };
+    }, { success: false, error: 'Failed to resume task' }));
+
+    ipcMain.handle('project:save-snapshot', createSafeIpcHandler('project:save-snapshot', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const checkpointId = await projectAgentService.saveSnapshot(payload.taskId);
+        return {
+            success: Boolean(checkpointId),
+            checkpointId
+        };
+    }, { success: false, checkpointId: '' }));
 
     ipcMain.handle('project:reset-state', createSafeIpcHandler('project:reset-state', async () => {
         await projectAgentService.resetState();
@@ -537,9 +258,122 @@ export function registerProjectAgentIpc(
         }, undefined)
     );
 
+    ipcMain.handle('project:approve-current-plan', createSafeIpcHandler('project:approve-current-plan', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.approveCurrentPlan(payload.taskId);
+        return {
+            success,
+            error: success ? undefined : 'Failed to approve plan'
+        };
+    }, { success: false, error: 'Failed to approve plan' }));
+
+    ipcMain.handle('project:reject-current-plan', createSafeIpcHandler('project:reject-current-plan', async (_, payload: { taskId: string; reason?: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
+        return {
+            success,
+            error: success ? undefined : 'Failed to reject plan'
+        };
+    }, { success: false, error: 'Failed to reject plan' }));
+
     ipcMain.handle('project:get-status', createSafeIpcHandler('project:get-status', async (_, payload?: { taskId?: string }) => {
         return await projectAgentService.getStatus(payload?.taskId);
     }, null));
+
+    ipcMain.handle('project:get-messages', createSafeIpcHandler('project:get-messages', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        return await projectAgentService.getTaskMessages(payload.taskId);
+    }, { success: false, messages: [] }));
+
+    ipcMain.handle('project:get-events', createSafeIpcHandler('project:get-events', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        return await projectAgentService.getTaskEvents(payload.taskId);
+    }, { success: false, events: [] }));
+
+    // ===== MARCH1-IPC-001: Council Protocol =====
+    ipcMain.handle('project:council-generate-plan', createSafeIpcHandler('project:council-generate-plan', async (_, payload: { taskId: string; task: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.task, 'task');
+        await projectAgentService.generatePlan({
+            task: payload.task,
+            projectId: payload.taskId, // Re-mapped if needed
+            agentProfileId: 'council-president'
+        });
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle('project:council-get-proposal', createSafeIpcHandler('project:council-get-proposal', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const status = await projectAgentService.getStatus(payload.taskId);
+        return {
+            success: true,
+            plan: status.plan || []
+        };
+    }, { success: false, plan: [] }));
+
+    ipcMain.handle('project:council-approve-proposal', createSafeIpcHandler('project:council-approve-proposal', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.approveCurrentPlan(payload.taskId);
+        return { success, error: success ? undefined : 'Failed to approve current plan' };
+    }, { success: false, error: 'Failed' }));
+
+    ipcMain.handle('project:council-reject-proposal', createSafeIpcHandler('project:council-reject-proposal', async (_, payload: { taskId: string; reason?: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.rejectCurrentPlan(payload.taskId, payload.reason);
+        return { success, error: success ? undefined : 'Failed to reject current plan' };
+    }, { success: false, error: 'Failed' }));
+
+    ipcMain.handle('project:council-start-execution', createSafeIpcHandler('project:council-start-execution', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        // If not already explicitly started by approve? Usually approve starts it, but if manual:
+        const success = await projectAgentService.resumeTask(payload.taskId);
+        return { success, error: success ? undefined : 'Failed to start execution' };
+    }, { success: false, error: 'Failed' }));
+
+    ipcMain.handle('project:council-pause-execution', createSafeIpcHandler('project:council-pause-execution', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        await projectAgentService.pauseTask(payload.taskId);
+        return { success: true };
+    }, { success: false }));
+
+    ipcMain.handle('project:council-resume-execution', createSafeIpcHandler('project:council-resume-execution', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.resumeTask(payload.taskId);
+        return { success, error: success ? undefined : 'Failed to resume execution' };
+    }, { success: false, error: 'Failed' }));
+
+    ipcMain.handle('project:council-get-timeline', createSafeIpcHandler('project:council-get-timeline', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const events = await projectAgentService.getTaskEvents(payload.taskId);
+        return { success: true, events: events.events || [] };
+    }, { success: false, events: [] }));
+    // ============================================
+
+    ipcMain.handle('project:get-telemetry', createSafeIpcHandler('project:get-telemetry', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        return await projectAgentService.getTaskTelemetry(payload.taskId);
+    }, { success: false, telemetry: [] }));
+
+    ipcMain.handle('project:get-task-history', createSafeIpcHandler('project:get-task-history', async (_, payload: { projectId?: string }) => {
+        return await projectAgentService.getTaskHistory(payload.projectId ?? '');
+    }, []));
+
+    ipcMain.handle('project:delete-task', createSafeIpcHandler('project:delete-task', async (_, payload: { taskId: string }) => {
+        validateString(payload.taskId, 'taskId');
+        const success = await projectAgentService.deleteTask(payload.taskId);
+        return {
+            success,
+            error: success ? undefined : 'Failed to delete task'
+        };
+    }, { success: false, error: 'Failed to delete task' }));
+
+    ipcMain.handle('project:get-available-models', createSafeIpcHandler('project:get-available-models', async () => {
+        const models = await projectAgentService.getAvailableModels();
+        return {
+            success: true,
+            models
+        };
+    }, { success: false, models: [] }));
 
     ipcMain.handle('project:retry-step', createSafeIpcHandler('project:retry-step', async (_, payload: number | { index: number; taskId?: string }) => {
         if (typeof payload === 'number') {
@@ -877,6 +711,8 @@ export function registerProjectAgentIpc(
         return projectAgentService.getTeamworkAnalytics();
     }, null));
 
+    registerCouncilMessagingHandlers(projectAgentService);
+
     // AGENT-08: Performance Metrics
     ipcMain.handle('project:get-performance-metrics', createSafeIpcHandler('project:get-performance-metrics', async (_, taskId: string) => {
         validateString(taskId, 'taskId');
@@ -884,235 +720,214 @@ export function registerProjectAgentIpc(
         return metrics ?? null;
     }, null));
 
-    registerLegacyProjectAgentCompatibilityHandlers(projectAgentService);
+    ipcMain.handle('project:health', createSafeIpcHandler('project:health', async () => {
+        return {
+            success: true,
+            data: {
+                status: 'healthy'
+            }
+        };
+    }, { success: true, data: { status: 'healthy' } }));
+
     registerCanvasPersistenceHandlers(databaseService, projectAgentService);
 }
 
-/**
- * Registers legacy project agent compatibility handlers that bridge
- * old-style `project-agent:*` channels to the current service API.
- * @param projectAgentService - The project agent service instance
- */
-function registerLegacyProjectAgentCompatibilityHandlers(
-    projectAgentService: ProjectAgentService
-): void {
-    registerLegacyProjectAgentHandler('project-agent:health', async () => {
-        return {
-            success: true,
-            data: createProjectAgentLegacyHealthPayload()
+function registerCouncilMessagingHandlers(projectAgentService: ProjectAgentService): void {
+    ipcMain.handle('project:council-send-message', createSafeIpcHandler('project:council-send-message', async (
+        _,
+        payload: {
+            taskId: string;
+            stageId: string;
+            fromAgentId: string;
+            toAgentId?: string;
+            intent: AgentCollaborationIntent;
+            priority?: AgentCollaborationPriority;
+            payload: Record<string, string | number | boolean | null>;
+            expiresAt?: number;
+        }
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stageId, 'stageId');
+        validateString(payload.fromAgentId, 'fromAgentId');
+        if (
+            payload.toAgentId !== undefined
+            && (typeof payload.toAgentId !== 'string' || payload.toAgentId.trim().length === 0)
+        ) {
+            throw new Error('toAgentId must be a non-empty string when provided');
+        }
+        if (!AGENT_COLLABORATION_INTENTS.includes(payload.intent)) {
+            throw new Error(`Unsupported intent: ${payload.intent}`);
+        }
+        if (
+            payload.priority !== undefined
+            && !AGENT_COLLABORATION_PRIORITIES.includes(payload.priority)
+        ) {
+            throw new Error(`Unsupported priority: ${payload.priority}`);
+        }
+        if (payload.expiresAt !== undefined) {
+            validateNumber(payload.expiresAt, 'expiresAt');
+        }
+        return await projectAgentService.sendCollaborationMessage(payload);
+    }, null));
+
+    ipcMain.handle('project:council-get-messages', createSafeIpcHandler('project:council-get-messages', async (
+        _,
+        payload: {
+            taskId: string;
+            stageId?: string;
+            agentId?: string;
+            includeExpired?: boolean;
+        }
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        if (payload.stageId !== undefined) {
+            validateString(payload.stageId, 'stageId');
+        }
+        if (payload.agentId !== undefined) {
+            validateString(payload.agentId, 'agentId');
+        }
+        return await projectAgentService.getCollaborationMessages(payload);
+    }, []));
+
+    ipcMain.handle('project:council-cleanup-expired-messages', createSafeIpcHandler('project:council-cleanup-expired-messages', async (
+        _,
+        payload?: { taskId?: string }
+    ) => {
+        if (payload?.taskId !== undefined) {
+            validateString(payload.taskId, 'taskId');
+        }
+        const removed = await projectAgentService.cleanupExpiredCollaborationMessages(payload?.taskId);
+        return { success: true, removed };
+    }, { success: true, removed: 0 }));
+
+    ipcMain.handle('project:council-handle-quota-interrupt', createSafeIpcHandler('project:council-handle-quota-interrupt', async (
+        _,
+        payload: {
+            taskId: string;
+            stageId?: string;
+            provider: string;
+            model: string;
+            reason?: string;
+            autoSwitch?: boolean;
+        }
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.provider, 'provider');
+        validateString(payload.model, 'model');
+        if (payload.stageId !== undefined) {
+            validateString(payload.stageId, 'stageId');
+        }
+        const result = await projectAgentService.handleQuotaExhaustedInterrupt(payload);
+        councilEventSequence += 1;
+        const eventPayload = {
+            ...result,
+            v: STREAM_EVENT_VERSION,
+            dedupeKey: createEventDedupeKey('quota_interrupt', payload.taskId, councilEventSequence),
+            emittedAt: Date.now(),
         };
-    });
-    registerLegacyProjectAgentMutationHandlers(projectAgentService);
-    registerLegacyProjectAgentQueryHandlers(projectAgentService);
-}
-
-/**
- * Registers legacy mutation handlers for project agent task lifecycle
- * operations (start, pause, stop, resume, approve, reject, delete).
- * @param projectAgentService - The project agent service instance
- */
-function registerLegacyProjectAgentMutationHandlers(
-    projectAgentService: ProjectAgentService
-): void {
-    registerLegacyProjectAgentHandler('project-agent:start-task', async (_event, ...args) => {
-        const payload = getPayload<LegacyStartTaskPayload>(args[0]);
-        const options: AgentStartOptions = {
-            task: payload.description ?? '',
-            projectId: payload.projectId,
-            nodeId: payload.nodeId,
-            agentProfileId: 'default',
-            model:
-                payload.provider && payload.model
-                    ? {
-                        provider: payload.provider,
-                        model: payload.model,
-                    }
-                    : undefined,
-            attachments: (payload.files ?? []).map(file => ({
-                name: file.name ?? '',
-                path: file.path ?? '',
-                size: 0,
-            })),
-        };
-
-        await projectAgentService.start(options);
-        return {
-            success: true,
-            taskId: projectAgentService.getCurrentTaskId(),
-        };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:pause-task', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+        const windows = BrowserWindow.getAllWindows();
+        for (const windowInstance of windows) {
+            windowInstance.webContents.send('project:quota-interrupt', eventPayload);
         }
+        return result;
+    }, null));
 
-        await projectAgentService.pauseTask(taskId);
-        return { success: true };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:stop-task', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (taskId) {
-            await projectAgentService.pauseTask(taskId);
+    ipcMain.handle('project:council-register-worker-availability', createSafeIpcHandler('project:council-register-worker-availability', async (
+        _,
+        payload: {
+            taskId: string;
+            agentId: string;
+            status: 'available' | 'busy' | 'offline';
+            reason?: string;
+            skills?: string[];
+            contextReadiness?: number;
         }
-        await projectAgentService.stop();
-        return { success: true };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:save-snapshot', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.agentId, 'agentId');
+        if (!['available', 'busy', 'offline'].includes(payload.status)) {
+            throw new Error('status must be one of available | busy | offline');
         }
-
-        const checkpointId = await projectAgentService.saveSnapshot(taskId);
-        return {
-            success: Boolean(checkpointId),
-            checkpointId,
-        };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:resume-task', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+        if (payload.skills && !Array.isArray(payload.skills)) {
+            throw new Error('skills must be an array');
         }
-
-        const success = await projectAgentService.resumeTask(taskId);
-        return { success, error: success ? undefined : 'Failed to resume task' };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:approve-plan', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+        if (payload.contextReadiness !== undefined) {
+            validateNumber(payload.contextReadiness, 'contextReadiness');
         }
-        const success = await projectAgentService.approveCurrentPlan(taskId);
-        return { success, error: success ? undefined : 'Failed to approve plan' };
-    });
+        return projectAgentService.registerWorkerAvailability(payload);
+    }, null));
 
-    registerLegacyProjectAgentHandler('project-agent:reject-plan', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string; reason?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+    ipcMain.handle('project:council-list-available-workers', createSafeIpcHandler('project:council-list-available-workers', async (
+        _,
+        payload: { taskId: string }
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        return projectAgentService.listAvailableWorkers(payload.taskId);
+    }, []));
+
+    ipcMain.handle('project:council-score-helper-candidates', createSafeIpcHandler('project:council-score-helper-candidates', async (
+        _,
+        payload: {
+            taskId: string;
+            stageId: string;
+            requiredSkills: string[];
+            blockedAgentIds?: string[];
+            contextReadinessOverrides?: Record<string, number>;
         }
-        const success = await projectAgentService.rejectCurrentPlan(taskId, payload.reason);
-        return { success, error: success ? undefined : 'Failed to reject plan' };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:delete-task', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stageId, 'stageId');
+        if (!Array.isArray(payload.requiredSkills)) {
+            throw new Error('requiredSkills must be an array');
         }
-        const success = await projectAgentService.deleteTask(taskId);
-        return { success, error: success ? undefined : 'Failed to delete task' };
-    });
+        return projectAgentService.scoreHelperCandidates(payload);
+    }, []));
 
-    registerLegacyProjectAgentHandler('project-agent:select-model', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string; provider?: string; model?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId || !payload.provider || !payload.model) {
-            return { success: false, error: 'taskId, provider and model are required' };
+    ipcMain.handle('project:council-generate-helper-handoff', createSafeIpcHandler('project:council-generate-helper-handoff', async (
+        _,
+        payload: {
+            taskId: string;
+            stageId: string;
+            ownerAgentId: string;
+            helperAgentId: string;
+            stageGoal: string;
+            acceptanceCriteria: string[];
+            constraints: string[];
+            contextNotes?: string;
         }
-        const success = await projectAgentService.selectModel(
-            taskId,
-            payload.provider,
-            payload.model
-        );
-        return { success, error: success ? undefined : 'Failed to select model' };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:subscribe-events', async () => {
-        return { success: true };
-    });
-}
-
-/**
- * Registers legacy query handlers for retrieving project agent status,
- * messages, events, telemetry, task history, and available models.
- * @param projectAgentService - The project agent service instance
- */
-function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAgentService): void {
-    registerLegacyProjectAgentHandler('project-agent:get-status', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, error: 'taskId is required' };
+    ) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.stageId, 'stageId');
+        validateString(payload.ownerAgentId, 'ownerAgentId');
+        validateString(payload.helperAgentId, 'helperAgentId');
+        validateString(payload.stageGoal, 'stageGoal');
+        if (!Array.isArray(payload.acceptanceCriteria)) {
+            throw new Error('acceptanceCriteria must be an array');
         }
-        return await projectAgentService.getTaskStatusDetails(taskId);
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:get-messages', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, messages: [] };
+        if (!Array.isArray(payload.constraints)) {
+            throw new Error('constraints must be an array');
         }
-        return await projectAgentService.getTaskMessages(taskId);
-    });
+        return projectAgentService.generateHelperHandoffPackage(payload);
+    }, null));
 
-    registerLegacyProjectAgentHandler('project-agent:get-events', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, events: [] };
+    ipcMain.handle('project:council-review-helper-merge', createSafeIpcHandler('project:council-review-helper-merge', async (
+        _,
+        payload: {
+            acceptanceCriteria: string[];
+            constraints: string[];
+            helperOutput: string;
+            reviewerNotes?: string;
         }
-        const result = await projectAgentService.getTaskEvents(taskId);
-        return {
-            success: result.success,
-            events: result.events.map(eventItem => ({
-                id: eventItem.id,
-                type: eventItem.type,
-                timestamp:
-                    eventItem.timestamp instanceof Date
-                        ? eventItem.timestamp.toISOString()
-                        : String(eventItem.timestamp),
-                payload: toJsonValue(eventItem.payload) ?? null,
-            })),
-        };
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:get-telemetry', async (_event, ...args) => {
-        const payload = getPayload<{ taskId?: string }>(args[0]);
-        const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
-        if (!taskId) {
-            return { success: false, telemetry: [] };
+    ) => {
+        if (!Array.isArray(payload.acceptanceCriteria)) {
+            throw new Error('acceptanceCriteria must be an array');
         }
-        return await projectAgentService.getTaskTelemetry(taskId);
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:get-task-history', async (_event, ...args) => {
-        const payload = getPayload<{ projectId?: string }>(args[0]);
-        const projectId = typeof args[0] === 'string' ? args[0] : payload.projectId;
-        if (!projectId) {
-            return [];
+        if (!Array.isArray(payload.constraints)) {
+            throw new Error('constraints must be an array');
         }
-        const history = await projectAgentService.getTaskHistory(projectId);
-        return history.map(item => ({
-            id: item.id,
-            description: item.description,
-            provider: item.provider,
-            model: item.model,
-            status: item.status,
-            createdAt: item.createdAt,
-            updatedAt: item.updatedAt,
-            latestCheckpointId: item.latestCheckpointId,
-        }));
-    });
-
-    registerLegacyProjectAgentHandler('project-agent:get-available-models', async () => {
-        return projectAgentService.getAvailableModels();
-    });
+        validateString(payload.helperOutput, 'helperOutput');
+        return projectAgentService.reviewHelperMergeGate(payload);
+    }, { accepted: false, verdict: 'REJECT', reasons: ['Invalid payload'], requiredFixes: [], reviewedAt: Date.now() }));
 }
 
 /**
