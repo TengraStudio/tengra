@@ -49,8 +49,6 @@ export function useProjectWorkspaceController({
 
         const listener = handleProgress as Parameters<typeof window.electron.ipcRenderer.on>[1];
 
-        // Remove any existing listeners first to prevent duplicates
-        window.electron.ipcRenderer.removeAllListeners('code:indexing-progress');
         window.electron.ipcRenderer.on('code:indexing-progress', listener);
 
         return () => {

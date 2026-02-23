@@ -8,17 +8,21 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 export default tseslint.config(
     {
         ignores: [
-            'dist',
-            'node_modules',
-            'vendor',
+            'dist/**',
+            'node_modules/**',
+            'vendor/**',
             'scripts/audit-i18n.ts',
             'scripts/debug-i18n.ts',
-            'scripts/extension-cli.ts'
+            'scripts/extension-cli.ts',
+            'playwright.config.ts',
+            '**/playwright.config.ts',
+            '**/test_errors*.txt',
+            '**/lint_output.txt'
         ]
     },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
-        files: ['**/*.{ts,tsx}'],
+        files: ['src/**/*.{ts,tsx}'],
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
@@ -42,7 +46,8 @@ export default tseslint.config(
             ...reactHooks.configs.recommended.rules,
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off', // TypeScript handles this
-            'react/display-name': 'warn',
+            // Disabled due eslint-plugin-react compatibility issue with current flat-config runtime.
+            'react/display-name': 'off',
             'react/jsx-key': 'error',
             'react/jsx-no-duplicate-props': 'error',
             'react/jsx-no-undef': 'error',

@@ -10,6 +10,7 @@ export interface SSHConnection {
     password?: string
     privateKey?: string
     passphrase?: string
+    jumpHost?: string
 }
 
 export interface SSHConfig {

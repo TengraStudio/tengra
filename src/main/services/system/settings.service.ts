@@ -138,11 +138,37 @@ import { LinkedAccount } from '@main/services/data/database.service';
 import { AuthService } from '@main/services/security/auth.service';
 
 export class SettingsService extends BaseService {
+    private static readonly ERROR_CODES = {
+        SAVE_FAILED: 'SETTINGS_SAVE_FAILED',
+        SAVE_RETRY_EXHAUSTED: 'SETTINGS_SAVE_RETRY_EXHAUSTED',
+    } as const;
+    private static readonly PERFORMANCE_BUDGET = {
+        loadSettingsMs: 400,
+        saveSettingsMs: 600,
+        saveRetryCount: 2,
+    } as const;
+    private static readonly UI_MESSAGE_KEYS = {
+        ready: 'serviceHealth.settings.ready',
+        empty: 'serviceHealth.settings.empty',
+        failure: 'serviceHealth.settings.failure',
+    } as const;
+    private readonly SAVE_RETRY_POLICY = {
+        maxAttempts: 2,
+        delayMs: 100,
+    } as const;
     private settingsPath: string;
     private settings: AppSettings;
     private saveInProgress: boolean = false;
     private pendingSave: Partial<AppSettings> | null = null;
     private initialized: boolean = false;
+    private telemetry = {
+        loadAttempts: 0,
+        saveAttempts: 0,
+        saveFailures: 0,
+        lastLoadAt: 0,
+        lastSaveAt: 0,
+        recentEvents: [] as Array<{ name: string; timestamp: number }>,
+    };
 
     constructor(
         dataService?: DataService,
@@ -172,6 +198,7 @@ export class SettingsService extends BaseService {
         }
 
         appLogger.info('SettingsService', 'Initialized successfully');
+        this.recordTelemetryEvent('settings.initialize.success');
     }
 
     async cleanup(): Promise<void> {
@@ -187,10 +214,14 @@ export class SettingsService extends BaseService {
     }
 
     private async loadSettings(): Promise<AppSettings> {
+        this.telemetry.loadAttempts += 1;
         try {
             await fs.promises.access(this.settingsPath);
         } catch {
-            return this.initializeDefaults();
+            const defaults = await this.initializeDefaults();
+            this.telemetry.lastLoadAt = Date.now();
+            this.recordTelemetryEvent('settings.load.defaults');
+            return defaults;
         }
 
         let loaded: Partial<AppSettings> = {};
@@ -218,7 +249,10 @@ export class SettingsService extends BaseService {
             loaded = {};
         }
 
-        return this.mergeWithDefaults(loaded);
+        const merged = await this.mergeWithDefaults(loaded);
+        this.telemetry.lastLoadAt = Date.now();
+        this.recordTelemetryEvent('settings.load.success');
+        return merged;
     }
 
     private async parseAndRecoverSettings(data: string): Promise<Partial<AppSettings>> {
@@ -467,12 +501,18 @@ export class SettingsService extends BaseService {
     }
 
     async saveSettings(newSettings: Partial<AppSettings>): Promise<AppSettings> {
+        if (!newSettings || typeof newSettings !== 'object' || Array.isArray(newSettings)) {
+            throw new Error('Settings payload must be a non-array object');
+        }
+
         if (this.saveInProgress) {
             this.pendingSave = { ...this.pendingSave, ...newSettings };
             return this.settings;
         }
 
         this.saveInProgress = true;
+        this.telemetry.saveAttempts += 1;
+        this.recordTelemetryEvent('settings.save.started');
         const currentSettings = { ...this.settings };
 
         if (this.authService) {
@@ -486,7 +526,15 @@ export class SettingsService extends BaseService {
             await this.syncTokensToAuth(newSettings, currentSettings);
         }
 
-        await this.persistSettingsToDisk();
+        const persisted = await this.persistSettingsToDisk();
+        if (!persisted) {
+            this.settings = currentSettings;
+            this.telemetry.saveFailures += 1;
+            this.recordTelemetryEvent('settings.save.failed');
+        } else {
+            this.telemetry.lastSaveAt = Date.now();
+            this.recordTelemetryEvent('settings.save.success');
+        }
 
         this.saveInProgress = false;
         this.processPendingSaves();
@@ -628,20 +676,28 @@ export class SettingsService extends BaseService {
         }
     }
 
-    private async persistSettingsToDisk(): Promise<void> {
-        try {
-            const settingsToSave = this.prepareSettingsForSaving();
-            const jsonString = JSON.stringify(settingsToSave, null, 2);
+    private async persistSettingsToDisk(): Promise<boolean> {
+        const settingsToSave = this.prepareSettingsForSaving();
+        const jsonString = JSON.stringify(settingsToSave, null, 2);
 
-            const tempPath = this.settingsPath + '.tmp';
-            await fs.promises.writeFile(tempPath, jsonString, 'utf8');
-            await fs.promises.rename(tempPath, this.settingsPath);
-        } catch (error) {
-            appLogger.error(
-                'SettingsService',
-                `Failed to save settings: ${getErrorMessage(error as Error)}`
-            );
+        const tempPath = this.settingsPath + '.tmp';
+        for (let attempt = 1; attempt <= this.SAVE_RETRY_POLICY.maxAttempts; attempt += 1) {
+            try {
+                await fs.promises.writeFile(tempPath, jsonString, 'utf8');
+                await fs.promises.rename(tempPath, this.settingsPath);
+                return true;
+            } catch (error) {
+                appLogger.error(
+                    'SettingsService',
+                    `[${SettingsService.ERROR_CODES.SAVE_FAILED}] Failed to save settings (attempt ${attempt}/${this.SAVE_RETRY_POLICY.maxAttempts}): ${getErrorMessage(error as Error)}`
+                );
+                if (attempt < this.SAVE_RETRY_POLICY.maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, this.SAVE_RETRY_POLICY.delayMs));
+                }
+            }
         }
+        appLogger.error('SettingsService', `[${SettingsService.ERROR_CODES.SAVE_RETRY_EXHAUSTED}] Settings save retries exhausted`);
+        return false;
     }
 
     private prepareSettingsForSaving(): AppSettings {
@@ -703,7 +759,49 @@ export class SettingsService extends BaseService {
 
     async reloadSettings(): Promise<AppSettings> {
         this.settings = await this.loadSettings();
+        this.recordTelemetryEvent('settings.reload.success');
         return this.settings;
+    }
+
+    getHealthMetrics(): {
+        status: 'healthy' | 'degraded';
+        uiState: 'ready' | 'empty' | 'failure';
+        messageKey: string;
+        performanceBudget: typeof SettingsService.PERFORMANCE_BUDGET;
+        loadAttempts: number;
+        saveAttempts: number;
+        saveFailures: number;
+        lastLoadAt: number;
+        lastSaveAt: number;
+        recentEvents: Array<{ name: string; timestamp: number }>;
+    } {
+        const uiState = this.telemetry.saveFailures > 0
+            ? 'failure'
+            : this.initialized
+                ? 'ready'
+                : 'empty';
+        return {
+            status: this.telemetry.saveFailures > 0 ? 'degraded' : 'healthy',
+            uiState,
+            messageKey: SettingsService.UI_MESSAGE_KEYS[uiState],
+            performanceBudget: SettingsService.PERFORMANCE_BUDGET,
+            loadAttempts: this.telemetry.loadAttempts,
+            saveAttempts: this.telemetry.saveAttempts,
+            saveFailures: this.telemetry.saveFailures,
+            lastLoadAt: this.telemetry.lastLoadAt,
+            lastSaveAt: this.telemetry.lastSaveAt,
+            recentEvents: [...this.telemetry.recentEvents],
+        };
+    }
+
+    private recordTelemetryEvent(name: string): void {
+        this.telemetry.recentEvents.push({
+            name,
+            timestamp: Date.now(),
+        });
+        if (this.telemetry.recentEvents.length > 20) {
+            this.telemetry.recentEvents.shift();
+        }
     }
 
     private findTokenInAuth(

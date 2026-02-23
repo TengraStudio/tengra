@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export interface SSHProfileTestUIResult {
     success: boolean;
@@ -19,6 +19,7 @@ interface AddConnectionModalProps {
         password?: string;
         privateKey?: string;
         name?: string;
+        jumpHost?: string;
     }
     setNewConnection: (val: AddConnectionModalProps['newConnection']) => void
     shouldSaveProfile: boolean
@@ -26,6 +27,25 @@ interface AddConnectionModalProps {
     isConnecting: boolean
     onConnect: () => void
     onTestProfile: () => Promise<SSHProfileTestUIResult>
+}
+
+const JUMP_HOST_CHAIN_STORAGE_KEY = 'ssh.jump-host-chains.v1';
+
+function loadJumpHostChains(): string[] {
+    try {
+        const raw = localStorage.getItem(JUMP_HOST_CHAIN_STORAGE_KEY);
+        if (!raw) {
+            return [];
+        }
+        const parsed = JSON.parse(raw) as string[];
+        return parsed.filter(chain => typeof chain === 'string' && chain.trim().length > 0);
+    } catch {
+        return [];
+    }
+}
+
+function saveJumpHostChains(chains: string[]): void {
+    localStorage.setItem(JUMP_HOST_CHAIN_STORAGE_KEY, JSON.stringify(chains));
 }
 
 export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
@@ -43,6 +63,25 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
     const [isTesting, setIsTesting] = useState(false);
     const [testMessage, setTestMessage] = useState('');
     const [testState, setTestState] = useState<'ready' | 'failure' | null>(null);
+    const [rememberChain, setRememberChain] = useState(false);
+    const [savedChains, setSavedChains] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        setSavedChains(loadJumpHostChains());
+    }, [isOpen]);
+
+    const handleConnectClick = () => {
+        const chain = newConnection.jumpHost?.trim();
+        if (rememberChain && chain) {
+            const nextChains = Array.from(new Set([chain, ...savedChains])).slice(0, 10);
+            setSavedChains(nextChains);
+            saveJumpHostChains(nextChains);
+        }
+        onConnect();
+    };
 
     const handleTestProfile = async () => {
         setIsTesting(true);
@@ -110,6 +149,47 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                         style={{ height: '80px', fontSize: '0.8em' }}
                     />
                 </div>
+                <div className="form-group">
+                    <label>{t('ssh.jumpHostChain')}</label>
+                    <input
+                        value={newConnection.jumpHost ?? ''}
+                        onChange={event => setNewConnection({ ...newConnection, jumpHost: event.target.value })}
+                        placeholder={t('ssh.placeholders.jumpHostChain')}
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">{t('ssh.jumpHostChainHint')}</div>
+                </div>
+                {savedChains.length > 0 && (
+                    <div className="form-group">
+                        <label>{t('ssh.savedJumpHostChains')}</label>
+                        <select
+                            value=""
+                            onChange={event => {
+                                const selected = event.target.value;
+                                if (!selected) {
+                                    return;
+                                }
+                                setNewConnection({ ...newConnection, jumpHost: selected });
+                            }}
+                        >
+                            <option value="">{t('ssh.selectSavedJumpHostChain')}</option>
+                            {savedChains.map(chain => (
+                                <option key={chain} value={chain}>{chain}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <input
+                        type="checkbox"
+                        checked={rememberChain}
+                        onChange={event => setRememberChain(event.target.checked)}
+                        id="saveJumpHostChain"
+                        style={{ width: 'auto', marginRight: '8px' }}
+                    />
+                    <label htmlFor="saveJumpHostChain" style={{ marginBottom: 0 }}>
+                        {t('ssh.saveJumpHostChain')}
+                    </label>
+                </div>
                 <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <input
                         type="checkbox"
@@ -141,7 +221,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
                     >
                         {isTesting ? t('ssh.testingProfile') : t('ssh.testProfile')}
                     </button>
-                    <button className="primary-btn" onClick={onConnect} disabled={isConnecting || !newConnection.host}>
+                    <button className="primary-btn" onClick={handleConnectClick} disabled={isConnecting || !newConnection.host}>
                         {isConnecting ? t('ssh.connecting') : t('ssh.connect')}
                     </button>
                 </div>

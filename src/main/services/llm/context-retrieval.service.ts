@@ -1,6 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import { DatabaseService, SemanticFragment } from '@main/services/data/database.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
+import { ContextRetrievalInputSchema } from '@shared/schemas/service-hardening.schema';
 
 export interface RetrievalResult {
     contextString: string;
@@ -23,6 +24,46 @@ interface ScoredContextItem {
     score: number;
 }
 
+const CONTEXT_RETRIEVAL_SERVICE_NAME = 'ContextRetrieval';
+const CONTEXT_RETRIEVAL_RETRY_ATTEMPTS = 2;
+const CONTEXT_RETRIEVAL_RETRY_DELAY_MS = 35;
+const CONTEXT_RETRIEVAL_BUDGET_MS = 700;
+
+const CONTEXT_RETRIEVAL_ERROR_CODE = {
+    validation: 'CONTEXT_RETRIEVAL_VALIDATION',
+    operationFailed: 'CONTEXT_RETRIEVAL_OPERATION_FAILED',
+    transient: 'CONTEXT_RETRIEVAL_TRANSIENT'
+} as const;
+
+const CONTEXT_RETRIEVAL_UI_MESSAGE_KEYS = {
+    ready: 'contextRetrieval.health.ready',
+    empty: 'contextRetrieval.health.empty',
+    failure: 'contextRetrieval.health.failure'
+} as const;
+
+type ContextRetrievalErrorCode = typeof CONTEXT_RETRIEVAL_ERROR_CODE[keyof typeof CONTEXT_RETRIEVAL_ERROR_CODE];
+
+export interface ContextRetrievalHealthSnapshot {
+    status: 'healthy' | 'degraded';
+    uiState: 'ready' | 'empty' | 'failure';
+    messageKey: string;
+    budgets: {
+        standardMs: number;
+    };
+    metrics: {
+        totalRequests: number;
+        failedRequests: number;
+        validationFailures: number;
+        retries: number;
+        fallbackResponses: number;
+        budgetExceededCount: number;
+        lastDurationMs: number;
+        lastErrorCode?: ContextRetrievalErrorCode;
+        lastRetrievedAt?: number;
+        errorRate: number;
+    };
+}
+
 export class ContextRetrievalService {
     private analytics = {
         totalRequests: 0,
@@ -30,7 +71,13 @@ export class ContextRetrievalService {
         totalSources: 0,
         totalContextLength: 0,
         lastRetrievedAt: 0,
-        queryCounts: new Map<string, number>()
+        queryCounts: new Map<string, number>(),
+        validationFailures: 0,
+        retries: 0,
+        fallbackResponses: 0,
+        budgetExceededCount: 0,
+        lastDurationMs: 0,
+        lastErrorCode: undefined as ContextRetrievalErrorCode | undefined
     };
 
     constructor(
@@ -39,37 +86,55 @@ export class ContextRetrievalService {
     ) { }
 
     async retrieveContext(query: string, projectId?: string, limit: number = 5): Promise<RetrievalResult> {
+        const startedAt = Date.now();
         try {
             this.analytics.totalRequests++;
-            let projectPath: string | undefined;
-            if (projectId) {
-                // Try to find project by ID to get its path
-                const projects = await this.db.getProjects();
-                const project = projects.find(p => p.id === projectId || p.path === projectId);
-                projectPath = project?.path ?? projectId; // Fallback to projectId if it's already a path
+            const parsed = ContextRetrievalInputSchema.safeParse({ query, projectId, limit });
+            if (!parsed.success) {
+                this.analytics.validationFailures++;
+                this.analytics.failedRequests++;
+                this.analytics.lastErrorCode = CONTEXT_RETRIEVAL_ERROR_CODE.validation;
+                this.finalizeDurationMetric(startedAt);
+                appLogger.warn(CONTEXT_RETRIEVAL_SERVICE_NAME, `Validation failed: ${parsed.error.issues[0]?.message ?? 'Unknown validation issue'}`);
+                return { contextString: '', sources: [] };
             }
 
-            const vector = await this.embedding.generateEmbedding(query);
+            const normalizedQuery = parsed.data.query.trim();
+            const effectiveLimit = parsed.data.limit ?? 5;
+            const effectiveProjectId = parsed.data.projectId;
+
+            let projectPath: string | undefined;
+            if (effectiveProjectId) {
+                // Try to find project by ID to get its path
+                const projects = await this.db.getProjects();
+                const project = projects.find(p => p.id === effectiveProjectId || p.path === effectiveProjectId);
+                projectPath = project?.path ?? effectiveProjectId; // Fallback to projectId if it's already a path
+            }
+
+            const vector = await this.generateEmbeddingWithRetry(normalizedQuery);
 
             // Parallel search with partial-failure tolerance
             const [symbolsResult, fragmentsResult] = await Promise.allSettled([
                 this.db.searchCodeSymbols(vector, projectPath),
-                this.db.searchSemanticFragments(vector, limit, projectPath)
+                this.db.searchSemanticFragments(vector, effectiveLimit, projectPath)
             ]);
             const symbols =
                 symbolsResult.status === 'fulfilled' ? symbolsResult.value : [];
             const fragments =
                 fragmentsResult.status === 'fulfilled' ? fragmentsResult.value : [];
+            if (symbolsResult.status === 'rejected' || fragmentsResult.status === 'rejected') {
+                this.analytics.fallbackResponses++;
+            }
 
             if (symbolsResult.status === 'rejected') {
                 appLogger.warn(
-                    'ContextRetrieval',
+                    CONTEXT_RETRIEVAL_SERVICE_NAME,
                     `Code symbol search failed: ${symbolsResult.reason instanceof Error ? symbolsResult.reason.message : String(symbolsResult.reason)}`
                 );
             }
             if (fragmentsResult.status === 'rejected') {
                 appLogger.warn(
-                    'ContextRetrieval',
+                    CONTEXT_RETRIEVAL_SERVICE_NAME,
                     `Semantic fragment search failed: ${fragmentsResult.reason instanceof Error ? fragmentsResult.reason.message : String(fragmentsResult.reason)}`
                 );
             }
@@ -98,7 +163,7 @@ export class ContextRetrievalService {
             if (fragments.length > 0) {
                 contextParts.push("\nRelevant Context:");
                 const dedupedFragments = this.deduplicateFragments(fragments);
-                dedupedFragments.slice(0, limit).forEach(frag => {
+                dedupedFragments.slice(0, effectiveLimit).forEach(frag => {
                     const snippet = frag.content.trim().substring(0, 300);
                     contextParts.push(`- [${frag.source}] ${snippet}...`);
                     sourceSet.add(frag.sourceId);
@@ -118,7 +183,7 @@ export class ContextRetrievalService {
             }
 
             appLogger.info(
-                'ContextRetrieval',
+                CONTEXT_RETRIEVAL_SERVICE_NAME,
                 `Retrieved context with ${scoredItems.length} items and ${sourceSet.size} unique sources`
             );
 
@@ -126,12 +191,16 @@ export class ContextRetrievalService {
                 contextString: contextParts.join('\n'),
                 sources: Array.from(sourceSet)
             };
-            this.recordRetrievalAnalytics(query, result);
+            this.recordRetrievalAnalytics(normalizedQuery, result);
+            this.analytics.lastErrorCode = undefined;
+            this.finalizeDurationMetric(startedAt);
             return result;
 
         } catch (error) {
             this.analytics.failedRequests++;
-            appLogger.error('ContextRetrieval', 'Failed to retrieve context', error as Error);
+            this.analytics.lastErrorCode = CONTEXT_RETRIEVAL_ERROR_CODE.operationFailed;
+            this.finalizeDurationMetric(startedAt);
+            appLogger.error(CONTEXT_RETRIEVAL_SERVICE_NAME, 'Failed to retrieve context', error as Error);
             return { contextString: '', sources: [] };
         }
     }
@@ -169,6 +238,42 @@ export class ContextRetrievalService {
             projectId,
             contextString: result.contextString,
             sources: result.sources
+        };
+    }
+
+    getHealthStatus(): ContextRetrievalHealthSnapshot {
+        const totalRequests = this.analytics.totalRequests;
+        const failedRequests = this.analytics.failedRequests;
+        const errorRate = totalRequests === 0 ? 0 : failedRequests / totalRequests;
+
+        const uiState = totalRequests === 0
+            ? 'empty'
+            : failedRequests > 0
+                ? 'failure'
+                : 'ready';
+        const status = errorRate > 0.05 || this.analytics.budgetExceededCount > 0
+            ? 'degraded'
+            : 'healthy';
+
+        return {
+            status,
+            uiState,
+            messageKey: CONTEXT_RETRIEVAL_UI_MESSAGE_KEYS[uiState],
+            budgets: {
+                standardMs: CONTEXT_RETRIEVAL_BUDGET_MS
+            },
+            metrics: {
+                totalRequests,
+                failedRequests,
+                validationFailures: this.analytics.validationFailures,
+                retries: this.analytics.retries,
+                fallbackResponses: this.analytics.fallbackResponses,
+                budgetExceededCount: this.analytics.budgetExceededCount,
+                lastDurationMs: this.analytics.lastDurationMs,
+                lastErrorCode: this.analytics.lastErrorCode,
+                lastRetrievedAt: this.analytics.lastRetrievedAt || undefined,
+                errorRate
+            }
         };
     }
 
@@ -221,5 +326,34 @@ export class ContextRetrievalService {
         }
         const currentCount = this.analytics.queryCounts.get(normalizedQuery) ?? 0;
         this.analytics.queryCounts.set(normalizedQuery, currentCount + 1);
+    }
+
+    private finalizeDurationMetric(startedAt: number): void {
+        const durationMs = Date.now() - startedAt;
+        this.analytics.lastDurationMs = durationMs;
+        if (durationMs > CONTEXT_RETRIEVAL_BUDGET_MS) {
+            this.analytics.budgetExceededCount += 1;
+            appLogger.warn(CONTEXT_RETRIEVAL_SERVICE_NAME, `Performance budget exceeded: ${durationMs}ms > ${CONTEXT_RETRIEVAL_BUDGET_MS}ms`);
+        }
+    }
+
+    private async generateEmbeddingWithRetry(query: string): Promise<number[]> {
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= CONTEXT_RETRIEVAL_RETRY_ATTEMPTS; attempt += 1) {
+            try {
+                return await this.embedding.generateEmbedding(query);
+            } catch (caughtError) {
+                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
+                lastError = error;
+                if (attempt >= CONTEXT_RETRIEVAL_RETRY_ATTEMPTS) {
+                    break;
+                }
+                this.analytics.retries++;
+                this.analytics.lastErrorCode = CONTEXT_RETRIEVAL_ERROR_CODE.transient;
+                appLogger.warn(CONTEXT_RETRIEVAL_SERVICE_NAME, `Embedding retry ${attempt}/${CONTEXT_RETRIEVAL_RETRY_ATTEMPTS - 1}: ${error.message}`);
+                await new Promise(resolve => setTimeout(resolve, CONTEXT_RETRIEVAL_RETRY_DELAY_MS));
+            }
+        }
+        throw (lastError ?? new Error('Unknown context retrieval embedding failure'));
     }
 }

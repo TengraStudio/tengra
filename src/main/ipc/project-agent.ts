@@ -1,6 +1,7 @@
 import { DatabaseService } from '@main/services/data/database.service';
 import { ProjectAgentService } from '@main/services/project/project-agent.service';
 import { registerBatchableHandler } from '@main/utils/ipc-batch.util';
+import { withRetry } from '@main/utils/ipc-retry.util';
 import { createSafeIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { IpcValue, JsonObject } from '@shared/types/common';
 import {
@@ -19,7 +20,8 @@ import {
     VotingConfiguration,
     VotingSession,
 } from '@shared/types/project-agent';
-import { BrowserWindow, ipcMain } from 'electron';
+import { getErrorMessage } from '@shared/utils/error.util';
+import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 
 interface CanvasNode {
     id: string;
@@ -44,6 +46,320 @@ interface LegacyStartTaskPayload {
     model?: string;
     nodeId?: string;
 }
+
+type ProjectAgentUiState = 'ready' | 'empty' | 'failure';
+
+const PROJECT_AGENT_ERROR_CODE = {
+    VALIDATION: 'PROJECT_AGENT_VALIDATION_ERROR',
+    OPERATION_FAILED: 'PROJECT_AGENT_OPERATION_FAILED',
+    TRANSIENT: 'PROJECT_AGENT_TRANSIENT_ERROR'
+} as const;
+
+const PROJECT_AGENT_MESSAGE_KEY = {
+    VALIDATION_FAILED: 'errors.unexpected',
+    OPERATION_FAILED: 'errors.unexpected'
+} as const;
+
+const PROJECT_AGENT_PERFORMANCE_BUDGET_MS = {
+    FAST: 45,
+    STANDARD: 140,
+    HEAVY: 320
+} as const;
+
+const MAX_PROJECT_AGENT_TELEMETRY_EVENTS = 250;
+
+interface ProjectAgentLegacyChannelMetrics {
+    calls: number;
+    failures: number;
+    retries: number;
+    validationFailures: number;
+    budgetExceededCount: number;
+    lastDurationMs: number;
+    lastErrorCode: string | null;
+}
+
+interface ProjectAgentLegacyTelemetryEvent {
+    channel: string;
+    event: 'success' | 'failure' | 'retry' | 'validation-failure';
+    timestamp: number;
+    durationMs?: number;
+    code?: string;
+}
+
+const projectAgentLegacyTelemetry = {
+    totalCalls: 0,
+    totalFailures: 0,
+    totalRetries: 0,
+    validationFailures: 0,
+    budgetExceededCount: 0,
+    lastErrorCode: null as string | null,
+    channels: {} as Record<string, ProjectAgentLegacyChannelMetrics>,
+    events: [] as ProjectAgentLegacyTelemetryEvent[]
+};
+
+const getProjectAgentLegacyChannelMetric = (channel: string): ProjectAgentLegacyChannelMetrics => {
+    if (!projectAgentLegacyTelemetry.channels[channel]) {
+        projectAgentLegacyTelemetry.channels[channel] = {
+            calls: 0,
+            failures: 0,
+            retries: 0,
+            validationFailures: 0,
+            budgetExceededCount: 0,
+            lastDurationMs: 0,
+            lastErrorCode: null
+        };
+    }
+    return projectAgentLegacyTelemetry.channels[channel];
+};
+
+const trackProjectAgentLegacyEvent = (
+    channel: string,
+    event: ProjectAgentLegacyTelemetryEvent['event'],
+    details: { durationMs?: number; code?: string } = {}
+): void => {
+    projectAgentLegacyTelemetry.events = [...projectAgentLegacyTelemetry.events, {
+        channel,
+        event,
+        timestamp: Date.now(),
+        durationMs: details.durationMs,
+        code: details.code
+    }].slice(-MAX_PROJECT_AGENT_TELEMETRY_EVENTS);
+};
+
+const isProjectAgentLegacyValidationFailure = (error: Error): boolean => {
+    const message = getErrorMessage(error).toLowerCase();
+    return message.includes('required')
+        || message.includes('must be')
+        || message.includes('invalid')
+        || message.includes('non-empty');
+};
+
+const isProjectAgentLegacyRetryableError = (error: Error): boolean => {
+    const message = getErrorMessage(error).toLowerCase();
+    return message.includes('timeout')
+        || message.includes('temporar')
+        || message.includes('busy')
+        || message.includes('econnreset')
+        || message.includes('econnrefused')
+        || message.includes('network');
+};
+
+const getProjectAgentLegacyBudgetForChannel = (channel: string): number => {
+    if (
+        channel.endsWith(':get-status')
+        || channel.endsWith(':get-messages')
+        || channel.endsWith(':get-events')
+        || channel.endsWith(':get-task-history')
+        || channel.endsWith(':get-available-models')
+        || channel.endsWith(':health')
+    ) {
+        return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.FAST;
+    }
+    if (
+        channel.endsWith(':pause-task')
+        || channel.endsWith(':resume-task')
+        || channel.endsWith(':approve-plan')
+        || channel.endsWith(':reject-plan')
+        || channel.endsWith(':delete-task')
+        || channel.endsWith(':select-model')
+    ) {
+        return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.STANDARD;
+    }
+    return PROJECT_AGENT_PERFORMANCE_BUDGET_MS.HEAVY;
+};
+
+const buildProjectAgentLegacyErrorPayload = (
+    error: Error
+): { error: string; errorCode: string; messageKey: string; retryable: boolean } => {
+    const validationFailure = isProjectAgentLegacyValidationFailure(error);
+    const retryable = !validationFailure && isProjectAgentLegacyRetryableError(error);
+    return {
+        error: getErrorMessage(error),
+        errorCode: validationFailure
+            ? PROJECT_AGENT_ERROR_CODE.VALIDATION
+            : retryable
+                ? PROJECT_AGENT_ERROR_CODE.TRANSIENT
+                : PROJECT_AGENT_ERROR_CODE.OPERATION_FAILED,
+        messageKey: validationFailure
+            ? PROJECT_AGENT_MESSAGE_KEY.VALIDATION_FAILED
+            : PROJECT_AGENT_MESSAGE_KEY.OPERATION_FAILED,
+        retryable
+    };
+};
+
+const trackProjectAgentLegacySuccess = (channel: string, durationMs: number): void => {
+    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
+    projectAgentLegacyTelemetry.totalCalls += 1;
+    channelMetric.calls += 1;
+    channelMetric.lastDurationMs = durationMs;
+    const budgetMs = getProjectAgentLegacyBudgetForChannel(channel);
+    if (durationMs > budgetMs) {
+        projectAgentLegacyTelemetry.budgetExceededCount += 1;
+        channelMetric.budgetExceededCount += 1;
+    }
+    trackProjectAgentLegacyEvent(channel, 'success', { durationMs });
+};
+
+const trackProjectAgentLegacyFailure = (
+    channel: string,
+    durationMs: number,
+    errorCode: string,
+    validationFailure: boolean
+): void => {
+    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
+    projectAgentLegacyTelemetry.totalCalls += 1;
+    projectAgentLegacyTelemetry.totalFailures += 1;
+    projectAgentLegacyTelemetry.lastErrorCode = errorCode;
+    channelMetric.calls += 1;
+    channelMetric.failures += 1;
+    channelMetric.lastDurationMs = durationMs;
+    channelMetric.lastErrorCode = errorCode;
+
+    if (validationFailure) {
+        projectAgentLegacyTelemetry.validationFailures += 1;
+        channelMetric.validationFailures += 1;
+        trackProjectAgentLegacyEvent(channel, 'validation-failure', { durationMs, code: errorCode });
+        return;
+    }
+
+    trackProjectAgentLegacyEvent(channel, 'failure', { durationMs, code: errorCode });
+};
+
+const trackProjectAgentLegacyRetries = (channel: string, count: number): void => {
+    if (count <= 0) {
+        return;
+    }
+    const channelMetric = getProjectAgentLegacyChannelMetric(channel);
+    projectAgentLegacyTelemetry.totalRetries += count;
+    channelMetric.retries += count;
+    for (let index = 0; index < count; index += 1) {
+        trackProjectAgentLegacyEvent(channel, 'retry', { code: PROJECT_AGENT_ERROR_CODE.TRANSIENT });
+    }
+};
+
+const inferProjectAgentLegacyUiState = (result: Record<string, unknown>): ProjectAgentUiState => {
+    const explicitUiState = result.uiState;
+    if (explicitUiState === 'ready' || explicitUiState === 'empty' || explicitUiState === 'failure') {
+        return explicitUiState;
+    }
+    if (result.success === false) {
+        return 'failure';
+    }
+    const candidates: unknown[] = [result.events, result.messages, result.telemetry, result.data];
+    for (const candidate of candidates) {
+        if (Array.isArray(candidate)) {
+            return candidate.length === 0 ? 'empty' : 'ready';
+        }
+    }
+    return 'ready';
+};
+
+const createProjectAgentLegacyHealthPayload = () => {
+    const errorRate = projectAgentLegacyTelemetry.totalCalls === 0
+        ? 0
+        : projectAgentLegacyTelemetry.totalFailures / projectAgentLegacyTelemetry.totalCalls;
+    const status = errorRate > 0.05 || projectAgentLegacyTelemetry.budgetExceededCount > 0
+        ? 'degraded'
+        : 'healthy';
+
+    return {
+        status,
+        uiState: status === 'healthy' ? 'ready' : 'failure',
+        budgets: {
+            fastMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.FAST,
+            standardMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.STANDARD,
+            heavyMs: PROJECT_AGENT_PERFORMANCE_BUDGET_MS.HEAVY
+        },
+        metrics: {
+            ...projectAgentLegacyTelemetry,
+            errorRate
+        }
+    };
+};
+
+const createLegacyProjectAgentHandler = (
+    channel: string,
+    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<unknown>
+) => {
+    return async (event: IpcMainInvokeEvent, ...args: IpcValue[]): Promise<unknown> => {
+        const startedAt = Date.now();
+        const retryResult = await withRetry(
+            async () => await handler(event, ...args),
+            {
+                maxRetries: 1,
+                initialDelayMs: 50,
+                maxDelayMs: 220,
+                backoffMultiplier: 2,
+                jitter: false,
+                operationName: channel,
+                isRetryable: error => isProjectAgentLegacyRetryableError(
+                    error instanceof Error ? error : new Error(getErrorMessage(error))
+                )
+            }
+        );
+
+        trackProjectAgentLegacyRetries(channel, Math.max(0, retryResult.attempts - 1));
+
+        if (!retryResult.success) {
+            const error = retryResult.error ?? new Error('Legacy project agent IPC operation failed');
+            const payload = buildProjectAgentLegacyErrorPayload(error);
+            trackProjectAgentLegacyFailure(
+                channel,
+                Date.now() - startedAt,
+                payload.errorCode,
+                payload.errorCode === PROJECT_AGENT_ERROR_CODE.VALIDATION
+            );
+            return {
+                success: false,
+                ...payload,
+                uiState: 'failure',
+                fallbackUsed: true
+            };
+        }
+
+        const durationMs = Date.now() - startedAt;
+        const result = retryResult.result;
+        if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+            const resultRecord = result as Record<string, unknown>;
+            const uiState = inferProjectAgentLegacyUiState(resultRecord);
+            if (resultRecord.success === false) {
+                const error = new Error(
+                    typeof resultRecord.error === 'string'
+                        ? resultRecord.error
+                        : 'Legacy project agent IPC operation failed'
+                );
+                const payload = buildProjectAgentLegacyErrorPayload(error);
+                trackProjectAgentLegacyFailure(
+                    channel,
+                    durationMs,
+                    payload.errorCode,
+                    payload.errorCode === PROJECT_AGENT_ERROR_CODE.VALIDATION
+                );
+                return {
+                    ...resultRecord,
+                    ...payload,
+                    uiState: 'failure',
+                    fallbackUsed: true
+                };
+            }
+            trackProjectAgentLegacySuccess(channel, durationMs);
+            return {
+                ...resultRecord,
+                uiState
+            };
+        }
+
+        trackProjectAgentLegacySuccess(channel, durationMs);
+        return result;
+    };
+};
+
+const registerLegacyProjectAgentHandler = (
+    channel: string,
+    handler: (event: IpcMainInvokeEvent, ...args: IpcValue[]) => Promise<unknown>
+): void => {
+    registerBatchableHandler(channel, createLegacyProjectAgentHandler(channel, handler));
+};
 
 function validateString(value: unknown, name: string): string {
     if (typeof value !== 'string' || value.trim().length === 0) {
@@ -190,8 +506,9 @@ export function registerProjectAgentIpc(
     });
     ipcMain.handle('project:start', createSafeIpcHandler('project:start', async (_, options: AgentStartOptions) => {
         const normalizedOptions = normalizeStartOptions(options);
-        await projectAgentService.start(normalizedOptions);
-    }, undefined));
+        const taskId = await projectAgentService.start(normalizedOptions);
+        return { taskId };
+    }, { taskId: '' }));
 
     ipcMain.handle('project:stop', createSafeIpcHandler('project:stop', async (_, payload?: { taskId?: string }) => {
         await projectAgentService.stop(payload?.taskId);
@@ -231,6 +548,21 @@ export function registerProjectAgentIpc(
         }
         await projectAgentService.retryStep(payload.index, payload.taskId);
     }, undefined));
+
+    ipcMain.handle('project:select-model', createSafeIpcHandler('project:select-model', async (_, payload: { taskId: string; provider: string; model: string }) => {
+        validateString(payload.taskId, 'taskId');
+        validateString(payload.provider, 'provider');
+        validateString(payload.model, 'model');
+        const success = await projectAgentService.selectModel(
+            payload.taskId,
+            payload.provider,
+            payload.model
+        );
+        return {
+            success,
+            error: success ? undefined : 'Failed to select model'
+        };
+    }, { success: false, error: 'Failed to select model' }));
 
     // --- AGT-HIL: Human-in-the-Loop IPC handlers ---
 
@@ -564,6 +896,12 @@ export function registerProjectAgentIpc(
 function registerLegacyProjectAgentCompatibilityHandlers(
     projectAgentService: ProjectAgentService
 ): void {
+    registerLegacyProjectAgentHandler('project-agent:health', async () => {
+        return {
+            success: true,
+            data: createProjectAgentLegacyHealthPayload()
+        };
+    });
     registerLegacyProjectAgentMutationHandlers(projectAgentService);
     registerLegacyProjectAgentQueryHandlers(projectAgentService);
 }
@@ -576,7 +914,7 @@ function registerLegacyProjectAgentCompatibilityHandlers(
 function registerLegacyProjectAgentMutationHandlers(
     projectAgentService: ProjectAgentService
 ): void {
-    registerBatchableHandler('project-agent:start-task', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:start-task', async (_event, ...args) => {
         const payload = getPayload<LegacyStartTaskPayload>(args[0]);
         const options: AgentStartOptions = {
             task: payload.description ?? '',
@@ -604,7 +942,7 @@ function registerLegacyProjectAgentMutationHandlers(
         };
     });
 
-    registerBatchableHandler('project-agent:pause-task', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:pause-task', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -615,7 +953,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success: true };
     });
 
-    registerBatchableHandler('project-agent:stop-task', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:stop-task', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (taskId) {
@@ -625,7 +963,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success: true };
     });
 
-    registerBatchableHandler('project-agent:save-snapshot', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:save-snapshot', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -639,7 +977,7 @@ function registerLegacyProjectAgentMutationHandlers(
         };
     });
 
-    registerBatchableHandler('project-agent:resume-task', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:resume-task', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -650,7 +988,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success, error: success ? undefined : 'Failed to resume task' };
     });
 
-    registerBatchableHandler('project-agent:approve-plan', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:approve-plan', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -660,7 +998,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success, error: success ? undefined : 'Failed to approve plan' };
     });
 
-    registerBatchableHandler('project-agent:reject-plan', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:reject-plan', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string; reason?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -670,7 +1008,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success, error: success ? undefined : 'Failed to reject plan' };
     });
 
-    registerBatchableHandler('project-agent:delete-task', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:delete-task', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -680,7 +1018,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success, error: success ? undefined : 'Failed to delete task' };
     });
 
-    registerBatchableHandler('project-agent:select-model', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:select-model', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string; provider?: string; model?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId || !payload.provider || !payload.model) {
@@ -694,7 +1032,7 @@ function registerLegacyProjectAgentMutationHandlers(
         return { success, error: success ? undefined : 'Failed to select model' };
     });
 
-    registerBatchableHandler('project-agent:subscribe-events', async () => {
+    registerLegacyProjectAgentHandler('project-agent:subscribe-events', async () => {
         return { success: true };
     });
 }
@@ -705,7 +1043,7 @@ function registerLegacyProjectAgentMutationHandlers(
  * @param projectAgentService - The project agent service instance
  */
 function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAgentService): void {
-    registerBatchableHandler('project-agent:get-status', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:get-status', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -714,7 +1052,7 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
         return await projectAgentService.getTaskStatusDetails(taskId);
     });
 
-    registerBatchableHandler('project-agent:get-messages', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:get-messages', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -723,7 +1061,7 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
         return await projectAgentService.getTaskMessages(taskId);
     });
 
-    registerBatchableHandler('project-agent:get-events', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:get-events', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -744,7 +1082,7 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
         };
     });
 
-    registerBatchableHandler('project-agent:get-telemetry', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:get-telemetry', async (_event, ...args) => {
         const payload = getPayload<{ taskId?: string }>(args[0]);
         const taskId = typeof args[0] === 'string' ? args[0] : payload.taskId;
         if (!taskId) {
@@ -753,7 +1091,7 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
         return await projectAgentService.getTaskTelemetry(taskId);
     });
 
-    registerBatchableHandler('project-agent:get-task-history', async (_event, ...args) => {
+    registerLegacyProjectAgentHandler('project-agent:get-task-history', async (_event, ...args) => {
         const payload = getPayload<{ projectId?: string }>(args[0]);
         const projectId = typeof args[0] === 'string' ? args[0] : payload.projectId;
         if (!projectId) {
@@ -772,7 +1110,7 @@ function registerLegacyProjectAgentQueryHandlers(projectAgentService: ProjectAge
         }));
     });
 
-    registerBatchableHandler('project-agent:get-available-models', async () => {
+    registerLegacyProjectAgentHandler('project-agent:get-available-models', async () => {
         return projectAgentService.getAvailableModels();
     });
 }
@@ -921,3 +1259,4 @@ function registerCanvasPersistenceHandlers(
         return projectAgentService.getTemplates().find(template => template.id === id) ?? null;
     }, null));
 }
+

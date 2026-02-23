@@ -56,7 +56,7 @@ describe('Missing IPC TODO coverage (behavior)', () => {
         const handler = handlers.get('advancedMemory:confirmAll');
         const result = await handler?.({} as unknown);
 
-        expect(result).toEqual({ success: true, confirmed: 1 });
+        expect(result).toMatchObject({ success: true, confirmed: 1, uiState: 'ready' });
         expect(service.confirmPendingMemory).toHaveBeenCalledTimes(1);
         expect(service.confirmPendingMemory).toHaveBeenCalledWith('p-1', 'user');
     });

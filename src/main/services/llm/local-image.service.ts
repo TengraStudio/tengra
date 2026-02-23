@@ -132,6 +132,24 @@ export interface LocalImageServiceDeps {
 }
 
 export class LocalImageService extends BaseService {
+    private static readonly ERROR_CODES = {
+        SDCPP_FALLBACK_TRIGGERED: 'LOCAL_IMAGE_SDCPP_FALLBACK_TRIGGERED',
+        POLLINATIONS_FAILURE: 'LOCAL_IMAGE_POLLINATIONS_FAILURE',
+    } as const;
+    private static readonly PERFORMANCE_BUDGET = {
+        statusCheckMs: 300,
+        generationFallbackMs: 5000,
+        queueDepthWarnThreshold: 25,
+    } as const;
+    private static readonly UI_MESSAGE_KEYS = {
+        ready: 'serviceHealth.localImage.ready',
+        empty: 'serviceHealth.localImage.empty',
+        failure: 'serviceHealth.localImage.failure',
+    } as const;
+    private readonly RETRY_POLICY = {
+        networkAttempts: 2,
+        networkDelayMs: 300,
+    } as const;
     private sdCppRuntimePromise: Promise<{ binaryPath: string; modelPath: string }> | null = null;
     private readonly storageRoot: string = path.join(app.getPath('userData'), 'ai', 'images');
     private readonly historyPath: string = path.join(this.storageRoot, 'generation-history.json');
@@ -271,6 +289,12 @@ export class LocalImageService extends BaseService {
         }
     }
 
+    private assertNonEmptyText(value: string, fieldName: string): void {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new Error(`${fieldName} is required`);
+        }
+    }
+
     /**
      * Generate an image using available providers
      * Priority: Antigravity (with quota) > Pollinations > Other local providers
@@ -279,6 +303,7 @@ export class LocalImageService extends BaseService {
         options: ImageGenerationOptions,
         source: 'generate' | 'edit' | 'schedule' | 'batch' = 'generate'
     ): Promise<string> {
+        this.assertNonEmptyText(options.prompt, 'Prompt');
         const settings = this.settingsService.getSettings();
         const preferredProvider = (settings.images?.provider ?? 'antigravity') as ImageProvider;
 
@@ -301,7 +326,10 @@ export class LocalImageService extends BaseService {
             } catch (error) {
                 if (preferredProvider === 'sd-cpp') {
                     this.logWarn('SD-CPP generation failed, falling back to Pollinations', error as Error);
-                    this.trackSdCppMetric('sd-cpp-fallback-triggered', { error: getErrorMessage(error as Error) });
+                    this.trackSdCppMetric('sd-cpp-fallback-triggered', {
+                        errorCode: LocalImageService.ERROR_CODES.SDCPP_FALLBACK_TRIGGERED,
+                        error: getErrorMessage(error as Error),
+                    });
                     generatedPath = await this.generateWithPollinations(options);
                 } else {
                     throw error;
@@ -529,12 +557,32 @@ export class LocalImageService extends BaseService {
         const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true`;
 
         try {
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            const response = await this.executeWithRetry(
+                () => axios.get(url, { responseType: 'arraybuffer' }),
+                this.RETRY_POLICY.networkAttempts
+            );
             return this.saveTempImage(Buffer.from(response.data));
         } catch (error) {
             this.logError('Pollinations generation failed', error as Error);
-            throw new Error(`Pollinations failure: ${getErrorMessage(error as Error)}`);
+            throw new Error(
+                `[${LocalImageService.ERROR_CODES.POLLINATIONS_FAILURE}] Pollinations failure: ${getErrorMessage(error as Error)}`
+            );
         }
+    }
+
+    private async executeWithRetry<T>(operation: () => Promise<T>, maxAttempts: number): Promise<T> {
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                if (attempt < maxAttempts) {
+                    await this.delay(this.RETRY_POLICY.networkDelayMs);
+                }
+            }
+        }
+        throw (lastError ?? new Error('Unknown retry failure'));
     }
 
     private async generateWithOllama(options: ImageGenerationOptions): Promise<string> {
@@ -779,6 +827,8 @@ export class LocalImageService extends BaseService {
     }
 
     async editImage(options: ImageEditOptions): Promise<string> {
+        this.assertNonEmptyText(options.prompt, 'Prompt');
+        this.assertNonEmptyText(options.sourceImage, 'Source image');
         const settings = this.settingsService.getSettings();
         const provider = (settings.images?.provider ?? 'antigravity') as ImageProvider;
 
@@ -875,6 +925,7 @@ export class LocalImageService extends BaseService {
     }
 
     async regenerateFromHistory(id: string): Promise<string> {
+        this.assertNonEmptyText(id, 'Generation history id');
         const entry = this.generationHistory.find(item => item.id === id);
         if (!entry) {
             throw new Error('Generation history entry not found');
@@ -919,6 +970,7 @@ export class LocalImageService extends BaseService {
     }
 
     async saveGenerationPreset(input: Omit<ImageGenerationPreset, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<ImageGenerationPreset> {
+        this.assertNonEmptyText(input.name, 'Preset name');
         const now = Date.now();
         const existingIndex = input.id
             ? this.generationPresets.findIndex(preset => preset.id === input.id)
@@ -945,6 +997,7 @@ export class LocalImageService extends BaseService {
     }
 
     async deleteGenerationPreset(id: string): Promise<boolean> {
+        this.assertNonEmptyText(id, 'Preset id');
         const filtered = this.generationPresets.filter(preset => preset.id !== id);
         if (filtered.length === this.generationPresets.length) {
             return false;
@@ -973,6 +1026,10 @@ export class LocalImageService extends BaseService {
     }
 
     async scheduleGeneration(runAt: number, options: ImageGenerationOptions): Promise<ImageScheduleTask> {
+        if (!Number.isFinite(runAt)) {
+            throw new Error('runAt must be a finite timestamp');
+        }
+        this.assertNonEmptyText(options.prompt, 'Prompt');
         const task: ImageScheduleTask = {
             id: uuidv4(),
             runAt,
@@ -992,6 +1049,7 @@ export class LocalImageService extends BaseService {
     }
 
     async cancelScheduledGeneration(id: string): Promise<boolean> {
+        this.assertNonEmptyText(id, 'Schedule id');
         const task = this.scheduleTasks.find(item => item.id === id);
         if (!task) {
             return false;
@@ -1035,6 +1093,9 @@ export class LocalImageService extends BaseService {
     }
 
     async runBatchGeneration(requests: ImageGenerationOptions[]): Promise<string[]> {
+        for (const request of requests) {
+            this.assertNonEmptyText(request.prompt, 'Prompt');
+        }
         const jobs = requests.slice(0, 20).map(request => this.enqueueGeneration(request, 'batch'));
         return Promise.all(jobs);
     }
@@ -1079,7 +1140,11 @@ export class LocalImageService extends BaseService {
     }
 
     async compareGenerations(ids: string[]): Promise<ImageComparisonResult> {
-        const records = ids
+        const uniqueIds = ids.map(id => id.trim()).filter(id => id.length > 0);
+        if (uniqueIds.length < 2) {
+            throw new Error('At least two history entries are required for comparison');
+        }
+        const records = uniqueIds
             .map(id => this.generationHistory.find(item => item.id === id))
             .filter((item): item is ImageGenerationRecord => Boolean(item));
         if (records.length < 2) {
@@ -1135,22 +1200,50 @@ export class LocalImageService extends BaseService {
         const binaryPath = settings.images?.sdCppBinaryPath;
         const modelPath = settings.images?.sdCppModelPath;
 
+        let status = 'notConfigured';
         if (this.sdCppRuntimePromise) {
-            return 'installing';
+            status = 'installing';
+            this.trackSdCppMetric('sd-cpp-status-checked', { status });
+            return status;
         }
 
         const binExists = binaryPath ? await this.pathExists(binaryPath) : false;
         const modelExists = modelPath ? await this.pathExists(modelPath) : false;
 
         if (binExists && modelExists) {
-            return 'ready';
+            status = 'ready';
+        } else if (binaryPath || modelPath) {
+            status = 'failed';
         }
+        this.trackSdCppMetric('sd-cpp-status-checked', { status });
+        return status;
+    }
 
-        if (binaryPath || modelPath) {
-            return 'failed';
-        }
-
-        return 'notConfigured';
+    public async getHealthMetrics(): Promise<{
+        status: 'healthy' | 'degraded';
+        uiState: 'ready' | 'empty' | 'failure';
+        messageKey: string;
+        performanceBudget: typeof LocalImageService.PERFORMANCE_BUDGET;
+        provider: string;
+        sdCppStatus: string;
+        queueDepth: number;
+        scheduledTaskCount: number;
+        historyCount: number;
+    }> {
+        const status = await this.getSDCppStatus();
+        const provider = this.settingsService.getSettings().images?.provider ?? 'antigravity';
+        const uiState = status === 'failed' ? 'failure' : status === 'ready' ? 'ready' : 'empty';
+        return {
+            status: status === 'failed' ? 'degraded' : 'healthy',
+            uiState,
+            messageKey: LocalImageService.UI_MESSAGE_KEYS[uiState],
+            performanceBudget: LocalImageService.PERFORMANCE_BUDGET,
+            provider,
+            sdCppStatus: status,
+            queueDepth: this.generationQueue.length,
+            scheduledTaskCount: this.scheduleTasks.length,
+            historyCount: this.generationHistory.length,
+        };
     }
 
     /**

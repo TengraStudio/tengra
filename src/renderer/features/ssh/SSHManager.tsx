@@ -18,6 +18,8 @@ import { appLogger } from '@/utils/renderer-logger';
 
 import { AddConnectionModal, SSHProfileTestUIResult } from './components/AddConnectionModal';
 import { SSHConnectionList } from './components/SSHConnectionList';
+import { SSHEnvSyncProfiles } from './components/SSHEnvSyncProfiles';
+import { SSHIncidentRecoveryToolkit } from './components/SSHIncidentRecoveryToolkit';
 import { SSHKeyManagement } from './components/SSHKeyManagement';
 import { SSHTerminal } from './components/SSHTerminal';
 import { SSHTunnels } from './components/SSHTunnels';
@@ -32,7 +34,9 @@ type SSHTabId =
     | 'logs'
     | 'management'
     | 'keys'
-    | 'tunnels';
+    | 'tunnels'
+    | 'sync'
+    | 'recovery';
 
 type SSHProfile = SSHConnectionFormInput;
 interface SSHConnectResult {
@@ -46,7 +50,7 @@ const CONNECT_RETRY_DELAY_MS = 150;
 
 const SSHTabs: React.FC<{ activeTab: SSHTabId, onTabChange: (id: SSHTabId) => void, t: (k: string) => string }> = ({ activeTab, onTabChange, t }) => (
     <div className="ssh-tabs flex border-b border-border/50 bg-muted/20 overflow-x-auto">
-        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
+        {[{ id: 'terminal', label: t('ssh.terminal') }, { id: 'dashboard', label: t('ssh.dashboard') }, { id: 'files', label: t('ssh.files') }, { id: 'packages', label: t('ssh.packages') }, { id: 'logs', label: t('ssh.logs') }, { id: 'management', label: t('ssh.management') }, { id: 'sync', label: t('ssh.syncProfiles') }, { id: 'recovery', label: t('ssh.recoveryToolkit') }, { id: 'keys', label: t('ssh.keyManagement') }, { id: 'tunnels', label: t('ssh.tunnels') }].map(tab => (
             <button key={tab.id} onClick={() => { onTabChange(tab.id as SSHTabId); }} style={{ padding: '8px 16px', backgroundColor: activeTab === tab.id ? 'var(--background)' : 'transparent', border: 'none', color: activeTab === tab.id ? 'var(--foreground)' : 'var(--muted-foreground)', borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : 'none', whiteSpace: 'nowrap' }}>{tab.label}</button>
         ))}
     </div>
@@ -73,7 +77,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         updateConnectionStatus,
     } = useSSHConnections(isOpen);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newConnection, setNewConnection] = useState<SSHProfile>({ name: '', host: '', port: 22, username: '', password: '', privateKey: '' });
+    const [newConnection, setNewConnection] = useState<SSHProfile>({ name: '', host: '', port: 22, username: '', password: '', privateKey: '', jumpHost: '' });
     const [shouldSaveProfile, setShouldSaveProfile] = useState(false);
     const [terminalOutput, setTerminalOutput] = useState('');
     const [activeTab, setActiveTab] = useState<SSHTabId>('terminal');
@@ -114,6 +118,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     authType: payload.privateKey ? 'key' : 'password',
                     password: payload.password,
                     privateKey: payload.privateKey,
+                    jumpHost: payload.jumpHost,
                 } as SSHConnection);
 
                 if (result.success) {
@@ -178,6 +183,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                         username: validated.normalized.username,
                         password: validated.normalized.password,
                         privateKey: validated.normalized.privateKey,
+                        jumpHost: validated.normalized.jumpHost,
                         authType: validated.normalized.privateKey ? 'key' : 'password',
                         status: 'disconnected',
                     })) {
@@ -250,6 +256,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
                     username: validated.normalized.username,
                     password: validated.normalized.password,
                     privateKey: validated.normalized.privateKey,
+                    jumpHost: validated.normalized.jumpHost,
                     authType: validated.normalized.privateKey ? 'key' : 'password',
                     status: 'connecting',
                 });
@@ -327,6 +334,7 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
             username: c.username,
             password: c.password,
             privateKey: c.privateKey,
+            jumpHost: c.jumpHost,
             name: c.name,
         }).then(result => {
             if (result.success) {
@@ -489,6 +497,12 @@ export function SSHManager({ isOpen, onClose, language }: SSHManagerProps) {
         }
         if (activeTab === 'management') {
             return <NginxWizard connectionId={selectedConnectionId} language={language} />;
+        }
+        if (activeTab === 'sync') {
+            return <SSHEnvSyncProfiles connectionId={selectedConnectionId} t={t} />;
+        }
+        if (activeTab === 'recovery') {
+            return <SSHIncidentRecoveryToolkit connectionId={selectedConnectionId} t={t} />;
         }
 
         return <SFTPBrowser connectionId={selectedConnectionId} />;

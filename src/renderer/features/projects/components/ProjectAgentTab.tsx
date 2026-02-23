@@ -15,6 +15,7 @@ import { StatusIndicators } from './agent/StatusIndicators';
 import { TaskExecutionView } from './agent/TaskExecutionView';
 import { TaskInputForm } from './agent/TaskInputForm';
 import { TaskSidebar } from './agent/TaskSidebar';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 interface ProjectAgentTabProps {
     project: Project;
@@ -122,6 +123,7 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
     });
 
     const [showHistory, setShowHistory] = useState(true);
+    const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const modelDropdownRef = useRef<HTMLDivElement>(null);
     const scrollEndRef = useRef<HTMLDivElement>(null);
@@ -136,14 +138,20 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
 
     const handleDeleteTask = useCallback(
         (id: string) => {
-            void (async () => {
-                if ((await deleteTask(id)) && id === selectedTaskId) {
-                    resetToIdle();
-                }
-            })();
+            setTaskToDelete(id);
         },
-        [deleteTask, selectedTaskId, resetToIdle]
+        []
     );
+
+    const confirmDeleteTask = useCallback(() => {
+        if (!taskToDelete) { return; }
+        void (async () => {
+            if ((await deleteTask(taskToDelete)) && taskToDelete === selectedTaskId) {
+                resetToIdle();
+            }
+            setTaskToDelete(null);
+        })();
+    }, [taskToDelete, deleteTask, selectedTaskId, resetToIdle]);
 
     const selectedModel = useMemo(
         () =>
@@ -326,6 +334,15 @@ export const ProjectAgentTab: React.FC<ProjectAgentTabProps> = ({
                 onSelect={(p, m) => {
                     void handleModelSelectFromInterrupt(p, m);
                 }}
+            />
+            <ConfirmationModal
+                isOpen={!!taskToDelete}
+                onClose={() => setTaskToDelete(null)}
+                onConfirm={confirmDeleteTask}
+                title="Delete Task"
+                message="Are you sure you want to delete this task? This action cannot be undone."
+                confirmLabel="Delete"
+                variant="danger"
             />
         </div>
     );

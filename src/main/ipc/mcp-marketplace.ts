@@ -4,17 +4,56 @@ import { appLogger } from '@main/logging/logger';
 import { McpMarketplaceService } from '@main/services/mcp/mcp-marketplace.service';
 import { McpPluginService } from '@main/services/mcp/mcp-plugin.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { withRetry } from '@main/utils/ipc-retry.util';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { JsonValue } from '@shared/types/common';
 import { AppSettings, MCPServerConfig } from '@shared/types/settings';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
+
+type MarketplaceUiState = 'ready' | 'empty' | 'failure';
 
 interface MarketplaceResponse {
     success: boolean;
     error?: string;
+    errorCode?: string;
+    messageKey?: string;
+    retryable?: boolean;
+    uiState?: MarketplaceUiState;
+    fallbackUsed?: boolean;
     [key: string]: unknown;
 }
+
+const MARKETPLACE_ERROR_CODE = {
+    VALIDATION: 'MCP_MARKETPLACE_VALIDATION_ERROR',
+    OPERATION_FAILED: 'MCP_MARKETPLACE_OPERATION_FAILED',
+    TRANSIENT: 'MCP_MARKETPLACE_TRANSIENT_ERROR'
+} as const;
+
+const MARKETPLACE_MESSAGE_KEY = {
+    VALIDATION_FAILED: 'errors.unexpected',
+    OPERATION_FAILED: 'errors.unexpected'
+} as const;
+
+const MARKETPLACE_PERFORMANCE_BUDGET_MS = {
+    FAST: 40,
+    STANDARD: 130,
+    HEAVY: 280
+} as const;
+
+const MAX_MARKETPLACE_TELEMETRY_EVENTS = 300;
+
+const MarketplaceUiStateSchema = z.enum(['ready', 'empty', 'failure']);
+const MarketplaceResponseSchema = z.object({
+    success: z.boolean(),
+    error: z.string().optional(),
+    errorCode: z.string().optional(),
+    messageKey: z.string().optional(),
+    retryable: z.boolean().optional(),
+    uiState: MarketplaceUiStateSchema.optional(),
+    fallbackUsed: z.boolean().optional()
+}).passthrough();
 
 const EmptyArgsSchema = z.tuple([]);
 const ServerIdSchema = z.string().trim().min(1).max(120);
@@ -127,9 +166,6 @@ const CrashPayloadSchema = z.object({
     stack: z.string().max(12000).optional(),
     metadata: z.record(z.string(), MarketplaceValueSchema).optional()
 });
-
-const getErrorMessage = (error: Error): string =>
-    error instanceof Error ? error.message : String(error);
 
 const isJsonObject = (value: JsonValue | undefined): value is Record<string, JsonValue> =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -295,6 +331,225 @@ const ensureServerCanBeEnabled = (targetServer: MCPServerConfig, allServers: MCP
     }
 };
 
+interface MarketplaceChannelMetrics {
+    calls: number;
+    failures: number;
+    retries: number;
+    validationFailures: number;
+    budgetExceededCount: number;
+    lastDurationMs: number;
+    lastErrorCode: string | null;
+}
+
+interface MarketplaceTelemetryEvent {
+    channel: string;
+    event: 'success' | 'failure' | 'retry' | 'validation-failure';
+    timestamp: number;
+    durationMs?: number;
+    code?: string;
+}
+
+const marketplaceTelemetry = {
+    totalCalls: 0,
+    totalFailures: 0,
+    totalRetries: 0,
+    validationFailures: 0,
+    budgetExceededCount: 0,
+    lastErrorCode: null as string | null,
+    channels: {} as Record<string, MarketplaceChannelMetrics>,
+    events: [] as MarketplaceTelemetryEvent[]
+};
+
+const getMarketplaceChannelMetric = (channel: string): MarketplaceChannelMetrics => {
+    if (!marketplaceTelemetry.channels[channel]) {
+        marketplaceTelemetry.channels[channel] = {
+            calls: 0,
+            failures: 0,
+            retries: 0,
+            validationFailures: 0,
+            budgetExceededCount: 0,
+            lastDurationMs: 0,
+            lastErrorCode: null
+        };
+    }
+    return marketplaceTelemetry.channels[channel];
+};
+
+const trackMarketplaceEvent = (
+    channel: string,
+    event: MarketplaceTelemetryEvent['event'],
+    details: { durationMs?: number; code?: string } = {}
+): void => {
+    marketplaceTelemetry.events = [...marketplaceTelemetry.events, {
+        channel,
+        event,
+        timestamp: Date.now(),
+        durationMs: details.durationMs,
+        code: details.code
+    }].slice(-MAX_MARKETPLACE_TELEMETRY_EVENTS);
+};
+
+const isMarketplaceValidationFailure = (error: Error): boolean => {
+    const message = getErrorMessage(error).toLowerCase();
+    return message.includes('invalid')
+        || message.includes('required')
+        || message.includes('must be')
+        || message.includes('expected');
+};
+
+const isMarketplaceRetryableError = (error: Error): boolean => {
+    const message = getErrorMessage(error).toLowerCase();
+    return message.includes('timeout')
+        || message.includes('timed out')
+        || message.includes('temporar')
+        || message.includes('busy')
+        || message.includes('econnreset')
+        || message.includes('econnrefused')
+        || message.includes('network')
+        || message.includes('rate limit');
+};
+
+const getMarketplaceBudgetForChannel = (channel: string): number => {
+    if (
+        channel.endsWith(':list')
+        || channel.endsWith(':categories')
+        || channel.endsWith(':version-history')
+        || channel.endsWith(':reviews:list')
+        || channel.endsWith(':telemetry:summary')
+        || channel.endsWith(':debug')
+        || channel.endsWith(':health')
+    ) {
+        return MARKETPLACE_PERFORMANCE_BUDGET_MS.FAST;
+    }
+    if (
+        channel.endsWith(':search')
+        || channel.endsWith(':filter')
+        || channel.endsWith(':installed')
+        || channel.endsWith(':security-scan')
+        || channel.endsWith(':reviews:submit')
+        || channel.endsWith(':reviews:vote')
+        || channel.endsWith(':reviews:moderate')
+    ) {
+        return MARKETPLACE_PERFORMANCE_BUDGET_MS.STANDARD;
+    }
+    return MARKETPLACE_PERFORMANCE_BUDGET_MS.HEAVY;
+};
+
+const buildMarketplaceErrorPayload = (
+    error: Error
+): Pick<MarketplaceResponse, 'error' | 'errorCode' | 'messageKey' | 'retryable'> => {
+    const validationFailure = isMarketplaceValidationFailure(error);
+    const retryable = !validationFailure && isMarketplaceRetryableError(error);
+    return {
+        error: getErrorMessage(error),
+        errorCode: validationFailure
+            ? MARKETPLACE_ERROR_CODE.VALIDATION
+            : retryable
+                ? MARKETPLACE_ERROR_CODE.TRANSIENT
+                : MARKETPLACE_ERROR_CODE.OPERATION_FAILED,
+        messageKey: validationFailure
+            ? MARKETPLACE_MESSAGE_KEY.VALIDATION_FAILED
+            : MARKETPLACE_MESSAGE_KEY.OPERATION_FAILED,
+        retryable
+    };
+};
+
+const inferMarketplaceUiState = (result: Record<string, unknown>): MarketplaceUiState => {
+    const explicitUiState = result.uiState;
+    if (explicitUiState === 'ready' || explicitUiState === 'empty' || explicitUiState === 'failure') {
+        return explicitUiState;
+    }
+
+    if (result.success === false) {
+        return 'failure';
+    }
+
+    const arrayFieldCandidates: unknown[] = [
+        result.servers,
+        result.categories,
+        result.templates,
+        result.history,
+        result.reviews
+    ];
+
+    for (const candidate of arrayFieldCandidates) {
+        if (Array.isArray(candidate)) {
+            return candidate.length === 0 ? 'empty' : 'ready';
+        }
+    }
+
+    return 'ready';
+};
+
+const trackMarketplaceSuccess = (channel: string, durationMs: number): void => {
+    const channelMetric = getMarketplaceChannelMetric(channel);
+    marketplaceTelemetry.totalCalls += 1;
+    channelMetric.calls += 1;
+    channelMetric.lastDurationMs = durationMs;
+
+    const budgetMs = getMarketplaceBudgetForChannel(channel);
+    if (durationMs > budgetMs) {
+        marketplaceTelemetry.budgetExceededCount += 1;
+        channelMetric.budgetExceededCount += 1;
+        appLogger.warn('MCP Marketplace IPC', `[${channel}] performance budget exceeded: ${durationMs}ms > ${budgetMs}ms`);
+    }
+    trackMarketplaceEvent(channel, 'success', { durationMs });
+};
+
+const trackMarketplaceFailure = (channel: string, durationMs: number, payload: Pick<MarketplaceResponse, 'errorCode'>, validationFailure: boolean): void => {
+    const errorCode = payload.errorCode ?? MARKETPLACE_ERROR_CODE.OPERATION_FAILED;
+    const channelMetric = getMarketplaceChannelMetric(channel);
+    marketplaceTelemetry.totalCalls += 1;
+    marketplaceTelemetry.totalFailures += 1;
+    marketplaceTelemetry.lastErrorCode = errorCode;
+    channelMetric.calls += 1;
+    channelMetric.failures += 1;
+    channelMetric.lastDurationMs = durationMs;
+    channelMetric.lastErrorCode = errorCode;
+
+    if (validationFailure) {
+        marketplaceTelemetry.validationFailures += 1;
+        channelMetric.validationFailures += 1;
+        trackMarketplaceEvent(channel, 'validation-failure', { durationMs, code: errorCode });
+        return;
+    }
+    trackMarketplaceEvent(channel, 'failure', { durationMs, code: errorCode });
+};
+
+const trackMarketplaceRetries = (channel: string, count: number): void => {
+    if (count <= 0) {
+        return;
+    }
+    const channelMetric = getMarketplaceChannelMetric(channel);
+    marketplaceTelemetry.totalRetries += count;
+    channelMetric.retries += count;
+    for (let index = 0; index < count; index += 1) {
+        trackMarketplaceEvent(channel, 'retry', { code: MARKETPLACE_ERROR_CODE.TRANSIENT });
+    }
+};
+
+const createMarketplaceHealthPayload = () => {
+    const errorRate = marketplaceTelemetry.totalCalls === 0
+        ? 0
+        : marketplaceTelemetry.totalFailures / marketplaceTelemetry.totalCalls;
+    const status = errorRate > 0.05 || marketplaceTelemetry.budgetExceededCount > 0
+        ? 'degraded'
+        : 'healthy';
+    return {
+        status,
+        uiState: status === 'healthy' ? 'ready' : 'failure',
+        budgets: {
+            fastMs: MARKETPLACE_PERFORMANCE_BUDGET_MS.FAST,
+            standardMs: MARKETPLACE_PERFORMANCE_BUDGET_MS.STANDARD,
+            heavyMs: MARKETPLACE_PERFORMANCE_BUDGET_MS.HEAVY
+        },
+        metrics: {
+            ...marketplaceTelemetry,
+            errorRate
+        }
+    };
+};
+
 const createMarketplaceHandler = <T extends Record<string, unknown>, Args extends unknown[] = unknown[]>(
     name: string,
     handler: (...args: Args) => Promise<T>,
@@ -303,13 +558,69 @@ const createMarketplaceHandler = <T extends Record<string, unknown>, Args extend
     return createValidatedIpcHandler<MarketplaceResponse, Args>(
         name,
         async (_event, ...args) => {
-            const result = await handler(...args);
-            return { success: true, ...result };
+            const startedAt = Date.now();
+            const retryResult = await withRetry(
+                async () => await handler(...args),
+                {
+                    maxRetries: 1,
+                    initialDelayMs: 50,
+                    maxDelayMs: 220,
+                    backoffMultiplier: 2,
+                    jitter: false,
+                    operationName: name,
+                    isRetryable: error => isMarketplaceRetryableError(
+                        error instanceof Error ? error : new Error(getErrorMessage(error))
+                    )
+                }
+            );
+
+            trackMarketplaceRetries(name, Math.max(0, retryResult.attempts - 1));
+
+            if (!retryResult.success || !retryResult.result) {
+                const caughtError = retryResult.error ?? new Error('MCP marketplace IPC operation failed');
+                const errorPayload = buildMarketplaceErrorPayload(caughtError);
+                trackMarketplaceFailure(
+                    name,
+                    Date.now() - startedAt,
+                    errorPayload,
+                    errorPayload.errorCode === MARKETPLACE_ERROR_CODE.VALIDATION
+                );
+                return {
+                    success: false,
+                    ...errorPayload,
+                    uiState: 'failure',
+                    fallbackUsed: true
+                };
+            }
+
+            const base = { success: true, ...retryResult.result };
+            const uiState = inferMarketplaceUiState(base);
+            const durationMs = Date.now() - startedAt;
+            trackMarketplaceSuccess(name, durationMs);
+            return {
+                ...base,
+                uiState
+            };
         },
         {
             argsSchema,
+            responseSchema: MarketplaceResponseSchema,
             schemaVersion: 1,
-            onError: (error) => ({ success: false, error: getErrorMessage(error) }),
+            onError: (error) => {
+                const payload = buildMarketplaceErrorPayload(error);
+                trackMarketplaceFailure(
+                    name,
+                    0,
+                    payload,
+                    payload.errorCode === MARKETPLACE_ERROR_CODE.VALIDATION
+                );
+                return {
+                    success: false,
+                    ...payload,
+                    uiState: 'failure',
+                    fallbackUsed: true
+                };
+            },
         }
     );
 };
@@ -912,6 +1223,12 @@ export function registerMcpMarketplaceHandlers(
                 installedCount: (settings.mcpUserServers ?? []).length,
                 pendingPermissions: (settings.mcpPermissionRequests ?? []).filter(r => r.status === 'pending').length
             }
+        };
+    }, EmptyArgsSchema));
+
+    ipcMain.handle('mcp:marketplace:health', createMarketplaceHandler('mcp:marketplace:health', async () => {
+        return {
+            data: createMarketplaceHealthPayload()
         };
     }, EmptyArgsSchema));
 }

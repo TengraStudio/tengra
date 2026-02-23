@@ -3,13 +3,15 @@
  * Allows users to run multiple LLMs simultaneously and compare/combine results
  */
 
-import { CheckCircle2, Loader2, Sparkles, XCircle } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, Copy, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ResponsiveContainer } from '@/components/responsive/ResponsiveContainer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/i18n';
 import { Message } from '@/types';
 
@@ -37,6 +39,27 @@ interface CollaborationResult {
         model: string
         content: string
     }
+}
+
+interface PresenceParticipant {
+    id: string
+    name: string
+    role: 'owner' | 'guest' | 'ai'
+    isOnline: boolean
+}
+
+interface CursorMarker {
+    id: string
+    user: string
+    target: string
+    highlightedAt: number
+}
+
+interface ChangeAnnotation {
+    id: string
+    author: string
+    note: string
+    timestamp: number
 }
 
 interface ModelItemProps {
@@ -116,6 +139,41 @@ export function MultiModelCollaboration({
     const [isRunning, setIsRunning] = useState(false);
     const [results, setResults] = useState<CollaborationResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [sharedContext, setSharedContext] = useState('');
+    const [sharedMemoryNote, setSharedMemoryNote] = useState('');
+    const [sharedMemory, setSharedMemory] = useState<string[]>([]);
+    const [presence, setPresence] = useState<PresenceParticipant[]>([
+        { id: 'owner', name: 'You', role: 'owner', isOnline: true },
+        { id: 'guest', name: 'Guest Reviewer', role: 'guest', isOnline: true },
+        { id: 'ai', name: 'AI Partner', role: 'ai', isOnline: true }
+    ]);
+    const [cursorMarkers, setCursorMarkers] = useState<CursorMarker[]>([]);
+    const [annotations, setAnnotations] = useState<ChangeAnnotation[]>([]);
+    const [sessionRecording, setSessionRecording] = useState(false);
+    const [recordedEvents, setRecordedEvents] = useState<string[]>([]);
+    const [shareLink, setShareLink] = useState('');
+    const [allowGuests, setAllowGuests] = useState(true);
+    const sessionId = useMemo(() => `collab-${Date.now().toString(36)}`, []);
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            setPresence((current) => current.map((participant) => {
+                if (participant.role !== 'guest') {
+                    return participant;
+                }
+                return { ...participant, isOnline: allowGuests };
+            }));
+        }, 3000);
+        return () => { window.clearInterval(interval); };
+    }, [allowGuests]);
+
+    const appendRecordingEvent = (eventText: string): void => {
+        if (!sessionRecording) {
+            return;
+        }
+        const timestamp = new Date().toLocaleTimeString();
+        setRecordedEvents((current) => [`[${timestamp}] ${eventText}`, ...current].slice(0, 25));
+    };
 
     const handleAddModel = () => {
         if (availableModels.length > 0) {
@@ -129,6 +187,38 @@ export function MultiModelCollaboration({
 
     const handleRemoveModel = (index: number) => {
         setSelectedModels(selectedModels.filter((_, i) => i !== index));
+    };
+
+    const addAnnotation = (note: string): void => {
+        const entry: ChangeAnnotation = {
+            id: `${Date.now()}-${Math.round(Math.random() * 1000)}`,
+            author: 'You',
+            note,
+            timestamp: Date.now()
+        };
+        setAnnotations((current) => [entry, ...current].slice(0, 10));
+        appendRecordingEvent(`${t('chat.collaboration.annotationRecorded')}: ${note}`);
+    };
+
+    const addCursorMarker = (user: string, target: string): void => {
+        const marker: CursorMarker = {
+            id: `${Date.now()}-${Math.round(Math.random() * 1000)}`,
+            user,
+            target,
+            highlightedAt: Date.now()
+        };
+        setCursorMarkers((current) => [marker, ...current].slice(0, 10));
+        appendRecordingEvent(`${t('chat.collaboration.cursorMarked')}: ${user}`);
+    };
+
+    const handleAddMemory = (): void => {
+        const trimmed = sharedMemoryNote.trim();
+        if (!trimmed) {
+            return;
+        }
+        setSharedMemory((current) => [trimmed, ...current].slice(0, 10));
+        setSharedMemoryNote('');
+        appendRecordingEvent(`${t('chat.collaboration.memoryUpdated')}: ${trimmed}`);
     };
 
     const handleRun = async () => {
@@ -149,6 +239,9 @@ export function MultiModelCollaboration({
             });
 
             setResults(result);
+            addAnnotation(t('chat.collaboration.responseSynchronized'));
+            addCursorMarker('AI Partner', t('chat.collaboration.latestResponse'));
+            appendRecordingEvent(t('chat.collaboration.collaborationRunFinished'));
             // Use the main response field from the result
             if (result.response) {
                 onResult?.(result.response);
@@ -209,6 +302,126 @@ export function MultiModelCollaboration({
                         </SelectContent>
                     </Select>
                 </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">{t('chat.collaboration.sharedContext')}</label>
+                    <Textarea
+                        value={sharedContext}
+                        onChange={(event) => {
+                            setSharedContext(event.target.value);
+                            appendRecordingEvent(t('chat.collaboration.contextUpdated'));
+                        }}
+                        placeholder={t('chat.collaboration.sharedContextPlaceholder')}
+                        disabled={isRunning}
+                    />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                    <Card className="p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{t('chat.collaboration.presence')}</span>
+                            <Button
+                                variant={allowGuests ? 'secondary' : 'outline'}
+                                size="sm"
+                                onClick={() => {
+                                    setAllowGuests((current) => !current);
+                                    appendRecordingEvent(t('chat.collaboration.guestPolicyChanged'));
+                                }}
+                            >
+                                {allowGuests ? t('chat.collaboration.guestsAllowed') : t('chat.collaboration.guestsBlocked')}
+                            </Button>
+                        </div>
+                        {presence.map((participant) => (
+                            <div key={participant.id} className="text-xs flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                                <span>{participant.name}</span>
+                            </div>
+                        ))}
+                    </Card>
+                    <Card className="p-3 space-y-2">
+                        <label className="text-sm font-medium">{t('chat.collaboration.sharedMemory')}</label>
+                        <div className="flex gap-2">
+                            <Input
+                                value={sharedMemoryNote}
+                                onChange={(event) => { setSharedMemoryNote(event.target.value); }}
+                                placeholder={t('chat.collaboration.memoryPlaceholder')}
+                            />
+                            <Button size="sm" onClick={handleAddMemory}>{t('common.add')}</Button>
+                        </div>
+                        {sharedMemory.map((entry) => (
+                            <p key={entry} className="text-xs text-muted-foreground">{entry}</p>
+                        ))}
+                    </Card>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                    <Card className="p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">{t('chat.collaboration.cursorMarkers')}</label>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => { addCursorMarker('Guest Reviewer', t('chat.collaboration.promptArea')); }}
+                            >
+                                {t('chat.collaboration.addMarker')}
+                            </Button>
+                        </div>
+                        {cursorMarkers.map((marker) => (
+                            <p key={marker.id} className="text-xs text-muted-foreground">
+                                {marker.user} → {marker.target}
+                            </p>
+                        ))}
+                    </Card>
+                    <Card className="p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">{t('chat.collaboration.changeAnnotations')}</label>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => { addAnnotation(t('chat.collaboration.annotationTemplate')); }}
+                            >
+                                {t('chat.collaboration.annotate')}
+                            </Button>
+                        </div>
+                        {annotations.map((annotation) => (
+                            <p key={annotation.id} className="text-xs text-muted-foreground">
+                                {annotation.author}: {annotation.note}
+                            </p>
+                        ))}
+                    </Card>
+                </div>
+
+                <Card className="p-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            size="sm"
+                            variant={sessionRecording ? 'destructive' : 'outline'}
+                            onClick={() => {
+                                setSessionRecording((current) => !current);
+                                appendRecordingEvent(t('chat.collaboration.recordingToggled'));
+                            }}
+                        >
+                            {sessionRecording ? t('chat.collaboration.stopRecording') : t('chat.collaboration.startRecording')}
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                                const link = `tandem://share/${sessionId}?guest=${allowGuests ? '1' : '0'}`;
+                                setShareLink(link);
+                                await navigator.clipboard.writeText(link).catch(() => {});
+                                appendRecordingEvent(t('chat.collaboration.linkGenerated'));
+                            }}
+                        >
+                            <Copy className="w-3 h-3 mr-1" />
+                            {t('chat.collaboration.generateShareLink')}
+                        </Button>
+                    </div>
+                    {shareLink && <Input value={shareLink} readOnly />}
+                    {recordedEvents.map((event, index) => (
+                        <p key={`${event}-${index}`} className="text-xs text-muted-foreground">{event}</p>
+                    ))}
+                </Card>
 
                 {/* Run Button */}
                 <Button

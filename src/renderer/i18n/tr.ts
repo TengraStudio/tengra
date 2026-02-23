@@ -82,6 +82,33 @@ export const tr = {
         "healthy": "Sağlıklı",
         "degraded": "Düşük Performans"
     },
+    "serviceHealth": {
+        "settings": {
+            "empty": "serviceHealth.settings.empty",
+            "ready": "serviceHealth.settings.ready",
+            "failure": "serviceHealth.settings.failure"
+        },
+        "llm": {
+            "empty": "serviceHealth.llm.empty",
+            "ready": "serviceHealth.llm.ready",
+            "failure": "serviceHealth.llm.failure"
+        },
+        "localImage": {
+            "empty": "serviceHealth.localImage.empty",
+            "ready": "serviceHealth.localImage.ready",
+            "failure": "serviceHealth.localImage.failure"
+        },
+        "modelRegistry": {
+            "empty": "serviceHealth.modelRegistry.empty",
+            "ready": "serviceHealth.modelRegistry.ready",
+            "failure": "serviceHealth.modelRegistry.failure"
+        },
+        "token": {
+            "empty": "serviceHealth.token.empty",
+            "ready": "serviceHealth.token.ready",
+            "failure": "serviceHealth.token.failure"
+        }
+    },
     "loading": {
         "codeEditor": "Kod editörü yükleniyor",
         "chart": "Grafik yükleniyor"
@@ -1268,7 +1295,33 @@ export const tr = {
             "from": "Kaynak: {{provider}}/{{model}}",
             "selectModelError": "Lütfen en az bir model seçin",
             "runFailed": "İşbirliği çalıştırılamadı",
-            "remove": "Kaldır"
+            "remove": "Kaldır",
+            "sharedContext": "Paylaşılan Bağlam",
+            "sharedContextPlaceholder": "Tüm katılımcılar için bağlam ekleyin...",
+            "sharedMemory": "Paylaşılan Hafıza",
+            "memoryPlaceholder": "Paylaşılan hafıza notu ekleyin",
+            "memoryUpdated": "Paylaşılan hafıza güncellendi",
+            "presence": "Varlık Durumu",
+            "guestsAllowed": "Misafirler Açık",
+            "guestsBlocked": "Misafirler Kapalı",
+            "guestPolicyChanged": "Misafir erişim politikası güncellendi",
+            "cursorMarkers": "İmleç Vurgu İşaretleri",
+            "addMarker": "İşaret Ekle",
+            "cursorMarked": "İmleç işareti eklendi",
+            "promptArea": "İstem Alanı",
+            "latestResponse": "Son Yanıt",
+            "changeAnnotations": "Değişiklik Notları",
+            "annotate": "Not Ekle",
+            "annotationTemplate": "Katılımcılar için bağlam değişiklikleri senkronlandı.",
+            "annotationRecorded": "Değişiklik notu kaydedildi",
+            "responseSynchronized": "AI yanıtı oturum katılımcılarıyla senkronlandı.",
+            "startRecording": "Kaydı Başlat",
+            "stopRecording": "Kaydı Durdur",
+            "recordingToggled": "Oturum kayıt durumu değişti",
+            "generateShareLink": "Paylaşım Bağlantısı Oluştur",
+            "linkGenerated": "Oturum paylaşım bağlantısı oluşturuldu",
+            "contextUpdated": "Paylaşılan bağlam güncellendi",
+            "collaborationRunFinished": "İşbirliği çalıştırması tamamlandı"
         }
     },
     "welcome": {
@@ -2003,6 +2056,27 @@ export const tr = {
         },
         "select": "Bellek Seç"
     },
+    "advancedMemory": {
+        "health": {
+            "ready": "Bellek servisi sağlıklı.",
+            "empty": "Bellek servisi hazır ve etkinlik bekliyor.",
+            "failure": "Bellek servisi bozulmuş durumda. Yeniden deneyin veya kayıtları kontrol edin."
+        }
+    },
+    "contextRetrieval": {
+        "health": {
+            "ready": "Bağlam getirme servisi sağlıklı.",
+            "empty": "Bağlam getirme servisi hazır ve istek bekliyor.",
+            "failure": "Bağlam getirme servisi bozulmuş durumda. Yeniden deneyin veya kayıtları kontrol edin."
+        }
+    },
+    "embedding": {
+        "health": {
+            "ready": "Embedding servisi sağlıklı.",
+            "empty": "Embedding servisi hazır ve istek bekliyor.",
+            "failure": "Embedding servisi bozulmuş durumda. Yeniden deneyin veya kayıtları kontrol edin."
+        }
+    },
     "terminal": {
         "title": "Terminal",
         "new": "Yeni Terminal",
@@ -2062,6 +2136,10 @@ export const tr = {
         "integratedSessions": "Entegre Oturumlar",
         "externalTerminals": "Harici Terminaller",
         "noBackendsAvailable": "Kullanılabilir terminal arka yüzü yok",
+        "sshPrefix": "SSH",
+        "dockerPrefix": "Docker",
+        "multiplexerTitle": "Çoklayıcı (tmux/screen)",
+        "healthSummary": "Araç çubuğu sağlığı",
         "aiExplainError": "Hatayı Açıkla",
         "aiFixError": "Hatayı Düzelt",
         "aiExplainCommand": "Komutu Açıkla",
@@ -2887,5 +2965,33 @@ export const tr = {
         "noTriggers": "Tanımlanmış tetikleyici yok",
         "noSteps": "Tanımlanmış adım yok",
         "editorNote": "Tetikleyicilerin ve adımların gelişmiş yapılandırması için JSON modunu kullanın."
+    },
+    "agentCollaboration": {
+        "error": {
+            "invalidRoutingRules": "Geçersiz yönlendirme kuralları sağlandı",
+            "votingSessionNotFound": "Oylama oturumu bulunamadı",
+            "votingSessionInvalid": "Geçerli bir oylama oturumu oluşturulamadı",
+            "debateSessionNotFound": "Tartışma oturumu bulunamadı",
+            "invalidDebateArgument": "Geçersiz tartışma argümanı"
+        },
+        "voting": {
+            "created": "Oylama oturumu oluşturuldu: {{question}}",
+            "voteSubmitted": "Oy gönderildi: {{modelId}} \"{{decision}}\" için oy kullandı",
+            "resolved": "Oylama sonuçlandı: \"{{winner}}\"",
+            "deadlocked": "Oylama kilitlendi: {{decisions}}"
+        },
+        "debate": {
+            "created": "Tartışma oturumu oluşturuldu: {{topic}}",
+            "argumentSubmitted": "{{agentId}} tarafından argüman gönderildi",
+            "resolved": "Tartışma kazanan taraf ile sonuçlandı: {{side}}"
+        }
+    },
+    "agentCheckpoint": {
+        "error": {
+            "saveFailed": "Ajan kontrol noktası kaydedilemedi",
+            "serializationFailed": "Ajan durum anlık görüntüsü serileştirilemedi",
+            "checkpointNotFound": "Kontrol noktası {{id}} bulunamadı"
+        },
+        "saved": "{{taskId}} görevi için kontrol noktası kaydedildi"
     }
 };

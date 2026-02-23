@@ -1,22 +1,8 @@
-import { invokeTypedIpc, type IpcContractMap } from '@renderer/lib/ipc-client';
-import { z } from 'zod';
+import { AgentStartOptions } from '@shared/types/project-agent';
 
 import { Project } from '@/types';
 
 import { AttachedFile, ModelOption } from '../../components/agent/TaskInputForm';
-
-interface StartTaskPayload {
-    projectId: string;
-    description: string;
-    files: Array<{
-        path: string;
-        name: string;
-        type: string;
-        content: string;
-    }>;
-    provider: string;
-    model: string;
-}
 
 interface StartTaskResult {
     success: boolean;
@@ -24,33 +10,12 @@ interface StartTaskResult {
     error?: string;
 }
 
-type StartTaskIpcContract = IpcContractMap & {
-    'project-agent:start-task': {
-        args: [StartTaskPayload];
-        response: StartTaskResult;
-    };
-};
-
-const startTaskPayloadSchema: z.ZodType<StartTaskPayload> = z.object({
-    projectId: z.string().min(1),
-    description: z.string().min(1),
-    files: z.array(
-        z.object({
-            path: z.string(),
-            name: z.string(),
-            type: z.string(),
-            content: z.string()
-        })
-    ),
-    provider: z.string().min(1),
-    model: z.string().min(1)
-});
-
-const startTaskResultSchema: z.ZodType<StartTaskResult> = z.object({
-    success: z.boolean(),
-    taskId: z.string().optional(),
-    error: z.string().optional()
-});
+interface StartTaskFile {
+    path: string;
+    name: string;
+    type: string;
+    content: string;
+}
 
 /**
  * Validate user input for starting a task
@@ -72,7 +37,7 @@ export const validateTaskInput = (userPrompt: string, selectedModel: ModelOption
 /**
  * Prepare files for task execution
  */
-export const prepareTaskFiles = (attachedFiles: AttachedFile[]): StartTaskPayload['files'] => {
+export const prepareTaskFiles = (attachedFiles: AttachedFile[]): StartTaskFile[] => {
     return attachedFiles.map((f) => ({
         path: f.path,
         name: f.name,
@@ -86,7 +51,7 @@ export const prepareTaskFiles = (attachedFiles: AttachedFile[]): StartTaskPayloa
  */
 export const invokeStartTask = async (
     userPrompt: string,
-    files: StartTaskPayload['files'],
+    files: StartTaskFile[],
     selectedModel: ModelOption,
     project: Project
 ): Promise<StartTaskResult> => {
@@ -97,26 +62,34 @@ export const invokeStartTask = async (
             selectedModel: selectedModel.model
         });
 
-        window.electron.log.info('[useAgentTask] Invoking project-agent:start-task');
+        window.electron.log.info('[useAgentTask] Invoking project:start');
 
-        const payload: StartTaskPayload = {
+        const options: AgentStartOptions = {
+            task: userPrompt,
             projectId: project.id,
-            description: userPrompt,
-            files,
-            provider: selectedModel.provider,
-            model: selectedModel.model
+            model: {
+                provider: selectedModel.provider,
+                model: selectedModel.model
+            },
+            attachments: files.map(file => ({
+                name: file.name,
+                path: file.path,
+                size: 0
+            }))
         };
 
-        const result = await invokeTypedIpc<StartTaskIpcContract, 'project-agent:start-task'>(
-            'project-agent:start-task',
-            [payload],
-            {
-                argsSchema: z.tuple([startTaskPayloadSchema]),
-                responseSchema: startTaskResultSchema
-            }
-        );
+        const { taskId } = await window.electron.projectAgent.start(options);
+        if (!taskId) {
+            return {
+                success: false,
+                error: 'Task started but taskId was missing'
+            };
+        }
 
-        return result;
+        return {
+            success: true,
+            taskId
+        };
     } catch (error) {
         window.electron.log.error('Failed to start task:', error as Error);
         return {

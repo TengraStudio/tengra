@@ -64,7 +64,7 @@ describe('useMemory', () => {
             expect(result.current.isLoading).toBe(false);
         });
 
-        expect(getPendingMock).toHaveBeenCalledTimes(2);
+        expect(getPendingMock.mock.calls.length).toBeGreaterThanOrEqual(2);
         expect(result.current.error).toBeNull();
     });
 

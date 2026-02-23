@@ -1,7 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { MultiLevelCache } from '@main/utils/cache.util';
 import { JsonValue } from '@shared/types/common';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 /**
  * MCP Marketplace Server from Registry API
@@ -56,6 +56,33 @@ export interface McpExtensionTemplate {
     };
 }
 
+interface MarketplaceFetchTelemetry {
+    totalRequests: number;
+    totalRetries: number;
+    transientFailures: number;
+    fallbackUsages: number;
+    lastFailureAt?: number;
+}
+
+interface MarketplacePackageManifest {
+    name?: string;
+    description?: string;
+    author?: string | { name?: string };
+    version?: string;
+    repository?: { url?: string };
+    license?: string;
+}
+
+function resolveAuthorName(author: MarketplacePackageManifest['author']): string | undefined {
+    if (!author) {
+        return undefined;
+    }
+    if (typeof author === 'string') {
+        return author;
+    }
+    return author.name;
+}
+
 /**
  * McpMarketplaceService fetches and caches MCP servers from the official
  * GitHub repository (modelcontextprotocol/servers).
@@ -68,6 +95,12 @@ export class McpMarketplaceService extends BaseService {
     });
     private readonly CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
     private readonly CACHE_KEY_ALL = 'servers:all';
+    private readonly fetchTelemetry: MarketplaceFetchTelemetry = {
+        totalRequests: 0,
+        totalRetries: 0,
+        transientFailures: 0,
+        fallbackUsages: 0
+    };
     private readonly EXTENSION_TEMPLATES: McpExtensionTemplate[] = [
         {
             id: 'tpl-mcp-server',
@@ -369,6 +402,39 @@ export class McpMarketplaceService extends BaseService {
         await this.listServers();
     }
 
+    private isTransientMarketplaceError(error: unknown): boolean {
+        if (!axios.isAxiosError(error)) {
+            return false;
+        }
+        if (error.code === 'ECONNABORTED') {
+            return true;
+        }
+        if (!error.response) {
+            return true;
+        }
+        return error.response.status === 429 || error.response.status >= 500;
+    }
+
+    private async getWithRetry<T>(url: string, config: AxiosRequestConfig, attempts = 3): Promise<T> {
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            this.fetchTelemetry.totalRequests += 1;
+            try {
+                const response = await axios.get<T>(url, config);
+                return response.data;
+            } catch (error) {
+                lastError = error;
+                if (!this.isTransientMarketplaceError(error) || attempt === attempts) {
+                    throw error;
+                }
+                this.fetchTelemetry.transientFailures += 1;
+                this.fetchTelemetry.totalRetries += 1;
+                await new Promise(resolve => setTimeout(resolve, attempt * 200));
+            }
+        }
+        throw lastError;
+    }
+
     /**
      * List all available MCP servers from GitHub repository
      */
@@ -380,7 +446,7 @@ export class McpMarketplaceService extends BaseService {
 
         try {
             // Fetch from GitHub API
-            const response = await axios.get<Array<{ name: string; type: string; path: string }>>(
+            const directoriesPayload = await this.getWithRetry<Array<{ name: string; type: string; path: string }>>(
                 this.GITHUB_API,
                 {
                     timeout: 10000,
@@ -391,11 +457,11 @@ export class McpMarketplaceService extends BaseService {
                 }
             );
 
-            if (response.data && Array.isArray(response.data)) {
+            if (directoriesPayload && Array.isArray(directoriesPayload)) {
                 const servers: McpMarketplaceServer[] = [];
 
                 // Filter only directories (each MCP server is in its own directory)
-                const directories = response.data.filter(item => item.type === 'dir');
+                const directories = directoriesPayload.filter(item => item.type === 'dir');
 
                 // Fetch package.json files in batches to avoid rate limiting
                 const BATCH_SIZE = 5;
@@ -404,14 +470,17 @@ export class McpMarketplaceService extends BaseService {
                     const batchPromises = batch.map(async (dir): Promise<McpMarketplaceServer | null> => {
                         try {
                             const packageUrl = `https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/${dir.name}/package.json`;
-                            const pkgResponse = await axios.get(packageUrl, { timeout: 5000 });
-                            const pkg = pkgResponse.data;
+                            const pkg = await this.getWithRetry<MarketplacePackageManifest>(
+                                packageUrl,
+                                { timeout: 5000 },
+                                2
+                            );
 
                             const server: McpMarketplaceServer = {
                                 id: dir.name,
                                 name: pkg.name ?? dir.name,
                                 description: pkg.description ?? `MCP server for ${dir.name}`,
-                                publisher: pkg.author?.name ?? pkg.author ?? 'Model Context Protocol',
+                                publisher: resolveAuthorName(pkg.author) ?? 'Model Context Protocol',
                                 version: pkg.version,
                                 command: `npx -y ${pkg.name}`,
                                 repository: pkg.repository?.url ?? `https://github.com/modelcontextprotocol/servers/tree/main/src/${dir.name}`,
@@ -459,11 +528,15 @@ export class McpMarketplaceService extends BaseService {
                 }
 
                 this.cache.set(this.CACHE_KEY_ALL, servers, { warm: this.CACHE_TTL_MS });
-                this.logInfo(`Loaded ${servers.length} servers from GitHub (cache hitRate=${(this.cache.stats().hitRate * 100).toFixed(1)}%)`);
+                this.logInfo(
+                    `Loaded ${servers.length} servers from GitHub (cache hitRate=${(this.cache.stats().hitRate * 100).toFixed(1)}%, retries=${this.fetchTelemetry.totalRetries})`
+                );
                 return servers.map(server => this.normalizeExtensionType(server));
             }
         } catch (error) {
             this.logError('Failed to fetch from GitHub, using fallback', error);
+            this.fetchTelemetry.fallbackUsages += 1;
+            this.fetchTelemetry.lastFailureAt = Date.now();
         }
 
         // Fallback to hardcoded list

@@ -311,7 +311,7 @@ export class ProjectAgentService extends BaseService {
         return this.agentPerformanceService;
     }
 
-    async start(options: AgentStartOptions): Promise<void> {
+    async start(options: AgentStartOptions): Promise<string> {
         // ALWAYS create a new task for 'start', as per original behavior
         const taskId = await this.databaseService.uac.createTask({
             description: options.task,
@@ -349,6 +349,8 @@ export class ProjectAgentService extends BaseService {
                 throw error;
             }
         }
+
+        return taskId;
     }
 
     async generatePlan(options: AgentStartOptions): Promise<void> {
@@ -617,26 +619,15 @@ export class ProjectAgentService extends BaseService {
     async saveSnapshot(taskId: string): Promise<string> {
         const executor = this.executors.get(taskId);
         if (executor) {
-            // Force executor to save?
-            // Actually agentCheckpointService does the heavy lifting, but we need the current in-memory state
-            // which the executor has.
-            // Executor has `saveState()` but it's private.
-            // However, executor syncs to DB on every step update.
-            // So we can probably just tell checkpoint service to snapshot the DB state?
-            // Or expose saveSnapshot on executor.
-
-            // For now, let's assume DB is up to date enough or I triggers a save.
-            // I'll add `saveSnapshot` to AgentTaskExecutor later if needed.
-            // OR I can use `executor.getStatus()` to build the state and save it manually here.
-
-            // But `agent-task-executor.ts` has `mapToAgentTaskState` private method.
-            // I should assume the executor handles checking pointing logic internally usually.
-            // But this is a manual "Save Snapshot" button action.
-
-            // I'll defer this implementation or try to fetch from DB.
-            return '';
+            return await executor.saveManualSnapshot();
         }
-        return '';
+
+        const latestCheckpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
+        if (latestCheckpoint?.id) {
+            return latestCheckpoint.id;
+        }
+
+        throw new Error(`Unable to save snapshot for task ${taskId}`);
     }
 
     // --- Profile Management ---
@@ -689,13 +680,18 @@ export class ProjectAgentService extends BaseService {
             const status = executor.getStatus();
             if (status.config) {
                 status.config.model = { provider, model };
-                // Need to persist this change to DB
-                // Update metadata
-                // For now, just in-memory update for the executor loop
             }
-            return true;
         }
-        return false;
+
+        const task = await this.databaseService.uac.getTask(taskId);
+        if (!task) {
+            return false;
+        }
+
+        const metadata = safeJsonParse<Record<string, unknown>>(task.metadata, {});
+        metadata['model'] = { provider, model };
+        await this.databaseService.uac.updateTaskMetadata(taskId, metadata);
+        return true;
     }
 
     // Stub methods for legacy compatibility that returns data
@@ -704,8 +700,29 @@ export class ProjectAgentService extends BaseService {
         const status = await this.getStatus(taskId);
         return { success: true, messages: status.history };
     }
-    async getTaskEvents(_taskId: string) { return { success: true, events: [] as AgentEventRecord[] }; } // Not impl
-    async getTaskTelemetry(_taskId: string) { return { success: true, telemetry: [] as TaskMetrics[] }; } // Not impl
+    async getTaskEvents(taskId: string) {
+        const latestCheckpoint = await this.agentCheckpointService.getLatestCheckpoint(taskId);
+        const events = latestCheckpoint?.state?.eventHistory ?? [];
+        return { success: true, events: events as AgentEventRecord[] };
+    }
+    async getTaskTelemetry(taskId: string) {
+        const metrics = await this.agentPerformanceService.loadMetrics(taskId);
+        if (!metrics) {
+            return { success: true, telemetry: [] as TaskMetrics[] };
+        }
+
+        const telemetry: TaskMetrics = {
+            duration: metrics.resources.totalExecutionTimeMs,
+            llmCalls: metrics.resources.apiCallCount,
+            toolCalls: 0,
+            tokensUsed: metrics.resources.totalTokensUsed,
+            providersUsed: [],
+            errorCount: metrics.errors.totalErrors,
+            recoveryCount: 0,
+            estimatedCost: metrics.resources.totalCostUsd,
+        };
+        return { success: true, telemetry: [telemetry] };
+    }
 
     async createPullRequest(taskId?: string): Promise<{ success: boolean; url?: string; error?: string }> {
         const targetId = taskId || this.currentTaskId;

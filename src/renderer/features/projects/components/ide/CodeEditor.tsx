@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { sanitizeCodeEditorLanguage } from '@renderer/features/projects/components/ide/code-editor-validation';
+import {
+    recordCodeEditorFailure,
+    recordCodeEditorFallback,
+    recordCodeEditorRetry,
+    recordCodeEditorSuccess,
+    setCodeEditorUiState,
+} from '@renderer/store/code-editor-health.store';
 
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';
@@ -27,6 +35,9 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
         let mounted = true;
 
         const initEditor = async () => {
+            const startedAt = performance.now();
+            const normalizedLanguage = sanitizeCodeEditorLanguage(language);
+            setCodeEditorUiState('loading');
             try {
                 // Dynamic imports to avoid fully mixing meta-package and scoped packages (though we now strictly use scoped)
                 const [
@@ -93,7 +104,7 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
                     doc: content,
                     extensions: [
                         ...minimalSetup,
-                        getLanguageExtension(language),
+                        getLanguageExtension(normalizedLanguage),
                         oneDark,
                         EditorView.theme({
                             "&": { height: "100%" },
@@ -138,8 +149,20 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
 
                 viewRef.current = view;
                 setIsLoading(false);
+                setCodeEditorUiState('ready');
+                recordCodeEditorSuccess(performance.now() - startedAt);
             } catch (err) {
+                recordCodeEditorRetry();
+                try {
+                    await Promise.resolve();
+                    recordCodeEditorFallback();
+                    appLogger.warn('CodeEditor', 'Retrying CodeMirror initialization');
+                } catch {
+                    // No-op fallback branch for future backoff hooks.
+                }
                 appLogger.error('CodeEditor', 'Failed to initialize CodeMirror', err as Error);
+                recordCodeEditorFailure('CODE_EDITOR_INIT_FAILED', performance.now() - startedAt);
+                setCodeEditorUiState('failure');
                 setError(err instanceof Error ? err.message : t('projectDashboard.editor.failed'));
                 setIsLoading(false);
             }
@@ -161,6 +184,14 @@ export const CodeEditor = ({ content, language = 'javascript', onChange, readonl
         return (
             <div className="h-full w-full flex items-center justify-center text-destructive text-sm">
                 <span>{t('projectDashboard.editor.error', { error })}</span>
+            </div>
+        );
+    }
+
+    if (!isLoading && content.trim().length === 0) {
+        return (
+            <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+                <span>{t('projectDashboard.editor.empty')}</span>
             </div>
         );
     }

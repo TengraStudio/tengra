@@ -76,6 +76,7 @@ import {
     DebateSession,
     DebateSide,
     ModelRoutingRule,
+    OrchestratorState,
     VotingConfiguration,
     VotingSession,
     VotingTemplate
@@ -853,10 +854,30 @@ export interface ElectronAPI {
         getAllEntityKnowledge: () => Promise<{ success: boolean; data: EntityKnowledge[]; error?: string }>;
         getAllEpisodes: () => Promise<{ success: boolean; data: EpisodicMemory[]; error?: string }>;
         getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+        }>;
     };
 
     codeSandbox: {
-        languages: () => Promise<{ languages: Array<'javascript' | 'typescript' | 'python' | 'shell'> }>;
+        languages: () => Promise<{
+            languages: Array<'javascript' | 'typescript' | 'python' | 'shell'>;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState: 'ready' | 'empty' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
         execute: (payload: {
             language: 'javascript' | 'typescript' | 'python' | 'shell';
             code: string;
@@ -869,6 +890,29 @@ export interface ElectronAPI {
             result?: string;
             durationMs: number;
             language: 'javascript' | 'typescript' | 'python' | 'shell';
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState: 'ready' | 'empty' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: {
+                    fastMs: number;
+                    executeMs: number;
+                };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState?: 'ready' | 'failure';
+            fallbackUsed?: boolean;
         }>;
     };
 
@@ -1577,6 +1621,21 @@ export interface ElectronAPI {
         ) => Promise<{ success: boolean; error?: string }>;
         debug: () => Promise<{ success: boolean; metrics?: Record<string, IpcValue>; error?: string }>;
         refresh: () => Promise<{ success: boolean; error?: string }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState?: 'ready' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
     };
 
     proxyEmbed: {
@@ -2217,7 +2276,7 @@ export interface ElectronAPI {
     };
 
     projectAgent: {
-        start: (options: AgentStartOptions) => Promise<void>;
+        start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
         generatePlan: (options: AgentStartOptions) => Promise<void>;
         approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
         stop: (taskId?: string) => Promise<void>;
@@ -2227,6 +2286,11 @@ export interface ElectronAPI {
         resetState: () => Promise<void>;
         getStatus: (taskId?: string) => Promise<ProjectState>;
         retryStep: (index: number, taskId?: string) => Promise<void>;
+        selectModel: (payload: {
+            taskId: string;
+            provider: string;
+            model: string;
+        }) => Promise<{ success: boolean; error?: string }>;
         // AGT-HIL: Human-in-the-Loop step actions
         approveStep: (taskId: string, stepId: string) => Promise<void>;
         skipStep: (taskId: string, stepId: string) => Promise<void>;
@@ -2368,6 +2432,28 @@ export interface ElectronAPI {
             }>
         >;
         deleteCanvasEdge: (id: string) => Promise<void>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState?: 'ready' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
+    };
+    orchestrator: {
+        start: (task: string, projectId?: string) => Promise<void>;
+        approve: (plan: ProjectStep[]) => Promise<void>;
+        getState: () => Promise<OrchestratorState>;
+        stop: () => Promise<void>;
+        onUpdate: (callback: (state: OrchestratorState) => void) => () => void;
     };
 
     // Extension API
@@ -2406,6 +2492,78 @@ export interface ElectronAPI {
         }>;
         validate: (manifest: unknown) => Promise<{ valid: boolean; errors: string[] }>;
     };
+}
+
+function normalizeOrchestratorPlan(value: IpcValue): ProjectStep[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const normalizedPlan: ProjectStep[] = [];
+    for (const planItem of value) {
+        if (
+            typeof planItem !== 'object' ||
+            planItem === null ||
+            Array.isArray(planItem)
+        ) {
+            continue;
+        }
+        const planRecord = planItem as Record<string, IpcValue>;
+        if (
+            typeof planRecord['id'] !== 'string' ||
+            typeof planRecord['text'] !== 'string' ||
+            typeof planRecord['status'] !== 'string'
+        ) {
+            continue;
+        }
+        normalizedPlan.push({
+            id: planRecord['id'],
+            text: planRecord['text'],
+            status: planRecord['status'] as ProjectStep['status']
+        });
+    }
+    return normalizedPlan;
+}
+
+function normalizeOrchestratorHistory(value: IpcValue): Message[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const normalizedHistory: Message[] = [];
+    for (const historyItem of value) {
+        if (
+            typeof historyItem !== 'object' ||
+            historyItem === null ||
+            Array.isArray(historyItem)
+        ) {
+            continue;
+        }
+        const historyRecord = historyItem as Record<string, IpcValue>;
+        if (typeof historyRecord['id'] !== 'string') {
+            continue;
+        }
+        const rawRole = historyRecord['role'];
+        const role: Message['role'] =
+            rawRole === 'system' ||
+            rawRole === 'user' ||
+            rawRole === 'assistant' ||
+            rawRole === 'tool'
+                ? rawRole
+                : 'assistant';
+        const rawContent = historyRecord['content'];
+        const content = typeof rawContent === 'string' ? rawContent : '';
+        const rawTimestamp = historyRecord['timestamp'];
+        const timestamp =
+            typeof rawTimestamp === 'number' || typeof rawTimestamp === 'string'
+                ? new Date(rawTimestamp)
+                : new Date();
+        normalizedHistory.push({
+            id: historyRecord['id'],
+            role,
+            content,
+            timestamp
+        });
+    }
+    return normalizedHistory;
 }
 
 const api: ElectronAPI = {
@@ -2826,6 +2984,7 @@ const api: ElectronAPI = {
         getAllEntityKnowledge: () => ipcRenderer.invoke('advancedMemory:getAllEntityKnowledge'),
         getAllEpisodes: () => ipcRenderer.invoke('advancedMemory:getAllEpisodes'),
         getAllAdvancedMemories: () => ipcRenderer.invoke('advancedMemory:getAllAdvancedMemories'),
+        health: () => ipcRenderer.invoke('advancedMemory:health'),
     },
     codeSandbox: {
         languages: () => ipcRenderer.invoke('code-sandbox:languages'),
@@ -2835,6 +2994,7 @@ const api: ElectronAPI = {
             timeoutMs?: number;
             stdin?: string;
         }) => ipcRenderer.invoke('code-sandbox:execute', payload),
+        health: () => ipcRenderer.invoke('code-sandbox:health'),
     },
     voice: {
         detectWakeWord: (payload: { transcript: string; wakeWord?: string }) =>
@@ -3051,6 +3211,7 @@ const api: ElectronAPI = {
             ipcRenderer.invoke('mcp:marketplace:rollback-version', serverId, targetVersion),
         debug: () => ipcRenderer.invoke('mcp:marketplace:debug'),
         refresh: () => ipcRenderer.invoke('mcp:marketplace:refresh'),
+        health: () => ipcRenderer.invoke('mcp:marketplace:health'),
     },
 
     proxyEmbed: {
@@ -3667,6 +3828,7 @@ const api: ElectronAPI = {
         resetState: () => ipcRenderer.invoke('project:reset-state'),
         getStatus: taskId => ipcRenderer.invoke('project:get-status', { taskId }),
         retryStep: (index, taskId) => ipcRenderer.invoke('project:retry-step', { index, taskId }),
+        selectModel: payload => ipcRenderer.invoke('project:select-model', payload),
         // AGT-HIL: Human-in-the-Loop step actions
         approveStep: (taskId: string, stepId: string) =>
             ipcRenderer.invoke('project:approve-step', { taskId, stepId }),
@@ -3732,6 +3894,41 @@ const api: ElectronAPI = {
         saveCanvasEdges: edges => ipcRenderer.invoke('project:save-canvas-edges', edges),
         getCanvasEdges: () => ipcRenderer.invoke('project:get-canvas-edges'),
         deleteCanvasEdge: id => ipcRenderer.invoke('project:delete-canvas-edge', id),
+        health: () => ipcRenderer.invoke('project-agent:health'),
+    },
+    orchestrator: {
+        start: (task: string, projectId?: string) =>
+            ipcRenderer.invoke('orchestrator:start', task, projectId),
+        approve: (plan: ProjectStep[]) => ipcRenderer.invoke('orchestrator:approve', plan),
+        getState: () => ipcRenderer.invoke('orchestrator:get-state'),
+        stop: () => ipcRenderer.invoke('orchestrator:stop'),
+        onUpdate: callback => {
+            const listener = (_event: IpcRendererEvent, state: IpcValue) => {
+                if (typeof state === 'object' && state !== null && !Array.isArray(state)) {
+                    const candidate = state as Record<string, IpcValue>;
+                    const hasShape =
+                        typeof candidate['status'] === 'string' &&
+                        typeof candidate['currentTask'] === 'string' &&
+                        Array.isArray(candidate['plan']) &&
+                        Array.isArray(candidate['history']) &&
+                        typeof candidate['assignments'] === 'object' &&
+                        candidate['assignments'] !== null &&
+                        !Array.isArray(candidate['assignments']);
+                    if (hasShape) {
+                        const nextState: OrchestratorState = {
+                            status: candidate['status'] as OrchestratorState['status'],
+                            currentTask: candidate['currentTask'] as string,
+                            plan: normalizeOrchestratorPlan(candidate['plan']),
+                            history: normalizeOrchestratorHistory(candidate['history']),
+                            assignments: candidate['assignments'] as Record<string, string>,
+                        };
+                        callback(nextState);
+                    }
+                }
+            };
+            ipcRenderer.on('orchestrator:update', listener);
+            return () => ipcRenderer.removeListener('orchestrator:update', listener);
+        },
     },
 
     extension: {

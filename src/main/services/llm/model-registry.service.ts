@@ -10,6 +10,7 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { SettingsService } from '@main/services/system/settings.service';
 import { JsonValue } from '@shared/types/common';
+import { SystemEventKey } from '@shared/types/events';
 import { getErrorMessage } from '@shared/utils/error.util';
 
 export type ModelProviderId =
@@ -63,8 +64,32 @@ export interface ModelRegistryDependencies {
  * Also keeps token context-window limits in sync with TokenEstimationService.
  */
 export class ModelRegistryService extends BaseService {
+    private static readonly ERROR_CODES = {
+        FETCH_FAILED: 'MODEL_REGISTRY_FETCH_FAILED',
+        MALFORMED_RESPONSE: 'MODEL_REGISTRY_MALFORMED_RESPONSE',
+    } as const;
+    private static readonly PERFORMANCE_BUDGET = {
+        cacheRefreshMs: 2000,
+        providerFetchMs: 1500,
+        maxCachedModels: 5000,
+    } as const;
+    private static readonly UI_MESSAGE_KEYS = {
+        ready: 'serviceHealth.modelRegistry.ready',
+        empty: 'serviceHealth.modelRegistry.empty',
+        failure: 'serviceHealth.modelRegistry.failure',
+    } as const;
+    private readonly FETCH_RETRY_POLICY = {
+        maxAttempts: 2,
+        delayMs: 250,
+    } as const;
     private cachedModels: ModelProviderInfo[] = [];
     private lastUpdate: number = 0;
+    private telemetry = {
+        cacheUpdates: 0,
+        providerFetchFailures: 0,
+        lastSuccessfulUpdateAt: 0,
+        lastTelemetryEventAt: 0,
+    };
 
     constructor(private deps: ModelRegistryDependencies) {
         super('ModelRegistryService');
@@ -103,9 +128,12 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async updateCache(): Promise<void> {
+        this.telemetry.cacheUpdates += 1;
+        this.trackTelemetry('model-registry.cache.update.started');
         appLogger.info('ModelRegistry', 'Updating remote model cache...');
         this.cachedModels = await this.fetchRemoteModels();
         this.lastUpdate = Date.now();
+        this.telemetry.lastSuccessfulUpdateAt = this.lastUpdate;
 
         // Push limits to TokenEstimationService
         const tokenEstimator = getTokenEstimationService();
@@ -121,6 +149,9 @@ export class ModelRegistryService extends BaseService {
         }
 
         appLogger.info('ModelRegistry', `Cache updated with ${this.cachedModels.length} models`);
+        this.trackTelemetry('model-registry.cache.update.completed', {
+            modelCount: this.cachedModels.length,
+        });
         this.deps.eventBus.emit('model:updated', {
             provider: 'all',
             count: this.cachedModels.length,
@@ -288,25 +319,34 @@ export class ModelRegistryService extends BaseService {
         proxyKey?: string
     ): Promise<ModelProviderInfo[]> {
         try {
-            const response = await this.deps.processManager.sendRequest<{
-                success: boolean;
-                models: ModelProviderInfo[];
-                error?: string;
-            }>('model-service', {
-                type: 'FetchModels',
-                provider,
-                token,
-                proxy_port: proxyPort,
-                proxy_key: proxyKey,
-            });
+            const response = await this.fetchRustModelsWithRetry(provider, token, proxyPort, proxyKey);
 
             appLogger.debug(
                 'ModelRegistry',
                 `Rust response for ${provider}: success=${response.success}, models=${response.models.length}, error=${response.error ?? 'none'}`
             );
 
+            const hasValidResponseShape =
+                typeof response.success === 'boolean' &&
+                Array.isArray(response.models);
+
+            if (!hasValidResponseShape) {
+                appLogger.warn(
+                    'ModelRegistry',
+                    `[${ModelRegistryService.ERROR_CODES.MALFORMED_RESPONSE}] Ignoring malformed model response for provider ${provider}`
+                );
+                return [];
+            }
+
             if (response.success && response.models.length > 0) {
-                return response.models.map(m => {
+                const validModels = response.models.filter(model =>
+                    typeof model.id === 'string' &&
+                    model.id.trim().length > 0 &&
+                    typeof model.provider === 'string' &&
+                    model.provider.trim().length > 0
+                );
+
+                return validModels.map(m => {
                     const mappedProvider = provider === 'anthropic' ? 'claude' : provider;
                     let id = m.id;
                     if (mappedProvider === 'nvidia' && !id.startsWith('nvidia/')) {
@@ -321,12 +361,86 @@ export class ModelRegistryService extends BaseService {
                 });
             }
         } catch (e) {
+            this.telemetry.providerFetchFailures += 1;
+            this.trackTelemetry('model-registry.provider.fetch.failed', { provider });
             appLogger.debug(
                 'ModelRegistry',
-                `Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`
+                `[${ModelRegistryService.ERROR_CODES.FETCH_FAILED}] Failed to fetch ${provider} models from Rust: ${getErrorMessage(e as Error)}`
             );
         }
         return [];
+    }
+
+    private trackTelemetry(name: SystemEventKey, properties: Record<string, unknown> = {}): void {
+        this.telemetry.lastTelemetryEventAt = Date.now();
+        this.deps.eventBus.emit('telemetry:model-registry', {
+            name,
+            ...properties,
+            timestamp: Date.now()
+        });
+    }
+
+    getHealthMetrics(): {
+        status: 'healthy' | 'degraded';
+        uiState: 'ready' | 'empty' | 'failure';
+        messageKey: string;
+        performanceBudget: typeof ModelRegistryService.PERFORMANCE_BUDGET;
+        cacheUpdates: number;
+        providerFetchFailures: number;
+        cachedModelCount: number;
+        lastSuccessfulUpdateAt: number;
+        lastTelemetryEventAt: number;
+    } {
+        const uiState = this.telemetry.providerFetchFailures > 0
+            ? 'failure'
+            : this.cachedModels.length === 0
+                ? 'empty'
+                : 'ready';
+        return {
+            status: this.telemetry.providerFetchFailures > 0 ? 'degraded' : 'healthy',
+            uiState,
+            messageKey: ModelRegistryService.UI_MESSAGE_KEYS[uiState],
+            performanceBudget: ModelRegistryService.PERFORMANCE_BUDGET,
+            cacheUpdates: this.telemetry.cacheUpdates,
+            providerFetchFailures: this.telemetry.providerFetchFailures,
+            cachedModelCount: this.cachedModels.length,
+            lastSuccessfulUpdateAt: this.telemetry.lastSuccessfulUpdateAt,
+            lastTelemetryEventAt: this.telemetry.lastTelemetryEventAt,
+        };
+    }
+
+    private async fetchRustModelsWithRetry(
+        provider: ModelProviderId,
+        token?: string,
+        proxyPort?: number,
+        proxyKey?: string
+    ): Promise<{
+        success: boolean;
+        models: ModelProviderInfo[];
+        error?: string;
+    }> {
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= this.FETCH_RETRY_POLICY.maxAttempts; attempt++) {
+            try {
+                return await this.deps.processManager.sendRequest<{
+                    success: boolean;
+                    models: ModelProviderInfo[];
+                    error?: string;
+                }>('model-service', {
+                    type: 'FetchModels',
+                    provider,
+                    token,
+                    proxy_port: proxyPort,
+                    proxy_key: proxyKey,
+                });
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                if (attempt < this.FETCH_RETRY_POLICY.maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, this.FETCH_RETRY_POLICY.delayMs));
+                }
+            }
+        }
+        throw (lastError ?? new Error('Unknown model registry fetch error'));
     }
 
     private ensureModelCapabilities(model: ModelProviderInfo): ModelProviderInfo {

@@ -2376,4 +2376,16 @@ ${content}`;
             this.logWarn(`Failed to save checkpoint: ${message}`);
         }
     }
+
+    async saveManualSnapshot(): Promise<string> {
+        const stepIndex = this.state.plan.findIndex(s => s.status === 'running');
+        const indexToSave = stepIndex >= 0 ? stepIndex : this.state.plan.length;
+        const taskState = this.mapToAgentTaskState();
+        return await this.services.checkpoint.saveCheckpoint(
+            this.taskId,
+            indexToSave,
+            taskState,
+            'manual_snapshot'
+        );
+    }
 }

@@ -29,16 +29,18 @@ interface MockProjectAgentService extends Partial<ProjectAgentService> {
     getCurrentTaskId: Mock;
 }
 
+type IpcHandler = (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown | Promise<unknown>;
+
 describe('Project Agent IPC Handlers', () => {
     let mockProjectAgentService: MockProjectAgentService;
     let mockDatabaseService: Partial<DatabaseService>;
-    let registeredHandlers: Map<string, any>;
+    let registeredHandlers: Map<string, IpcHandler>;
     let mockEventBus: Partial<EventBusService>;
 
     beforeEach(() => {
         registeredHandlers = new Map();
 
-        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: any) => {
+        vi.mocked(ipcMain.handle).mockImplementation((channel: string, listener: IpcHandler) => {
             if (!registeredHandlers.has(channel)) {
                 registeredHandlers.set(channel, listener);
             }
@@ -72,9 +74,17 @@ describe('Project Agent IPC Handlers', () => {
         vi.clearAllMocks();
     });
 
+    const getRequiredHandler = (channel: string): IpcHandler => {
+        const handler = registeredHandlers.get(channel);
+        if (!handler) {
+            throw new Error(`Missing IPC handler: ${channel}`);
+        }
+        return handler;
+    };
+
     describe('Core Handlers', () => {
         it('should start a project agent task', async () => {
-            const handler = registeredHandlers.get('project:start');
+            const handler = getRequiredHandler('project:start');
             const options = { task: 'Fix bugs' };
             await handler({} as IpcMainInvokeEvent, options);
 
@@ -82,21 +92,21 @@ describe('Project Agent IPC Handlers', () => {
         });
 
         it('should reject invalid start payload', async () => {
-            const handler = registeredHandlers.get('project:start');
+            const handler = getRequiredHandler('project:start');
             const result = await handler({} as IpcMainInvokeEvent, { task: '   ' });
             expect(mockProjectAgentService.start).not.toHaveBeenCalled();
             expect(result).toBeUndefined();
         });
 
         it('should stop a project agent task', async () => {
-            const handler = registeredHandlers.get('project:stop');
+            const handler = getRequiredHandler('project:stop');
             await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.stop).toHaveBeenCalledWith('task-123');
         });
 
         it('should get project agent status', async () => {
-            const handler = registeredHandlers.get('project:get-status');
+            const handler = getRequiredHandler('project:get-status');
             const result = await handler({} as IpcMainInvokeEvent, { taskId: 'task-123' });
 
             expect(mockProjectAgentService.getStatus).toHaveBeenCalledWith('task-123');
@@ -106,7 +116,7 @@ describe('Project Agent IPC Handlers', () => {
 
     describe('HIL Handlers', () => {
         it('should approve a step', async () => {
-            const handler = registeredHandlers.get('project:approve-step');
+            const handler = getRequiredHandler('project:approve-step');
             await handler({} as IpcMainInvokeEvent, { taskId: 'task-123', stepId: 'step-1' });
 
             expect(mockProjectAgentService.approveStep).toHaveBeenCalledWith('task-123', 'step-1');
@@ -115,7 +125,7 @@ describe('Project Agent IPC Handlers', () => {
 
     describe('Checkpoint Handlers', () => {
         it('should resume from a checkpoint', async () => {
-            const handler = registeredHandlers.get('project:resume-checkpoint');
+            const handler = getRequiredHandler('project:resume-checkpoint');
             await handler({} as IpcMainInvokeEvent, 'cp-123');
 
             expect(mockProjectAgentService.resumeFromCheckpoint).toHaveBeenCalledWith('cp-123');
@@ -124,12 +134,38 @@ describe('Project Agent IPC Handlers', () => {
 
     describe('Legacy Compatibility', () => {
         it('should handle project-agent:start-task', async () => {
-            const handler = registeredHandlers.get('project-agent:start-task');
-            const result = await handler({} as IpcMainInvokeEvent, { description: 'Legacy task' });
+            const handler = getRequiredHandler('project-agent:start-task');
+            const result = await handler({} as IpcMainInvokeEvent, { description: 'Legacy task' }) as {
+                success: boolean;
+                taskId?: string;
+                uiState?: string;
+            };
 
             expect(mockProjectAgentService.start).toHaveBeenCalled();
             expect(result.success).toBe(true);
             expect(result.taskId).toBe('task-123');
+            expect(result.uiState).toBe('ready');
+        });
+
+        it('should expose project-agent health dashboard', async () => {
+            const handler = getRequiredHandler('project-agent:health');
+            const result = await handler({} as IpcMainInvokeEvent);
+            expect(result).toMatchObject({
+                success: true,
+                data: {
+                    status: expect.any(String),
+                    budgets: {
+                        fastMs: 45,
+                        standardMs: 140,
+                        heavyMs: 320
+                    },
+                    metrics: {
+                        totalCalls: expect.any(Number),
+                        totalFailures: expect.any(Number),
+                        totalRetries: expect.any(Number)
+                    }
+                }
+            });
         });
     });
 });

@@ -2,6 +2,8 @@
  * Voice interface types for UI-11: Voice-first interface option
  */
 
+import { JsonValue } from './common';
+
 /** Voice command definition */
 export interface VoiceCommand {
     id: string;
@@ -12,6 +14,7 @@ export interface VoiceCommand {
     description: string;
     enabled: boolean;
     isSystem?: boolean;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice action types */
@@ -41,6 +44,7 @@ export interface VoiceRecognitionResult {
     isFinal: boolean;
     error?: string;
     timestamp: number;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice synthesis options */
@@ -51,6 +55,7 @@ export interface VoiceSynthesisOptions {
     volume?: number;
     voice?: string;
     lang?: string;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice settings */
@@ -85,6 +90,7 @@ export interface VoiceSettings {
     continuousListening: boolean;
     /** Silence timeout in ms before processing */
     silenceTimeout: number;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice shortcut for common actions */
@@ -93,6 +99,7 @@ export interface VoiceShortcut {
     phrase: string;
     action: string;
     enabled: boolean;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice session state */
@@ -113,6 +120,7 @@ export interface VoiceInfo {
     lang: string;
     localService: boolean;
     default: boolean;
+    [key: string]: JsonValue | undefined;
 }
 
 /** Voice event types */

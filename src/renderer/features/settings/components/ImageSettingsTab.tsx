@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { cn } from '@/lib/utils';
 
 import { SettingsSharedProps } from '../types';
@@ -134,14 +135,15 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
         };
     }, [checkStatus, refreshImageData]);
 
-    const handleReinstall = async () => {
+    const [isReinstallModalOpen, setIsReinstallModalOpen] = useState(false);
+
+    const handleReinstallClick = () => {
         if (isReinstalling || sdCppStatus === 'installing') { return; }
+        setIsReinstallModalOpen(true);
+    };
 
-        // eslint-disable-next-line no-alert
-        if (!window.confirm(t('settings.images.reinstallConfirm'))) {
-            return;
-        }
-
+    const handleReinstallConfirm = async () => {
+        setIsReinstallModalOpen(false);
         setIsReinstalling(true);
         setDownloadProgress(null);
         try {
@@ -441,7 +443,7 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                         <div className="flex items-center gap-2">
                             {getStatusIcon()}
                             <button
-                                onClick={() => { void handleReinstall(); }}
+                                onClick={handleReinstallClick}
                                 disabled={isReinstalling || sdCppStatus === 'installing'}
                                 className={cn(
                                     "px-4 py-2.5 rounded-xl transition-all duration-300 group flex items-center gap-2 text-[10px] font-black uppercase tracking-tight shadow-sm w-full sm:w-auto justify-center",
@@ -729,6 +731,15 @@ export const ImageSettingsTab: React.FC<SettingsSharedProps> = ({ settings, hand
                     </div>
                 </div>
             </div>
+            <ConfirmationModal
+                isOpen={isReinstallModalOpen}
+                onClose={() => setIsReinstallModalOpen(false)}
+                onConfirm={() => { void handleReinstallConfirm(); }}
+                title={t('settings.images.reinstall')}
+                message={t('settings.images.reinstallConfirm')}
+                confirmLabel={t('settings.images.reinstall')}
+                variant="warning"
+            />
         </div>
     );
 };

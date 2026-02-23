@@ -48,9 +48,13 @@ export interface SystemEvents {
     'project:budget-exceeded': { taskId: string; budgetLimitUsd: number; currentCostUsd: number }
     'project:plan-revised': { action: 'add' | 'remove' | 'modify' | 'insert'; index?: number; stepText?: string; reason: string; taskId?: string }
     'orchestrator:update': OrchestratorState
-    // sd-cpp runtime
-    'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
     'sd-cpp:progress': { downloaded: number; total: number; filename: string }
+    'sd-cpp:status': { state: 'installing' | 'ready' | 'failed'; error?: string }
+    // Model Registry Cache & Telemetry
+    'model-registry.cache.update.started': { provider?: string }
+    'model-registry.cache.update.completed': { provider?: string; count: number }
+    'model-registry.provider.fetch.failed': { provider: string; error: string }
+    'telemetry:model-registry': { name: SystemEventKey;[key: string]: unknown; timestamp: number }
 }
 
 export type SystemEventKey = keyof SystemEvents

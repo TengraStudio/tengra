@@ -1,0 +1,15 @@
+import { sanitizeCodeEditorLanguage } from '@renderer/features/projects/components/ide/code-editor-validation';
+import { describe, expect, it } from 'vitest';
+
+describe('code editor validation', () => {
+    it('keeps supported languages', () => {
+        expect(sanitizeCodeEditorLanguage('typescript')).toBe('typescript');
+        expect(sanitizeCodeEditorLanguage('python')).toBe('python');
+    });
+
+    it('falls back to javascript for invalid language values', () => {
+        expect(sanitizeCodeEditorLanguage('')).toBe('javascript');
+        expect(sanitizeCodeEditorLanguage('go')).toBe('javascript');
+        expect(sanitizeCodeEditorLanguage(undefined)).toBe('javascript');
+    });
+});

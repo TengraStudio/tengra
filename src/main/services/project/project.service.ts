@@ -2,6 +2,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import {
+    ProjectEnvKeySchema,
+    ProjectEnvVarsSchema,
+    ProjectRootPathSchema
+} from '@shared/schemas/service-hardening.schema';
 import { JsonObject } from '@shared/types/common';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
@@ -70,7 +75,7 @@ export class ProjectService extends BaseService {
      * @param onChange Callback triggered on file change events.
      */
     async watchProject(rootPath: string, onChange: (event: string, path: string) => void): Promise<void> {
-        rootPath = path.resolve(rootPath);
+        rootPath = this.resolveAndValidateRootPath(rootPath);
         this.logInfo(`Starting watch on ${rootPath}`);
 
         // Stop existing watcher if any
@@ -126,7 +131,7 @@ export class ProjectService extends BaseService {
     }
 
     async stopWatch(rootPath: string) {
-        rootPath = path.resolve(rootPath);
+        rootPath = this.resolveAndValidateRootPath(rootPath);
         if (this.watchers.has(rootPath)) {
             this.watchers.get(rootPath)?.close();
             this.watchers.delete(rootPath);
@@ -136,7 +141,7 @@ export class ProjectService extends BaseService {
     }
 
     getAuditContext(rootPath: string): { rootPath: string; projectName: string } {
-        const normalizedRootPath = path.resolve(rootPath);
+        const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
         return {
             rootPath: normalizedRootPath,
             projectName: path.basename(normalizedRootPath) || normalizedRootPath,
@@ -144,7 +149,7 @@ export class ProjectService extends BaseService {
     }
 
     private trackChangedPath(rootPath: string, changedPath: string): void {
-        const normalizedRootPath = path.resolve(rootPath);
+        const normalizedRootPath = this.resolveAndValidateRootPath(rootPath);
         const normalizedChangedPath = path.resolve(changedPath);
         const changedPaths = this.changedPathSets.get(normalizedRootPath) ?? new Set<string>();
         changedPaths.add(normalizedChangedPath);
@@ -212,11 +217,7 @@ export class ProjectService extends BaseService {
      * @returns Detailed project analysis.
      */
     async analyzeProject(rootPath: string): Promise<ProjectAnalysis> {
-        // Handle Windows paths from renderer that might have leading slash (e.g. /C:/...)
-        if (process.platform === 'win32' && rootPath.startsWith('/') && rootPath.charAt(2) === ':') {
-            rootPath = rootPath.slice(1);
-        }
-        rootPath = path.resolve(rootPath);
+        rootPath = this.resolveAndValidateRootPath(rootPath);
         await this.applyIncrementalInvalidation(rootPath);
 
         // Cache Check (5 min TTL)
@@ -275,10 +276,7 @@ export class ProjectService extends BaseService {
      * @param limit Number of files to return.
      */
     async getProjectFilePage(rootPath: string, offset = 0, limit = this.PROJECT_FILES_PAGE_SIZE): Promise<ProjectFilesPageResult> {
-        if (process.platform === 'win32' && rootPath.startsWith('/') && rootPath.charAt(2) === ':') {
-            rootPath = rootPath.slice(1);
-        }
-        rootPath = path.resolve(rootPath);
+        rootPath = this.resolveAndValidateRootPath(rootPath);
         await this.applyIncrementalInvalidation(rootPath);
 
         const cachedFiles = this.fileListCache.get(rootPath);
@@ -416,6 +414,7 @@ export class ProjectService extends BaseService {
         readme: string | null
         stats: ProjectStats
     }> {
+        dirPath = this.resolveAndValidateRootPath(dirPath);
         // 1. Check for package.json
         let hasPackageJson = false;
         let pkg: JsonObject = {};
@@ -959,6 +958,7 @@ export class ProjectService extends BaseService {
     }
 
     async getEnvVars(rootPath: string): Promise<Record<string, string>> {
+        rootPath = this.resolveAndValidateRootPath(rootPath);
         const envPath = path.join(rootPath, '.env');
         try {
             const content = await fs.readFile(envPath, 'utf-8');
@@ -970,12 +970,17 @@ export class ProjectService extends BaseService {
                 const firstEquals = trimmed.indexOf('=');
                 if (firstEquals === -1) { continue; }
                 const key = trimmed.slice(0, firstEquals).trim();
+                const validatedKey = ProjectEnvKeySchema.safeParse(key);
+                if (!validatedKey.success) {
+                    this.logWarn(`Skipping invalid env key ${key} at ${envPath}`);
+                    continue;
+                }
                 let value = trimmed.slice(firstEquals + 1).trim();
                 // Remove quotes
                 if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
                     value = value.slice(1, -1);
                 }
-                result[key] = value;
+                result[validatedKey.data] = value;
             }
             return result;
         } catch (error) {
@@ -985,9 +990,14 @@ export class ProjectService extends BaseService {
     }
 
     async saveEnvVars(rootPath: string, vars: Record<string, string>): Promise<void> {
+        rootPath = this.resolveAndValidateRootPath(rootPath);
+        const parsedVars = ProjectEnvVarsSchema.safeParse(vars);
+        if (!parsedVars.success) {
+            throw new Error(`Invalid environment variable payload: ${parsedVars.error.issues[0]?.message ?? 'unknown validation issue'}`);
+        }
         const envPath = path.join(rootPath, '.env');
         try {
-            const content = Object.entries(vars)
+            const content = Object.entries(parsedVars.data)
                 .map(([key, value]) => `${key}=${value}`)
                 .join('\n');
             await fs.writeFile(envPath, content, 'utf-8');
@@ -996,6 +1006,17 @@ export class ProjectService extends BaseService {
             appLogger.error(LOG_CONTEXT, `Failed to save .env file at ${envPath}:`, error as Error);
             throw error;
         }
+    }
+
+    private resolveAndValidateRootPath(inputPath: string): string {
+        const sanitizedInput = process.platform === 'win32' && inputPath.startsWith('/') && inputPath.charAt(2) === ':'
+            ? inputPath.slice(1)
+            : inputPath;
+        const parsedPath = ProjectRootPathSchema.safeParse(sanitizedInput);
+        if (!parsedPath.success) {
+            throw new Error(`Invalid project root path: ${parsedPath.error.issues[0]?.message ?? 'unknown validation issue'}`);
+        }
+        return path.resolve(parsedPath.data);
     }
 }
 

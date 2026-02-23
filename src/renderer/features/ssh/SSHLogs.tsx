@@ -60,15 +60,21 @@ export const SSHLogs: React.FC<SSHLogsProps> = ({ connectionId, active }) => {
                     <button onClick={() => void loadFiles()} className="text-xs opacity-70 hover:opacity-100">{t('common.refresh')}</button>
                 </div>
                 <div className="overflow-y-auto flex-1">
-                    {logFiles.map(file => (
-                        <button
-                            key={file}
-                            onClick={() => void selectLog(file)}
-                            className={`w-full text-left px-4 py-2 text-sm truncate hover:bg-muted/20 ${selectedLog === file ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'text-muted-foreground'}`}
-                        >
-                            {file}
-                        </button>
-                    ))}
+                    {logFiles.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                            {t('ssh.noLogFiles')}
+                        </div>
+                    ) : (
+                        logFiles.map(file => (
+                            <button
+                                key={file}
+                                onClick={() => void selectLog(file)}
+                                className={`w-full text-left px-4 py-2 text-sm truncate hover:bg-muted/20 ${selectedLog === file ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'text-muted-foreground'}`}
+                            >
+                                {file}
+                            </button>
+                        ))
+                    )}
                 </div>
             </div>
 

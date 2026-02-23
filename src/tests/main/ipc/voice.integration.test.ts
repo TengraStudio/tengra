@@ -90,4 +90,40 @@ describe('Voice IPC Handlers', () => {
         const removed = await removeHandler?.({}, 'custom-open-help');
         expect(removed).toMatchObject({ success: true });
     });
+
+    it('returns validation metadata for invalid payloads', async () => {
+        const processTranscriptHandler = ipcMainHandlers.get('voice:process-transcript');
+        expect(processTranscriptHandler).toBeDefined();
+
+        const invalid = await processTranscriptHandler?.({}, '');
+        expect(invalid).toMatchObject({
+            success: false,
+            errorCode: 'VOICE_VALIDATION_ERROR',
+            messageKey: 'errors.unexpected',
+            uiState: 'failure'
+        });
+    });
+
+    it('exposes voice health metrics dashboard endpoint', async () => {
+        const healthHandler = ipcMainHandlers.get('voice:health');
+        expect(healthHandler).toBeDefined();
+
+        const health = await healthHandler?.({});
+        expect(health).toMatchObject({
+            success: true,
+            data: {
+                status: expect.any(String),
+                budgets: {
+                    fastMs: 40,
+                    standardMs: 120,
+                    heavyMs: 220
+                },
+                metrics: {
+                    totalCalls: expect.any(Number),
+                    totalFailures: expect.any(Number),
+                    totalRetries: expect.any(Number)
+                }
+            }
+        });
+    });
 });

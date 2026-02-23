@@ -20,12 +20,16 @@ export const SSHTunnels: React.FC<SSHTunnelsProps> = ({ connectionId, t }) => {
     const [presets, setPresets] = useState<SSHTunnelPreset[]>([]);
 
     const loadData = useCallback(async () => {
-        const [activeTunnels, savedPresets] = await Promise.all([
-            window.electron.ssh.listTunnels(connectionId),
-            window.electron.ssh.listTunnelPresets()
-        ]);
-        setTunnels(activeTunnels);
-        setPresets(savedPresets);
+        try {
+            const [activeTunnels, savedPresets] = await Promise.all([
+                window.electron.ssh.listTunnels(connectionId),
+                window.electron.ssh.listTunnelPresets()
+            ]);
+            setTunnels(activeTunnels);
+            setPresets(savedPresets);
+        } catch (error) {
+            appLogger.error('SSHTunnels', 'Failed to load tunnel data', error as Error);
+        }
     }, [connectionId]);
 
     useEffect(() => {

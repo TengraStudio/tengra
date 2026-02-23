@@ -83,10 +83,10 @@ describe('Advanced Memory IPC Handlers', () => {
         registerAdvancedMemoryIpc(service as never);
 
         const pendingResult = await handlers.get('advancedMemory:getPending')?.({});
-        expect(pendingResult).toEqual({ success: true, data: [] });
+        expect(pendingResult).toMatchObject({ success: true, data: [], uiState: 'empty' });
 
         const confirmResult = await handlers.get('advancedMemory:confirm')?.({}, 'p1');
-        expect(confirmResult).toEqual({ success: true, data: { id: 'p1' } });
+        expect(confirmResult).toMatchObject({ success: true, data: { id: 'p1' } });
         expect(service.confirmPendingMemory).toHaveBeenCalledWith('p1', 'user', undefined);
     });
 
@@ -96,7 +96,7 @@ describe('Advanced Memory IPC Handlers', () => {
         const searchHandler = handlers.get('advancedMemory:search');
 
         const empty = await searchHandler?.({}, '   ', -100);
-        expect(empty).toEqual({ success: true, data: [] });
+        expect(empty).toMatchObject({ success: true, data: [], uiState: 'empty' });
         expect(service.searchMemoriesHybrid).not.toHaveBeenCalled();
 
         await searchHandler?.({}, '  release notes ', 9999);
@@ -112,4 +112,3 @@ describe('Advanced Memory IPC Handlers', () => {
         expect(service.exportMemories).toHaveBeenCalledWith(undefined, 1);
     });
 });
-

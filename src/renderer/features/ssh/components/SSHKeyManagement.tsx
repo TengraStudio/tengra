@@ -1,10 +1,44 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SSHKnownHostEntry, SSHManagedKey } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
 interface SSHKeyManagementProps {
     t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+interface HostTrustRecord {
+    host: string;
+    keyType: string;
+    fingerprint: string;
+    decision: 'trusted' | 'rejected';
+    updatedAt: number;
+}
+
+const SSH_TRUST_CENTER_STORAGE_KEY = 'ssh.trust-center.records.v1';
+
+function fingerprintOf(publicKey: string): string {
+    let hash = 0;
+    for (let index = 0; index < publicKey.length; index += 1) {
+        hash = ((hash << 5) - hash + publicKey.charCodeAt(index)) | 0;
+    }
+    return `fp-${Math.abs(hash).toString(16)}`;
+}
+
+function loadTrustRecords(): HostTrustRecord[] {
+    try {
+        const raw = localStorage.getItem(SSH_TRUST_CENTER_STORAGE_KEY);
+        if (!raw) {
+            return [];
+        }
+        return JSON.parse(raw) as HostTrustRecord[];
+    } catch {
+        return [];
+    }
+}
+
+function saveTrustRecords(records: HostTrustRecord[]): void {
+    localStorage.setItem(SSH_TRUST_CENTER_STORAGE_KEY, JSON.stringify(records));
 }
 
 export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
@@ -16,15 +50,64 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
     const [importKey, setImportKey] = useState('');
     const [knownHost, setKnownHost] = useState<SSHKnownHostEntry>({ host: '', keyType: 'ssh-ed25519', publicKey: '' });
     const [status, setStatus] = useState('');
+    const [trustRecords, setTrustRecords] = useState<HostTrustRecord[]>([]);
 
     const loadData = useCallback(async () => {
-        const [managedKeys, hosts] = await Promise.all([
-            window.electron.ssh.listManagedKeys(),
-            window.electron.ssh.listKnownHosts()
-        ]);
-        setKeys(managedKeys);
-        setKnownHosts(hosts);
+        try {
+            const [managedKeys, hosts] = await Promise.all([
+                window.electron.ssh.listManagedKeys(),
+                window.electron.ssh.listKnownHosts()
+            ]);
+            setKeys(managedKeys);
+            setKnownHosts(hosts);
+            setTrustRecords(loadTrustRecords());
+        } catch (error) {
+            appLogger.error('SSHKeyManagement', 'Failed to load SSH key data', error as Error);
+        }
     }, []);
+
+    const reviewQueue = useMemo<Array<SSHKnownHostEntry & { fingerprint: string; previousFingerprint?: string }>>(() => {
+        return knownHosts.flatMap(host => {
+            const fingerprint = fingerprintOf(host.publicKey);
+            const record = trustRecords.find(saved =>
+                saved.host === host.host
+                && saved.keyType === host.keyType
+            );
+            if (!record) {
+                return [{ ...host, fingerprint }];
+            }
+            if (record.fingerprint !== fingerprint) {
+                return [{ ...host, fingerprint, previousFingerprint: record.fingerprint }];
+            }
+            return [];
+        });
+    }, [knownHosts, trustRecords]);
+
+    const applyTrustDecision = useCallback((
+        hostEntry: SSHKnownHostEntry,
+        fingerprint: string,
+        decision: 'trusted' | 'rejected'
+    ) => {
+        const nextRecords = [
+            ...trustRecords.filter(record =>
+                !(record.host === hostEntry.host && record.keyType === hostEntry.keyType)
+            ),
+            {
+                host: hostEntry.host,
+                keyType: hostEntry.keyType,
+                fingerprint,
+                decision,
+                updatedAt: Date.now(),
+            }
+        ];
+        setTrustRecords(nextRecords);
+        saveTrustRecords(nextRecords);
+        setStatus(
+            decision === 'trusted'
+                ? t('ssh.trustDecisionTrusted', { host: hostEntry.host })
+                : t('ssh.trustDecisionRejected', { host: hostEntry.host })
+        );
+    }, [t, trustRecords]);
 
     useEffect(() => {
         const init = async () => {
@@ -92,6 +175,47 @@ export const SSHKeyManagement: React.FC<SSHKeyManagementProps> = ({ t }) => {
                         </div>
                     ))}
                     {keys.length === 0 ? <div className="text-xs text-muted-foreground">{t('ssh.noManagedKeys')}</div> : null}
+                </div>
+            </section>
+
+            <section className="border border-border rounded-lg p-3 space-y-2">
+                <h4 className="font-medium">{t('ssh.trustCenter')}</h4>
+                {reviewQueue.length > 0 ? (
+                    <div className="space-y-2">
+                        <div className="text-xs text-warning">{t('ssh.trustReviewRequired', { count: reviewQueue.length })}</div>
+                        {reviewQueue.map((entry, index) => (
+                            <div key={`${entry.host}-${entry.keyType}-${index}`} className="border border-warning/40 rounded px-2 py-2 text-xs space-y-1">
+                                <div>{entry.host} ({entry.keyType})</div>
+                                <div>{t('ssh.trustFingerprintCurrent')}: {entry.fingerprint}</div>
+                                {entry.previousFingerprint && (
+                                    <div>{t('ssh.trustFingerprintPrevious')}: {entry.previousFingerprint}</div>
+                                )}
+                                <div className="flex gap-2">
+                                    <button
+                                        className="secondary-btn text-xs px-2 py-1"
+                                        onClick={() => applyTrustDecision(entry, entry.fingerprint, 'trusted')}
+                                    >
+                                        {t('ssh.trustApprove')}
+                                    </button>
+                                    <button
+                                        className="secondary-btn text-xs px-2 py-1"
+                                        onClick={() => applyTrustDecision(entry, entry.fingerprint, 'rejected')}
+                                    >
+                                        {t('ssh.trustReject')}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-xs text-muted-foreground">{t('ssh.trustNoAlerts')}</div>
+                )}
+                <div className="space-y-1 max-h-32 overflow-auto pr-1">
+                    {trustRecords.map(record => (
+                        <div key={`${record.host}-${record.keyType}`} className="text-xs border border-border/40 rounded px-2 py-1">
+                            {record.host} ({record.keyType}) • {record.decision} • {record.fingerprint}
+                        </div>
+                    ))}
                 </div>
             </section>
 

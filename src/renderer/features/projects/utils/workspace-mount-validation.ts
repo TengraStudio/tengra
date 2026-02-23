@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { MountForm } from '@/types';
 
 const nonEmptyStringSchema = z.string().trim().min(1);
+const absolutePathSchema = z.string().regex(/^(?:[a-zA-Z]:[\\/]|\/|\\\\)/);
 const portSchema = z
     .string()
     .trim()
@@ -35,6 +36,21 @@ function failureResult(errorCode: string): WorkspaceMountValidationResult {
     };
 }
 
+function isValidHostValue(host: string): boolean {
+    const trimmedHost = host.trim();
+    if (trimmedHost.length === 0) {
+        return false;
+    }
+    if (trimmedHost.includes(' ') || trimmedHost.includes('/')) {
+        return false;
+    }
+    return true;
+}
+
+function isInlinePrivateKey(privateKey: string): boolean {
+    return privateKey.includes('BEGIN') && privateKey.includes('PRIVATE KEY');
+}
+
 /**
  * Validates workspace mount form fields and normalizes SSH port value.
  */
@@ -50,7 +66,7 @@ export function validateWorkspaceMountForm(form: MountForm): WorkspaceMountValid
         };
     }
 
-    if (!nonEmptyStringSchema.safeParse(form.host).success) {
+    if (!isValidHostValue(form.host)) {
         return failureResult(workspaceMountErrorCodes.validation);
     }
     if (!nonEmptyStringSchema.safeParse(form.username).success) {
@@ -67,8 +83,13 @@ export function validateWorkspaceMountForm(form: MountForm): WorkspaceMountValid
         if (!nonEmptyStringSchema.safeParse(form.password).success) {
             return failureResult(workspaceMountErrorCodes.validation);
         }
-    } else if (!nonEmptyStringSchema.safeParse(form.privateKey).success) {
-        return failureResult(workspaceMountErrorCodes.validation);
+    } else {
+        if (!nonEmptyStringSchema.safeParse(form.privateKey).success) {
+            return failureResult(workspaceMountErrorCodes.validation);
+        }
+        if (!isInlinePrivateKey(form.privateKey) && !absolutePathSchema.safeParse(form.privateKey).success) {
+            return failureResult(workspaceMountErrorCodes.validation);
+        }
     }
 
     return {

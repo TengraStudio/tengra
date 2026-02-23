@@ -1,5 +1,14 @@
 import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
 import type { ComponentProps } from 'react';
+import { useEffect, useMemo } from 'react';
+import { sanitizeBackendId, sanitizeShellId } from '@renderer/features/terminal/utils/terminal-toolbar-validation';
+import {
+    recordTerminalToolbarFailure,
+    recordTerminalToolbarFallback,
+    recordTerminalToolbarSuccess,
+    setTerminalToolbarUiState,
+    useTerminalToolbarHealth,
+} from '@renderer/store/terminal-toolbar-health.store';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -160,6 +169,20 @@ export function TerminalToolbar({
 }: TerminalToolbarProps) {
     void toggleRecording;
     void activeRecordingTabId;
+    const healthSummary = useTerminalToolbarHealth(snapshot => snapshot);
+
+    useEffect(() => {
+        setTerminalToolbarUiState('ready');
+    }, []);
+    const healthTone = useMemo(() => {
+        if (healthSummary.uiState === 'failure') {
+            return 'text-destructive';
+        }
+        if (healthSummary.budgetExceededCount > 0) {
+            return 'text-yellow-500';
+        }
+        return 'text-muted-foreground';
+    }, [healthSummary.budgetExceededCount, healthSummary.uiState]);
 
     return (
         <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/70">
@@ -224,13 +247,21 @@ export function TerminalToolbar({
                                             {t('terminal.integratedSessions')}
                                         </div>
                                         {availableShells.map(s => (
-                                            <button
-                                                key={s.id}
-                                                onClick={() => {
-                                                    createTerminal(s.id, integratedBackend.id);
-                                                }}
-                                                className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground rounded-sm"
-                                            >
+                                                <button
+                                                    key={s.id}
+                                                    onClick={() => {
+                                                        const shellId = sanitizeShellId(s.id);
+                                                        const backendId = sanitizeBackendId(integratedBackend.id);
+                                                        if (!shellId || !backendId) {
+                                                            recordTerminalToolbarFailure('TERMINAL_TOOLBAR_INVALID_LAUNCH_INPUT');
+                                                            return;
+                                                        }
+                                                        const startedAt = performance.now();
+                                                        createTerminal(shellId, backendId);
+                                                        recordTerminalToolbarSuccess(performance.now() - startedAt);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center gap-2 text-foreground rounded-sm"
+                                                >
                                                 <span className="opacity-50">&gt;_</span>
                                                 {s.name}
                                             </button>
@@ -249,8 +280,12 @@ export function TerminalToolbar({
                                                 onClick={() => {
                                                     const shellId = resolvePreferredShellId();
                                                     if (shellId) {
+                                                        const startedAt = performance.now();
                                                         createTerminal(shellId, backend.id);
+                                                        recordTerminalToolbarSuccess(performance.now() - startedAt);
+                                                        return;
                                                     }
+                                                    recordTerminalToolbarFallback();
                                                 }}
                                                 className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             >
@@ -284,7 +319,7 @@ export function TerminalToolbar({
                                             className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             title={`${profile.username}@${profile.host}:${profile.port}`}
                                         >
-                                            <span className="truncate">SSH: {profile.name}</span>
+                                            <span className="truncate">{t('terminal.sshPrefix')}: {profile.name}</span>
                                             <span className="text-[10px] text-muted-foreground">
                                                 {profile.host}
                                             </span>
@@ -300,7 +335,7 @@ export function TerminalToolbar({
                                             className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 text-foreground rounded-sm"
                                             title={container.id}
                                         >
-                                            <span className="truncate">Docker: {container.name}</span>
+                                            <span className="truncate">{t('terminal.dockerPrefix')}: {container.name}</span>
                                             <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
                                                 {container.status}
                                             </span>
@@ -364,7 +399,7 @@ export function TerminalToolbar({
                             'p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
                             isMultiplexerOpen && 'text-primary'
                         )}
-                        title="Multiplexer (tmux/screen)"
+                        title={t('terminal.multiplexerTitle')}
                     >
                         <Rows2 className="w-3.5 h-3.5" />
                     </button>
@@ -387,6 +422,9 @@ export function TerminalToolbar({
                     >
                         <ChevronDown className="w-3.5 h-3.5" />
                     </button>
+                </div>
+                <div className={cn('ml-2 text-[10px]', healthTone)}>
+                    {t('terminal.healthSummary')}: {healthSummary.uiState} | {healthSummary.avgDurationMs}ms/{healthSummary.budgetMs}ms
                 </div>
             </div>
         </div>

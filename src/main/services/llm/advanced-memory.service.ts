@@ -40,10 +40,51 @@ import {
     SharedMemorySyncResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
+import {
+    AdvancedMemoryImportPayloadSchema,
+    AdvancedMemoryRecallContextSchema
+} from '@shared/schemas/service-hardening.schema';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 const SERVICE_NAME = 'AdvancedMemoryService';
+const ADVANCED_MEMORY_RETRY_ATTEMPTS = 2;
+const ADVANCED_MEMORY_RETRY_DELAY_MS = 35;
+const ADVANCED_MEMORY_BUDGET_MS = 900;
+
+const ADVANCED_MEMORY_ERROR_CODE = {
+    validation: 'ADVANCED_MEMORY_VALIDATION',
+    operationFailed: 'ADVANCED_MEMORY_OPERATION_FAILED',
+    transient: 'ADVANCED_MEMORY_TRANSIENT'
+} as const;
+
+const ADVANCED_MEMORY_UI_MESSAGE_KEYS = {
+    ready: 'advancedMemory.health.ready',
+    empty: 'advancedMemory.health.empty',
+    failure: 'advancedMemory.health.failure'
+} as const;
+
+type AdvancedMemoryErrorCode = typeof ADVANCED_MEMORY_ERROR_CODE[keyof typeof ADVANCED_MEMORY_ERROR_CODE];
+
+export interface AdvancedMemoryHealthSnapshot {
+    status: 'healthy' | 'degraded';
+    uiState: 'ready' | 'empty' | 'failure';
+    messageKey: string;
+    budgets: {
+        standardMs: number;
+    };
+    metrics: {
+        totalRequests: number;
+        failedRequests: number;
+        validationFailures: number;
+        retries: number;
+        fallbackResponses: number;
+        budgetExceededCount: number;
+        lastDurationMs: number;
+        lastErrorCode?: AdvancedMemoryErrorCode;
+        errorRate: number;
+    };
+}
 
 // Ollama models in order of preference (smallest first)
 const PREFERRED_MODELS = [
@@ -86,6 +127,16 @@ export class AdvancedMemoryService {
         queryCounts: new Map<string, number>(),
         history: [] as MemorySearchHistoryEntry[]
     };
+    private operationalAnalytics = {
+        totalRequests: 0,
+        failedRequests: 0,
+        validationFailures: 0,
+        retries: 0,
+        fallbackResponses: 0,
+        budgetExceededCount: 0,
+        lastDurationMs: 0,
+        lastErrorCode: undefined as AdvancedMemoryErrorCode | undefined
+    };
 
     constructor(
         private db: DatabaseService,
@@ -121,14 +172,29 @@ export class AdvancedMemoryService {
         sourceId: string,
         projectId?: string
     ): Promise<PendingMemory[]> {
+        const startedAt = Date.now();
+        this.operationalAnalytics.totalRequests++;
+
+        if (!content.trim()) {
+            this.operationalAnalytics.validationFailures++;
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.validation;
+            this.finalizeOperationDuration(startedAt);
+            return [];
+        }
+
         // Skip if message is too short or likely not containing facts
         if (!this.shouldExtractFacts(content)) {
+            this.operationalAnalytics.fallbackResponses++;
+            this.finalizeOperationDuration(startedAt);
             return [];
         }
 
         const model = await this.getAvailableModel();
         if (!model) {
             appLogger.debug(SERVICE_NAME, 'No LLM available for extraction');
+            this.operationalAnalytics.fallbackResponses++;
+            this.finalizeOperationDuration(startedAt);
             return [];
         }
 
@@ -153,8 +219,13 @@ export class AdvancedMemoryService {
                 }
             }
 
+            this.operationalAnalytics.lastErrorCode = undefined;
+            this.finalizeOperationDuration(startedAt);
             return pendingMemories;
         } catch (error) {
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.operationFailed;
+            this.finalizeOperationDuration(startedAt);
             appLogger.error(SERVICE_NAME, `Extraction failed: ${error}`);
             return [];
         }
@@ -170,40 +241,58 @@ export class AdvancedMemoryService {
         tags: string[] = [],
         projectId?: string
     ): Promise<AdvancedSemanticFragment> {
-        const embedding = await this.embedding.generateEmbedding(content);
-        const now = Date.now();
+        const startedAt = Date.now();
+        this.operationalAnalytics.totalRequests++;
+        if (!content.trim()) {
+            this.operationalAnalytics.validationFailures++;
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.validation;
+            this.finalizeOperationDuration(startedAt);
+            throw new Error('Explicit memory content must not be empty');
+        }
+        try {
+            const embedding = await this.generateEmbeddingWithRetry(content);
+            const now = Date.now();
 
-        const memory: AdvancedSemanticFragment = {
-            id: this.generateId(),
-            content,
-            embedding,
-            source: 'user_explicit',
-            sourceId,
-            category,
-            tags,
-            confidence: 1.0,  // User explicitly stated - maximum confidence
-            importance: 0.9,  // High importance for explicit memories
-            initialImportance: 0.9,
-            status: 'confirmed',
-            validatedAt: now,
-            validatedBy: 'user',
-            accessCount: 0,
-            lastAccessedAt: now,
-            relatedMemoryIds: [],
-            contradictsIds: [],
-            projectId,
-            createdAt: now,
-            updatedAt: now
-        };
+            const memory: AdvancedSemanticFragment = {
+                id: this.generateId(),
+                content,
+                embedding,
+                source: 'user_explicit',
+                sourceId,
+                category,
+                tags,
+                confidence: 1.0,  // User explicitly stated - maximum confidence
+                importance: 0.9,  // High importance for explicit memories
+                initialImportance: 0.9,
+                status: 'confirmed',
+                validatedAt: now,
+                validatedBy: 'user',
+                accessCount: 0,
+                lastAccessedAt: now,
+                relatedMemoryIds: [],
+                contradictsIds: [],
+                projectId,
+                createdAt: now,
+                updatedAt: now
+            };
 
-        // Check for contradictions and resolve
-        await this.handleContradictions(memory);
+            // Check for contradictions and resolve
+            await this.handleContradictions(memory);
 
-        // Store
-        await this.storeAdvancedMemory(memory);
+            // Store
+            await this.storeAdvancedMemory(memory);
 
-        appLogger.info(SERVICE_NAME, `Explicit memory stored: "${content.substring(0, 50)}..."`);
-        return memory;
+            appLogger.info(SERVICE_NAME, `Explicit memory stored: "${content.substring(0, 50)}..."`);
+            this.operationalAnalytics.lastErrorCode = undefined;
+            this.finalizeOperationDuration(startedAt);
+            return memory;
+        } catch (error) {
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.operationFailed;
+            this.finalizeOperationDuration(startedAt);
+            throw error;
+        }
     }
 
     // ========================================================================
@@ -424,54 +513,90 @@ export class AdvancedMemoryService {
      * Recall memories with full context awareness
      */
     async recall(context: RecallContext): Promise<RecallResult> {
-        const queryEmbedding = await this.embedding.generateEmbedding(context.query);
-        const limit = context.limit ?? this.config.defaultRecallLimit;
+        const startedAt = Date.now();
+        this.operationalAnalytics.totalRequests++;
 
-        // Get candidate memories
-        let candidates = await this.searchMemoriesByVector(queryEmbedding, limit * 3);
-
-        // Apply filters
-        candidates = this.applyRecallFilters(candidates, context);
-
-        // Calculate final scores with all factors
-        const scores = new Map<string, MemoryScoreFactors>();
-        const scoredCandidates: Array<{ memory: AdvancedSemanticFragment; finalScore: number }> = [];
-
-        for (const memory of candidates) {
-            const factors = this.calculateMemoryScore(memory, queryEmbedding);
-            scores.set(memory.id, factors);
-
-            const finalScore =
-                factors.baseImportance * 0.2 +
-                factors.recencyBoost * 0.15 +
-                factors.accessBoost * 0.1 +
-                factors.relevanceScore * 0.4 +
-                factors.confidenceWeight * 0.15;
-
-            scoredCandidates.push({ memory, finalScore });
+        const parsed = AdvancedMemoryRecallContextSchema.safeParse(context);
+        if (!parsed.success) {
+            this.operationalAnalytics.validationFailures++;
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.validation;
+            this.finalizeOperationDuration(startedAt);
+            appLogger.warn(SERVICE_NAME, `Recall validation failed: ${parsed.error.issues[0]?.message ?? 'unknown validation issue'}`);
+            return {
+                memories: [],
+                scores: new Map<string, MemoryScoreFactors>(),
+                totalMatches: 0,
+                queryEmbedding: []
+            };
         }
 
-        // Sort by score and apply diversity
-        scoredCandidates.sort((a, b) => b.finalScore - a.finalScore);
+        try {
+            const recallContext = parsed.data as RecallContext;
+            const queryEmbedding = await this.generateEmbeddingWithRetry(recallContext.query);
+            const limit = recallContext.limit ?? this.config.defaultRecallLimit;
 
-        let results = scoredCandidates.slice(0, limit).map(c => c.memory);
+            // Get candidate memories
+            let candidates = await this.searchMemoriesByVector(queryEmbedding, limit * 3);
 
-        // Apply diversity if requested
-        if (context.diversityFactor && context.diversityFactor > 0) {
-            results = this.applyDiversity(scoredCandidates, limit, context.diversityFactor);
+            // Apply filters
+            candidates = this.applyRecallFilters(candidates, recallContext);
+
+            // Calculate final scores with all factors
+            const scores = new Map<string, MemoryScoreFactors>();
+            const scoredCandidates: Array<{ memory: AdvancedSemanticFragment; finalScore: number }> = [];
+
+            for (const memory of candidates) {
+                const factors = this.calculateMemoryScore(memory, queryEmbedding);
+                scores.set(memory.id, factors);
+
+                const finalScore =
+                    factors.baseImportance * 0.2 +
+                    factors.recencyBoost * 0.15 +
+                    factors.accessBoost * 0.1 +
+                    factors.relevanceScore * 0.4 +
+                    factors.confidenceWeight * 0.15;
+
+                scoredCandidates.push({ memory, finalScore });
+            }
+
+            // Sort by score and apply diversity
+            scoredCandidates.sort((a, b) => b.finalScore - a.finalScore);
+
+            let results = scoredCandidates.slice(0, limit).map(c => c.memory);
+
+            // Apply diversity if requested
+            if (recallContext.diversityFactor && recallContext.diversityFactor > 0) {
+                results = this.applyDiversity(scoredCandidates, limit, recallContext.diversityFactor);
+            }
+
+            // Update access tracking
+            for (const memory of results) {
+                await this.updateAccessTracking(memory.id);
+            }
+
+            const output = {
+                memories: results,
+                scores,
+                totalMatches: candidates.length,
+                queryEmbedding
+            };
+            this.operationalAnalytics.lastErrorCode = undefined;
+            this.finalizeOperationDuration(startedAt);
+            return output;
+        } catch (error) {
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.operationFailed;
+            this.operationalAnalytics.fallbackResponses++;
+            this.finalizeOperationDuration(startedAt);
+            appLogger.error(SERVICE_NAME, `Recall failed: ${error}`);
+            return {
+                memories: [],
+                scores: new Map<string, MemoryScoreFactors>(),
+                totalMatches: 0,
+                queryEmbedding: []
+            };
         }
-
-        // Update access tracking
-        for (const memory of results) {
-            await this.updateAccessTracking(memory.id);
-        }
-
-        return {
-            memories: results,
-            scores,
-            totalMatches: candidates.length,
-            queryEmbedding
-        };
     }
 
     /**
@@ -530,8 +655,25 @@ export class AdvancedMemoryService {
         pendingMemories?: Array<Partial<PendingMemory>>;
         replaceExisting?: boolean;
     }): Promise<MemoryImportResult> {
-        const memories = Array.isArray(payload.memories) ? payload.memories : [];
-        const pendingMemories = Array.isArray(payload.pendingMemories) ? payload.pendingMemories : [];
+        const startedAt = Date.now();
+        this.operationalAnalytics.totalRequests++;
+
+        const parsedPayload = AdvancedMemoryImportPayloadSchema.safeParse(payload);
+        if (!parsedPayload.success) {
+            this.operationalAnalytics.validationFailures++;
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.validation;
+            this.finalizeOperationDuration(startedAt);
+            return {
+                imported: 0,
+                pendingImported: 0,
+                skipped: 1,
+                errors: [`Invalid import payload: ${parsedPayload.error.issues[0]?.message ?? 'unknown validation issue'}`]
+            };
+        }
+
+        const memories = Array.isArray(parsedPayload.data.memories) ? parsedPayload.data.memories : [];
+        const pendingMemories = Array.isArray(parsedPayload.data.pendingMemories) ? parsedPayload.data.pendingMemories : [];
         const result: MemoryImportResult = {
             imported: 0,
             pendingImported: 0,
@@ -539,7 +681,7 @@ export class AdvancedMemoryService {
             errors: []
         };
 
-        if (payload.replaceExisting) {
+        if (parsedPayload.data.replaceExisting) {
             await this.clearExistingMemories();
         }
 
@@ -553,12 +695,13 @@ export class AdvancedMemoryService {
 
             try {
                 if (candidate.embedding.length === 0) {
-                    candidate.embedding = await this.embedding.generateEmbedding(candidate.content);
+                    candidate.embedding = await this.generateEmbeddingWithRetry(candidate.content);
                 }
                 await this.storeAdvancedMemory(candidate);
                 result.imported++;
             } catch (error) {
                 result.skipped++;
+                this.operationalAnalytics.fallbackResponses++;
                 result.errors.push(`Failed to import memory ${candidate.id}: ${String(error)}`);
             }
         }
@@ -577,10 +720,18 @@ export class AdvancedMemoryService {
                 result.pendingImported++;
             } catch (error) {
                 result.skipped++;
+                this.operationalAnalytics.fallbackResponses++;
                 result.errors.push(`Failed to import pending memory ${pending.id}: ${String(error)}`);
             }
         }
 
+        if (result.errors.length > 0) {
+            this.operationalAnalytics.failedRequests++;
+            this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.operationFailed;
+        } else {
+            this.operationalAnalytics.lastErrorCode = undefined;
+        }
+        this.finalizeOperationDuration(startedAt);
         return result;
     }
 
@@ -603,6 +754,40 @@ export class AdvancedMemoryService {
             averageResults,
             lastQueryAt: this.searchAnalytics.lastQueryAt || undefined,
             topQueries
+        };
+    }
+
+    getHealthStatus(): AdvancedMemoryHealthSnapshot {
+        const totalRequests = this.operationalAnalytics.totalRequests;
+        const failedRequests = this.operationalAnalytics.failedRequests;
+        const errorRate = totalRequests === 0 ? 0 : failedRequests / totalRequests;
+        const uiState = totalRequests === 0
+            ? 'empty'
+            : failedRequests > 0
+                ? 'failure'
+                : 'ready';
+        const status = errorRate > 0.05 || this.operationalAnalytics.budgetExceededCount > 0
+            ? 'degraded'
+            : 'healthy';
+
+        return {
+            status,
+            uiState,
+            messageKey: ADVANCED_MEMORY_UI_MESSAGE_KEYS[uiState],
+            budgets: {
+                standardMs: ADVANCED_MEMORY_BUDGET_MS
+            },
+            metrics: {
+                totalRequests,
+                failedRequests,
+                validationFailures: this.operationalAnalytics.validationFailures,
+                retries: this.operationalAnalytics.retries,
+                fallbackResponses: this.operationalAnalytics.fallbackResponses,
+                budgetExceededCount: this.operationalAnalytics.budgetExceededCount,
+                lastDurationMs: this.operationalAnalytics.lastDurationMs,
+                lastErrorCode: this.operationalAnalytics.lastErrorCode,
+                errorRate
+            }
         };
     }
 
@@ -1671,6 +1856,35 @@ If no facts worth remembering, return [].`;
             return fallback;
         }
         return Math.max(0, Math.min(1, value));
+    }
+
+    private finalizeOperationDuration(startedAt: number): void {
+        const durationMs = Date.now() - startedAt;
+        this.operationalAnalytics.lastDurationMs = durationMs;
+        if (durationMs > ADVANCED_MEMORY_BUDGET_MS) {
+            this.operationalAnalytics.budgetExceededCount++;
+            appLogger.warn(SERVICE_NAME, `Performance budget exceeded: ${durationMs}ms > ${ADVANCED_MEMORY_BUDGET_MS}ms`);
+        }
+    }
+
+    private async generateEmbeddingWithRetry(content: string): Promise<number[]> {
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= ADVANCED_MEMORY_RETRY_ATTEMPTS; attempt += 1) {
+            try {
+                return await this.embedding.generateEmbedding(content);
+            } catch (caughtError) {
+                const error = caughtError instanceof Error ? caughtError : new Error(String(caughtError));
+                lastError = error;
+                if (attempt >= ADVANCED_MEMORY_RETRY_ATTEMPTS) {
+                    break;
+                }
+                this.operationalAnalytics.retries++;
+                this.operationalAnalytics.lastErrorCode = ADVANCED_MEMORY_ERROR_CODE.transient;
+                appLogger.warn(SERVICE_NAME, `Embedding retry ${attempt}/${ADVANCED_MEMORY_RETRY_ATTEMPTS - 1}: ${error.message}`);
+                await new Promise(resolve => setTimeout(resolve, ADVANCED_MEMORY_RETRY_DELAY_MS));
+            }
+        }
+        throw (lastError ?? new Error('Unknown advanced memory embedding failure'));
     }
 
     private isProjectAllowed(

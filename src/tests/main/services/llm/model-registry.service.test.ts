@@ -8,6 +8,8 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { en } from '../../../../renderer/i18n/en';
+import { tr } from '../../../../renderer/i18n/tr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger', () => ({
@@ -50,7 +52,11 @@ describe('ModelRegistryService', () => {
             getSettings: vi.fn().mockReturnValue({ ai: { modelUpdateInterval: 3600000 } })
         };
 
-        mockProxyService = { getModels: vi.fn().mockResolvedValue({ data: [] }) };
+        mockProxyService = {
+            getModels: vi.fn().mockResolvedValue({ data: [] }),
+            getEmbeddedProxyStatus: vi.fn().mockReturnValue({ port: 8317 }),
+            getProxyKey: vi.fn().mockResolvedValue('proxy-key'),
+        };
         mockEventBus = { emit: vi.fn() };
         mockAuthService = { getActiveToken: vi.fn().mockResolvedValue('test-token') };
         mockTokenService = { ensureFreshToken: vi.fn().mockResolvedValue(undefined) };
@@ -90,6 +96,11 @@ describe('ModelRegistryService', () => {
             const models = await service.getRemoteModels();
             expect(models.length).toBe(1);
             expect(mockHuggingFaceService.searchModels).toHaveBeenCalled();
+            expect(service.getHealthMetrics().cacheUpdates).toBe(1);
+            expect(mockEventBus.emit).toHaveBeenCalledWith(
+                'telemetry:model-registry',
+                expect.objectContaining({ name: 'model-registry.cache.update.completed' })
+            );
         });
 
         it('should return cached models on subsequent calls', async () => {
@@ -107,6 +118,12 @@ describe('ModelRegistryService', () => {
             const hfModel = models.find(m => m.provider === 'huggingface');
             expect(hfModel).toBeDefined();
             expect(hfModel?.id).toBe('TheBloke/Llama-7B-GGUF');
+        });
+
+        it('should keep sd-cpp fallback model available in aggregated model list', async () => {
+            const models = await service.getAllModels();
+
+            expect(models.some(model => model.provider === 'sd-cpp')).toBe(true);
         });
     });
 
@@ -130,6 +147,39 @@ describe('ModelRegistryService', () => {
             const installed = await service.getInstalledModels();
             expect(installed.length).toBe(0);
         });
+
+        it('should return empty array when provider request throws', async () => {
+            vi.mocked(mockProcessManager.sendRequest!).mockRejectedValueOnce(new Error('native service down'));
+
+            const installed = await service.getInstalledModels();
+
+            expect(installed).toEqual([]);
+        });
+
+        it('should return empty array when provider response is malformed', async () => {
+            vi.mocked(mockProcessManager.sendRequest!).mockResolvedValueOnce({
+                success: true,
+                models: [{ id: '', provider: 'ollama' }],
+            } as never);
+
+            const installed = await service.getInstalledModels();
+
+            expect(installed).toEqual([]);
+        });
+
+        it('should retry once before returning models when transient error occurs', async () => {
+            vi.mocked(mockProcessManager.sendRequest!)
+                .mockRejectedValueOnce(new Error('temporary failure'))
+                .mockResolvedValueOnce({
+                    success: true,
+                    models: [{ id: 'ollama/llama3:7b', name: 'llama3:7b', provider: 'ollama' }],
+                });
+
+            const installed = await service.getInstalledModels();
+
+            expect(installed).toHaveLength(1);
+            expect(mockProcessManager.sendRequest).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('getLastUpdate', () => {
@@ -152,6 +202,33 @@ describe('ModelRegistryService', () => {
 
             const models = await service.getRemoteModels();
             expect(models.length).toBe(0);
+        });
+
+        it('should track provider fetch failures in health metrics', async () => {
+            vi.mocked(mockProcessManager.sendRequest!).mockRejectedValue(new Error('provider unavailable'));
+            await service.getInstalledModels();
+
+            expect(service.getHealthMetrics().providerFetchFailures).toBe(1);
+            expect(mockEventBus.emit).toHaveBeenCalledWith(
+                'telemetry:model-registry',
+                expect.objectContaining({ name: 'model-registry.provider.fetch.failed', provider: 'ollama' })
+            );
+        });
+
+        it('should expose performance budget, normalized ui state and i18n keys in health metrics', async () => {
+            const emptyMetrics = service.getHealthMetrics();
+            expect(emptyMetrics.uiState).toBe('empty');
+            expect(emptyMetrics.performanceBudget.cacheRefreshMs).toBe(2000);
+            expect(en.serviceHealth.modelRegistry.empty).toBe(emptyMetrics.messageKey);
+            expect(tr.serviceHealth.modelRegistry.empty).toBeTruthy();
+
+            vi.mocked(mockProcessManager.sendRequest!).mockRejectedValue(new Error('provider unavailable'));
+            await service.getInstalledModels();
+
+            const failureMetrics = service.getHealthMetrics();
+            expect(failureMetrics.uiState).toBe('failure');
+            expect(en.serviceHealth.modelRegistry.failure).toBe(failureMetrics.messageKey);
+            expect(tr.serviceHealth.modelRegistry.failure).toBeTruthy();
         });
     });
 });

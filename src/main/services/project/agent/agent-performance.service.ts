@@ -1,6 +1,7 @@
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
 import { AgentPerformanceMetrics } from '@shared/types/project-agent';
+import { safeJsonParse } from '@shared/utils/sanitize.util';
 
 /**
  * AGENT-08: Service for tracking and analyzing agent performance metrics
@@ -27,6 +28,9 @@ export class AgentPerformanceService extends BaseService {
         this.logInfo('Cleaning up AgentPerformanceService...');
         if (this.resourceMonitorInterval) {
             clearInterval(this.resourceMonitorInterval);
+        }
+        for (const taskId of this.metricsMap.keys()) {
+            await this.saveMetrics(taskId);
         }
     }
 
@@ -316,9 +320,13 @@ export class AgentPerformanceService extends BaseService {
             return;
         }
 
-        const metricsJson = JSON.stringify(metrics);
-        await this.databaseService.uac.savePerformanceMetrics(taskId, metricsJson);
-        this.logInfo(`Metrics persisted for task ${taskId}`);
+        try {
+            const metricsJson = JSON.stringify(metrics);
+            await this.databaseService.uac.savePerformanceMetrics(taskId, metricsJson);
+            this.logInfo(`Metrics persisted for task ${taskId}`);
+        } catch (error) {
+            this.logError(`Failed to persist metrics for task ${taskId}`, error as Error);
+        }
     }
 
     /**
@@ -334,14 +342,24 @@ export class AgentPerformanceService extends BaseService {
             return null;
         }
 
-        const record = await this.databaseService.uac.getPerformanceMetrics(taskId);
-        if (!record) {
+        try {
+            const record = await this.databaseService.uac.getPerformanceMetrics(taskId);
+            if (!record) {
+                return null;
+            }
+
+            const parsed = safeJsonParse<AgentPerformanceMetrics | null>(record.metrics_json, null);
+            if (!parsed) {
+                this.logWarn(`Invalid metrics JSON for task ${taskId}`);
+                return null;
+            }
+
+            this.metricsMap.set(taskId, parsed);
+            return parsed;
+        } catch (error) {
+            this.logError(`Failed to load metrics for task ${taskId}`, error as Error);
             return null;
         }
-
-        const parsed = JSON.parse(record.metrics_json) as AgentPerformanceMetrics;
-        this.metricsMap.set(taskId, parsed);
-        return parsed;
     }
 
     /**
@@ -358,7 +376,13 @@ export class AgentPerformanceService extends BaseService {
         }
 
         const records = await this.databaseService.uac.getPerformanceMetricsHistory(taskId, limit);
-        const history = records.map(record => JSON.parse(record.metrics_json) as AgentPerformanceMetrics);
+        const history: AgentPerformanceMetrics[] = [];
+        for (const record of records) {
+            const parsed = safeJsonParse<AgentPerformanceMetrics | null>(record.metrics_json, null);
+            if (parsed) {
+                history.push(parsed);
+            }
+        }
 
         if (history.length === 0 && inMemoryMetrics) {
             return [inMemoryMetrics];

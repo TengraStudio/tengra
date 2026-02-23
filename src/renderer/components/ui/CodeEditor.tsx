@@ -134,6 +134,15 @@ export interface CodeEditorProps {
     fontSize?: number;
     initialLine?: number;
     appLanguage?: Language;
+    enableInlayHints?: boolean;
+    enableCodeLens?: boolean;
+    performanceMode?: boolean;
+    aiSafetyFilterEnabled?: boolean;
+    aiContextLimit?: number;
+    initialPosition?: { lineNumber: number; column: number } | null;
+    initialScrollTop?: number | null;
+    onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void;
+    onScrollPositionChange?: (scrollTop: number) => void;
 }
 
 let textMateInitialized = false;
@@ -202,7 +211,9 @@ const useEditorDecorations = (monaco: Monaco | null, t: (key: string) => string)
 const useInlineCompletions = (
     monacoRef: React.MutableRefObject<Monaco | null>,
     normalizedLanguage: string,
-    hasMonaco: boolean
+    hasMonaco: boolean,
+    aiSafetyFilterEnabled: boolean,
+    aiContextLimit: number
 ) => {
     useEffect(() => {
         if (!monacoRef.current || !hasMonaco) {
@@ -221,6 +232,15 @@ const useInlineCompletions = (
                     endColumn: pos.column,
                 });
                 if (before.trim().length === 0) {
+                    return { items: [] };
+                }
+                if (before.length > aiContextLimit) {
+                    return { items: [] };
+                }
+                if (
+                    aiSafetyFilterEnabled
+                    && /api[_-]?key|private[_-]?key|token\s*=|password\s*=/i.test(before)
+                ) {
                     return { items: [] };
                 }
                 try {
@@ -251,13 +271,17 @@ const useInlineCompletions = (
         return () => {
             prov.dispose();
         };
-    }, [normalizedLanguage, hasMonaco, monacoRef]);
+    }, [normalizedLanguage, hasMonaco, monacoRef, aiSafetyFilterEnabled, aiContextLimit]);
 };
 
 const useEditorLifecycle = (
     editorRef: React.MutableRefObject<MonacoEditorInstance | null>,
     monacoRef: React.MutableRefObject<Monaco | null>,
-    updateDecorations: (editor: MonacoEditorInstance) => void
+    updateDecorations: (editor: MonacoEditorInstance) => void,
+    initialPosition?: { lineNumber: number; column: number } | null,
+    initialScrollTop?: number | null,
+    onCursorPositionChange?: (position: { lineNumber: number; column: number }) => void,
+    onScrollPositionChange?: (scrollTop: number) => void
 ) => {
     return useCallback(
         async (editor: MonacoEditorInstance, monaco: Monaco) => {
@@ -295,8 +319,31 @@ const useEditorLifecycle = (
                     updateDecorations(editor);
                 }, 500);
             });
+            if (initialPosition) {
+                editor.setPosition(initialPosition);
+            }
+            if (typeof initialScrollTop === 'number') {
+                editor.setScrollTop(initialScrollTop);
+            }
+            editor.onDidChangeCursorPosition(event => {
+                onCursorPositionChange?.({
+                    lineNumber: event.position.lineNumber,
+                    column: event.position.column,
+                });
+            });
+            editor.onDidScrollChange(event => {
+                onScrollPositionChange?.(event.scrollTop);
+            });
         },
-        [updateDecorations, editorRef, monacoRef]
+        [
+            initialPosition,
+            initialScrollTop,
+            onCursorPositionChange,
+            onScrollPositionChange,
+            updateDecorations,
+            editorRef,
+            monacoRef,
+        ]
     );
 };
 
@@ -373,6 +420,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     fontSize,
     initialLine,
     appLanguage,
+    enableInlayHints = true,
+    enableCodeLens = true,
+    performanceMode = false,
+    aiSafetyFilterEnabled = true,
+    aiContextLimit = 8000,
+    initialPosition = null,
+    initialScrollTop = null,
+    onCursorPositionChange,
+    onScrollPositionChange,
 }) => {
     const { isLight } = useTheme();
     const { t } = useTranslation(appLanguage);
@@ -382,10 +438,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     const updateDecorations = useEditorDecorations(monacoComponents?.monaco ?? null, t);
     const normalizedLanguage = normalizeLanguage(language);
 
-    useInlineCompletions(monacoRef, normalizedLanguage, !!monacoComponents);
+    useInlineCompletions(
+        monacoRef,
+        normalizedLanguage,
+        !!monacoComponents,
+        aiSafetyFilterEnabled,
+        aiContextLimit
+    );
     useEditorInitialLine(editorRef, initialLine);
 
-    const handleEditorDidMount = useEditorLifecycle(editorRef, monacoRef, updateDecorations);
+    const handleEditorDidMount = useEditorLifecycle(
+        editorRef,
+        monacoRef,
+        updateDecorations,
+        initialPosition,
+        initialScrollTop,
+        onCursorPositionChange,
+        onScrollPositionChange
+    );
 
     const monacoTheme = useMemo(() => {
         if (!monacoComponents?.monaco) {
@@ -409,13 +479,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             cursorSmoothCaretAnimation: 'on',
             formatOnPaste: true,
             tabSize: 4,
-            glyphMargin: true,
+            glyphMargin: enableCodeLens && !performanceMode,
             lineNumbers: 'on',
             folding: true,
             lineDecorationsWidth: 10,
             fixedOverflowWidgets: true,
+            codeLens: enableCodeLens && !performanceMode,
+            inlayHints: { enabled: enableInlayHints && !performanceMode ? 'on' : 'off' },
         }),
-        [showMinimap, fontSize, readOnly]
+        [showMinimap, fontSize, readOnly, enableCodeLens, performanceMode, enableInlayHints]
     );
 
     if (loading || !monacoComponents) {

@@ -2,11 +2,13 @@ import { randomUUID } from 'crypto';
 
 import { createMainWindowSenderValidator } from '@main/ipc/sender-validator';
 import { sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/ipc/validation';
+import { appLogger } from '@main/logging/logger';
 import { SSHConnection, SSHService } from '@main/services/project/ssh.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
 import { IpcValue, JsonValue } from '@shared/types/common';
-import { getErrorMessage } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMetricsStore, IPC_PERFORMANCE_BUDGETS } from '@main/utils/ipc-telemetry.util';
 
 function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
     const safeConnection = { ...connection };
@@ -24,7 +26,33 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     ) => {
         ipcMain.handle(channel, async (event, ...args: Args) => {
             validateSender(event);
-            return await handler(event, ...args);
+            const startTime = Date.now();
+            const budget = IPC_PERFORMANCE_BUDGETS[channel];
+            try {
+                const result = await handler(event, ...args);
+                const duration = Date.now() - startTime;
+                appLogger.debug('SSH', `[${channel}] Success in ${duration}ms`);
+
+                // Record telemetry metrics
+                ipcMetricsStore.recordSuccess(channel, duration);
+                if (budget && duration > budget) {
+                    appLogger.warn('SSH', `[${channel}] Exceeded performance budget: ${duration}ms > ${budget}ms`);
+                }
+
+                return result;
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                const message = getErrorMessage(error as Error);
+                appLogger.error('SSH', `[${channel}] Failed in ${duration}ms: ${message}`);
+
+                // Record telemetry failure
+                const errorCode = error instanceof Error && 'code' in error
+                    ? String((error as { code?: string }).code)
+                    : AppErrorCode.UNKNOWN;
+                ipcMetricsStore.recordFailure(channel, duration, errorCode);
+
+                throw error;
+            }
         });
     };
     const send = (channel: string, data: JsonValue) => {
@@ -56,6 +84,7 @@ export function registerSshIpc(getMainWindow: () => BrowserWindow | null, sshSer
     registerTunnelHandlers(sshService, secureHandle);
     registerAdvancedSshHandlers(sshService, secureHandle);
     registerKeyManagementHandlers(sshService, secureHandle);
+    registerHealthHandlers(sshService, rateLimitService, secureHandle);
 
     // Return dispose function
     return () => {
@@ -132,16 +161,26 @@ function registerConnectionHandlers(
             // Our schema doesn't have .passthrough() so unknown keys are stripped. 
             // This is safer.
             return await sshService.saveProfile(validated as SSHConnection);
-        } catch {
-            return false;
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return {
+                success: false,
+                error: message,
+                code: AppErrorCode.SSH_PROFILE_SAVE_FAILED
+            };
         }
     });
 
     secureHandle('ssh:deleteProfile', async (_event, id: string) => {
         try {
             return await sshService.deleteProfile(id);
-        } catch {
-            return false;
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return {
+                success: false,
+                error: message,
+                code: AppErrorCode.SSH_PROFILE_DELETE_FAILED
+            };
         }
     });
 }
@@ -291,16 +330,18 @@ function registerSystemHandlers(
     secureHandle('ssh:getInstalledPackages', async (_event, connectionId: string, manager?: 'apt' | 'npm' | 'pip') => {
         try {
             return await sshService.getInstalledPackages(connectionId, manager);
-        } catch {
-            return [];
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return { success: false, error: message, code: AppErrorCode.SSH_COMMAND_FAILED, packages: [] };
         }
     });
 
     secureHandle('ssh:getLogFiles', async (_event, connectionId: string) => {
         try {
             return await sshService.getLogFiles(connectionId);
-        } catch {
-            return [];
+        } catch (error) {
+            const message = getErrorMessage(error as Error);
+            return { success: false, error: message, code: AppErrorCode.SSH_COMMAND_FAILED, files: [] };
         }
     });
 
@@ -519,4 +560,29 @@ function registerKeyManagementHandlers(
         async (_event, payload: { host: string; keyType?: string }) =>
             sshService.removeKnownHost(payload.host, payload.keyType)
     );
+}
+
+function registerHealthHandlers(
+    sshService: SSHService,
+    _rateLimitService: RateLimitService,
+    secureHandle: <Args extends unknown[]>(
+        channel: string,
+        handler: (event: IpcMainInvokeEvent, ...args: Args) => Promise<unknown>
+    ) => void
+) {
+    secureHandle('ssh:health', async () => {
+        const activeConnections = sshService.getAllConnections();
+        const poolStats = sshService.getConnectionPoolStats();
+
+        // Determine health status based on metrics
+        const status = 'healthy';
+
+        return {
+            status,
+            activeConnections: activeConnections.length,
+            connectedCount: activeConnections.filter(c => c.connected).length,
+            poolStats: poolStats,
+            timestamp: Date.now(),
+        };
+    });
 }

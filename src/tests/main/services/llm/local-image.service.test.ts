@@ -6,6 +6,8 @@ import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { en } from '../../../../renderer/i18n/en';
+import { tr } from '../../../../renderer/i18n/tr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('axios');
@@ -69,6 +71,10 @@ describe('LocalImageService Integration', () => {
     });
 
     describe('Fallback Mechanism', () => {
+        it('should reject generation when prompt is blank', async () => {
+            await expect(service.generateImage({ prompt: '   ' })).rejects.toThrow('Prompt is required');
+        });
+
         it('should fallback to pollinations when sd-cpp fails', async () => {
             // Mock ensureSDCppReady to succeed
             vi.spyOn(service, 'ensureSDCppReady').mockResolvedValue({
@@ -92,7 +98,13 @@ describe('LocalImageService Integration', () => {
             expect(result).toBe('/path/to/fallback/image.png');
             expect(sdCppSpy).toHaveBeenCalled();
             expect(pollinationsSpy).toHaveBeenCalled();
-            expect(mockTelemetryService.track).toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                'sd-cpp-fallback-triggered',
+                expect.objectContaining({
+                    provider: 'sd-cpp',
+                    errorCode: 'LOCAL_IMAGE_SDCPP_FALLBACK_TRIGGERED',
+                })
+            );
         });
 
         it('should track success metric when sd-cpp succeeds', async () => {
@@ -129,6 +141,15 @@ describe('LocalImageService Integration', () => {
             await expect(service.generateImage({ prompt: 'test prompt' })).rejects.toThrow('ollama unavailable');
             expect(mockTelemetryService.track).not.toHaveBeenCalledWith('sd-cpp-fallback-triggered', expect.any(Object));
         });
+
+        it('should fallback to pollinations for unknown provider values', async () => {
+            const pollinationsSpy = vi.spyOn(service as any, 'generateWithPollinations').mockResolvedValue('/path/to/unknown-provider.png');
+
+            const result = await (service as any).generateWithProvider('unknown-provider', { prompt: 'test prompt' });
+
+            expect(result).toBe('/path/to/unknown-provider.png');
+            expect(pollinationsSpy).toHaveBeenCalledWith({ prompt: 'test prompt' });
+        });
     });
 
     describe('Telemetry Tracking', () => {
@@ -139,6 +160,46 @@ describe('LocalImageService Integration', () => {
                 provider: 'sd-cpp',
                 detail: 'info'
             });
+        });
+
+        it('should emit telemetry when sd-cpp status is checked', async () => {
+            const status = await service.getSDCppStatus();
+
+            expect(status).toBe('notConfigured');
+            expect(mockTelemetryService.track).toHaveBeenCalledWith(
+                'sd-cpp-status-checked',
+                expect.objectContaining({ provider: 'sd-cpp', status: 'notConfigured' })
+            );
+        });
+    });
+
+    describe('Health Metrics', () => {
+        it('should expose dashboard-friendly health metrics', async () => {
+            const metrics = await service.getHealthMetrics();
+
+            expect(metrics).toMatchObject({
+                status: 'healthy',
+                provider: 'sd-cpp',
+                sdCppStatus: 'notConfigured',
+                uiState: 'empty',
+                queueDepth: 0,
+                scheduledTaskCount: 0,
+            });
+            expect(metrics.performanceBudget.statusCheckMs).toBe(300);
+            expect(en.serviceHealth.localImage.empty).toBe(metrics.messageKey);
+            expect(tr.serviceHealth.localImage.empty).toBeTruthy();
+        });
+
+        it('should report ready and failure ui states from status checks', async () => {
+            vi.spyOn(service, 'getSDCppStatus').mockResolvedValueOnce('ready');
+            const readyMetrics = await service.getHealthMetrics();
+            expect(readyMetrics.uiState).toBe('ready');
+            expect(en.serviceHealth.localImage.ready).toBe(readyMetrics.messageKey);
+
+            vi.spyOn(service, 'getSDCppStatus').mockResolvedValueOnce('failed');
+            const failureMetrics = await service.getHealthMetrics();
+            expect(failureMetrics.uiState).toBe('failure');
+            expect(en.serviceHealth.localImage.failure).toBe(failureMetrics.messageKey);
         });
     });
 });

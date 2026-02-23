@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { EditorTab, Project, ProjectDashboardTab, WorkspaceDashboardTab } from '@/types';
 
 import { EditorTabs } from './EditorTabs';
+import { WorkspaceContentHub } from './WorkspaceContentHub';
 import { WorkspaceEditor } from './WorkspaceEditor';
 
 interface WorkspaceMainProps {
@@ -29,7 +30,7 @@ interface WorkspaceMainProps {
     setShowLogoModal: (show: boolean) => void;
     t: (key: string) => string;
     language: Language;
-    setDashboardTab: (tab: ProjectDashboardTab) => void;
+    setDashboardTab: (tab: WorkspaceDashboardTab) => void;
     onDeleteProject?: () => void;
     selectedEntry?: { path: string; isDirectory: boolean } | null;
     onOpenFile?: (path: string) => void;
@@ -61,8 +62,41 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
     selectedEntry,
     onOpenFile,
 }) => {
+    const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+
+    const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        const touch = event.changedTouches[0];
+        if (!touch) {
+            return;
+        }
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        const start = touchStartRef.current;
+        const touch = event.changedTouches[0];
+        if (!start || !touch) {
+            return;
+        }
+        const deltaX = touch.clientX - start.x;
+        const deltaY = touch.clientY - start.y;
+        touchStartRef.current = null;
+        if (Math.abs(deltaX) < 70 || Math.abs(deltaX) < Math.abs(deltaY)) {
+            return;
+        }
+        if (deltaX > 0) {
+            setDashboardTab('overview');
+            return;
+        }
+        setDashboardTab('files');
+    };
+
     return (
-        <div className="flex-1 flex flex-col min-w-0 bg-background relative">
+        <div
+            className="flex-1 flex flex-col min-w-0 bg-background relative"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+        >
             {openTabs.length > 0 && dashboardTab === 'editor' && (
                 <div className="z-20 relative">
                     <EditorTabs
@@ -92,6 +126,8 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                     <WorkspaceEditor
                         activeTab={activeTab}
                         updateTabContent={updateTabContent}
+                        projectKey={project.id}
+                        projectPath={project.path}
                         emptyState={null}
                     />
                 </div>
@@ -114,6 +150,7 @@ export const WorkspaceMain: React.FC<WorkspaceMainProps> = ({
                             selectedEntry={selectedEntry}
                             onOpenFile={onOpenFile}
                         />
+                        <WorkspaceContentHub project={project} onApplyTemplate={handleUpdateProject} />
                     </div>
                 )}
             </div>

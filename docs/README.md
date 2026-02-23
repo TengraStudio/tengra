@@ -37,6 +37,12 @@ Overview of unit, integration, and end-to-end testing approaches.
 ### [Troubleshooting](./TROUBLESHOOTING.md)
 Solutions for common issues, log analysis, and system recovery.
 
+### [Remote Workspace with SSH](./REMOTE_WORKSPACE_SSH_ONBOARDING.md)
+Step-by-step onboarding for SSH workspace setup, troubleshooting, and secure usage.
+
+### [Project Workspace Shortcuts & Editor Features](./PROJECT_WORKSPACE_SHORTCUTS_EDITOR_FEATURES.md)
+Reference for workspace keyboard shortcuts, editor capabilities, and local vs SSH behavior.
+
 ### [I18N Guide](./I18N_GUIDE.md)
 Process for internationalization and adding support for new languages.
 

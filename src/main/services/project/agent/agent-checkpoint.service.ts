@@ -12,6 +12,22 @@ import {
     ProjectStep
 } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
+import {
+    AgentCheckpointSnapshotV1Schema,
+    AgentTaskStateSchema
+} from '@shared/schemas/agent-checkpoint.schema';
+
+/** Standardized error for agent checkpointing */
+export class AgentCheckpointError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string,
+        public readonly details?: Record<string, unknown>
+    ) {
+        super(message);
+        this.name = 'AgentCheckpointError';
+    }
+}
 
 interface RollbackPreparation {
     resumedCheckpoint: AgentCheckpointItem;
@@ -45,31 +61,47 @@ export class AgentCheckpointService extends BaseService {
         state: AgentTaskState,
         trigger: AgentCheckpointTrigger = 'manual_snapshot'
     ): Promise<string> {
-        if (trigger === 'auto_state_sync') {
-            const latestCheckpoint = await this.databaseService.uac.getLatestCheckpoint(taskId);
-            if (latestCheckpoint) {
-                const parsedLatest = this.parseSnapshot(
-                    latestCheckpoint.snapshot,
-                    latestCheckpoint.trigger,
-                    latestCheckpoint.created_at
-                );
-                const latestHash = this.createStateFingerprint(parsedLatest.state);
-                const nextHash = this.createStateFingerprint(state);
-                if (latestHash === nextHash) {
-                    return latestCheckpoint.id;
-                }
+        if (!taskId) throw new AgentCheckpointError('taskId is required', 'MISSING_TASK_ID');
+
+        try {
+            // Validate state before saving
+            AgentTaskStateSchema.parse(state);
+
+            if (trigger === 'auto_state_sync') {
+                const latestCheckpointId = await this.skipIfDuplicate(taskId, state);
+                if (latestCheckpointId) return latestCheckpointId;
+            }
+
+            const snapshot = this.serializeSnapshot(state, trigger);
+            const checkpointId = await this.databaseService.uac.createCheckpoint(
+                taskId,
+                stepIndex,
+                trigger,
+                snapshot
+            );
+            await this.databaseService.uac.trimCheckpoints(taskId, MAX_CHECKPOINTS_PER_TASK);
+            this.logInfo(`Saved checkpoint ${checkpointId} for task ${taskId} (trigger: ${trigger})`);
+            return checkpointId;
+        } catch (error) {
+            throw new AgentCheckpointError('Failed to save checkpoint', 'SAVE_FAILED', { error, taskId });
+        }
+    }
+
+    private async skipIfDuplicate(taskId: string, state: AgentTaskState): Promise<string | null> {
+        const latestCheckpoint = await this.databaseService.uac.getLatestCheckpoint(taskId);
+        if (latestCheckpoint) {
+            const parsedLatest = this.parseSnapshot(
+                latestCheckpoint.snapshot,
+                latestCheckpoint.trigger,
+                latestCheckpoint.created_at
+            );
+            const latestHash = this.createStateFingerprint(parsedLatest.state);
+            const nextHash = this.createStateFingerprint(state);
+            if (latestHash === nextHash) {
+                return latestCheckpoint.id;
             }
         }
-
-        const snapshot = this.serializeSnapshot(state, trigger);
-        const checkpointId = await this.databaseService.uac.createCheckpoint(
-            taskId,
-            stepIndex,
-            trigger,
-            snapshot
-        );
-        await this.databaseService.uac.trimCheckpoints(taskId, MAX_CHECKPOINTS_PER_TASK);
-        return checkpointId;
+        return null;
     }
 
     async getCheckpoints(taskId: string): Promise<AgentCheckpointItem[]> {
@@ -176,16 +208,23 @@ export class AgentCheckpointService extends BaseService {
     }
 
     private serializeSnapshot(state: AgentTaskState, trigger: AgentCheckpointTrigger): string {
-        const snapshot: AgentCheckpointSnapshotV1 = {
-            schemaVersion: 1,
-            trigger,
-            createdAt: Date.now(),
-            state
-        };
+        try {
+            const snapshot: AgentCheckpointSnapshotV1 = {
+                schemaVersion: 1,
+                trigger,
+                createdAt: Date.now(),
+                state
+            };
 
-        const serialized = JSON.stringify(snapshot);
-        const compressed = gzipSync(Buffer.from(serialized, 'utf8'));
-        return `${CHECKPOINT_SNAPSHOT_PREFIX}${compressed.toString('base64')}`;
+            // Double check validation before compression
+            AgentCheckpointSnapshotV1Schema.parse(snapshot);
+
+            const serialized = JSON.stringify(snapshot);
+            const compressed = gzipSync(Buffer.from(serialized, 'utf8'));
+            return `${CHECKPOINT_SNAPSHOT_PREFIX}${compressed.toString('base64')}`;
+        } catch (error) {
+            throw new AgentCheckpointError('Failed to serialize snapshot', 'SERIALIZATION_FAILED', { error });
+        }
     }
 
     private parseSnapshot(

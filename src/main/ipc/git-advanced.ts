@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { appLogger } from '@main/logging/logger';
 import { GitService } from '@main/services/project/git.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
@@ -997,6 +998,8 @@ function registerStatsHandlers(gitService: GitService) {
  * Registers advanced git IPC handlers including conflicts, stashing, blame, rebase, and submodules.
  */
 export function registerGitAdvancedIpc(gitService: GitService) {
+    appLogger.info('GitAdvanced', '[IPC] Git-Advanced service registered');
+
     registerConflictHandlers(gitService);
     registerStashHandlers(gitService);
     registerBlameAndCommitHandlers(gitService);
@@ -1007,16 +1010,24 @@ export function registerGitAdvancedIpc(gitService: GitService) {
     registerStatsHandlers(gitService);
 
     ipcMain.handle('git:runControlledOperation', createValidatedIpcHandler('git:runControlledOperation', async (_event, cwd: string, command: string, operationId?: string, timeoutMs?: number) => {
-        if (!isControlledCommandAllowed(command)) {
-            return {
-                success: false,
-                error: 'Operation is not allowed for controlled execution',
-            };
-        }
+        const startTime = Date.now();
+        try {
+            if (!isControlledCommandAllowed(command)) {
+                return {
+                    success: false,
+                    error: 'Operation is not allowed for controlled execution',
+                };
+            }
 
-        return await withRateLimit('git', () =>
-            gitService.executeRaw(cwd, command, { operationId, timeoutMs })
-        );
+            const result = await withRateLimit('git', () =>
+                gitService.executeRaw(cwd, command, { operationId, timeoutMs })
+            );
+            appLogger.debug('GitAdvanced', `[git:runControlledOperation] Success in ${Date.now() - startTime}ms`);
+            return result;
+        } catch (error) {
+            appLogger.error('GitAdvanced', `[git:runControlledOperation] Failed in ${Date.now() - startTime}ms: ${getErrorMessage(error as Error)}`);
+            throw error;
+        }
     }, {
         defaultValue: {
             success: false,
@@ -1026,11 +1037,18 @@ export function registerGitAdvancedIpc(gitService: GitService) {
     }));
 
     ipcMain.handle('git:cancelOperation', createValidatedIpcHandler('git:cancelOperation', async (_event, operationId: string) => {
-        const cancelled = gitService.cancelOperation(operationId);
-        return {
-            success: cancelled,
-            error: cancelled ? undefined : 'Operation not found',
-        };
+        const startTime = Date.now();
+        try {
+            const cancelled = gitService.cancelOperation(operationId);
+            appLogger.debug('GitAdvanced', `[git:cancelOperation] Success in ${Date.now() - startTime}ms`);
+            return {
+                success: cancelled,
+                error: cancelled ? undefined : 'Operation not found',
+            };
+        } catch (error) {
+            appLogger.error('GitAdvanced', `[git:cancelOperation] Failed in ${Date.now() - startTime}ms: ${getErrorMessage(error as Error)}`);
+            throw error;
+        }
     }, {
         defaultValue: { success: false, error: 'Failed to cancel operation' },
         argsSchema: z.tuple([OperationIdSchema])

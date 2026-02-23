@@ -100,6 +100,33 @@ export const en = {
         somethingWentWrong: 'Something went wrong:',
         rootNotFound: 'Root element not found',
     },
+    serviceHealth: {
+        modelRegistry: {
+            ready: 'serviceHealth.modelRegistry.ready',
+            empty: 'serviceHealth.modelRegistry.empty',
+            failure: 'serviceHealth.modelRegistry.failure',
+        },
+        llm: {
+            ready: 'serviceHealth.llm.ready',
+            empty: 'serviceHealth.llm.empty',
+            failure: 'serviceHealth.llm.failure',
+        },
+        localImage: {
+            ready: 'serviceHealth.localImage.ready',
+            empty: 'serviceHealth.localImage.empty',
+            failure: 'serviceHealth.localImage.failure',
+        },
+        settings: {
+            ready: 'serviceHealth.settings.ready',
+            empty: 'serviceHealth.settings.empty',
+            failure: 'serviceHealth.settings.failure',
+        },
+        token: {
+            ready: 'serviceHealth.token.ready',
+            empty: 'serviceHealth.token.empty',
+            failure: 'serviceHealth.token.failure',
+        },
+    },
     languages: {
         tr: 'Turkish',
         en: 'English',
@@ -1331,6 +1358,27 @@ export const en = {
             importFailed: 'Memory import failed',
         },
     },
+    advancedMemory: {
+        health: {
+            ready: 'Memory service is healthy.',
+            empty: 'Memory service is ready and waiting for activity.',
+            failure: 'Memory service is degraded. Retry or check logs.'
+        }
+    },
+    contextRetrieval: {
+        health: {
+            ready: 'Context retrieval is healthy.',
+            empty: 'Context retrieval is ready and waiting for requests.',
+            failure: 'Context retrieval is degraded. Retry or check logs.'
+        }
+    },
+    embedding: {
+        health: {
+            ready: 'Embedding service is healthy.',
+            empty: 'Embedding service is ready and waiting for requests.',
+            failure: 'Embedding service is degraded. Retry or check logs.'
+        }
+    },
     terminal: {
         title: 'Terminal',
         renamePrompt: 'Enter new name:',
@@ -1340,8 +1388,10 @@ export const en = {
         local_terminal: 'Local Terminal',
         local_terminal_desc: 'Standard shell on your computer',
         ssh_connections: 'SSH Connections',
+        sshPrefix: 'SSH',
         no_ssh_profiles: 'No saved SSH profiles found',
         docker_containers: 'Docker Containers',
+        dockerPrefix: 'Docker',
         no_containers: 'No running containers found',
         hide: 'Hide Terminal',
         paste: 'Paste',
@@ -1366,6 +1416,8 @@ export const en = {
         exitGalleryView: 'Exit Gallery View',
         floatTerminal: 'Float Terminal',
         dockTerminal: 'Dock Terminal',
+        multiplexerTitle: 'Multiplexer (tmux/screen)',
+        healthSummary: 'Health: {{state}} | Avg {{avg}}ms / Budget {{budget}}ms',
         runTask: 'Run Task',
         taskRunner: 'Task Runner',
         tasksSearchPlaceholder: 'Search tasks...',
@@ -1541,6 +1593,32 @@ export const en = {
             selectModelError: 'Please select at least one model',
             runFailed: 'Failed to run collaboration',
             remove: 'Remove',
+            sharedContext: 'Shared Context',
+            sharedContextPlaceholder: 'Add context for all collaborators...',
+            sharedMemory: 'Shared Memory',
+            memoryPlaceholder: 'Add a shared memory note',
+            memoryUpdated: 'Shared memory updated',
+            presence: 'Presence',
+            guestsAllowed: 'Guests Allowed',
+            guestsBlocked: 'Guests Blocked',
+            guestPolicyChanged: 'Guest access policy updated',
+            cursorMarkers: 'Cursor Highlight Markers',
+            addMarker: 'Add Marker',
+            cursorMarked: 'Cursor marker added',
+            promptArea: 'Prompt Area',
+            latestResponse: 'Latest Response',
+            changeAnnotations: 'Change Annotations',
+            annotate: 'Annotate',
+            annotationTemplate: 'Synced context changes for collaborators.',
+            annotationRecorded: 'Change annotation recorded',
+            responseSynchronized: 'AI response synchronized with session members.',
+            startRecording: 'Start Recording',
+            stopRecording: 'Stop Recording',
+            recordingToggled: 'Session recording state changed',
+            generateShareLink: 'Generate Share Link',
+            linkGenerated: 'Session share link generated',
+            contextUpdated: 'Shared context updated',
+            collaborationRunFinished: 'Collaboration run completed',
         },
     },
     welcome: {
@@ -3048,4 +3126,32 @@ export const en = {
             },
         },
     },
+    agentCollaboration: {
+        error: {
+            invalidRoutingRules: 'Invalid routing rules provided',
+            votingSessionNotFound: 'Voting session not found',
+            votingSessionInvalid: 'Failed to create a valid voting session',
+            debateSessionNotFound: 'Debate session not found',
+            invalidDebateArgument: 'Invalid debate argument',
+        },
+        voting: {
+            created: 'Created voting session: {{question}}',
+            voteSubmitted: 'Vote submitted: {{modelId}} voted "{{decision}}"',
+            resolved: 'Voting resolved: "{{winner}}"',
+            deadlocked: 'Voting deadlock: {{decisions}}',
+        },
+        debate: {
+            created: 'Created debate session: {{topic}}',
+            argumentSubmitted: 'Argument submitted by {{agentId}}',
+            resolved: 'Debate resolved with winning side: {{side}}',
+        }
+    },
+    agentCheckpoint: {
+        error: {
+            saveFailed: 'Failed to save agent checkpoint',
+            serializationFailed: 'Failed to serialize agent state snapshot',
+            checkpointNotFound: 'Checkpoint {{id}} not found',
+        },
+        saved: 'Saved checkpoint for task {{taskId}}',
+    }
 };

@@ -108,11 +108,14 @@ export const useAgentHandlers = ({
             return;
         }
         try {
-            await window.electron.batch.invoke([{
-                channel: 'project-agent:select-model',
-                args: [{ taskId: selectedTaskId, provider, model }]
-            }]);
-            setIsInterruptModalOpen(false);
+            const result = await window.electron.projectAgent.selectModel({
+                taskId: selectedTaskId,
+                provider,
+                model
+            });
+            if (result.success) {
+                setIsInterruptModalOpen(false);
+            }
         } catch (error) {
             window.electron.log.error('Failed to select model:', error as Error);
         }

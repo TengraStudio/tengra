@@ -105,6 +105,27 @@ describe('AgentProviderRotationService', () => {
             expect(result?.provider).toBe('anthropic');
             expect(result?.accountIndex).toBe(0);
         });
+
+        it('should skip cloud providers with exhausted quota', async () => {
+            const currentProvider = { provider: 'openai', model: 'gpt-4', accountIndex: 0, status: 'active' };
+
+            mockAuthService.getAccountsByProvider = vi.fn().mockResolvedValue([
+                { provider: 'openai', isActive: true }
+            ]);
+            mockKeyRotationService.rotateKey = vi.fn().mockReturnValue(false);
+            service.setQuotaProvider(async (provider: string) => {
+                if (provider === 'anthropic') {
+                    return 0;
+                }
+                return undefined;
+            });
+
+            const result = await service.getNextProvider(currentProvider as any);
+
+            expect(result).toBeDefined();
+            expect(result?.provider).toBe('google');
+            expect(result?.accountIndex).toBe(0);
+        });
     });
 
     describe('rotation settings persistence', () => {

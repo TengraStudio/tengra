@@ -10,7 +10,8 @@ vi.mock('fs', () => ({
     promises: {
         readdir: vi.fn(),
         readFile: vi.fn(),
-        stat: vi.fn()
+        stat: vi.fn(),
+        writeFile: vi.fn()
     }
 }));
 vi.mock('path', async () => {
@@ -47,15 +48,15 @@ describe('ProjectService', () => {
         vi.mocked(fs.readdir).mockResolvedValue([
             mockDirent('src', true),
             mockDirent('package.json', false)
-        ] as any);
+        ] as never);
 
         // Mock readdir for nested src
         vi.mocked(fs.readdir).mockResolvedValueOnce([
             mockDirent('src', true),
             mockDirent('package.json', false)
-        ] as any).mockResolvedValueOnce([
+        ] as never).mockResolvedValueOnce([
             mockDirent('index.ts', false)
-        ] as any);
+        ] as never);
 
         vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({
             dependencies: { 'react': '18.2.0' },
@@ -83,7 +84,7 @@ describe('ProjectService', () => {
         vi.mocked(fs.readdir).mockResolvedValue([
             'file1.ts',
             'README.md'
-        ] as any);
+        ] as never);
         vi.mocked(fs.stat).mockResolvedValue({
             size: 500,
             mtimeMs: Date.now(),
@@ -124,6 +125,10 @@ describe('ProjectService', () => {
         expect(result.stats.fileCount).toBe(0);
     });
 
+    it('throws when project root path input is invalid', async () => {
+        await expect(projectService.analyzeProject('')).rejects.toThrow('Invalid project root path');
+    });
+
     it('applies incremental invalidation from changed path set', async () => {
         const mockDirPath = '/mock/project';
 
@@ -159,5 +164,77 @@ describe('ProjectService', () => {
 
         expect(updated.stats.fileCount).toBe(initial.stats.fileCount + 1);
         expect(updated.files.some(file => file.includes('new-file.ts'))).toBe(true);
+    });
+
+    it('normalizes pagination bounds for file pages', async () => {
+        const mockDirPath = '/mock/project';
+
+        vi.mocked(fs.readdir).mockResolvedValueOnce([
+            mockDirent('index.ts', false),
+            mockDirent('util.ts', false),
+            mockDirent('package.json', false)
+        ] as never);
+
+        vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({
+            dependencies: {},
+            devDependencies: {}
+        }));
+
+        vi.mocked(fs.stat).mockResolvedValue({
+            size: 250,
+            mtimeMs: Date.now(),
+            isDirectory: () => false,
+            isFile: () => true
+        } as unknown as import('fs').Stats);
+
+        await projectService.analyzeProject(mockDirPath);
+        const page = await projectService.getProjectFilePage(mockDirPath, -10, 0);
+
+        expect(page.offset).toBe(0);
+        expect(page.limit).toBe(1);
+        expect(page.files).toHaveLength(1);
+        expect(page.total).toBeGreaterThanOrEqual(3);
+    });
+
+    it('parses env vars with comments, quotes, and embedded equals signs', async () => {
+        vi.mocked(fs.readFile).mockResolvedValue([
+            '# comment line',
+            'PLAIN=value',
+            '1INVALID=skip-me',
+            'DOUBLE_QUOTED="quoted value"',
+            "SINGLE_QUOTED='single value'",
+            'WITH_EQUALS="a=b=c"',
+            'EMPTY=',
+            'INVALID_LINE'
+        ].join('\n'));
+
+        const vars = await projectService.getEnvVars('/mock/project');
+
+        expect(vars).toEqual({
+            PLAIN: 'value',
+            DOUBLE_QUOTED: 'quoted value',
+            SINGLE_QUOTED: 'single value',
+            WITH_EQUALS: 'a=b=c',
+            EMPTY: ''
+        });
+    });
+
+    it('writes env vars to the project .env file', async () => {
+        await projectService.saveEnvVars('/mock/project', {
+            API_KEY: 'secret',
+            NODE_ENV: 'development'
+        });
+
+        expect(fs.writeFile).toHaveBeenCalledWith(
+            expect.stringMatching(/mock[\\/]+project[\\/]+\.env$/),
+            'API_KEY=secret\nNODE_ENV=development',
+            'utf-8'
+        );
+    });
+
+    it('rejects env save payloads with invalid variable names', async () => {
+        await expect(projectService.saveEnvVars('/mock/project', {
+            'INVALID-NAME': 'x'
+        })).rejects.toThrow('Invalid environment variable payload');
     });
 });

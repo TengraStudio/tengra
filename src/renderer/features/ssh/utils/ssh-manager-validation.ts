@@ -11,6 +11,7 @@ const sshConnectionFormSchema = z.object({
     password: z.string().optional(),
     privateKey: z.string().optional(),
     name: z.string().trim().max(128).optional(),
+    jumpHost: z.string().trim().max(512).optional(),
 });
 
 const sshProfileSchema = z.object({
@@ -21,6 +22,7 @@ const sshProfileSchema = z.object({
     name: z.string().trim().max(128).optional(),
     password: z.string().optional(),
     privateKey: z.string().optional(),
+    jumpHost: z.string().trim().max(512).optional(),
     error: z.string().optional(),
     status: z.enum(['connected', 'disconnected', 'connecting', 'error']).optional(),
 });
@@ -41,6 +43,7 @@ export interface SSHConnectionFormInput {
     password?: string;
     privateKey?: string;
     name?: string;
+    jumpHost?: string;
 }
 
 export interface SSHManagerValidationFailure {
@@ -97,6 +100,7 @@ export function validateSSHConnectionForm(
         password: parsed.data.password?.trim() || undefined,
         privateKey: parsed.data.privateKey?.trim() || undefined,
         name: parsed.data.name?.trim() || undefined,
+        jumpHost: parsed.data.jumpHost?.trim() || undefined,
     };
 
     if (!hasAuthMethod(normalized)) {
@@ -134,6 +138,9 @@ export function parseSSHProfile(raw: unknown): ParsedSSHProfileResult {
     }
     if (parsed.data.privateKey) {
         profile.privateKey = parsed.data.privateKey;
+    }
+    if (parsed.data.jumpHost) {
+        profile.jumpHost = parsed.data.jumpHost;
     }
     if (parsed.data.error) {
         profile.error = parsed.data.error;

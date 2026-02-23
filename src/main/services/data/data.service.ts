@@ -4,13 +4,67 @@ import * as path from 'path';
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { getErrorMessage } from '@shared/utils/error.util';
+import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { app } from 'electron';
 
+/**
+ * Standardized error codes for DataService operations
+ */
+export enum DataServiceErrorCode {
+    INITIALIZATION_FAILED = 'DATA_SERVICE_INIT_FAILED',
+    DIRECTORY_CREATE_FAILED = 'DATA_SERVICE_DIR_CREATE_FAILED',
+    MIGRATION_FAILED = 'DATA_SERVICE_MIGRATION_FAILED',
+    MIGRATION_PATH_INVALID = 'DATA_SERVICE_MIGRATION_PATH_INVALID',
+    PATH_TYPE_INVALID = 'DATA_SERVICE_PATH_TYPE_INVALID',
+    FILE_OPERATION_FAILED = 'DATA_SERVICE_FILE_OP_FAILED',
+    PERMISSION_DENIED = 'DATA_SERVICE_PERMISSION_DENIED'
+}
+
+/**
+ * Performance budget thresholds for DataService operations (in milliseconds)
+ */
+export const DATA_SERVICE_PERFORMANCE_BUDGETS = {
+    INITIALIZE_MS: 5000,
+    MIGRATE_MS: 30000,
+    ENSURE_DIRECTORY_MS: 1000,
+    GET_PATH_MS: 10
+} as const;
+
+/**
+ * Telemetry event names for DataService
+ */
+export enum DataServiceTelemetryEvent {
+    INITIALIZE_START = 'data_service_initialize_start',
+    INITIALIZE_COMPLETE = 'data_service_initialize_complete',
+    INITIALIZE_ERROR = 'data_service_initialize_error',
+    MIGRATE_START = 'data_service_migrate_start',
+    MIGRATE_COMPLETE = 'data_service_migrate_complete',
+    MIGRATE_ERROR = 'data_service_migrate_error',
+    DIRECTORY_CREATED = 'data_service_directory_created',
+    PATH_ACCESSED = 'data_service_path_accessed'
+}
+
 export type DataType = 'auth' | 'db' | 'config' | 'logs' | 'models' | 'gallery' | 'galleryImages' | 'galleryVideos' | 'data'
+
+/**
+ * Valid DataType values for validation
+ */
+const VALID_DATA_TYPES: DataType[] = ['auth', 'db', 'config', 'logs', 'models', 'gallery', 'galleryImages', 'galleryVideos', 'data'];
+
+/**
+ * Migration entry definition
+ */
+interface MigrationEntry {
+    old: string;
+    new: string;
+    isDir: boolean;
+}
 
 export class DataService extends BaseService {
     private baseDir: string;
     private paths: Record<DataType, string>;
+    private telemetryService: TelemetryService | null = null;
+    private initialized = false;
 
     constructor() {
         super('DataService');
@@ -34,31 +88,144 @@ export class DataService extends BaseService {
         };
     }
 
+    /**
+     * Set the telemetry service dependency
+     */
+    setTelemetryService(service: TelemetryService): void {
+        this.telemetryService = service;
+    }
+
+    /**
+     * Track telemetry event if service is available
+     */
+    private trackEvent(eventName: DataServiceTelemetryEvent, properties?: Record<string, unknown>): void {
+        if (this.telemetryService) {
+            this.telemetryService.track(eventName, properties);
+        }
+    }
+
+    /**
+     * Validate that the provided DataType is valid
+     */
+    private validateDataType(type: unknown): type is DataType {
+        return typeof type === 'string' && VALID_DATA_TYPES.includes(type as DataType);
+    }
+
     async initialize(): Promise<void> {
+        const startTime = Date.now();
         this.logInfo('Initializing data service and ensuring directory structure...');
+        this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_START);
 
         try {
             await this.ensureDirectories();
-            this.logInfo('Data service initialized successfully');
+            this.initialized = true;
+            const duration = Date.now() - startTime;
+
+            this.logInfo(`Data service initialized successfully in ${duration}ms`);
+            this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_COMPLETE, {
+                durationMs: duration,
+                success: true
+            });
+
+            // Warn if initialization exceeded budget
+            if (duration > DATA_SERVICE_PERFORMANCE_BUDGETS.INITIALIZE_MS) {
+                this.logWarn(`Initialization exceeded performance budget: ${duration}ms > ${DATA_SERVICE_PERFORMANCE_BUDGETS.INITIALIZE_MS}ms`);
+            }
         } catch (error) {
+            const duration = Date.now() - startTime;
             this.logError('Failed to initialize data service', error);
+            this.trackEvent(DataServiceTelemetryEvent.INITIALIZE_ERROR, {
+                durationMs: duration,
+                error: getErrorMessage(error as Error)
+            });
             throw error;
         }
     }
 
     async cleanup(): Promise<void> {
         this.logInfo('Data service cleanup - no resources to clean');
+        this.initialized = false;
+    }
+
+    /**
+     * Check if the service has been initialized
+     */
+    isInitialized(): boolean {
+        return this.initialized;
     }
 
     private async ensureDirectories(): Promise<void> {
-        await fsp.mkdir(this.baseDir, { recursive: true, mode: 0o700 });
-        for (const targetPath of Object.values(this.paths)) {
-            await fsp.mkdir(targetPath, { recursive: true, mode: 0o700 });
+        const startTime = Date.now();
+
+        try {
+            await fsp.mkdir(this.baseDir, { recursive: true, mode: 0o700 });
+            this.trackEvent(DataServiceTelemetryEvent.DIRECTORY_CREATED, { path: this.baseDir });
+
+            for (const targetPath of Object.values(this.paths)) {
+                await fsp.mkdir(targetPath, { recursive: true, mode: 0o700 });
+                this.trackEvent(DataServiceTelemetryEvent.DIRECTORY_CREATED, { path: targetPath });
+            }
+
+            const duration = Date.now() - startTime;
+            if (duration > DATA_SERVICE_PERFORMANCE_BUDGETS.ENSURE_DIRECTORY_MS) {
+                this.logWarn(`ensureDirectories exceeded budget: ${duration}ms`);
+            }
+        } catch (error) {
+            this.logError('Failed to create directories', error);
+            const dataError = new Error(getErrorMessage(error)) as Error & { code?: string };
+            dataError.code = DataServiceErrorCode.DIRECTORY_CREATE_FAILED;
+            throw dataError;
         }
     }
 
+    /**
+     * Get the path for a given data type.
+     * @param type - The type of data to get the path for
+     * @returns The path string for the requested data type
+     * @throws Error if the type is invalid
+     */
     getPath(type: DataType): string {
-        return this.paths[type];
+        const startTime = Date.now();
+
+        if (!this.validateDataType(type)) {
+            const error = new Error(`Invalid DataType: ${type}`) as Error & { code?: string };
+            error.code = DataServiceErrorCode.PATH_TYPE_INVALID;
+            throw error;
+        }
+
+        const result = this.paths[type];
+        const duration = Date.now() - startTime;
+
+        this.trackEvent(DataServiceTelemetryEvent.PATH_ACCESSED, { type, durationMs: duration });
+
+        if (duration > DATA_SERVICE_PERFORMANCE_BUDGETS.GET_PATH_MS) {
+            this.logWarn(`getPath exceeded budget for type ${type}: ${duration}ms`);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get all registered paths
+     */
+    getAllPaths(): Record<DataType, string> {
+        return { ...this.paths };
+    }
+
+    /**
+     * Get the base data directory
+     */
+    getBaseDir(): string {
+        return this.baseDir;
+    }
+
+    /**
+     * Validate a path is within allowed directories (path traversal protection)
+     */
+    validatePath(targetPath: string, allowedRoot: string): boolean {
+        const resolvedTarget = path.resolve(targetPath);
+        const resolvedRoot = path.resolve(allowedRoot);
+        return resolvedTarget.startsWith(resolvedRoot);
     }
 
     /**
@@ -69,7 +236,7 @@ export class DataService extends BaseService {
         const userData = app.getPath('userData'); // tandem/runtime
         const rootPath = path.dirname(userData);  // tandem
 
-        const migrations = [
+        const migrations: MigrationEntry[] = [
             // Auth: root/auth -> data/auth
             {
                 old: path.join(rootPath, 'auth'),

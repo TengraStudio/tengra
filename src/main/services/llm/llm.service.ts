@@ -18,7 +18,7 @@ import { StreamChunk, StreamParser } from '@main/utils/stream-parser.util';
 import { Message, MessageContentPart, SystemMode, ToolDefinition } from '@shared/types/chat';
 import { JsonObject } from '@shared/types/common';
 import { OpenAIChatCompletion, OpenAIContentPartImage, OpenAIMessage } from '@shared/types/llm-provider-types';
-import { ApiError, AuthenticationError, NetworkError, ValidationError } from '@shared/utils/error.util';
+import { ApiError, AppErrorCode, AuthenticationError, NetworkError, ValidationError } from '@shared/utils/error.util';
 import { getErrorMessage } from '@shared/utils/error.util';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { Agent } from 'undici';
@@ -33,6 +33,11 @@ const DEFAULT_MODELS = {
     ANTHROPIC: 'claude-3-5-sonnet-20240620',
     GROQ: 'llama3-70b-8192',
     EMBEDDING: 'text-embedding-3-small'
+} as const;
+
+const OPENAI_RETRY_POLICY = {
+    requestRetryCount: 2,
+    authRetryCount: 1,
 } as const;
 
 export interface LLMChatOptions {
@@ -87,6 +92,20 @@ export interface LLMServiceDependencies {
  * Service for interacting with multiple Large Language Model providers.
  */
 export class LLMService {
+    private static readonly ERROR_CODES = {
+        OPENAI_HTTP_FAILURE: 'LLM_OPENAI_HTTP_FAILURE',
+        OPENAI_STREAM_FAILURE: 'LLM_OPENAI_STREAM_FAILURE',
+    } as const;
+    private static readonly PERFORMANCE_BUDGET = {
+        chatCompletionMs: 30000,
+        cacheLookupMs: 50,
+        maxRecentEvents: 20,
+    } as const;
+    private static readonly UI_MESSAGE_KEYS = {
+        ready: 'serviceHealth.llm.ready',
+        empty: 'serviceHealth.llm.empty',
+        failure: 'serviceHealth.llm.failure',
+    } as const;
     private openaiApiKey: string = '';
     private openaiBaseUrl: string = 'https://api.openai.com/v1';
     private anthropicApiKey: string = '';
@@ -96,6 +115,14 @@ export class LLMService {
     private opencodeApiKey: string = '';
     private dispatcher: Agent | null = null;
     private imagePersistence: ImagePersistenceService;
+    private telemetry = {
+        openAiRequests: 0,
+        openAiFailures: 0,
+        lastRequestAt: 0,
+        lastSuccessAt: 0,
+        lastError: '' as string | null,
+        recentEvents: [] as Array<{ name: string; timestamp: number; provider: string }>,
+    };
 
     // Circuit Breakers
     private breakers: Record<string, CircuitBreaker>;
@@ -324,6 +351,25 @@ export class LLMService {
         }
     }
 
+    private validateMessagesInput(messages: Array<Message | ChatMessage>): void {
+        if (!Array.isArray(messages)) {
+            throw new ValidationError('Messages must be an array', { field: 'messages' });
+        }
+
+        for (const msg of messages) {
+            const role = (msg as { role?: string }).role;
+            if (typeof role !== 'string' || role.trim().length === 0) {
+                throw new ValidationError('Each message must include a valid role', { field: 'messages.role' });
+            }
+
+            const content = (msg as { content?: string | MessageContentPart[] | ContentPart[] }).content;
+            const isValidContent = typeof content === 'string' || Array.isArray(content);
+            if (!isValidContent) {
+                throw new ValidationError('Each message must include string or array content', { field: 'messages.content' });
+            }
+        }
+    }
+
     // --- Chat Methods ---
 
     async chatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions = {}): Promise<OpenAIResponse> {
@@ -331,8 +377,12 @@ export class LLMService {
     }
 
     private async executeChatOpenAI(messages: Array<Message | ChatMessage>, options: LLMChatOptions): Promise<OpenAIResponse> {
+        this.validateMessagesInput(messages);
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, n, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
+        this.telemetry.openAiRequests += 1;
+        this.telemetry.lastRequestAt = Date.now();
+        this.recordTelemetryEvent('llm.openai.request', provider);
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
 
         // LLM-001-3: Context overflow mitigation
@@ -351,7 +401,7 @@ export class LLMService {
             const response = await this.breakers.openai.execute(() =>
                 this.deps.httpService.fetch(endpoint, {
                     ...requestInit,
-                    retryCount: 2,
+                    retryCount: OPENAI_RETRY_POLICY.requestRetryCount,
                     timeoutMs: 300000
                 } as HttpRequestOptions)
             );
@@ -364,7 +414,7 @@ export class LLMService {
                         await this.deps.tokenService.ensureFreshToken(provider, true);
                         const retryResponse = await this.deps.httpService.fetch(endpoint, {
                             ...requestInit,
-                            retryCount: 1,
+                            retryCount: OPENAI_RETRY_POLICY.authRetryCount,
                             timeoutMs: 300000
                         } as HttpRequestOptions);
                         if (retryResponse.ok) {
@@ -379,16 +429,65 @@ export class LLMService {
             }
 
             const json = await response.json() as OpenAIChatCompletion;
-            return this.processOpenAIResponse(json);
+            const parsed = await this.processOpenAIResponse(json);
+            this.telemetry.lastSuccessAt = Date.now();
+            this.telemetry.lastError = null;
+            this.recordTelemetryEvent('llm.openai.success', provider);
+            return parsed;
         };
 
         try {
             return await execute();
         } catch (error) {
+            this.telemetry.openAiFailures += 1;
+            this.telemetry.lastError = getErrorMessage(error as Error);
+            this.recordTelemetryEvent('llm.openai.failure', provider);
             appLogger.error('LLMService', `[LLMService:OpenAI] Chat Error: ${getErrorMessage(error as Error)}`);
             if (error instanceof ApiError) { throw error; }
             throw new NetworkError(error instanceof Error ? error.message : String(error), { originalError: error instanceof Error ? error : String(error) });
         }
+    }
+
+    private recordTelemetryEvent(name: string, provider: string): void {
+        this.telemetry.recentEvents.push({
+            name,
+            provider,
+            timestamp: Date.now(),
+        });
+        if (this.telemetry.recentEvents.length > 20) {
+            this.telemetry.recentEvents.shift();
+        }
+    }
+
+    getHealthMetrics(): {
+        status: 'healthy' | 'degraded';
+        uiState: 'ready' | 'empty' | 'failure';
+        messageKey: string;
+        performanceBudget: typeof LLMService.PERFORMANCE_BUDGET;
+        openAiRequests: number;
+        openAiFailures: number;
+        lastRequestAt: number;
+        lastSuccessAt: number;
+        lastError: string | null;
+        recentEvents: Array<{ name: string; timestamp: number; provider: string }>;
+    } {
+        const uiState = this.telemetry.openAiFailures > 0
+            ? 'failure'
+            : this.telemetry.openAiRequests === 0
+                ? 'empty'
+                : 'ready';
+        return {
+            status: this.telemetry.openAiFailures > 0 ? 'degraded' : 'healthy',
+            uiState,
+            messageKey: LLMService.UI_MESSAGE_KEYS[uiState],
+            performanceBudget: LLMService.PERFORMANCE_BUDGET,
+            openAiRequests: this.telemetry.openAiRequests,
+            openAiFailures: this.telemetry.openAiFailures,
+            lastRequestAt: this.telemetry.lastRequestAt,
+            lastSuccessAt: this.telemetry.lastSuccessAt,
+            lastError: this.telemetry.lastError,
+            recentEvents: [...this.telemetry.recentEvents],
+        };
     }
 
     async *chatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions = {}): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
@@ -396,6 +495,7 @@ export class LLMService {
     }
 
     private async *executeChatOpenAIStream(messages: Array<Message | ChatMessage>, options: LLMChatOptions): AsyncGenerator<{ content?: string; reasoning?: string; images?: string[]; tool_calls?: ToolCall[]; type?: string, usage?: { prompt_tokens: number, completion_tokens: number, total_tokens: number } }> {
+        this.validateMessagesInput(messages);
         const { model = DEFAULT_MODELS.OPENAI, tools, baseUrl: baseUrlOverride, apiKey: apiKeyOverride, provider: requestedProvider, signal, systemMode, reasoningEffort } = options;
         const provider = this.resolveProvider(model, requestedProvider);
         const sanitized = this.applyLocaleInstructions(this.sanitizeMessages(messages));
@@ -414,7 +514,7 @@ export class LLMService {
 
         const response = await this.deps.httpService.fetch(endpoint, {
             ...requestInit,
-            retryCount: 2,
+            retryCount: OPENAI_RETRY_POLICY.requestRetryCount,
             timeoutMs: 300000
         });
 
@@ -433,7 +533,7 @@ export class LLMService {
                 await this.deps.tokenService.ensureFreshToken(provider, true);
                 const retryResponse = await this.deps.httpService.fetch(endpoint, {
                     ...requestInit,
-                    retryCount: 1,
+                    retryCount: OPENAI_RETRY_POLICY.authRetryCount,
                     timeoutMs: 300000
                 });
                 if (retryResponse.ok) {
@@ -707,6 +807,7 @@ export class LLMService {
     }
 
     async chat(messages: Array<Message | ChatMessage>, model: string, tools?: ToolDefinition[], provider?: string, options?: { temperature?: number, projectRoot?: string }): Promise<OpenAIResponse> {
+        this.validateMessagesInput(messages);
         const effectiveProvider = this.resolveProvider(model, provider);
 
         // LLM-03: Try cache first (only for assistant responses, not tool calls for now)
@@ -772,10 +873,23 @@ export class LLMService {
     }
 
     async searchHFModels(query: string = '', limit: number = 20, page: number = 0, sort: string = 'downloads'): Promise<{ models: HFModel[], total: number }> {
-        return this.deps.huggingFaceService.searchModels(query, limit, page, sort);
+        const normalizedQuery = query.trim();
+        const boundedLimit = Math.max(1, Math.min(limit, 100));
+        const boundedPage = Math.max(0, Math.floor(page));
+        const normalizedSort = sort.trim() || 'downloads';
+        return this.deps.huggingFaceService.searchModels(normalizedQuery, boundedLimit, boundedPage, normalizedSort);
     }
 
     async getEmbeddings(input: string, model: string = DEFAULT_MODELS.EMBEDDING): Promise<number[]> {
+        const normalizedInput = input.trim();
+        if (normalizedInput.length === 0) {
+            throw new ValidationError('Embedding input must not be empty', { field: 'input' });
+        }
+        const normalizedModel = model.trim();
+        if (normalizedModel.length === 0) {
+            throw new ValidationError('Embedding model must not be empty', { field: 'model' });
+        }
+
         const key = this.deps.keyRotationService.getCurrentKey('openai') ?? this.openaiApiKey;
         const baseUrl = this.openaiBaseUrl;
 
@@ -787,7 +901,7 @@ export class LLMService {
             const response = await this.deps.httpService.fetch(`${baseUrl}/embeddings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                body: JSON.stringify({ model, input }),
+                body: JSON.stringify({ model: normalizedModel, input: normalizedInput }),
                 retryCount: 3
             });
 
@@ -1085,7 +1199,16 @@ export class LLMService {
         if (response.status === 401 || response.status === 403) {
             this.deps.keyRotationService.rotateKey('openai');
         }
-        throw new ApiError(errorText || `HTTP ${response.status}`, 'openai', response.status, response.status >= 500 || response.status === 429);
+        throw new ApiError(
+            errorText || `HTTP ${response.status}`,
+            'openai',
+            response.status,
+            response.status >= 500 || response.status === 429,
+            {
+                code: LLMService.ERROR_CODES.OPENAI_HTTP_FAILURE,
+                appCode: AppErrorCode.API_ERROR,
+            }
+        );
     }
 
     private async saveImagesFromOpenAIMessage(message: OpenAIMessage): Promise<string[]> {
@@ -1153,7 +1276,16 @@ export class LLMService {
             this.logDetailedQuotaError(response, model, provider, errorText);
         }
 
-        throw new ApiError(errorText || `HTTP ${response.status}`, 'openai-stream', response.status, response.status >= 500 || response.status === 429);
+        throw new ApiError(
+            errorText || `HTTP ${response.status}`,
+            'openai-stream',
+            response.status,
+            response.status >= 500 || response.status === 429,
+            {
+                code: LLMService.ERROR_CODES.OPENAI_STREAM_FAILURE,
+                appCode: AppErrorCode.API_ERROR,
+            }
+        );
     }
 
     private logDetailedQuotaError(_response: Response, model: string, provider: string | undefined, errorText: string) {

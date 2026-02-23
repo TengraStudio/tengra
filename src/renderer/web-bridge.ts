@@ -1114,6 +1114,15 @@ export const webElectronMock: ElectronAPI = {
         rollbackVersion: async (_serverId: string, _targetVersion: string) => ({ success: true }),
         debug: async () => ({ success: true, metrics: {} }),
         refresh: async () => ({ success: true }),
+        health: async () => ({
+            success: true,
+            data: {
+                status: 'healthy' as const,
+                uiState: 'ready' as const,
+                budgets: { fastMs: 40, standardMs: 130, heavyMs: 280 },
+                metrics: {}
+            }
+        }),
     },
 
     proxyEmbed: {
@@ -1415,6 +1424,15 @@ export const webElectronMock: ElectronAPI = {
         getAllEntityKnowledge: async () => ({ success: true, data: [] }),
         getAllEpisodes: async () => ({ success: true, data: [] }),
         getAllAdvancedMemories: async () => ({ success: true, data: [] }),
+        health: async () => ({
+            success: true,
+            data: {
+                status: 'healthy' as const,
+                uiState: 'ready' as const,
+                budgets: { fastMs: 40, standardMs: 120, heavyMs: 250 },
+                metrics: {}
+            }
+        }),
     },
     ideas: {
         createSession: async (config: unknown) => ({
@@ -1517,7 +1535,7 @@ export const webElectronMock: ElectronAPI = {
         (_channel: string, _listener: (event: IpcRendererEvent, ..._args: IpcValue[]) => void) =>
             () => { },
     projectAgent: {
-        start: async (_options: unknown) => { },
+        start: async (_options: unknown) => ({ taskId: 'mock-task-id' }),
         generatePlan: async (_options: unknown) => { },
         approvePlan: async (_plan: string[] | unknown[], _taskId?: string) => { },
         stop: async (_taskId?: string) => { },
@@ -1525,6 +1543,9 @@ export const webElectronMock: ElectronAPI = {
         resetState: async () => { },
         getStatus: async (_taskId?: string) => null,
         retryStep: async (_index: number, _taskId?: string) => { },
+        selectModel: async (_payload: { taskId: string; provider: string; model: string }) => ({
+            success: true
+        }),
         // AGT-HIL: Human-in-the-Loop step actions
         approveStep: async (_taskId: string, _stepId: string) => { },
         skipStep: async (_taskId: string, _stepId: string) => { },
@@ -1699,6 +1720,28 @@ export const webElectronMock: ElectronAPI = {
         saveCanvasEdges: async (_edges: unknown[]) => { },
         getCanvasEdges: async () => [],
         deleteCanvasEdge: async (_id: string) => { },
+        health: async () => ({
+            success: true,
+            data: {
+                status: 'healthy' as const,
+                uiState: 'ready' as const,
+                budgets: { fastMs: 45, standardMs: 140, heavyMs: 320 },
+                metrics: {}
+            }
+        }),
+    },
+    orchestrator: {
+        start: async (_task, _projectId) => { },
+        approve: async (_plan) => { },
+        getState: async () => ({
+            status: 'idle',
+            currentTask: '',
+            plan: [],
+            history: [],
+            assignments: {}
+        }),
+        stop: async () => { },
+        onUpdate: (_callback) => () => { },
     },
     workflow: {
         getAll: async () => [],
@@ -1791,6 +1834,25 @@ export const webElectronMock: ElectronAPI = {
         getVoices: async () => [],
         synthesize: async (_options: import('@shared/types/voice').VoiceSynthesisOptions) => ({
             success: true,
+        }),
+        health: async () => ({
+            success: true,
+            data: {
+                status: 'healthy' as const,
+                uiState: 'ready' as const,
+                budgets: {
+                    fastMs: 40,
+                    standardMs: 120,
+                    heavyMs: 220,
+                },
+                metrics: {
+                    totalCalls: 0,
+                    totalFailures: 0,
+                    totalRetries: 0,
+                    validationFailures: 0,
+                    budgetExceededCount: 0,
+                },
+            },
         }),
     },
     extension: {

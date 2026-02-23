@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from '@/i18n';
 import { mcpMarketplaceClient, McpServerLike } from '@/lib/mcp-marketplace-client';
 import { cn } from '@/lib/utils';
+import { recordMarketplaceHealthEvent } from '@/store/marketplace-health.store';
 import { appLogger } from '@/utils/renderer-logger';
 
 type SurfaceMode = 'browse' | 'installed' | 'compare';
@@ -108,22 +109,48 @@ export const MCPMarketplaceStudio: React.FC<{ onConfigure?: (id: string) => void
     const [wizard, setWizard] = useState<WizardState>({ open: false, step: 'permissions', tool: null, progress: 0, error: null });
 
     const loadMarketplace = useCallback(async () => {
+        const startedAt = window.performance.now();
         setLoading(true);
         try {
             const result = await mcpMarketplaceClient.list();
             if (result.success && result.servers) {
                 setMarketplaceServers(result.servers);
+                recordMarketplaceHealthEvent({
+                    channel: 'marketplace.load',
+                    status: 'success',
+                    durationMs: window.performance.now() - startedAt,
+                });
+                return;
             }
+            recordMarketplaceHealthEvent({
+                channel: 'marketplace.load',
+                status: 'failure',
+                durationMs: window.performance.now() - startedAt,
+                errorCode: 'MCP_MARKETPLACE_LOAD_FAILED',
+            });
         } finally {
             setLoading(false);
         }
     }, []);
 
     const loadInstalled = useCallback(async () => {
+        const startedAt = window.performance.now();
         const result = await mcpMarketplaceClient.installed();
         if (result.success && result.servers) {
             setInstalledServers(result.servers);
+            recordMarketplaceHealthEvent({
+                channel: 'marketplace.load',
+                status: 'success',
+                durationMs: window.performance.now() - startedAt,
+            });
+            return;
         }
+        recordMarketplaceHealthEvent({
+            channel: 'marketplace.load',
+            status: 'failure',
+            durationMs: window.performance.now() - startedAt,
+            errorCode: 'MCP_MARKETPLACE_INSTALLED_LOAD_FAILED',
+        });
     }, []);
 
     useEffect(() => {
@@ -217,6 +244,7 @@ export const MCPMarketplaceStudio: React.FC<{ onConfigure?: (id: string) => void
         if (!wizard.tool) {
             return;
         }
+        const startedAt = window.performance.now();
         setWizard(previous => ({ ...previous, step: 'progress', progress: 20, error: null }));
         let progress = 20;
         const timer = window.setInterval(() => {
@@ -231,9 +259,20 @@ export const MCPMarketplaceStudio: React.FC<{ onConfigure?: (id: string) => void
             }
             setWizard(previous => ({ ...previous, progress: 100, step: 'summary' }));
             await loadInstalled();
+            recordMarketplaceHealthEvent({
+                channel: 'marketplace.install',
+                status: 'success',
+                durationMs: window.performance.now() - startedAt,
+            });
         } catch (error) {
             window.clearInterval(timer);
             setWizard(previous => ({ ...previous, step: 'config', progress: 0, error: (error as Error).message }));
+            recordMarketplaceHealthEvent({
+                channel: 'marketplace.install',
+                status: 'failure',
+                durationMs: window.performance.now() - startedAt,
+                errorCode: 'MCP_MARKETPLACE_INSTALL_FAILED',
+            });
         }
     }, [loadInstalled, wizard.tool]);
 

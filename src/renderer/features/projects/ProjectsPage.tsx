@@ -19,6 +19,12 @@ import {
     saveProjectListPreferences,
     useProjectListStateMachine,
 } from './hooks/useProjectListStateMachine';
+import {
+    executeProjectRunbook,
+    ProjectRunbook,
+    ProjectStartupPreflightResult,
+    runProjectStartupPreflight
+} from './utils/project-startup-preflight';
 
 interface ProjectsPageProps {
     projects: Project[]
@@ -55,6 +61,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
     const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt'>('updatedAt');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [listPreset, setListPreset] = useState<'recent' | 'oldest' | 'name-az' | 'name-za'>('recent');
+    const [preflightProjectTitle, setPreflightProjectTitle] = useState('');
+    const [preflightProject, setPreflightProject] = useState<Project | null>(null);
+    const [preflightResult, setPreflightResult] = useState<ProjectStartupPreflightResult | null>(null);
+    const [severityFilter, setSeverityFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
+    const [sourceFilter, setSourceFilter] = useState<'all' | 'mount' | 'git' | 'task' | 'analysis' | 'terminal' | 'policy' | 'security' | 'toolchain'>('all');
+    const [activeRunbookId, setActiveRunbookId] = useState<string | null>(null);
+    const [runbookTimeline, setRunbookTimeline] = useState<string[]>([]);
+    const [runbookOutput, setRunbookOutput] = useState('');
 
     React.useEffect(() => {
         const savedPreferences = loadProjectListPreferences(LIST_SETTINGS_STORAGE_KEY, {
@@ -188,6 +202,48 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
             : ('archive' as const);
     }, [sm.state.selectedProjectIds, sortedProjects]);
 
+    const handleSelectProject = React.useCallback(async (project: Project) => {
+        const preflight = await runProjectStartupPreflight(project);
+        setPreflightProject(project);
+        setPreflightProjectTitle(project.title);
+        setPreflightResult(preflight);
+        if (!preflight.canOpen) {
+            return;
+        }
+        setPreflightProjectTitle('');
+        setPreflightProject(null);
+        setPreflightResult(null);
+        setRunbookTimeline([]);
+        setRunbookOutput('');
+        onSelectProject?.(project);
+    }, [onSelectProject]);
+
+    const filteredIssues = React.useMemo(() => {
+        if (!preflightResult) {
+            return [];
+        }
+        return preflightResult.issues.filter(issue => {
+            const severityMatches = severityFilter === 'all' || issue.severity === severityFilter;
+            const sourceMatches = sourceFilter === 'all' || issue.source === sourceFilter;
+            return severityMatches && sourceMatches;
+        });
+    }, [preflightResult, severityFilter, sourceFilter]);
+
+    const handleRunbook = React.useCallback(async (runbook: ProjectRunbook) => {
+        if (!preflightProject) {
+            return;
+        }
+        setActiveRunbookId(runbook.id);
+        setRunbookOutput('');
+        setRunbookTimeline([`Preparing ${runbook.label}...`]);
+        const result = await executeProjectRunbook(preflightProject, runbook);
+        setRunbookTimeline(result.timeline);
+        setRunbookOutput(
+            `${result.success ? 'Success' : 'Failed'}\nRollback hint: ${result.rollbackHint}\n\n${result.output}`
+        );
+        setActiveRunbookId(null);
+    }, [preflightProject]);
+
     if (selectedProject) {
         return (
             <>
@@ -270,7 +326,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                 {viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <ProjectCardSurfaceProvider
-                            onSelect={(p) => onSelectProject?.(p)}
+                            onSelect={(p) => {
+                                void handleSelectProject(p);
+                            }}
                             activeMenuId={showProjectMenu}
                             setActiveMenuId={setShowProjectMenu}
                             onEdit={(p, e) => { setShowProjectMenu(null); sm.startEdit(p, e); }}
@@ -323,7 +381,9 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                         />
                                     </div>
                                     <button
-                                        onClick={() => onSelectProject?.(project)}
+                                        onClick={() => {
+                                            void handleSelectProject(project);
+                                        }}
                                         className="text-left min-w-0"
                                         title={project.description || t('projects.noDescription')}
                                     >
@@ -335,7 +395,13 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                         {new Date(project.updatedAt).toLocaleDateString()}
                                     </div>
                                     <div className="flex items-center justify-end gap-1">
-                                        <button onClick={() => onSelectProject?.(project)} className="p-2 rounded-md hover:bg-muted/30" title="Open">
+                                        <button
+                                            onClick={() => {
+                                                void handleSelectProject(project);
+                                            }}
+                                            className="p-2 rounded-md hover:bg-muted/30"
+                                            title="Open"
+                                        >
                                             <FolderOpen className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => sm.startEdit(project)} className="p-2 rounded-md hover:bg-muted/30" title={t('common.edit')}>
@@ -365,6 +431,90 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                                 <p className="text-muted-foreground font-medium">{t('projects.noProjects')}</p>
                                 <p className="text-xs text-muted-foreground/50 mt-1">{t('projects.startNewProject')}</p>
                             </div>
+                        )}
+                    </div>
+                )}
+                {preflightResult && (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 space-y-3">
+                        <div className="text-sm font-semibold text-destructive">
+                            Startup checks for {preflightProjectTitle || 'project'} ({preflightResult.openingMode} mode)
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Security posture: {preflightResult.securityPosture.risk} risk •
+                            max concurrent ops: {preflightResult.maxConcurrentOperations}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <select
+                                value={severityFilter}
+                                onChange={event => setSeverityFilter(event.target.value as 'all' | 'error' | 'warning' | 'info')}
+                                className="px-2 py-1 rounded border border-border/50 bg-background text-xs"
+                            >
+                                <option value="all">All severities</option>
+                                <option value="error">Errors</option>
+                                <option value="warning">Warnings</option>
+                                <option value="info">Info</option>
+                            </select>
+                            <select
+                                value={sourceFilter}
+                                onChange={event => setSourceFilter(event.target.value as 'all' | 'mount' | 'git' | 'task' | 'analysis' | 'terminal' | 'policy' | 'security' | 'toolchain')}
+                                className="px-2 py-1 rounded border border-border/50 bg-background text-xs"
+                            >
+                                <option value="all">All sources</option>
+                                <option value="mount">Mount</option>
+                                <option value="git">Git</option>
+                                <option value="task">Task</option>
+                                <option value="analysis">Analysis</option>
+                                <option value="terminal">Terminal</option>
+                                <option value="policy">Policy</option>
+                                <option value="security">Security</option>
+                                <option value="toolchain">Toolchain</option>
+                            </select>
+                        </div>
+                        <ul className="space-y-2 text-xs text-foreground">
+                            {filteredIssues.map(issue => (
+                                <li key={issue.id} className="space-y-1">
+                                    <div>
+                                        {issue.severity.toUpperCase()} [{issue.source}]: {issue.message}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                        Fix: {issue.fixAction}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                        {preflightResult.runbooks.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="text-xs font-semibold">Runbooks</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {preflightResult.runbooks.map(runbook => (
+                                        <button
+                                            key={runbook.id}
+                                            onClick={() => {
+                                                void handleRunbook(runbook);
+                                            }}
+                                            disabled={activeRunbookId !== null}
+                                            className="px-2 py-1 rounded border border-border/50 bg-background text-xs disabled:opacity-50"
+                                        >
+                                            {activeRunbookId === runbook.id ? 'Running…' : `Run ${runbook.label}`}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {runbookTimeline.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="text-xs font-semibold">Runbook timeline</div>
+                                <ul className="text-xs space-y-1">
+                                    {runbookTimeline.map((line, index) => (
+                                        <li key={`${line}-${index}`}>{line}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {runbookOutput && (
+                            <pre className="text-[11px] whitespace-pre-wrap bg-background/80 border border-border/40 rounded p-2">
+                                {runbookOutput}
+                            </pre>
                         )}
                     </div>
                 )}

@@ -18,6 +18,21 @@ import {
 } from '../utils/memory-inspector-validation';
 
 type TabType = 'pending' | 'confirmed' | 'archived' | 'stats' | 'visualization';
+type MemoryUiState = 'ready' | 'empty' | 'failure';
+
+interface MemoryIpcMetadata {
+    error?: string;
+    errorCode?: string;
+    messageKey?: string;
+    retryable?: boolean;
+    uiState?: MemoryUiState;
+    fallbackUsed?: boolean;
+}
+
+type MemoryIpcResponse<TData> = {
+    success: boolean;
+    data?: TData;
+} & MemoryIpcMetadata;
 
 interface UseMemoryReturn {
     // Data
@@ -73,6 +88,19 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         setError(message);
     }, []);
 
+    const resolveIpcMessage = useCallback((
+        payload: MemoryIpcMetadata,
+        fallbackMessage: string
+    ): string => {
+        if (payload.messageKey) {
+            return t(payload.messageKey);
+        }
+        if (payload.error && payload.error.trim().length > 0) {
+            return payload.error;
+        }
+        return fallbackMessage;
+    }, [t]);
+
     const loadData = useCallback(async () => {
         const startedAt = Date.now();
         setIsLoading(true);
@@ -106,34 +134,80 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
                     })
                 ]);
 
-                if (pendingRes.success) { setPendingMemories(pendingRes.data); }
-                if (statsRes.success && statsRes.data) { setStats(statsRes.data); }
-                if (analyticsRes.success) { setSearchAnalytics(analyticsRes.data); }
-                if (contextRes.success) { setContextPreview(contextRes.data.memories); }
+                const pendingResponse = pendingRes as MemoryIpcResponse<PendingMemory[]>;
+                const statsResponse = statsRes as MemoryIpcResponse<MemoryStatistics>;
+                const analyticsResponse = analyticsRes as MemoryIpcResponse<MemorySearchAnalytics>;
+                const contextResponse = contextRes as MemoryIpcResponse<{ memories: AdvancedSemanticFragment[]; totalMatches: number }>;
 
-                if (searchQuery) {
-                    const searchRes = await window.electron.advancedMemory.search(searchQuery, 50);
-                    if (searchRes.success) { setConfirmedMemories(searchRes.data); }
-                } else {
-                    const recallRes = await window.electron.advancedMemory.recall({
+                if (pendingResponse.success && Array.isArray(pendingResponse.data)) {
+                    setPendingMemories(pendingResponse.data);
+                }
+                if (statsResponse.success && statsResponse.data) {
+                    setStats(statsResponse.data);
+                }
+                if (analyticsResponse.success && analyticsResponse.data) {
+                    setSearchAnalytics(analyticsResponse.data);
+                }
+                if (contextResponse.success && contextResponse.data) {
+                    setContextPreview(contextResponse.data.memories);
+                }
+
+                const confirmedResponse = searchQuery
+                    ? await window.electron.advancedMemory.search(searchQuery, 50)
+                    : await window.electron.advancedMemory.recall({
                         query: '',
                         limit: 100,
                         includeArchived: activeTab === 'archived'
                     });
-                    if (recallRes.success) { setConfirmedMemories(recallRes.data.memories); }
+
+                const confirmedResult = confirmedResponse as MemoryIpcResponse<AdvancedSemanticFragment[] | { memories: AdvancedSemanticFragment[]; totalMatches: number }>;
+                if (confirmedResult.success && confirmedResult.data) {
+                    if (Array.isArray(confirmedResult.data)) {
+                        setConfirmedMemories(confirmedResult.data);
+                    } else {
+                        setConfirmedMemories(confirmedResult.data.memories);
+                    }
                 }
 
+                const failures: MemoryIpcResponse<object | object[] | string | number | boolean | null>[] = [
+                    pendingResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
+                    statsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
+                    analyticsResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
+                    contextResponse as MemoryIpcResponse<object | object[] | string | number | boolean | null>,
+                    confirmedResult as MemoryIpcResponse<object | object[] | string | number | boolean | null>
+                ].filter(response => response.success === false);
+
+                if (failures.length === 0) {
+                    recordMemoryInspectorHealthEvent({
+                        channel: 'memory.loadData',
+                        status: 'success',
+                        durationMs: Date.now() - startedAt,
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+
+                const shouldRetry = failures.some(response => response.retryable !== false);
+                if (attempt < maxAttempts && shouldRetry) {
+                    continue;
+                }
+
+                const firstFailure = failures[0];
+                const errorCode = firstFailure?.errorCode ?? memoryInspectorErrorCodes.loadFailed;
+                const message = resolveIpcMessage(firstFailure ?? {}, unexpectedMessage);
+                setHookError(errorCode, message);
                 recordMemoryInspectorHealthEvent({
                     channel: 'memory.loadData',
-                    status: 'success',
+                    status: 'failure',
                     durationMs: Date.now() - startedAt,
+                    errorCode,
                 });
-                setIsLoading(false);
-                return;
-            } catch (err) {
+                break;
+            } catch (error) {
                 if (attempt === maxAttempts) {
                     const errorCode = memoryInspectorErrorCodes.loadFailed;
-                    setHookError(errorCode, String(err));
+                    const errorMessage = error instanceof Error ? error.message : unexpectedMessage;
+                    setHookError(errorCode, errorMessage);
                     recordMemoryInspectorHealthEvent({
                         channel: 'memory.loadData',
                         status: 'failure',
@@ -144,7 +218,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             }
         }
         setIsLoading(false);
-    }, [activeTab, searchQuery, setHookError, unexpectedMessage]);
+    }, [activeTab, resolveIpcMessage, searchQuery, setHookError, unexpectedMessage]);
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
@@ -155,15 +229,23 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         };
     }, [loadData]);
 
-    const recordOperationFailure = useCallback((errorCode: string, message: string, startedAt: number) => {
+    const recordOperationFailure = useCallback((
+        payload: MemoryIpcMetadata,
+        fallbackErrorCode: string,
+        fallbackMessage: string,
+        startedAt: number,
+        channel: 'memory.operation' | 'memory.import' = 'memory.operation'
+    ) => {
+        const errorCode = payload.errorCode ?? fallbackErrorCode;
+        const message = resolveIpcMessage(payload, fallbackMessage);
         setHookError(errorCode, message);
         recordMemoryInspectorHealthEvent({
-            channel: 'memory.operation',
+            channel,
             status: 'failure',
             durationMs: Date.now() - startedAt,
             errorCode,
         });
-    }, [setHookError]);
+    }, [resolveIpcMessage, setHookError]);
 
     const handleConfirm = useCallback(async (id: string) => {
         const startedAt = Date.now();
@@ -189,11 +271,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             });
             return;
         }
-        recordOperationFailure(
-            memoryInspectorErrorCodes.operationFailed,
-            unexpectedMessage,
-            startedAt
-        );
+        recordOperationFailure(res as MemoryIpcMetadata, memoryInspectorErrorCodes.operationFailed, unexpectedMessage, startedAt);
     }, [loadData, recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleReject = useCallback(async (id: string) => {
@@ -219,11 +297,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             });
             return;
         }
-        recordOperationFailure(
-            memoryInspectorErrorCodes.operationFailed,
-            unexpectedMessage,
-            startedAt
-        );
+        recordOperationFailure(res as MemoryIpcMetadata, memoryInspectorErrorCodes.operationFailed, unexpectedMessage, startedAt);
     }, [recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleConfirmAll = useCallback(async () => {
@@ -265,11 +339,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             });
             return;
         }
-        recordOperationFailure(
-            memoryInspectorErrorCodes.operationFailed,
-            unexpectedMessage,
-            startedAt
-        );
+        recordOperationFailure(res as MemoryIpcMetadata, memoryInspectorErrorCodes.operationFailed, unexpectedMessage, startedAt);
     }, [recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleDeleteSelected = useCallback(async (selectedIds: Set<string>, setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>) => {
@@ -302,14 +372,12 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         const startedAt = Date.now();
         const exportRes = await window.electron.advancedMemory.export(searchQuery || undefined, 500);
         if (!exportRes.success || !exportRes.data) {
-            const errorCode = memoryInspectorErrorCodes.operationFailed;
-            setHookError(errorCode, exportRes.error ?? exportFailedMessage);
-            recordMemoryInspectorHealthEvent({
-                channel: 'memory.operation',
-                status: 'failure',
-                durationMs: Date.now() - startedAt,
-                errorCode,
-            });
+            recordOperationFailure(
+                exportRes as MemoryIpcMetadata,
+                memoryInspectorErrorCodes.operationFailed,
+                exportFailedMessage,
+                startedAt
+            );
             return;
         }
 
@@ -328,7 +396,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             status: 'success',
             durationMs: Date.now() - startedAt,
         });
-    }, [exportFailedMessage, searchQuery, setHookError]);
+    }, [exportFailedMessage, recordOperationFailure, searchQuery]);
 
     const handleImport = useCallback(async (fileContent: string, replaceExisting: boolean) => {
         const startedAt = Date.now();
@@ -349,14 +417,13 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
         try {
             const importRes = await window.electron.advancedMemory.import(validation.payload);
             if (!importRes.success) {
-                const errorCode = memoryInspectorErrorCodes.importFailed;
-                setHookError(errorCode, importRes.error ?? importFailedMessage);
-                recordMemoryInspectorHealthEvent({
-                    channel: 'memory.import',
-                    status: 'failure',
-                    durationMs: Date.now() - startedAt,
-                    errorCode,
-                });
+                recordOperationFailure(
+                    importRes as MemoryIpcMetadata,
+                    memoryInspectorErrorCodes.importFailed,
+                    importFailedMessage,
+                    startedAt,
+                    'memory.import'
+                );
                 return;
             }
 
@@ -368,7 +435,10 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
             });
         } catch (importError) {
             const errorCode = memoryInspectorErrorCodes.importFailed;
-            setHookError(errorCode, `${importFailedMessage}: ${String(importError)}`);
+            const message = importError instanceof Error
+                ? `${importFailedMessage}: ${importError.message}`
+                : importFailedMessage;
+            setHookError(errorCode, message);
             recordMemoryInspectorHealthEvent({
                 channel: 'memory.import',
                 status: 'failure',
@@ -376,7 +446,7 @@ export function useMemory(searchQuery: string, activeTab: TabType): UseMemoryRet
                 errorCode,
             });
         }
-    }, [importFailedMessage, loadData, setHookError, unexpectedMessage]);
+    }, [importFailedMessage, loadData, recordOperationFailure, setHookError, unexpectedMessage]);
 
     const handleShare = useCallback(async (memoryId: string, targetProjectId: string) => {
         const res = await window.electron.advancedMemory.shareWithProject(memoryId, targetProjectId);

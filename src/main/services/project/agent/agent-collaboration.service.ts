@@ -8,6 +8,7 @@
  */
 
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
 
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
@@ -30,6 +31,23 @@ import {
     VotingSession,
     VotingTemplate,
 } from '@shared/types/project-agent';
+import {
+    DebateArgumentSchema,
+    ModelRoutingRuleSchema,
+    VotingSessionSchema
+} from '@shared/schemas/agent-collaboration.schema';
+
+/** Standardized error for agent collaboration */
+export class AgentCollaborationError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string,
+        public readonly details?: Record<string, unknown>
+    ) {
+        super(message);
+        this.name = 'AgentCollaborationError';
+    }
+}
 
 /** Default model routing rules based on task type */
 const DEFAULT_ROUTING_RULES: ModelRoutingRule[] = [
@@ -267,8 +285,17 @@ export class AgentCollaborationService extends BaseService {
      * Add or update routing rules
      */
     setRoutingRules(rules: ModelRoutingRule[]): void {
-        this.routingRules = [...rules];
-        appLogger.info('AgentCollaboration', `Updated routing rules: ${rules.length} rules`);
+        try {
+            const validatedRules = z.array(ModelRoutingRuleSchema).parse(rules) as ModelRoutingRule[];
+            this.routingRules = [...validatedRules];
+            appLogger.info('AgentCollaboration', `Updated routing rules: ${validatedRules.length} rules`);
+        } catch (error) {
+            throw new AgentCollaborationError(
+                'Invalid routing rules',
+                'INVALID_ROUTING_RULES',
+                { error }
+            );
+        }
     }
 
     /**
@@ -299,6 +326,9 @@ export class AgentCollaborationService extends BaseService {
         question: string,
         options: string[]
     ): VotingSession {
+        if (!taskId) throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
+        if (options.length < 2) throw new AgentCollaborationError('At least 2 options required', 'INVALID_OPTIONS');
+
         const session: VotingSession = {
             id: randomUUID(),
             taskId,
@@ -310,10 +340,14 @@ export class AgentCollaborationService extends BaseService {
             createdAt: Date.now(),
         };
 
-        this.votingSessions.set(session.id, session);
-        appLogger.info('AgentCollaboration', `Created voting session: ${session.id} - "${question}"`);
-
-        return session;
+        try {
+            VotingSessionSchema.parse(session);
+            this.votingSessions.set(session.id, session);
+            appLogger.info('AgentCollaboration', `Created voting session: ${session.id} - "${question}"`);
+            return session;
+        } catch (error) {
+            throw new AgentCollaborationError('Failed to create valid voting session', 'VOTING_SESSION_INVALID', { error });
+        }
     }
 
     /**
@@ -331,29 +365,24 @@ export class AgentCollaborationService extends BaseService {
         const session = this.votingSessions.get(sessionId);
         if (!session) {
             appLogger.warn('AgentCollaboration', `Voting session not found: ${sessionId}`);
-            return null;
+            throw new AgentCollaborationError(`Voting session ${sessionId} not found`, 'VOTING_SESSION_NOT_FOUND');
         }
+
+        const vote = {
+            modelId,
+            provider,
+            decision,
+            confidence,
+            reasoning,
+            timestamp: Date.now(),
+        };
 
         // Check if this model already voted
         const existingVoteIndex = session.votes.findIndex(v => v.modelId === modelId);
         if (existingVoteIndex >= 0) {
-            session.votes[existingVoteIndex] = {
-                modelId,
-                provider,
-                decision,
-                confidence,
-                reasoning,
-                timestamp: Date.now(),
-            };
+            session.votes[existingVoteIndex] = vote;
         } else {
-            session.votes.push({
-                modelId,
-                provider,
-                decision,
-                confidence,
-                reasoning,
-                timestamp: Date.now(),
-            });
+            session.votes.push(vote);
         }
 
         session.status = 'voting';
@@ -508,8 +537,10 @@ Respond with a JSON object:
     ): VotingSession | null {
         const session = this.votingSessions.get(sessionId);
         if (!session) {
-            return null;
+            throw new AgentCollaborationError(`Voting session ${sessionId} not found`, 'VOTING_SESSION_NOT_FOUND');
         }
+
+        if (!finalDecision) throw new AgentCollaborationError('finalDecision is required', 'MISSING_DECISION');
 
         session.status = 'resolved';
         session.finalDecision = finalDecision;
@@ -657,7 +688,9 @@ Respond with a JSON object:
     // ===== AGENT-13: Multi-Agent Debate =====
 
     createDebateSession(taskId: string, stepIndex: number, topic: string): DebateSession {
-        const now = Date.now();
+        if (!taskId) throw new AgentCollaborationError('taskId is required', 'MISSING_TASK_ID');
+        if (!topic) throw new AgentCollaborationError('topic is required', 'MISSING_TOPIC');
+
         const session: DebateSession = {
             id: randomUUID(),
             taskId,
@@ -670,7 +703,7 @@ Respond with a JSON object:
                 confidence: 0,
                 rationale: 'Awaiting arguments'
             },
-            createdAt: now
+            createdAt: Date.now()
         };
 
         this.debateSessions.set(session.id, session);
@@ -689,33 +722,34 @@ Respond with a JSON object:
     }): DebateSession | null {
         const session = this.debateSessions.get(options.sessionId);
         if (!session) {
-            return null;
+            throw new AgentCollaborationError(`Debate session ${options.sessionId} not found`, 'DEBATE_SESSION_NOT_FOUND');
         }
 
-        const qualityScore = this.scoreArgumentQuality(
-            options.content,
-            options.confidence,
-            options.citations ?? []
-        );
-        const argument: DebateArgument = {
-            id: randomUUID(),
-            agentId: options.agentId,
-            provider: options.provider,
-            side: options.side,
-            content: options.content,
-            confidence: options.confidence,
-            qualityScore,
-            citations: options.citations ?? [],
-            timestamp: Date.now()
-        };
+        try {
+            const qualityScore = this.scoreArgumentQuality(
+                options.content,
+                options.confidence,
+                options.citations ?? []
+            );
 
-        session.arguments.push(argument);
-        session.consensus = this.detectDebateConsensus(session.arguments);
-        this.getAgentTaskStats(options.agentId).debatesParticipated++;
-        this.getAgentTaskStats(options.agentId).totalConfidence += options.confidence;
-        this.getAgentTaskStats(options.agentId).confidenceSamples++;
+            const argument = DebateArgumentSchema.parse({
+                ...options,
+                id: randomUUID(),
+                qualityScore,
+                citations: options.citations ?? [],
+                timestamp: Date.now()
+            });
 
-        return session;
+            session.arguments.push(argument);
+            session.consensus = this.detectDebateConsensus(session.arguments);
+            this.getAgentTaskStats(options.agentId).debatesParticipated++;
+            this.getAgentTaskStats(options.agentId).totalConfidence += options.confidence;
+            this.getAgentTaskStats(options.agentId).confidenceSamples++;
+
+            return session;
+        } catch (error) {
+            throw new AgentCollaborationError('Invalid debate argument', 'INVALID_DEBATE_ARGUMENT', { error });
+        }
     }
 
     resolveDebateSession(sessionId: string): DebateSession | null {
@@ -796,24 +830,27 @@ Respond with a JSON object:
         durationMs?: number;
         confidence?: number;
     }): void {
-        const stats = this.getAgentTaskStats(options.agentId);
-        if (options.status === 'in_progress') {
+        const { agentId, status, durationMs, confidence } = options;
+        if (!agentId) throw new AgentCollaborationError('agentId is required', 'MISSING_AGENT_ID');
+
+        const stats = this.getAgentTaskStats(agentId);
+        if (status === 'in_progress') {
             stats.inProgressTasks++;
-        } else if (options.status === 'completed') {
+        } else if (status === 'completed') {
             stats.completedTasks++;
             stats.inProgressTasks = Math.max(0, stats.inProgressTasks - 1);
-            if (options.durationMs !== undefined) {
-                stats.totalDurationMs += options.durationMs;
+            if (durationMs !== undefined) {
+                stats.totalDurationMs += durationMs;
             }
         } else {
             stats.failedTasks++;
             stats.inProgressTasks = Math.max(0, stats.inProgressTasks - 1);
-            if (options.durationMs !== undefined) {
-                stats.totalDurationMs += options.durationMs;
+            if (durationMs !== undefined) {
+                stats.totalDurationMs += durationMs;
             }
         }
-        if (options.confidence !== undefined) {
-            stats.totalConfidence += options.confidence;
+        if (confidence !== undefined) {
+            stats.totalConfidence += confidence;
             stats.confidenceSamples++;
         }
     }

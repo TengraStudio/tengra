@@ -1,6 +1,110 @@
 # Changelog
 
+## [2026-02-23]
+
+### Agent Collaboration and Checkpoint Service Hardening
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.
+
+- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.
+- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.
+- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.
+- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).
+- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages.
+
+### Monitoring, Telemetry, and Theme Service Test Reliability Fixes
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved test flakiness and improved mock reliability for Monitoring, Telemetry, and Theme services.
+
+- **MonitoringService**: Refactored platform detection to strictly use `os.platform()` to enable predictable OS mocking.
+- **MonitoringService**: Fixed `NaN` division by zero issue in memory computations when `totalMem` reporting fails.
+- **TelemetryService**: Added defensive checks to gracefully handle undefined settings properties in tracking routines.
+- **ThemeService**: Migrated DataService mocks to robust class-based implementations to ensure proper initialization during testing.
+- **ThemeService**: Adjusted filesystem mocking with `fs/promises` and aligned rejection assumptions for `installTheme` testing.
+
+## [2026-02-22]
+
+### Backlog 0251-0281 Unit-Test Edge Coverage Expansion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.
+
+- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths
+- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior
+- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection
+- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors
+- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md
+
+### Backlog 0252-0283 Service Hardening and Operational Coverage
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.
+
+- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records
+- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
+- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics
+- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases
+- Added English and Turkish i18n coverage for new service health message keys
+- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
+- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md
+
+## [2026-02-21]
+
+### Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.
+
+- Added unit and integration/regression tests for all target surfaces
+- Added input validation guards, standardized retry/fallback paths, and component error codes
+- Added component health telemetry stores with explicit performance budgets
+- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor
+- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies
+
 ## [2026-02-20]
+
+### Advanced Memory IPC Hardening and Operational Readiness
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.
+
+- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior
+- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel
+- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)
+- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging
+- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)
+
+### IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.
+
+- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels
+- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics
+- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`
+- Wired preload/web bridge and renderer typings for new health channels
+- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies
+
+### Resolution of Core Technical Debt and Type Failures
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Fixed a wide range of inherited type failures, service registration mismatches, and syntax regressions across core application services and IPC handlers.
+
+- **Core Services**: Resolved constructor and dependency injection mismatches in `TokenService`, `ModelRegistryService`, and `Services` registry.
+- **Type Safety**: Fixed JSON-to-interface mismatches in `VoiceService` and corrected invalid literal types in `CodeSandbox` IPC contracts.
+- **Shared Types**: Updated `SystemEvents` to include missing keys required by model registry and telemetry flows.
+- **IPC Hardening**: Resolved `TelemetryAwareHandler` type regressions and ensured strict schema compliance in `AdvancedMemory` IPC channels.
+- **Quality**: Fixed test regressions in `ModelSelectorModal` and `WorkspaceExplorer` caused by outdated imports and component snapshots.
 
 ### Voice-First Interface Implementation (UI-11)
 
@@ -13,6 +117,18 @@
 - **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.
 - **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.
 - **Custom Commands**: Added support for user-defined voice phrases mapped to system actions.
+
+### Voice IPC Hardening, Telemetry, and Health Dashboard
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.
+
+- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events
+- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures
+- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics
+- Updated web fallback bridge and integration tests for voice health and validation metadata behavior
+- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)
 
 ## [2026-02-18]
 

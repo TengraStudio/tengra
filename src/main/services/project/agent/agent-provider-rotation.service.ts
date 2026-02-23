@@ -112,6 +112,15 @@ export class AgentProviderRotationService extends BaseService {
         }
     }
 
+    /**
+     * Check whether a provider has remaining quota.
+     * Undefined quota means quota data is unavailable and should not block usage.
+     */
+    private async hasQuotaRemaining(provider: string): Promise<boolean> {
+        const quotaRemaining = await this.getQuotaRemaining(provider);
+        return quotaRemaining === undefined || quotaRemaining > 0;
+    }
+
     // ========================================================================
     // Provider Selection
     // ========================================================================
@@ -203,7 +212,17 @@ export class AgentProviderRotationService extends BaseService {
         }
 
         // Step 2: Try next cloud provider
-        const nextCloud = this.getNextCloudProvider(currentProvider.provider, chain);
+        let nextCloud: string | null = null;
+        const currentIndex = chain.cloud.indexOf(currentProvider.provider);
+        const startIndex = currentIndex === -1 ? 0 : currentIndex + 1;
+        for (let i = startIndex; i < chain.cloud.length; i++) {
+            const candidate = chain.cloud[i];
+            if (await this.hasQuotaRemaining(candidate)) {
+                nextCloud = candidate;
+                break;
+            }
+            this.logInfo(`Skipping cloud provider ${candidate} due to exhausted quota`);
+        }
         if (nextCloud) {
             this.logInfo(`Falling back to cloud provider: ${nextCloud}`);
             const model = await this.getDefaultModelForProvider(nextCloud);
@@ -287,19 +306,6 @@ export class AgentProviderRotationService extends BaseService {
         }
         current.lastUsedAt = new Date();
         this.accountHealth.set(key, current);
-    }
-
-    /**
-     * Get next cloud provider in fallback chain
-     */
-    private getNextCloudProvider(currentProvider: string, chain: FallbackChain): string | null {
-        const currentIndex = chain.cloud.indexOf(currentProvider);
-
-        if (currentIndex === -1 || currentIndex === chain.cloud.length - 1) {
-            return null;
-        }
-
-        return chain.cloud[currentIndex + 1];
     }
 
     /**
@@ -393,12 +399,13 @@ export class AgentProviderRotationService extends BaseService {
             const model = await this.getDefaultModelForProvider(account.provider);
             if (model) {
                 const quotaRemaining = await this.getQuotaRemaining(account.provider);
+                const hasQuotaRemaining = quotaRemaining === undefined || quotaRemaining > 0;
                 models.push({
                     provider: account.provider,
                     model,
                     displayName: `${account.provider} - ${model}`,
                     type: 'cloud',
-                    available: true,
+                    available: hasQuotaRemaining,
                     quotaRemaining
                 });
             }

@@ -1,8 +1,281 @@
 {
   "version": 1,
   "generatedFrom": "docs/changelog/data/changelog.entries.json",
-  "generatedAt": "2026-02-18T14:03:53.304Z",
+  "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
+    {
+      "id": "2026-02-23-monitoring-telemetry-theme-test-fixes",
+      "date": "2026-02-23",
+      "channel": "stable",
+      "type": "fix",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "MonitoringService",
+        "TelemetryService",
+        "ThemeService",
+        "Unit Tests"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Monitoring, Telemetry, and Theme Service Test Reliability Fixes",
+          "summary": "Resolved test flakiness and improved mock reliability for Monitoring, Telemetry, and Theme services.",
+          "items": [
+            "- **MonitoringService**: Refactored platform detection to strictly use `os.platform()` to enable predictable OS mocking.",
+            "- **MonitoringService**: Fixed `NaN` division by zero issue in memory computations when `totalMem` reporting fails.",
+            "- **TelemetryService**: Added defensive checks to gracefully handle undefined settings properties in tracking routines.",
+            "- **ThemeService**: Migrated DataService mocks to robust class-based implementations to ensure proper initialization during testing.",
+            "- **ThemeService**: Adjusted filesystem mocking with `fs/promises` and aligned rejection assumptions for `installTheme` testing."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-23-agent-service-hardening",
+      "date": "2026-02-23",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AgentCollaborationService",
+        "AgentCheckpointService",
+        "I18N",
+        "Shared Schemas"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Agent Collaboration and Checkpoint Service Hardening",
+          "summary": "Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.",
+          "items": [
+            "- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.",
+            "- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.",
+            "- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.",
+            "- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).",
+            "- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages."
+          ]
+        },
+        "tr": {
+          "title": "Ajan İş Birliği ve Kontrol Noktası Servisi Sertleştirmesi",
+          "summary": "Ajan İş Birliği ve Kontrol Noktası servisleri için kapsamlı çalışma zamanı doğrulaması, standartlaştırılmış hata yönetimi ve tam i18n kapsamı uygulandı.",
+          "items": [
+            "- **Doğrulama**: Tüm ajan görevi, oylama ve kontrol noktası akışları için Zod şema tabanlı giriş doğrulaması ve bütünlük korumaları eklendi.",
+            "- **Hata Yönetimi**: Tanımlayıcı, makine tarafından okunabilir kodlar ve çevrilmiş mesajlar içeren standart hata sınıfları (`AgentCollaborationError`, `AgentCheckpointError`) uygulandı.",
+            "- **Güvenilirlik**: Yinelenen senkronizasyon algılaması için görev durumu parmak izi alma ve optimize edilmiş kontrol noktası sıkıştırması uygulandı.",
+            "- **NASA Uyumluluğu**: Daha iyi bakım yapılabilirlik ve güvenilirlik için çekirdek servis yöntemleri yeniden yapılandırıldı (Power of Ten Kuralı #3).",
+            "- **I18N**: Tüm ajan iş birliği ve kontrol noktası durum mesajları için tam İngilizce ve Türkçe yerelleştirme eklendi."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-22-backlog-0251-0281-unit-test-coverage",
+      "date": "2026-02-22",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "ContextRetrievalService",
+        "EmbeddingService",
+        "ProjectService",
+        "Unit Tests"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Backlog 0251-0281 Unit-Test Edge Coverage Expansion",
+          "summary": "Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.",
+          "items": [
+            "- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths",
+            "- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior",
+            "- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection",
+            "- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors",
+            "- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-22-backlog-0252-0283-service-hardening",
+      "date": "2026-02-22",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AdvancedMemoryService",
+        "ContextRetrievalService",
+        "EmbeddingService",
+        "ProjectService",
+        "I18N",
+        "Shared Schemas"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Backlog 0252-0283 Service Hardening and Operational Coverage",
+          "summary": "Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.",
+          "items": [
+            "- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records",
+            "- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
+            "- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics",
+            "- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases",
+            "- Added English and Turkish i18n coverage for new service health message keys",
+            "- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
+            "- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-20-tech-debt-and-type-failures-resolution",
+      "date": "2026-02-20",
+      "channel": "stable",
+      "type": "fix",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Core Services",
+        "IPC",
+        "Shared Types",
+        "Testing"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Resolution of Core Technical Debt and Type Failures",
+          "summary": "Fixed a wide range of inherited type failures, service registration mismatches, and syntax regressions across core application services and IPC handlers.",
+          "items": [
+            "- **Core Services**: Resolved constructor and dependency injection mismatches in `TokenService`, `ModelRegistryService`, and `Services` registry.",
+            "- **Type Safety**: Fixed JSON-to-interface mismatches in `VoiceService` and corrected invalid literal types in `CodeSandbox` IPC contracts.",
+            "- **Shared Types**: Updated `SystemEvents` to include missing keys required by model registry and telemetry flows.",
+            "- **IPC Hardening**: Resolved `TelemetryAwareHandler` type regressions and ensured strict schema compliance in `AdvancedMemory` IPC channels.",
+            "- **Quality**: Fixed test regressions in `ModelSelectorModal` and `WorkspaceExplorer` caused by outdated imports and component snapshots."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-20-code-sandbox-marketplace-project-agent-ipc-hardening",
+      "date": "2026-02-20",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "code-sandbox IPC",
+        "mcp-marketplace IPC",
+        "project-agent IPC"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent",
+          "summary": "Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.",
+          "items": [
+            "- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels",
+            "- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics",
+            "- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`",
+            "- Wired preload/web bridge and renderer typings for new health channels",
+            "- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-20-advanced-memory-ipc-hardening",
+      "date": "2026-02-20",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "advanced-memory IPC",
+        "Memory Inspector",
+        "preload bridge"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Advanced Memory IPC Hardening and Operational Readiness",
+          "summary": "Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.",
+          "items": [
+            "- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior",
+            "- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel",
+            "- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)",
+            "- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging",
+            "- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-20-voice-ipc-hardening-and-observability",
+      "date": "2026-02-20",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "ai",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "voice IPC",
+        "VoiceService",
+        "web bridge"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Voice IPC Hardening, Telemetry, and Health Dashboard",
+          "summary": "Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.",
+          "items": [
+            "- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events",
+            "- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures",
+            "- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics",
+            "- Updated web fallback bridge and integration tests for voice health and validation metadata behavior",
+            "- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)"
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-20-voice-first-interface-ui-11",
       "date": "2026-02-20",
@@ -6090,6 +6363,40 @@
             "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
             "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
             "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-21-renderer-backlog-0201-0250-coverage-and-hardening",
+      "date": "2026-02-21",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "renderer",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "TerminalToolbar",
+        "LanguageSelectionPrompt",
+        "MCPSettingsTab",
+        "CodeEditor",
+        "notification-center.store"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening",
+          "summary": "Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.",
+          "items": [
+            "- Added unit and integration/regression tests for all target surfaces",
+            "- Added input validation guards, standardized retry/fallback paths, and component error codes",
+            "- Added component health telemetry stores with explicit performance budgets",
+            "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor",
+            "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies"
           ]
         }
       }

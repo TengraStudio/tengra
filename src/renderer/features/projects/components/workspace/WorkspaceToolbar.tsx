@@ -27,6 +27,7 @@ interface WorkspaceToolbarProps {
     handleRunProject: () => void;
     showAgentPanel: boolean;
     toggleAgentPanel: () => void;
+    mountStatus: Record<string, 'connected' | 'disconnected' | 'connecting'>;
 }
 
 export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
@@ -42,6 +43,7 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     handleRunProject,
     showAgentPanel,
     toggleAgentPanel,
+    mountStatus,
 }) => {
     const { t } = useTranslation(language);
     const [isEditingName, setIsEditingName] = React.useState(false);
@@ -71,6 +73,17 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             setIsEditingName(false);
         }
     };
+
+    const mountHealth = React.useMemo(() => {
+        const statuses = Object.values(mountStatus);
+        const mountCount = statuses.length;
+        const connectedCount = statuses.filter(status => status === 'connected').length;
+        return {
+            mountCount,
+            connectedCount,
+            isHealthy: mountCount === 0 || connectedCount === mountCount,
+        };
+    }, [mountStatus]);
 
     return (
         <div className="h-14 border-b border-white/10 bg-background flex items-center justify-between px-4 shrink-0 relative z-20">
@@ -143,6 +156,22 @@ export const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
+                {mountHealth.mountCount > 0 && (
+                    <div
+                        className={cn(
+                            'flex items-center gap-1.5 px-2 py-1 rounded-md border text-xxs font-semibold uppercase tracking-wide',
+                            mountHealth.isHealthy
+                                ? 'border-success/30 bg-success/10 text-success'
+                                : 'border-warning/30 bg-warning/10 text-warning'
+                        )}
+                        title={t('projects.systemHealth')}
+                    >
+                        <span>{mountHealth.isHealthy ? t('common.healthy') : t('common.degraded')}</span>
+                        <span className="opacity-80">
+                            {mountHealth.connectedCount}/{mountHealth.mountCount}
+                        </span>
+                    </div>
+                )}
                 <button
                     onClick={toggleAgentPanel}
                     className={cn(

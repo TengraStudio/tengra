@@ -420,6 +420,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 toggleSidebar={() => ps.setSidebarCollapsed(!ps.sidebarCollapsed)}
                 showAgentPanel={ps.showAgentPanel}
                 toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
+                mountStatus={wm.mountStatus}
             />
 
             <div className="flex-1 flex overflow-hidden relative">

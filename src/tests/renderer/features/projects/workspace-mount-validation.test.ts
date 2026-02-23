@@ -42,6 +42,16 @@ describe('workspace mount validation', () => {
         expect(result.errorCode).toBe(workspaceMountErrorCodes.validation);
     });
 
+    it('fails for ssh mount with invalid host value', () => {
+        const result = validateWorkspaceMountForm({
+            ...baseSshForm,
+            host: 'invalid host/name',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.errorCode).toBe(workspaceMountErrorCodes.validation);
+    });
+
     it('fails for key auth without private key', () => {
         const result = validateWorkspaceMountForm({
             ...baseSshForm,
@@ -52,6 +62,30 @@ describe('workspace mount validation', () => {
 
         expect(result.success).toBe(false);
         expect(result.errorCode).toBe(workspaceMountErrorCodes.validation);
+    });
+
+    it('fails for key auth with non-absolute private key path', () => {
+        const result = validateWorkspaceMountForm({
+            ...baseSshForm,
+            authType: 'key',
+            password: '',
+            privateKey: 'id_rsa',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.errorCode).toBe(workspaceMountErrorCodes.validation);
+    });
+
+    it('accepts key auth with inline private key content', () => {
+        const result = validateWorkspaceMountForm({
+            ...baseSshForm,
+            authType: 'key',
+            password: '',
+            privateKey: '-----BEGIN OPENSSH PRIVATE KEY-----test-----END OPENSSH PRIVATE KEY-----',
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.parsedPort).toBe(22);
     });
 
     it('normalizes valid ssh form and exposes parsed port', () => {

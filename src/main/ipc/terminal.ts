@@ -15,6 +15,7 @@ import {
 } from '@main/services/terminal/terminal-profile.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
@@ -132,7 +133,17 @@ function secureHandle(
         }
         const validateSender = createMainWindowSenderValidator(getWindow, 'terminal operation');
         validateSender(event);
-        return await handler(event, ...args);
+
+        const startTime = Date.now();
+        try {
+            const result = await handler(event, ...args);
+            appLogger.debug('Terminal', `[${channel}] Success in ${Date.now() - startTime}ms`);
+            return result;
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            appLogger.error('Terminal', `[${channel}] Failed in ${duration}ms: ${getErrorMessage(error as Error)}`);
+            throw error;
+        }
     });
 }
 
@@ -182,7 +193,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, profile: TerminalProfile) => {
                 return profileService.saveProfile(profile);
             },
-            { 
+            {
                 defaultValue: undefined,
                 argsSchema: z.tuple([terminalProfileSchema])
             }
@@ -196,7 +207,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, id: string) => {
                 return profileService.deleteProfile(id);
             },
-            { 
+            {
                 defaultValue: undefined,
                 argsSchema: z.tuple([z.string()])
             }
@@ -210,7 +221,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, profile: TerminalProfile) => {
                 return profileService.validateProfile(profile);
             },
-            { 
+            {
                 defaultValue: { valid: false, errors: ['validation failed'] },
                 argsSchema: z.tuple([terminalProfileSchema])
             }
@@ -246,7 +257,7 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, profileId: string) => {
                 return profileService.exportProfileShareCode(profileId);
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([z.string().min(1, 'profileId is required')])
             }
@@ -260,10 +271,10 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, shareCode: string, options?: { overwrite?: boolean }) => {
                 return profileService.importProfileShareCode(shareCode, options);
             },
-            { 
+            {
                 defaultValue: { success: false, imported: false, error: 'import failed' },
                 argsSchema: z.tuple([
-                    z.string(), 
+                    z.string(),
                     z.object({ overwrite: z.boolean().optional() }).optional()
                 ])
             }
@@ -277,10 +288,10 @@ function registerProfileIpc(profileService: TerminalProfileService) {
             async (_event, payload: string, options?: { overwrite?: boolean }) => {
                 return profileService.importProfiles(payload, options);
             },
-            { 
+            {
                 defaultValue: { success: false, imported: 0, skipped: 0, errors: ['import failed'] },
                 argsSchema: z.tuple([
-                    z.string(), 
+                    z.string(),
                     z.object({ overwrite: z.boolean().optional() }).optional()
                 ])
             }
@@ -313,7 +324,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
                 });
                 return success ? sessionId : null;
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([createOptionsSchema])
             }
@@ -328,7 +339,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
             async (_event, sessionId: string) => {
                 return terminalService.kill(sessionId);
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([sessionIdSchema])
             }
@@ -343,7 +354,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
             async (_event, sessionId: string) => {
                 return terminalService.kill(sessionId);
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([sessionIdSchema])
             }
@@ -389,7 +400,7 @@ function registerSessionLifecycleIpc(getWindow: () => BrowserWindow | null, term
                     },
                 });
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([sessionIdSchema])
             }
@@ -408,10 +419,10 @@ function registerSessionIOIpc(terminalService: TerminalService) {
                     terminalService.write(sessionId, data)
                 );
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([
-                    sessionIdSchema, 
+                    sessionIdSchema,
                     z.string().max(MAX_WRITE_SIZE, 'Data exceeds maximum size of 1MB')
                 ])
             }
@@ -431,7 +442,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
             ) => {
                 return terminalService.resize(sessionId, cols, rows);
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -450,7 +461,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
             async (_event, sessionId: string) => {
                 return terminalService.getSessionBuffer(sessionId);
             },
-            { 
+            {
                 defaultValue: '',
                 argsSchema: z.tuple([sessionIdSchema])
             }
@@ -464,7 +475,7 @@ function registerSessionIOIpc(terminalService: TerminalService) {
             async (_event, sessionId: string, title: string) => {
                 return terminalService.setSessionTitle(sessionId, title);
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([sessionIdSchema, z.string()])
             }
@@ -481,7 +492,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
                 const includeScrollback = options?.includeScrollback ?? false;
                 return terminalService.exportSession(sessionId, { includeScrollback });
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -498,7 +509,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
             async (_event, payload: string, options?: ImportSessionOptions) => {
                 return terminalService.importSession(payload, options);
             },
-            { 
+            {
                 defaultValue: { success: false, error: 'import failed' },
                 argsSchema: z.tuple([
                     z.string(),
@@ -516,7 +527,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
                 const includeScrollback = options?.includeScrollback ?? false;
                 return terminalService.generateSessionShareCode(sessionId, { includeScrollback });
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -533,7 +544,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
             async (_event, shareCode: string, options?: ImportSessionOptions) => {
                 return terminalService.importSessionShareCode(shareCode, options);
             },
-            { 
+            {
                 defaultValue: { success: false, error: 'import failed' },
                 argsSchema: z.tuple([
                     z.string(),
@@ -554,7 +565,7 @@ function registerSessionExportIpc(terminalService: TerminalService) {
             ) => {
                 return terminalService.exportSessionScrollback(sessionId, exportPath);
             },
-            { 
+            {
                 defaultValue: { success: false, error: 'export failed' },
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -590,7 +601,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
                     name: payload.name,
                 });
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([templateSavePayloadSchema])
             }
@@ -604,7 +615,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
             async (_event, templateId: string) => {
                 return terminalService.deleteSessionTemplate(templateId.trim());
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([z.string().min(1, 'templateId is required')])
             }
@@ -648,7 +659,7 @@ function registerSessionTemplateIpc(getWindow: () => BrowserWindow | null, termi
                 activeSessionId = createdSessionId ?? activeSessionId;
                 return createdSessionId;
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([
                     z.string().min(1, 'templateId is required'),
@@ -694,7 +705,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             ) => {
                 return terminalService.searchSessionScrollback(sessionId, query, options);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -712,7 +723,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, sessionId: string) => {
                 return terminalService.getSessionAnalytics(sessionId);
             },
-            { 
+            {
                 defaultValue: { sessionId: '', bytes: 0, lineCount: 0, commandCount: 0, updatedAt: 0 },
                 argsSchema: z.tuple([sessionIdSchema])
             }
@@ -737,7 +748,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, query?: string, limit?: number) => {
                 return terminalService.getSearchSuggestions(query ?? '', limit ?? 10);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([
                     z.string().optional(),
@@ -767,7 +778,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
                     fmt
                 );
             },
-            { 
+            {
                 defaultValue: { success: false, error: 'export failed' },
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -785,7 +796,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, sessionId: string, label: string, lineNumber?: number) => {
                 return terminalService.addScrollbackMarker(sessionId, label, lineNumber);
             },
-            { 
+            {
                 defaultValue: null,
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -803,7 +814,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, sessionId?: string) => {
                 return terminalService.listScrollbackMarkers(sessionId);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([sessionIdSchema.optional()])
             }
@@ -817,7 +828,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, markerId: string) => {
                 return terminalService.deleteScrollbackMarker(markerId.trim());
             },
-            { 
+            {
                 defaultValue: false,
                 argsSchema: z.tuple([z.string().min(1, 'markerId is required')])
             }
@@ -831,7 +842,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
             async (_event, sessionId: string, options: ScrollbackFilter) => {
                 return terminalService.filterSessionScrollback(sessionId, options);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([
                     sessionIdSchema,
@@ -851,7 +862,7 @@ function registerSessionSearchIpc(terminalService: TerminalService) {
                 const l = typeof limit === 'number' ? Math.max(1, Math.min(Math.floor(limit), 500)) : 100;
                 return terminalService.getCommandHistory(q, l);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([
                     z.string().optional(),
@@ -881,7 +892,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
             async (_event, options: SuggestionOptions) => {
                 return smartService.getSuggestions(options);
             },
-            { 
+            {
                 defaultValue: [],
                 argsSchema: z.tuple([suggestionOptionsSchema])
             }
@@ -895,7 +906,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
             async (_event, options: ExplainCommandOptions) => {
                 return withRateLimit('terminal', async () => smartService.explainCommand(options));
             },
-            { 
+            {
                 defaultValue: { explanation: 'Service unavailable', breakdown: [] },
                 argsSchema: z.tuple([explainCommandOptionsSchema])
             }
@@ -909,7 +920,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
             async (_event, options: ExplainErrorOptions) => {
                 return withRateLimit('terminal', async () => smartService.explainError(options));
             },
-            { 
+            {
                 defaultValue: { summary: 'Service unavailable', cause: 'Unknown', solution: 'Please try again later' },
                 argsSchema: z.tuple([explainErrorOptionsSchema])
             }
@@ -923,7 +934,7 @@ function registerSmartIpc(smartService: TerminalSmartService) {
             async (_event, options: FixErrorOptions) => {
                 return withRateLimit('terminal', async () => smartService.fixError(options));
             },
-            { 
+            {
                 defaultValue: { suggestedCommand: '', explanation: 'Service unavailable', confidence: 'low' as const },
                 argsSchema: z.tuple([fixErrorOptionsSchema])
             }
@@ -1009,7 +1020,7 @@ export function registerTerminalIpc(
             async () => {
                 return dockerService.listContainers();
             },
-            { 
+            {
                 defaultValue: { success: false, containers: [] }
             }
         )

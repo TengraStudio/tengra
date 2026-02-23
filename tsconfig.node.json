@@ -13,7 +13,6 @@
         "electron.vite.config.ts",
         "vite-plugin-react-global.ts",
         "vitest.config.ts",
-        "vitest.config.renderer.ts",
-        "playwright.config.ts"
+        "vitest.config.renderer.ts"
     ]
 }

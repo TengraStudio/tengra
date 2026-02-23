@@ -123,6 +123,11 @@ export interface ProcessInfo {
     memory: number;
 }
 
+export interface OrchestratorStateView extends ProjectState {
+    activeAgentId?: string;
+    assignments: Record<string, string>;
+}
+
 export interface ModelDefinition {
     id: string;
     name: string;
@@ -1450,6 +1455,21 @@ export interface ElectronAPI {
         ) => Promise<{ success: boolean; error?: string }>;
         debug: () => Promise<{ success: boolean; metrics?: IpcValue; error?: string }>;
         refresh: () => Promise<{ success: boolean; error?: string }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState?: 'ready' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
     };
 
     proxyEmbed: {
@@ -1968,6 +1988,19 @@ export interface ElectronAPI {
         getAllEntityKnowledge: () => Promise<{ success: boolean; data: EntityKnowledge[]; error?: string }>;
         getAllEpisodes: () => Promise<{ success: boolean; data: EpisodicMemory[]; error?: string }>;
         getAllAdvancedMemories: () => Promise<{ success: boolean; data: AdvancedSemanticFragment[]; error?: string }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+        }>;
     };
 
     // IPC Batching API
@@ -2038,7 +2071,7 @@ export interface ElectronAPI {
     ) => () => void;
 
     projectAgent: {
-        start: (options: AgentStartOptions) => Promise<void>;
+        start: (options: AgentStartOptions) => Promise<{ taskId: string }>;
         generatePlan: (options: AgentStartOptions) => Promise<void>;
         approvePlan: (plan: string[] | ProjectStep[], taskId?: string) => Promise<void>;
         stop: (taskId?: string) => Promise<void>;
@@ -2048,6 +2081,11 @@ export interface ElectronAPI {
         resetState: () => Promise<void>;
         getStatus: (taskId?: string) => Promise<ProjectState>;
         retryStep: (index: number, taskId?: string) => Promise<void>;
+        selectModel: (payload: {
+            taskId: string;
+            provider: string;
+            model: string;
+        }) => Promise<{ success: boolean; error?: string }>;
         // AGT-HIL: Human-in-the-Loop step actions
         approveStep: (taskId: string, stepId: string) => Promise<void>;
         skipStep: (taskId: string, stepId: string) => Promise<void>;
@@ -2228,6 +2266,28 @@ export interface ElectronAPI {
             }>
         >;
         deleteCanvasEdge: (id: string) => Promise<void>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+            uiState?: 'ready' | 'failure';
+            fallbackUsed?: boolean;
+        }>;
+    };
+    orchestrator: {
+        start: (task: string, projectId?: string) => Promise<void>;
+        approve: (plan: ProjectStep[]) => Promise<void>;
+        getState: () => Promise<OrchestratorStateView>;
+        stop: () => Promise<void>;
+        onUpdate: (callback: (state: OrchestratorStateView) => void) => () => void;
     };
 
     workflow: {
@@ -2254,6 +2314,19 @@ export interface ElectronAPI {
         executeCommand: (command: VoiceCommand) => Promise<{ success: boolean; action: string }>;
         getVoices: () => Promise<VoiceInfo[]>;
         synthesize: (options: VoiceSynthesisOptions) => Promise<{ success: boolean }>;
+        health: () => Promise<{
+            success: boolean;
+            data?: {
+                status: 'healthy' | 'degraded';
+                uiState: 'ready' | 'failure';
+                budgets: { fastMs: number; standardMs: number; heavyMs: number };
+                metrics: Record<string, IpcValue>;
+            };
+            error?: string;
+            errorCode?: string;
+            messageKey?: string;
+            retryable?: boolean;
+        }>;
     };
 
     extension: {

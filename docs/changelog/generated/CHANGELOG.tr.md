@@ -1,6 +1,109 @@
 # Değişiklik Günlüğü
 
+## [2026-02-23]
+
+### Ajan İş Birliği ve Kontrol Noktası Servisi Sertleştirmesi
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Ajan İş Birliği ve Kontrol Noktası servisleri için kapsamlı çalışma zamanı doğrulaması, standartlaştırılmış hata yönetimi ve tam i18n kapsamı uygulandı.
+
+- **Doğrulama**: Tüm ajan görevi, oylama ve kontrol noktası akışları için Zod şema tabanlı giriş doğrulaması ve bütünlük korumaları eklendi.
+- **Hata Yönetimi**: Tanımlayıcı, makine tarafından okunabilir kodlar ve çevrilmiş mesajlar içeren standart hata sınıfları (`AgentCollaborationError`, `AgentCheckpointError`) uygulandı.
+- **Güvenilirlik**: Yinelenen senkronizasyon algılaması için görev durumu parmak izi alma ve optimize edilmiş kontrol noktası sıkıştırması uygulandı.
+- **NASA Uyumluluğu**: Daha iyi bakım yapılabilirlik ve güvenilirlik için çekirdek servis yöntemleri yeniden yapılandırıldı (Power of Ten Kuralı #3).
+- **I18N**: Tüm ajan iş birliği ve kontrol noktası durum mesajları için tam İngilizce ve Türkçe yerelleştirme eklendi.
+
+### İzleme, Telemetri ve Tema Servisi Test Güvenilirliği Düzeltmeleri
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: İzleme, Telemetri ve Tema servisleri için test tutarsızlıkları giderildi ve mock güvenilirliği artırıldı.
+
+- **MonitoringService**: Tahmin edilebilir OS mocklamasına olanak tanımak için platform algılaması sadece `os.platform()` kullanacak şekilde yeniden düzenlendi.
+- **MonitoringService**: `totalMem` raporlaması başarısız olduğunda bellek hesaplamalarında oluşan sıfıra bölme (NaN) sorunu düzeltildi.
+- **TelemetryService**: İzleme rutinlerinde tanımsız ayar özelliklerini zarif bir şekilde yönetmek için savunma kontrolleri eklendi.
+- **ThemeService**: Test sırasında uygun başlatmayı sağlamak için DataService mockları sağlam sınıf tabanlı uygulamalara taşındı.
+- **ThemeService**: `fs/promises` ile dosya sistemi mocklaması ayarlandı ve `installTheme` testi için reddetme varsayımları uyarlandı.
+
+## [2026-02-22]
+
+### Backlog 0251-0281 Unit-Test Edge Coverage Expansion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.
+
+- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths
+- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior
+- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection
+- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors
+- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md
+
+### Backlog 0252-0283 Servis Sertleştirme ve Operasyonel Kapsam
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Bellek, bağlam getirme, embedding ve proje servisleri için entegrasyon/regresyon kapsamı ve çalışma zamanı sertleştirme çalışmaları tamamlandı.
+
+- Gelişmiş bellek recall/import yükleri, embedding metin girdileri, proje kök yolu ve env değişken anahtarları/kayıtları için şema korumaları eklendi
+- AdvancedMemoryService, ContextRetrievalService ve EmbeddingService üzerinde sınırlı tekrar deneme, fallback davranışı, standart hata kodları ve telemetri sayaçları eklendi
+- UI durum ve message-key yüzeyleri ile bütçe aşımı/hata oranı metriklerini içeren servis sağlık özetleri eklendi
+- Doğrulama hataları, retry iyileşmesi, fallback davranışı ve proje env/yol sınır durumları için regresyon/entegrasyon testleri eklendi
+- Yeni servis sağlık mesaj anahtarları için İngilizce ve Türkçe i18n kapsamı eklendi
+- AdvancedMemoryService, ContextRetrievalService ve EmbeddingService için runbook, performans bütçesi ve tehdit modeli dokümantasyonu eklendi
+- docs/TODO.md içinde BACKLOG-0252 ile BACKLOG-0283 arası görevler tamamlandı olarak işaretlendi
+
+## [2026-02-21]
+
+### Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.
+
+- Added unit and integration/regression tests for all target surfaces
+- Added input validation guards, standardized retry/fallback paths, and component error codes
+- Added component health telemetry stores with explicit performance budgets
+- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor
+- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies
+
 ## [2026-02-20]
+
+### Advanced Memory IPC Hardening and Operational Readiness
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.
+
+- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior
+- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel
+- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)
+- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging
+- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)
+
+### IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.
+
+- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels
+- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics
+- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`
+- Wired preload/web bridge and renderer typings for new health channels
+- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies
+
+### Temel Teknik Borç ve Tip Hatalarının Çözümü
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Çekirdek servisler ve IPC işleyicilerinde miras kalan tip hataları ve kayıt uyumsuzlukları giderildi.
+
+- Çekirdek servis bağımlılık eşleşmeleri düzeltildi.
+- IPC tip uyumsuzlukları ve şema doğrulama hataları giderildi.
+- Paylaşılan tiplerde eksik anahtarlar tamamlandı.
+- İlgili test regresyonları güncellendi.
 
 ### Ses Öncelikli Arayüz Uygulaması (UI-11)
 
@@ -13,6 +116,18 @@
 - **Sesli Geri Bildirim**: Sesle tetiklenen eylemler ve sistem durumu için sesli onay eklendi.
 - **Eller Serbest Gezinme**: Uygulama genelinde sesli olaylar aracılığıyla gezinme ve komut yürütme etkinleştirildi.
 - **Özel Komutlar**: Sistem eylemlerine eşlenen kullanıcı tanımlı sesli ifadeler için destek eklendi.
+
+### Voice IPC Hardening, Telemetry, and Health Dashboard
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.
+
+- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events
+- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures
+- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics
+- Updated web fallback bridge and integration tests for voice health and validation metadata behavior
+- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)
 
 ## [2026-02-18]
 

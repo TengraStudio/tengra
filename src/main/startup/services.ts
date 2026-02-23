@@ -1,6 +1,6 @@
 import { ApiServerService } from '@main/api/api-server.service';
 import { Container } from '@main/core/container';
-import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency,lazyServiceRegistry } from '@main/core/lazy-services';
+import { createLazyServiceDependency, createLazyServiceProxy, type LazyServiceDependency, lazyServiceRegistry } from '@main/core/lazy-services';
 import { McpDeps } from '@main/mcp/server-utils';
 import { AuditLogService } from '@main/services/analysis/audit-log.service';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
@@ -236,6 +236,9 @@ export async function createServices(allowedFileRoots: Set<string>): Promise<Ser
 
     // 5. Build Services Map
     const services = buildServicesMap(dataService, settingsService, ollamaHealthService);
+
+    // 6. Post-Map Setup
+    dataService.setTelemetryService(services.telemetryService);
 
     startCriticalHealthChecks({
         databaseService: services.databaseService,

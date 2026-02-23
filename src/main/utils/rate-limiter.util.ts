@@ -194,6 +194,7 @@ const DEFAULT_LIMITS: Record<string, RateLimiterOptions> = {
     tools: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 },       // 30 tool calls per minute
     git: { maxTokens: 60, refillRate: 60, refillIntervalMs: 60000 },         // 60 git operations per minute
     terminal: { maxTokens: 120, refillRate: 120, refillIntervalMs: 60000 }, // 120 writes per minute
+    ssh: { maxTokens: 60, refillRate: 60, refillIntervalMs: 60000 },        // 60 SSH operations per minute
     // Added migration rate limit for safety
     migration: { maxTokens: 10, refillRate: 10, refillIntervalMs: 60000 },
     default: { maxTokens: 30, refillRate: 30, refillIntervalMs: 60000 }

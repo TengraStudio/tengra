@@ -9,6 +9,32 @@ Tandem uses Electron's IPC mechanism for secure communication:
 - **Renderer Process**: React frontend with restricted permissions
 - **Preload Script**: Exposes safe IPC channels via `contextBridge`
 
+## Central IPC Contract Reference
+
+Use these files as the single source of truth for IPC contract auditing and payload validation:
+
+- `src/main/ipc/index.ts` - all registered IPC domains in main process.
+- `src/main/utils/ipc-wrapper.util.ts` - validation wrapper behavior and error handling.
+- `src/shared/constants/ipc-contract.ts` - renderer/main contract negotiation compatibility.
+- `src/renderer/lib/ipc-client.ts` - typed IPC invocation and runtime schema checks.
+
+### Registered IPC domains (main)
+
+`agent`, `audit`, `auth`, `backup`, `brain`, `chat`, `code-intelligence`, `code-sandbox`, `collaboration`, `contract`, `db`, `dialog`, `export`, `files`, `gallery`, `git`, `health`, `huggingface`, `key-rotation`, `lazy-services`, `llama`, `logging`, `marketplace`, `mcp`, `memory`, `metrics`, `migration`, `multi-model`, `ollama`, `performance`, `process`, `project`, `prompt-templates`, `proxy`, `proxy-embed`, `screenshot`, `sd-cpp`, `settings`, `ssh`, `terminal`, `token-estimation`, `tools`, `usage`, `voice`, `window`.
+
+### MCP marketplace payload contract checkpoints
+
+Critical channels are validated in `src/main/ipc/mcp-marketplace.ts` with Zod schemas:
+
+- `mcp:marketplace:list` / `search` / `filter` / `categories`
+- `mcp:marketplace:install` / `uninstall` / `toggle`
+- `mcp:marketplace:update-config` / `version-history` / `rollback-version`
+- `mcp:marketplace:security-scan`
+- `mcp:marketplace:reviews:*`
+- `mcp:marketplace:telemetry:*`
+
+These channels should be treated as audited contract surfaces for marketplace behavior changes.
+
 ### Architecture
 
 ```
