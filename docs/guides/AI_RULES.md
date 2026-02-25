@@ -17,7 +17,7 @@
 8.  **ADVANCED HARDENING**: Strictly follow [Advanced Agent Hardening Rules](../.agent/rules/advanced-hardening.md).
 9.  **FRIDAY FORBIDDEN**: NO COMMITS OR MAJOR DEPLOYMENTS ON FRIDAYS. Fridays are for testing, documentation, and review ONLY.
 10. **TEST PASS MANDATORY**: Never commit code that fails any test. `npm run test` must pass 100%.
-11. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding.
+11. **READ RULES FIRST**: You MUST read rule files (`MASTER_COMMANDMENTS.md`, `AI_RULES.md`, `advanced-hardening.md`) using `view_file` at the start of every session before coding. (Locations: `.agent/rules/`, `docs/guides/`, `docs/architecture/`).
 
 
 ---
@@ -215,10 +215,12 @@ tengra/
 │       ├── unit/             # Unit tests
 │       ├── integration/      # Integration tests
 │       └── e2e/              # End-to-end tests
-├── docs/                     # Documentation
-├── logs/                     # Log files (AI writable)
-├── vendor/                   # Third-party code
-└── dist/                     # Build output
+├── docs/                     # Documentation (Subdivided by domain)
+│   ├── architecture/         # System design and technologies
+│   ├── api/                  # IPC and API contracts
+│   ├── guides/               # Rules, onboarding, and standard guides
+│   ├── tasks/                # Backlog and TODOs
+│   └── changelog/            # Project history
 ```
 
 ### 3.2 Service Placement Guide
@@ -637,7 +639,7 @@ type Status = 'pending' | 'complete' | 'failed';
 
 ### 10.6 Linting Priority
 
-**CRITICAL**: Agents MUST check [LINT_ISSUES.md](./LINT_ISSUES.md) before starting work. Fixing the categorized issues in that file is currently the top priority for codebase maintenance.
+**CRITICAL**: Agents MUST check [LINT_ISSUES.md](./LINT_ISSUES.md) (or current status in `docs/tasks/`) before starting work.
 ```
 
 ### 10.2 Async/Await Rules

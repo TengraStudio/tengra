@@ -24,6 +24,18 @@
 - **Test Güvenilirliği**: chat.integration.test.ts dosyasındaki require-yield ihlalleri ve kullanılmayan değişkenler düzeltildi.
 - **API Sözleşmeleri**: api-openapi.contract.test.ts dosyasındaki OpenAPI spesifikasyon dosyası yolu, geçerli sözleşme doğrulamasını sağlamak için düzeltildi.
 
+### Pazaryeri C++ Arka Uç Başlatma
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Drogon framework, PostgreSQL ve Redis kullanılarak yüksek performanslı ve düşük bellek tüketimli (< 500MB RAM) C++ arka ucu başlatıldı.
+
+- **C++ Arka Uç**: `website/tengra-backend` altında C++20 ve Drogon framework kullanılarak yeni bir servis kuruldu.
+- **Optimize Edilmiş Ayak İzi**: Bloklamasız I/O ile 500MB RAM sınırları içinde çalışacak şekilde tasarlandı.
+- **Şema Tasarımı**: Yapay zeka modelleri, uzantılar (temalar/VSCode), istemler ve iş akışları için PostgreSQL şeması tanımlandı.
+- **Önbellek Katmanı**: Hızlı metadata erişimi ve pazaryeri indeksleme için Redis entegrasyonu yapıldı.
+- **Birleşik Süreç Yönetimi**: Hem C++ arka ucunu hem de React ön ucunu yönetmek için PM2 ekosistem yapılandırması eklendi.
+
 ## [2026-02-23]
 
 ### Ajan İş Birliği ve Kontrol Noktası Servisi Sertleştirmesi

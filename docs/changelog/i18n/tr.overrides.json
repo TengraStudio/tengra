@@ -1,4 +1,15 @@
 {
+  "2026-02-25-marketplace-cpp-backend-init": {
+    "title": "Pazaryeri C++ Arka Uç Başlatma",
+    "summary": "Drogon framework, PostgreSQL ve Redis kullanılarak yüksek performanslı ve düşük bellek tüketimli (< 500MB RAM) C++ arka ucu başlatıldı.",
+    "items": [
+      "- **C++ Arka Uç**: `website/tengra-backend` altında C++20 ve Drogon framework kullanılarak yeni bir servis kuruldu.",
+      "- **Optimize Edilmiş Ayak İzi**: Bloklamasız I/O ile 500MB RAM sınırları içinde çalışacak şekilde tasarlandı.",
+      "- **Şema Tasarımı**: Yapay zeka modelleri, uzantılar (temalar/VSCode), istemler ve iş akışları için PostgreSQL şeması tanımlandı.",
+      "- **Önbellek Katmanı**: Hızlı metadata erişimi ve pazaryeri indeksleme için Redis entegrasyonu yapıldı.",
+      "- **Birleşik Süreç Yönetimi**: Hem C++ arka ucunu hem de React ön ucunu yönetmek için PM2 ekosistem yapılandırması eklendi."
+    ]
+  },
   "2026-02-25-i18n-refactoring-and-marketplace": {
     "title": "i18n Çoklu Dil Yeniden Yapılandırması ve Pazaryeri Arayüzü",
     "summary": "Uluslararasılaştırma sistemini modüler dosyalara böldük ve yeni bir Pazaryeri arayüzü ile birlikte 10 ana dil desteği ekledik.",

@@ -4,8 +4,8 @@
 
 ## Quick Start
 
-1. **READ RULES FIRST**: Call `view_file` on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and [docs/AI_RULES.md](docs/AI_RULES.md) before ANY code work.
-2. Check [docs/TODO.md](docs/TODO.md) - Current tasks and priorities.
+1. **READ RULES FIRST**: Call `view_file` on [.agent/rules/MASTER_COMMANDMENTS.md](.agent/rules/MASTER_COMMANDMENTS.md) and [docs/guides/AI_RULES.md](docs/guides/AI_RULES.md) before ANY code work.
+2. Check [docs/tasks/TODO.md](docs/tasks/TODO.md) - Current tasks and priorities.
 3. **VALIDATE**: Run `npm run build && npm run lint && npm run type-check && npm run test` before every commit.
 4. **FRIDAY BAN**: No commits on Fridays. NO EXCEPTIONS.
 
@@ -255,10 +255,10 @@ npm run test         # Run tests
 
 ## Workflow
 
-1. Read docs/AI_RULES.md
+1. Read docs/guides/AI_RULES.md
 2. Make changes
 3. `npm run build && npm run lint`
-4. Update docs/TODO.md (mark `[x]`, don't delete)
+4. Update docs/tasks/TODO.md (mark `[x]`, don't delete)
 5. Update `docs/changelog/data/changelog.entries.json`
 6. Run `npm run changelog:sync`
 7. Commit and push
@@ -377,7 +377,7 @@ Located in `src/main/mcp/templates/server.template.ts`
 
 ### Getting Help
 
-- Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- Review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Check [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+- Check [docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)
+- Review [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+- Check [docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md)
 

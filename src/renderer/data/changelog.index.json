@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-25T13:33:45.430Z",
+  "generatedAt": "2026-02-25T13:56:29.817Z",
   "locales": [
     "en",
     "tr",
@@ -207,6 +207,116 @@
             "- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.",
             "- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.",
             "- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-marketplace-cpp-backend-init",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Marketplace Backend",
+        "C++",
+        "Drogon",
+        "PostgreSQL",
+        "Redis",
+        "PM2"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "tr": {
+          "title": "Pazaryeri C++ Arka Uç Başlatma",
+          "summary": "Drogon framework, PostgreSQL ve Redis kullanılarak yüksek performanslı ve düşük bellek tüketimli (< 500MB RAM) C++ arka ucu başlatıldı.",
+          "items": [
+            "- **C++ Arka Uç**: `website/tengra-backend` altında C++20 ve Drogon framework kullanılarak yeni bir servis kuruldu.",
+            "- **Optimize Edilmiş Ayak İzi**: Bloklamasız I/O ile 500MB RAM sınırları içinde çalışacak şekilde tasarlandı.",
+            "- **Şema Tasarımı**: Yapay zeka modelleri, uzantılar (temalar/VSCode), istemler ve iş akışları için PostgreSQL şeması tanımlandı.",
+            "- **Önbellek Katmanı**: Hızlı metadata erişimi ve pazaryeri indeksleme için Redis entegrasyonu yapıldı.",
+            "- **Birleşik Süreç Yönetimi**: Hem C++ arka ucunu hem de React ön ucunu yönetmek için PM2 ekosistem yapılandırması eklendi."
+          ]
+        },
+        "de": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "fr": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "es": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "ja": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "zh": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+          ]
+        },
+        "ar": {
+          "title": "Marketplace C++ Backend Initialization",
+          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "items": [
+            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
+            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
+            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
+            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
+            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
           ]
         }
       }

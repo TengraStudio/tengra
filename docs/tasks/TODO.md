@@ -7,16 +7,33 @@
 ## Release Milestones
 
 ### v1.3.0 (Target: Q2 2026)
-- ( ) Marketplace system MVP
+- [/] Marketplace system MVP (C++ Backend initialized)
 - ( ) HuggingFace model integration
 - ( ) Agent collaboration improvements
 - ( ) Performance optimizations
+
+### Marketplace Infrastructure
+- [x] **MKT-CORE-001**: Initialize C++ Backend (Drogon framework).
+- [x] **MKT-CORE-002**: Define Marketplace Database Schema (PostgreSQL).
+- [x] **MKT-CORE-003**: Configure Redis caching layer.
+- [x] **MKT-CORE-004**: Set up PM2 Process Management.
+
 
 ### v1.4.0 (Target: Q3 2026)
 - ( ) Extension system beta
 - ( ) ComfyUI integration
 - ( ) SSH tunneling
 - ( ) Advanced memory features
+
+### Backlog Range: BACKLOG-0501 to BACKLOG-0510 (Project Health & Maintenance)
+- ( ) **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
+- ( ) **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
+- ( ) **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
+- ( ) **BACKLOG-0504**: Enforce Component Promotion Rules: Perform cleanup of feature-local components in `src/renderer/features`.
+- ( ) **BACKLOG-0505**: Root Directory Hygiene: Move `tengra_key.txt` to `.env` or secure storage.
+- ( ) **BACKLOG-0506**: Build Artifact Hygiene: Move `stats.html` generation to `dist/` or `build/`.
+- (x) **BACKLOG-0507**: Website Submodule Integration: Remove `website/tengra-*` from root `.gitignore` and properly integrate as git submodules or manage separately.
+- (x) **BACKLOG-0508**: Documentation Reorganization: Group files in `docs/` into subdirectories (`architecture`, `api`, `guides`, `tasks`).
 
 ### v2.0.0 (Target: Q4 2026)
 - ( ) Plugin ecosystem

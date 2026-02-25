@@ -24,6 +24,18 @@
 - **Testzuverlässigkeit**: Verstöße gegen `require-yield` und nicht verwendete Variablen in `chat.integration.test.ts` behoben.
 - **API Verträge**: Der Pfad der OpenAPI-Spezifikationsdatei in `api-openapi.contract.test.ts` wurde korrigiert, um eine gültige Vertragsüberprüfung sicherzustellen.
 
+### Marketplace C++ Backend Initialization
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.
+
+- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.
+- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.
+- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
+- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
+- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+
 ## [2026-02-23]
 
 ### Agentenzusammenarbeit und Checkpoint-Service-Härtung
