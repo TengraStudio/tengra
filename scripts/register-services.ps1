@@ -1,4 +1,4 @@
-# Tandem Services Startup Registration Script (User-Level, No Admin Required)
+# Tengra Services Startup Registration Script (User-Level, No Admin Required)
 # Uses Windows Registry HKCU\Software\Microsoft\Windows\CurrentVersion\Run
 
 param(
@@ -11,10 +11,10 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $Services = @{
-    "TandemTokenService" = "tandem-token-service.exe"
-    "TandemModelService" = "tandem-model-service.exe"
-    "TandemQuotaService" = "tandem-quota-service.exe"
-    "TandemMemoryService" = "tandem-memory-service.exe"
+    "TengraTokenService" = "tengra-token-service.exe"
+    "TengraModelService" = "tengra-model-service.exe"
+    "TengraQuotaService" = "tengra-quota-service.exe"
+    "TengraMemoryService" = "tengra-memory-service.exe"
 }
 
 $RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
@@ -26,8 +26,8 @@ $LocalAppData = [Environment]::GetFolderPath("LocalApplicationData")
 $BinCandidates = @(
     (Join-Path $InstallRoot "resources\bin"),
     (Join-Path $InstallRoot "resources\resources\bin"),
-    (Join-Path $LocalAppData "Programs\Tandem\resources\bin"),
-    (Join-Path $LocalAppData "Programs\Tandem\resources\resources\bin")
+    (Join-Path $LocalAppData "Programs\Tengra\resources\bin"),
+    (Join-Path $LocalAppData "Programs\Tengra\resources\resources\bin")
 )
 $BinDir = $BinCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $BinDir) {
@@ -43,7 +43,7 @@ function Write-Log {
 }
 
 function Get-ServiceStatus {
-    Write-Log "`n=== Tandem Services Status ===" "Cyan"
+    Write-Log "`n=== Tengra Services Status ===" "Cyan"
 
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
@@ -69,8 +69,8 @@ function Get-ServiceStatus {
 
         # Check port file
         $AppData = [Environment]::GetFolderPath("ApplicationData")
-        $serviceName = $exe -replace 'tandem-','' -replace '\.exe$',''
-        $PortFile = Join-Path $AppData "Tandem\services\$serviceName.port"
+        $serviceName = $exe -replace 'tengra-','' -replace '\.exe$',''
+        $PortFile = Join-Path $AppData "Tengra\services\$serviceName.port"
         if (Test-Path $PortFile) {
             $port = Get-Content $PortFile
             Write-Log "  Listening on: Port $port" "Green"
@@ -79,7 +79,7 @@ function Get-ServiceStatus {
 }
 
 function Install-Services {
-    Write-Log "`n=== Installing Tandem Services ===" "Cyan"
+    Write-Log "`n=== Installing Tengra Services ===" "Cyan"
 
     if (-not (Test-Path $BinDir)) {
         Write-Log "Error: Binary directory not found at $BinDir" "Red"
@@ -88,7 +88,7 @@ function Install-Services {
 
     # Ensure services directory exists
     $AppData = [Environment]::GetFolderPath("ApplicationData")
-    $ServicesDir = Join-Path $AppData "Tandem\services"
+    $ServicesDir = Join-Path $AppData "Tengra\services"
     if (-not (Test-Path $ServicesDir)) {
         New-Item -ItemType Directory -Force -Path $ServicesDir | Out-Null
     }
@@ -132,7 +132,7 @@ function Install-Services {
 }
 
 function Uninstall-Services {
-    Write-Log "`n=== Uninstalling Tandem Services ===" "Cyan"
+    Write-Log "`n=== Uninstalling Tengra Services ===" "Cyan"
 
     foreach ($name in $Services.Keys) {
         $exe = $Services[$name]
@@ -155,7 +155,7 @@ function Uninstall-Services {
 
     # Clean up port files
     $AppData = [Environment]::GetFolderPath("ApplicationData")
-    $ServicesDir = Join-Path $AppData "Tandem\services"
+    $ServicesDir = Join-Path $AppData "Tengra\services"
     if (Test-Path $ServicesDir) {
         Remove-Item -Path "$ServicesDir\*.port" -Force -ErrorAction SilentlyContinue
         Write-Log "Cleaned up port files" "Gray"
@@ -173,3 +173,4 @@ if ($Status) {
     Install-Services
     Get-ServiceStatus
 }
+

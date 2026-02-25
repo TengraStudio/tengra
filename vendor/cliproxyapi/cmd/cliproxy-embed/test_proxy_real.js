@@ -2,7 +2,10 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const binary = path.join(__dirname, 'cliproxy-embed.exe');
-const config = 'C:\\Users\\agnes\\AppData\\Roaming\\Tandem\\data\\config\\proxy-config.yaml';
+
+// Dynamically determine the config path based on OS
+const appDataPath = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library', 'Application Support') : path.join(process.env.HOME, '.config'));
+const config = path.join(appDataPath, 'Tengra', 'data', 'config', 'proxy-config.yaml');
 
 console.log('Spawning:', binary, '-config', config);
 

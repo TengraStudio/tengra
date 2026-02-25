@@ -73,6 +73,27 @@ interface MarketplacePackageManifest {
     license?: string;
 }
 
+interface TengraMarketplaceResponseItem {
+    id?: string;
+    name?: string;
+    description?: string;
+    publisher?: string;
+    version?: string;
+    categories?: string[];
+    tags?: string[];
+    repository?: string;
+    npmPackage?: string;
+    command?: string;
+    license?: string;
+    downloads?: number;
+    rating?: number;
+    isOfficial?: boolean;
+    extensionType?: McpMarketplaceServer['extensionType'];
+    capabilities?: string[];
+    dependencies?: string[];
+    conflictsWith?: string[];
+}
+
 function resolveAuthorName(author: MarketplacePackageManifest['author']): string | undefined {
     if (!author) {
         return undefined;
@@ -95,6 +116,8 @@ export class McpMarketplaceService extends BaseService {
     });
     private readonly CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
     private readonly CACHE_KEY_ALL = 'servers:all';
+    private readonly TENGRA_MARKETPLACE_API = 'https://api.tengra.studio/marketplace';
+    private hasLoadedRemoteCatalog = false;
     private readonly fetchTelemetry: MarketplaceFetchTelemetry = {
         totalRequests: 0,
         totalRetries: 0,
@@ -402,6 +425,60 @@ export class McpMarketplaceService extends BaseService {
         await this.listServers();
     }
 
+    private normalizeApiItem(item: TengraMarketplaceResponseItem): McpMarketplaceServer | null {
+        const sourceId = item.id?.trim() || item.name?.trim();
+        if (!sourceId) {
+            return null;
+        }
+        const id = sourceId.toLowerCase().replace(/\s+/g, '-');
+        return this.normalizeExtensionType({
+            id,
+            name: item.name?.trim() || sourceId,
+            description: item.description?.trim() || `Marketplace extension ${sourceId}`,
+            publisher: item.publisher?.trim() || 'Tengra Marketplace',
+            version: item.version,
+            categories: item.categories,
+            tags: item.tags,
+            repository: item.repository,
+            npmPackage: item.npmPackage,
+            command: item.command,
+            license: item.license,
+            downloads: item.downloads,
+            rating: item.rating,
+            isOfficial: item.isOfficial ?? false,
+            extensionType: item.extensionType,
+            capabilities: item.capabilities,
+            dependencies: item.dependencies,
+            conflictsWith: item.conflictsWith,
+            settingsVersion: 1,
+            updatePolicy: { channel: 'stable', autoUpdate: true },
+            storage: { quotaMb: 256 }
+        });
+    }
+
+    private normalizeApiPayload(payload: unknown): McpMarketplaceServer[] {
+        const data = payload as
+            | TengraMarketplaceResponseItem[]
+            | {
+                items?: TengraMarketplaceResponseItem[];
+                servers?: TengraMarketplaceResponseItem[];
+                extensions?: TengraMarketplaceResponseItem[];
+                themes?: TengraMarketplaceResponseItem[];
+            };
+        const list = Array.isArray(data)
+            ? data
+            : [
+                ...(Array.isArray(data.items) ? data.items : []),
+                ...(Array.isArray(data.servers) ? data.servers : []),
+                ...(Array.isArray(data.extensions) ? data.extensions : []),
+                ...(Array.isArray(data.themes) ? data.themes : [])
+            ];
+        const mapped = list
+            .map(item => this.normalizeApiItem(item))
+            .filter((item): item is McpMarketplaceServer => item !== null);
+        return Array.from(new Map(mapped.map(item => [item.id, item])).values());
+    }
+
     private isTransientMarketplaceError(error: unknown): boolean {
         if (!axios.isAxiosError(error)) {
             return false;
@@ -440,8 +517,36 @@ export class McpMarketplaceService extends BaseService {
      */
     async listServers(): Promise<McpMarketplaceServer[]> {
         const cached = this.cache.get(this.CACHE_KEY_ALL);
-        if (cached !== undefined && cached.length > 0) {
+        if (cached !== undefined && cached.length > 0 && this.hasLoadedRemoteCatalog) {
             return cached;
+        }
+
+        try {
+            const apiPayload = await this.getWithRetry<unknown>(
+                this.TENGRA_MARKETPLACE_API,
+                {
+                    timeout: 10000,
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'Tengra-MCP-Marketplace'
+                    }
+                }
+            );
+            const apiServers = this.normalizeApiPayload(apiPayload);
+            if (apiServers.length > 0) {
+                this.cache.set(this.CACHE_KEY_ALL, apiServers, { warm: this.CACHE_TTL_MS });
+                this.hasLoadedRemoteCatalog = true;
+                this.logInfo(`Loaded ${apiServers.length} servers from Tengra marketplace API`);
+                return apiServers;
+            }
+        } catch (error) {
+            this.logWarn('Failed to fetch Tengra marketplace API, trying GitHub source');
+            this.fetchTelemetry.lastFailureAt = Date.now();
+            this.fetchTelemetry.transientFailures += 1;
+            this.logDebug(
+                'Tengra marketplace API error details',
+                error instanceof Error ? error : undefined
+            );
         }
 
         try {
@@ -531,6 +636,7 @@ export class McpMarketplaceService extends BaseService {
                 this.logInfo(
                     `Loaded ${servers.length} servers from GitHub (cache hitRate=${(this.cache.stats().hitRate * 100).toFixed(1)}%, retries=${this.fetchTelemetry.totalRetries})`
                 );
+                this.hasLoadedRemoteCatalog = true;
                 return servers.map(server => this.normalizeExtensionType(server));
             }
         } catch (error) {
@@ -543,6 +649,7 @@ export class McpMarketplaceService extends BaseService {
         const fallbackServers = this.FALLBACK_SERVERS.map(server => this.normalizeExtensionType(server));
         this.cache.set(this.CACHE_KEY_ALL, fallbackServers, { warm: this.CACHE_TTL_MS });
         this.logInfo(`Using fallback servers: ${this.FALLBACK_SERVERS.length}`);
+        this.hasLoadedRemoteCatalog = true;
         return fallbackServers;
     }
 
@@ -697,6 +804,7 @@ export class McpMarketplaceService extends BaseService {
      */
     async refreshCache(): Promise<void> {
         this.cache.clear();
+        this.hasLoadedRemoteCatalog = false;
         await this.listServers();
     }
 

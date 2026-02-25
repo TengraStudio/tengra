@@ -826,7 +826,7 @@ func (h *Handler) saveTokenRecord(ctx context.Context, record *coreauth.Auth) (s
 		return store.Save(ctx, record)
 	}
 
-	// Legacy: Direct communication with Tandem Electron via stdout for file-based stores
+	// Legacy: Direct communication with Tengra Electron via stdout for file-based stores
 	if record.Metadata != nil {
 		update := make(map[string]any)
 		for k, v := range record.Metadata {
@@ -837,7 +837,7 @@ func (h *Handler) saveTokenRecord(ctx context.Context, record *coreauth.Auth) (s
 			update["label"] = record.Label
 		}
 		if jsonBytes, err := json.Marshal(update); err == nil {
-			fmt.Printf("__TANDEM_AUTH_UPDATE__:%s\n", string(jsonBytes))
+			fmt.Printf("__TENGRA_AUTH_UPDATE__:%s\n", string(jsonBytes))
 		}
 	}
 
@@ -1490,7 +1490,7 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 		tokenStorage := openaiAuth.CreateTokenStorage(bundle)
 
 		// Calculate expiration timestamp for database storage
-		expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Unix() * 1000
+		expiresAt := time.Now().Add(time.Duration(tokenResp.ExpiresIn)*time.Second).Unix() * 1000
 
 		record := &coreauth.Auth{
 			ID:       fmt.Sprintf("codex-%s", tokenStorage.Email),

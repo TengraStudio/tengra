@@ -1758,7 +1758,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tandem-db-service"
+name = "tengra-db-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1780,7 +1780,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tandem-memory-service"
+name = "tengra-memory-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1796,7 +1796,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tandem-model-service"
+name = "tengra-model-service"
 version = "0.1.0"
 dependencies = [
  "axum",
@@ -1812,7 +1812,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tandem-quota-service"
+name = "tengra-quota-service"
 version = "0.1.0"
 dependencies = [
  "axum",
@@ -1826,7 +1826,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tandem-token-service"
+name = "tengra-token-service"
 version = "0.1.0"
 dependencies = [
  "axum",

@@ -47,7 +47,7 @@ param(
 
 # Configuration
 $RepoOwner = "TengraStudio"
-$RepoName = "tandem"
+$RepoName = "tengra"
 $GitHubToken = $env:GH_TOKEN
 if (-not $GitHubToken) {
     $GitHubToken = $env:GITHUB_TOKEN
@@ -190,3 +190,4 @@ catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
+

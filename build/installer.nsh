@@ -1,9 +1,9 @@
-# Tandem Service Installer NSIS Include Script
+# Tengra Service Installer NSIS Include Script
 # This script handles service registration during installation and cleanup during uninstallation
 
 !macro customInstall
   # Register user-level services (no admin required)
-  DetailPrint "Registering Tandem services..."
+  DetailPrint "Registering Tengra services..."
 
   # Create a temporary batch file to register services at startup
   FileOpen $0 "$INSTDIR\register-services.bat" w
@@ -23,23 +23,24 @@
 
 !macro customUnInstall
   # Stop and unregister services
-  DetailPrint "Stopping Tandem services..."
+  DetailPrint "Stopping Tengra services..."
 
   # Stop any running service processes
-  nsExec::ExecToLog 'taskkill /f /im tandem-db-service.exe'
-  nsExec::ExecToLog 'taskkill /f /im tandem-token-service.exe'
-  nsExec::ExecToLog 'taskkill /f /im tandem-model-service.exe'
-  nsExec::ExecToLog 'taskkill /f /im tandem-quota-service.exe'
-  nsExec::ExecToLog 'taskkill /f /im tandem-memory-service.exe'
+  nsExec::ExecToLog 'taskkill /f /im tengra-db-service.exe'
+  nsExec::ExecToLog 'taskkill /f /im tengra-token-service.exe'
+  nsExec::ExecToLog 'taskkill /f /im tengra-model-service.exe'
+  nsExec::ExecToLog 'taskkill /f /im tengra-quota-service.exe'
+  nsExec::ExecToLog 'taskkill /f /im tengra-memory-service.exe'
 
   # Remove registry entries for startup services
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TandemTokenService"
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TandemModelService"
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TandemQuotaService"
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TandemMemoryService"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TengraTokenService"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TengraModelService"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TengraQuotaService"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "TengraMemoryService"
 
   # Clean up service port files
-  RMDir /r "$LOCALAPPDATA\Tandem\services"
+  RMDir /r "$LOCALAPPDATA\Tengra\services"
 
   DetailPrint "Service cleanup complete."
 !macroend
+
