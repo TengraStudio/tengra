@@ -1,4 +1,4 @@
-# Tandem Theme System
+# Tengra Theme System
 
 VSCode-compatible theme system for marketplace extensibility.
 
@@ -118,8 +118,8 @@ document.documentElement.setAttribute('data-theme', 'my-theme');
 
 ## Built-in Themes
 
-- **Tandem Black** (`black`) - Pure black with electric cyan
-- **Tandem White** (`white`) - Clean white with vibrant purple
+- **Tengra Black** (`black`) - Pure black with electric cyan
+- **Tengra White** (`white`) - Clean white with vibrant purple
 
 ## Marketplace Integration (Future)
 
@@ -225,4 +225,5 @@ If you have old themes, convert to manifest:
 
 ---
 
-Made with 💜 by Tandem Team
+Made with 💜 by Tengra Team
+

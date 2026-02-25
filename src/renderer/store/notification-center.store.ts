@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { Toast } from '@/types';
 
-const NOTIFICATION_CENTER_STORAGE_KEY = 'tandem.notification-center.v1';
+const NOTIFICATION_CENTER_STORAGE_KEY = 'tengra.notification-center.v1';
 const NOTIFICATION_CENTER_VERSION = 1;
 const DEFAULT_NOTIFICATION_DURATION_MS = 5000;
 const MAX_ACTIVE_NOTIFICATIONS = 8;
@@ -799,3 +799,4 @@ export function __resetNotificationCenterForTests(): void {
     }
     emit();
 }
+

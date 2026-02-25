@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Tandem employs a multi-layered testing strategy to ensure stability across the main process, renderer process, and external microservices.
+Tengra employs a multi-layered testing strategy to ensure stability across the main process, renderer process, and external microservices.
 
 ## Unit Testing
 
@@ -45,3 +45,4 @@ All tests are executed on every push to the `main` or `develop` branches.
 1. **Avoid Flakiness**: Use proper async/await and wait for specific DOM elements or event signals rather than using arbitrary timeouts.
 2. **Deterministic Data**: Use factories or structured mocks for accounts and tokens to ensure tests are reproducible.
 3. **Clean Up**: Ensure test files and database entries are removed after test execution to avoid side effects on subsequent runs.
+

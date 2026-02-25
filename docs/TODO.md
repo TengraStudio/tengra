@@ -1,5 +1,5 @@
 
-# Tandem Project - Comprehensive TODO List
+# Tengra Project - Comprehensive TODO List
 
 > Last updated: 2026-02-20
 > **Total Tasks: 1020+** | **Status: In Development**
@@ -53,7 +53,7 @@ Deadline note: This block is the must-ship scope for **March 1, 2026**.
   - ( ) Persist full execution state on important transitions (planning, approval, step start/end, reassignment).
   - ( ) On app relaunch, restore active tasks and continue from last consistent checkpoint.
   - ( ) Validate rollback/resume path with integration tests.
-- ( ) **MARCH1-RESUME-002**: Continue execution after quota exhaustion.
+- (x) **MARCH1-RESUME-002**: Continue execution after quota exhaustion.
   - (x) Detect quota exhaustion as a first-class interrupt reason.
   - (x) Auto-switch to next eligible account/model and continue step/task (auto-resume attempt after switch).
   - (x) Surface user notification baseline: emit `project:quota-interrupt` event to renderer on forced switch.
@@ -64,7 +64,7 @@ Deadline note: This block is the must-ship scope for **March 1, 2026**.
   - (x) Continue from same stage checkpoint (no full-plan restart).
   - (x) If no fallback candidate exists, mark task as `blocked_by_quota` and require user action.
   - (x) Persist interrupt + switch decisions to timeline/audit logs.
-  - ( ) Add integration test: quota exhaustion -> checkpoint -> auto switch -> same-stage continuation.
+  - (x) Add integration test: quota exhaustion -> checkpoint -> auto switch -> same-stage continuation.
 - ( ) **MARCH1-QUALITY-001**: Stabilize project-agent operational gaps blocking March 1 launch.
   - (x) Replace stubbed `saveSnapshot` behavior with real checkpoint persistence return values.
   - (x) Replace stubbed telemetry/events endpoints with backed data for task diagnostics.
@@ -394,12 +394,12 @@ Output strict JSON with resume steps.
 Selected small/contained tasks that are realistic to ship quickly:
 
 ### Pending Quick Wins
-  - ( ) `src/main/ipc/mcp-marketplace.ts` (`registerMcpMarketplaceHandlers`)
-  - ( ) `src/renderer/features/projects/components/ProjectWorkspace.tsx`
+  - [x] `src/main/ipc/mcp-marketplace.ts` (`registerMcpMarketplaceHandlers`)
+  - [/] `src/renderer/features/projects/components/ProjectWorkspace.tsx`
   - ( ) `src/renderer/features/settings/components/ImageSettingsTab.tsx`
   - ( ) Applied targeted lint override to unblock quality gate; follow-up refactor remains.
-- ( ) **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
-  - ( ) `src/renderer/features/extensions/hooks/useExtensions.ts`
+- [/] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
+  - [x] `src/renderer/features/extensions/hooks/useExtensions.ts`
   - ( ) `src/renderer/features/projects/hooks/useAgentHandlers.ts`
   - ( ) `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
   - ( ) `src/renderer/features/projects/utils/workspace-mount-validation.ts`
@@ -1067,5 +1067,6 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0498**: Add full i18n key coverage for user-facing strings surfaced by DatabaseService.
 - ( ) **BACKLOG-0499**: Write an operational runbook and troubleshooting guide for DatabaseService.
 - ( ) **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
+
 
 

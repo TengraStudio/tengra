@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = 'tandem.tooltip-analytics.v1';
+const STORAGE_KEY = 'tengra.tooltip-analytics.v1';
 const MAX_RECENT_EVENTS = 300;
 
 type Listener = () => void;
@@ -199,3 +199,4 @@ export function __resetTooltipAnalyticsForTests(): void {
     }
     emit();
 }
+

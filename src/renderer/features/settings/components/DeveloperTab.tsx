@@ -39,7 +39,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div><div className="text-sm font-bold text-foreground">{t('developer.exportSettings')}</div><div className="text-xs text-muted-foreground">{t('developer.exportSettingsDesc')}</div></div>
-                        <button onClick={() => { if (!settings) { return; } const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Tandem-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">{t('developer.exportSettings')}</button>
+                        <button onClick={() => { if (!settings) { return; } const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `Tengra-settings-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); setStatusMessage(t('developer.settingsExported')); setTimeout(() => setStatusMessage(''), 3000); }} className="px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20">{t('developer.exportSettings')}</button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                         <div>
@@ -60,7 +60,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = `Tandem-ui-state-${new Date().toISOString().split('T')[0]}.json`;
+                                a.download = `Tengra-ui-state-${new Date().toISOString().split('T')[0]}.json`;
                                 a.click();
                                 URL.revokeObjectURL(url);
                                 setStatusMessage('UI state exported');
@@ -94,8 +94,8 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
                             </button>
                             <button
                                 onClick={() => {
-                                    const current = localStorage.getItem('tandem.motion.force-reduced') === 'true';
-                                    localStorage.setItem('tandem.motion.force-reduced', String(!current));
+                                    const current = localStorage.getItem('tengra.motion.force-reduced') === 'true';
+                                    localStorage.setItem('tengra.motion.force-reduced', String(!current));
                                     setStatusMessage(!current ? 'Forced reduced motion enabled' : 'Forced reduced motion disabled');
                                     setTimeout(() => setStatusMessage(''), 3000);
                                 }}
@@ -119,5 +119,6 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ settings, setStatusM
         </div>
     );
 };
+
 
 

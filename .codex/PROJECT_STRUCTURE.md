@@ -1,11 +1,11 @@
 # Project Structure
 
-Tandem follows a strict organizational pattern to manage its multi-process architecture. This ensures a clear separation of concerns and makes the codebase easier to navigate for developers.
+Tengra follows a strict organizational pattern to manage its multi-process architecture. This ensures a clear separation of concerns and makes the codebase easier to navigate for developers.
 
 ## Repository Overview
 
 ```text
-tandem/
+tengra/
 ├── src/                # Primary source code for the application
 │   ├── main/           # Node.js code for the Electron Main process
 │   ├── renderer/       # React code for the Electron Renderer process
@@ -284,3 +284,4 @@ Never modify these paths:
 - `node_modules/` - Dependencies
 - `vendor/` - Third-party code
 - `.env`, `.env.local` - Environment files
+

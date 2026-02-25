@@ -243,10 +243,10 @@ export class ExtensionService extends BaseService {
 
         const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
         const packageJson = JSON.parse(manifestContent);
-        const manifest = packageJson.tandem as ExtensionManifest;
+        const manifest = packageJson.tengra as ExtensionManifest;
 
         if (!manifest) {
-            return { success: false, error: 'No tandem configuration found in package.json' };
+            return { success: false, error: 'No tengra configuration found in package.json' };
         }
 
         const validation = validateManifest(manifest);
@@ -500,3 +500,4 @@ export function getExtensionService(): ExtensionService {
     }
     return extensionServiceInstance;
 }
+

@@ -415,7 +415,7 @@
   },
   "2026-02-10-debugging-codex-token-refresh": {
     "title": "Codex トークンのリフレッシュのデバッグ",
-    "summary": "Codex (OpenAI) トークンの再利用エラーを引き起こした、`tandem-token-service` (Node/Rust) と埋め込み Go Proxy の間の競合状態を解決しました。",
+    "summary": "Codex (OpenAI) トークンの再利用エラーを引き起こした、`tengra-token-service` (Node/Rust) と埋め込み Go Proxy の間の競合状態を解決しました。",
     "items": [
       "- [x] **競合状態の修正**: `AuthAPIService` を変更して、`codex` プロバイダーの Go Proxy から `refresh_token` を非表示にし、`TokenService` のみが更新を管理するようにしました (BUG-002)。",
       "- [x] **検証**: lint チェックによる検証済みの修正。"
@@ -790,7 +790,7 @@
       "- `src/renderer/features/chat/hooks/useChatGenerator.ts`",
       "- `src/main/services/proxy/proxy.service.ts`",
       "- `src/renderer/features/models/components/ModelSelectorModal.tsx`",
-      "Tandem の進化を追跡します。",
+      "Tengra の進化を追跡します。",
       "## 2026-02-04: 🤖 バッチ 6: マルチエージェント オーケストレーション v2",
       "**ステータス**: ✅ 完了",
       "**概要**: 洗練されたマルチエージェント オーケストレーション システムと永続的なエージェント プロファイルを実装しました。このアップデートにより、専門のエージェント (プランナー、ワーカー、レビュー担当者) 間のワークフローの調整が可能になり、エージェントのパーソナリティとシステム プロンプトがセッション間で保持されるようになります。",
@@ -1375,7 +1375,7 @@
       "**概要**: `DatabaseClientService` と Rust バックエンドの統合の完全な検証と強化。コード インテリジェンスおよびコンテキスト取得システムをリファクタリングして、一貫してプロジェクト パスを使用し、異なるワークスペース間で信頼性の高い RAG および検索機能を確保しました。",
       "### 主な成果",
       "1. **サービスの互換性とブリッジング**:",
-      "- TypeScript `DatabaseService` と Rust `tandem-db-service` の間の契約を強化しました。",
+      "- TypeScript `DatabaseService` と Rust `tengra-db-service` の間の契約を強化しました。",
       "- UUID ベースのプロジェクト参照をパス インデックス付きインテリジェンス データにブリッジするために、`DatabaseService` にパス解決ロジックを実装しました。",
       "- すべてのコアデータベース操作 (チャット、メッセージ、プロジェクト、ナレッジ) を Rust HTTP API に対して検証しました。",
       "2. **コード インテリジェンスのリファクタリング**:",
@@ -1451,7 +1451,7 @@
       "**ステータス**: ✅ 完了",
       "**概要**: 組み込み PGlite データベースを Rust ベースのホストを使用するスタンドアロン Windows サービスにリファクタリングし、アーキテクチャ ロードマップ タスク 4.3 を完了しました。データベースは独立したサービスとして実行されるようになり、信頼性が向上し、アプリの再起動後もデータベースを維持できるようになりました。",
       "### 主な成果",
-      "1. **Rust データベース サービス (`tandem-db-service`)**:",
+      "1. **Rust データベース サービス (`tengra-db-service`)**:",
       "- `src/services/db-service/` の新しい Rust サービス",
       "- 同時実行のための WAL モードを備えた SQLite データベース",
       "- ビンコードでシリアル化された埋め込みを使用したベクトル検索",
@@ -1460,7 +1460,7 @@
       "2. **Windows サービスの統合**:",
       "- `windows-service` クレートによるネイティブ Windows サービスのサポート",
       "- Windowsで自動起動、失敗時に自動再起動",
-      "- ポート ファイルによるサービス検出 (`%APPDATA%/Tandem/services/db-service.port`)",
+      "- ポート ファイルによるサービス検出 (`%APPDATA%/Tengra/services/db-service.port`)",
       "- `scripts/install-db-service.ps1` 経由でインストール/アンインストール",
       "3. **HTTP API**:",
       "- 動的ポート上の RESTful API",
@@ -1739,9 +1739,9 @@
       "## [2026-01-26]",
       "＃＃＃ 追加した",
       "- コアサービスに関する包括的な JSDoc ドキュメント:",
-      "- [SettingsService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)",
-      "- [SecurityService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)",
-      "- [ConfigService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)",
+      "- [SettingsService](file:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/settings.service.ts)",
+      "- [SecurityService](file:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/auth/security.service.ts)",
+      "- [ConfigService](file:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/config.service.ts)",
       "- クォータ関連の操作に対する `ipc-batch.util.ts` の型安全性が強化されました。",
       "＃＃＃ 修理済み",
       "- `src/main/ipc/chat.ts` の `sanitizeStreamInputs` 呼び出しにおける重大な引数の不一致。",
@@ -1968,7 +1968,7 @@
       "## 2026-01-25: 🤖 タンデム プロジェクト エージェント - 自律開発者",
       "**ステータス**: ✅ 完了",
       "**まとめ**：",
-      "**Tandem Project Agent** を実装しました。これは、複雑な複数ステップのコーディング タスクを IDE 内で直接実行できる完全自律型 AI 開発者です。エージェントは「思考 -> 計画 -> 行動 -> 観察」ループで動作し、セッション全体でコンテキストを維持し、API 制限に対する復元力が組み込まれています。",
+      "**Tengra Project Agent** を実装しました。これは、複雑な複数ステップのコーディング タスクを IDE 内で直接実行できる完全自律型 AI 開発者です。エージェントは「思考 -> 計画 -> 行動 -> 観察」ループで動作し、セッション全体でコンテキストを維持し、API 制限に対する復元力が組み込まれています。",
       "**主な成果**:",
       "- **自律エージェント サービス**:",
       "- 堅牢な実行ループを備えた `ProjectAgentService` を作成しました。",
@@ -1980,7 +1980,7 @@
       "- 自律セッションを管理するための開始/停止/一時停止コントロール。",
       "- **システム統合**:",
       "- 特殊な「シニア フルスタック エンジニア」システム プロンプト (`project-agent.prompts.ts`) を挿入しました。",
-      "- Tandem の Tool Executor との完全な統合 (コマンドの実行、ファイルの編集など)。",
+      "- Tengra の Tool Executor との完全な統合 (コマンドの実行、ファイルの編集など)。",
       "- **タイプセーフティ**:",
       "- ビルド時の型の競合を解決するために明示的なキャストを使用して強化された IPC バッチ ユーティリティ (`ipc-batch.util.ts`)。",
       "**技術的な詳細**:",
@@ -2073,7 +2073,7 @@
       "- CI/CD パイプライン: 9 つの品質ゲートと以前の 5 つのステップ",
       "- テストパフォーマンス: レンダラースイートの実行は約 7.8 秒",
       "- セキュリティ: すべてのファイルの自動シークレット スキャン",
-      "**結果**: Tandem は、テスト、セキュリティ、コード品質に関する企業基準を満たしています。 🚀",
+      "**結果**: Tengra は、テスト、セキュリティ、コード品質に関する企業基準を満たしています。 🚀",
       "## 最近の更新"
     ]
   },
@@ -2101,7 +2101,7 @@
     "items": [
       "**ステータス**: ✅ 完全に完了 - すべてのフェーズが成功しました",
       "**エンタープライズ グレードの成果の概要**:",
-      "Tandem は、劇的なパフォーマンスの向上、包括的なセキュリティ強化、強化されたアーキテクチャ、および完璧なタイプ セーフティを備えたエンタープライズ対応アプリケーションに完全に変換されました。このアプリケーションは、最適なリソース使用率でエンタープライズ ワークロード (10,000 以上のアイテム) を処理できるようになりました。",
+      "Tengra は、劇的なパフォーマンスの向上、包括的なセキュリティ強化、強化されたアーキテクチャ、および完璧なタイプ セーフティを備えたエンタープライズ対応アプリケーションに完全に変換されました。このアプリケーションは、最適なリソース使用率でエンタープライズ ワークロード (10,000 以上のアイテム) を処理できるようになりました。",
       "**🚀 フェーズ 1 および 2: エンタープライズ パフォーマンスの最適化**",
       "**パフォーマンスへの影響**:",
       "- **起動時間**: アプリケーションの起動が最大 50% 高速化",
@@ -2169,7 +2169,7 @@
       "- `src/renderer/features/settings/hooks/useSettingsStats.ts` - バッチ読み込みの最適化",
       "- `src/renderer/features/projects/hooks/useGitData.ts` - Git バッチ読み込みの最適化",
       "- `src/renderer/features/chat/hooks/useChatCRUD.ts` - データベースのバッチ処理の最適化",
-      "**結果**: Tandem は **エンタープライズ グレードのパフォーマンス**になり、何千ものチャット、プロジェクト、メッセージを含む重い実稼働ワークロードに対応できるようになりました。",
+      "**結果**: Tengra は **エンタープライズ グレードのパフォーマンス**になり、何千ものチャット、プロジェクト、メッセージを含む重い実稼働ワークロードに対応できるようになりました。",
       "**🔒 フェーズ 3: セキュリティの強化 - 包括的な JSON の安全性**",
       "**ステータス**: ✅ 完了",
       "**セキュリティの実績**:",
@@ -2800,7 +2800,7 @@
       "**主要なアーキテクチャの変更**:",
       "- **双方向の永続性** ✅:",
       "- 外部サービスからトークンの更新を受信するために、`AuthAPIService.ts` に `POST /api/auth/accounts/:id` を実装しました。",
-      "- Go プロキシの `HTTPAuthStore.Save` を更新し、更新されたトークンを更新直後に Tandem のデータベースにプッシュ バックするようにしました。",
+      "- Go プロキシの `HTTPAuthStore.Save` を更新し、更新されたトークンを更新直後に Tengra のデータベースにプッシュ バックするようにしました。",
       "- これにより、UI の操作を必要とせずに、バックグラウンドで更新されたトークン (Claude、Antigravity、Codex) が確実に永続化されます。",
       "- **廃止されたファイルベースの同期** ✅:",
       "- 機密トークンをディスクに書き込む `syncAuthFiles()` ロジックを完全に削除しました。",
@@ -2975,7 +2975,7 @@
     "items": [
       "- **Microservices Refactoring**:",
       "    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.",
-      "    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\\Tandem\\services\\{service}.port` for discovery.",
+      "    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\\Tengra\\services\\{service}.port` for discovery.",
       "    - Services can run **completely independently** of the main Electron application.",
       "- **ProcessManagerService**:",
       "    - Updated to use **HTTP requests** via axios instead of stdin pipes.",
@@ -2983,11 +2983,11 @@
       "    - Services are now started with `detached: true` to allow independent lifecycle.",
       "- **Windows Startup Integration**:",
       "    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.",
-      "    - Services start automatically at Windows login, even before Tandem app is launched.",
+      "    - Services start automatically at Windows login, even before Tengra app is launched.",
       "    - Supports `-Status`, `-Uninstall` flags for management.",
       "- **Default Settings**:",
       "    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.",
-      "    - Tandem now minimizes to **System Tray** by default instead of closing."
+      "    - Tengra now minimizes to **System Tray** by default instead of closing."
     ]
   },
   "2026-01-16-phase-19-technical-debt-security-current": {
@@ -3497,7 +3497,7 @@
     "summary": "Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.",
     "items": [
       "- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.",
-      "- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
+      "- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
       "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
       "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
       "- **Verification**: Verified clean build, lint, and type-check across both components."
@@ -3524,9 +3524,9 @@
   },
   "2026-02-17-copilot-token-refactor": {
     "title": "Copilot Token Refresh Refactor",
-    "summary": "Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.",
+    "summary": "Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.",
     "items": [
-      "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.",
+      "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.",
       "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
       "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
       "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
@@ -3772,6 +3772,16 @@
       "- Added English and Turkish i18n coverage for new service health message keys",
       "- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
       "- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md"
+    ]
+  },
+  "2026-02-25-image-settings-refactoring": {
+    "title": "Image Settings Tab Refactoring and Test Suite Reliability",
+    "summary": "Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.",
+    "items": [
+      "- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.",
+      "- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.",
+      "- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.",
+      "- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification."
     ]
   }
 }

@@ -726,7 +726,7 @@ export class LocalImageService extends BaseService {
             '7': {
                 class_type: 'SaveImage',
                 inputs: {
-                    filename_prefix: 'tandem',
+                    filename_prefix: 'tengra',
                     images: ['6', 0]
                 }
             }
@@ -1688,3 +1688,4 @@ export class LocalImageService extends BaseService {
         return filePath;
     }
 }
+

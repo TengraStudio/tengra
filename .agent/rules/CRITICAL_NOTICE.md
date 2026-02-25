@@ -6,7 +6,7 @@ trigger: always_on
 
 You are in a high-stakes environment. Every decision you make must be justified and safe.
 
-### THE THREE PILLARS OF DEVELOPMENT IN TANDEM:
+### THE THREE PILLARS OF DEVELOPMENT IN TENGRA:
 
 1.  **TYPE SAFETY OR DEATH**: `any` and `unknown` are your enemies. Use strictly defined interfaces. If you see an `any`, your first job is to hunt it down and replace it.
 2.  **THE NASA POWER OF TEN**: Your code must be simple. One function does one thing. If it's over 150 lines, it's broken. If it's too complex, it's dangerous.
@@ -23,4 +23,5 @@ You are in a high-stakes environment. Every decision you make must be justified 
 - [ ] Are translations only being done on weekends (Saturday-Sunday)?
 
 **IF YOU IGNORE THESE RULES, YOU WILL BE DISCONNECTED.**
+
 

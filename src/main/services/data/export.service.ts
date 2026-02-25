@@ -151,7 +151,7 @@ export class ExportService {
             this.addMarkdownMessage(lines, msg, options);
         }
 
-        lines.push('---', `*Exported from Tandem on ${new Date().toLocaleString()}*`);
+        lines.push('---', `*Exported from Tengra on ${new Date().toLocaleString()}*`);
         return lines.join('\n');
     }
 
@@ -330,7 +330,7 @@ export class ExportService {
     ${options.includeMetadata ? this.generateHTMLMetadata(chat) : ''}
     ${messages}
     <div class="footer">
-        Exported from Tandem on ${new Date().toLocaleString()}
+        Exported from Tengra on ${new Date().toLocaleString()}
     </div>
 </body>
 </html>`;
@@ -448,7 +448,7 @@ export class ExportService {
 
         // Footer
         lines.push(`───────────────────────────────────────────────────────────────`);
-        lines.push(`Exported from Tandem on ${new Date().toLocaleString()}`);
+        lines.push(`Exported from Tengra on ${new Date().toLocaleString()}`);
 
         return lines.join('\n');
     }
@@ -521,3 +521,4 @@ export class ExportService {
 
 // Singleton instance
 export const exportService = new ExportService();
+

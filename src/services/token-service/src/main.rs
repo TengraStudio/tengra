@@ -521,7 +521,7 @@ fn save_state(path: &Path, tokens: &HashMap<String, MonitoredToken>) -> Result<(
 
 fn get_app_data_dir() -> Result<PathBuf, Box<dyn Error>> {
     if let Ok(appdata) = std::env::var("APPDATA") {
-        Ok(Path::new(&appdata).join("Tandem"))
+        Ok(Path::new(&appdata).join("Tengra"))
     } else {
         Err("APPDATA not found".into())
     }
@@ -556,3 +556,4 @@ fn setup_logging() {
         log(&format!("PANIC: {}", msg));
     }));
 }
+

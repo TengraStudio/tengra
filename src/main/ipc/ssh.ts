@@ -5,10 +5,10 @@ import { sshConnectionSchema, sshProfileSchema, validateIpc } from '@main/ipc/va
 import { appLogger } from '@main/logging/logger';
 import { SSHConnection, SSHService } from '@main/services/project/ssh.service';
 import { RateLimitService } from '@main/services/security/rate-limit.service';
+import { IPC_PERFORMANCE_BUDGETS,ipcMetricsStore } from '@main/utils/ipc-telemetry.util';
 import { IpcValue, JsonValue } from '@shared/types/common';
 import { AppErrorCode, getErrorMessage } from '@shared/utils/error.util';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
-import { ipcMetricsStore, IPC_PERFORMANCE_BUDGETS } from '@main/utils/ipc-telemetry.util';
 
 function sanitizeConnectionForRenderer(connection: SSHConnection): Omit<SSHConnection, 'password' | 'privateKey' | 'passphrase'> {
     const safeConnection = { ...connection };

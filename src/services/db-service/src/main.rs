@@ -1,7 +1,7 @@
-//! Tandem Database Service
+//! Tengra Database Service
 //!
 //! A Windows Service that hosts the SQLite database with vector search support
-//! for the Tandem AI assistant application.
+//! for the Tengra AI assistant application.
 
 // Hide console window on Windows release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -34,26 +34,26 @@ use windows_service::{
     service_dispatcher,
 };
 
-const SERVICE_NAME: &str = "TandemDatabaseService";
-const SERVICE_DISPLAY_NAME: &str = "Tandem Database Service";
+const SERVICE_NAME: &str = "TengraDatabaseService";
+const SERVICE_DISPLAY_NAME: &str = "Tengra Database Service";
 
 /// Get the database path
 fn get_db_path() -> PathBuf {
     if let Ok(appdata) = std::env::var("APPDATA") {
         PathBuf::from(appdata)
-            .join("Tandem")
+            .join("Tengra")
             .join("runtime")
             .join("db")
-            .join("Tandem.db")
+            .join("Tengra.db")
     } else {
-        PathBuf::from("Tandem.db")
+        PathBuf::from("Tengra.db")
     }
 }
 
 /// Get the services directory for port file
 fn get_services_dir() -> PathBuf {
     if let Ok(appdata) = std::env::var("APPDATA") {
-        PathBuf::from(appdata).join("Tandem").join("services")
+        PathBuf::from(appdata).join("Tengra").join("services")
     } else {
         PathBuf::from(".")
     }
@@ -80,11 +80,11 @@ async fn run_server(shutdown_rx: Option<oneshot::Receiver<()>>) -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("Tandem_db_service=info".parse().unwrap())
+                .add_directive("Tengra_db_service=info".parse().unwrap())
         )
         .init();
 
-    tracing::info!("Starting Tandem Database Service v{}", env!("CARGO_PKG_VERSION"));
+    tracing::info!("Starting Tengra Database Service v{}", env!("CARGO_PKG_VERSION"));
 
     // Initialize database
     let db_path = get_db_path();
@@ -240,9 +240,9 @@ fn main() -> Result<()> {
                 return Ok(());
             }
             "--help" | "-h" => {
-                println!("Tandem Database Service v{}", env!("CARGO_PKG_VERSION"));
+                println!("Tengra Database Service v{}", env!("CARGO_PKG_VERSION"));
                 println!();
-                println!("Usage: Tandem-db-service [OPTIONS]");
+                println!("Usage: Tengra-db-service [OPTIONS]");
                 println!();
                 println!("Options:");
                 println!("  --console, -c     Run in console mode (foreground)");
@@ -309,7 +309,7 @@ fn install_service() -> Result<()> {
         .args([
             "description",
             SERVICE_NAME,
-            "Manages the Tandem application database for AI assistant features",
+            "Manages the Tengra application database for AI assistant features",
         ])
         .output();
 
@@ -348,4 +348,5 @@ fn uninstall_service() -> Result<()> {
 
     Ok(())
 }
+
 

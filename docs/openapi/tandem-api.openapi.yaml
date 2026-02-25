@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Tandem Local API
+  title: Tengra Local API
   version: 1.0.0
   description: Local REST API used by browser extension and external automation clients.
 servers:
@@ -289,3 +289,4 @@ components:
           type: boolean
         description:
           type: string
+

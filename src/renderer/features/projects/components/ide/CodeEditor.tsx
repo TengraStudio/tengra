@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import { sanitizeCodeEditorLanguage } from '@renderer/features/projects/components/ide/code-editor-validation';
 import {
     recordCodeEditorFailure,
@@ -7,6 +6,7 @@ import {
     recordCodeEditorSuccess,
     setCodeEditorUiState,
 } from '@renderer/store/code-editor-health.store';
+import { useEffect, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { appLogger } from '@/utils/renderer-logger';

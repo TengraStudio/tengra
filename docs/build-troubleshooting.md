@@ -23,7 +23,7 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 npm run build
 ```
 
-*(Note: `npm run dev` and `npm run electron:dev` in TANDEM already include this setting for Windows).*
+*(Note: `npm run dev` and `npm run electron:dev` in TENGRA already include this setting for Windows).*
 
 **2. GitHub Actions (CI)**
 To prevent random timeouts and JavaScript heap out of memory errors in GitHub Actions, configure `NODE_OPTIONS` for the build steps and set explicit job timeouts to fail fast.
@@ -43,3 +43,4 @@ jobs:
 
 **Why 6144 MB for GitHub Actions?**
 Standard GitHub-hosted Linux runners come with 7GB of RAM. Setting the limit to 8192MB (8GB) can cause the runner itself to run out of physical memory and kill the process abruptly. `6144` provides a stable buffer for Vite and TypeScript to complete their builds safely.
+

@@ -145,7 +145,7 @@ export class DatabaseClientService extends BaseService {
         this.logInfo('Starting db-service...');
         await this.processManager.startService({
             name: SERVICE_NAME,
-            executable: 'tandem-db-service',
+            executable: 'tengra-db-service',
             args: ['--console'], // Run in console mode, not as Windows Service
             persistent: true,
         });
@@ -202,7 +202,7 @@ export class DatabaseClientService extends BaseService {
      */
     private getPortFilePath(): string {
         const appData = app.getPath('appData');
-        return path.join(appData, 'tandem', 'services', `${SERVICE_NAME}.port`);
+        return path.join(appData, 'tengra', 'services', `${SERVICE_NAME}.port`);
     }
 
     /**
@@ -671,3 +671,4 @@ export class DatabaseClientService extends BaseService {
         // Note: We don't stop the service as it's persistent
     }
 }
+

@@ -114,7 +114,7 @@ export const tr = {
         "chart": "Grafik yükleniyor"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "V {{version}}"
     },
     "errors": {
@@ -316,7 +316,7 @@ export const tr = {
         },
         "browserClosure": {
             "title": "Tarayıcıyı Kapatmak Gerekli",
-            "description": "{{provider}} ile kimlik doğrulamak için Tandem korumalı çerezleri okumalı.",
+            "description": "{{provider}} ile kimlik doğrulamak için Tengra korumalı çerezleri okumalı.",
             "warningPrefix": "Dosya kilidini kaldırmak için",
             "warningEmphasis": "tarayıcınızı otomatik olarak kapatmamız",
             "warningSuffix": "gerekiyor.",
@@ -678,7 +678,7 @@ export const tr = {
         },
         "noIssues": "Projede önemli bir sorun bulunamadı. Tebrikler!",
         "noIssuesDesc": "Proje analizinde kritik sorun bulunmadı.",
-        "issuesDescription": "Tandem, projenizi potansiyel hatalar, uyarılar ve kod kokuları için tarar.",
+        "issuesDescription": "Tengra, projenizi potansiyel hatalar, uyarılar ve kod kokuları için tarar.",
         "issueType": "TÜR",
         "issueMessage": "MESAJ",
         "issueLocation": "KONUM",
@@ -1036,13 +1036,13 @@ export const tr = {
         "systemDefault": "Sistem Varsayılanı",
         "test": "Sesi Test Et",
         "speed": "Konuşma Hızı",
-        "previewText": "Tandem ile geleceğe hoş geldiniz. Ben sizin yapay zeka asistanınızım.",
+        "previewText": "Tengra ile geleceğe hoş geldiniz. Ben sizin yapay zeka asistanınızım.",
         "microphone": "Mikrofon",
         "speaker": "Hoparlör / Kulaklık",
         "microphoneSelection": "Mikrofon Girişi",
         "speakerSelection": "Ses Çıkışı",
         "voiceCloning": "Ses Klonlama",
-        "voiceCloningDesc": "Kendi sesinizi Tandem ekosistemine entegre edin.",
+        "voiceCloningDesc": "Kendi sesinizi Tengra ekosistemine entegre edin.",
         "voiceCloningTitle": "Kendi Sesinizi Kullanın!",
         "voiceCloningTeaser": "1 dakika boyunca konuşun ve yapay zeka sizin sesinizi taklit etsin Bu özellik artık aktif!",
         "record": "Kaydı Başlat",
@@ -1325,7 +1325,7 @@ export const tr = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "Zeka ve zarafetin buluştuğu nokta."
     },
     "input": {
@@ -1388,7 +1388,7 @@ export const tr = {
         "creative": {
             "title": "Yaratıcı Yazım",
             "description": "Metin ve içerik üret.",
-            "prompt": "Tandem isimli bir AI asistanı için etkileyici bir tanıtım metni yazar mısın?"
+            "prompt": "Tengra isimli bir AI asistanı için etkileyici bir tanıtım metni yazar mısın?"
         },
         "debug": {
             "title": "Hata Ayıkla",
@@ -1410,7 +1410,7 @@ export const tr = {
         "user": "Kullanıcı",
         "assistant": "Asistan",
         "copyAsHtml": "HTML Olarak Kopyala",
-        "TandemDrawing": "Tandem Çiziyor...",
+        "TengraDrawing": "Tengra Çiziyor...",
         "quotaExceeded": "Kota Aşıldı",
         "quotaMessage": "Model kullanım kotasını aştınız. Lütfen daha sonra tekrar deneyin veya planınızı yükseltin.",
         "resetsAt": "Sıfırlanma:",
@@ -1421,7 +1421,7 @@ export const tr = {
         "speakAloud": "Sesli Oku",
         "convertToCode": "Koda Dönüştür",
         "approvePlan": "Planı Onayla",
-        "TandemThinking": "Tandem Düşünüyor",
+        "TengraThinking": "Tengra Düşünüyor",
         "showThought": "Düşünceyi Göster",
         "favorite": "Favori",
         "thinking": "Düşünüyor...",
@@ -1470,12 +1470,12 @@ export const tr = {
         "updates": "Güncellemeler",
         "privacy": "Gizlilik",
         "crashReporting": "Çökme Raporlaması",
-        "crashReportingDesc": "Tandem'i geliştirmemize yardımcı olmak için anonim çökme raporları gönderin.",
+        "crashReportingDesc": "Tengra'i geliştirmemize yardımcı olmak için anonim çökme raporları gönderin.",
         "startup": "Başlangıç",
         "startOnStartup": "Sistem başlangıcında çalıştır",
-        "startOnStartupDesc": "Bilgisayar açıldığında Tandem otomatik başlatılsın.",
+        "startOnStartupDesc": "Bilgisayar açıldığında Tengra otomatik başlatılsın.",
         "workAtBackground": "Arka planda çalıştır",
-        "workAtBackgroundDesc": "Pencere kapatılsa bile Tandem arka planda çalışsın.",
+        "workAtBackgroundDesc": "Pencere kapatılsa bile Tengra arka planda çalışsın.",
         "projectBasics": "Proje Temelleri",
         "projectBasicsDesc": "Temel proje ayarları",
         "appIntelligence": "Uygulama Zekası",
@@ -1495,7 +1495,7 @@ export const tr = {
         "fontDesc": "Uygulamanın yazı tipini ve boyutunu özelleştirin.",
         "fontFamily": "YAZI TİPİ AİLESİ",
         "fontSize": "YAZI BOYUTU",
-        "previewText": "Tandem AI ile geleceği şekillendirin.",
+        "previewText": "Tengra AI ile geleceği şekillendirin.",
         "accessibility": "Erişilebilirlik",
         "accessibilityDesc": "Görüntü ve görünürlük ayarları",
         "highContrast": "Yüksek Kontrast Modu",
@@ -1600,11 +1600,11 @@ export const tr = {
         "usageOverview": "Kullanıma Genel Bakış"
     },
     "about": {
-        "description": "Tandem, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.",
+        "description": "Tengra, yerel ve bulut tabanlı yapay zeka modellerini tek bir arayüzde birleştiren, geliştiriciler için tasarlanmış yeni nesil bir AI IDE asistanıdır.",
         "checkUpdates": "Güncellemeleri Kontrol Et",
         "privacyPolicy": "Gizlilik Politikası",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "Fabrika Ayarlarına Dön",
         "factoryResetDesc": "Tüm ayarları ve verileri silerek uygulamayı sıfırlar.",
         "updateCheckAlert": "Güncelleme kontrolü prodüksiyon sürümünde aktiftir.",
@@ -1675,7 +1675,7 @@ export const tr = {
     "tips": {
         "title": "Biliyor muydunuz?",
         "tip1": "CTRL+N kısayolunu kullanarak yeni bir sohbet oluşturabilirsiniz.",
-        "tip2": "Tandem, geliştirme için uzak SSH sunucularına bağlanmayı destekler.",
+        "tip2": "Tengra, geliştirme için uzak SSH sunucularına bağlanmayı destekler.",
         "tip3": "Dosyaları doğrudan sohbet penceresine sürükleyip bırakabilirsiniz.",
         "tip4": "Kodunuz hakkında çoklu ajan perspektifi almak için \"Konsey\" sekmesini kullanın.",
         "tip5": "Deneyiminizi Ayarlar > Görünüm menüsünden özelleştirebilirsiniz.",
@@ -1833,7 +1833,7 @@ export const tr = {
         "navigate": "Gezin",
         "select": "Seç",
         "close": "Kapat",
-        "engineLabel": "Tandem Komut Motoru",
+        "engineLabel": "Tengra Komut Motoru",
         "previewEmpty": "Detayları görmek için bir öğe seçin",
         "noResultsHint": "Sohbetler, modeller veya ayarlar içinde aramayı deneyin"
     },
@@ -1861,10 +1861,10 @@ export const tr = {
     "updateNotification": {
         "checkingTitle": "Güncellemeler kontrol ediliyor...",
         "availableTitle": "Güncelleme Mevcut: v{{version}}",
-        "availableContent": "Tandem’in yeni bir sürümü mevcut.",
+        "availableContent": "Tengra’in yeni bir sürümü mevcut.",
         "downloadingTitle": "Güncelleme indiriliyor...",
         "downloadedTitle": "Güncelleme Hazır",
-        "downloadedContent": "En son güncellemeyi uygulamak için Tandem’i yeniden başlatın.",
+        "downloadedContent": "En son güncellemeyi uygulamak için Tengra’i yeniden başlatın.",
         "errorTitle": "Güncelleme Başarısız",
         "uptodateTitle": "Güncelsiniz",
         "downloadAction": "İndir",
@@ -1901,7 +1901,7 @@ export const tr = {
         "logout": "Çıkış yap",
         "sessionKeyRequired": "Claude Oturum Anahtarı Gerekli",
         "completeConnection": "{{email}} için Bağlantıyı Tamamla",
-        "sessionKeyDescription": "Kota takibi ve doğrudan etkileşim için Tandem, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.",
+        "sessionKeyDescription": "Kota takibi ve doğrudan etkileşim için Tengra, Claude oturum anahtarınıza ihtiyaç duyar. Bu anahtar cihazınızda şifrelenmiş olarak saklanır.",
         "howToFindKey": "Oturum anahtarınızı nasıl bulursunuz",
         "sessionKeyInstructions": {
             "step1": "claude.ai adresini açın ve giriş yapın",
@@ -1926,7 +1926,7 @@ export const tr = {
     },
     "memory": {
         "title": "Bellek Denetçisi",
-        "subtitle": "Tandem'in bildiklerini ve hatırladıklarını görselleştirin ve yönetin.",
+        "subtitle": "Tengra'in bildiklerini ve hatırladıklarını görselleştirin ve yönetin.",
         "searchPlaceholder": "Bellekte ara...",
         "totalFacts": "Toplam Gerçek",
         "episodes": "Bölümler",
@@ -2329,16 +2329,16 @@ export const tr = {
         "stats": "İstatistikler"
     },
     "onboarding": {
-        "welcomeTitle": "Tandem'e Hoş Geldiniz",
-        "welcomeDescription": "Yapay zeka destekli kodlama arkadaşınız. Tandem, parmaklarınızın ucundaki birden fazla AI sağlayıcısıyla kod yazmanıza, hata ayıklamanıza ve anlamanıza yardımcı olur.",
+        "welcomeTitle": "Tengra'e Hoş Geldiniz",
+        "welcomeDescription": "Yapay zeka destekli kodlama arkadaşınız. Tengra, parmaklarınızın ucundaki birden fazla AI sağlayıcısıyla kod yazmanıza, hata ayıklamanıza ve anlamanıza yardımcı olur.",
         "multiModelTitle": "Çoklu Model Desteği",
-        "multiModelDescription": "OpenAI, Anthropic, Google, Ollama ve daha fazlasına bağlanın. Modeller arasında anında geçiş yapın veya Tandem'in göreviniz için en iyisini seçmesine izin verin.",
+        "multiModelDescription": "OpenAI, Anthropic, Google, Ollama ve daha fazlasına bağlanın. Modeller arasında anında geçiş yapın veya Tengra'in göreviniz için en iyisini seçmesine izin verin.",
         "workspaceTitle": "Çalışma Alanınız",
         "workspaceDescription": "Projeleri düzenleyin, konuşmaları yönetin ve kodlama geçmişinize erişin. Her şey bilgisayarınızda yerel ve güvenli kalır.",
         "privacyTitle": "Önce Gizlilik",
-        "privacyDescription": "Kodunuz sizin kalır. Tandem isteğe bağlı bulut özellikleriyle yerel olarak çalışır. Bilgisayarınızdan hangi verilerin çıkacağını tam olarak kontrol edersiniz.",
+        "privacyDescription": "Kodunuz sizin kalır. Tengra isteğe bağlı bulut özellikleriyle yerel olarak çalışır. Bilgisayarınızdan hangi verilerin çıkacağını tam olarak kontrol edersiniz.",
         "step1Title": "AI Asistanınızla Tanışın",
-        "step1Desc": "Tandem, daha hızlı kod yazmanıza yardımcı olmak için birden fazla AI modelini birleştirir. Doğal dille sorular sorun, kod üretin veya sorunları ayıklayın.",
+        "step1Desc": "Tengra, daha hızlı kod yazmanıza yardımcı olmak için birden fazla AI modelini birleştirir. Doğal dille sorular sorun, kod üretin veya sorunları ayıklayın.",
         "step2Title": "Komut Paleti",
         "step2Desc": "Komut paletine erişmek için Cmd+K (Windows'ta Ctrl+K) tuşlarına basın. Her yerden hızlıca gezinin, arayın ve eylemler gerçekleştirin.",
         "step3Title": "Çalışma Alanları ve Projeler",
@@ -2346,20 +2346,20 @@ export const tr = {
         "step4Title": "Yerleşik Güvenlik",
         "step4Desc": "API anahtarları yerel olarak şifrelenir. Tüm konuşmalar Ollama ile çevrimdışı kalabilir. Neyin paylaşılacağını ve neyin gizli kalacağını siz kontrol edersiniz.",
         "step5Title": "Sohbete Başlayın",
-        "step5Desc": "Aşağıya ilk mesajınızı yazın. Kodla ilgili yardım isteyin, bir kavramı açıklayın veya yeni bir şey üretin. Tandem siz hazır olduğunuzda hazır.",
+        "step5Desc": "Aşağıya ilk mesajınızı yazın. Kodla ilgili yardım isteyin, bir kavramı açıklayın veya yeni bir şey üretin. Tengra siz hazır olduğunuzda hazır.",
         "skip": "Atla",
         "next": "İleri",
         "back": "Geri",
         "finish": "Bitir",
         "continue": "Devam Et",
         "letsStart": "Başlayalım",
-        "welcome": "Tandem'e Hoş Geldiniz",
+        "welcome": "Tengra'e Hoş Geldiniz",
         "step1": "AI Sağlayıcılarını Bağlayın",
         "step2": "Çalışma Alanını Hazırlayın",
         "step3": "Kodlamaya Başlayın",
         "language": {
             "title": "Dilinizi seçin",
-            "description": "Tandem kullanmaya başlamak için tercih ettiğiniz dili seçin."
+            "description": "Tengra kullanmaya başlamak için tercih ettiğiniz dili seçin."
         }
     },
     "agentDashboard": {
@@ -2869,9 +2869,9 @@ export const tr = {
     },
     "extensionPrompt": {
         "title": "Deneyiminizi Geliştirin",
-        "subtitle": "Tandem Tarayıcı Uzantısını Yükleyin",
+        "subtitle": "Tengra Tarayıcı Uzantısını Yükleyin",
         "infoTitle": "Tarayıcı uzantısı nedir?",
-        "infoBody": "Tandem tarayıcı uzantısı, yapay zekanın web sayfalarıyla doğrudan etkileşim kurmasını sağlar. İçeriği okuyabilir, formları doldurabilir, düğmelere tıklayabilir ve komutlarınıza göre otomatik işlemler yapabilir.",
+        "infoBody": "Tengra tarayıcı uzantısı, yapay zekanın web sayfalarıyla doğrudan etkileşim kurmasını sağlar. İçeriği okuyabilir, formları doldurabilir, düğmelere tıklayabilir ve komutlarınıza göre otomatik işlemler yapabilir.",
         "featuresTitle": "Özellikler:",
         "features": {
             "aiChatTitle": "Tarayıcıda Yapay Zeka Sohbeti:",
@@ -2888,7 +2888,7 @@ export const tr = {
             "step1": "Chrome'u açın ve chrome://extensions/ adresine gidin",
             "step2": "\"Geliştirici modu\"nu etkinleştirin (sağ üstteki anahtar)",
             "step3": "\"Paketlenmemiş yükle\"ye tıklayın",
-            "step4Prefix": "Tandem dizinindeki",
+            "step4Prefix": "Tengra dizinindeki",
             "step4Suffix": "klasörünü seçin"
         },
         "openFolder": "Uzantı Klasörünü Aç",
@@ -2995,3 +2995,5 @@ export const tr = {
         "saved": "{{taskId}} görevi için kontrol noktası kaydedildi"
     }
 };
+
+

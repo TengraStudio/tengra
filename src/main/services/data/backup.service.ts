@@ -350,7 +350,7 @@ export class BackupService {
     }
 
     private deriveEncryptionKey(): Buffer {
-        const raw = process.env.BACKUP_ENCRYPTION_KEY ?? 'tandem-backup-default-key';
+        const raw = process.env.BACKUP_ENCRYPTION_KEY ?? 'tengra-backup-default-key';
         return crypto.createHash('sha256').update(raw).digest();
     }
 
@@ -923,3 +923,4 @@ export class BackupService {
         this.stopAutoBackup();
     }
 }
+

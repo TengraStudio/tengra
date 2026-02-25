@@ -1,4 +1,4 @@
-export const PANEL_LAYOUT_STORAGE_KEY = 'tandem.panel-layout.v1';
+export const PANEL_LAYOUT_STORAGE_KEY = 'tengra.panel-layout.v1';
 
 export interface PersistedPanelGroupState {
     size?: number;
@@ -107,3 +107,4 @@ export function getPersistedPanelLayoutSnapshot(): PersistedPanelLayout | null {
         return null;
     }
 }
+

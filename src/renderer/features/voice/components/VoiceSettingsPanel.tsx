@@ -130,7 +130,7 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
                         <Input
                             value={localSettings.wakeWord}
                             onChange={(e) => handleSettingChangeSafe('wakeWord', e.target.value)}
-                            placeholder="tandem"
+                            placeholder="tengra"
                         />
                     </div>
                     <div className="flex items-center justify-between">
@@ -316,3 +316,4 @@ export function VoiceSettingsPanel({ className }: VoiceSettingsPanelProps) {
 }
 
 export default VoiceSettingsPanel;
+

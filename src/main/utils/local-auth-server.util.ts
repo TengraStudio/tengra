@@ -113,7 +113,7 @@ export class LocalAuthServer {
             await onSuccess(tokenData);
 
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tandem.</p>');
+            res.end('<h1>Login Successful!</h1><p>You can close this window and return to Tengra.</p>');
         } catch (e) {
             const err = e as Error;
             appLogger.error('LocalAuthServer', `Claude Auth Failed: ${err.message}`, err);
@@ -167,7 +167,7 @@ export class LocalAuthServer {
 
                         if (code) {
                             res.writeHead(200, { 'Content-Type': 'text/html' });
-                            res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tandem.</p><script>setTimeout(() => window.close(), 1000)</script>');
+                            res.end('<h1>Auth Successful</h1><p>You can close this window and return to Tengra.</p><script>setTimeout(() => window.close(), 1000)</script>');
 
                             await LocalAuthServer.handleAntigravityCallback(code, verifier, `http://127.0.0.1:${address.port}/callback`, onSuccess, onError);
                             server.close();
@@ -545,4 +545,5 @@ export class LocalAuthServer {
         return undefined;
     }
 }
+
 

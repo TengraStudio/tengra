@@ -1,5 +1,5 @@
-import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { CodeSymbolSearchResult, DatabaseService, SemanticFragment } from '@main/services/data/database.service';
+import { ContextRetrievalService } from '@main/services/llm/context-retrieval.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { Project } from '@shared/types/project';
 import { describe, expect, it, vi } from 'vitest';

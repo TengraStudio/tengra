@@ -43,8 +43,8 @@ export interface ExtensionManifest {
     permissions?: ExtensionPermission[];
     /** Extension capabilities */
     capabilities?: ExtensionCapability[];
-    /** Minimum Tandem version required */
-    tandemVersion?: string;
+    /** Minimum Tengra version required */
+    tengraVersion?: string;
     /** Extension activation events */
     activationEvents?: ActivationEvent[];
     /** Extension contributes */
@@ -474,3 +474,5 @@ export interface ExtensionProfileData {
         deactivated?: number;
     };
 }
+
+

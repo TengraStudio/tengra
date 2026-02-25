@@ -1,6 +1,6 @@
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 
-const HISTORY_KEY_PREFIX = 'Tandem_terminal_history_';
+const HISTORY_KEY_PREFIX = 'Tengra_terminal_history_';
 const MAX_HISTORY_SIZE = 500;
 
 export const getHistoryKey = (projectId?: string) => {
@@ -27,4 +27,5 @@ export const saveHistory = (history: string[], projectId?: string) => {
         window.electron.log.warn('Failed to save terminal history:', error);
     }
 };
+
 

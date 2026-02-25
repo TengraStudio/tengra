@@ -1,4 +1,4 @@
-# AI Agent Rules & Guidelines for Tandem
+# AI Agent Rules & Guidelines for Tengra
 
 > **STOP!** Read the [MASTER COMMANDMENTS](../.agent/rules/MASTER_COMMANDMENTS.md) first.
 
@@ -43,9 +43,9 @@
 
 ## 1. Project Overview
 
-### What is OrTandembit?
+### What is OrTengrabit?
 
-Tandem is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
+Tengra is a **desktop AI assistant application** built with Electron, React, and TypeScript. It provides:
 
 - **Multi-LLM Support**: Connects to multiple AI providers (OpenAI, Anthropic, Google, GitHub Copilot, Ollama)
 - **Local AI**:
@@ -185,7 +185,7 @@ await service.doSomething(); // Ignored return
 ### 3.1 Directory Organization
 
 ```
-tandem/
+tengra/
 ├── src/
 │   ├── main/                 # Electron main process
 │   │   ├── services/         # Backend services (by domain)
@@ -1087,7 +1087,7 @@ npm run changelog:sync
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    TANDEM AI RULES SUMMARY                   │
+│                    TENGRA AI RULES SUMMARY                   │
 ├─────────────────────────────────────────────────────────────┤
 │ Logs:     logs/*.log only                                   │
 │ Tests:    src/tests/**/*.test.ts                           │
@@ -1112,4 +1112,6 @@ npm run changelog:sync
 
 *Last updated: 2026-01-14*
 *Version: 1.1.0*
+
+
 

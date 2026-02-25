@@ -1,6 +1,6 @@
 # Internationalization (I18N) Guide
 
-Tandem is designed to be accessible to a global audience. This guide explains how to manage translations and add support for new languages.
+Tengra is designed to be accessible to a global audience. This guide explains how to manage translations and add support for new languages.
 
 ## Translation Workflow
 
@@ -45,3 +45,4 @@ Periodic audits should be performed to:
 - Remove unused keys.
 - Update outdated translations.
 - Ensure consistency in terminology across all supported languages.
+

@@ -1,6 +1,6 @@
 # UI and UX Guidelines
 
-Tandem aims for a premium, high-performance aesthetic that feels both professional and state-of-the-art. This document outlines the design principles and component standards used throughout the application.
+Tengra aims for a premium, high-performance aesthetic that feels both professional and state-of-the-art. This document outlines the design principles and component standards used throughout the application.
 
 ## Core Philosophy
 
@@ -47,3 +47,4 @@ We utilize Framer Motion for most UI transitions.
 
 - **Gradients**: Use multi-step gradients for a more premium look.
 - **Shadows**: Prefer soft, multi-layered shadows over harsh borders.
+

@@ -2143,7 +2143,7 @@ export class SSHService extends EventEmitter {
 
             conn
                 .on('ready', () => {
-                    conn.exec('echo tandem-ssh-test', (error, stream) => {
+                    conn.exec('echo tengra-ssh-test', (error, stream) => {
                         if (error) {
                             finalize({
                                 success: false,
@@ -2253,3 +2253,4 @@ export class SSHService extends EventEmitter {
         return Array.from(this.sessionRecordings.values());
     }
 }
+

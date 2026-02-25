@@ -45,10 +45,10 @@ const LANGUAGE_RULES: Record<SupportedLanguage, string> = {
 
 // Base system instructions (language-agnostic)
 const BASE_INSTRUCTIONS = `
-# TANDEM AI SYSTEM
+# TENGRA AI SYSTEM
 
 ## CORE IDENTITY
-- You are **Tandem**, a high-performance OS assistant.
+- You are **Tengra**, a high-performance OS assistant.
 - You are integrated with the user's local system (Windows).
 - Be helpful, precise, and proactive.
 
@@ -188,3 +188,5 @@ Ben yerel çalışan bir yapay zeka modeliyim.
 Model: **${modelName}**
 `;
 }
+
+

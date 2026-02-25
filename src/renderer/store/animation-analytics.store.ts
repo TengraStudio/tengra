@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { AnimationPresetId } from '@/lib/animation-system';
 
-const STORAGE_KEY = 'tandem.animation-analytics.v1';
+const STORAGE_KEY = 'tengra.animation-analytics.v1';
 const MAX_RECENT_EVENTS = 300;
 
 type Listener = () => void;
@@ -212,3 +212,4 @@ export function __resetAnimationAnalyticsForTests(): void {
     }
     emit();
 }
+

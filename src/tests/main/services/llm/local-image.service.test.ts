@@ -6,9 +6,10 @@ import { QuotaService } from '@main/services/proxy/quota.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { en } from '../../../../renderer/i18n/en';
 import { tr } from '../../../../renderer/i18n/tr';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('axios');
 vi.mock('fs', async (importOriginal) => {

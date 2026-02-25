@@ -7,8 +7,8 @@ import React from 'react';
 
 import {
     WorkspaceExplorerError,
-    WorkspaceExplorerErrorCodes,
     WorkspaceExplorerErrorCode,
+    WorkspaceExplorerErrorCodes,
 } from './workspace-explorer-validation';
 
 /**
@@ -208,7 +208,7 @@ export function logWorkspaceError(error: Error, context?: Record<string, unknown
         ...context,
     };
 
-    // eslint-disable-next-line no-console
+     
     console.error('[WorkspaceExplorer]', JSON.stringify(errorInfo, null, 2));
 }
 

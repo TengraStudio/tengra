@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@/assets/tandem_black.png';
-import logoWhite from '@/assets/tandem_white.png';
+import logoBlack from '@/assets/tengra_black.png';
+import logoWhite from '@/assets/tengra_white.png';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 
     return (
         <div className="p-3 space-y-4">
-            {/* Tandem Branding */}
+            {/* Tengra Branding */}
             <div
                 className={cn(
                     'flex items-center gap-3 px-2 py-1',
@@ -62,3 +62,5 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 };
 
 SidebarHeader.displayName = 'SidebarHeader';
+
+

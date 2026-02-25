@@ -4,6 +4,7 @@ import { CommandStrip } from '@renderer/features/projects/components/workspace/C
 import { WorkspaceMain } from '@renderer/features/projects/components/workspace/WorkspaceMain';
 import { WorkspaceModals } from '@renderer/features/projects/components/workspace/WorkspaceModals';
 import { WorkspaceNotifications } from '@renderer/features/projects/components/workspace/WorkspaceNotifications';
+import { WorkspaceQuickSwitch } from '@renderer/features/projects/components/workspace/WorkspaceQuickSwitch';
 import { WorkspaceSidebar } from '@renderer/features/projects/components/workspace/WorkspaceSidebar';
 import { WorkspaceToolbar } from '@renderer/features/projects/components/workspace/WorkspaceToolbar';
 import { WorkspaceExplorer } from '@renderer/features/projects/components/WorkspaceExplorer';
@@ -696,80 +697,20 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             )}
 
             {showQuickSwitch && (
-                <div
-                    className="absolute inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-start justify-center p-8"
-                    onClick={() => setShowQuickSwitch(false)}
-                >
-                    <div
-                        className="w-full max-w-xl rounded-xl border border-border/50 bg-background p-3 space-y-2"
-                        onClick={event => event.stopPropagation()}
-                    >
-                        <input
-                            autoFocus
-                            value={quickSwitchQuery}
-                            onChange={event => setQuickSwitchQuery(event.target.value)}
-                            onKeyDown={event => {
-                                if (quickSwitchItems.length === 0 && event.key !== 'Escape') {
-                                    return;
-                                }
-                                if (event.key === 'ArrowDown') {
-                                    event.preventDefault();
-                                    setQuickSwitchIndex(prev =>
-                                        Math.min(prev + 1, quickSwitchItems.length - 1)
-                                    );
-                                    return;
-                                }
-                                if (event.key === 'ArrowUp') {
-                                    event.preventDefault();
-                                    setQuickSwitchIndex(prev => Math.max(prev - 1, 0));
-                                    return;
-                                }
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    const selected = quickSwitchItems[quickSwitchIndex];
-                                    if (!selected) {
-                                        return;
-                                    }
-                                    wm.setActiveEditorTabId(selected.id);
-                                    setShowQuickSwitch(false);
-                                    return;
-                                }
-                                if (event.key === 'Escape') {
-                                    event.preventDefault();
-                                    setShowQuickSwitch(false);
-                                }
-                            }}
-                            placeholder={t('workspace.quickSwitch') || 'Quick switch'}
-                            className="w-full rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
-                        />
-                        <div className="max-h-72 overflow-y-auto space-y-1">
-                            {quickSwitchItems.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        wm.setActiveEditorTabId(item.id);
-                                        setShowQuickSwitch(false);
-                                    }}
-                                    className={cn(
-                                        'w-full text-left rounded-md px-3 py-2 hover:bg-muted/30 transition-colors',
-                                        quickSwitchItems[quickSwitchIndex]?.id === item.id &&
-                                            'bg-muted/30'
-                                    )}
-                                >
-                                    <div className="text-sm text-foreground">{item.label}</div>
-                                    <div className="text-xxs text-muted-foreground truncate">
-                                        {item.path}
-                                    </div>
-                                </button>
-                            ))}
-                            {quickSwitchItems.length === 0 && (
-                                <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-                                    {t('projectDashboard.noResults')}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <WorkspaceQuickSwitch
+                    isOpen={showQuickSwitch}
+                    onClose={() => setShowQuickSwitch(false)}
+                    items={quickSwitchItems}
+                    query={quickSwitchQuery}
+                    onQueryChange={setQuickSwitchQuery}
+                    selectedIndex={quickSwitchIndex}
+                    onSelectedIndexChange={setQuickSwitchIndex}
+                    onSelect={(tabId) => {
+                        wm.setActiveEditorTabId(tabId);
+                        setShowQuickSwitch(false);
+                    }}
+                    t={t}
+                />
             )}
             <WorkspaceNotifications notifications={ps.notifications} />
         </div>

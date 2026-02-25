@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-const CURRENT_STORAGE_KEY = 'tandem.ui-layout.v2';
-const LEGACY_STORAGE_KEY = 'tandem.ui-layout.v1';
+const CURRENT_STORAGE_KEY = 'tengra.ui-layout.v2';
+const LEGACY_STORAGE_KEY = 'tengra.ui-layout.v1';
 const UI_LAYOUT_SCHEMA_VERSION = 2;
 
 export interface UiLayoutState {
@@ -274,3 +274,4 @@ export function __resetUiLayoutStoreForTests(): void {
     }
     emit();
 }
+

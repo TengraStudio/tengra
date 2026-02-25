@@ -7,7 +7,7 @@ const HelloWorld: React.FC<{ name?: string }> = ({ name = 'World' }) => {
     return (
         <div data-testid="hello-world">
             <h1>Hello, {name}!</h1>
-            <p>Welcome to Tandem testing</p>
+            <p>Welcome to Tengra testing</p>
         </div>
     );
 };
@@ -17,14 +17,14 @@ describe('React Testing Library Setup', () => {
         render(<HelloWorld />);
         
         expect(screen.getByText('Hello, World!')).toBeInTheDocument();
-        expect(screen.getByText('Welcome to Tandem testing')).toBeInTheDocument();
+        expect(screen.getByText('Welcome to Tengra testing')).toBeInTheDocument();
         expect(screen.getByTestId('hello-world')).toBeInTheDocument();
     });
 
     test('renders with custom name', () => {
-        render(<HelloWorld name="Tandem" />);
+        render(<HelloWorld name="Tengra" />);
         
-        expect(screen.getByText('Hello, Tandem!')).toBeInTheDocument();
+        expect(screen.getByText('Hello, Tengra!')).toBeInTheDocument();
     });
 
     test('component has correct structure', () => {

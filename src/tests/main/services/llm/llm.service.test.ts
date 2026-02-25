@@ -1,9 +1,10 @@
 import { LLMService } from '@main/services/llm/llm.service';
 import { ChatMessage } from '@main/types/llm.types';
-import { en } from '../../../../renderer/i18n/en';
-import { tr } from '../../../../renderer/i18n/tr';
 import { ApiError, AuthenticationError, ValidationError } from '@shared/utils/error.util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { en } from '../../../../renderer/i18n/en';
+import { tr } from '../../../../renderer/i18n/tr';
 
 const mockImagePersistence = {
     saveImage: vi.fn().mockResolvedValue('/tmp/image.png')

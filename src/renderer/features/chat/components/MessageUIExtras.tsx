@@ -43,7 +43,7 @@ export const ImageSkeleton = () => {
             </div>
             <div className="space-y-2 text-center">
                 <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
-                    {t('messageBubble.TandemDrawing')}
+                    {t('messageBubble.TengraDrawing')}
                 </div>
                 <div className="flex gap-1 justify-center">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
@@ -54,3 +54,4 @@ export const ImageSkeleton = () => {
         </div>
     );
 };
+

@@ -52,7 +52,7 @@ export class SentryService {
 
             Sentry.init({
                 dsn: SENTRY_DSN,
-                release: `tandem@${app.getVersion()}`,
+                release: `tengra@${app.getVersion()}`,
                 environment: app.isPackaged ? 'production' : 'development',
                 // User-centric data is stripped by default
                 beforeSend(event) {
@@ -88,3 +88,4 @@ export class SentryService {
         Sentry.addBreadcrumb({ message, category, data });
     }
 }
+

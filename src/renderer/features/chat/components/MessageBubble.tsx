@@ -207,7 +207,7 @@ const ImageSkeleton = ({ t }: { t: TranslationFn }) => (
         </div>
         <div className="space-y-2 text-center">
             <div className="text-xxs font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
-                {t('messageBubble.TandemDrawing')}
+                {t('messageBubble.TengraDrawing')}
             </div>
             <div className="flex gap-1 justify-center">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce [animation-delay:-0.3s]" />
@@ -721,7 +721,7 @@ const ThoughtSection = memo(
                         </div>
                         <span className="text-xxs font-black uppercase tracking-[0.15em]">
                             {isThoughtExpanded
-                                ? t('messageBubble.TandemThinking')
+                                ? t('messageBubble.TengraThinking')
                                 : t('messageBubble.showThought')}
                         </span>
                         <Sparkles
@@ -2235,3 +2235,4 @@ export const MessageBubble = memo(
     areMessagePropsEqual
 );
 MessageBubble.displayName = 'MessageBubble';
+

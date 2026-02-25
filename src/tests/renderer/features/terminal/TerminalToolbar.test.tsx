@@ -1,6 +1,5 @@
-import type { ComponentProps } from 'react';
-
 import { render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { TerminalToolbar } from '@/features/terminal/components/TerminalToolbar';

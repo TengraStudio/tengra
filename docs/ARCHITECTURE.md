@@ -1,10 +1,10 @@
 # System Architecture
 
-Tandem is built with a multi-process, polyglot architecture designed to maximize security, performance, and developer flexibility. This document provides a detailed look at how the different components of Tandem interact to provide a seamless AI coding experience.
+Tengra is built with a multi-process, polyglot architecture designed to maximize security, performance, and developer flexibility. This document provides a detailed look at how the different components of Tengra interact to provide a seamless AI coding experience.
 
 ## Process Model and Communication
 
-Tandem utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
+Tengra utilizes Electron's multi-process architecture to isolate the user interface from the intensive system-level logic.
 
 ### Renderer Process (UI)
 
@@ -93,7 +93,7 @@ Metrics and monitoring.
 
 ## Native Microservices
 
-To handle tasks that require high performance or low-level networking capabilities, Tandem delegates work to specialized microservices.
+To handle tasks that require high performance or low-level networking capabilities, Tengra delegates work to specialized microservices.
 
 ### Go Proxy (CLIProxy-Embed)
 
@@ -112,7 +112,7 @@ Dedicated to background maintenance of authentication tokens:
 
 ## Secure Proxy Routing
 
-Tandem implements a "stateless" approach to credential handling:
+Tengra implements a "stateless" approach to credential handling:
 
 1. Tokens stored in encrypted database
 2. Decrypted only in memory during requests
@@ -242,3 +242,4 @@ Formal decisions are tracked in `docs/adr/`:
 5. **Certificate Error Blocking**: Prevents MITM attacks
 6. **Rate Limiting**: Prevents API abuse
 7. **Context Isolation**: Renderer process sandboxed from Node.js
+

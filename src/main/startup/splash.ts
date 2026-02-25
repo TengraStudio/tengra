@@ -17,7 +17,7 @@ function getSplashHtml(): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tandem</title>
+  <title>Tengra</title>
   <style>
     :root {
       color-scheme: light;
@@ -78,7 +78,7 @@ function getSplashHtml(): string {
 </head>
 <body>
   <div class="wrap">
-    <div class="brand">TANDEM</div>
+    <div class="brand">TENGRA</div>
     <div class="subtitle">Starting services...</div>
     <div class="progress"><div class="bar"></div></div>
   </div>
@@ -142,4 +142,6 @@ export function closeSplashWindow(): void {
     splashWindow.close();
     splashWindow = null;
 }
+
+
 

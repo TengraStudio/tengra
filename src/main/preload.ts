@@ -2811,32 +2811,30 @@ const api: ElectronAPI = {
     getModels: () => ipcRenderer.invoke('ollama:getModels'),
     chat: (messages, model) => ipcRenderer.invoke('ollama:chat', messages, model),
     chatOpenAI: async request => {
-        const res = await ipcRenderer.invoke(
-            'chat:openai',
-            request.messages,
-            request.model,
-            request.tools,
-            request.provider,
-            request.options,
-            request.projectId
-        );
+        const res = await ipcRenderer.invoke('chat:openai', {
+            messages: request.messages,
+            model: request.model,
+            tools: request.tools,
+            provider: request.provider,
+            projectId: request.projectId,
+            systemMode: request.systemMode
+        });
         if (res.success) {
             return res.data;
         }
         throw new Error(res.error?.message ?? 'Chat request failed');
     },
     chatStream: request =>
-        ipcRenderer.invoke(
-            'chat:stream',
-            request.messages,
-            request.model,
-            request.tools,
-            request.provider,
-            request.options,
-            request.chatId,
-            request.projectId,
-            request.systemMode
-        ),
+        ipcRenderer.invoke('chat:stream', {
+            messages: request.messages,
+            model: request.model,
+            tools: request.tools,
+            provider: request.provider,
+            optionsJson: request.options,
+            chatId: request.chatId,
+            projectId: request.projectId,
+            systemMode: request.systemMode
+        }),
     abortChat: () => {
         void ipcRenderer.invoke('ollama:abort');
     },

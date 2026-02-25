@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `src/main` folder contains the Electron main process code for the Tandem application. This is a sophisticated AI-powered development assistant with multi-provider LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
+The `src/main` folder contains the Electron main process code for the Tengra application. This is a sophisticated AI-powered development assistant with multi-provider LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
 
 ---
 

@@ -40,13 +40,13 @@ function safeSend(sender: WebContents, channel: string, ...args: unknown[]): boo
 }
 
 const PROVIDER_INSTRUCTIONS: Record<string, string> = {
-    'antigravity': "I am an advanced AI assistant provided by **Antigravity** on the **Tandem** platform. I am here to help you in the best way possible.",
-    'copilot': "I am an AI programming assistant provided by GitHub Copilot on the **Tandem** platform. I am here to help you in the best way possible.",
-    'ollama': "I am an Ollama model running locally on the **Tandem** platform. I am here to help you in the best way possible.",
-    'nvidia': "I am an AI assistant provided via NVIDIA NIM API on the **Tandem** platform. I am here to help you in the best way possible.",
-    'opencode': "I am an AI assistant provided via OpenCode API on the **Tandem** platform. I am here to help you in the best way possible.",
-    'codex': "I am an AI assistant provided via OpenAI Codex API on the **Tandem** platform. I am here to help you in the best way possible.",
-    'claude': "I am an AI assistant provided via Anthropic Claude API on the **Tandem** platform. I am here to help you in the best way possible.",
+    'antigravity': "I am an advanced AI assistant provided by **Antigravity** on the **Tengra** platform. I am here to help you in the best way possible.",
+    'copilot': "I am an AI programming assistant provided by GitHub Copilot on the **Tengra** platform. I am here to help you in the best way possible.",
+    'ollama': "I am an Ollama model running locally on the **Tengra** platform. I am here to help you in the best way possible.",
+    'nvidia': "I am an AI assistant provided via NVIDIA NIM API on the **Tengra** platform. I am here to help you in the best way possible.",
+    'opencode': "I am an AI assistant provided via OpenCode API on the **Tengra** platform. I am here to help you in the best way possible.",
+    'codex': "I am an AI assistant provided via OpenAI Codex API on the **Tengra** platform. I am here to help you in the best way possible.",
+    'claude': "I am an AI assistant provided via Anthropic Claude API on the **Tengra** platform. I am here to help you in the best way possible.",
 };
 
 /**
@@ -327,10 +327,10 @@ class ChatIpcManager {
     }
 
     private sanitizeStreamInputs(params: { messages: Message[], model: string, provider: string, chatId: string, tools?: ToolDefinition[], projectId?: string, systemMode?: SystemMode }) {
-        const { messages, model, provider, chatId, tools, projectId } = params;
+        const { messages, model, provider, chatId, tools, projectId, systemMode } = params;
         if (!chatId) { throw new Error('Chat ID must be a non-empty string'); }
 
-        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId });
+        const sanitized = this.sanitizeRequestParams({ messages, model, provider, tools, projectId, systemMode });
         return {
             ...sanitized,
             chatId: sanitizeString(chatId, { maxLength: 100, allowNewlines: false })
@@ -569,7 +569,7 @@ const OpenAIChatSchema = z.object({
     tools: z.array(ToolDefinitionSchema).optional(),
     provider: z.string(),
     projectId: z.string().optional(),
-    systemMode: z.enum(['default', 'architect', 'code', 'research']).optional()
+    systemMode: z.enum(['thinking', 'agent', 'fast', 'architect']).optional()
 });
 
 const StreamChatSchema = OpenAIChatSchema.extend({
@@ -597,3 +597,4 @@ export function registerChatIpc(options: ChatIpcOptions) {
         return { content: parseAIResponseContent(res?.content as JsonValue), role: 'assistant' };
     }));
 }
+

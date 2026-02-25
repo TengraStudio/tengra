@@ -1,9 +1,9 @@
-# Tandem 🏮
+# Tengra 🏮
 
-Tandem is a powerful, open-source AI assistant designed to streamline your development workflow by integrating various LLM providers (Ollama, Antigravity, GitHub Copilot) into a unified, high-performance desktop application.
+Tengra is a powerful, open-source AI assistant designed to streamline your development workflow by integrating various LLM providers (Ollama, Antigravity, GitHub Copilot) into a unified, high-performance desktop application.
 
 > [!IMPORTANT]
-> **LEGAL DISCLAIMER**: This project is an unofficial client and is not affiliated with, endorsed by, or connected to GitHub, Microsoft, Google, Anthropic, or any of their subsidiaries. All trademarks and brand names are the property of their respective owners. Tandem provides interoperability layers for research and educational purposes. **Users are responsible for ensuring their usage of third-party APIs complies with the respective providers' Terms of Service.**
+> **LEGAL DISCLAIMER**: This project is an unofficial client and is not affiliated with, endorsed by, or connected to GitHub, Microsoft, Google, Anthropic, or any of their subsidiaries. All trademarks and brand names are the property of their respective owners. Tengra provides interoperability layers for research and educational purposes. **Users are responsible for ensuring their usage of third-party APIs complies with the respective providers' Terms of Service.**
 
 ## Key Features
 - **Multi-Model Support**: Chat with Ollama (Local), Antigravity, Copilot, and more.
@@ -20,8 +20,8 @@ Tandem is a powerful, open-source AI assistant designed to streamline your devel
 
 ### Installation
 ```bash
-git clone https://github.com/TengraStudio/tandem.git
-cd tandem
+git clone https://github.com/TengraStudio/tengra.git
+cd tengra
 npm install
 npm run setup-build-env
 ```
@@ -41,10 +41,10 @@ We welcome contributions! Please see our [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 ## Browser Extension
 
-Tandem includes a powerful browser extension that enables AI to interact directly with web pages. See [`extension/README.md`](extension/README.md) for installation instructions.
+Tengra includes a powerful browser extension that enables AI to interact directly with web pages. See [`extension/README.md`](extension/README.md) for installation instructions.
 
 ### Quick Setup
-1. Start the Tandem desktop app
+1. Start the Tengra desktop app
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable **Developer mode**
 4. Click **Load unpacked** and select the `extension` folder
@@ -58,7 +58,8 @@ The extension allows the AI to:
 - 🔒 All communication stays local on your computer
 
 ## Security & Privacy
-Tandem is built with privacy in mind. It uses a "Bring Your Own Key" (BYOK) model. No API keys or personal data are stored on our servers; everything remains on your local machine.
+Tengra is built with privacy in mind. It uses a "Bring Your Own Key" (BYOK) model. No API keys or personal data are stored on our servers; everything remains on your local machine.
 
 ## License
 This project is licensed under the **GNU General Public License v3.0 (GPLv3)** - see the [LICENSE](LICENSE) file for details. This ensures the project remains free and open-source for everyone.
+

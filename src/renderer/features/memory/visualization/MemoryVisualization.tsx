@@ -76,9 +76,10 @@ export const MemoryVisualization: React.FC = () => {
                     </div>
                 </div>
                 <div>
-                    Powered by Tandem Advanced Memory Service
+                    Powered by Tengra Advanced Memory Service
                 </div>
             </div>
         </div>
     );
 };
+

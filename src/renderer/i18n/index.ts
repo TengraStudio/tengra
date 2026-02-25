@@ -25,7 +25,7 @@ const translations: Partial<Record<Language, TranslationKeys>> = {
     ar: ar as unknown as TranslationKeys
 };
 
-const TRANSLATION_MEMORY_STORAGE_KEY = 'tandem.i18n.translation-memory.v1';
+const TRANSLATION_MEMORY_STORAGE_KEY = 'tengra.i18n.translation-memory.v1';
 const MAX_TRANSLATION_MEMORY_ENTRIES = 1000;
 
 interface TranslationMemoryEntry {
@@ -308,4 +308,5 @@ export function useTranslation(lang?: Language) {
         formatCurrency: (value: number) => String(value)
     };
 }
+
 

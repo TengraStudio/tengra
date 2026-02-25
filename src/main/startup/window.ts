@@ -135,7 +135,7 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
         if (!isHidden) {
             win.show();
         }
-        win.setTitle('TANDEM');
+        win.setTitle('TENGRA');
     });
 }
 
@@ -303,7 +303,7 @@ export function setupTray(settingsService?: SettingsService) {
 
         const contextMenu = Menu.buildFromTemplate([
             {
-                label: 'Show Tandem',
+                label: 'Show Tengra',
                 click: () => {
                     if (mainWindow && !mainWindow.isDestroyed()) {
                         mainWindow.show();
@@ -321,7 +321,7 @@ export function setupTray(settingsService?: SettingsService) {
             },
         ]);
 
-        tray.setToolTip('Tandem');
+        tray.setToolTip('Tengra');
         tray.setContextMenu(contextMenu);
 
         tray.on('click', () => {
@@ -347,3 +347,5 @@ export function destroyTray() {
         tray = null;
     }
 }
+
+

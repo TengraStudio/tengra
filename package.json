@@ -1,7 +1,7 @@
 {
-    "name": "tandem",
+    "name": "tengra",
     "version": "1.0.0",
-    "description": "Tandem - Your Personal AI Assistant",
+    "description": "Tengra - Your Personal AI Assistant",
     "main": "dist/main/main.js",
     "type": "commonjs",
     "scripts": {
@@ -88,7 +88,7 @@
         "ollama",
         "electron",
         "copilot",
-        "tandem"
+        "tengra"
     ],
     "author": "",
     "license": "GPL-3.0",
@@ -199,9 +199,9 @@
         "zod": "^4.3.6"
     },
     "build": {
-        "appId": "com.tandem.app",
-        "productName": "Tandem",
-        "executableName": "Tandem",
+        "appId": "com.tengra.app",
+        "productName": "Tengra",
+        "executableName": "Tengra",
         "directories": {
             "output": "release"
         },
@@ -235,7 +235,7 @@
                 "zip"
             ],
             "icon": "resources/icon.ico",
-            "publisherName": "Tandem Team"
+            "publisherName": "Tengra Team"
         },
         "nsis": {
             "artifactName": "${productName} Setup.${ext}",
@@ -263,7 +263,7 @@
         "publish": {
             "provider": "github",
             "owner": "TengraStudio",
-            "repo": "tandem"
+            "repo": "tengra"
         }
     },
     "overrides": {
@@ -274,3 +274,4 @@
         "utf-8-validate": "*"
     }
 }
+

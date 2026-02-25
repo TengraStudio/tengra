@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = 'tandem.theme.v1';
+const STORAGE_KEY = 'tengra.theme.v1';
 
 interface ThemeState {
     theme: 'black' | 'white' | string;
@@ -79,3 +79,4 @@ export function useThemeStore<T>(selector: (snapshot: ThemeState) => T): T {
         () => selector(getThemeSnapshot())
     );
 }
+

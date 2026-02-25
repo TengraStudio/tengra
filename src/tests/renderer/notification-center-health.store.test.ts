@@ -1,9 +1,9 @@
-import { getNotificationCenterHealthSnapshot } from '@renderer/store/notification-center-health.store';
 import {
     __resetNotificationCenterForTests,
     pushNotification,
     scheduleNotification,
 } from '@renderer/store/notification-center.store';
+import { getNotificationCenterHealthSnapshot } from '@renderer/store/notification-center-health.store';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('notification center health store', () => {

@@ -2,8 +2,9 @@
  * @fileoverview Error handling, retry policy, and fallback behavior for Model Selector
  */
 
-import { ModelSelectorError, ModelSelectorErrorCodes, ModelSelectorErrorCode } from './model-selector-validation';
 import { appLogger } from '@/utils/renderer-logger';
+
+import { ModelSelectorError, ModelSelectorErrorCode,ModelSelectorErrorCodes } from './model-selector-validation';
 
 export const RetryConfig = {
     maxRetries: 3,

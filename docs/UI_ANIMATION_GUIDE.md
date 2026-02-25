@@ -19,7 +19,7 @@ Each preset maps to duration + easing values and respects reduced motion setting
 ## Reduced Motion
 
 - Uses `prefers-reduced-motion`.
-- Optional forced mode via local storage key: `tandem.motion.force-reduced=true`.
+- Optional forced mode via local storage key: `tengra.motion.force-reduced=true`.
 
 ## Analytics and Debug
 
@@ -31,4 +31,5 @@ Developer tools:
 
 - Toggle animation debug mode from `DeveloperTab`.
 - View play counts and reduced-motion play counts.
+
 

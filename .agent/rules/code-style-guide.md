@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# TANDEM AI AGENT: CODE STYLE GUIDE
+# TENGRA AI AGENT: CODE STYLE GUIDE
 
 > **CRITICAL**: Read [AGENTS.md](../../AGENTS.md) completely before making any changes.
 
@@ -49,4 +49,5 @@ trigger: always_on
 7. Commit and push
 
 For complete details, see [AGENTS.md](../../AGENTS.md) and [docs/AI_RULES.md](../../docs/AI_RULES.md).
+
 

@@ -4,11 +4,11 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { WorkspaceEntry, WorkspaceMount } from '../../../../shared/types';
-import { WorkspaceExplorer } from '../../../../renderer/features/projects/components/WorkspaceExplorer';
 import { ContextMenuAction, ContextMenuState } from '../../../../renderer/features/projects/components/workspace/types';
+import { WorkspaceExplorer } from '../../../../renderer/features/projects/components/WorkspaceExplorer';
+import { WorkspaceEntry, WorkspaceMount } from '../../../../shared/types';
 
 // Mock the hooks
 vi.mock('@renderer/features/projects/hooks/useWorkspaceExplorerLogic', () => ({

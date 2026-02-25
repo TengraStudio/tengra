@@ -6,7 +6,7 @@ import { app } from 'electron';
 dotenv.config();
 
 // Set the application name early
-app.setName('Tandem');
+app.setName('Tengra');
 
 import { ApiServerService } from '@main/api/api-server.service';
 import { appLogger, LogLevel } from '@main/logging/logger';
@@ -36,7 +36,7 @@ app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192');
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 
 if (process.platform === 'win32') {
-    app.setAppUserModelId('com.tandem.app');
+    app.setAppUserModelId('com.tengra.app');
 }
 
 // Security: Pre-register schemes before app is ready
@@ -56,8 +56,8 @@ app.whenReady().then(async () => {
 
     // Security: Filter allowed roots for file protocol
     const galleryPath = path.join(path.dirname(app.getPath('userData')), 'Gallery');
-    const tandemRoaming = path.join(app.getPath('appData'), 'Tandem');
-    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, tandemRoaming]);
+    const tengraRoaming = path.join(app.getPath('appData'), 'Tengra');
+    const allowedFileRoots = new Set([app.getPath('userData'), app.getPath('home'), galleryPath, tengraRoaming]);
 
     // Register Protocols
     registerProtocols(allowedFileRoots);
@@ -187,3 +187,5 @@ app.whenReady().then(async () => {
     appLogger.error('Main', 'Critical failure on startup', e as Error);
     app.exit(1);
 });
+
+

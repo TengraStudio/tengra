@@ -2,9 +2,9 @@ import * as fsp from 'fs/promises';
 import * as path from 'path';
 
 import { appLogger } from '@main/logging/logger';
+import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { BaseService } from '@main/services/base.service';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { TelemetryService } from '@main/services/analysis/telemetry.service';
 import { app } from 'electron';
 
 /**
@@ -69,8 +69,8 @@ export class DataService extends BaseService {
     constructor() {
         super('DataService');
 
-        // Use standard AppData/tandem/data structure
-        // app.getPath('userData') usually points to AppData/Roaming/tandem (or similar)
+        // Use standard AppData/tengra/data structure
+        // app.getPath('userData') usually points to AppData/Roaming/tengra (or similar)
         // We want to organize things cleanly inside it.
         const userData = app.getPath('userData');
         this.baseDir = path.join(userData, 'data');
@@ -233,8 +233,8 @@ export class DataService extends BaseService {
      * Should be called on app startup.
      */
     async migrate() {
-        const userData = app.getPath('userData'); // tandem/runtime
-        const rootPath = path.dirname(userData);  // tandem
+        const userData = app.getPath('userData'); // tengra/runtime
+        const rootPath = path.dirname(userData);  // tengra
 
         const migrations: MigrationEntry[] = [
             // Auth: root/auth -> data/auth
@@ -255,15 +255,15 @@ export class DataService extends BaseService {
                 new: this.paths.auth,
                 isDir: true
             },
-            // DB: root/tandem-lancedb -> data/db/vector-store (Renamed from tandem-lancedb)
+            // DB: root/tengra-lancedb -> data/db/vector-store (Renamed from tengra-lancedb)
             {
-                old: path.join(rootPath, 'tandem-lancedb'),
+                old: path.join(rootPath, 'tengra-lancedb'),
                 new: path.join(this.paths.db, 'vector-store'),
                 isDir: true
             },
-            // DB: runtime/data/db/tandem-lancedb -> data/db/vector-store (Rename if already migrated)
+            // DB: runtime/data/db/tengra-lancedb -> data/db/vector-store (Rename if already migrated)
             {
-                old: path.join(this.paths.db, 'tandem-lancedb'),
+                old: path.join(this.paths.db, 'tengra-lancedb'),
                 new: path.join(this.paths.db, 'vector-store'),
                 isDir: true
             },
@@ -299,9 +299,9 @@ export class DataService extends BaseService {
                 new: path.join(userData, 'static'),
                 isDir: true
             },
-            // Gallery: Pictures/tandem/Gallery -> gallery/images (External path)
+            // Gallery: Pictures/tengra/Gallery -> gallery/images (External path)
             {
-                old: path.join(app.getPath('pictures'), 'tandem', 'Gallery'),
+                old: path.join(app.getPath('pictures'), 'tengra', 'Gallery'),
                 new: this.paths.galleryImages,
                 isDir: true
             }
@@ -382,3 +382,4 @@ export class DataService extends BaseService {
         }
     }
 }
+

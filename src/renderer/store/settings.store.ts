@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import { AppSettings, JsonValue } from '@/types';
 
-const SETTINGS_DRAFT_STORAGE_KEY = 'tandem.settings.draft.v1';
+const SETTINGS_DRAFT_STORAGE_KEY = 'tengra.settings.draft.v1';
 const AUTO_SAVE_DELAY_MS = 2000;
 
 interface SettingsStoreState {
@@ -178,3 +178,4 @@ export function useSettingsStore<T>(selector: (snapshot: SettingsStoreState) => 
         () => selector(getSettingsSnapshot())
     );
 }
+

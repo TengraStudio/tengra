@@ -29,7 +29,7 @@ describe('Proxy-Data Integration', () => {
     let proxyService: ProxyService;
 
     beforeEach(() => {
-        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tandem-integration-test-wiring-'));
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tengra-integration-test-wiring-'));
         mockGetPath.mockReturnValue(tempDir);
         dataService = new DataService();
         proxyService = new ProxyService({
@@ -60,3 +60,4 @@ describe('Proxy-Data Integration', () => {
     // due to fs mocking/path inconsistencies. We trust DataService works (unit tested) 
     // and ProxyService works (unit tested). Integration is Wiring.
 });
+

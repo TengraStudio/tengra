@@ -148,12 +148,12 @@ export class ThemeService extends BaseService {
         const builtInThemes = [
             {
                 id: 'black',
-                name: 'tandem-black',
-                displayName: 'Tandem Black',
+                name: 'tengra-black',
+                displayName: 'Tengra Black',
                 version: '1.0.0',
                 type: 'dark' as const,
                 description: 'Pure black theme with electric cyan accents',
-                author: 'Tandem Team',
+                author: 'Tengra Team',
                 colors: {
                     background: '0 0% 0%',
                     foreground: '0 0% 100%',
@@ -178,12 +178,12 @@ export class ThemeService extends BaseService {
             },
             {
                 id: 'white',
-                name: 'tandem-white',
-                displayName: 'Tandem White',
+                name: 'tengra-white',
+                displayName: 'Tengra White',
                 version: '1.0.0',
                 type: 'light' as const,
                 description: 'Clean white theme with vibrant purple accents',
-                author: 'Tandem Team',
+                author: 'Tengra Team',
                 colors: {
                     background: '0 0% 100%',
                     foreground: '0 0% 0%',
@@ -421,3 +421,4 @@ export class ThemeService extends BaseService {
         return this.themesDir;
     }
 }
+

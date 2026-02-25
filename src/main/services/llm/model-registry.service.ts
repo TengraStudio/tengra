@@ -116,7 +116,7 @@ export class ModelRegistryService extends BaseService {
         // Start the native service process
         await this.deps.processManager.startService({
             name: 'model-service',
-            executable: 'tandem-model-service',
+            executable: 'tengra-model-service',
             persistent: true,
         });
 
@@ -641,3 +641,4 @@ export class ModelRegistryService extends BaseService {
         ];
     }
 }
+

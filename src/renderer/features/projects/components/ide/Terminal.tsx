@@ -29,7 +29,7 @@ interface TerminalStateRefs {
 }
 
 // Terminal history persistence keys
-const HISTORY_KEY_PREFIX = 'Tandem_terminal_history_';
+const HISTORY_KEY_PREFIX = 'Tengra_terminal_history_';
 const MAX_HISTORY_SIZE = 500;
 
 // Get history storage key for a project
@@ -448,6 +448,7 @@ export const TerminalComponent = ({ cwd, projectId }: TerminalComponentProps) =>
         </div>
     );
 };
+
 
 
 

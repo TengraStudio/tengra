@@ -6,10 +6,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ModelCategory, ModelListItem } from '../../../../renderer/features/models/types';
 import { ModelSelectorModal } from '../../../../renderer/features/models/components/ModelSelectorModal';
+import { ModelCategory, ModelListItem } from '../../../../renderer/features/models/types';
 
 // Mock createPortal
 vi.mock('react-dom', () => ({

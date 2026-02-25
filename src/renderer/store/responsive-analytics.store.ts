@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import type { BreakpointId } from '@/lib/responsive';
 
-const STORAGE_KEY = 'tandem.responsive-analytics.v1';
+const STORAGE_KEY = 'tengra.responsive-analytics.v1';
 const MAX_TRANSITIONS = 200;
 
 type Listener = () => void;
@@ -208,3 +208,4 @@ export function __resetResponsiveAnalyticsForTests(): void {
     }
     emit();
 }
+

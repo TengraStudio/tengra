@@ -9,7 +9,7 @@ import { AppSettings } from '@shared/types/settings';
  * - Memoization decorator for function result caching
  * 
  * @module utils/cache
- * @author Tandem Team
+ * @author Tengra Team
  * @license MIT
  */
 
@@ -431,4 +431,5 @@ export const settingsCache = new Cache<AppSettings>({
     maxSize: 5,
     defaultTTL: 30 * 1000 // 30 seconds
 });
+
 

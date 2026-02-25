@@ -139,9 +139,7 @@ export default tseslint.config(
 
     {
         files: [
-            'src/main/ipc/mcp-marketplace.ts',
-            'src/renderer/features/projects/components/ProjectWorkspace.tsx',
-            'src/renderer/features/settings/components/ImageSettingsTab.tsx'
+            'src/main/ipc/mcp-marketplace.ts'
         ],
         rules: {
             'max-lines-per-function': 'off'

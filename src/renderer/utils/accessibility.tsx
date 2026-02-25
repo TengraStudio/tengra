@@ -1,5 +1,5 @@
 /**
- * Accessibility utilities for the Tandem application.
+ * Accessibility utilities for the Tengra application.
  * Provides hooks, components, and utilities for a11y compliance.
  */
 
@@ -31,7 +31,7 @@ export interface AnnouncementOptions {
 // Accessibility Settings Store
 // ============================================================================
 
-const A11Y_SETTINGS_KEY = 'tandem-a11y-settings';
+const A11Y_SETTINGS_KEY = 'tengra-a11y-settings';
 
 const defaultSettings: AccessibilitySettings = {
     highContrast: false,
@@ -539,3 +539,4 @@ export const LiveRegion: React.FC<{
             </div>
         );
     };
+

@@ -1,6 +1,6 @@
 # src/renderer Analysis - Comprehensive Summary
 
-This document provides a detailed analysis of the renderer process architecture in the Tandem application.
+This document provides a detailed analysis of the renderer process architecture in the Tengra application.
 
 ---
 
@@ -510,8 +510,8 @@ class ThemeRegistryService {
 
 ### Built-in Themes
 
-- **Tandem Black** (`black`) - Pure black with electric cyan
-- **Tandem White** (`white`) - Clean white with vibrant purple
+- **Tengra Black** (`black`) - Pure black with electric cyan
+- **Tengra White** (`white`) - Clean white with vibrant purple
 
 ### Theme Application
 

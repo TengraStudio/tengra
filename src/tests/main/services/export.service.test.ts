@@ -96,7 +96,7 @@ describe('ExportService - Basic Formats', () => {
 
         it('should include export footer', () => {
             const content = service.getExportContent(mockChat, { format: 'markdown' });
-            expect(content).toContain('*Exported from Tandem');
+            expect(content).toContain('*Exported from Tengra');
         });
     });
 
@@ -284,3 +284,4 @@ describe('ExportService - Specialized Content', () => {
         });
     });
 });
+

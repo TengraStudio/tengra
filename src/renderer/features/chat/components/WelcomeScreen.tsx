@@ -1,9 +1,9 @@
-﻿import { ChatTemplate } from '@renderer/features/chat/types';
+import { ChatTemplate } from '@renderer/features/chat/types';
 import { Activity, Code, PenTool, Search } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@/assets/tandem_black.png';
-import logoWhite from '@/assets/tandem_white.png';
+import logoBlack from '@/assets/tengra_black.png';
+import logoWhite from '@/assets/tengra_white.png';
 import { useThemeDetection } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils'; 
 
@@ -60,3 +60,4 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </div>
     );
 };
+

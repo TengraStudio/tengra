@@ -1,10 +1,10 @@
-# GitHub Copilot Instructions for Tandem
+# GitHub Copilot Instructions for Tengra
 
 This file provides custom instructions for GitHub Copilot when working on this project.
 
 ## Project Overview
 
-Tandem is an Electron + React + TypeScript application for AI-powered development assistance. It uses a multi-process architecture with a Node.js main process and React renderer.
+Tengra is an Electron + React + TypeScript application for AI-powered development assistance. It uses a multi-process architecture with a Node.js main process and React renderer.
 
 ## Code Style Requirements
 
@@ -97,3 +97,4 @@ Always run before committing:
 ```bash
 npm run build && npm run lint && npm run type-check
 ```
+

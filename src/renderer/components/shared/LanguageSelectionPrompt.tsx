@@ -1,8 +1,8 @@
-import { Language, useLanguage } from '@renderer/i18n';
 import {
     sanitizePromptLanguage,
     SUPPORTED_PROMPT_LANGUAGES,
 } from '@renderer/components/shared/language-selection-prompt.validation';
+import { Language, useLanguage } from '@renderer/i18n';
 import {
     recordLanguageSelectionFailure,
     recordLanguageSelectionFallback,

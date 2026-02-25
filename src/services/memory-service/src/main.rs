@@ -142,7 +142,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Memory service listening on {}", local_addr);
 
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let services_dir = std::path::Path::new(&appdata).join("Tandem").join("services");
+        let services_dir = std::path::Path::new(&appdata).join("Tengra").join("services");
         fs::create_dir_all(&services_dir)?;
         let port_file = services_dir.join("memory-service.port");
         fs::write(port_file, port.to_string())?;
@@ -186,4 +186,5 @@ async fn handle_rpc(
     };
     Json(res)
 }
+
 

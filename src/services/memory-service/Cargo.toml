@@ -1,5 +1,5 @@
 [package]
-name = "tandem-memory-service"
+name = "tengra-memory-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,3 +14,4 @@ bincode = "1.3"
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 directories = "5.0"
+

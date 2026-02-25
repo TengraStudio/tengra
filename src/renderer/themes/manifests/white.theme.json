@@ -1,9 +1,9 @@
 {
   "id": "white",
-  "name": "tandem-white",
-  "displayName": "Tandem White",
+  "name": "tengra-white",
+  "displayName": "Tengra White",
   "description": "Clean and minimal white theme with vibrant purple accents",
-  "author": "Tandem Team",
+  "author": "Tengra Team",
   "version": "1.0.0",
   "type": "light",
   "category": "professional-light",
@@ -45,7 +45,8 @@
     "shadowColor": "0 0% 10%"
   },
   "isInstalled": true,
-  "publisher": "tandem",
+  "publisher": "tengra",
   "license": "MIT",
   "tags": ["light", "minimal", "modern", "clean"]
 }
+

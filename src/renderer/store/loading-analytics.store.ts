@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = 'tandem.loading-analytics.v1';
+const STORAGE_KEY = 'tengra.loading-analytics.v1';
 const STORE_VERSION = 1;
 const MAX_HISTORY = 300;
 
@@ -304,3 +304,4 @@ export function __resetLoadingAnalyticsForTests(): void {
     }
     emit();
 }
+

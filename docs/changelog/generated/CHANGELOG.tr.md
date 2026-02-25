@@ -1,5 +1,18 @@
 # Değişiklik Günlüğü
 
+## [2026-02-25]
+
+### Görüntü Ayarları Sekmesi Refaktörü ve Test Paketi Güvenilirliği
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Karmaşık ImageSettingsTab bileşeni modüler alt bileşenlere ve hook'lara ayrıştırıldı, bakımı iyileştirildi ve ESLint ihlalleri giderildi. Ayrıca birkaç entegrasyon ve sözleşme testi hatası düzeltildi.
+
+- **Modülerleştirme**: Monolitik ImageSettingsTab.tsx'ten ImageSettingsHistory, ImageSettingsPresets, ImageSettingsSchedules, ImageSettingsEdit, ImageSettingsProvider ve ImageSettingsRuntime ayrıştırıldı.
+- **Kod Kalitesi**: ImageSettingsTab.tsx için max-lines-per-function ESLint geçersiz kılması kaldırıldı ve ayarlar modülündeki any tipi sorunları çözüldü.
+- **Test Güvenilirliği**: chat.integration.test.ts dosyasındaki require-yield ihlalleri ve kullanılmayan değişkenler düzeltildi.
+- **API Sözleşmeleri**: api-openapi.contract.test.ts dosyasındaki OpenAPI spesifikasyon dosyası yolu, geçerli sözleşme doğrulamasını sağlamak için düzeltildi.
+
 ## [2026-02-23]
 
 ### Ajan İş Birliği ve Kontrol Noktası Servisi Sertleştirmesi
@@ -385,9 +398,9 @@
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.
+- **Summary**: Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.
 
-- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.
+- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.
 - **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
 - **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
 - **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
@@ -431,7 +444,7 @@
 - **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
 
 - **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
-- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
+- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
 - **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
 - **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
 - **Verification**: Verified clean build, lint, and type-check across both components.
@@ -949,7 +962,7 @@
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: `tandem-token-service` (Node/Rust) ile yerleşik Go Proxy arasında Codex (OpenAI) belirtecinin yeniden kullanım hatalarına neden olan yarış durumu çözüldü.
+- **Summary**: `tengra-token-service` (Node/Rust) ile yerleşik Go Proxy arasında Codex (OpenAI) belirtecinin yeniden kullanım hatalarına neden olan yarış durumu çözüldü.
 
 - [x] **Yarış Durumu Düzeltme**: `AuthAPIService`, `refresh_token`'yi Go Proxy for `codex` sağlayıcısından gizleyecek şekilde değiştirildi ve yenilemelerin yalnızca `TokenService` tarafından yönetilmesi sağlandı (BUG-002).
 - [x] **Doğrulama**: Tüy bırakmayan kontrollerle doğrulanmış düzeltme.
@@ -1304,7 +1317,7 @@
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/main/services/proxy/proxy.service.ts`
 - `src/renderer/features/models/components/ModelSelectorModal.tsx`
-Tandem'in gelişimini takip edin.
+Tengra'in gelişimini takip edin.
 ## 2026-02-04: 🤖 6. GRUP: ÇOK AJANLI ORKESTRASYON v2
 **Durum**: ✅ TAMAMLANDI
 **Özet**: Gelişmiş bir çok aracılı düzenleme sistemi ve kalıcı aracı profilleri uygulandı. Bu güncelleme, uzman aracılar (Planlayıcı, Çalışan, Gözden Geçiren) arasında koordineli iş akışlarına izin verir ve aracı kişiliklerinin ve sistem istemlerinin oturumlar boyunca kalıcı olmasını sağlar.
@@ -1889,7 +1902,7 @@ Tandem'in gelişimini takip edin.
 **Özet**: `DatabaseClientService` entegrasyonunun Rust arka ucuyla tam olarak doğrulanması ve sağlamlaştırılması. Farklı çalışma alanlarında güvenilir RAG ve arama işlevselliği sağlayarak proje yollarını tutarlı bir şekilde kullanmak için Kod Zekası ve Bağlam Alma sistemlerini yeniden düzenledi.
 ### Temel Başarılar
 1. **Hizmet Uyumluluğu ve Köprü Oluşturma**:
-- TypeScript `DatabaseService` ve Rust `tandem-db-service` arasındaki sözleşme sıkılaştırıldı.
+- TypeScript `DatabaseService` ve Rust `tengra-db-service` arasındaki sözleşme sıkılaştırıldı.
 - UUID tabanlı proje referanslarını yol indeksli istihbarat verileriyle köprülemek için `DatabaseService`'da uygulanan yol çözümleme mantığı.
 - Tüm temel veritabanı işlemleri (Sohbet, Mesajlar, Projeler, Bilgi) Rust HTTP API'sine göre doğrulandı.
 2. **Kod İstihbaratını Yeniden Düzenleme**:
@@ -1965,7 +1978,7 @@ Tandem'in gelişimini takip edin.
 **Durum**: ✅ TAMAMLANDI
 **Özet**: Gömülü PGlite veritabanı, Rust tabanlı bir ana makineye sahip bağımsız bir Windows Hizmeti olarak yeniden düzenlendi ve Mimari Yol Haritası görevi 4.3 tamamlandı. Veritabanı artık bağımsız bir hizmet olarak çalışarak güvenilirliği artırıyor ve veritabanının uygulama yeniden başlatıldığında kalıcı olmasını sağlıyor.
 ### Temel Başarılar
-1. **Rust Veritabanı Hizmeti (`tandem-db-service`)**:
+1. **Rust Veritabanı Hizmeti (`tengra-db-service`)**:
 - `src/services/db-service/`'da yeni Rust hizmeti
 - Eşzamanlılık için WAL moduna sahip SQLite veritabanı
 - Bincode serileştirilmiş yerleştirmeleri kullanarak vektör arama
@@ -1974,7 +1987,7 @@ Tandem'in gelişimini takip edin.
 2. **Windows Hizmet Entegrasyonu**:
 - `windows-service` kasası aracılığıyla Yerel Windows Hizmeti desteği
 - Windows ile otomatik başlatma, arıza durumunda otomatik yeniden başlatma
-- Bağlantı noktası dosyası aracılığıyla hizmet keşfi (`%APPDATA%/Tandem/services/db-service.port`)
+- Bağlantı noktası dosyası aracılığıyla hizmet keşfi (`%APPDATA%/Tengra/services/db-service.port`)
 - `scripts/install-db-service.ps1` aracılığıyla yükleyin/kaldırın
 3. **HTTP API'si**:
 - Dinamik bağlantı noktasında RESTful API
@@ -2253,9 +2266,9 @@ ipucu: 'Fikir oluşturma sırasında yapay zekanın dikkate alması için belirl
 ## [2026-01-26]
 ### Eklendi
 - Temel hizmetler için kapsamlı JSDoc belgeleri:
-- [AyarlarServisi](dosya:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
-- [SecurityService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
-- [ConfigService](file:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
+- [AyarlarServisi](dosya:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/settings.service.ts)
+- [SecurityService](file:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/auth/security.service.ts)
+- [ConfigService](file:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/config.service.ts)
 - Kotayla ilgili işlemler için `ipc-batch.util.ts`'de geliştirilmiş tür güvenliği.
 ### Sabit
 - `src/main/ipc/chat.ts`'nin `sanitizeStreamInputs` çağrısında kritik bir bağımsız değişken uyumsuzluğu.
@@ -2479,10 +2492,10 @@ Doğru durum takibi ve özet bölümleriyle `docs/TODO/` dizinindeki tüm TODO y
 - Özet bölümü eklendi
 ### Fikirler ve Özellikler
 - İncelendi ancak değişiklik yapılmasına gerek yok - ayrıntılı özellik listeleri zaten doğru
-## 2026-01-25: 🤖 Tandem PROJE TEMSİLCİSİ - OTONOM GELİŞTİRİCİ
+## 2026-01-25: 🤖 Tengra PROJE TEMSİLCİSİ - OTONOM GELİŞTİRİCİ
 **Durum**: ✅ TAMAMLANDI
 **Özet**:
-Karmaşık, çok adımlı kodlama görevlerini doğrudan IDE içinde yürütebilen, tamamen özerk bir yapay zeka geliştiricisi olan **Tandem Project Agent** uygulandı. Aracı, "Düşün -> Planla -> Harekete Geç -> Gözlemle" döngüsünde çalışır, oturumlar arasında bağlamı korur ve API sınırları için yerleşik esneklik içerir.
+Karmaşık, çok adımlı kodlama görevlerini doğrudan IDE içinde yürütebilen, tamamen özerk bir yapay zeka geliştiricisi olan **Tengra Project Agent** uygulandı. Aracı, "Düşün -> Planla -> Harekete Geç -> Gözlemle" döngüsünde çalışır, oturumlar arasında bağlamı korur ve API sınırları için yerleşik esneklik içerir.
 **Önemli Başarılar**:
 - **Otonom Temsilci Hizmeti**:
 - Sağlam bir yürütme döngüsüyle `ProjectAgentService` oluşturuldu.
@@ -2494,7 +2507,7 @@ Karmaşık, çok adımlı kodlama görevlerini doğrudan IDE içinde yürütebil
 - Otonom oturumu yönetmek için Başlat/Durdur/Duraklat kontrolleri.
 - **Sistem Entegrasyonu**:
 - Özel bir "Kıdemli Tam Yığın Mühendisi" sistem istemi (`project-agent.prompts.ts`) enjekte edildi.
-- Tandem'in Araç Yürütücüsü ile tam entegrasyon (komutları çalıştırma, dosyaları düzenleme vb.).
+- Tengra'in Araç Yürütücüsü ile tam entegrasyon (komutları çalıştırma, dosyaları düzenleme vb.).
 - **Tip Güvenliği**:
 - Derleme zamanı türü çakışmalarını çözmek için açık döküm ile sağlamlaştırılmış IPC toplu işlem yardımcı programları (`ipc-batch.util.ts`).
 **Teknik Detaylar**:
@@ -2587,7 +2600,7 @@ Tam test altyapısı, güvenliğin güçlendirilmesi ve otomatik kalite geçitle
 - CI/CD hattı: 9 kalite kapısı ve önceki 5 adım
 - Test performansı: ~7,8 saniyelik oluşturucu paketi yürütme
 - Güvenlik: Tüm dosyalarda otomatik sır taraması
-**Sonuç**: Tandem artık test, güvenlik ve kod kalitesi açısından kurumsal standartları karşılıyor! 🚀
+**Sonuç**: Tengra artık test, güvenlik ve kod kalitesi açısından kurumsal standartları karşılıyor! 🚀
 ## Son Güncellemeler
 
 ### Terminal Arka Uç Seçimi ve UI İyileştirmeleri
@@ -2670,7 +2683,7 @@ Tam test altyapısı, güvenliğin güçlendirilmesi ve otomatik kalite geçitle
 
 **Durum**: ✅ Tamamlandı
 **Özellikler**:
-- **Basitleştirilmiş Tema Sistemi**: Tutarlılığı güçlendiren uygulama temaları temiz bir "Tandem Beyaz" (Açık) ve "Tandem Siyah" (Koyu) modeliyle kısıtlandı.
+- **Basitleştirilmiş Tema Sistemi**: Tutarlılığı güçlendiren uygulama temaları temiz bir "Tengra Beyaz" (Açık) ve "Tengra Siyah" (Koyu) modeliyle kısıtlandı.
 - **Tipografi Standardizasyonu**: Oluşturucu genelinde yazı tipi kullanımını (UI için Inter, kod için JetBrains Mono) birleştirmek için `typography.css` tanıtıldı.
 - **Renk Token Geçişi**: Ana uygulama bileşenleri, sabit kodlanmış renklerden (`bg-white`, `bg-black`, `text-gray-300`) semantik tema belirteçlerine (`bg-card`, `bg-background`, `text-muted-foreground`) başarıyla geçirilerek gerçek karanlık/açık mod uyumluluğu sağlandı.
 - **Premium Tasarım Geliştirmeleri**: Cammorfizm, canlı ağ geçişleri ve pürüzsüz mikro animasyonlar için gelişmiş CSS yardımcı programları eklendi.
@@ -2702,7 +2715,7 @@ Tam test altyapısı, güvenliğin güçlendirilmesi ve otomatik kalite geçitle
 
 **Durum**: ✅ TAMAMEN TAMAMLANDI - Tüm Aşamalar Başarılı
 **Kurumsal Düzeyde Başarı Özeti**:
-Tandem, dramatik performans iyileştirmeleri, kapsamlı güvenlik güçlendirmesi, gelişmiş mimari ve mükemmel tür güvenliği ile tamamen kurumsal kullanıma hazır bir uygulamaya dönüştürüldü. Uygulama artık kurumsal iş yüklerini (10.000'den fazla öğe) optimum kaynak kullanımıyla yönetiyor.
+Tengra, dramatik performans iyileştirmeleri, kapsamlı güvenlik güçlendirmesi, gelişmiş mimari ve mükemmel tür güvenliği ile tamamen kurumsal kullanıma hazır bir uygulamaya dönüştürüldü. Uygulama artık kurumsal iş yüklerini (10.000'den fazla öğe) optimum kaynak kullanımıyla yönetiyor.
 **🚀 AŞAMA 1 ve 2: Kurumsal Performans Optimizasyonu**
 **Performans Etkisi**:
 - **Başlatma Süresi**: ~%50 daha hızlı uygulama başlatma
@@ -2770,7 +2783,7 @@ Tandem, dramatik performans iyileştirmeleri, kapsamlı güvenlik güçlendirmes
 - `src/renderer/features/settings/hooks/useSettingsStats.ts` - Toplu yükleme optimizasyonu
 - `src/renderer/features/projects/hooks/useGitData.ts` - Git toplu yükleme optimizasyonu
 - `src/renderer/features/chat/hooks/useChatCRUD.ts` - Veritabanı toplu işleme optimizasyonu
-**Sonuç**: Tandem artık **kurumsal düzeyde performans sergiliyor** ve binlerce sohbet, proje ve mesajla ağır üretim iş yüklerine hazır.
+**Sonuç**: Tengra artık **kurumsal düzeyde performans sergiliyor** ve binlerce sohbet, proje ve mesajla ağır üretim iş yüklerine hazır.
 **🔒 3. AŞAMA: Güvenliği Güçlendirme - Kapsamlı JSON Güvenliği**
 **Durum**: ✅ Tamamlandı
 **Güvenlik Başarıları**:
@@ -2838,7 +2851,7 @@ Tandem, dramatik performans iyileştirmeleri, kapsamlı güvenlik güçlendirmes
 - Karmaşık iş akışları için merkezi olay odaklı mimari
 - Derleme zamanı hata önleme özelliğiyle tür açısından güvenli geliştirme
 - Uzun süren oturumlar için optimum kaynak kullanımı
-**Yeni Nesil Temel**: Tandem artık ### için hazır kurumsal düzeyde temeller üzerine inşa edildi [2026-01-26]
+**Yeni Nesil Temel**: Tengra artık ### için hazır kurumsal düzeyde temeller üzerine inşa edildi [2026-01-26]
 - **Belgeler**: Dosya ve satır numarasına göre kategorize edilmiş, 804 tüy bırakmayan uyarının tam dökümüyle `docs/LINT_ISSUES.md` oluşturuldu.
 - **Kurallar**: Tüm aracıya özgü yapılandırma dosyalarına (`.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, `.claude/CLAUDE.md` ve `docs/AI_RULES.md`) 12 yeni Performans Optimizasyon Kuralı eklendi.
 - **Standartlaştırma**: Tüm aracı hata ayıklama çıktıları için zorunlu dizin olarak `logs/` oluşturuldu.
@@ -3359,7 +3372,7 @@ sensibleDefaults: 'burada',
 **Temel Mimari Değişiklikler**:
 - **Çift Yönlü Kalıcılık** ✅:
 - Harici hizmetlerden belirteç güncellemelerini almak için `AuthAPIService.ts` içinde `POST /api/auth/accounts/:id` uygulandı.
-- Yenilenen belirteçleri yenileme sonrasında hemen Tandem'in veritabanına geri göndermek için Go proxy'nin `HTTPAuthStore.Save`'si güncellendi.
+- Yenilenen belirteçleri yenileme sonrasında hemen Tengra'in veritabanına geri göndermek için Go proxy'nin `HTTPAuthStore.Save`'si güncellendi.
 - Bu, arka planda yenilenen belirteçlerin (Claude, Antigravity, Codex) UI etkileşimi gerektirmeden kalıcı olmasını sağlar.
 - **Kullanımdan Kaldırılan Dosya Tabanlı Senkronizasyon** ✅:
 - Diske hassas belirteçler yazan `syncAuthFiles()` mantığı tamamen kaldırıldı.
@@ -3617,7 +3630,7 @@ sensibleDefaults: 'burada',
 
 - **Mikro Hizmetlerin Yeniden Düzenlenmesi**:
 - Tüm Rust hizmetleri (`token-service`, `model-service`, `quota-service`, `memory-service`) stdin/stdout kanallarından **bağımsız HTTP sunucularına** yeniden düzenlendi.
-- Artık her hizmet **geçici bir bağlantı noktasına** bağlanıyor ve bağlantı noktasını keşif için `%APPDATA%\Tandem\services\{service}.port`'a yazıyor.
+- Artık her hizmet **geçici bir bağlantı noktasına** bağlanıyor ve bağlantı noktasını keşif için `%APPDATA%\Tengra\services\{service}.port`'a yazıyor.
 - Hizmetler ana Electron uygulamasından **tamamen bağımsız** olarak çalışabilir.
 - **ProcessManagerService**:
 - **HTTP isteklerini** stdin kanalları yerine axios aracılığıyla kullanacak şekilde güncellendi.
@@ -3625,11 +3638,11 @@ sensibleDefaults: 'burada',
 - Hizmetler artık bağımsız yaşam döngüsüne izin vermek için `detached: true` ile başlatılıyor.
 - **Windows Başlangıç ​​Entegrasyonu**:
 - Hizmetleri **Windows Zamanlanmış Görevleri** olarak kaydetmek için `scripts/register-services.ps1` oluşturuldu.
-- Hizmetler, Tandem uygulaması başlatılmadan önce bile Windows oturum açtığında otomatik olarak başlar.
+- Hizmetler, Tengra uygulaması başlatılmadan önce bile Windows oturum açtığında otomatik olarak başlar.
 - Yönetim için `-Status`, `-Uninstall` bayraklarını destekler.
 - **Varsayılan Ayarlar**:
 - Varsayılanlar değiştirildi: `startOnStartup: true`, `workAtBackground: true`.
-- Tandem artık kapanmak yerine varsayılan olarak **Sistem Tepsisi**'ne küçültülüyor.
+- Tengra artık kapanmak yerine varsayılan olarak **Sistem Tepsisi**'ne küçültülüyor.
 
 ## [2026-01-15]
 

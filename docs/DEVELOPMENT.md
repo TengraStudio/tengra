@@ -1,11 +1,11 @@
 # Development Guide
 
-This guide provides the necessary information to set up, develop, and test Tandem. We prioritize stability and security by following strict coding standards and a rigorous build process.
+This guide provides the necessary information to set up, develop, and test Tengra. We prioritize stability and security by following strict coding standards and a rigorous build process.
 
 ## Environment Setup
 
 ### Prerequisites
-To build and run Tandem locally, you need the following tools:
+To build and run Tengra locally, you need the following tools:
 - **Node.js**: v18.0.0 or higher is required for the main application.
 - **Git**: Ensure you have the latest version for version control.
 - **Go**: v1.21+ is required to compile the `cliproxy-embed` microservice.
@@ -22,7 +22,7 @@ To build and run Tandem locally, you need the following tools:
 
 ## Coding Standards
 
-Tandem follows high-integrity software standards to ensure the application remains reliable over time.
+Tengra follows high-integrity software standards to ensure the application remains reliable over time.
 
 ### Core Principles
 - **Type Safety**: The use of `any` or `unknown` is forbidden. Always define specific interfaces or use narrowed types.
@@ -37,7 +37,7 @@ Tandem follows high-integrity software standards to ensure the application remai
 
 ## Architecture and Style
 
-- **Service Layer**: Services are the backbone of Tandem. They should be modular, domain-specific, and reside in `src/main/services/`.
+- **Service Layer**: Services are the backbone of Tengra. They should be modular, domain-specific, and reside in `src/main/services/`.
 - **Path Aliasing**: Use the following aliases to keep imports clean:
     - `@main/`: `src/main/`
     - `@renderer/`: `src/renderer/`
@@ -60,4 +60,5 @@ The build process is complex because it involves multiple languages.
 3. **Frontend Build**: Vite bundles the React code, assets, and styles for the renderer process.
 4. **Native Compilation**: A custom script (`scripts/build-native.js`) triggers `go build` and `cargo build`, then moves the resulting binaries to the `resources/bin` directory.
 5. **Packaging**: Electron Builder packages the binaries and assets into an executable installer.
+
 

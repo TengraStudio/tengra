@@ -95,7 +95,7 @@ export class FileSystemService {
         '.git',
         'dist',
         'build',
-        '.tandem',
+        '.tengra',
         '.DS_Store',
     ];
 
@@ -703,3 +703,4 @@ export class FileSystemService {
         }
     }
 }
+

@@ -1,14 +1,14 @@
 
-import { ApiError, AppErrorCode, isTandemError, TandemError } from '@shared/utils/error.util';
+import { ApiError, AppErrorCode, isTengraError, TengraError } from '@shared/utils/error.util';
 import { describe, expect, it } from 'vitest';
 
 describe('Error Hierarchy', () => {
-    it('should correctly construct TandemError', () => {
-        class TestError extends TandemError { }
+    it('should correctly construct TengraError', () => {
+        class TestError extends TengraError { }
         const err = new TestError('test', AppErrorCode.UNKNOWN, { foo: 'bar' });
 
         expect(err).toBeInstanceOf(Error);
-        expect(err).toBeInstanceOf(TandemError);
+        expect(err).toBeInstanceOf(TengraError);
         expect(err.message).toBe('test');
         expect(err.code).toBe(AppErrorCode.UNKNOWN);
         expect(err.context).toEqual({ foo: 'bar' });
@@ -24,12 +24,12 @@ describe('Error Hierarchy', () => {
         expect(err.retryable).toBe(true);
     });
 
-    it('should identify TandemErrors', () => {
+    it('should identify TengraErrors', () => {
         const err = new ApiError('fail', 'test');
         const regularErr = new Error('fail');
 
-        expect(isTandemError(err)).toBe(true);
-        expect(isTandemError(regularErr)).toBe(false);
+        expect(isTengraError(err)).toBe(true);
+        expect(isTengraError(regularErr)).toBe(false);
     });
 
     it('should serialize to JSON', () => {
@@ -41,3 +41,4 @@ describe('Error Hierarchy', () => {
         expect(json.name).toBe('ApiError');
     });
 });
+

@@ -56,8 +56,8 @@ export class McpPluginService extends BaseService {
         const storageQuotaMb = serverConfig.storage?.quotaMb ?? 256;
         return {
             ...(serverConfig.env ?? {}),
-            TANDEM_MCP_STORAGE_PATH: storagePath,
-            TANDEM_MCP_STORAGE_QUOTA_MB: String(storageQuotaMb)
+            TENGRA_MCP_STORAGE_PATH: storagePath,
+            TENGRA_MCP_STORAGE_QUOTA_MB: String(storageQuotaMb)
         };
     }
 
@@ -373,3 +373,4 @@ export class McpPluginService extends BaseService {
         await this.settingsService.saveSettings({ mcpUserServers: userServers });
     }
 }
+

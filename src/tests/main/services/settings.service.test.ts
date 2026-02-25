@@ -2,10 +2,11 @@
  * Unit tests for SettingsService
  */
 import * as fs from 'fs';
-import { en } from '../../../renderer/i18n/en';
-import { tr } from '../../../renderer/i18n/tr';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { en } from '../../../renderer/i18n/en';
+import { tr } from '../../../renderer/i18n/tr';
 
 // Mock electron
 vi.mock('electron', () => ({

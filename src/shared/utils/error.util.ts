@@ -63,7 +63,7 @@ export enum AppErrorCode {
     DB_COMPRESSION_ERROR = 'DB_COMPRESSION_ERROR'
 }
 
-export class TandemError extends Error {
+export class TengraError extends Error {
     public readonly timestamp: string;
     public readonly code: string;
     public readonly context?: Record<string, unknown>;
@@ -98,7 +98,7 @@ export class TandemError extends Error {
 /**
  * Thrown when an external API call fails (e.g., OpenAI, GitHub).
  */
-export class ApiError extends TandemError {
+export class ApiError extends TengraError {
     public readonly statusCode?: number;
     public readonly provider: string;
     public readonly retryable: boolean;
@@ -111,38 +111,38 @@ export class ApiError extends TandemError {
     }
 }
 
-export class ValidationTandemError extends TandemError {
+export class ValidationTengraError extends TengraError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.VALIDATION_ERROR, context);
     }
 }
 
 // Alias for compatibility with main process code
-export class ValidationError extends ValidationTandemError { }
+export class ValidationError extends ValidationTengraError { }
 
-export class NetworkTandemError extends TandemError {
+export class NetworkTengraError extends TengraError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.NETWORK_ERROR, context);
     }
 }
 
 // Alias for compatibility with main process code
-export class NetworkError extends NetworkTandemError { }
+export class NetworkError extends NetworkTengraError { }
 
-export class NotFoundTandemError extends TandemError {
+export class NotFoundTengraError extends TengraError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.NOT_FOUND, context);
     }
 }
 
-export class UnauthorizedTandemError extends TandemError {
+export class UnauthorizedTengraError extends TengraError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, AppErrorCode.UNAUTHORIZED, context);
     }
 }
 
 // Alias for compatibility with main process code
-export class AuthenticationError extends UnauthorizedTandemError {
+export class AuthenticationError extends UnauthorizedTengraError {
     constructor(message: string, context?: Record<string, unknown>) {
         super(message, context);
         // Ensure code is AUTH_ERROR if preferred, or generic UNAUTHORIZED
@@ -319,10 +319,10 @@ export function isNodeError(error: CatchError): error is NodeJS.ErrnoException {
 }
 
 /**
- * Helper to check if an error is a TandemError.
+ * Helper to check if an error is a TengraError.
  */
-export function isTandemError(error: CatchError): error is TandemError {
-    return error instanceof TandemError;
+export function isTengraError(error: CatchError): error is TengraError {
+    return error instanceof TengraError;
 }
 
 /**
@@ -331,3 +331,4 @@ export function isTandemError(error: CatchError): error is TandemError {
 export function createErrorResponse(error: CatchError): { success: false; error: string } {
     return { success: false, error: getErrorMessage(error) };
 }
+

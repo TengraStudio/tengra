@@ -127,7 +127,7 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Tandem-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+            a.download = `Tengra-logs-${new Date().toISOString().slice(0, 10)}.txt`;
             a.click();
             URL.revokeObjectURL(url);
         }, [filteredLogs]);
@@ -280,3 +280,4 @@ export const LoggingDashboard: React.FC<LoggingDashboardProps> = React.memo(
 
 LoggingDashboard.displayName = 'LoggingDashboard';
 export default LoggingDashboard;
+

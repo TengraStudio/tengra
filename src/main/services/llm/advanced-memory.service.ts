@@ -16,6 +16,10 @@ import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { ChatMessage } from '@main/types/llm.types';
 import {
+    AdvancedMemoryImportPayloadSchema,
+    AdvancedMemoryRecallContextSchema
+} from '@shared/schemas/service-hardening.schema';
+import {
     AdvancedMemoryConfig,
     AdvancedSemanticFragment,
     ConsolidationResult,
@@ -40,10 +44,6 @@ import {
     SharedMemorySyncResult,
     SimilarMemoryCandidate
 } from '@shared/types/advanced-memory';
-import {
-    AdvancedMemoryImportPayloadSchema,
-    AdvancedMemoryRecallContextSchema
-} from '@shared/schemas/service-hardening.schema';
 import { JsonObject } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 

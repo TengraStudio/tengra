@@ -882,7 +882,7 @@ ${context}`;
         prompt: string,
         model: string
     ): Promise<string> {
-        const targetDir = join(projectPath, '.tandem', 'temp');
+        const targetDir = join(projectPath, '.tengra', 'temp');
         const timestamp = Date.now();
         const randomSuffix = Math.floor(Math.random() * 1000);
         const targetPath = join(targetDir, `logo-${timestamp}-${randomSuffix}.png`);
@@ -893,7 +893,7 @@ ${context}`;
         // ImagePersistenceService.saveImage handles data URIs and URLs.
         // But here we want to save to the PROJECT temp folder first for the UI to display?
         // Or does the UI use the gallery path?
-        // The original code copied to project/.tandem/temp AND saved to gallery.
+        // The original code copied to project/.tengra/temp AND saved to gallery.
         // Let's keep that behavior.
 
         const resolvedLocalSource = this.resolveLocalImagePath(sourcePathOrUrl);
@@ -944,10 +944,10 @@ ${context}`;
 
     async applyLogo(projectPath: string, tempLogoPath: string): Promise<string> {
         try {
-            const tandemDir = join(projectPath, '.tandem');
-            await fs.mkdir(tandemDir, { recursive: true });
+            const tengraDir = join(projectPath, '.tengra');
+            await fs.mkdir(tengraDir, { recursive: true });
 
-            const targetPath = join(tandemDir, 'logo.png');
+            const targetPath = join(tengraDir, 'logo.png');
             const sourcePath = this.resolveLocalImagePath(tempLogoPath);
             if (sourcePath !== targetPath) {
                 await fs.copyFile(sourcePath, targetPath);
@@ -987,3 +987,5 @@ ${text}`;
         return response.content;
     }
 }
+
+

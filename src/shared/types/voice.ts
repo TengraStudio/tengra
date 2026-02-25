@@ -148,7 +148,7 @@ export interface VoiceEvent {
 /** Default voice settings */
 export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
     enabled: false,
-    wakeWord: 'tandem',
+    wakeWord: 'tengra',
     customWakeWords: [],
     recognitionLanguage: 'en-US',
     synthesisVoice: '',
@@ -275,3 +275,4 @@ export const DEFAULT_VOICE_COMMANDS: VoiceCommand[] = [
         enabled: true,
     },
 ];
+

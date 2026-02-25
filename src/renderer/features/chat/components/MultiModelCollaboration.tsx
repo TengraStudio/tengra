@@ -407,7 +407,7 @@ export function MultiModelCollaboration({
                             size="sm"
                             variant="outline"
                             onClick={async () => {
-                                const link = `tandem://share/${sessionId}?guest=${allowGuests ? '1' : '0'}`;
+                                const link = `tengra://share/${sessionId}?guest=${allowGuests ? '1' : '0'}`;
                                 setShareLink(link);
                                 await navigator.clipboard.writeText(link).catch(() => {});
                                 appendRecordingEvent(t('chat.collaboration.linkGenerated'));
@@ -471,3 +471,4 @@ export function MultiModelCollaboration({
         </ResponsiveContainer>
     );
 }
+

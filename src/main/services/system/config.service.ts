@@ -129,7 +129,8 @@ export class ConfigService extends BaseService {
      * @returns The database path string, or a default value if not set.
      */
     getDatabasePath(): string {
-        return process.env.DATABASE_PATH ?? 'default-Tandem.db';
+        return process.env.DATABASE_PATH ?? 'default-Tengra.db';
     }
 }
+
 

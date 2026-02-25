@@ -41,7 +41,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         const appData =
             process.env.APPDATA ??
             path.join(process.env.HOME ?? '', 'Library', 'Application Support');
-        return path.join(appData, 'Tandem', 'services', `${name}.port`);
+        return path.join(appData, 'Tengra', 'services', `${name}.port`);
     }
 
     private async isPortOpen(port: number): Promise<boolean> {
@@ -142,7 +142,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
             const child = spawn(binPath, options.args ?? [], {
                 stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin to prevent hanging
                 windowsHide: true, // Clean taskbar
-                detached: true, // Allow it to live beyond Tandem
+                detached: true, // Allow it to live beyond Tengra
             });
 
             child.unref(); // Electron won't wait for it to exit
@@ -439,3 +439,4 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         return candidates[0];
     }
 }
+

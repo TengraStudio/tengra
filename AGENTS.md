@@ -1,4 +1,4 @@
-# AI Agent Guide for Tandem
+# AI Agent Guide for Tengra
 
 > **CRITICAL**: Read this document completely before making any changes to the codebase.
 
@@ -12,7 +12,7 @@
 
 ## Project Overview
 
-**Tandem** is a desktop AI assistant application built with Electron, React, and TypeScript. It provides multi-LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
+**Tengra** is a desktop AI assistant application built with Electron, React, and TypeScript. It provides multi-LLM support, project management, terminal integration, and extensibility via MCP (Model Context Protocol) plugins.
 
 ### Technology Stack
 
@@ -57,7 +57,7 @@
 ## Directory Structure
 
 ```
-tandem/
+tengra/
 ├── src/
 │   ├── main/                 # Electron main process
 │   │   ├── services/         # Backend services (by domain)
@@ -380,3 +380,4 @@ Located in `src/main/mcp/templates/server.template.ts`
 - Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - Review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Check [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+

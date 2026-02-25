@@ -43,17 +43,13 @@ interface UseExtensionsReturn extends UseExtensionsState {
     getProfile: (extensionId: string) => Promise<{ success: boolean; profile?: ExtensionProfileData }>;
 }
 
-/**
- * Hook for managing extensions
- */
-export function useExtensions(): UseExtensionsReturn {
+function useExtensionState() {
     const [state, setState] = useState<UseExtensionsState>({
         extensions: [],
         loading: false,
         error: null,
     });
 
-    /** Fetch all extensions */
     const refresh = useCallback(async (): Promise<void> => {
         setState((prev) => ({ ...prev, loading: true, error: null }));
 
@@ -81,6 +77,50 @@ export function useExtensions(): UseExtensionsReturn {
         }
     }, []);
 
+    useEffect(() => {
+        let mounted = true;
+
+        async function loadExtensions() {
+            if (!mounted) { return; }
+            setState((prev) => ({ ...prev, loading: true, error: null }));
+
+            try {
+                const result = await window.electron.extension?.getAll();
+                if (!mounted) { return; }
+                if (result?.success) {
+                    setState({
+                        extensions: result.extensions,
+                        loading: false,
+                        error: null,
+                    });
+                } else {
+                    setState({
+                        extensions: [],
+                        loading: false,
+                        error: 'Failed to fetch extensions',
+                    });
+                }
+            } catch (error) {
+                if (!mounted) { return; }
+                setState({
+                    extensions: [],
+                    loading: false,
+                    error: (error as Error).message,
+                });
+            }
+        }
+
+        void loadExtensions();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    return { state, refresh };
+}
+
+function useExtensionActions(refresh: () => Promise<void>) {
     /** Install an extension */
     const install = useCallback(async (extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> => {
         try {
@@ -133,6 +173,10 @@ export function useExtensions(): UseExtensionsReturn {
         }
     }, [refresh]);
 
+    return { install, uninstall, activate, deactivate };
+}
+
+function useExtensionDev(refresh: () => Promise<void>) {
     /** Start development server */
     const startDev = useCallback(async (options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> => {
         try {
@@ -172,6 +216,10 @@ export function useExtensions(): UseExtensionsReturn {
         }
     }, [refresh]);
 
+    return { startDev, stopDev, reload };
+}
+
+function useExtensionTools() {
     /** Run tests */
     const runTests = useCallback(async (options: ExtensionTestOptions): Promise<ExtensionTestResult> => {
         try {
@@ -202,46 +250,17 @@ export function useExtensions(): UseExtensionsReturn {
         }
     }, []);
 
-    // Load extensions on mount
-    useEffect(() => {
-        let mounted = true;
+    return { runTests, publish, getProfile };
+}
 
-        async function loadExtensions() {
-            if (!mounted) {return;}
-            setState((prev) => ({ ...prev, loading: true, error: null }));
-
-            try {
-                const result = await window.electron.extension?.getAll();
-                if (!mounted) {return;}
-                if (result?.success) {
-                    setState({
-                        extensions: result.extensions,
-                        loading: false,
-                        error: null,
-                    });
-                } else {
-                    setState({
-                        extensions: [],
-                        loading: false,
-                        error: 'Failed to fetch extensions',
-                    });
-                }
-            } catch (error) {
-                if (!mounted) {return;}
-                setState({
-                    extensions: [],
-                    loading: false,
-                    error: (error as Error).message,
-                });
-            }
-        }
-
-        void loadExtensions();
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
+/**
+ * Hook for managing extensions
+ */
+export function useExtensions(): UseExtensionsReturn {
+    const { state, refresh } = useExtensionState();
+    const { install, uninstall, activate, deactivate } = useExtensionActions(refresh);
+    const { startDev, stopDev, reload } = useExtensionDev(refresh);
+    const { runTests, publish, getProfile } = useExtensionTools();
 
     return {
         ...state,

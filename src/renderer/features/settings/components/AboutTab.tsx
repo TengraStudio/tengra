@@ -1,8 +1,8 @@
 import { Activity, AlertTriangle, ExternalLink } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-import logoBlack from '@/assets/tandem_black.png';
-import logoWhite from '@/assets/tandem_white.png';
+import logoBlack from '@/assets/tengra_black.png';
+import logoWhite from '@/assets/tengra_white.png';
 import { useTheme } from '@/hooks/useTheme';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -42,7 +42,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                 <div className="flex gap-3">
                     <button
                         onClick={() =>
-                            window.electron.openExternal('https://github.com/agnes0912491/Tandem')
+                            window.electron.openExternal('https://github.com/agnes0912491/Tengra')
                         }
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-xs font-bold text-muted-foreground hover:text-foreground border border-border/50"
                     >
@@ -50,7 +50,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
                     </button>
                     <button
                         onClick={() =>
-                            window.electron.openExternal('https://github.com/agnes0912491/Tandem')
+                            window.electron.openExternal('https://github.com/agnes0912491/Tengra')
                         }
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 text-xs font-bold text-muted-foreground hover:text-foreground border border-border/50"
                     >
@@ -139,3 +139,5 @@ export const AboutTab: React.FC<AboutTabProps> = ({ onReset, t }) => {
         </div>
     );
 };
+
+

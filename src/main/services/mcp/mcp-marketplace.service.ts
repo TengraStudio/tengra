@@ -452,7 +452,7 @@ export class McpMarketplaceService extends BaseService {
                     timeout: 10000,
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'User-Agent': 'Tandem-MCP-Marketplace'
+                        'User-Agent': 'Tengra-MCP-Marketplace'
                     }
                 }
             );
@@ -704,3 +704,4 @@ export class McpMarketplaceService extends BaseService {
         this.cache.clear();
     }
 }
+

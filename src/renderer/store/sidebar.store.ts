@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = 'tandem.sidebar.v1';
+const STORAGE_KEY = 'tengra.sidebar.v1';
 
 interface SidebarState {
     collapsed: boolean;
@@ -92,3 +92,4 @@ export function useSidebarStore<T>(selector: (snapshot: SidebarState) => T): T {
         () => selector(getSidebarSnapshot())
     );
 }
+

@@ -25,4 +25,46 @@ export interface AccountWrapper<T> {
     accounts: (T & { accountId?: string; email?: string; error?: string })[]
 }
 
+export type ImageProvider = 'antigravity' | 'ollama' | 'sd-webui' | 'comfyui' | 'pollinations' | 'sd-cpp';
+
+export interface ImageHistoryEntry {
+    id: string;
+    provider: string;
+    prompt: string;
+    width: number;
+    height: number;
+    steps: number;
+    cfgScale: number;
+    imagePath: string;
+    createdAt: number;
+}
+
+export interface ImagePresetEntry {
+    id: string;
+    name: string;
+    promptPrefix?: string;
+    width: number;
+    height: number;
+    steps: number;
+    cfgScale: number;
+}
+
+export interface ImageScheduleEntry {
+    id: string;
+    runAt: number;
+    status: string;
+    options: {
+        prompt: string;
+    };
+}
+
+export interface ImageComparisonResult {
+    ids: string[];
+    summary: {
+        averageFileSizeBytes: number;
+        smallestFileId?: string;
+        largestFileId?: string;
+    };
+}
+
 export * from './types/props';

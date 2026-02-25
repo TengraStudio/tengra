@@ -85,7 +85,7 @@ export const es = {
         "chart": "Cargando gráfico"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "V {{version}}"
     },
     "errors": {
@@ -247,7 +247,7 @@ export const es = {
         },
         "browserClosure": {
             "title": "Se requiere cerrar el navegador",
-            "description": "Para autenticar con {{provider}}, Tandem necesita leer cookies protegidas.",
+            "description": "Para autenticar con {{provider}}, Tengra necesita leer cookies protegidas.",
             "warningPrefix": "Debemos",
             "warningEmphasis": "cerrar automáticamente tu navegador",
             "warningSuffix": "para liberar el bloqueo de archivos.",
@@ -626,7 +626,7 @@ export const es = {
             "pushing": "Haciendo push..."
         },
         "noIssues": "No se encontraron problemas significativos en el proyecto. ¡Buen trabajo!",
-        "issuesDescription": "Tandem escanea tu proyecto en busca de posibles errores, advertencias y olores de código.",
+        "issuesDescription": "Tengra escanea tu proyecto en busca de posibles errores, advertencias y olores de código.",
         "issueType": "TIPO",
         "issueMessage": "MENSAJE",
         "issueLocation": "UBICACIÓN",
@@ -1036,7 +1036,7 @@ export const es = {
     },
     "memory": {
         "title": "Inspector de memoria",
-        "subtitle": "Visualiza y gestiona lo que Tandem sabe y recuerda.",
+        "subtitle": "Visualiza y gestiona lo que Tengra sabe y recuerda.",
         "searchPlaceholder": "Buscar en memoria...",
         "totalFacts": "Total de hechos",
         "episodes": "Episodios",
@@ -1377,7 +1377,7 @@ export const es = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "La inteligencia encuentra la elegancia."
     },
     "auth": {
@@ -1386,7 +1386,7 @@ export const es = {
         "connectionFailed": "Error de conexión con el servidor Antigravity. Por favor inicia sesión o verifica tu clave API.",
         "sessionKeyRequired": "Se requiere clave de sesión de Claude",
         "completeConnection": "Completar conexión para {{email}}",
-        "sessionKeyDescription": "Para el seguimiento de cuotas e interacción directa, Tandem necesita tu clave de sesión de Claude. Se almacena encriptada localmente.",
+        "sessionKeyDescription": "Para el seguimiento de cuotas e interacción directa, Tengra necesita tu clave de sesión de Claude. Se almacena encriptada localmente.",
         "howToFindKey": "Cómo encontrar tu clave de sesión",
         "sessionKeyInstructions": {
             "step1": "Abre claude.ai e inicia sesión",
@@ -1788,7 +1788,7 @@ export const es = {
         "creative": {
             "title": "Escritura creativa",
             "description": "Generar texto y contenido.",
-            "prompt": "¿Puedes escribir un texto de introducción impresionante para un asistente de IA llamado Tandem?"
+            "prompt": "¿Puedes escribir un texto de introducción impresionante para un asistente de IA llamado Tengra?"
         },
         "debug": {
             "title": "Depuración",
@@ -1810,7 +1810,7 @@ export const es = {
         "user": "Usuario",
         "assistant": "Asistente",
         "copyAsHtml": "Copiar como HTML",
-        "TandemDrawing": "Dibujo de Tandem...",
+        "TengraDrawing": "Dibujo de Tengra...",
         "quotaExceeded": "Cuota excedida",
         "quotaMessage": "Has excedido la cuota de uso del modelo. Por favor intenta de nuevo más tarde o mejora tu plan.",
         "resetsAt": "Se reinicia en:",
@@ -1819,7 +1819,7 @@ export const es = {
         "speakAloud": "Leer en voz alta",
         "convertToCode": "Convertir a código",
         "approvePlan": "Aprobar plan",
-        "TandemThinking": "Tandem pensando",
+        "TengraThinking": "Tengra pensando",
         "showThought": "Mostrar pensamiento",
         "react": "Reaccionar",
         "runBenchmark": "Ejecutar benchmark",
@@ -1880,12 +1880,12 @@ export const es = {
         "updates": "Actualizaciones",
         "privacy": "Privacidad",
         "crashReporting": "Informe de fallos",
-        "crashReportingDesc": "Envíe informes de fallos anónimos para ayudarnos a mejorar Tandem.",
+        "crashReportingDesc": "Envíe informes de fallos anónimos para ayudarnos a mejorar Tengra.",
         "startup": "Puesta en marcha",
         "startOnStartup": "Iniciar al iniciar el sistema",
-        "startOnStartupDesc": "Inicie automáticamente Tandem cuando se inicie su computadora.",
+        "startOnStartupDesc": "Inicie automáticamente Tengra cuando se inicie su computadora.",
         "workAtBackground": "Ejecutar en segundo plano",
-        "workAtBackgroundDesc": "Mantenga Tandem ejecutándose en segundo plano después de cerrar la ventana."
+        "workAtBackgroundDesc": "Mantenga Tengra ejecutándose en segundo plano después de cerrar la ventana."
     },
     "appearance": {
         "themeDesc": "Cambiar el tema de color de la aplicación.",
@@ -1893,7 +1893,7 @@ export const es = {
         "fontDesc": "Personalizar la fuente y el tamaño de la aplicación.",
         "fontFamily": "FAMILIA DE FUENTE",
         "fontSize": "TAMAÑO DE FUENTE",
-        "previewText": "Da forma al futuro con Tandem IA.",
+        "previewText": "Da forma al futuro con Tengra IA.",
         "accessibility": "Accesibilidad",
         "accessibilityDesc": "Ajustes de pantalla y visibilidad",
         "highContrast": "Modo de alto contraste",
@@ -2000,11 +2000,11 @@ export const es = {
         "copilotTitle": "GitHub Copilot"
     },
     "about": {
-        "description": "Tandem es un asistente IDE de IA de próxima generación diseñado para desarrolladores, unificando modelos de IA locales y basados en la nube en una sola interfaz.",
+        "description": "Tengra es un asistente IDE de IA de próxima generación diseñado para desarrolladores, unificando modelos de IA locales y basados en la nube en una sola interfaz.",
         "checkUpdates": "Buscar actualizaciones",
         "privacyPolicy": "Política de privacidad",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "Restablecimiento de fábrica",
         "factoryResetDesc": "Restablece la aplicación eliminando todos los ajustes y datos.",
         "updateCheckAlert": "Verificación de actualizaciones habilitada en compilaciones de producción.",
@@ -2055,7 +2055,7 @@ export const es = {
     "tips": {
         "title": "¿Sabías que?",
         "tip1": "Puedes crear un nuevo chat usando el acceso directo CTRL+N.",
-        "tip2": "Tandem admite la conexión a servidores SSH remotos para el desarrollo.",
+        "tip2": "Tengra admite la conexión a servidores SSH remotos para el desarrollo.",
         "tip3": "Puedes arrastrar y soltar archivos directamente en el chat.",
         "tip4": "Usa la pestaña \"Consejo\" para obtener perspectivas de múltiples agentes sobre tu código.",
         "tip5": "Personaliza tu experiencia en Ajustes > Apariencia.",
@@ -2213,7 +2213,7 @@ export const es = {
         "navigate": "Navegar",
         "select": "Seleccionar",
         "close": "Cerrar",
-        "engineLabel": "Motor de comandos de Tandem",
+        "engineLabel": "Motor de comandos de Tengra",
         "previewEmpty": "Selecciona un elemento para ver detalles",
         "noResultsHint": "Intenta buscar chats, modelos o ajustes"
     },
@@ -2241,10 +2241,10 @@ export const es = {
     "updateNotification": {
         "checkingTitle": "Buscando actualizaciones...",
         "availableTitle": "Actualización disponible: v{{version}}",
-        "availableContent": "Hay una nueva versión de Tandem disponible.",
+        "availableContent": "Hay una nueva versión de Tengra disponible.",
         "downloadingTitle": "Descargando actualización...",
         "downloadedTitle": "Actualización lista",
-        "downloadedContent": "Reinicia Tandem para aplicar la última actualización.",
+        "downloadedContent": "Reinicia Tengra para aplicar la última actualización.",
         "errorTitle": "La actualización falló",
         "uptodateTitle": "Estás al día",
         "downloadAction": "Descargar",
@@ -2383,7 +2383,7 @@ export const es = {
         "noLogs": "No hay registros disponibles"
     },
     "onboarding": {
-        "welcome": "Bienvenido a Tandem",
+        "welcome": "Bienvenido a Tengra",
         "step1": "Conectar proveedores de IA",
         "step2": "Configurar espacio de trabajo",
         "step3": "Empezar a programar",
@@ -2392,18 +2392,18 @@ export const es = {
         "finish": "Finalizar",
         "language": {
             "title": "Elige tu idioma",
-            "description": "Seleccione su idioma preferido para comenzar con Tandem."
+            "description": "Seleccione su idioma preferido para comenzar con Tengra."
         },
-        "welcomeTitle": "Bienvenido a Tandem",
-        "welcomeDescription": "Su compañero de codificación impulsado por IA. Tandem te ayuda a escribir, depurar y comprender código con múltiples proveedores de IA a tu alcance.",
+        "welcomeTitle": "Bienvenido a Tengra",
+        "welcomeDescription": "Su compañero de codificación impulsado por IA. Tengra te ayuda a escribir, depurar y comprender código con múltiples proveedores de IA a tu alcance.",
         "multiModelTitle": "Soporte multimodelo",
-        "multiModelDescription": "Conéctese a OpenAI, Anthropic, Google, Ollama y más. Cambie entre modelos al instante o deje que Tandem elija el mejor para su tarea.",
+        "multiModelDescription": "Conéctese a OpenAI, Anthropic, Google, Ollama y más. Cambie entre modelos al instante o deje que Tengra elija el mejor para su tarea.",
         "workspaceTitle": "Tu espacio de trabajo",
         "workspaceDescription": "Organice proyectos, administre conversaciones y acceda a su historial de codificación. Todo permanece local y seguro en su máquina.",
         "privacyTitle": "Privacidad primero",
-        "privacyDescription": "Tu código sigue siendo tuyo. Tandem se ejecuta localmente con funciones de nube opcionales. Control total sobre qué datos salen de su computadora.",
+        "privacyDescription": "Tu código sigue siendo tuyo. Tengra se ejecuta localmente con funciones de nube opcionales. Control total sobre qué datos salen de su computadora.",
         "step1Title": "Conozca a su asistente de IA",
-        "step1Desc": "Tandem combina múltiples modelos de IA para ayudarte a codificar más rápido. Haga preguntas, genere código o depure problemas con lenguaje natural.",
+        "step1Desc": "Tengra combina múltiples modelos de IA para ayudarte a codificar más rápido. Haga preguntas, genere código o depure problemas con lenguaje natural.",
         "step2Title": "Paleta de comandos",
         "step2Desc": "Presione Cmd+K (o Ctrl+K en Windows) para acceder a la paleta de comandos. Navegue, busque y ejecute acciones rápidamente desde cualquier lugar.",
         "step3Title": "Espacios de trabajo y proyectos",
@@ -2411,7 +2411,7 @@ export const es = {
         "step4Title": "Seguridad incorporada",
         "step4Desc": "Las claves API están cifradas localmente. Todas las conversaciones pueden permanecer sin conexión con Ollama. Tú controlas lo que se comparte y lo que permanece privado.",
         "step5Title": "Empezar a chatear",
-        "step5Desc": "Escriba su primer mensaje a continuación. Pide ayuda con el código, explica un concepto o genera algo nuevo. Tandem estará listo cuando tú lo estés.",
+        "step5Desc": "Escriba su primer mensaje a continuación. Pide ayuda con el código, explica un concepto o genera algo nuevo. Tengra estará listo cuando tú lo estés.",
         "back": "Atrás",
         "continue": "Continuar",
         "letsStart": "Empecemos"
@@ -2459,9 +2459,9 @@ export const es = {
     },
     "extensionPrompt": {
         "title": "Mejora tu experiencia",
-        "subtitle": "Instala la extensión de navegador de Tandem",
+        "subtitle": "Instala la extensión de navegador de Tengra",
         "infoTitle": "¿Qué es la extensión del navegador?",
-        "infoBody": "La extensión de navegador de Tandem permite que la IA interactúe directamente con páginas web. Puede leer contenido, completar formularios, hacer clic en botones y realizar acciones automatizadas según tus comandos.",
+        "infoBody": "La extensión de navegador de Tengra permite que la IA interactúe directamente con páginas web. Puede leer contenido, completar formularios, hacer clic en botones y realizar acciones automatizadas según tus comandos.",
         "featuresTitle": "Funciones:",
         "features": {
             "aiChatTitle": "Chat de IA en el navegador:",
@@ -2479,7 +2479,7 @@ export const es = {
             "step2": "Activa el \"modo desarrollador\" (interruptor arriba a la derecha)",
             "step3": "Haz clic en \"Cargar descomprimida\"",
             "step4Prefix": "Selecciona la carpeta",
-            "step4Suffix": "del directorio Tandem"
+            "step4Suffix": "del directorio Tengra"
         },
         "openFolder": "Abrir carpeta de la extensión",
         "viewInstructions": "Ver instrucciones",
@@ -2494,13 +2494,13 @@ export const es = {
         "systemDefault": "Predeterminado del sistema",
         "test": "Probar voz",
         "speed": "Velocidad de habla",
-        "previewText": "Bienvenido al futuro con Tandem. Soy tu asistente de IA.",
+        "previewText": "Bienvenido al futuro con Tengra. Soy tu asistente de IA.",
         "microphone": "Micrófono",
         "speaker": "Altavoz / Auriculares",
         "microphoneSelection": "Entrada de micrófono",
         "speakerSelection": "Salida de audio",
         "voiceCloning": "Clonación de voz",
-        "voiceCloningDesc": "Integra tu propia voz en el ecosistema Tandem.",
+        "voiceCloningDesc": "Integra tu propia voz en el ecosistema Tengra.",
         "voiceCloningTitle": "¡Usa tu propia voz!",
         "voiceCloningTeaser": "Habla durante 1 minuto y deja que la IA imite tu voz. ¡Esta función ya está activa!",
         "record": "Comenzar grabación",
@@ -2888,3 +2888,5 @@ export const es = {
         "editorNote": "Utilice el modo JSON para la configuración avanzada de activadores y pasos."
     }
 };
+
+

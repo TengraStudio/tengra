@@ -15,11 +15,11 @@ export class RuleService {
     constructor() { }
 
     /**
-     * Reads .tandem/RULES.md from the given project root.
+     * Reads .tengra/RULES.md from the given project root.
      * Returns null if file doesn't exist.
      */
     async getRules(projectRoot: string): Promise<string | null> {
-        const rulesPath = path.join(projectRoot, '.tandem', 'RULES.md');
+        const rulesPath = path.join(projectRoot, '.tengra', 'RULES.md');
 
         try {
             const stats = await fs.stat(rulesPath);
@@ -55,7 +55,8 @@ export class RuleService {
      * Clears cache for a specific project
      */
     clearCache(projectRoot: string) {
-        const rulesPath = path.join(projectRoot, '.tandem', 'RULES.md');
+        const rulesPath = path.join(projectRoot, '.tengra', 'RULES.md');
         this.cache.delete(rulesPath);
     }
 }
+

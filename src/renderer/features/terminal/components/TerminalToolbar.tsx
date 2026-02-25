@@ -1,6 +1,3 @@
-import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
-import type { ComponentProps } from 'react';
-import { useEffect, useMemo } from 'react';
 import { sanitizeBackendId, sanitizeShellId } from '@renderer/features/terminal/utils/terminal-toolbar-validation';
 import {
     recordTerminalToolbarFailure,
@@ -9,6 +6,9 @@ import {
     setTerminalToolbarUiState,
     useTerminalToolbarHealth,
 } from '@renderer/store/terminal-toolbar-health.store';
+import { Check, ChevronDown, Maximize2, Minimize2, Plus, Rows2, TerminalSquare } from 'lucide-react';
+import type { ComponentProps } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';

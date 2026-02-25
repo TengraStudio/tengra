@@ -36,7 +36,7 @@ export class McpModule {
     static getInfo() {
         return {
             version: '1.0.0',
-            description: 'Model Context Protocol integration for Tandem',
+            description: 'Model Context Protocol integration for Tengra',
             availableServers: Object.values(McpServerType),
             status: 'active'
         };

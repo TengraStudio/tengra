@@ -85,7 +85,7 @@ export const de = {
         "chart": "Diagramm wird geladen"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "V {{version}}"
     },
     "errors": {
@@ -247,7 +247,7 @@ export const de = {
         },
         "browserClosure": {
             "title": "Browser muss geschlossen werden",
-            "description": "Zur Authentifizierung mit {{provider}} muss Tandem geschützte Cookies lesen.",
+            "description": "Zur Authentifizierung mit {{provider}} muss Tengra geschützte Cookies lesen.",
             "warningPrefix": "Wir müssen",
             "warningEmphasis": "Ihren Browser automatisch schließen",
             "warningSuffix": "um die Dateisperre zu lösen.",
@@ -633,7 +633,7 @@ export const de = {
             "pushing": "Pushing..."
         },
         "noIssues": "Keine signifikanten Probleme im Projekt gefunden. Gute Arbeit!",
-        "issuesDescription": "Tandem scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.",
+        "issuesDescription": "Tengra scannt Ihr Projekt auf potenzielle Fehler, Warnungen und Code-Smells.",
         "issueType": "TYP",
         "issueMessage": "NACHRICHT",
         "issueLocation": "ORT",
@@ -1036,7 +1036,7 @@ export const de = {
     },
     "memory": {
         "title": "Speicherinspektor",
-        "subtitle": "Visualisieren und verwalten Sie, was Tandem weiß und erinnert.",
+        "subtitle": "Visualisieren und verwalten Sie, was Tengra weiß und erinnert.",
         "searchPlaceholder": "Speicher durchsuchen...",
         "totalFacts": "Gesamte Fakten",
         "episodes": "Episoden",
@@ -1377,7 +1377,7 @@ export const de = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "Intelligenz trifft Eleganz."
     },
     "auth": {
@@ -1386,7 +1386,7 @@ export const de = {
         "connectionFailed": "Verbindung zum Antigravity-Server fehlgeschlagen. Bitte melden Sie sich an oder überprüfen Sie Ihren API-Schlüssel.",
         "sessionKeyRequired": "Claude-Sitzungsschlüssel erforderlich",
         "completeConnection": "Verbindung für {{email}} abschließen",
-        "sessionKeyDescription": "Für Kontingent-Tracking und direkte Interaktion benötigt Tandem Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.",
+        "sessionKeyDescription": "Für Kontingent-Tracking und direkte Interaktion benötigt Tengra Ihren Claude-Sitzungsschlüssel. Dieser wird lokal verschlüsselt auf Ihrem Gerät gespeichert.",
         "howToFindKey": "So finden Sie Ihren Sitzungsschlüssel",
         "sessionKeyInstructions": {
             "step1": "Öffnen Sie claude.ai und melden Sie sich an",
@@ -1417,13 +1417,13 @@ export const de = {
         "systemDefault": "Systemstandard",
         "test": "Stimme testen",
         "speed": "Sprachgeschwindigkeit",
-        "previewText": "Willkommen in der Zukunft mit Tandem. Ich bin Ihr KI-Assistent.",
+        "previewText": "Willkommen in der Zukunft mit Tengra. Ich bin Ihr KI-Assistent.",
         "microphone": "Mikrofon",
         "speaker": "Lautsprecher / Kopfhörer",
         "microphoneSelection": "Mikrofoneingabe",
         "speakerSelection": "Audioausgabe",
         "voiceCloning": "Stimmklonen",
-        "voiceCloningDesc": "Integrieren Sie Ihre eigene Stimme in das Tandem-Ökosystem.",
+        "voiceCloningDesc": "Integrieren Sie Ihre eigene Stimme in das Tengra-Ökosystem.",
         "voiceCloningTitle": "Verwenden Sie Ihre eigene Stimme!",
         "voiceCloningTeaser": "Sprechen Sie 1 Minute und lassen Sie die KI Ihre Stimme imitieren. Diese Funktion ist jetzt aktiv!",
         "record": "Aufnahme starten",
@@ -1848,7 +1848,7 @@ export const de = {
         "creative": {
             "title": "Kreatives Schreiben",
             "description": "Texte und Inhalte generieren.",
-            "prompt": "Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Tandem schreiben?"
+            "prompt": "Können Sie einen beeindruckenden Einführungstext für einen KI-Assistenten namens Tengra schreiben?"
         },
         "debug": {
             "title": "Debuggen",
@@ -1870,7 +1870,7 @@ export const de = {
         "user": "Benutzer",
         "assistant": "Assistent",
         "copyAsHtml": "Als HTML kopieren",
-        "TandemDrawing": "Tandem Zeichnung...",
+        "TengraDrawing": "Tengra Zeichnung...",
         "quotaExceeded": "Kontingent überschritten",
         "quotaMessage": "Sie haben das Nutzungskontingent für das Modell überschritten. Bitte versuchen Sie es später erneut oder erweitern Sie Ihren Plan.",
         "resetsAt": "Wird zurückgesetzt am:",
@@ -1879,7 +1879,7 @@ export const de = {
         "speakAloud": "Vorlesen",
         "convertToCode": "In Code umwandeln",
         "approvePlan": "Plan genehmigen",
-        "TandemThinking": "Tandem denkt nach",
+        "TengraThinking": "Tengra denkt nach",
         "showThought": "Gedankengänge anzeigen",
         "react": "Reagieren",
         "runBenchmark": "Benchmark ausführen",
@@ -1930,7 +1930,7 @@ export const de = {
         "updates": "Updates",
         "privacy": "Datenschutz",
         "crashReporting": "Absturzberichte",
-        "crashReportingDesc": "Senden Sie anonyme Absturzberichte, um Tandem zu verbessern.",
+        "crashReportingDesc": "Senden Sie anonyme Absturzberichte, um Tengra zu verbessern.",
         "startOnStartup": "Beim Start ausführen",
         "startOnStartupDesc": "Startet die App automatisch beim Systemstart.",
         "workAtBackground": "Im Hintergrund arbeiten",
@@ -1953,7 +1953,7 @@ export const de = {
         "fontDesc": "Anpassung der Schriftart und -größe.",
         "fontFamily": "SCHRIFTFAMILIE",
         "fontSize": "SCHRIFTGRÖSSE",
-        "previewText": "Gestalten Sie die Zukunft mit Tandem KI.",
+        "previewText": "Gestalten Sie die Zukunft mit Tengra KI.",
         "accessibility": "Barrierefreiheit",
         "accessibilityDesc": "Anzeige- und Sichtbarkeitseinstellungen",
         "highContrast": "Hochkontrastmodus",
@@ -2060,11 +2060,11 @@ export const de = {
         "weeklyStatus": "Wöchentlicher Status"
     },
     "about": {
-        "description": "Tandem ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.",
+        "description": "Tengra ist ein KI-IDE-Assistent der nächsten Generation für Entwickler, der lokale und cloudbasierte KI-Modelle in einer einzigen Schnittstelle vereint.",
         "checkUpdates": "Auf Updates prüfen",
         "privacyPolicy": "Datenschutzerklärung",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "Werksreset",
         "factoryResetDesc": "Setzt die Anwendung zurück, indem alle Einstellungen und Daten gelöscht werden.",
         "updateCheckAlert": "Update-Prüfung in Produktions-Builds aktiviert.",
@@ -2115,7 +2115,7 @@ export const de = {
     "tips": {
         "title": "Wussten Sie schon?",
         "tip1": "Sie können einen neuen Chat mit der Tastenkombination CTRL+N erstellen.",
-        "tip2": "Tandem unterstützt die Verbindung zu Remote-SSH-Servern für die Entwicklung.",
+        "tip2": "Tengra unterstützt die Verbindung zu Remote-SSH-Servern für die Entwicklung.",
         "tip3": "Sie können Dateien direkt per Drag & Drop in den Chat ziehen.",
         "tip4": "Nutzen Sie den Tab \"Rat\", um Multi-Agenten-Perspektiven auf Ihren Code zu erhalten.",
         "tip5": "Passen Sie Ihr Erlebnis unter Einstellungen > Erscheinungsbild an.",
@@ -2273,7 +2273,7 @@ export const de = {
         "navigate": "Navigieren",
         "select": "Auswählen",
         "close": "Schließen",
-        "engineLabel": "Tandem Befehls-Engine",
+        "engineLabel": "Tengra Befehls-Engine",
         "previewEmpty": "Wählen Sie ein Element aus, um Details anzuzeigen",
         "noResultsHint": "Versuchen Sie, nach Chats, Modellen oder Einstellungen zu suchen"
     },
@@ -2301,10 +2301,10 @@ export const de = {
     "updateNotification": {
         "checkingTitle": "Nach Updates wird gesucht...",
         "availableTitle": "Update verfügbar: v{{version}}",
-        "availableContent": "Eine neue Version von Tandem ist verfügbar.",
+        "availableContent": "Eine neue Version von Tengra ist verfügbar.",
         "downloadingTitle": "Update wird heruntergeladen...",
         "downloadedTitle": "Update bereit",
-        "downloadedContent": "Starten Sie Tandem neu, um das Update anzuwenden.",
+        "downloadedContent": "Starten Sie Tengra neu, um das Update anzuwenden.",
         "errorTitle": "Update fehlgeschlagen",
         "uptodateTitle": "Sie sind auf dem neuesten Stand",
         "downloadAction": "Herunterladen",
@@ -2466,7 +2466,7 @@ export const de = {
         "noLogs": "Keine Protokolle verfügbar"
     },
     "onboarding": {
-        "welcome": "Willkommen bei Tandem",
+        "welcome": "Willkommen bei Tengra",
         "step1": "KI-Anbieter verbinden",
         "step2": "Arbeitsbereich einrichten",
         "step3": "Programmierung starten",
@@ -2475,18 +2475,18 @@ export const de = {
         "finish": "Abschließen",
         "language": {
             "title": "Wählen Sie Ihre Sprache",
-            "description": "Wählen Sie Ihre bevorzugte Sprache aus, um mit Tandem zu beginnen."
+            "description": "Wählen Sie Ihre bevorzugte Sprache aus, um mit Tengra zu beginnen."
         },
-        "welcomeTitle": "Willkommen bei Tandem",
-        "welcomeDescription": "Ihr KI-gestützter Programmierbegleiter. Tandem hilft Ihnen, Code zu schreiben, zu debuggen und zu verstehen, wobei Ihnen mehrere KI-Anbieter zur Verfügung stehen.",
+        "welcomeTitle": "Willkommen bei Tengra",
+        "welcomeDescription": "Ihr KI-gestützter Programmierbegleiter. Tengra hilft Ihnen, Code zu schreiben, zu debuggen und zu verstehen, wobei Ihnen mehrere KI-Anbieter zur Verfügung stehen.",
         "multiModelTitle": "Unterstützung mehrerer Modelle",
-        "multiModelDescription": "Stellen Sie eine Verbindung zu OpenAI, Anthropic, Google, Ollama und mehr her. Wechseln Sie sofort zwischen den Modellen oder lassen Sie Tandem das beste Modell für Ihre Aufgabe auswählen.",
+        "multiModelDescription": "Stellen Sie eine Verbindung zu OpenAI, Anthropic, Google, Ollama und mehr her. Wechseln Sie sofort zwischen den Modellen oder lassen Sie Tengra das beste Modell für Ihre Aufgabe auswählen.",
         "workspaceTitle": "Ihr Arbeitsbereich",
         "workspaceDescription": "Organisieren Sie Projekte, verwalten Sie Gespräche und greifen Sie auf Ihren Codierungsverlauf zu. Alles bleibt lokal und sicher auf Ihrem Computer.",
         "privacyTitle": "Datenschutz zuerst",
-        "privacyDescription": "Ihr Code bleibt Ihr. Tandem wird lokal mit optionalen Cloud-Funktionen ausgeführt. Volle Kontrolle darüber, welche Daten Ihren Computer verlassen.",
+        "privacyDescription": "Ihr Code bleibt Ihr. Tengra wird lokal mit optionalen Cloud-Funktionen ausgeführt. Volle Kontrolle darüber, welche Daten Ihren Computer verlassen.",
         "step1Title": "Lernen Sie Ihren KI-Assistenten kennen",
-        "step1Desc": "Tandem kombiniert mehrere KI-Modelle, damit Sie schneller programmieren können. Stellen Sie Fragen, generieren Sie Code oder beheben Sie Probleme mit natürlicher Sprache.",
+        "step1Desc": "Tengra kombiniert mehrere KI-Modelle, damit Sie schneller programmieren können. Stellen Sie Fragen, generieren Sie Code oder beheben Sie Probleme mit natürlicher Sprache.",
         "step2Title": "Befehlspalette",
         "step2Desc": "Drücken Sie Befehl+K (oder Strg+K unter Windows), um auf die Befehlspalette zuzugreifen. Navigieren Sie schnell, suchen Sie und führen Sie Aktionen von überall aus aus.",
         "step3Title": "Arbeitsbereiche und Projekte",
@@ -2494,7 +2494,7 @@ export const de = {
         "step4Title": "Integrierte Sicherheit",
         "step4Desc": "API Schlüssel werden lokal verschlüsselt. Alle Konversationen können mit Ollama offline bleiben. Sie kontrollieren, was geteilt wird und was privat bleibt.",
         "step5Title": "Beginnen Sie mit dem Chatten",
-        "step5Desc": "Geben Sie unten Ihre erste Nachricht ein. Bitten Sie um Hilfe beim Code, erklären Sie ein Konzept oder generieren Sie etwas Neues. Tandem ist bereit, wenn Sie es sind.",
+        "step5Desc": "Geben Sie unten Ihre erste Nachricht ein. Bitten Sie um Hilfe beim Code, erklären Sie ein Konzept oder generieren Sie etwas Neues. Tengra ist bereit, wenn Sie es sind.",
         "back": "Zurück",
         "continue": "Weitermachen",
         "letsStart": "Fangen wir an"
@@ -2514,9 +2514,9 @@ export const de = {
     },
     "extensionPrompt": {
         "title": "Verbessern Sie Ihr Erlebnis",
-        "subtitle": "Installieren Sie die Tandem-Browsererweiterung",
+        "subtitle": "Installieren Sie die Tengra-Browsererweiterung",
         "infoTitle": "Was ist die Browsererweiterung?",
-        "infoBody": "Die Tandem-Browsererweiterung ermöglicht der KI, direkt mit Webseiten zu interagieren. Sie kann Inhalte lesen, Formulare ausfüllen, Schaltflächen klicken und automatisierte Aktionen basierend auf Ihren Befehlen ausführen.",
+        "infoBody": "Die Tengra-Browsererweiterung ermöglicht der KI, direkt mit Webseiten zu interagieren. Sie kann Inhalte lesen, Formulare ausfüllen, Schaltflächen klicken und automatisierte Aktionen basierend auf Ihren Befehlen ausführen.",
         "featuresTitle": "Funktionen:",
         "features": {
             "aiChatTitle": "KI-Chat im Browser:",
@@ -2534,7 +2534,7 @@ export const de = {
             "step2": "Aktivieren Sie den \"Entwicklermodus\" (Schalter oben rechts)",
             "step3": "Klicken Sie auf \"Entpackte Erweiterung laden\"",
             "step4Prefix": "Wählen Sie den",
-            "step4Suffix": "Ordner im Tandem-Verzeichnis aus"
+            "step4Suffix": "Ordner im Tengra-Verzeichnis aus"
         },
         "openFolder": "Erweiterungsordner öffnen",
         "viewInstructions": "Anleitung anzeigen",
@@ -2888,3 +2888,5 @@ export const de = {
         "editorNote": "Verwenden Sie den Modus JSON für die erweiterte Konfiguration von Triggern und Schritten."
     }
 };
+
+

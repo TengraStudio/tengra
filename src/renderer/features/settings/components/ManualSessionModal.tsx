@@ -26,7 +26,7 @@ const HeaderSection: React.FC<{ email?: string }> = ({ email }) => (
                 Complete Connection for {email ?? 'your account'}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-                To enable quota tracking and direct interaction, Tandem needs your Claude session key.
+                To enable quota tracking and direct interaction, Tengra needs your Claude session key.
                 We encrypt and store this key locally on your device.
             </p>
         </div>
@@ -172,3 +172,4 @@ export const ManualSessionModal: React.FC<ManualSessionModalProps> = ({
         </Modal>
     );
 };
+

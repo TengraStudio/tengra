@@ -3,17 +3,18 @@
  * Integration and regression coverage for critical flows in ThemeService
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+
 import { ThemeService } from '@main/services/theme/theme.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the entire module to have full control
 vi.mock('fs/promises');
 vi.mock('@main/services/data/data.service', () => ({
     DataService: class {
-        getPath = vi.fn().mockReturnValue('/fake/user/data')
+        getPath = vi.fn().mockReturnValue('/fake/user/data');
     }
 }));
 vi.mock('@main/logging/logger', () => ({
@@ -192,8 +193,8 @@ describe('ThemeService Integration Tests', () => {
         it('should allow reinstalling built-in themes', async () => {
             const blackTheme = {
                 id: 'black',
-                name: 'tandem-black',
-                displayName: 'Tandem Black',
+                name: 'tengra-black',
+                displayName: 'Tengra Black',
                 version: '1.0.0',
                 type: 'dark' as const,
                 colors: {
@@ -244,8 +245,8 @@ describe('ThemeService Integration Tests', () => {
             vi.mocked(fs.readdir).mockResolvedValueOnce(['black.theme.json', 'white.theme.json', 'corrupt.theme.json'] as any);
             vi.mocked(fs.readFile).mockImplementation(async (filePath) => {
                 const pathStr = String(filePath);
-                if (pathStr.includes('corrupt')) return 'not valid json {{{';
-                if (pathStr.includes('black')) return JSON.stringify({ id: 'black', name: 'black', displayName: 'Black', version: '1.0.0', type: 'dark', colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });
+                if (pathStr.includes('corrupt')) {return 'not valid json {{{';}
+                if (pathStr.includes('black')) {return JSON.stringify({ id: 'black', name: 'black', displayName: 'Black', version: '1.0.0', type: 'dark', colors: { background: '0 0% 0%', foreground: '0 0% 100%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });}
                 return JSON.stringify({ id: 'white', name: 'white', displayName: 'White', version: '1.0.0', type: 'light', colors: { background: '0 0% 100%', foreground: '0 0% 0%', primary: '', secondary: '', accent: '', muted: '', destructive: '', border: '', input: '', ring: '', card: '', cardForeground: '', popover: '', popoverForeground: '', primaryForeground: '', secondaryForeground: '', accentForeground: '', destructiveForeground: '', mutedForeground: '' } });
             });
 
@@ -414,3 +415,4 @@ describe('Concurrent Operations', () => {
         expect(result2).toBe(true);
     });
 });
+

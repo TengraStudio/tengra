@@ -3,6 +3,10 @@ import { gunzipSync, gzipSync } from 'zlib';
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import {
+    AgentCheckpointSnapshotV1Schema,
+    AgentTaskStateSchema
+} from '@shared/schemas/agent-checkpoint.schema';
 import { AgentTaskState } from '@shared/types/agent-state';
 import {
     AgentCheckpointItem,
@@ -12,10 +16,6 @@ import {
     ProjectStep
 } from '@shared/types/project-agent';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
-import {
-    AgentCheckpointSnapshotV1Schema,
-    AgentTaskStateSchema
-} from '@shared/schemas/agent-checkpoint.schema';
 
 /** Standardized error for agent checkpointing */
 export class AgentCheckpointError extends Error {
@@ -61,7 +61,7 @@ export class AgentCheckpointService extends BaseService {
         state: AgentTaskState,
         trigger: AgentCheckpointTrigger = 'manual_snapshot'
     ): Promise<string> {
-        if (!taskId) throw new AgentCheckpointError('taskId is required', 'MISSING_TASK_ID');
+        if (!taskId) {throw new AgentCheckpointError('taskId is required', 'MISSING_TASK_ID');}
 
         try {
             // Validate state before saving
@@ -69,7 +69,7 @@ export class AgentCheckpointService extends BaseService {
 
             if (trigger === 'auto_state_sync') {
                 const latestCheckpointId = await this.skipIfDuplicate(taskId, state);
-                if (latestCheckpointId) return latestCheckpointId;
+                if (latestCheckpointId) {return latestCheckpointId;}
             }
 
             const snapshot = this.serializeSnapshot(state, trigger);

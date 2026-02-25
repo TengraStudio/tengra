@@ -47,7 +47,7 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
             const remotePath = `/etc/nginx/sites-available/${fileName}`;
 
             // Step 1: Write to temp file first (since /etc/nginx is likely protected)
-            const tempPath = `/tmp/Tandem_nginx_${fileName}`;
+            const tempPath = `/tmp/Tengra_nginx_${fileName}`;
             await window.electron.ssh.writeFile(connectionId, tempPath, config);
 
             // Step 2: Try to move with sudo (User will see errors if they don't have sudo or if it fails)
@@ -146,4 +146,5 @@ export const NginxWizard: React.FC<NginxWizardProps> = ({ connectionId, language
         </div>
     );
 };
+
 

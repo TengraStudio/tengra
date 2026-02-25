@@ -1,6 +1,6 @@
 # REST API Documentation
 
-Tandem exposes a REST API for browser extension integration. The API server runs on port `37240` by default.
+Tengra exposes a REST API for browser extension integration. The API server runs on port `37240` by default.
 
 ## Base URL
 
@@ -477,11 +477,12 @@ async function streamChat(messages, model) {
 ## Support
 
 For issues or questions:
-- Check logs: `~/.tandem/logs/main.log`
+- Check logs: `~/.tengra/logs/main.log`
 - Report bugs: GitHub Issues
 - Documentation: [CONFIG.md](CONFIG.md)
 
 ## Additional References
 
-- OpenAPI spec: `docs/openapi/tandem-api.openapi.yaml`
+- OpenAPI spec: `docs/openapi/tengra-api.openapi.yaml`
 - IPC channels index: `docs/IPC_CHANNELS.md`
+

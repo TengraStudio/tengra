@@ -627,6 +627,58 @@ const createMarketplaceHandler = <T extends Record<string, unknown>, Args extend
 
 type ExtensionReviewRecord = NonNullable<AppSettings['mcpExtensionReviews']>[string][number];
 
+const parseCommand = (commandLine: string | undefined): { command: string; args: string[] } => {
+    const cmdParts = commandLine?.split(' ') ?? [];
+    return {
+        command: cmdParts[0] ?? '',
+        args: cmdParts.slice(1)
+    };
+};
+
+const checkPublisherTrust = (settingsService: SettingsService, publisher: string | undefined): void => {
+    const settings = settingsService.getSettings();
+    const trustedPublishers = new Set(
+        (settings.mcpTrustedPublishers ?? []).map(value => normalizePublisher(value))
+    );
+    const normalizedPublisher = normalizePublisher(publisher);
+    if (!normalizedPublisher) {
+        throw new Error('Publisher metadata is required');
+    }
+    if (!trustedPublishers.has(normalizedPublisher)) {
+        throw new Error(`Publisher is not trusted: ${publisher}`);
+    }
+};
+
+const checkRevokedSignature = (settingsService: SettingsService, signature: string | undefined): void => {
+    const settings = settingsService.getSettings();
+    const revokedSignatures = new Set(settings.mcpRevokedSignatures ?? []);
+    if (signature && revokedSignatures.has(signature)) {
+        throw new Error('Signature is revoked');
+    }
+};
+
+const persistSecurityScan = async (settingsService: SettingsService, serverConfig: MCPServerConfig): Promise<void> => {
+    const scan = scanServerSecurity(serverConfig);
+    const settings = settingsService.getSettings();
+    const scans = settings.mcpSecurityScans ?? {};
+    scans[serverConfig.id] = {
+        score: scan.score,
+        flags: scan.flags,
+        status: scan.status,
+        scannedAt: Date.now()
+    };
+    serverConfig.security = {
+        reviewStatus: scan.status === 'clean' ? 'approved' : 'pending',
+        securityScore: scan.score,
+        malwareFlags: scan.flags,
+        lastScannedAt: Date.now()
+    };
+    if (scan.status === 'blocked') {
+        throw new Error(`Security scan blocked installation: ${scan.flags.join(', ') || 'unknown risk'}`);
+    }
+    await settingsService.saveSettings({ mcpSecurityScans: scans });
+};
+
 /**
  * IPC handlers for MCP Marketplace operations
  */
@@ -635,58 +687,6 @@ export function registerMcpMarketplaceHandlers(
     settingsService: SettingsService,
     mcpPluginService: McpPluginService
 ) {
-    const parseCommand = (commandLine: string | undefined): { command: string; args: string[] } => {
-        const cmdParts = commandLine?.split(' ') ?? [];
-        return {
-            command: cmdParts[0] ?? '',
-            args: cmdParts.slice(1)
-        };
-    };
-
-    const checkPublisherTrust = (publisher: string | undefined): void => {
-        const settings = settingsService.getSettings();
-        const trustedPublishers = new Set(
-            (settings.mcpTrustedPublishers ?? []).map(value => normalizePublisher(value))
-        );
-        const normalizedPublisher = normalizePublisher(publisher);
-        if (!normalizedPublisher) {
-            throw new Error('Publisher metadata is required');
-        }
-        if (!trustedPublishers.has(normalizedPublisher)) {
-            throw new Error(`Publisher is not trusted: ${publisher}`);
-        }
-    };
-
-    const checkRevokedSignature = (signature: string | undefined): void => {
-        const settings = settingsService.getSettings();
-        const revokedSignatures = new Set(settings.mcpRevokedSignatures ?? []);
-        if (signature && revokedSignatures.has(signature)) {
-            throw new Error('Signature is revoked');
-        }
-    };
-
-    const persistSecurityScan = async (serverConfig: MCPServerConfig): Promise<void> => {
-        const scan = scanServerSecurity(serverConfig);
-        const settings = settingsService.getSettings();
-        const scans = settings.mcpSecurityScans ?? {};
-        scans[serverConfig.id] = {
-            score: scan.score,
-            flags: scan.flags,
-            status: scan.status,
-            scannedAt: Date.now()
-        };
-        serverConfig.security = {
-            reviewStatus: scan.status === 'clean' ? 'approved' : 'pending',
-            securityScore: scan.score,
-            malwareFlags: scan.flags,
-            lastScannedAt: Date.now()
-        };
-        if (scan.status === 'blocked') {
-            throw new Error(`Security scan blocked installation: ${scan.flags.join(', ') || 'unknown risk'}`);
-        }
-        await settingsService.saveSettings({ mcpSecurityScans: scans });
-    };
-
     ipcMain.handle('mcp:marketplace:list', createMarketplaceHandler('mcp:marketplace:list', async () => {
         const servers = await marketplaceService.listServers();
         return { servers };
@@ -720,7 +720,7 @@ export function registerMcpMarketplaceHandlers(
             publisher: string;
         }
     ) => {
-        checkPublisherTrust(payload.publisher);
+        checkPublisherTrust(settingsService, payload.publisher);
         const draft = marketplaceService.createExtensionDraft(payload);
         return { draft };
     }, z.tuple([
@@ -800,13 +800,13 @@ export function registerMcpMarketplaceHandlers(
             throw new Error('Server already installed');
         }
         ensureInstallableServerConfig(serverConfig, existing);
-        checkPublisherTrust(serverConfig.publisher);
-        checkRevokedSignature(serverConfig.updatePolicy?.signatureSha256);
+        checkPublisherTrust(settingsService, serverConfig.publisher);
+        checkRevokedSignature(settingsService, serverConfig.updatePolicy?.signatureSha256);
         validateSettingsValues(
             serverConfig.settingsSchema as JsonValue | undefined,
             serverConfig.settingsValues as JsonValue | undefined
         );
-        await persistSecurityScan(serverConfig);
+        await persistSecurityScan(settingsService, serverConfig);
         const integrityHash = computeIntegrityHash(serverConfig);
         serverConfig.integrityHash = integrityHash;
         serverConfig.updatePolicy = {
@@ -934,8 +934,8 @@ export function registerMcpMarketplaceHandlers(
                 previousVersion: s.version,
                 updatedAt: Date.now()
             };
-            checkPublisherTrust(mergedServer.publisher);
-            checkRevokedSignature(mergedServer.updatePolicy?.signatureSha256);
+            checkPublisherTrust(settingsService, mergedServer.publisher);
+            checkRevokedSignature(settingsService, mergedServer.updatePolicy?.signatureSha256);
             validateSettingsValues(
                 mergedServer.settingsSchema as JsonValue | undefined,
                 mergedServer.settingsValues as JsonValue | undefined

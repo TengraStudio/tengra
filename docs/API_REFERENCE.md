@@ -1,6 +1,6 @@
 # Internal API Reference
 
-Tandem uses internal APIs to coordinate activity between the Electron main process and its native microservices. This document provides a reference for the endpoints used in our bidirectional communication model.
+Tengra uses internal APIs to coordinate activity between the Electron main process and its native microservices. This document provides a reference for the endpoints used in our bidirectional communication model.
 
 ## Authentication API (Main Process)
 
@@ -40,5 +40,6 @@ Microservices identify the correct port for the Main process API through environ
 - **Error Propagation**: Internal API errors include a structured JSON body with an error code and a human-readable message, which are mapped back to application-level exceptions.
 
 ### Secure Transport
-While these APIs run on `localhost`, we still enforce authentication using secret keys. This prevents other local applications from interacting with Tandem's internal control plane.
+While these APIs run on `localhost`, we still enforce authentication using secret keys. This prevents other local applications from interacting with Tengra's internal control plane.
+
 

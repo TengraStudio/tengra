@@ -125,7 +125,7 @@ describe('SecurityService - Encryption and Hashing', () => {
             expect(decrypted).toBe(original);
         });
 
-        it('should use Tandem:v1 format when master key is available', () => {
+        it('should use Tengra:v1 format when master key is available', () => {
             // Force master key to be loaded (it should be by default in test due to migrateLegacyKey/generateNewMasterKey logic simulation or mock)
             // In the beforeEach, we create service. initialize() calls loadOrCreateMasterKey.
             // We need to ensure initialize is called or manually set up the key if checking internal state isn't possible.
@@ -141,7 +141,7 @@ describe('SecurityService - Encryption and Hashing', () => {
             // but we need to ensure the service thinks it has a master key.
             // The mock for fs.existsSync returns undefined by default in strict mocks, or false? 
             // We verify the output format.
-            expect(encrypted).toMatch(/^Tandem:v1:/);
+            expect(encrypted).toMatch(/^Tengra:v1:/);
 
             const decrypted = service.decryptSync(encrypted);
             expect(decrypted).toBe(original);
@@ -161,3 +161,4 @@ describe('SecurityService - Encryption and Hashing', () => {
         });
     });
 });
+

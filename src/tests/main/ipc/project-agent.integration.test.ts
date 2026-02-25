@@ -9,6 +9,9 @@ vi.mock('electron', () => ({
     ipcMain: {
         handle: vi.fn(),
         removeHandler: vi.fn()
+    },
+    BrowserWindow: {
+        getAllWindows: vi.fn(() => [])
     }
 }));
 
@@ -37,6 +40,7 @@ interface MockProjectAgentService extends Partial<ProjectAgentService> {
     reviewHelperMergeGate: Mock;
     approveStep: Mock;
     resumeFromCheckpoint: Mock;
+    handleQuotaExhaustedInterrupt: Mock;
     getCurrentTaskId: Mock;
 }
 
@@ -105,6 +109,16 @@ describe('Project Agent IPC Handlers', () => {
             }),
             approveStep: vi.fn().mockResolvedValue(undefined),
             resumeFromCheckpoint: vi.fn().mockResolvedValue(true),
+            handleQuotaExhaustedInterrupt: vi.fn().mockResolvedValue({
+                success: true,
+                interruptId: 'task-123:123',
+                checkpointId: 'cp-123',
+                blockedByQuota: false,
+                switched: true,
+                selectedFallback: { provider: 'openai', model: 'gpt-4o' },
+                availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+                message: 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
+            }),
             getCurrentTaskId: vi.fn().mockReturnValue('task-123')
         };
 
@@ -292,6 +306,32 @@ describe('Project Agent IPC Handlers', () => {
             await handler({} as IpcMainInvokeEvent, payload);
 
             expect(mockProjectAgentService.reviewHelperMergeGate).toHaveBeenCalledWith(payload);
+        });
+
+        it('should handle quota exhaustion with checkpoint and automatic continuation', async () => {
+            const handler = getRequiredHandler('project:council-handle-quota-interrupt');
+            const payload = {
+                taskId: 'task-123',
+                stageId: 'S1',
+                provider: 'anthropic',
+                model: 'claude-3-5-sonnet-20241022',
+                reason: 'quota_exhausted',
+                autoSwitch: true
+            };
+
+            const result = await handler({} as IpcMainInvokeEvent, payload);
+
+            expect(mockProjectAgentService.handleQuotaExhaustedInterrupt).toHaveBeenCalledWith(payload);
+            expect(result).toEqual({
+                success: true,
+                interruptId: 'task-123:123',
+                checkpointId: 'cp-123',
+                blockedByQuota: false,
+                switched: true,
+                selectedFallback: { provider: 'openai', model: 'gpt-4o' },
+                availableFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+                message: 'Quota exhaustion handled via checkpoint restore, fallback switch, and resume.'
+            });
         });
     });
 });

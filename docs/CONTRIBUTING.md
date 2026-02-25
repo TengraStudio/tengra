@@ -1,6 +1,6 @@
-# Contributing to Tandem
+# Contributing to Tengra
 
-Thank you for your interest in contributing to Tandem! To maintain high code quality and safety, we follow strict guidelines.
+Thank you for your interest in contributing to Tengra! To maintain high code quality and safety, we follow strict guidelines.
 
 ## 👑 The Master Commandments
 > **CRITICAL**: Failure to adhere to these rules will result in immediate session termination. NO EXCEPTIONS.
@@ -45,3 +45,4 @@ Thank you for your interest in contributing to Tandem! To maintain high code qua
 ---
 
 For more details, see [AI_RULES.md](./AI_RULES.md).
+

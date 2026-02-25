@@ -25,7 +25,7 @@ describe('Voice IPC Handlers', () => {
     it('processes transcript and matches a built-in command', async () => {
         const handler = ipcMainHandlers.get('voice:process-transcript');
         expect(handler).toBeDefined();
-        const result = await handler?.({}, 'tandem open settings');
+        const result = await handler?.({}, 'tengra open settings');
         expect(result).toMatchObject({
             success: true,
             command: { id: 'nav-settings' },
@@ -127,3 +127,4 @@ describe('Voice IPC Handlers', () => {
         });
     });
 });
+

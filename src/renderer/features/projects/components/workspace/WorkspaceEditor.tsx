@@ -2,6 +2,14 @@
 
 import { CodeEditor } from '@/components/ui/CodeEditor';
 import {
+    loadReviewRuleConfig,
+    ReviewRuleConfig,
+    runBugDetectionAnalysis,
+    runCodeReviewAnalysis,
+    runPerformanceSuggestionAnalysis,
+    saveReviewRuleConfig
+} from '@/features/projects/utils/dev-ai-assistant';
+import {
     createShareCode,
     filterSnippets,
     loadProjectSnippets,
@@ -9,14 +17,6 @@ import {
     ProjectSnippet,
     saveProjectSnippets,
 } from '@/features/projects/utils/snippet-manager';
-import {
-    loadReviewRuleConfig,
-    runBugDetectionAnalysis,
-    runCodeReviewAnalysis,
-    runPerformanceSuggestionAnalysis,
-    ReviewRuleConfig,
-    saveReviewRuleConfig
-} from '@/features/projects/utils/dev-ai-assistant';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { EditorTab } from '@/types';

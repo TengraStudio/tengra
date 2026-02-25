@@ -40,7 +40,7 @@ export class QuotaService {
 
         void this.processManager.startService({
             name: 'quota-service',
-            executable: 'tandem-quota-service',
+            executable: 'tengra-quota-service',
             persistent: true
         }).catch(err => {
             appLogger.error('QuotaService', `Failed to start quota service: ${getErrorMessage(err)}`);
@@ -216,3 +216,4 @@ export class QuotaService {
         return { success: true, ...quota };
     }
 }
+

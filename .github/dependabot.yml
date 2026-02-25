@@ -9,7 +9,7 @@ updates:
       time: "09:00"
     open-pull-requests-limit: 10
     reviewers:
-      - "tandem-maintainers"
+      - "tengra-maintainers"
     labels:
       - "dependencies"
       - "automated"
@@ -33,3 +33,4 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+

@@ -12,8 +12,8 @@ const ArgsSchema = z.object({
   limit: z.number().int().min(1).max(500).default(50),
   type: z.string().optional(),
   channel: z.string().optional(),
-  baseUrl: z.string().url().default('https://tandem.local/changelog'),
-  title: z.string().min(1).default('Tandem Changelog'),
+  baseUrl: z.string().url().default('https://tengra.local/changelog'),
+  title: z.string().min(1).default('Tengra Changelog'),
   watchMinutes: z.number().int().min(1).max(1440).optional(),
 });
 
@@ -141,4 +141,5 @@ function run() {
 }
 
 run();
+
 

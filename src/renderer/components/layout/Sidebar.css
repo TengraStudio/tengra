@@ -1,5 +1,5 @@
 /* ================================================
-   SIDEBAR STYLES - Tandem IDE
+   SIDEBAR STYLES - Tengra IDE
    ================================================ */
 
 /* === Base Sidebar === */
@@ -453,3 +453,4 @@
 .tools-item-status {
     @apply flex items-center gap-1;
 }
+

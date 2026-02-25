@@ -1,9 +1,9 @@
 {
   "id": "black",
-  "name": "tandem-black",
-  "displayName": "Tandem Black",
+  "name": "tengra-black",
+  "displayName": "Tengra Black",
   "description": "The default pure black theme with vibrant electric cyan accents",
-  "author": "Tandem Team",
+  "author": "Tengra Team",
   "version": "1.0.0",
   "type": "dark",
   "category": "elite-dark",
@@ -45,7 +45,8 @@
     "shadowColor": "0 0% 0%"
   },
   "isInstalled": true,
-  "publisher": "tandem",
+  "publisher": "tengra",
   "license": "MIT",
   "tags": ["dark", "minimal", "modern", "electric"]
 }
+

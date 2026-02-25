@@ -30,8 +30,8 @@ interface Theme {
 const BUILT_IN_THEMES: Theme[] = [
     {
         id: 'black',
-        name: 'Tandem Black',
-        author: 'Tandem Team',
+        name: 'Tengra Black',
+        author: 'Tengra Team',
         description: 'The default pure black theme',
         preview: '#000000',
         colors: { primary: '#0ea5e9', background: '#000000', foreground: 'white', accent: '#0c4a6e' },
@@ -41,8 +41,8 @@ const BUILT_IN_THEMES: Theme[] = [
     },
     {
         id: 'white',
-        name: 'Tandem White',
-        author: 'Tandem Team',
+        name: 'Tengra White',
+        author: 'Tengra Team',
         description: 'Clean and minimal white theme',
         preview: 'white',
         colors: { primary: '#4f46e5', background: 'white', foreground: '#000000', accent: '#eef2ff' },
@@ -272,4 +272,5 @@ export const ThemeStore: React.FC<ThemeStoreProps> = ({
 };
 
 export default ThemeStore;
+
 

@@ -95,7 +95,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     mcpActionPermissions: {},
     mcpPermissionRequests: [],
     mcpServerVersionHistory: {},
-    mcpTrustedPublishers: ['Model Context Protocol', 'Tandem', 'Brave', 'Notion', 'MongoDB'],
+    mcpTrustedPublishers: ['Model Context Protocol', 'Tengra', 'Brave', 'Notion', 'MongoDB'],
     mcpRevokedSignatures: [],
     mcpSecurityScans: {},
     mcpExtensionReviews: {},
@@ -958,3 +958,4 @@ export class SettingsService extends BaseService {
         preserveToken('proxy', 'key');
     }
 }
+

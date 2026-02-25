@@ -89,7 +89,7 @@ export const ar = {
         "chart": "جاري تحميل الرسم البياني"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "الخامس __فارتوكين_0__"
     },
     "errors": {
@@ -278,7 +278,7 @@ export const ar = {
         },
         "browserClosure": {
             "title": "إغلاق المتصفح مطلوب",
-            "description": "للمصادقة باستخدام {{provider}}، يحتاج Tandem إلى قراءة ملفات تعريف الارتباط المحمية.",
+            "description": "للمصادقة باستخدام {{provider}}، يحتاج Tengra إلى قراءة ملفات تعريف الارتباط المحمية.",
             "warningPrefix": "يجب علينا",
             "warningEmphasis": "إغلاق المتصفح تلقائيا",
             "warningSuffix": "لتحرير قفل الملف.",
@@ -617,7 +617,7 @@ export const ar = {
             "pushing": "جاري الدفع..."
         },
         "noIssues": "لم يتم العثور على مشكلات كبيرة في المشروع. عمل جيد!",
-        "issuesDescription": "يقوم Tandem بفحص مشروعك بحثاً عن الأخطاء والتحذيرات المحتملة.",
+        "issuesDescription": "يقوم Tengra بفحص مشروعك بحثاً عن الأخطاء والتحذيرات المحتملة.",
         "issueType": "النوع",
         "issueMessage": "الرسالة",
         "issueLocation": "الموقع",
@@ -1027,7 +1027,7 @@ export const ar = {
     },
     "memory": {
         "title": "فاحص الذاكرة",
-        "subtitle": "تصور وإدارة ما يعرفه ويتذكره Tandem.",
+        "subtitle": "تصور وإدارة ما يعرفه ويتذكره Tengra.",
         "searchPlaceholder": "البحث في الذاكرة...",
         "totalFacts": "إجمالي الحقائق",
         "episodes": "حلقات",
@@ -1368,7 +1368,7 @@ export const ar = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "الذكاء يلتقي بالأناقة."
     },
     "auth": {
@@ -1377,7 +1377,7 @@ export const ar = {
         "connectionFailed": "فشل الاتصال بخادم Antigravity. يرجى تسجيل الدخول أو التحقق من مفتاح API الخاص بك.",
         "sessionKeyRequired": "مفتاح جلسة Claude مطلوب",
         "completeConnection": "إكمال الاتصال لـ {{email}}",
-        "sessionKeyDescription": "من أجل تتبع الحصص والتفاعل المباشر، يحتاج Tandem إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.",
+        "sessionKeyDescription": "من أجل تتبع الحصص والتفاعل المباشر، يحتاج Tengra إلى مفتاح جلسة Claude الخاص بك. يتم تخزينه مشفراً محلياً.",
         "howToFindKey": "كيف تجد مفتاح الجلسة الخاص بك",
         "sessionKeyInstructions": {
             "step1": "افتح claude.ai وقم بتسجيل الدخول",
@@ -1546,7 +1546,7 @@ export const ar = {
         "creative": {
             "title": "كتابة إبداعية",
             "description": "توليد نصوص ومحتوى.",
-            "prompt": "هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Tandem؟"
+            "prompt": "هل يمكنك كتابة نص تعريفي مثير للإعجاب لمساعد ذكاء اصطناعي يدعى Tengra؟"
         },
         "debug": {
             "title": "تصحيح الأخطاء",
@@ -1568,7 +1568,7 @@ export const ar = {
         "user": "مستخدم",
         "assistant": "مساعد",
         "copyAsHtml": "نسخ كـ HTML",
-        "TandemDrawing": "Tandem يرسم...",
+        "TengraDrawing": "Tengra يرسم...",
         "quotaExceeded": "تم تجاوز الحصة",
         "quotaMessage": "لقد تجاوزت حصة الاستخدام للنموذج. يرجى المحاولة مرة أخرى لاحقاً أو ترقية خطتك.",
         "resetsAt": "يتم إعادة التعيين في:",
@@ -1577,7 +1577,7 @@ export const ar = {
         "speakAloud": "قراءة بصوت عال",
         "convertToCode": "تحويل إلى كود",
         "approvePlan": "الموافقة على الخطة",
-        "TandemThinking": "Tandem يفكر",
+        "TengraThinking": "Tengra يفكر",
         "showThought": "عرض الفكر",
         "react": "تفاعل",
         "runBenchmark": "تشغيل المعيار",
@@ -1638,12 +1638,12 @@ export const ar = {
         "updates": "التحديثات",
         "privacy": "خصوصية",
         "crashReporting": "الإبلاغ عن الأعطال",
-        "crashReportingDesc": "أرسل تقارير أعطال مجهولة المصدر لمساعدتنا في تحسين Tandem.",
+        "crashReportingDesc": "أرسل تقارير أعطال مجهولة المصدر لمساعدتنا في تحسين Tengra.",
         "startup": "بدء",
         "startOnStartup": "ابدأ عند بدء تشغيل النظام",
-        "startOnStartupDesc": "قم بتشغيل Tandem تلقائيًا عند بدء تشغيل جهاز الكمبيوتر الخاص بك.",
+        "startOnStartupDesc": "قم بتشغيل Tengra تلقائيًا عند بدء تشغيل جهاز الكمبيوتر الخاص بك.",
         "workAtBackground": "تشغيل في الخلفية",
-        "workAtBackgroundDesc": "استمر في تشغيل Tandem في الخلفية بعد إغلاق النافذة."
+        "workAtBackgroundDesc": "استمر في تشغيل Tengra في الخلفية بعد إغلاق النافذة."
     },
     "appearance": {
         "themeDesc": "تغيير سمة ألوان التطبيق.",
@@ -1651,7 +1651,7 @@ export const ar = {
         "fontDesc": "تخصيص خط التطبيق وحجمه.",
         "fontFamily": "عائلة الخط",
         "fontSize": "حجم الخط",
-        "previewText": "شكل المستقبل مع Tandem AI.",
+        "previewText": "شكل المستقبل مع Tengra AI.",
         "accessibility": "إمكانية الوصول",
         "accessibilityDesc": "إعدادات العرض والرؤية",
         "highContrast": "وضع التباين العالي",
@@ -1758,11 +1758,11 @@ export const ar = {
         "copilotTitle": "GitHub Copilot"
     },
     "about": {
-        "description": "Tandem هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.",
+        "description": "Tengra هو مساعد IDE بالذكاء الاصطناعي من الجيل التالي مصمم للمطورين، يوحد نماذج الذكاء الاصطناعي المحلية والسحابية في واجهة واحدة.",
         "checkUpdates": "التحقق من التحديثات",
         "privacyPolicy": "سياسة الخصوصية",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "إعادة ضبط المصنع",
         "factoryResetDesc": "إعادة تعيين التطبيق عن طريق مسح جميع الإعدادات والبيانات.",
         "updateCheckAlert": "تم تفعيل التحقق من التحديثات في إصدارات الإنتاج.",
@@ -1833,7 +1833,7 @@ export const ar = {
     "tips": {
         "title": "هل تعلم؟",
         "tip1": "يمكنك إنشاء محادثة جديدة باستخدام اختصار CTRL+N.",
-        "tip2": "يدعم Tandem الاتصال بخوادم SSH البعيدة للتطوير.",
+        "tip2": "يدعم Tengra الاتصال بخوادم SSH البعيدة للتطوير.",
         "tip3": "يمكنك سحب وإفلات الملفات مباشرة في المحادثة.",
         "tip4": "استخدم علامة التبويب \"المجلس\" للحصول على رؤى متعددة الوكلاء حول الكود الخاص بك.",
         "tip5": "خصص تجربتك في الإعدادات > المظهر.",
@@ -1991,7 +1991,7 @@ export const ar = {
         "navigate": "تصفح",
         "select": "اختر",
         "close": "إغلاق",
-        "engineLabel": "محرك أوامر Tandem",
+        "engineLabel": "محرك أوامر Tengra",
         "previewEmpty": "اختر عنصراً لعرض التفاصيل",
         "noResultsHint": "جرّب البحث عن الدردشات أو النماذج أو الإعدادات"
     },
@@ -2019,10 +2019,10 @@ export const ar = {
     "updateNotification": {
         "checkingTitle": "جارٍ التحقق من التحديثات...",
         "availableTitle": "تحديث متاح: v{{version}}",
-        "availableContent": "يتوفر إصدار جديد من Tandem.",
+        "availableContent": "يتوفر إصدار جديد من Tengra.",
         "downloadingTitle": "جارٍ تنزيل التحديث...",
         "downloadedTitle": "التحديث جاهز",
-        "downloadedContent": "أعد تشغيل Tandem لتطبيق أحدث تحديث.",
+        "downloadedContent": "أعد تشغيل Tengra لتطبيق أحدث تحديث.",
         "errorTitle": "فشل التحديث",
         "uptodateTitle": "أنت محدّث",
         "downloadAction": "تنزيل",
@@ -2161,7 +2161,7 @@ export const ar = {
         "noLogs": "لا توجد سجلات متاحة"
     },
     "onboarding": {
-        "welcome": "مرحباً في Tandem",
+        "welcome": "مرحباً في Tengra",
         "step1": "توصيل موفري الذكاء الاصطناعي",
         "step2": "إعداد مساحة العمل",
         "step3": "ابدأ البرمجة",
@@ -2170,18 +2170,18 @@ export const ar = {
         "finish": "إنهاء",
         "language": {
             "title": "اختر لغتك",
-            "description": "حدد لغتك المفضلة لبدء استخدام Tandem."
+            "description": "حدد لغتك المفضلة لبدء استخدام Tengra."
         },
-        "welcomeTitle": "مرحبًا بك في Tandem",
-        "welcomeDescription": "رفيقك في البرمجة المدعومة بالذكاء الاصطناعي. يساعدك Tandem على كتابة التعليمات البرمجية وتصحيح أخطائها وفهمها باستخدام العديد من موفري الذكاء الاصطناعي في متناول يدك.",
+        "welcomeTitle": "مرحبًا بك في Tengra",
+        "welcomeDescription": "رفيقك في البرمجة المدعومة بالذكاء الاصطناعي. يساعدك Tengra على كتابة التعليمات البرمجية وتصحيح أخطائها وفهمها باستخدام العديد من موفري الذكاء الاصطناعي في متناول يدك.",
         "multiModelTitle": "دعم متعدد النماذج",
-        "multiModelDescription": "اتصل بـ OpenAI، Anthropic، Google، Ollama، والمزيد. قم بالتبديل بين النماذج على الفور أو اسمح لـ Tandem باختيار النموذج الأفضل لمهمتك.",
+        "multiModelDescription": "اتصل بـ OpenAI، Anthropic، Google، Ollama، والمزيد. قم بالتبديل بين النماذج على الفور أو اسمح لـ Tengra باختيار النموذج الأفضل لمهمتك.",
         "workspaceTitle": "مساحة العمل الخاصة بك",
         "workspaceDescription": "قم بتنظيم المشاريع وإدارة المحادثات والوصول إلى سجل البرمجة الخاص بك. كل شيء يبقى محليًا وآمنًا على جهازك.",
         "privacyTitle": "الخصوصية أولاً",
-        "privacyDescription": "الرمز الخاص بك يبقى لك. Tandem يعمل محليًا مع ميزات سحابية اختيارية. السيطرة الكاملة على البيانات التي تترك جهاز الكمبيوتر الخاص بك.",
+        "privacyDescription": "الرمز الخاص بك يبقى لك. Tengra يعمل محليًا مع ميزات سحابية اختيارية. السيطرة الكاملة على البيانات التي تترك جهاز الكمبيوتر الخاص بك.",
         "step1Title": "تعرف على مساعد الذكاء الاصطناعي الخاص بك",
-        "step1Desc": "يجمع Tandem بين نماذج الذكاء الاصطناعي المتعددة لمساعدتك على البرمجة بشكل أسرع. اطرح الأسئلة أو أنشئ تعليمات برمجية أو صحح الأخطاء باستخدام اللغة الطبيعية.",
+        "step1Desc": "يجمع Tengra بين نماذج الذكاء الاصطناعي المتعددة لمساعدتك على البرمجة بشكل أسرع. اطرح الأسئلة أو أنشئ تعليمات برمجية أو صحح الأخطاء باستخدام اللغة الطبيعية.",
         "step2Title": "لوحة الأوامر",
         "step2Desc": "اضغط على Cmd+K (أو Ctrl+K في نظام التشغيل Windows) للوصول إلى لوحة الأوامر. يمكنك التنقل بسرعة والبحث وتنفيذ الإجراءات من أي مكان.",
         "step3Title": "مساحات العمل والمشاريع",
@@ -2189,7 +2189,7 @@ export const ar = {
         "step4Title": "الأمان مدمج",
         "step4Desc": "يتم تشفير مفاتيح API محليًا. يمكن أن تظل جميع المحادثات في وضع عدم الاتصال باستخدام Ollama. يمكنك التحكم في ما تتم مشاركته وما يبقى خاصًا.",
         "step5Title": "ابدأ الدردشة",
-        "step5Desc": "اكتب رسالتك الأولى أدناه. اطلب المساعدة في التعليمات البرمجية، أو اشرح مفهومًا، أو أنشئ شيئًا جديدًا. Tandem جاهز عندما تكون كذلك.",
+        "step5Desc": "اكتب رسالتك الأولى أدناه. اطلب المساعدة في التعليمات البرمجية، أو اشرح مفهومًا، أو أنشئ شيئًا جديدًا. Tengra جاهز عندما تكون كذلك.",
         "back": "خلف",
         "continue": "يكمل",
         "letsStart": "لنبدأ"
@@ -2470,9 +2470,9 @@ export const ar = {
     },
     "extensionPrompt": {
         "title": "حسّن تجربتك",
-        "subtitle": "ثبّت إضافة متصفح Tandem",
+        "subtitle": "ثبّت إضافة متصفح Tengra",
         "infoTitle": "ما هي إضافة المتصفح؟",
-        "infoBody": "تتيح إضافة متصفح Tandem للذكاء الاصطناعي التفاعل مباشرة مع صفحات الويب. يمكنها قراءة المحتوى وملء النماذج والنقر على الأزرار وتنفيذ إجراءات تلقائية بناءً على أوامرك.",
+        "infoBody": "تتيح إضافة متصفح Tengra للذكاء الاصطناعي التفاعل مباشرة مع صفحات الويب. يمكنها قراءة المحتوى وملء النماذج والنقر على الأزرار وتنفيذ إجراءات تلقائية بناءً على أوامرك.",
         "featuresTitle": "الميزات:",
         "features": {
             "aiChatTitle": "محادثة الذكاء الاصطناعي في المتصفح:",
@@ -2490,7 +2490,7 @@ export const ar = {
             "step2": "فعّل \"وضع المطوّر\" (المفتاح أعلى اليمين)",
             "step3": "انقر على \"تحميل إضافة غير معبأة\"",
             "step4Prefix": "اختر مجلد",
-            "step4Suffix": "من دليل Tandem"
+            "step4Suffix": "من دليل Tengra"
         },
         "openFolder": "فتح مجلد الإضافة",
         "viewInstructions": "عرض التعليمات",
@@ -2505,13 +2505,13 @@ export const ar = {
         "systemDefault": "النظام الافتراضي",
         "test": "اختبار الصوت",
         "speed": "معدل الكلام",
-        "previewText": "مرحباً بك في المستقبل مع Tandem. أنا مساعدك بالذكاء الاصطناعي.",
+        "previewText": "مرحباً بك في المستقبل مع Tengra. أنا مساعدك بالذكاء الاصطناعي.",
         "microphone": "الميكروفون",
         "speaker": "السماعة / سماعات الرأس",
         "microphoneSelection": "مدخل الميكروفون",
         "speakerSelection": "مخرج الصوت",
         "voiceCloning": "استنساخ الصوت",
-        "voiceCloningDesc": "دمج صوتك الخاص في نظام Tandem البيئي.",
+        "voiceCloningDesc": "دمج صوتك الخاص في نظام Tengra البيئي.",
         "voiceCloningTitle": "استخدم صوتك الخاص!",
         "voiceCloningTeaser": "تحدث لمدة دقيقة واحدة ودع الذكاء الاصطناعي يقلد صوتك. هذه الميزة نشطة الآن!",
         "record": "بدء التسجيل",
@@ -2892,3 +2892,5 @@ export const ar = {
         "editorNote": "استخدم الوضع JSON للتكوين المتقدم للمشغلات والخطوات."
     }
 };
+
+

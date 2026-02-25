@@ -37,7 +37,7 @@ export function usePrefersReducedMotion(): boolean {
         if (typeof window === 'undefined') {
             return false;
         }
-        const forced = window.localStorage.getItem('tandem.motion.force-reduced') === 'true';
+        const forced = window.localStorage.getItem('tengra.motion.force-reduced') === 'true';
         const query = '(prefers-reduced-motion: reduce)';
         const mediaQuery = typeof window.matchMedia === 'function' ? window.matchMedia(query) : null;
         return Boolean(mediaQuery?.matches) || forced;
@@ -58,7 +58,7 @@ export function usePrefersReducedMotion(): boolean {
         }
 
         const update = () => {
-            const forceReduced = window.localStorage.getItem('tandem.motion.force-reduced') === 'true';
+            const forceReduced = window.localStorage.getItem('tengra.motion.force-reduced') === 'true';
             setPrefersReducedMotion(Boolean(mediaQuery.matches) || forceReduced);
         };
 
@@ -70,3 +70,4 @@ export function usePrefersReducedMotion(): boolean {
 
     return prefersReducedMotion;
 }
+

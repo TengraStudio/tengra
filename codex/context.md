@@ -1,7 +1,7 @@
-# Project Context: Tandem (Orbit)
+# Project Context: Tengra (Orbit)
 
 ## Overview
-Tandem is a high-performance desktop AI assistant built with Electron, React, and TypeScript. It features a multi-process architecture with a service-oriented backend and a strictly typed IPC bridge.
+Tengra is a high-performance desktop AI assistant built with Electron, React, and TypeScript. It features a multi-process architecture with a service-oriented backend and a strictly typed IPC bridge.
 
 ## Core Directives
 1.  **Safety First**: NASA Power of Ten rules for control flow and memory.
@@ -20,3 +20,4 @@ Tandem is a high-performance desktop AI assistant built with Electron, React, an
 - Documentation is now strictly mirrored to `.codex/`.
 - Termination warnings have been added to all rule files to ensure absolute compliance.
 - `LINT_ISSUES.md` introduced for systematic technical debt reduction.
+

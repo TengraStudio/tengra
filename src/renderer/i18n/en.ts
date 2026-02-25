@@ -92,7 +92,7 @@ export const en = {
         chart: 'Loading chart',
     },
     app: {
-        name: 'Tandem',
+        name: 'Tengra',
         versionShort: 'V {{version}}',
     },
     errors: {
@@ -334,7 +334,7 @@ export const en = {
         browserClosure: {
             title: 'Browser Closure Required',
             description:
-                'To authenticate with {{provider}}, Tandem needs to read protected cookies.',
+                'To authenticate with {{provider}}, Tengra needs to read protected cookies.',
             warningPrefix: 'We must',
             warningEmphasis: 'automatically close your browser',
             warningSuffix: 'to release the file lock.',
@@ -701,7 +701,7 @@ export const en = {
         noIssues: 'No significant issues found in the project. Good job!',
         noIssuesDesc: 'Project analysis did not detect critical issues.',
         issuesDescription:
-            'Tandem scans your project for potential errors, warnings, and code smells.',
+            'Tengra scans your project for potential errors, warnings, and code smells.',
         issueType: 'TYPE',
         issueMessage: 'MESSAGE',
         issueLocation: 'LOCATION',
@@ -1075,13 +1075,13 @@ export const en = {
         systemDefault: 'System Default',
         test: 'Test Voice',
         speed: 'Speech Rate',
-        previewText: 'Welcome to the future with Tandem. I am your AI assistant.',
+        previewText: 'Welcome to the future with Tengra. I am your AI assistant.',
         microphone: 'Microphone',
         speaker: 'Speaker / Headphones',
         microphoneSelection: 'Microphone Input',
         speakerSelection: 'Audio Output',
         voiceCloning: 'Voice Cloning',
-        voiceCloningDesc: 'Integrate your own voice into the Tandem ecosystem.',
+        voiceCloningDesc: 'Integrate your own voice into the Tengra ecosystem.',
         voiceCloningTitle: 'Use Your Own Voice!',
         voiceCloningTeaser:
             'Speak for 1 minute and let the AI imitate your voice This feature is now active!',
@@ -1226,7 +1226,7 @@ export const en = {
     },
     memory: {
         title: 'Memory Inspector',
-        subtitle: 'Visualize and manage what Tandem knows and remembers.',
+        subtitle: 'Visualize and manage what Tengra knows and remembers.',
         searchPlaceholder: 'Search memory...',
         totalFacts: 'Total Facts',
         episodes: 'Episodes',
@@ -1622,7 +1622,7 @@ export const en = {
         },
     },
     welcome: {
-        title: 'Tandem',
+        title: 'Tengra',
         tagline: 'Intelligence meets elegance.',
     },
     input: {
@@ -1686,7 +1686,7 @@ export const en = {
         creative: {
             title: 'Creative Writing',
             description: 'Generate text and content.',
-            prompt: 'Can you write an impressive intro text for an AI assistant named Tandem?',
+            prompt: 'Can you write an impressive intro text for an AI assistant named Tengra?',
         },
         debug: {
             title: 'Debug',
@@ -1710,7 +1710,7 @@ export const en = {
         user: 'User',
         assistant: 'Assistant',
         copyAsHtml: 'Copy as HTML',
-        TandemDrawing: 'Tandem Drawing...',
+        TengraDrawing: 'Tengra Drawing...',
         quotaExceeded: 'Quota Exceeded',
         quotaMessage:
             'You have exceeded the model usage quota. Please try again later or upgrade your plan.',
@@ -1722,7 +1722,7 @@ export const en = {
         speakAloud: 'Read Aloud',
         convertToCode: 'Convert to Code',
         approvePlan: 'Approve Plan',
-        TandemThinking: 'Tandem Thinking',
+        TengraThinking: 'Tengra Thinking',
         showThought: 'Show Thought',
         renderingDiagram: 'Rendering Diagram...',
         imageAlt: 'Image',
@@ -1779,12 +1779,12 @@ export const en = {
         updates: 'Updates',
         privacy: 'Privacy',
         crashReporting: 'Crash Reporting',
-        crashReportingDesc: 'Send anonymous crash reports to help us improve Tandem.',
+        crashReportingDesc: 'Send anonymous crash reports to help us improve Tengra.',
         startup: 'Startup',
         startOnStartup: 'Start on system startup',
-        startOnStartupDesc: 'Automatically launch Tandem when your computer starts.',
+        startOnStartupDesc: 'Automatically launch Tengra when your computer starts.',
         workAtBackground: 'Run in background',
-        workAtBackgroundDesc: 'Keep Tandem running in the background after closing the window.',
+        workAtBackgroundDesc: 'Keep Tengra running in the background after closing the window.',
     },
     appearance: {
         themeDesc: 'Change the application color theme.',
@@ -1794,7 +1794,7 @@ export const en = {
         fontDesc: 'Customize application font and size.',
         fontFamily: 'FONT FAMILY',
         fontSize: 'FONT SIZE',
-        previewText: 'Shape the future with Tandem AI.',
+        previewText: 'Shape the future with Tengra AI.',
         accessibility: 'Accessibility',
         accessibilityDesc: 'Display and visibility settings',
         highContrast: 'High Contrast Mode',
@@ -1900,11 +1900,11 @@ export const en = {
     },
     about: {
         description:
-            'Tandem is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.',
+            'Tengra is a next-generation AI IDE assistant designed for developers, unifying local and cloud-based AI models in a single interface.',
         checkUpdates: 'Check for Updates',
         privacyPolicy: 'Privacy Policy',
         github: 'GitHub',
-        copyright: '© 2025 Tandem',
+        copyright: '© 2025 Tengra',
         factoryReset: 'Factory Reset',
         factoryResetDesc: 'Resets the application by deleting all settings and data.',
         updateCheckAlert: 'Update check enabled in production builds.',
@@ -1975,7 +1975,7 @@ export const en = {
     tips: {
         title: 'Did you know?',
         tip1: 'You can create a new chat using CTRL+N shortcut.',
-        tip2: 'Tandem supports connecting to remote SSH servers for development.',
+        tip2: 'Tengra supports connecting to remote SSH servers for development.',
         tip3: 'You can drag and drop files directly into the chat.',
         tip4: 'Use the "Council" tab to get multi-agent perspectives on your code.',
         tip5: 'Customize your experience in Settings > Appearance.',
@@ -2135,7 +2135,7 @@ export const en = {
         navigate: 'Navigate',
         select: 'Select',
         close: 'Close',
-        engineLabel: 'Tandem Command Engine',
+        engineLabel: 'Tengra Command Engine',
         previewEmpty: 'Select an item to view details',
         noResultsHint: 'Try searching for chats, models, or settings',
     },
@@ -2163,10 +2163,10 @@ export const en = {
     updateNotification: {
         checkingTitle: 'Checking for updates...',
         availableTitle: 'Update Available: v{{version}}',
-        availableContent: 'A new version of Tandem is available.',
+        availableContent: 'A new version of Tengra is available.',
         downloadingTitle: 'Downloading update...',
         downloadedTitle: 'Update Ready',
-        downloadedContent: 'Restart Tandem to apply the latest update.',
+        downloadedContent: 'Restart Tengra to apply the latest update.',
         errorTitle: 'Update Failed',
         uptodateTitle: 'You are up to date',
         downloadAction: 'Download',
@@ -2206,7 +2206,7 @@ export const en = {
         sessionKeyRequired: 'Claude Session Key Required',
         completeConnection: 'Complete Connection for {{email}}',
         sessionKeyDescription:
-            'To enable quota tracking and direct interaction, Tandem needs your Claude session key. We encrypt and store this key locally on your device.',
+            'To enable quota tracking and direct interaction, Tengra needs your Claude session key. We encrypt and store this key locally on your device.',
         howToFindKey: 'How to find your session key',
         sessionKeyInstructions: {
             step1: 'Open claude.ai and log in',
@@ -2386,25 +2386,25 @@ export const en = {
     onboarding: {
         language: {
             title: 'Choose your language',
-            description: 'Select your preferred language to get started with Tandem.'
+            description: 'Select your preferred language to get started with Tengra.'
         },
         // OnboardingFlow steps (4-step wizard) - flat keys for i18n compatibility
-        welcomeTitle: 'Welcome to Tandem',
+        welcomeTitle: 'Welcome to Tengra',
         welcomeDescription:
-            'Your AI-powered coding companion. Tandem helps you write, debug, and understand code with multiple AI providers at your fingertips.',
+            'Your AI-powered coding companion. Tengra helps you write, debug, and understand code with multiple AI providers at your fingertips.',
         multiModelTitle: 'Multi-Model Support',
         multiModelDescription:
-            'Connect to OpenAI, Anthropic, Google, Ollama, and more. Switch between models instantly or let Tandem choose the best one for your task.',
+            'Connect to OpenAI, Anthropic, Google, Ollama, and more. Switch between models instantly or let Tengra choose the best one for your task.',
         workspaceTitle: 'Your Workspace',
         workspaceDescription:
             'Organize projects, manage conversations, and access your coding history. Everything stays local and secure on your machine.',
         privacyTitle: 'Privacy First',
         privacyDescription:
-            'Your code stays yours. Tandem runs locally with optional cloud features. Full control over what data leaves your computer.',
+            'Your code stays yours. Tengra runs locally with optional cloud features. Full control over what data leaves your computer.',
         // OnboardingTour steps (5-step feature tour)
         step1Title: 'Meet Your AI Assistant',
         step1Desc:
-            'Tandem combines multiple AI models to help you code faster. Ask questions, generate code, or debug issues with natural language.',
+            'Tengra combines multiple AI models to help you code faster. Ask questions, generate code, or debug issues with natural language.',
         step2Title: 'Command Palette',
         step2Desc:
             'Press Cmd+K (or Ctrl+K on Windows) to access the command palette. Quickly navigate, search, and execute actions from anywhere.',
@@ -2416,7 +2416,7 @@ export const en = {
             'API keys are encrypted locally. All conversations can stay offline with Ollama. You control what gets shared and what stays private.',
         step5Title: 'Start Chatting',
         step5Desc:
-            'Type your first message below. Ask for help with code, explain a concept, or generate something new. Tandem is ready when you are.',
+            'Type your first message below. Ask for help with code, explain a concept, or generate something new. Tengra is ready when you are.',
         // Navigation buttons
         skip: 'Skip',
         next: 'Next',
@@ -2425,7 +2425,7 @@ export const en = {
         continue: 'Continue',
         letsStart: "Let's Start",
         // Legacy keys for compatibility
-        welcome: 'Welcome to Tandem',
+        welcome: 'Welcome to Tengra',
         step1: 'Connect AI Providers',
         step2: 'Setup Workspace',
         step3: 'Start Coding',
@@ -2987,10 +2987,10 @@ export const en = {
     },
     extensionPrompt: {
         title: 'Enhance Your Experience',
-        subtitle: 'Install the Tandem Browser Extension',
+        subtitle: 'Install the Tengra Browser Extension',
         infoTitle: 'What is the browser extension?',
         infoBody:
-            'The Tandem browser extension allows the AI to interact directly with web pages. It can read content, fill forms, click buttons, and perform automated actions based on your commands.',
+            'The Tengra browser extension allows the AI to interact directly with web pages. It can read content, fill forms, click buttons, and perform automated actions based on your commands.',
         featuresTitle: 'Features:',
         features: {
             aiChatTitle: 'AI Chat in Browser:',
@@ -3008,7 +3008,7 @@ export const en = {
             step2: 'Enable "Developer mode" (toggle in top-right)',
             step3: 'Click "Load unpacked"',
             step4Prefix: 'Select the',
-            step4Suffix: 'folder from Tandem directory',
+            step4Suffix: 'folder from Tengra directory',
         },
         openFolder: 'Open Extension Folder',
         viewInstructions: 'View Instructions',
@@ -3155,3 +3155,5 @@ export const en = {
         saved: 'Saved checkpoint for task {{taskId}}',
     }
 };
+
+

@@ -24,7 +24,7 @@ test.describe('Application Launch', () => {
 
         // Verify a non-empty title is provided by the app shell
         expect(title.length).toBeGreaterThan(0);
-        // expect(title).toContain('Tandem'); 
+        // expect(title).toContain('Tengra'); 
         // Title usually set in HTML or via setIsTitleVisible. 
         // The main.ts loads index.html.
 
@@ -33,3 +33,4 @@ test.describe('Application Launch', () => {
         expect(isVisible).toBe(true);
     });
 });
+

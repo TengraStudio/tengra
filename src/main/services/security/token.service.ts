@@ -4,11 +4,11 @@ import { LinkedAccount } from '@main/services/data/database.service';
 import { CopilotService } from '@main/services/llm/copilot.service';
 import { AuthService } from '@main/services/security/auth.service';
 import { EventBusService } from '@main/services/system/event-bus.service';
-import { getErrorMessage } from '@shared/utils/error.util';
-import { SettingsService } from '@main/services/system/settings.service';
-import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
+import { ProcessManagerService } from '@main/services/system/process-manager.service';
+import { SettingsService } from '@main/services/system/settings.service';
 import { SystemEventKey } from '@shared/types/events';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 export class TokenService extends BaseService {
     private static readonly REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 mins

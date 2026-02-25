@@ -1,6 +1,7 @@
 import { Bot, ChevronRight } from 'lucide-react';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import type { GroupedModels } from '@/features/models/utils/model-fetcher';
 import { Language } from '@/i18n';
 import { AppSettings, CodexUsage, Project, QuotaResponse, WorkspaceDashboardTab } from '@/types';
@@ -15,7 +16,6 @@ import { StatusIndicators } from './agent/StatusIndicators';
 import { TaskExecutionView } from './agent/TaskExecutionView';
 import { TaskInputForm } from './agent/TaskInputForm';
 import { TaskSidebar } from './agent/TaskSidebar';
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 interface ProjectAgentTabProps {
     project: Project;

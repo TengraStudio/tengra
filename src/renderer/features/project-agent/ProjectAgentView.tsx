@@ -961,7 +961,7 @@ const InternalProjectAgentView: React.FC = () => {
 };
 
 /**
- * ProjectAgentView - The Quantum Canvas for Tandem Autonomous Core (UAC)
+ * ProjectAgentView - The Quantum Canvas for Tengra Autonomous Core (UAC)
  *
  * Provides an infinite canvas with a grid system for visualizing autonomous nodes.
  */
@@ -972,3 +972,4 @@ export const ProjectAgentView: React.FC = () => {
         </ReactFlowProvider>
     );
 };
+

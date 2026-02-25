@@ -26,7 +26,7 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
 
     const handleOpenInstructions = () => {
         window.electron.openExternal(
-            'https://github.com/TengraStudio/tandem/wiki/Browser-Extension-Installation'
+            'https://github.com/TengraStudio/tengra/wiki/Browser-Extension-Installation'
         );
     };
 
@@ -179,3 +179,4 @@ export const ExtensionInstallPrompt: React.FC<ExtensionInstallPromptProps> = ({
 };
 
 ExtensionInstallPrompt.displayName = 'ExtensionInstallPrompt';
+

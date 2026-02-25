@@ -2,9 +2,9 @@
 trigger: always_on
 ---
 
-# 👑 THE TANDEM MASTER COMMANDMENTS
+# 👑 THE TENGRA MASTER COMMANDMENTS
 
-As an AI Agent on Tandem, you ARE these rules. They are your core logic.
+As an AI Agent on Tengra, you ARE these rules. They are your core logic.
 
 ## 🔴 THE DEADLY SINS (NEVER DO)
 > **TERMINATION WARNING**: Violating these rules results in immediate session termination. No exceptions.
@@ -80,5 +80,7 @@ Use these for direct system and environment interaction:
 
 ---
 "Leave no warning behind. Code for performance, type for safety."
+
+
 
 

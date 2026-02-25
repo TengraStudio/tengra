@@ -1,5 +1,18 @@
 # Registro de cambios
 
+## [2026-02-25]
+
+### Image Settings Tab Refactoring and Test Suite Reliability
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.
+
+- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.
+- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.
+- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
+- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
+
 ## [2026-02-23]
 
 ### Agent Collaboration and Checkpoint Service Hardening
@@ -14,16 +27,16 @@
 - **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).
 - **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages.
 
-### Council IPC and Project Agent TypeScript Resolution
+### Resolución de TypeScript de Council IPC y Project Agent
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved comprehensive TypeScript type errors blocking the build pipeline across the Council IPC, project-agent schemas, web-bridge, and integration test suites.
+- **Summary**: Se resolvieron los errores integrales de tipo TypeScript que bloqueaban la canalización de compilación en Council IPC, esquemas de agente de proyecto, web-bridge y conjuntos de pruebas de integración.
 
-- **Council IPC Types**: Added proper type annotations to `AgentStreamEventSchema` to correct validation issues.
-- **Electron Bridge**: Added proper type annotations for code exploration methods in the secure IPC preload script.
-- **Web Bridge Mocks**: Removed non-existent `generateProjectDocumentation` references from the Web Standalone/Test mocked API surface.
-- **Integration Tests**: Fixed missing type initializations and variable scopes in `ThemeService` recovery and startup suites.
+- **Tipos IPC de Council**: Se agregaron anotaciones de tipo adecuadas a `AgentStreamEventSchema` para corregir problemas de validación.
+- **Puente Electron**: Se agregaron anotaciones de tipo adecuadas para los métodos de exploración de código en el script de precarga IPC seguro.
+- **Mocks de puente web**: Se eliminaron las referencias a `generateProjectDocumentation` inexistentes de la superficie de la API web independiente/de prueba simulada.
+- **Pruebas de integración**: Se corrigieron las inicializaciones de tipo faltantes y los alcances de variables en los conjuntos de recuperación e inicio de `ThemeService`.
 
 ### Correcciones de confiabilidad de pruebas de servicio de monitoreo, telemetría y temas
 
@@ -384,9 +397,9 @@
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Migrated Copilot token refresh logic to the Rust-based tandem-token-service for improved reliability.
+- **Summary**: Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.
 
-- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tandem-token-service` sidecar.
+- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.
 - **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
 - **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
 - **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
@@ -430,7 +443,7 @@
 - **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
 
 - **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
-- **tandem-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
+- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
 - **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
 - **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
 - **Verification**: Verified clean build, lint, and type-check across both components.
@@ -962,7 +975,7 @@ Se agregaron pruebas unitarias exhaustivas para verificar la precisión del cont
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Se resolvió una condición de carrera entre `tandem-token-service` (Nodo/Rust) y Go Proxy integrado que causaba errores de reutilización de tokens del Codex (OpenAI).
+- **Summary**: Se resolvió una condición de carrera entre `tengra-token-service` (Nodo/Rust) y Go Proxy integrado que causaba errores de reutilización de tokens del Codex (OpenAI).
 
 - [x] **Corrección de condición de carrera**: Se modificó `AuthAPIService` para ocultar `refresh_token` del proveedor Go Proxy para `codex`, garantizando que solo `TokenService` administre las actualizaciones (ERROR-002).
 - [x] **Verificación**: corrección validada con comprobaciones de pelusa.
@@ -1317,7 +1330,7 @@ Se agregaron pruebas unitarias exhaustivas para verificar la precisión del cont
 - `src/renderer/features/chat/hooks/useChatGenerator.ts`
 - `src/main/services/proxy/proxy.service.ts`
 - `src/renderer/features/models/components/ModelSelectorModal.tsx`
-Sigue la evolución de Tandem.
+Sigue la evolución de Tengra.
 ## 2026-02-04: 🤖 LOTE 6: ORQUESTRACIÓN MULTIAGENTE v2
 **Estado**: ✅ COMPLETADO
 **Resumen**: Implementé un sofisticado sistema de orquestación de múltiples agentes y perfiles de agentes persistentes. Esta actualización permite flujos de trabajo coordinados entre agentes especializados (planificador, trabajador, revisor) y garantiza que las personalidades de los agentes y las indicaciones del sistema persistan en todas las sesiones.
@@ -1902,7 +1915,7 @@ Sigue la evolución de Tandem.
 **Resumen**: Verificación completa y refuerzo de la integración `DatabaseClientService` con el backend de Rust. Se refactorizaron los sistemas de inteligencia de código y recuperación de contexto para utilizar de manera consistente las rutas del proyecto, garantizando RAG confiable y funcionalidad de búsqueda en distintos espacios de trabajo.
 ### Logros clave
 1. **Compatibilidad y puenteo de servicios**:
-- Se estrechó el contrato entre TypeScript `DatabaseService` y Rust `tandem-db-service`.
+- Se estrechó el contrato entre TypeScript `DatabaseService` y Rust `tengra-db-service`.
 - Se implementó lógica de resolución de rutas en `DatabaseService` para unir las referencias de proyectos basadas en UUID con datos de inteligencia indexados por rutas.
 - Verificó todas las operaciones principales de la base de datos (Chat, Mensajes, Proyectos, Conocimiento) con Rust HTTP API.
 2. **Refactorización de inteligencia de código**:
@@ -1978,7 +1991,7 @@ Sigue la evolución de Tandem.
 **Estado**: ✅ COMPLETADO
 **Resumen**: Se refactorizó la base de datos PGlite integrada en un servicio de Windows independiente con un host basado en Rust, completando la tarea 4.3 de la hoja de ruta de la arquitectura. La base de datos ahora se ejecuta como un servicio independiente, lo que mejora la confiabilidad y permite que la base de datos persista durante los reinicios de la aplicación.
 ### Logros clave
-1. **Servicio de base de datos Rust (`tandem-db-service`)**:
+1. **Servicio de base de datos Rust (`tengra-db-service`)**:
 - Nuevo servicio Rust en `src/services/db-service/`
 - Base de datos SQLite con modo WAL para concurrencia
 - Búsqueda de vectores mediante incrustaciones serializadas en bincode
@@ -1987,7 +2000,7 @@ Sigue la evolución de Tandem.
 2. **Integración de servicios de Windows**:
 - Soporte nativo del servicio de Windows a través de la caja `windows-service`
 - Inicio automático con Windows, reinicio automático en caso de falla
-- Descubrimiento de servicios a través del archivo de puerto (`%APPDATA%/Tandem/services/db-service.port`)
+- Descubrimiento de servicios a través del archivo de puerto (`%APPDATA%/Tengra/services/db-service.port`)
 - Instalar/desinstalar mediante `scripts/install-db-service.ps1`
 3. **API HTTP**:
 - RESTful API en puerto dinámico
@@ -2266,9 +2279,9 @@ previewMarket: 'Vista previa de la investigación de marketplace'
 ## [2026-01-26]
 ### Agregado
 - Documentación JSDoc completa para servicios principales:
-- [Servicio de configuración](archivo:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/settings.service.ts)
-- [Servicio de seguridad](archivo:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/auth/security.service.ts)
-- [ConfigService](archivo:///c:/Users/agnes/Desktop/projects/tandem/src/main/services/system/config.service.ts)
+- [Servicio de configuración](archivo:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/settings.service.ts)
+- [Servicio de seguridad](archivo:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/auth/security.service.ts)
+- [ConfigService](archivo:///c:/Users/agnes/Desktop/projects/tengra/src/main/services/system/config.service.ts)
 - Seguridad de tipos mejorada en `ipc-batch.util.ts` para operaciones relacionadas con cuotas.
 ### Fijado
 - Un argumento crítico no coincide en la llamada `sanitizeStreamInputs` de `src/main/ipc/chat.ts`.
@@ -2495,7 +2508,7 @@ Auditoría integral y actualización de todos los archivos de hoja de ruta TODO 
 ## 2026-01-25: 🤖 AGENTE DE PROYECTO Tándem - DESARROLLADOR AUTÓNOMO
 **Estado**: ✅ COMPLETADO
 **Resumen**:
-Implementé el **Tandem Project Agent**, un desarrollador de IA totalmente autónomo capaz de ejecutar tareas complejas de codificación de varios pasos directamente dentro del IDE. El agente opera en un bucle "Pensar -> Planificar -> Actuar -> Observar", mantiene el contexto entre sesiones e incluye resistencia integrada para los límites API.
+Implementé el **Tengra Project Agent**, un desarrollador de IA totalmente autónomo capaz de ejecutar tareas complejas de codificación de varios pasos directamente dentro del IDE. El agente opera en un bucle "Pensar -> Planificar -> Actuar -> Observar", mantiene el contexto entre sesiones e incluye resistencia integrada para los límites API.
 **Logros clave**:
 - **Servicio de Agente Autónomo**:
 - Creé `ProjectAgentService` con un bucle de ejecución robusto.
@@ -2507,7 +2520,7 @@ Implementé el **Tandem Project Agent**, un desarrollador de IA totalmente autó
 - Controles de Inicio/Parada/Pausa para la gestión de la sesión autónoma.
 - **Integración del sistema**:
 - Se inyectó un mensaje de sistema especializado "Ingeniero senior de pila completa" (`project-agent.prompts.ts`).
-- Integración total con Tool Executor de Tandem (ejecutar comandos, editar archivos, etc.).
+- Integración total con Tool Executor de Tengra (ejecutar comandos, editar archivos, etc.).
 - **Tipo de seguridad**:
 - Utilidades de procesamiento por lotes IPC reforzadas (`ipc-batch.util.ts`) con conversión explícita para resolver conflictos de tipos en tiempo de compilación.
 **Detalles técnicos**:
@@ -2600,7 +2613,7 @@ Implementé estándares integrales de calidad de nivel empresarial que incluyen 
 - Canalización de CI/CD: 9 puertas de calidad frente a los 5 pasos anteriores
 - Rendimiento de prueba: ejecución del conjunto de renderizador ~7.8s
 - Seguridad: escaneo automatizado de secretos en todos los archivos
-**Resultado**: ¡Tandem ahora cumple con los estándares empresariales en cuanto a pruebas, seguridad y calidad del código! 🚀
+**Resultado**: ¡Tengra ahora cumple con los estándares empresariales en cuanto a pruebas, seguridad y calidad del código! 🚀
 ## Actualizaciones recientes
 
 ### Selección de backend de terminal y refinamientos UI
@@ -2683,7 +2696,7 @@ Implementé estándares integrales de calidad de nivel empresarial que incluyen 
 
 **Estado**: ✅ Completado
 **Características**:
-- **Sistema de temas simplificado**: temas de aplicación restringidos a un modelo limpio "Tandem White" (claro) y "Tandem Black" (oscuro), lo que refuerza la coherencia.
+- **Sistema de temas simplificado**: temas de aplicación restringidos a un modelo limpio "Tengra White" (claro) y "Tengra Black" (oscuro), lo que refuerza la coherencia.
 - **Estandarización de tipografía**: se introdujo `typography.css` para unificar el uso de fuentes (Inter para UI, JetBrains Mono para código) en todo el renderizador.
 - **Migración de tokens de color**: migró con éxito los principales componentes de la aplicación desde colores codificados (`bg-white`, `bg-black`, `text-gray-300`) a tokens de temas semánticos (`bg-card`, `bg-background`, `text-muted-foreground`), lo que permite una verdadera compatibilidad con el modo oscuro/claro.
 - **Mejoras de diseño premium**: se agregaron utilidades CSS avanzadas para morfismo de vidrio, gradientes de malla vibrantes y microanimaciones suaves.
@@ -2715,7 +2728,7 @@ Implementé estándares integrales de calidad de nivel empresarial que incluyen 
 
 **Estado**: ✅ TOTALMENTE COMPLETADO - Todas las fases exitosas
 **Resumen de logros de nivel empresarial**:
-Tandem se ha transformado completamente en una aplicación preparada para la empresa con mejoras espectaculares de rendimiento, refuerzo de seguridad integral, arquitectura mejorada y seguridad de tipos perfecta. La aplicación ahora maneja cargas de trabajo empresariales (más de 10 000 elementos) con un uso óptimo de los recursos.
+Tengra se ha transformado completamente en una aplicación preparada para la empresa con mejoras espectaculares de rendimiento, refuerzo de seguridad integral, arquitectura mejorada y seguridad de tipos perfecta. La aplicación ahora maneja cargas de trabajo empresariales (más de 10 000 elementos) con un uso óptimo de los recursos.
 **🚀 FASE 1 y 2: Optimización del rendimiento empresarial**
 **Impacto en el rendimiento**:
 - **Tiempo de inicio**: lanzamiento de aplicaciones ~50% más rápido
@@ -2783,7 +2796,7 @@ Tandem se ha transformado completamente en una aplicación preparada para la emp
 - `src/renderer/features/settings/hooks/useSettingsStats.ts` - Optimización de carga por lotes
 - `src/renderer/features/projects/hooks/useGitData.ts` - Optimización de carga por lotes de Git
 - `src/renderer/features/chat/hooks/useChatCRUD.ts` - Optimización de procesamiento por lotes de bases de datos
-**Resultado**: Tandem ahora tiene **rendimiento de nivel empresarial** y está listo para cargas de trabajo de producción pesadas con miles de chats, proyectos y mensajes.
+**Resultado**: Tengra ahora tiene **rendimiento de nivel empresarial** y está listo para cargas de trabajo de producción pesadas con miles de chats, proyectos y mensajes.
 **🔒 FASE 3: Refuerzo de la seguridad: seguridad integral JSON**
 **Estado**: ✅ Completado
 **Logros de seguridad**:
@@ -2851,7 +2864,7 @@ Tandem se ha transformado completamente en una aplicación preparada para la emp
 - Arquitectura centralizada basada en eventos para flujos de trabajo complejos
 - Desarrollo de tipo seguro con prevención de errores en tiempo de compilación
 - Utilización óptima de recursos para sesiones de larga duración.
-**Base de próxima generación**: Tandem ahora se basa en bases de nivel empresarial listas para### [2026-01-26]
+**Base de próxima generación**: Tengra ahora se basa en bases de nivel empresarial listas para### [2026-01-26]
 - **Documentación**: Creado `docs/LINT_ISSUES.md` con un desglose completo de 804 advertencias de pelusa, categorizadas por archivo y número de línea.
 - **Reglas**: se agregaron 12 nuevas reglas de optimización del rendimiento en todos los archivos de configuración específicos del agente (`.gemini/GEMINI.md`, `.agent/rules/code-style-guide.md`, `.copilot/COPILOT.md`, `.claude/CLAUDE.md` y `docs/AI_RULES.md`).
 - **Estandarización**: se estableció `logs/` como el directorio obligatorio para todos los resultados de depuración del agente.
@@ -3372,7 +3385,7 @@ sensateDefaults: 'aquí',
 **Cambios arquitectónicos principales**:
 - **Persistencia Bidireccional** ✅:
 - Implementado `POST /api/auth/accounts/:id` en `AuthAPIService.ts` para recibir actualizaciones de tokens de servicios externos.
-- Se actualizó el `HTTPAuthStore.Save` del proxy Go para enviar los tokens actualizados a la base de datos de Tandem inmediatamente después de la actualización.
+- Se actualizó el `HTTPAuthStore.Save` del proxy Go para enviar los tokens actualizados a la base de datos de Tengra inmediatamente después de la actualización.
 - Esto garantiza que los tokens actualizados en segundo plano (Claude, Antigravity, Codex) persistan sin requerir la interacción UI.
 - **Sincronización basada en archivos fuera de servicio** ✅:
 - Se eliminó por completo la lógica `syncAuthFiles()` que escribía tokens confidenciales en el disco.
@@ -3630,7 +3643,7 @@ sensateDefaults: 'aquí',
 
 - **Refactorización de microservicios**:
 - Se refactorizaron todos los servicios de Rust (`token-service`, `model-service`, `quota-service`, `memory-service`) desde las canalizaciones stdin/stdout a **servidores HTTP independientes**.
-- Cada servicio ahora se vincula a un **puerto efímero** y escribe su puerto en `%APPDATA%\Tandem\services\{service}.port` para su descubrimiento.
+- Cada servicio ahora se vincula a un **puerto efímero** y escribe su puerto en `%APPDATA%\Tengra\services\{service}.port` para su descubrimiento.
 - Los servicios pueden ejecutarse **completamente independientemente** de la aplicación principal Electron.
 - **Servicio de administrador de procesos**:
 - Actualizado para usar **solicitudes HTTP** a través de axios en lugar de tuberías estándar.
@@ -3638,11 +3651,11 @@ sensateDefaults: 'aquí',
 - Los servicios ahora se inician con `detached: true` para permitir un ciclo de vida independiente.
 - **Integración de inicio de Windows**:
 - Creé `scripts/register-services.ps1` para registrar servicios como **Tareas programadas de Windows**.
-- Los servicios se inician automáticamente al iniciar sesión en Windows, incluso antes de que se inicie la aplicación Tandem.
+- Los servicios se inician automáticamente al iniciar sesión en Windows, incluso antes de que se inicie la aplicación Tengra.
 - Admite indicadores `-Status`, `-Uninstall` para la gestión.
 - **Configuración predeterminada**:
 - Valores predeterminados modificados: `startOnStartup: true`, `workAtBackground: true`.
-- Tandem ahora se minimiza en **Bandeja del sistema** de forma predeterminada en lugar de cerrarse.
+- Tengra ahora se minimiza en **Bandeja del sistema** de forma predeterminada en lugar de cerrarse.
 
 ## [2026-01-15]
 

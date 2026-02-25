@@ -1,8 +1,8 @@
 [package]
-name = "tandem-db-service"
+name = "tengra-db-service"
 version = "0.1.0"
 edition = "2021"
-description = "Tandem Database Service - Windows Service hosting SQLite database"
+description = "Tengra Database Service - Windows Service hosting SQLite database"
 
 [dependencies]
 # Async runtime
@@ -38,6 +38,7 @@ directories = "5.0"
 base64 = "0.21"
 
 [[bin]]
-name = "tandem-db-service"
+name = "tengra-db-service"
 path = "src/main.rs"
+
 

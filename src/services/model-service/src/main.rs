@@ -234,7 +234,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // Port Discovery
     if let Ok(appdata) = std::env::var("APPDATA") {
         let services_dir = std::path::Path::new(&appdata)
-            .join("Tandem")
+            .join("Tengra")
             .join("services");
         if let Err(e) = fs::create_dir_all(&services_dir) {
             eprintln!("Failed to create services directory: {}", e);
@@ -2249,7 +2249,7 @@ struct HfApiModel {
 fn db_service_port_file() -> Result<std::path::PathBuf, Box<dyn Error + Send + Sync>> {
     let appdata = std::env::var("APPDATA")?;
     Ok(std::path::Path::new(&appdata)
-        .join("Tandem")
+        .join("Tengra")
         .join("services")
         .join("db-service.port"))
 }
@@ -3131,3 +3131,4 @@ async fn get_huggingface_marketplace_model_details(
         }),
     }
 }
+

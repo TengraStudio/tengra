@@ -297,7 +297,7 @@ export function registerThemeIpc(themeService: ThemeService): void {
                 return false;
             }
 
-            const tempPath = path.join(os.tmpdir(), `tandem-theme-${themeId}-${Date.now()}.json`);
+            const tempPath = path.join(os.tmpdir(), `tengra-theme-${themeId}-${Date.now()}.json`);
             await fs.writeFile(tempPath, json);
             await shell.openPath(tempPath);
             return true;
@@ -328,3 +328,4 @@ export function registerThemeIpc(themeService: ThemeService): void {
         }
     ));
 }
+

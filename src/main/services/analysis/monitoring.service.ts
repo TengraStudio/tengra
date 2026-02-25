@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
 import * as os from 'os';
+
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
 import { ServiceResponse } from '@shared/types';

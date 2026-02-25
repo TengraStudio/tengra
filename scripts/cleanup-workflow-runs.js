@@ -25,7 +25,7 @@ const { promisify } = require('util');
 // Configuration
 const GITHUB_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 const REPO_OWNER = 'TengraStudio';
-const REPO_NAME = 'tandem';
+const REPO_NAME = 'tengra';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -247,3 +247,4 @@ main().catch(error => {
     log(`\n❌ Fatal error: ${error.message}`, 'red');
     process.exit(1);
 });
+

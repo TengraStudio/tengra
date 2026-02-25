@@ -1,11 +1,11 @@
-# tandem Documentation Hub
+# tengra Documentation Hub
 
-Welcome to the internal documentation for tandem, the premier desktop AI coding assistant. This hub provides detailed information about the technical architecture, security protocols, development workflows, and the diverse technology stack that powers tandem.
+Welcome to the internal documentation for tengra, the premier desktop AI coding assistant. This hub provides detailed information about the technical architecture, security protocols, development workflows, and the diverse technology stack that powers tengra.
 
 ## Documentation Index
 
 ### [System Architecture](./ARCHITECTURE.md)
-Detailed overview of tandem's multi-process design, Inter-Process Communication (IPC) bridge, and the service-oriented backend.
+Detailed overview of tengra's multi-process design, Inter-Process Communication (IPC) bridge, and the service-oriented backend.
 
 ### [Technology Stack](./TECHNOLOGIES.md)
 A comprehensive look at the languages and frameworks used, including Electron, React, Rust, Go, and PGlite.
@@ -29,7 +29,7 @@ Reference for the Auth HTTP API, Proxy endpoints, and Microservice communication
 In-depth look at the agent architecture, tool-calling mechanisms, and lifecycle.
 
 ### [UI and UX Guidelines](./UI_UX_GUIDELINES.md)
-Design philosophy, component usage, and aesthetic standards for the tandem interface.
+Design philosophy, component usage, and aesthetic standards for the tengra interface.
 
 ### [Testing Strategy](./TESTING_STRATEGY.md)
 Overview of unit, integration, and end-to-end testing approaches.
@@ -55,4 +55,5 @@ Guidelines for submitting pull requests and adhering to project standards.
 - [AI Rules and Standards](./AI_RULES.md)
 - [Project Status and Roadmap](./PROJECT.md)
 - [Changelog](../CHANGELOG.md)
+
 

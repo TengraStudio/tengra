@@ -14,7 +14,7 @@ const MCPServersTab = lazy(async () => import('./MCPServersTab').then(module => 
 const MCPMarketplaceStudio = lazy(async () =>
     import('../../mcp/MCPMarketplaceStudio').then(module => ({ default: module.MCPMarketplaceStudio }))
 );
-const MCP_SETTINGS_VIEW_STORAGE_KEY = 'tandem.settings.mcp.active-view.v1';
+const MCP_SETTINGS_VIEW_STORAGE_KEY = 'tengra.settings.mcp.active-view.v1';
 
 function persistActiveView(view: 'servers' | 'marketplace'): void {
     try {
@@ -123,3 +123,4 @@ export const MCPSettingsTab = () => {
         </div>
     );
 };
+

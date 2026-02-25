@@ -5,9 +5,10 @@ import { EventBusService } from '@main/services/system/event-bus.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
 import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { SettingsService } from '@main/services/system/settings.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { en } from '../../../../renderer/i18n/en';
 import { tr } from '../../../../renderer/i18n/tr';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@main/logging/logger');
 vi.mock('@main/services/security/auth.service');

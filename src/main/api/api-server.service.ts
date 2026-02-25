@@ -795,7 +795,7 @@ export class ApiServerService extends BaseService {
                 JSON.stringify({
                     type: 'connected',
                     clientId,
-                    message: 'Connected to Tandem API server'
+                    message: 'Connected to Tengra API server'
                 })
             );
         });
@@ -1099,3 +1099,4 @@ export class ApiServerService extends BaseService {
         return parts.length > 0 ? parts : '';
     }
 }
+

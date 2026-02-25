@@ -1,10 +1,10 @@
 # Agent Engineering
 
-This document details the architecture and implementation of the AI agents within Tandem.
+This document details the architecture and implementation of the AI agents within Tengra.
 
 ## Agent Architecture
 
-Tandem uses a multi-layered agent architecture designed for high autonomy and reliability.
+Tengra uses a multi-layered agent architecture designed for high autonomy and reliability.
 
 ### 1. Decision Engine
 The agents are powered by state-of-the-art LLMs (Anthropic, Gemini, OpenAI) accessed via a unified proxy layer. The decision-making process follows a "think-before-act" pattern, where the agent generates an internal monologue before emitting tool calls.
@@ -46,3 +46,4 @@ Personas are defined in `src/shared/types/agent.ts` and managed through the `Age
 - **Multi-Agent Collaboration**: Enabling multiple agents to work on separate components of a task simultaneously.
 - **Self-Correction**: Improved loops for agents to automatically fix build or lint errors they introduce.
 - **Custom tool creation**: Allowing developers to define project-specific tools that agents can learn and use.
+

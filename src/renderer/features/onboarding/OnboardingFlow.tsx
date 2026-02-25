@@ -42,7 +42,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
     const { t } = useTranslation(language);
 
     const completeOnboarding = () => {
-        localStorage.setItem('Tandem-onboarding-complete', 'true');
+        localStorage.setItem('Tengra-onboarding-complete', 'true');
         // Also update via IPC if available
         window.electron?.ipcRenderer
             ?.invoke?.('settings:update', {
@@ -159,3 +159,4 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ isOpen, onClose,
         </Modal>
     );
 };
+

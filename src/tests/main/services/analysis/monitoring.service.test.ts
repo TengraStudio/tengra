@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MonitoringService } from '@main/services/analysis/monitoring.service';
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock os module
 vi.mock('os', () => ({
@@ -24,8 +24,8 @@ vi.mock('@main/logging/logger', () => ({
     },
 }));
 
-import * as os from 'os';
 import { exec } from 'child_process';
+import * as os from 'os';
 
 const mockExec = exec as unknown as ReturnType<typeof vi.fn>;
 

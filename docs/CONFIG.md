@@ -1,6 +1,6 @@
 # Configuration Guide
 
-This document describes all environment variables and configuration options for Tandem.
+This document describes all environment variables and configuration options for Tengra.
 
 ## Environment Variables
 
@@ -57,7 +57,7 @@ Web search and research capabilities.
 
 ## Configuration Precedence
 
-Tandem uses the following configuration precedence (highest to lowest):
+Tengra uses the following configuration precedence (highest to lowest):
 
 1. **Runtime cache** - `ConfigService.setConfig()` (highest priority)
 2. **Environment variables** - `process.env.*`
@@ -78,7 +78,7 @@ ConfigService.get('apiKey', 'default-key');           // Priority 4
 
 ## Settings File
 
-Location: `~/.tandem/settings.json` (user data directory)
+Location: `~/.tengra/settings.json` (user data directory)
 
 ### Structure
 
@@ -114,9 +114,9 @@ Sensitive values (API keys, tokens) are encrypted using `SecurityService.encrypt
 
 ## Database Configuration
 
-Tandem uses SQLite for local data storage.
+Tengra uses SQLite for local data storage.
 
-**Location**: `~/.tandem/data.db`
+**Location**: `~/.tengra/data.db`
 
 **Migrations**: Automatically applied on startup via `MigrationService`
 
@@ -150,7 +150,7 @@ REST API server for browser extension communication.
 
 ## Logging Configuration
 
-**Location**: `~/.tandem/logs/`
+**Location**: `~/.tengra/logs/`
 
 **Rotation**: Daily rotation, 7-day retention
 
@@ -195,13 +195,13 @@ const isTest = process.env.NODE_ENV === 'test';
 
 ### Missing Environment Variables
 
-Tandem will start without environment variables but features requiring authentication will be disabled.
+Tengra will start without environment variables but features requiring authentication will be disabled.
 
-Check logs: `~/.tandem/logs/main.log`
+Check logs: `~/.tengra/logs/main.log`
 
 ### Database Migration Failures
 
-1. Backup `~/.tandem/data.db`
+1. Backup `~/.tengra/data.db`
 2. Check migration logs
 3. Manually roll back if needed (see `migrations.ts`)
 
@@ -217,3 +217,4 @@ Check logs: `~/.tandem/logs/main.log`
 - [README.md](../README.md) - Getting started guide
 - [AI_RULES.md](AI_RULES.md) - Coding guidelines
 - [API Documentation](API.md) - REST API reference (if exists)
+

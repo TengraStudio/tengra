@@ -1,7 +1,7 @@
 import { appLogger } from '@main/logging/logger';
 import type { EventBusService } from '@main/services/system/event-bus.service';
 import { JsonValue } from '@shared/types/common';
-import { AppErrorCode, getErrorMessage, TandemError } from '@shared/utils/error.util';
+import { AppErrorCode, getErrorMessage, TengraError } from '@shared/utils/error.util';
 import { IpcMainInvokeEvent } from 'electron';
 import { z, ZodError, ZodType } from 'zod';
 
@@ -118,7 +118,7 @@ export const createIpcHandler = <T = JsonValue, Args extends unknown[] = unknown
                 const message = getErrorMessage(errorObj);
                 let context: Record<string, JsonValue | Error> | undefined;
 
-                if (errorObj instanceof TandemError) {
+                if (errorObj instanceof TengraError) {
                     code = errorObj.code as AppErrorCode;
                     context = errorObj.context as Record<string, JsonValue | Error>;
                 }
@@ -247,4 +247,5 @@ export const createValidatedIpcHandler = <T = JsonValue, Args extends unknown[] 
         ipcOptions
     );
 };
+
 

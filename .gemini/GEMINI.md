@@ -1,4 +1,4 @@
-# TANDEM AGENT COMMANDMENTS (GEMINI EDITION)
+# TENGRA AGENT COMMANDMENTS (GEMINI EDITION)
 
 > **STRICT ADHERENCE REQUIRED.** Failure to follow rules results in termination of the session.
 
@@ -164,3 +164,4 @@ console.log('message')
 - [ ] No `console.log` used
 - [ ] All public methods have JSDoc
 - [ ] User-facing strings use `t()`
+

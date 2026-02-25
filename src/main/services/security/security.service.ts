@@ -101,12 +101,12 @@ export class SecurityService extends BaseService implements ISecurityService {
 
     private testEncryption() {
         try {
-            const test = 'Tandem-test-string';
+            const test = 'Tengra-test-string';
             const encrypted = this.encryptSync(test);
             const decrypted = this.decryptSync(encrypted);
 
             if (decrypted === test) {
-                appLogger.info('SecurityService', 'Encryption self-test passed (Tandem Versioned).');
+                appLogger.info('SecurityService', 'Encryption self-test passed (Tengra Versioned).');
             } else {
                 appLogger.error('SecurityService', 'CRITICAL: Encryption self-test FAILED. Decrypted value verification mismatch.');
             }
@@ -332,7 +332,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     /**
-     * Synchronously encrypts text using Tandem Custom AES-256-GCM (v1)
+     * Synchronously encrypts text using Tengra Custom AES-256-GCM (v1)
      * with a fallback to Electron's safeStorage if the master key is unavailable.
      * 
      * @param text - The plain text to encrypt.
@@ -341,7 +341,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     encryptSync(text: string): string {
         if (!text) { return ''; }
 
-        // 1. Try Custom AES-256-GCM first (Tandem V1)
+        // 1. Try Custom AES-256-GCM first (Tengra V1)
         if (this.masterKey) {
             try {
                 const iv = crypto.randomBytes(12);
@@ -350,9 +350,9 @@ export class SecurityService extends BaseService implements ISecurityService {
                 encrypted += cipher.final('base64');
                 const tag = cipher.getAuthTag().toString('base64');
 
-                return `Tandem:v1:${iv.toString('base64')}:${tag}:${encrypted}`;
+                return `Tengra:v1:${iv.toString('base64')}:${tag}:${encrypted}`;
             } catch (error) {
-                appLogger.error('SecurityService', `Tandem encryption failed: ${getErrorMessage(error as Error)}`);
+                appLogger.error('SecurityService', `Tengra encryption failed: ${getErrorMessage(error as Error)}`);
             }
         }
 
@@ -371,7 +371,7 @@ export class SecurityService extends BaseService implements ISecurityService {
     }
 
     /**
-     * Synchronously decrypts text. Handles Tandem Custom V1 format
+     * Synchronously decrypts text. Handles Tengra Custom V1 format
      * and legacy Electron safeStorage format.
      * 
      * @param encryptedText - The encrypted string to decrypt.
@@ -380,23 +380,23 @@ export class SecurityService extends BaseService implements ISecurityService {
     decryptSync(encryptedText: string): string | null {
         if (!encryptedText) { return null; }
 
-        // Case A: Tandem Custom V1
-        if (encryptedText.startsWith('Tandem:v1:')) {
-            return this.decryptTandemV1(encryptedText);
+        // Case A: Tengra Custom V1
+        if (encryptedText.startsWith('Tengra:v1:')) {
+            return this.decryptTengraV1(encryptedText);
         }
 
         // Case B: Legacy safeStorage (with or without v1: prefix)
         return this.decryptLegacyV1(encryptedText);
     }
 
-    private decryptTandemV1(encryptedText: string): string | null {
+    private decryptTengraV1(encryptedText: string): string | null {
         if (!this.masterKey) {
-            appLogger.error('SecurityService', 'Master Key missing - cannot decrypt Tandem:v1 data');
+            appLogger.error('SecurityService', 'Master Key missing - cannot decrypt Tengra:v1 data');
             return null;
         }
         try {
             const parts = encryptedText.split(':');
-            if (parts.length < 5) { throw new Error('Invalid Tandem:v1 format'); }
+            if (parts.length < 5) { throw new Error('Invalid Tengra:v1 format'); }
 
             const iv = Buffer.from(parts[2], 'base64');
             const tag = Buffer.from(parts[3], 'base64');
@@ -409,7 +409,7 @@ export class SecurityService extends BaseService implements ISecurityService {
             decrypted += decipher.final('utf8');
             return decrypted;
         } catch (error) {
-            appLogger.error('SecurityService', `Tandem decryption failed: ${getErrorMessage(error as Error)}`);
+            appLogger.error('SecurityService', `Tengra decryption failed: ${getErrorMessage(error as Error)}`);
             return null;
         }
     }
@@ -445,4 +445,6 @@ export class SecurityService extends BaseService implements ISecurityService {
         return null;
     }
 }
+
+
 

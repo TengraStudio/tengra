@@ -91,7 +91,7 @@ function applyMonacoTheme(monaco: Monaco, isLight: boolean): string {
     const tokenType = readCssVariableAsHex('--editor-token-type', '--code-function');
     const tokenInvalid = readCssVariableAsHex('--editor-token-invalid', '--destructive');
 
-    const themeName = isLight ? 'tandem-light' : 'tandem-dark';
+    const themeName = isLight ? 'tengra-light' : 'tengra-dark';
     monaco.editor.defineTheme(themeName, {
         base: isLight ? 'vs' : 'vs-dark',
         inherit: true,
@@ -515,3 +515,4 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         />
     );
 };
+

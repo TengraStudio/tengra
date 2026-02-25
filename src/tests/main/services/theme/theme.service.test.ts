@@ -3,8 +3,8 @@
  * Comprehensive unit tests for edge cases in ThemeService
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeService } from '@main/services/theme/theme.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('fs/promises', () => ({
@@ -41,7 +41,7 @@ vi.mock('fs/promises', () => ({
     }),
     writeFile: vi.fn().mockResolvedValue(undefined),
     readdir: vi.fn().mockImplementation(async (dir) => {
-        if (dir.includes('themes')) return ['black.theme.json', 'white.theme.json'];
+        if (dir.includes('themes')) {return ['black.theme.json', 'white.theme.json'];}
         return [];
     }),
     mkdir: vi.fn().mockResolvedValue(undefined),
@@ -51,7 +51,7 @@ vi.mock('fs/promises', () => ({
 
 vi.mock('@main/services/data/data.service', () => ({
     DataService: class {
-        getPath = vi.fn().mockReturnValue('/fake/path')
+        getPath = vi.fn().mockReturnValue('/fake/path');
     }
 }));
 

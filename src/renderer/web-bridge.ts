@@ -1915,7 +1915,7 @@ export const webElectronMock: ElectronAPI = {
     voice: {
         getSettings: async () => ({
             enabled: false,
-            wakeWord: 'tandem',
+            wakeWord: 'tengra',
             customWakeWords: [],
             recognitionLanguage: 'en-US',
             synthesisVoice: '',
@@ -1934,7 +1934,7 @@ export const webElectronMock: ElectronAPI = {
             success: true,
             settings: {
                 enabled: false,
-                wakeWord: 'tandem',
+                wakeWord: 'tengra',
                 customWakeWords: [],
                 recognitionLanguage: 'en-US',
                 synthesisVoice: '',
@@ -2058,3 +2058,4 @@ if (typeof window !== 'undefined' && !(window as unknown as Record<string, unkno
 }
 
 export default webElectronMock;
+

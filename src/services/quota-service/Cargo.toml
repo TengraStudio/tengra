@@ -1,5 +1,5 @@
 [package]
-name = "tandem-quota-service"
+name = "tengra-quota-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,3 +12,4 @@ thiserror = "1.0"
 axum = "0.7"
 tower-http = { version = "0.5", features = ["cors"] }
 directories = "5.0"
+

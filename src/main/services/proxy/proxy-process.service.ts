@@ -373,8 +373,8 @@ export class ProxyProcessManager {
         }
 
         // IPC: Capture direct auth updates from Proxy (stdout)
-        if (line.includes('__TANDEM_AUTH_UPDATE__:')) {
-            const parts = line.split('__TANDEM_AUTH_UPDATE__:');
+        if (line.includes('__TENGRA_AUTH_UPDATE__:')) {
+            const parts = line.split('__TENGRA_AUTH_UPDATE__:');
             if (parts.length > 1 && parts[1]) {
                 const jsonContent = parts[1].trim();
                 void this.handleAuthUpdateFromProxy(jsonContent);
@@ -507,3 +507,4 @@ logging-to-file: false
         return undefined;
     }
 }
+

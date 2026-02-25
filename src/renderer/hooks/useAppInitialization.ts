@@ -10,7 +10,7 @@ export function useAppInitialization() {
     const { speak: handleSpeak } = useTextToSpeech();
 
     useEffect(() => {
-        window.TandemSpeak = handleSpeak;
+        window.TengraSpeak = handleSpeak;
     }, [handleSpeak]);
 
     useEffect(() => {
@@ -66,3 +66,4 @@ export function useAppInitialization() {
 
     return {};
 }
+

@@ -87,7 +87,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
     // Port Discovery
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let services_dir = std::path::Path::new(&appdata).join("Tandem").join("services");
+        let services_dir = std::path::Path::new(&appdata).join("Tengra").join("services");
         if let Err(e) = fs::create_dir_all(&services_dir) {
             eprintln!("Failed to create services directory: {}", e);
             return Err(e.into());
@@ -279,4 +279,5 @@ async fn get_quota(
         Json(response)
     }
 }
+
 

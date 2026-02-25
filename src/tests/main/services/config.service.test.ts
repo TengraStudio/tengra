@@ -101,7 +101,7 @@ describe('ConfigService', () => {
 
         it('should return default when DATABASE_PATH not set', () => {
             delete process.env.DATABASE_PATH;
-            expect(configService.getDatabasePath()).toBe('default-Tandem.db');
+            expect(configService.getDatabasePath()).toBe('default-Tengra.db');
         });
     });
 
@@ -130,3 +130,4 @@ describe('ConfigService', () => {
         });
     });
 });
+

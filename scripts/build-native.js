@@ -105,11 +105,11 @@ function buildNative() {
         // Kill existing services to prevent EBUSY errors
         console.log('Stopping running services...');
         const binaries = [
-            'tandem-db-service.exe',
-            'tandem-token-service.exe',
-            'tandem-model-service.exe',
-            'tandem-quota-service.exe',
-            'tandem-memory-service.exe'
+            'tengra-db-service.exe',
+            'tengra-token-service.exe',
+            'tengra-model-service.exe',
+            'tengra-quota-service.exe',
+            'tengra-memory-service.exe'
         ];
 
         for (const bin of [...binaries]) {
@@ -213,4 +213,5 @@ if (require.main === module) {
     buildNative();
     buildGoProxy();
 }
+
 

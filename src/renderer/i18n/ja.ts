@@ -85,7 +85,7 @@ export const ja = {
         "chart": "チャートを読み込み中"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "V {{version}}"
     },
     "errors": {
@@ -274,7 +274,7 @@ export const ja = {
         },
         "browserClosure": {
             "title": "ブラウザを閉じる必要があります",
-            "description": "{{provider}} で認証するには、Tandem は保護された Cookie を読み取る必要があります。",
+            "description": "{{provider}} で認証するには、Tengra は保護された Cookie を読み取る必要があります。",
             "warningPrefix": "私たちはしなければなりません",
             "warningEmphasis": "ブラウザを自動的に閉じます",
             "warningSuffix": "ファイルのロックを解除します。",
@@ -613,7 +613,7 @@ export const ja = {
             "pushing": "Push中..."
         },
         "noIssues": "プロジェクト内に重大な問題は見つかりませんでした。お見事！",
-        "issuesDescription": "Tandemは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。",
+        "issuesDescription": "Tengraは潜在的なバグ、警告、コードの臭いがないかプロジェクトをスキャンします。",
         "issueType": "タイプ",
         "issueMessage": "メッセージ",
         "issueLocation": "場所",
@@ -1023,7 +1023,7 @@ export const ja = {
     },
     "memory": {
         "title": "メモリインスペクター",
-        "subtitle": "Tandemが何を知り、何を覚えているかを視覚化して管理します。",
+        "subtitle": "Tengraが何を知り、何を覚えているかを視覚化して管理します。",
         "searchPlaceholder": "メモリを検索...",
         "totalFacts": "総事実数",
         "episodes": "エピソード",
@@ -1364,7 +1364,7 @@ export const ja = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "知性とエレガンスの融合。"
     },
     "auth": {
@@ -1373,7 +1373,7 @@ export const ja = {
         "connectionFailed": "Antigravityサーバーへの接続に失敗しました。サインインするか、APIキーを確認してください。",
         "sessionKeyRequired": "Claudeセッションキーが必要です",
         "completeConnection": "{{email}} の接続を完了する",
-        "sessionKeyDescription": "クォータの追跡と直接対話を有効にするために、TandemにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。",
+        "sessionKeyDescription": "クォータの追跡と直接対話を有効にするために、TengraにはClaudeセッションキーが必要です。このキーはデバイスにローカルで暗号化されて保存されます。",
         "howToFindKey": "セッションキーの見つけ方",
         "sessionKeyInstructions": {
             "step1": "claude.aiを開いてログインする",
@@ -1542,7 +1542,7 @@ export const ja = {
         "creative": {
             "title": "クリエイティブ・ライティング",
             "description": "テキストやコンテンツを生成します。",
-            "prompt": "Tandemという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？"
+            "prompt": "Tengraという名前のAIアシスタントのための、印象的な紹介文を書いてもらえますか？"
         },
         "debug": {
             "title": "デバッグ",
@@ -1564,7 +1564,7 @@ export const ja = {
         "user": "ユーザー",
         "assistant": "アシスタント",
         "copyAsHtml": "HTMLとしてコピー",
-        "TandemDrawing": "Tandem 描画中...",
+        "TengraDrawing": "Tengra 描画中...",
         "quotaExceeded": "クォータ超過",
         "quotaMessage": "モデルの使用クォータを超えました。後でもう一度試すか、プランをアップグレードしてください。",
         "resetsAt": "リセット時刻:",
@@ -1573,7 +1573,7 @@ export const ja = {
         "speakAloud": "読み上げる",
         "convertToCode": "コードに変換",
         "approvePlan": "プランを承認",
-        "TandemThinking": "Tandemが思考中",
+        "TengraThinking": "Tengraが思考中",
         "showThought": "思考を表示",
         "react": "リアクション",
         "runBenchmark": "ベンチマークを実行",
@@ -1634,12 +1634,12 @@ export const ja = {
         "updates": "アップデート",
         "privacy": "プライバシー",
         "crashReporting": "クラッシュレポート",
-        "crashReportingDesc": "Tandem の改善に役立てるため、匿名のクラッシュ レポートを送信してください。",
+        "crashReportingDesc": "Tengra の改善に役立てるため、匿名のクラッシュ レポートを送信してください。",
         "startup": "起動する",
         "startOnStartup": "システム起動時に開始",
-        "startOnStartupDesc": "コンピューターの起動時に Tandem を自動的に起動します。",
+        "startOnStartupDesc": "コンピューターの起動時に Tengra を自動的に起動します。",
         "workAtBackground": "バックグラウンドで実行",
-        "workAtBackgroundDesc": "ウィンドウを閉じた後も、Tandem をバックグラウンドで実行し続けます。"
+        "workAtBackgroundDesc": "ウィンドウを閉じた後も、Tengra をバックグラウンドで実行し続けます。"
     },
     "appearance": {
         "themeDesc": "アプリケーションのカラーテーマを変更します。",
@@ -1647,7 +1647,7 @@ export const ja = {
         "fontDesc": "アプリケーションのフォントとサイズをカスタマイズします。",
         "fontFamily": "フォントファミリー",
         "fontSize": "フォントサイズ",
-        "previewText": "Tandem AIで未来を形作ります。",
+        "previewText": "Tengra AIで未来を形作ります。",
         "accessibility": "アクセシビリティ",
         "accessibilityDesc": "表示と視認性の設定",
         "highContrast": "高コントラストモード",
@@ -1754,11 +1754,11 @@ export const ja = {
         "copilotTitle": "GitHub Copilot"
     },
     "about": {
-        "description": "Tandemは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。",
+        "description": "Tengraは開発者向けに設計された次世代AI IDEアシスタントであり、ローカルおよびクラウドベースのAIモデルを単一のインターフェースに統合します。",
         "checkUpdates": "アップデートを確認",
         "privacyPolicy": "プライバシーポリシー",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "工場出荷時リセット",
         "factoryResetDesc": "すべての設定とデータを削除してアプリケーションをリセットします。",
         "updateCheckAlert": "プロダクションビルドでのアップデート確認が有効です。",
@@ -1829,7 +1829,7 @@ export const ja = {
     "tips": {
         "title": "ご存知でしたか？",
         "tip1": "CTRL+Nショートカットを使用して新しいチャットを作成できます。",
-        "tip2": "Tandemは開発用のリモートSSHサーバーへの接続をサポートしています。",
+        "tip2": "Tengraは開発用のリモートSSHサーバーへの接続をサポートしています。",
         "tip3": "ファイルをチャットに直接ドラッグ＆ドロップできます。",
         "tip4": "「評議会」タブを使用して、コードに関するマルチエージェントの洞察を得ることができます。",
         "tip5": "設定 > 外観 で体験をカスタマイズしてください。",
@@ -1987,7 +1987,7 @@ export const ja = {
         "navigate": "移動",
         "select": "選択",
         "close": "閉じる",
-        "engineLabel": "Tandem コマンドエンジン",
+        "engineLabel": "Tengra コマンドエンジン",
         "previewEmpty": "詳細を表示するには項目を選択してください",
         "noResultsHint": "チャット、モデル、設定を検索してみてください"
     },
@@ -2015,10 +2015,10 @@ export const ja = {
     "updateNotification": {
         "checkingTitle": "更新を確認しています...",
         "availableTitle": "更新があります: v{{version}}",
-        "availableContent": "Tandem の新しいバージョンがあります。",
+        "availableContent": "Tengra の新しいバージョンがあります。",
         "downloadingTitle": "更新をダウンロード中...",
         "downloadedTitle": "更新の準備完了",
-        "downloadedContent": "最新の更新を適用するには Tandem を再起動してください。",
+        "downloadedContent": "最新の更新を適用するには Tengra を再起動してください。",
         "errorTitle": "更新に失敗しました",
         "uptodateTitle": "最新の状態です",
         "downloadAction": "ダウンロード",
@@ -2157,7 +2157,7 @@ export const ja = {
         "noLogs": "利用可能なログがありません"
     },
     "onboarding": {
-        "welcome": "Tandemへようこそ",
+        "welcome": "Tengraへようこそ",
         "step1": "AIプロバイダーを接続",
         "step2": "ワークスペースをセットアップ",
         "step3": "コーディングを開始",
@@ -2166,18 +2166,18 @@ export const ja = {
         "finish": "完了",
         "language": {
             "title": "言語を選択してください",
-            "description": "Tandem を開始するには、希望の言語を選択してください。"
+            "description": "Tengra を開始するには、希望の言語を選択してください。"
         },
-        "welcomeTitle": "Tandem へようこそ",
-        "welcomeDescription": "AI を活用したコーディング コンパニオン。 Tandem は、複数の AI プロバイダーをすぐに使用してコードを作成、デバッグ、理解するのに役立ちます。",
+        "welcomeTitle": "Tengra へようこそ",
+        "welcomeDescription": "AI を活用したコーディング コンパニオン。 Tengra は、複数の AI プロバイダーをすぐに使用してコードを作成、デバッグ、理解するのに役立ちます。",
         "multiModelTitle": "マルチモデルのサポート",
-        "multiModelDescription": "OpenAI、Anthropic、Google、Ollama などに接続します。モデルを即座に切り替えるか、Tandem にタスクに最適なモデルを選択させます。",
+        "multiModelDescription": "OpenAI、Anthropic、Google、Ollama などに接続します。モデルを即座に切り替えるか、Tengra にタスクに最適なモデルを選択させます。",
         "workspaceTitle": "あなたのワークスペース",
         "workspaceDescription": "プロジェクトを整理し、会話を管理し、コーディング履歴にアクセスします。すべてがローカルに維持され、マシン上で安全になります。",
         "privacyTitle": "プライバシー第一",
-        "privacyDescription": "あなたのコードはあなたのもののままです。 Tandem は、オプションのクラウド機能を使用してローカルで実行されます。コンピューターからどのデータを送信するかを完全に制御します。",
+        "privacyDescription": "あなたのコードはあなたのもののままです。 Tengra は、オプションのクラウド機能を使用してローカルで実行されます。コンピューターからどのデータを送信するかを完全に制御します。",
         "step1Title": "AI アシスタントを紹介します",
-        "step1Desc": "Tandem は複数の AI モデルを組み合わせて、コーディングを高速化するのに役立ちます。自然言語を使用して質問したり、コードを生成したり、問題をデバッグしたりできます。",
+        "step1Desc": "Tengra は複数の AI モデルを組み合わせて、コーディングを高速化するのに役立ちます。自然言語を使用して質問したり、コードを生成したり、問題をデバッグしたりできます。",
         "step2Title": "コマンドパレット",
         "step2Desc": "Cmd+K (Windows では Ctrl+K) を押して、コマンド パレットにアクセスします。どこからでもアクションをすばやく移動、検索、実行できます。",
         "step3Title": "ワークスペースとプロジェクト",
@@ -2185,7 +2185,7 @@ export const ja = {
         "step4Title": "セキュリティ内蔵",
         "step4Desc": "API キーはローカルで暗号化されます。 Ollama を使用すると、すべての会話をオフラインのままにすることができます。何を共有し、何を非公開にするかを制御します。",
         "step5Title": "チャットを開始する",
-        "step5Desc": "最初のメッセージを以下に入力します。コードについて助けを求めたり、概念を説明したり、何か新しいものを生成したりしてください。 Tandem は準備ができています。",
+        "step5Desc": "最初のメッセージを以下に入力します。コードについて助けを求めたり、概念を説明したり、何か新しいものを生成したりしてください。 Tengra は準備ができています。",
         "back": "戻る",
         "continue": "続く",
         "letsStart": "始めましょう"
@@ -2466,9 +2466,9 @@ export const ja = {
     },
     "extensionPrompt": {
         "title": "体験を強化しましょう",
-        "subtitle": "Tandem ブラウザー拡張機能をインストール",
+        "subtitle": "Tengra ブラウザー拡張機能をインストール",
         "infoTitle": "ブラウザー拡張機能とは？",
-        "infoBody": "Tandem のブラウザー拡張機能により、AI がウェブページと直接やり取りできるようになります。コンテンツの読み取り、フォーム入力、ボタンのクリック、コマンドに基づく自動操作が可能です。",
+        "infoBody": "Tengra のブラウザー拡張機能により、AI がウェブページと直接やり取りできるようになります。コンテンツの読み取り、フォーム入力、ボタンのクリック、コマンドに基づく自動操作が可能です。",
         "featuresTitle": "機能:",
         "features": {
             "aiChatTitle": "ブラウザー内AIチャット:",
@@ -2485,7 +2485,7 @@ export const ja = {
             "step1": "Chrome を開き chrome://extensions/ に移動",
             "step2": "「デベロッパーモード」を有効にする（右上の切り替え）",
             "step3": "「パッケージ化されていない拡張機能を読み込む」をクリック",
-            "step4Prefix": "Tandem ディレクトリ内の",
+            "step4Prefix": "Tengra ディレクトリ内の",
             "step4Suffix": "フォルダーを選択"
         },
         "openFolder": "拡張機能フォルダーを開く",
@@ -2501,13 +2501,13 @@ export const ja = {
         "systemDefault": "システムデフォルト",
         "test": "音声をテスト",
         "speed": "スピーチレート",
-        "previewText": "Tandemで未来へようこそ。私はあなたのAIアシスタントです。",
+        "previewText": "Tengraで未来へようこそ。私はあなたのAIアシスタントです。",
         "microphone": "マイク",
         "speaker": "スピーカー / ヘッドフォン",
         "microphoneSelection": "マイク入力",
         "speakerSelection": "オーディオ出力",
         "voiceCloning": "音声クローニング",
-        "voiceCloningDesc": "Tandemエコシステムに独自の音声を統合します。",
+        "voiceCloningDesc": "Tengraエコシステムに独自の音声を統合します。",
         "voiceCloningTitle": "独自の音声を使用しましょう！",
         "voiceCloningTeaser": "1分間話すとAIがあなたの音声を模倣します。この機能は現在アクティブです！",
         "record": "録音開始",
@@ -2888,3 +2888,5 @@ export const ja = {
         "editorNote": "トリガーとステップの高度な構成には、JSON モードを使用します。"
     }
 };
+
+

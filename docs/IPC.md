@@ -4,7 +4,7 @@ Inter-Process Communication (IPC) handlers enable communication between the main
 
 ## Overview
 
-Tandem uses Electron's IPC mechanism for secure communication:
+Tengra uses Electron's IPC mechanism for secure communication:
 - **Main Process**: Node.js backend with full system access
 - **Renderer Process**: React frontend with restricted permissions
 - **Preload Script**: Exposes safe IPC channels via `contextBridge`
@@ -741,3 +741,4 @@ describe('files:read handler', () => {
 - [API.md](API.md) - REST API reference
 - [MCP.md](MCP.md) - MCP server documentation
 - [IPC_CHANNELS.md](IPC_CHANNELS.md) - Auto-generated full channel inventory
+

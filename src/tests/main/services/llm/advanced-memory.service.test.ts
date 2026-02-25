@@ -1,5 +1,5 @@
-import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { DatabaseService } from '@main/services/data/database.service';
+import { AdvancedMemoryService } from '@main/services/llm/advanced-memory.service';
 import { EmbeddingService } from '@main/services/llm/embedding.service';
 import { LLMService } from '@main/services/llm/llm.service';
 import { AdvancedSemanticFragment, PendingMemory } from '@shared/types/advanced-memory';

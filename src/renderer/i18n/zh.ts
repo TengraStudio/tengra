@@ -85,7 +85,7 @@ export const zh = {
         "chart": "正在加载图表"
     },
     "app": {
-        "name": "Tandem",
+        "name": "Tengra",
         "versionShort": "V {{version}}"
     },
     "errors": {
@@ -274,7 +274,7 @@ export const zh = {
         },
         "browserClosure": {
             "title": "需要关闭浏览器",
-            "description": "要使用 {{provider}} 进行身份验证，Tandem 需要读取受保护的 cookie。",
+            "description": "要使用 {{provider}} 进行身份验证，Tengra 需要读取受保护的 cookie。",
             "warningPrefix": "我们必须",
             "warningEmphasis": "自动关闭您的浏览器",
             "warningSuffix": "释放文件锁。",
@@ -613,7 +613,7 @@ export const zh = {
             "pushing": "正在推送..."
         },
         "noIssues": "项目中未发现重大问题。做的不错！",
-        "issuesDescription": "Tandem 会扫描您的项目以查找潜在错误、警告和代码异味。",
+        "issuesDescription": "Tengra 会扫描您的项目以查找潜在错误、警告和代码异味。",
         "issueType": "类型",
         "issueMessage": "消息",
         "issueLocation": "位置",
@@ -1023,7 +1023,7 @@ export const zh = {
     },
     "memory": {
         "title": "内存检查器",
-        "subtitle": "可视化并管理 Tandem 了解和记住的内容。",
+        "subtitle": "可视化并管理 Tengra 了解和记住的内容。",
         "searchPlaceholder": "搜索内存...",
         "totalFacts": "总事实数",
         "episodes": "片段",
@@ -1364,7 +1364,7 @@ export const zh = {
         }
     },
     "welcome": {
-        "title": "Tandem",
+        "title": "Tengra",
         "tagline": "智慧与优雅并存。"
     },
     "auth": {
@@ -1373,7 +1373,7 @@ export const zh = {
         "connectionFailed": "连接到 Antigravity 服务器失败。请登录或检查您的 API 密钥。",
         "sessionKeyRequired": "需要 Claude 会话密钥",
         "completeConnection": "完成 {{email}} 的连接",
-        "sessionKeyDescription": "为了跟踪额度和直接交互，Tandem 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。",
+        "sessionKeyDescription": "为了跟踪额度和直接交互，Tengra 需要您的 Claude 会话密钥。该密钥会以加密形式存储在本地。",
         "howToFindKey": "如何查找您的会话密钥",
         "sessionKeyInstructions": {
             "step1": "打开 claude.ai 并登录",
@@ -1542,7 +1542,7 @@ export const zh = {
         "creative": {
             "title": "创意写作",
             "description": "生成文本和内容。",
-            "prompt": "您能为名为 Tandem 的 AI 助手写一段精彩的介绍文案吗？"
+            "prompt": "您能为名为 Tengra 的 AI 助手写一段精彩的介绍文案吗？"
         },
         "debug": {
             "title": "调试",
@@ -1564,7 +1564,7 @@ export const zh = {
         "user": "用户",
         "assistant": "助手",
         "copyAsHtml": "复制为 HTML",
-        "TandemDrawing": "Tandem 正在绘制...",
+        "TengraDrawing": "Tengra 正在绘制...",
         "quotaExceeded": "额度超限",
         "quotaMessage": "您已超出该模型的使用额度。请稍后再试或升级您的计划。",
         "resetsAt": "重置时间：",
@@ -1573,7 +1573,7 @@ export const zh = {
         "speakAloud": "朗读",
         "convertToCode": "转换为代码",
         "approvePlan": "批准计划",
-        "TandemThinking": "Tandem 正在思考",
+        "TengraThinking": "Tengra 正在思考",
         "showThought": "显示思路",
         "react": "反应",
         "runBenchmark": "运行基准测试",
@@ -1634,12 +1634,12 @@ export const zh = {
         "updates": "更新",
         "privacy": "隐私",
         "crashReporting": "崩溃报告",
-        "crashReportingDesc": "发送匿名崩溃报告以帮助我们改进 Tandem。",
+        "crashReportingDesc": "发送匿名崩溃报告以帮助我们改进 Tengra。",
         "startup": "启动",
         "startOnStartup": "在系统启动时启动",
-        "startOnStartupDesc": "计算机启动时自动启动 Tandem。",
+        "startOnStartupDesc": "计算机启动时自动启动 Tengra。",
         "workAtBackground": "在后台运行",
-        "workAtBackgroundDesc": "关闭窗口后保持 Tandem 在后台运行。"
+        "workAtBackgroundDesc": "关闭窗口后保持 Tengra 在后台运行。"
     },
     "appearance": {
         "themeDesc": "更改应用程序的主题颜色。",
@@ -1647,7 +1647,7 @@ export const zh = {
         "fontDesc": "自定义应用程序字体和大小。",
         "fontFamily": "字体族",
         "fontSize": "字体大小",
-        "previewText": "用 Tandem AI 塑造未来。",
+        "previewText": "用 Tengra AI 塑造未来。",
         "accessibility": "辅助功能",
         "accessibilityDesc": "显示与可见性设置",
         "highContrast": "高对比度模式",
@@ -1754,11 +1754,11 @@ export const zh = {
         "copilotTitle": "GitHub Copilot"
     },
     "about": {
-        "description": "Tandem 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。",
+        "description": "Tengra 是为开发者设计的下一代 AI IDE 助手，将本地和云端 AI 模型统一在单个界面中。",
         "checkUpdates": "检查更新",
         "privacyPolicy": "隐私政策",
         "github": "GitHub",
-        "copyright": "© 2025 Tandem",
+        "copyright": "© 2025 Tengra",
         "factoryReset": "恢复出厂设置",
         "factoryResetDesc": "重置应用程序并删除所有设置和数据。",
         "updateCheckAlert": "生产版本中已启用更新检查。",
@@ -1829,7 +1829,7 @@ export const zh = {
     "tips": {
         "title": "您知道吗？",
         "tip1": "您可以使用 CTRL+N 快捷键创建新聊天。",
-        "tip2": "Tandem 支持连接到远程 SSH 服务器进行开发。",
+        "tip2": "Tengra 支持连接到远程 SSH 服务器进行开发。",
         "tip3": "您可以直接将文件拖拽到聊天中。",
         "tip4": "使用“评议会”选项卡可以获得多代理对您代码的见解。",
         "tip5": "在“设置 > 外观”中自定义您的体验。",
@@ -1987,7 +1987,7 @@ export const zh = {
         "navigate": "导航",
         "select": "选择",
         "close": "关闭",
-        "engineLabel": "Tandem 命令引擎",
+        "engineLabel": "Tengra 命令引擎",
         "previewEmpty": "选择一个项目以查看详情",
         "noResultsHint": "试着搜索聊天、模型或设置"
     },
@@ -2015,10 +2015,10 @@ export const zh = {
     "updateNotification": {
         "checkingTitle": "正在检查更新...",
         "availableTitle": "有可用更新：v{{version}}",
-        "availableContent": "Tandem 有新版本可用。",
+        "availableContent": "Tengra 有新版本可用。",
         "downloadingTitle": "正在下载更新...",
         "downloadedTitle": "更新已就绪",
-        "downloadedContent": "重启 Tandem 以应用最新更新。",
+        "downloadedContent": "重启 Tengra 以应用最新更新。",
         "errorTitle": "更新失败",
         "uptodateTitle": "已是最新版本",
         "downloadAction": "下载",
@@ -2157,7 +2157,7 @@ export const zh = {
         "noLogs": "无可用日志"
     },
     "onboarding": {
-        "welcome": "欢迎来到 Tandem",
+        "welcome": "欢迎来到 Tengra",
         "step1": "连接 AI 提供商",
         "step2": "设置工作区",
         "step3": "开始编程",
@@ -2166,18 +2166,18 @@ export const zh = {
         "finish": "完成",
         "language": {
             "title": "选择您的语言",
-            "description": "选择您的首选语言以开始使用 Tandem。"
+            "description": "选择您的首选语言以开始使用 Tengra。"
         },
-        "welcomeTitle": "欢迎来到Tandem",
-        "welcomeDescription": "您的人工智能编码伴侣。 Tandem 可帮助您轻松编写、调试和理解多个 AI 提供商的代码。",
+        "welcomeTitle": "欢迎来到Tengra",
+        "welcomeDescription": "您的人工智能编码伴侣。 Tengra 可帮助您轻松编写、调试和理解多个 AI 提供商的代码。",
         "multiModelTitle": "多型号支持",
-        "multiModelDescription": "连接到 OpenAI、Anthropic、Google、Ollama 等。立即在模型之间切换，或者让 Tandem 选择最适合您任务的模型。",
+        "multiModelDescription": "连接到 OpenAI、Anthropic、Google、Ollama 等。立即在模型之间切换，或者让 Tengra 选择最适合您任务的模型。",
         "workspaceTitle": "您的工作空间",
         "workspaceDescription": "组织项目、管理对话并访问您的编码历史记录。一切都保留在本地并且安全地保存在您的计算机上。",
         "privacyTitle": "隐私第一",
-        "privacyDescription": "您的代码仍然属于您。 Tandem 在本地运行，具有可选的云功能。完全控制哪些数据离开您的计算机。",
+        "privacyDescription": "您的代码仍然属于您。 Tengra 在本地运行，具有可选的云功能。完全控制哪些数据离开您的计算机。",
         "step1Title": "认识你的人工智能助手",
-        "step1Desc": "Tandem 结合了多个 AI 模型，帮助您更快地编码。使用自然语言提出问题、生成代码或调试问题。",
+        "step1Desc": "Tengra 结合了多个 AI 模型，帮助您更快地编码。使用自然语言提出问题、生成代码或调试问题。",
         "step2Title": "命令面板",
         "step2Desc": "按 Cmd+K（或 Windows 上的 Ctrl+K）访问命令选项板。从任何地方快速导航、搜索和执行操作。",
         "step3Title": "工作空间和项目",
@@ -2185,7 +2185,7 @@ export const zh = {
         "step4Title": "内置安全性",
         "step4Desc": "API 密钥在本地加密。所有对话都可以通过 Ollama 保持离线状态。您可以控制哪些内容可以共享，哪些内容可以保密。",
         "step5Title": "开始聊天",
-        "step5Desc": "在下面输入您的第一条消息。寻求代码方面的帮助、解释概念或生成新的东西。 Tandem 已准备就绪。",
+        "step5Desc": "在下面输入您的第一条消息。寻求代码方面的帮助、解释概念或生成新的东西。 Tengra 已准备就绪。",
         "back": "后退",
         "continue": "继续",
         "letsStart": "让我们开始吧"
@@ -2466,9 +2466,9 @@ export const zh = {
     },
     "extensionPrompt": {
         "title": "提升你的体验",
-        "subtitle": "安装 Tandem 浏览器扩展",
+        "subtitle": "安装 Tengra 浏览器扩展",
         "infoTitle": "什么是浏览器扩展？",
-        "infoBody": "Tandem 浏览器扩展允许 AI 直接与网页交互。它可以读取内容、填写表单、点击按钮，并根据你的指令执行自动化操作。",
+        "infoBody": "Tengra 浏览器扩展允许 AI 直接与网页交互。它可以读取内容、填写表单、点击按钮，并根据你的指令执行自动化操作。",
         "featuresTitle": "功能：",
         "features": {
             "aiChatTitle": "浏览器内 AI 聊天：",
@@ -2485,7 +2485,7 @@ export const zh = {
             "step1": "打开 Chrome 并访问 chrome://extensions/",
             "step2": "启用“开发者模式”（右上角开关）",
             "step3": "点击“加载已解压的扩展程序”",
-            "step4Prefix": "选择 Tandem 目录中的",
+            "step4Prefix": "选择 Tengra 目录中的",
             "step4Suffix": "文件夹"
         },
         "openFolder": "打开扩展文件夹",
@@ -2501,13 +2501,13 @@ export const zh = {
         "systemDefault": "系统默认",
         "test": "测试语音",
         "speed": "语速",
-        "previewText": "欢迎来到 Tandem 的未来。我是您的 AI 助手。",
+        "previewText": "欢迎来到 Tengra 的未来。我是您的 AI 助手。",
         "microphone": "麦克风",
         "speaker": "扬声器 / 耳机",
         "microphoneSelection": "麦克风输入",
         "speakerSelection": "音频输出",
         "voiceCloning": "语音克隆",
-        "voiceCloningDesc": "将您自己的声音集成到 Tandem 生态系统中。",
+        "voiceCloningDesc": "将您自己的声音集成到 Tengra 生态系统中。",
         "voiceCloningTitle": "使用您自己的声音！",
         "voiceCloningTeaser": "说话 1 分钟，让 AI 模仿您的声音。此功能现已激活！",
         "record": "开始录音",
@@ -2888,3 +2888,5 @@ export const zh = {
         "editorNote": "使用 JSON 模式进行触发器和步骤的高级配置。"
     }
 };
+
+
