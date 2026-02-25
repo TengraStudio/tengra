@@ -17,6 +17,10 @@
 - [x] **MKT-CORE-002**: Define Marketplace Database Schema (PostgreSQL).
 - [x] **MKT-CORE-003**: Configure Redis caching layer.
 - [x] **MKT-CORE-004**: Set up PM2 Process Management.
+- [x] **MKT-AUTH-001**: Implement Secure User Registration & Login (C++).
+- [x] **MKT-SUB-001**: Implement Extension Submission System (GitHub URL).
+- [ ] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
+
 
 
 ### v1.4.0 (Target: Q3 2026)

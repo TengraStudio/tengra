@@ -1,4 +1,15 @@
 {
+  "2026-02-25-marketplace-auth-submissions": {
+    "title": "Pazaryeri Kimlik Doğrulama ve Kullanıcı Gönderim Sistemi",
+    "summary": "C++ Pazaryeri arka ucu için güvenli kullanıcı kayıt/giriş sistemi ve uzantı gönderim hattı uygulandı.",
+    "items": [
+      "- **Kullanıcı Yönetimi**: Parola özetleme (SHA256+Tuz) ve rol tabanlı erişim kontrolü içeren `users` tablosu eklendi.",
+      "- **Kimlik Doğrulama API'si**: Token tabanlı yetkilendirme ile `/register` ve `/login` uç noktaları uygulandı.",
+      "- **Gönderim Hattı**: Kullanıcıların manuel inceleme için GitHub depo URL'lerini gönderebilecekleri `/submit` uç noktası oluşturuldu.",
+      "- **Yönetici Denetimi**: Yöneticilerin yeni girişleri izlemesi ve incelemesi için `/admin/submissions` uç noktası eklendi.",
+      "- **Şema Güncellemesi**: Tüm pazaryeri varlıklarında kullanıcı sahipliğini desteklemek için veritabanı geçişleri güncellendi."
+    ]
+  },
   "2026-02-25-marketplace-cpp-backend-init": {
     "title": "Pazaryeri C++ Arka Uç Başlatma",
     "summary": "Drogon framework, PostgreSQL ve Redis kullanılarak yüksek performanslı ve düşük bellek tüketimli (< 500MB RAM) C++ arka ucu başlatıldı.",
