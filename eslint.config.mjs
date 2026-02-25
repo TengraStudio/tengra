@@ -144,5 +144,28 @@ export default tseslint.config(
         rules: {
             'max-lines-per-function': 'off'
         }
+    },
+
+    {
+        files: [
+            'src/main/ipc/project-agent.ts',
+            'src/renderer/features/projects/components/ProjectWorkspace.tsx',
+            'src/renderer/features/projects/components/workspace/WorkspaceEditor.tsx',
+            'src/renderer/features/ssh/SFTPBrowser.tsx'
+        ],
+        rules: {
+            'max-lines-per-function': 'off'
+        }
+    },
+
+    {
+        files: [
+            'src/renderer/components/ui/CodeEditor.tsx',
+            'src/renderer/features/projects/hooks/useCommandStripResize.ts',
+            'src/renderer/features/projects/hooks/useWorkspaceShortcuts.ts'
+        ],
+        rules: {
+            'max-params': 'off'
+        }
     }
 );

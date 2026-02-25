@@ -1,4 +1,14 @@
 {
+  "2026-02-25-i18n-refactoring-and-marketplace": {
+    "title": "Refactorización i18n multi-idioma e interfaz de Marketplace",
+    "summary": "El sistema de internacionalización se dividió en archivos modulares, se añadieron 10 idiomas con calidad nativa y se implementó una nueva interfaz para el Marketplace.",
+    "items": [
+      "- **i18n modular**: División de traducciones monolíticas en archivos separados (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) para un mejor mantenimiento.",
+      "- **Locales extendidos**: Se agregaron traducciones nativas de alta calidad para alemán, francés, español, japonés, chino, coreano, portugués y ruso.",
+      "- **Interfaz de Marketplace**: Lanzamiento de la página inicial del Marketplace con búsqueda, filtros de categorías (Plugins, Prompts, Workflows, Ajustes de Modelo) y cuadrícula de recursos comunitarios.",
+      "- **Mejoras de UX**: Se añadió un selector de idioma con icono de globo en la barra de navegación con persistencia en localStorage."
+    ]
+  },
   "2026-02-23-council-ipc-typescript-fixes": {
     "title": "Resolución de TypeScript de Council IPC y Project Agent",
     "summary": "Se resolvieron los errores integrales de tipo TypeScript que bloqueaban la canalización de compilación en Council IPC, esquemas de agente de proyecto, web-bridge y conjuntos de pruebas de integración.",
@@ -21,52 +31,55 @@
     ]
   },
   "2026-02-18-hardened-ai-rules-v2": {
-    "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
-    "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+    "title": "Aplicación estricta de las normas de IA y prohibición de implementación los viernes",
+    "summary": "Se implementaron reglas aún más estrictas para los agentes de IA, incluida una prohibición obligatoria de confirmación los viernes y protocolos de lectura de reglas forzadas.",
     "items": [
-      "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
-      "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
-      "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
-      "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
-      "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+      "- **Prohibición de los viernes**: se implementó una política de tolerancia cero para confirmaciones e implementaciones importantes los viernes.",
+      "- **Protocolos de reglas**: llamadas `view_file` obligatorias a archivos de reglas al inicio de cada sesión para garantizar el cumplimiento del agente.",
+      "- **Aplicación de pruebas**: Se aplica un 100% de éxito de prueba obligatorio (`npm run test`) antes de cualquier confirmación.",
+      "- **Tipo de seguridad**: Prohibido el uso de `as any` y `as unknown` sin comentarios de justificación explícitos `// SAFETY`.",
+      "- **Actualizaciones de la guía**: Sincronizó `AGENTS.md` y reflejó todas las actualizaciones de reglas en el directorio `.codex/`."
     ]
   },
   "2026-02-18-docs-and-rules-hardening": {
-    "title": "Documentation Hardening and Codex Implementation",
-    "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+    "title": "Refuerzo de la documentación e implementación del Codex",
+    "summary": "Se implementó un directorio de documentación .codex restringido y se reforzaron las reglas del agente de IA con advertencias de terminación para mejorar el cumplimiento.",
     "items": [
-      "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
-      "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
-      "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
-      "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+      "- **Codex**: se creó el directorio `.codex/` e implementó la duplicación de documentos para las directivas y la arquitectura principales.",
+      "- **Aplicación de reglas**: `MASTER_COMMANDMENTS.md` y `AI_RULES.md` actualizados con advertencias de terminación explícitas y políticas de tolerancia cero.",
+      "- **Mantenimiento**: Se corrigieron rutas absolutas rotas en el centro de documentación y se creó `LINT_ISSUES.md` para el seguimiento sistemático de la deuda tecnológica.",
+      "- **Estructura**: `PROJECT_STRUCTURE.md` actualizado para reflejar los nuevos patrones organizativos `.codex` y `.agent`."
     ]
   },
   "2026-02-18-sec-llm-i18n-followup": {
-    "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+    "title": "SEC-007/009 + LLM-05 + I18N-05 Seguimiento",
     "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
     "items": [
-      "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
-      "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
-      "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
-      "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
-      "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+      "- **SEC-007**: Se agregó API registro de auditoría de acceso de clave en la configuración IPC y registro de auditoría de operación del sistema de archivos wrappers en archivos IPC.",
+      "- **SEC-009**: Cobertura de validación de seguridad y desinfección rápida confirmada en LLM rutas de manejo de solicitudes.",
+      "- **LLM-05**: Manejo extendido de archivos adjuntos para contexto de vista previa de audio/video y preparación de mensajes multimodales más rica.",
+      "- **I18N-05**: Se agregó guía de respuesta basada en la configuración regional y selección del modelo predeterminado basado en la configuración regional fallback.",
+      "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.",
+      "- **AGENT-05/04/09**: Se agregó retención de punto de control comprimido + lógica de sincronización con deduplicación, API de análisis/anulación/configuración de votación y paneles de máquina de estado/votación integrados en ProjectAgentView.",
+      "- **MKT-INFRA-01..08**: Metadatos del servidor de Marketplace ampliados, validación de dependencia/conflicto, verificación de integridad de actualización, cableado de entorno de cuota/aislamiento de almacenamiento y edición de configuración de MCP basada en esquema.",
+      "- **Mantenimiento**: Se eliminaron las casillas de verificación TODO completadas y se redujeron varias conversiones `as unknown as` restantes a escrituras más seguras."
     ]
   },
   "2026-02-18-aud-sec-completion": {
-    "title": "AUD-SEC 003-030 Security Hardening Complete",
-    "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+    "title": "AUD-SEC 003-030 Refuerzo de seguridad completo",
+    "summary": "Se completó el refuerzo de la auditoría de seguridad en IPC límites de confianza, aplicación de rutas de acceso al sistema de archivos, autenticación API, devoluciones de llamadas OAuth y manejo de secretos.",
     "items": [
-      "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
-      "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
-      "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
-      "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+      "- **IPC/Ventana**: Validación obligatoria del remitente y protecciones reforzadas de apertura externa/cookies/registro en los módulos IPC críticos.",
+      "- **Sistema de archivos/Protocolo**: se reemplazaron las comprobaciones de prefijo con validación de límites de ruta relativa y se agregó bloqueo de escape de unión/enlace simbólico.",
+      "- **API/OAuth**: se aplica un acceso estricto al punto final de token solo local, enlace de bucle invertido, sesiones de websocket autenticadas y validación estricta del estado de devolución de llamada.",
+      "- **Secretos/SSH**: se eliminó la compatibilidad con la clave maestra de texto sin formato fallback y se aseguró que los campos sensibles a SSH no estén expuestos a las respuestas del renderizador."
     ]
   },
   "2026-02-18-llm-security-v2": {
-    "title": "LLM Security Hardening & Performance Optimization",
-    "summary": "Implemented advanced prompt security measures and optimized application load time via lazy loading.",
+    "title": "LLM Fortalecimiento de la seguridad y optimización del rendimiento",
+    "summary": "Se implementaron medidas de seguridad avanzadas y se optimizó el tiempo de carga de la aplicación mediante carga diferida.",
     "items": [
-      "- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.",
+      "- **LLM-09.3**: Se agregaron límites estrictos de longitud de mensajes (128k caracteres) para evitar ataques de carga útil grandes.",
       "- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.",
       "- **DEBT-01**: Cleaned up obsolete feature flags.",
       "- **DEBT-06**: Reduced bundle size via lazy loading.",
@@ -75,42 +88,43 @@
   },
   "2026-02-17-agent-performance-metrics": {
     "title": "Autonomous Agent Performance Metrics (AGENT-08)",
-    "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+    "summary": "Implementé un monitoreo integral del desempeño para agentes autónomos con seguimiento de la tasa de errores y métricas de uso de recursos.",
     "items": [
       "- **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).",
-      "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
-      "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
-      "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis."
+      "- **AGENT-08.4**: Se implementó el seguimiento del uso de recursos para memoria, llamadas CPU, API, tokens y costos con alertas configurables.",
+      "- **Servicio de métricas**: creado `AgentPerformanceService` para realizar un seguimiento de las tasas de finalización, los tiempos de ejecución y generar alertas de rendimiento.",
+      "- **Integración**: Métricas de rendimiento integradas en `ProjectState` y `AgentTaskHistoryItem` para análisis histórico.",
+      "- **Monitoreo automatizado**: Se agregó monitoreo de recursos en segundo plano cada 5 segundos para las tareas del agente activo."
     ]
   },
   "2026-02-18-sidebar-accessibility-and-clear-history": {
-    "title": "Sidebar Enhancements: Accessibility and Clear History",
-    "summary": "Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.",
+    "title": "Mejoras en la barra lateral: accesibilidad y borrado del historial",
+    "summary": "Se mejoró la accesibilidad de la barra lateral con atributos de título y se agregó una función \"Borrar todo\" para el historial de chat.",
     "items": [
-      "- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.",
+      "- **Borrar historial**: se agregó un botón 'Borrar historial' a la sección de chats recientes con un modo de confirmación segura.",
       "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
-      "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
+      "- **Mantenimiento**: Se limpió la lista de tareas pendientes del proyecto eliminando las tareas completadas y seleccionando 10 elementos prioritarios para la siguiente fase de desarrollo.",
       "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
     ]
   },
   "2026-02-17-todo-organization-v2": {
-    "title": "Comprehensive TODO List Reorganization",
-    "summary": "Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.",
+    "title": "Reorganización integral de la lista de tareas pendientes",
+    "summary": "Se reorganizó la lista de tareas pendientes del proyecto para mejorar la legibilidad, se agregó una tabla de contenido y se movieron todas las tareas completadas a una sección de archivo dedicada.",
     "items": [
-      "- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.",
-      "- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.",
+      "- **Estructura**: se agregó una tabla de contenido en la que se puede hacer clic y se movieron los hitos del lanzamiento a la parte superior para una mejor visibilidad del proyecto.",
+      "- **Claridad**: Quick Wins agrupados por estado (Pendiente/Completado) y secciones de categoría vacías limpiadas.",
       "- **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.",
-      "- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories."
+      "- **Mantenimiento**: formato estandarizado y solicitudes de funciones futuras consolidadas en subcategorías lógicas."
     ]
   },
   "2026-02-16-i18n-core-rtl-onboarding": {
-    "title": "Internationalization Core & RTL Support",
-    "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+    "title": "Core de internacionalización y soporte RTL",
+    "summary": "Implementó una infraestructura I18N sólida con soporte RTL, pluralización y un mensaje de selección de idioma de primera ejecución.",
     "items": [
-      "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
-      "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
-      "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
-      "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+      "- **I18N Core**: Se agregó detección automática de idioma, utilidades de formato `Intl` y soporte de pluralización.",
+      "- **Compatibilidad con RTL**: propiedades lógicas de CSS implementadas, cambio de íconos sensible a la dirección y ajuste de diseño dinámico para idiomas RTL (árabe, hebreo).",
+      "- **Incorporación**: se agregó un `LanguageSelectionPrompt` para permitir a los usuarios elegir su idioma preferido en el primer inicio.",
+      "- **Verificación**: Pluralización integrada en `ProjectsHeader` y scripts de auditoría agregados para claves de traducción."
     ]
   },
   "2026-02-16-ipc-validation-schemas": {
@@ -148,17 +162,18 @@
     "items": [
       "- **Corrección**: Se corrigió el error `o?.forEach is not a function` en el filtrado de categorías del Marketplace.",
       "- **Portapapeles**: Se implementó un servicio de portapapeles seguro basado en IPC para evitar las restricciones de permisos del navegador.",
-      "- **Manejo de errores**: Se actualizó la pantalla de error para usar el nuevo servicio seguro al copiar los detalles del error."
+      "- **Manejo de errores**: Se actualizó la pantalla de error para usar el nuevo servicio seguro al copiar los detalles del error.",
+      "- **Manejo de errores**: Error actualizado Fallback para usar el nuevo servicio de portapapeles seguro para copiar los detalles del error."
     ]
   },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
-    "title": "IPC Security Audit: Input Validation (SEC-003)",
-    "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",
+    "title": "IPC Auditoría de seguridad: Validación de entrada (SEC-003)",
+    "summary": "Se implementó una validación estricta del esquema Zod para el Agente y la Terminal IPC handlers para evitar la inyección.",
     "items": [
-      "- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.",
-      "- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.",
-      "- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.",
-      "- **Type Safety**: Ensured explicit types for handler arguments and return policies."
+      "- **Agente IPC**: Se reemplazó la validación manual con `createValidatedIpcHandler` y se agregaron esquemas Zod para los 7 handlers.",
+      "- **Terminal IPC**: `terminal.ts` refactorizado para usar `createValidatedIpcHandler` con esquemas para operaciones de perfil, sesión y búsqueda.",
+      "- **Utilidad común**: `createValidatedIpcHandler` mejorada para admitir `defaultValue` para el manejo seguro de errores fallback.",
+      "- **Seguridad de tipos**: tipos explícitos garantizados para handler argumentos y políticas de devolución."
     ]
   },
   "2026-02-13-drop-validation": {
@@ -182,13 +197,13 @@
     ]
   },
   "2026-02-13-llm-service-improvements": {
-    "title": "LLM Service Improvements: Fallback & Caching",
-    "summary": "Enhanced the LLM service with model fallback, response caching, and improved streaming response management.",
+    "title": "LLM Mejoras en el servicio: Fallback y almacenamiento en caché",
+    "summary": "Se mejoró el servicio LLM con el modelo fallback, almacenamiento en caché de respuestas y gestión mejorada de respuestas de transmisión.",
     "items": [
-      "- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.",
-      "- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.",
-      "- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.",
-      "- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management."
+      "- **Modelo Fallback**: Se agregó `ModelFallbackService` para conmutación por error automática entre proveedores LLM para garantizar la continuidad del servicio.",
+      "- **Almacenamiento en caché de respuestas**: Implementado `ResponseCacheService` para almacenar en caché y reutilizar las respuestas del asistente, mejorando el rendimiento y reduciendo costos.",
+      "- **Mejoras de transmisión**: Se mejoró el manejo de `AbortSignal` y se implementó el ahorro de respuesta parcial para transmisiones canceladas.",
+      "- **Fiabilidad**: Patrones de disyuntores integrados a través del servicio fallback para gestión proactiva de errores."
     ]
   },
   "2026-02-12-renderer-logging-refactor": {
@@ -2294,7 +2309,7 @@
       "// Después: Seguro con valores predeterminados",
       "datos constantes = safeJsonParse(untrustedInput, {",
       "sensateDefaults: 'aquí',",
-      "});",
+      "    });",
       "    ```",
       "**Beneficios**:",
       "- **Prevención de fallos**: JSON con formato incorrecto ya no bloquea la aplicación",
@@ -2345,7 +2360,7 @@
       "'autenticación:cambiada',",
       "carga útil => {",
       "console.log('Auth cambiado:', carga útil);",
-      "},",
+      "    },",
       "{una vez: verdadero, prioridad: 10}",
       ");",
       "// Eventos personalizados",
@@ -3438,201 +3453,211 @@
     ]
   },
   "2026-02-13-huggingface-integration-core": {
-    "title": "Core HuggingFace Integration & GGUF Support",
-    "summary": "Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.",
+    "title": "Integración principal HuggingFace y soporte GGUF",
+    "summary": "Implementó la base para la integración del modelo HuggingFace, incluido un raspador dedicado, un analizador de metadatos GGUF y un administrador de descargas sólido.",
     "items": [
-      "- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.",
-      "- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.",
-      "- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.",
-      "- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.",
-      "- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability."
+      "- **Servicio Scraper**: creado `HuggingFaceService` para buscar y recuperar metadatos del modelo con almacenamiento en caché local.",
+      "- **Análisis de GGUF**: se agregó un analizador de encabezado GGUF parcial para extraer la arquitectura del modelo y la longitud del contexto.",
+      "- **Administrador de descargas**: descargas reanudables implementadas con verificación SHA256 y seguimiento del progreso en tiempo real.",
+      "- **Integración de servicios**: `HuggingFaceService` conectado a `ModelRegistryService` y `LLMService` mediante inyección de dependencia.",
+      "- **Pruebas**: Pruebas unitarias integrales actualizadas para `ModelRegistryService` y `LLMService` para garantizar la estabilidad de la integración."
     ]
   },
   "2026-02-13-ollama-abort-fix-and-chat-refactor": {
-    "title": "Ollama Abort Fix & Chat Refactor",
-    "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+    "title": "Ollama Cancelar reparación y refactorización de chat",
+    "summary": "Se corrigió el error 'No handler registrado para ollama:abort' y se refactorizó el chat Ollama handlers para usar el robusto OllamaService.",
     "items": [
-      "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
-      "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
-      "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
+      "- **IPC**: Se agregó el `ollama:abort` IPC handler faltante para admitir la cancelación de solicitudes de chat.",
+      "- **Refactor**: Se actualizaron `ollama:chat` y `ollama:chatStream` para usar `OllamaService` en lugar de `LocalAIService` fallback, lo que permite verdaderas capacidades de transmisión y cancelación.",
+      "- **Pruebas**: pruebas de integración actualizadas para verificar la funcionalidad de cancelación y simular los métodos `OllamaService` correctamente."
     ]
   },
   "2026-02-14-ui-chat-shimmer-animation": {
-    "title": "Chat Generation Shimmer Animation",
-    "summary": "Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.",
+    "title": "Animación Shimmer de generación de chat",
+    "summary": "Se agregó una animación de brillo sutil al título del chat en la barra lateral cuando la IA genera una respuesta.",
     "items": [
-      "- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.",
-      "- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true."
+      "- **UI**: Clase `animate-text-shimmer` implementada para un efecto de carga premium.",
+      "- **Barra lateral**: se aplicó el efecto de brillo a la etiqueta del elemento de chat cuando `isGenerating` es verdadero."
     ]
   },
   "2026-02-14-marketplace-ui-error-handling": {
-    "title": "Marketplace UI Error Handling",
-    "summary": "Added proper error handling and retry mechanism to the Model Marketplace grid.",
+    "title": "Mercado UI Manejo de errores",
+    "summary": "Se agregó un mecanismo de reintento y manejo de errores adecuado a la cuadrícula de Model Marketplace.",
     "items": [
-      "- **UI**: Display user-friendly error message when model fetching fails.",
-      "- **UX**: Added a retry button to recover from transient network or service errors."
+      "- **UI**: muestra un mensaje de error fácil de usar cuando falla la recuperación del modelo.",
+      "- **UX**: Se agregó un botón de reintento para recuperarse de errores transitorios de red o de servicio."
     ]
   },
   "2026-02-14-error-fallback-enhancement": {
-    "title": "Enhanced Error Display",
-    "summary": "Improved the application error screen to show detailed error messages and stack traces for better debugging.",
+    "title": "Visualización de errores mejorada",
+    "summary": "Se mejoró la pantalla de error de la aplicación para mostrar mensajes de error detallados y seguimientos de pila para una mejor depuración.",
     "items": [
-      "- **Transparency**: Added detailed error message display instead of generic text.",
-      "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
-      "- **Usability**: Added 'Copy Details' button to easily share error information.",
-      "- **UX**: Automatic error state reset when navigating between different views."
+      "- **Transparencia**: Se agregó visualización detallada de mensajes de error en lugar de texto genérico.",
+      "- **Depuración**: Se incluye seguimiento de pila plegable para la resolución de problemas técnicos.",
+      "- **Usabilidad**: Se agregó el botón 'Copiar detalles' para compartir fácilmente información de error.",
+      "- **UX**: Restablecimiento automático del estado de error al navegar entre diferentes vistas."
     ]
   },
   "2026-02-14-sd-cpp-binary-discovery-fix": {
-    "title": "SD-CPP Binary Discovery Fix",
-    "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+    "title": "Solución de descubrimiento binario SD-CPP",
+    "summary": "Se solucionó un problema por el cual el ejecutable stable-diffusion.cpp no ​​se podía encontrar después de la descarga debido a diferencias en las convenciones de nomenclatura.",
     "items": [
-      "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
-      "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
-      "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+      "- **Solución**: Se agregó soporte para detectar `sd-cli.exe` y `stable-diffusion.exe` además de `sd.exe`.",
+      "- **Robustez**: descubrimiento binario recursivo mejorado para manejar varias estructuras de lanzamiento.",
+      "- **Calidad del código**: se eliminaron los `eslint-disable` comentarios prohibidos y se agregaron controles estrictos de dependencia del servicio."
     ]
   },
   "2026-02-17-token-rotation-hardening-sec-001": {
-    "title": "Token Rotation Hardening (SEC-001)",
-    "summary": "Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.",
+    "title": "Endurecimiento de la rotación de tokens (SEC-001)",
+    "summary": "Se implementó un sólido mecanismo de rotación de tokens con retroceso exponencial y buffers de actualización proactivos para evitar tiempos de espera de sesión.",
     "items": [
-      "- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.",
-      "- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
-      "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
-      "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
-      "- **Verification**: Verified clean build, lint, and type-check across both components."
+      "- **TokenService (TS)**: se agregó un búfer de actualización proactiva de 5 minutos y la utilidad `withRetry` para un retroceso exponencial en caso de fallas.",
+      "- **tengra-token-service (Rust)**: bucle de actualización en segundo plano reforzado con lógica de reintento y punto final `/health` agregado.",
+      "- **Monitoreo de salud**: Implementado `getTokenHealth` API en TypeScript y Rust para el seguimiento del estado del token en tiempo real.",
+      "- **Manejo de eventos**: se agregó el evento `token:permanent_failure` para detectar y manejar credenciales revocadas o caducadas.",
+      "- **Verificación**: Verificación de tipos, pelusas y construcción limpia verificada en ambos componentes."
     ]
   },
   "2026-02-17-llm-05-attachments-and-audit-backlog": {
-    "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
-    "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+    "title": "LLM-05 Progreso: Manejo de archivos adjuntos multimodal y expansión del trabajo pendiente de auditoría",
+    "summary": "Se implementó LLM-05 detección de tipo de archivo y optimización del tamaño de imagen en archivos adjuntos de chat, luego se agregó un gran trabajo pendiente de auditoría procesable en seguridad, rendimiento, UX y arquitectura.",
     "items": [
-      "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
-      "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
-      "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
-      "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+      "- **LLM-05.4**: Se agregó una detección más sólida del tipo de archivo adjunto con la extensión MIME + fallback y un mapeo de tipo de archivo adjunto más seguro.",
+      "- **LLM-05.5**: Se agregó preprocesamiento de imágenes del lado del cliente y optimización del tamaño para archivos adjuntos de imágenes grandes antes del envío del modelo.",
+      "- **Flujo de chat**: Canalización de envío de chat actualizada para incluir archivos adjuntos de imágenes listas como entradas de imágenes multimodales e incluir contexto de archivos adjuntos sin imágenes en las indicaciones.",
+      "- **Expansión del trabajo pendiente**: se agregaron más de 100 nuevos elementos TODO procesables en `docs/TODO.md` de auditorías de todo el repositorio (seguridad, rendimiento, accesibilidad/UX, arquitectura/pruebas).",
+      "- **Lote de rendimiento n.º 1**: Refactorizaciones clave de PERF completadas, incluida la eliminación del estado de la ruta de procesamiento de MessageList, el cálculo previo del chat de carpetas de la barra lateral, la optimización del comparador MessageBubble (se eliminaron `JSON.stringify` comparaciones profundas), el almacenamiento en caché del índice de búsqueda de proyectos y la búsqueda en la barra lateral diferida/indexada con derivaciones fijadas/recientes en caché.",
+      "- **Lote de rendimiento n.º 2**: Acción de lista de mensajes memorizada handlers para devoluciones de llamadas de filas estables y flujo de clasificación de proyectos modificado para ordenar una vez por modo de clasificación activo, luego filtrar el resultado ordenado.",
+      "- **Lote de rendimiento n.º 3**: Se agregó búsqueda de mensajes indexados y diferidos en `useChatManager` para reducir las minúsculas repetidas por mensaje y realizar actualizaciones de búsqueda fluidas al escribir.",
+      "- **Lote de rendimiento n.° 4**: rutas de actualización de transmisión optimizadas al reemplazar los trucos de lectura de estado de devolución de llamada con instantáneas de mensajes locales en bucles de herramientas, limitar la distribución de secuencias de múltiples modelos, reducir el mapeo anidado de chat/mensajes en los ticks de transmisión, fusionar los guardados de secuencias de bases de datos en vuelo y diferir los servicios de inicio no críticos hasta la primera pintura.",
+      "- **Lote de rendimiento n.º 5**: virtualización agregada para el modo de lista de proyectos y memorias confirmadas para reducir el trabajo del renderizador para conjuntos de datos grandes.",
+      "- **Lote de rendimiento n.º 6**: se cambió la hidratación de inicio del chat a carga de metadatos primero y recuperación diferida de mensajes por chat seleccionado para evitar la carga completa del mensaje al iniciar la aplicación.",
+      "- **Lote de rendimiento n.º 7**: Se agregaron colas de exportación de PDF en segundo plano serializadas y flujos de migración de datos convertidos desde llamadas de sistema de archivos de sincronización a operaciones fragmentadas asíncronas.",
+      "- **Lote de rendimiento n.º 8**: se agregó el asistente SELECT paginado a nivel de repositorio y se aplicó a rutas de lectura de chat/proyecto/conocimiento de gran volumen para evitar escaneos ilimitados en la memoria.",
+      "- **Lote de rendimiento n.º 9**: Se finalizaron los elementos PERF del renderizador restantes con virtualización de la lista de chat de la barra lateral, análisis de la sección de pensamiento/plan en caché, salida de rebajas memorizada para mensajes estables, módulo de renderizado de rebajas con carga diferida y devoluciones de llamadas/suscripciones divididas de la aplicación raíz para reducir las reproducciones de árboles evitables."
     ]
   },
   "2026-02-17-llm-security-and-attachments": {
-    "title": "LLM Security & Robust Attachments",
-    "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+    "title": "LLM Seguridad y accesorios robustos",
+    "summary": "Seguridad de IA mejorada con desinfección rápida de entradas y carga de archivos mejorada con detección de firmas binarias.",
     "items": [
-      "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
-      "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
-      "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+      "- **LLM-09.2**: Se agregó una utilidad de desinfección de mensajes HTML/JS para evitar posibles vectores de inyección/XSS y al mismo tiempo preservar la legibilidad del código mediante el escape de entidades.",
+      "- **LLM-05.4**: Se implementó una detección sólida de tipos de archivos mediante firmas binarias (números mágicos) para evitar la suplantación de extensiones de archivos.",
+      "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.",
+      "- **DEBT-03**: Se eliminó la dependencia `cheerio` no utilizada para reducir el tamaño del paquete."
     ]
   },
   "2026-02-17-copilot-token-refactor": {
-    "title": "Copilot Token Refresh Refactor",
-    "summary": "Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.",
+    "title": "Refactorización de actualización de tokens de Copilot",
+    "summary": "Se migró la lógica de actualización del token Copilot al servicio de token tengra basado en Rust para mejorar la confiabilidad.",
     "items": [
-      "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.",
-      "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
-      "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
-      "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
+      "- **Arquitectura**: se movió la actualización del token Copilot de TypeScript al sidecar `tengra-token-service` basado en Rust.",
+      "- **Confiabilidad**: Se implementaron encabezados compatibles con VSCode y actualización en segundo plano en Rust para garantizar que los tokens de sesión sigan siendo válidos.",
+      "- **Integración**: actualizado `TokenService` para sincronizar tokens administrados por Rust con `AuthService`.",
+      "- **Optimización**: `CopilotService` refactorizado para priorizar los tokens sincronizados, lo que reduce la sobrecarga del proceso principal."
     ]
   },
   "2026-02-18-aud-ux-accessibility": {
-    "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
-    "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+    "title": "AUD-UX 001-025 Mejoras de accesibilidad e interacción",
+    "summary": "Se completó el conjunto de tareas AUD-UX con mejoras en el teclado, el enfoque, la semántica y la localización en las superficies principales de UI.",
     "items": [
-      "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
-      "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
-      "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
-      "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
-      "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+      "- **Chat UX**: Se agregaron anuncios de regiones en vivo, semántica de lista corregida y ayuda de teclado/sugerencias de comandos mejoradas.",
+      "- **Paleta de comandos**: comportamiento modal de captura de enfoque obligatorio y estructura semántica mejorada para controles y resultados precisos.",
+      "- **Base UI**: posibilidades mejoradas de límites de error y modales compartidos con controles y acciones de recuperación más claros.",
+      "- **Sesión y navegación**: Se agregó enfoque de bloqueo de sesión/manejo de escape y navegación con teclado itinerante en la barra lateral y áreas de actividad.",
+      "- **Barra de título/Acciones rápidas**: se agregaron etiquetas faltantes, etiquetas de accesibilidad del filtro de registro de cambios y capacidad de descubrimiento del teclado para acciones rápidas."
     ]
   },
   "2026-02-18-terminal-ipc-renderer-migration": {
-    "title": "Terminal IPC Renderer Migration",
-    "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+    "title": "Terminal IPC Migración del renderizador",
+    "summary": "Se completó la migración de los componentes del renderizador de Terminal para utilizar la comunicación IPC con seguridad de tipos.",
     "items": [
-      "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
-      "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
-      "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
-      "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+      "- **Seguridad de tipo**: Se migraron `useTerminal`, `TerminalConnectionSelector` y otros componentes para usar `invokeTypedIpc` con `TerminalIpcContract`.",
+      "- **Validación**: Validación obligatoria del esquema Zod para las respuestas del terminal IPC en el renderizador.",
+      "- **Limpieza de código**: se eliminaron las llamadas `window.electron.terminal` sin procesar y las importaciones no utilizadas.",
+      "- **Solución de error**: Se corrigió el manejo del tipo de retorno `getDockerContainers` en el selector de conexión."
     ]
   },
   "2026-02-18-aud-arch-foundation": {
-    "title": "AUD-ARCH Initial Reliability Hardening",
-    "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+    "title": "AUD-ARCH Endurecimiento de la confiabilidad inicial",
+    "summary": "Se completó el primer lote de confiabilidad de la arquitectura ajustando los esquemas IPC y eliminando rutas de falla silenciosas.",
     "items": [
-      "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
-      "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
-      "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
-      "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+      "- **AUD-ARCH-005/006**: Se eliminó el uso de `as any` en el registro de chat IPC y se reemplazaron los esquemas de chat permisivos `z.any()` con validación basada en `z.unknown()`.",
+      "- **AUD-ARCH-007/008**: Se reemplazó el esquema de argumentos del proyecto de base de datos permisivo y se fortaleció la escritura del decorador del limitador de velocidad.",
+      "- **AUD-ARCH-015/017**: Se eliminaron capturas silenciosas en la limpieza del terminal y en las rutas de escaneo de proyectos, reemplazándolas con advertencias explícitas.",
+      "- **AUD-ARCH-019**: Se detectaron fallas de limpieza de imágenes temporales obsoletas con registros de advertencia explícitos y señalización de fallas."
     ]
   },
   "2026-02-18-aud-arch-completion": {
-    "title": "AUD-ARCH 001-020 Completion",
-    "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+    "title": "AUD-ARCH 001-020 Finalización",
+    "summary": "Tareas de auditoría de arquitectura completadas con descomposición de precarga/inicio, estandarización wrapper y cobertura de pruebas centradas en la confiabilidad.",
     "items": [
-      "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
-      "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
-      "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
-      "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+      "- **Precarga/Inicio**: Se agregaron módulos puente de precarga basados ​​en dominios y ayudantes de composición del ciclo de vida de inicio con pruebas de regresión.",
+      "- **IPC Endurecimiento**: Se migró el marketplace heredado restante handlers a wrappers validado y se actualizaron las pruebas de cobertura de expresiones regulares/humo a afirmaciones de comportamiento.",
+      "- **Confiabilidad del servicio**: se reemplazaron las pruebas de servicio de solo humo con afirmaciones funcionales y se agregaron pruebas de persistencia/ciclo de vida de la sesión del terminal.",
+      "- **Rutas de falla**: se agregaron pruebas de ruta negativa para el escaneo del proyecto y fallas del proveedor fallback en la generación de imágenes locales."
     ]
   },
   "2026-02-18-aud-sec-preload-hardening": {
-    "title": "AUD-SEC Preload API Hardening (001/002)",
-    "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+    "title": "Precarga AUD-SEC API Endurecimiento (001/002)",
+    "summary": "Se redujo la superficie genérica IPC insegura reemplazando las API de puente de renderizador genéricas con métodos explícitos específicos del canal.",
     "items": [
-      "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
-      "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
-      "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+      "- **AUD-SEC-001**: Se eliminó la exposición genérica a `window.electron.invoke` y se migraron las personas que llaman a métodos API explícitos.",
+      "- **AUD-SEC-002**: Se eliminó el puente `window.electron.on` genérico y se reemplazaron los oyentes con métodos de suscripción con nombre para eventos de chat, agente y SD-CPP.",
+      "- **Seguridad**: Se agregaron métodos de puente `modelDownloader` dedicados para evitar la invocación de canales dinámicos desde el renderizador."
     ]
   },
   "2026-02-18-project-terminal-diagnostics": {
-    "title": "Project Terminal Diagnostics Tab",
-    "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+    "title": "Pestaña Diagnóstico del terminal del proyecto",
+    "summary": "Se movieron las advertencias/errores del proyecto desde Problemas del panel a una pestaña de diagnóstico de terminal dedicada y se agregó la actualización automática del análisis del panel.",
     "items": [
-      "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
-      "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
-      "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+      "- Se agregó una pestaña de Problemas del proyecto que no se puede cerrar en el panel de la terminal con navegación de actualización y apertura de archivos.",
+      "- Se eliminó el cableado de la pestaña Problemas de las superficies de navegación del panel de trabajo/proyecto.",
+      "- Se agregó una política de actualización automática de análisis periódico de proyectos en la lógica del tablero (AUD-PROJ-008)"
     ]
   },
   "2026-02-18-test-stability-and-ipc-fixes": {
-    "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
-    "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+    "title": "Estabilización integral del conjunto de pruebas y correcciones IPC",
+    "summary": "Se resolvieron fallas críticas de integración y pruebas de renderizado en múltiples módulos, incluidos los componentes Copilot, MCP y UI.",
     "items": [
-      "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
-      "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
-      "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
-      "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
-      "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+      "- **IPC Estabilización**: Se corrigieron pruebas de integración fallidas corrigiendo simulacros de servicios sincrónicos y proporcionando un contexto de validación de remitente válido.",
+      "- **Correcciones del copiloto**: se implementó una lógica de actualización de token correcta con ID de cliente válidos y pruebas de servicio asociadas fijas.",
+      "- **Pruebas de renderizador**: se restauraron las pruebas de renderizador fallidas burlándose de la negociación del contrato obligatorio IPC y actualizando las expectativas de rol de ARIA para los componentes UI.",
+      "- **Plantillas de aviso**: pruebas de integración corregidas para LLM plantillas de aviso para que coincidan con la naturaleza sincrónica de los servicios subyacentes.",
+      "- **Mercado**: Se corrigieron las pruebas del cliente del marketplace MCP al garantizar el control de versiones del contrato IPC adecuado durante las invocaciones escritas."
     ]
   },
   "2026-02-18-ipc-hardening-and-zod-contracts": {
-    "title": "Advanced IPC Hardening & Zod Contract Rules",
-    "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+    "title": "Reglas avanzadas de endurecimiento y contrato Zod IPC",
+    "summary": "Se implementaron reglas de refuerzo arquitectónico verificadas para evitar IPC discrepancias y aplicar la estricta paridad del esquema Zod.",
     "items": [
-      "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
-      "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
-      "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
-      "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
-      "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+      "- **Contratos estrictos**: esquemas Zod duales obligatorios (Args + Response) para todos los IPC handlers para evitar errores de tipo silencioso.",
+      "- **Paridad de esquema**: se aplica `@shared/schemas` como única fuente de verdad para los procesos principal y de renderizado.",
+      "- **Aislamiento de tienda**: `useState` prohibido para el estado de la aplicación; patrones `useSyncExternalStore` obligatorios.",
+      "- **Disposal Guard**: se requiere verificación explícita `dispose()` en todas las pruebas de servicio.",
+      "- **Política de registro**: se aplica la restricción de directorio `logs/` para todas las salidas de depuración temporales."
     ]
   },
   "2026-02-18-git-panel-section-states": {
-    "title": "Git Panel Section State Indicators",
-    "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+    "title": "Indicadores de estado de la sección del panel Git",
+    "summary": "Se agregaron indicadores de error y carga a nivel de sección para los paneles del panel de Git del proyecto para mejorar la visibilidad de los diagnósticos.",
     "items": [
-      "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
-      "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
-      "- Completed AUD-PROJ-009 and updated project TODO tracking"
+      "- Se agregaron metadatos de estado de sección en el canal de carga de datos de git para estado/acciones/controles remotos/confirmaciones/cambios",
+      "- Chips de carga/error/listos renderizados por sección en ProjectGitTab para comentarios detallados",
+      "- Se completó AUD-PROJ-009 y se actualizó el seguimiento TODO del proyecto."
     ]
   },
   "2026-02-18-workspace-editor-tab-actions": {
-    "title": "Workspace Editor Tab Power Actions",
-    "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+    "title": "Acciones de energía de la pestaña Editor del espacio de trabajo",
+    "summary": "Se agregaron acciones contextuales avanzadas de la pestaña del editor para fijar, operaciones de cierre masivo, copia de ruta y revelación del explorador en el espacio de trabajo del proyecto.",
     "items": [
-      "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
-      "- Added clipboard actions for absolute and relative file paths from editor tabs",
-      "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+      "- Se agregaron acciones del menú contextual de pestañas: fijar/desanclar, cerrar pestaña, cerrar todo, cerrar a la derecha y cerrar otras",
+      "- Se agregaron acciones del portapapeles para rutas de archivos absolutas y relativas desde las pestañas del editor.",
+      "- Se agregó la acción de revelar en el explorador de archivos y un indicador visual de pestaña fijada en la barra de pestañas del editor del espacio de trabajo."
     ]
   },
   "2026-02-18-workspace-branch-popover-switch": {
-    "title": "Workspace Branch Switch Popover",
+    "title": "Espacio de trabajo Branch Cambiar ventana emergente",
     "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
     "items": [
       "- Click branch label to open branch list popover",
@@ -3641,147 +3666,148 @@
     ]
   },
   "2026-02-18-advanced-memory-features": {
-    "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
-    "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+    "title": "Versionado y uso compartido avanzado de memoria (MEM-03/07/08)",
+    "summary": "Se implementó una gestión avanzada del ciclo de vida de la memoria que incluye control de versiones, reversión, caducidad y uso compartido entre proyectos.",
     "items": [
-      "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
-      "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
-      "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
-      "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
-      "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+      "- **Control de versiones**: se agregó soporte para rastrear el historial de memoria y retroceder a versiones anteriores.",
+      "- **Expiración**: se implementó el archivado automático de recuerdos con una marca de tiempo de caducidad.",
+      "- **Compartir**: habilitó el uso compartido de memoria entre múltiples proyectos manteniendo los enlaces de origen.",
+      "- **Categorización**: Se agregó recategorización automática impulsada por LLM para recuerdos en evolución.",
+      "- **Automatización**: comprobaciones de caducidad integradas en el ciclo de mantenimiento de deterioro de la memoria."
     ]
   },
   "2026-02-18-mcp-image-ssh-i18n-sweep": {
-    "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
-    "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+    "title": "MCP Marketplace, Image Ops, prueba de perfil SSH y finalización de i18n",
+    "summary": "Se activó la configuración del marketplace de MCP UX, se completaron operaciones de generación de imágenes en el backend/UI, se agregaron pruebas de perfil SSH y se alcanzó la paridad de claves locales completa.",
     "items": [
       "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
-      "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
-      "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
-      "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
-      "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+      "- Se agregó operación de imagen SD-CPP IPC/puente de precarga para historial, regeneración, análisis, ajustes preestablecidos, programación, estadísticas de cola, edición, generación de lotes y comparación.",
+      "- Se agregaron operaciones de imagen UI en la configuración de historial/regeneración, CRUD preestablecido, controles de programación/cola, ejecuciones por lotes, solicitudes de edición y resúmenes de comparación.",
+      "- Se agregó una acción de prueba de perfil de conexión SSH (servicio + IPC + precarga + botón modal) con respuesta de latencia/error",
+      "- Se completó la paridad de claves locales de i18n en tr/en/de/fr/es/ja/zh/ar y se agregaron claves faltantes para nuevas configuraciones/flujos SSH"
     ]
   },
   "2026-02-18-agent-voice-sandbox-marketplace-sec-ext": {
-    "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
-    "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+    "title": "Debate de agentes/análisis de memoria, flujos de trabajo de voz, Code Sandbox y extensiones de seguridad de Marketplace",
+    "summary": "Se completaron pistas de seguridad de AGENT/VOICE/FEAT y de extensión de marketplace con nuevos IPC flujos de trabajo, protecciones y cobertura de metadatos.",
     "items": [
-      "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
-      "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
-      "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
-      "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
-      "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
-      "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+      "- Operaciones cableadas de espacios de nombres compartidos de memoria avanzada a través de IPC (creación/sincronización/análisis/búsqueda) para flujos de colaboración de memoria entre proyectos",
+      "- Se agregó una zona de pruebas de código dedicada IPC con soporte de lenguaje escrito (`javascript`, `typescript`, `python`, `shell`), ejecución limitada y bloqueo de patrones de seguridad.",
+      "- Se agregaron flujos de trabajo de voz IPC para la detección de intención de palabra de activación, manejo de turnos de sesión de voz con señales de interrupción y resumen/búsqueda de notas de voz con IA.",
+      "- Metadatos de extensión de marketplace MCP extendido con tipos de extensión, campos OAuth/credenciales/seguridad/telemetría y API de extensión de plantilla/borrador",
+      "- Se agregaron controles de seguridad y confianza en el marketplace: verificación de editor confiable, verificaciones de revocación de firmas, registros de escaneo de seguridad, moderación de revisión y puntos finales de telemetría/bloqueo.",
+      "- Finalización marcada para MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 en seguimiento TODO"
     ]
   },
   "2026-02-20-voice-first-interface-ui-11": {
-    "title": "Voice-First Interface Implementation (UI-11)",
-    "summary": "Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.",
+    "title": "Implementación de la interfaz de voz primero (UI-11)",
+    "summary": "Implementó un sistema integral de control de voz con una pestaña de configuración dedicada, acciones de voz globales y retroalimentación visual en tiempo real.",
     "items": [
-      "- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.",
-      "- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.",
-      "- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.",
-      "- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.",
-      "- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions."
+      "- **Configuración de voz**: se agregó una nueva pestaña para configurar palabras de activación, síntesis de voz y comandos personalizados.",
+      "- **Superposición de voz**: se implementó un sistema de retroalimentación visual para la transcripción y el estado de voz a texto en tiempo real.",
+      "- **Comentarios de audio**: se agregó confirmación hablada para acciones activadas por voz y estado del sistema.",
+      "- **Navegación manos libres**: navegación habilitada y ejecución de comandos a través de eventos de voz en toda la aplicación.",
+      "- **Comandos personalizados**: se agregó soporte para frases de voz definidas por el usuario asignadas a acciones del sistema."
     ]
   },
   "2026-02-20-tech-debt-and-type-failures-resolution": {
-    "title": "Resolution of Core Technical Debt and Type Failures",
+    "title": "Resolución de Deuda Técnica Central y Fallas de Tipo",
     "summary": "Fixed inherited type failures and contract mismatches across core services and IPC handlers.",
     "items": [
       "- Core service dependency and registration mismatches were fixed.",
       "- IPC and shared type regressions were resolved.",
       "- Health and telemetry-related missing type keys were completed.",
-      "- Related test regressions were updated."
+      "- Related test regressions were updated.",
+      "- **Calidad**: Se corrigieron las regresiones de prueba en `ModelSelectorModal` y `WorkspaceExplorer` causadas por importaciones e instantáneas de componentes obsoletas."
     ]
   },
   "2026-02-20-code-sandbox-marketplace-project-agent-ipc-hardening": {
-    "title": "IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent",
-    "summary": "Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.",
+    "title": "IPC Refuerzo para Code Sandbox, MCP Marketplace y Legacy Project Agent",
+    "summary": "Metadatos de error estandarizados y comportamiento de reintento/fallback, paneles de control de estado y presupuestos respaldados por telemetría agregados, y operaciones documentadas y modelos de amenazas para tres superficies IPC.",
     "items": [
-      "- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels",
-      "- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics",
-      "- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`",
-      "- Wired preload/web bridge and renderer typings for new health channels",
-      "- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies"
+      "- Metadatos de respuesta estandarizados (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) para code-sandbox y mcp-marketplace handlers y canales heredados `project-agent:*`",
+      "- Se agregaron políticas de reintento limitadas y seguimiento de telemetría por canal, incluidas métricas de reintento/validación/presupuesto excedido.",
+      "- Puntos finales de salud agregados: `code-sandbox:health`, `mcp:marketplace:health` y `project-agent:health`",
+      "- Precarga cableada/puente web y tipificaciones de renderizador para nuevos canales de salud",
+      "- Se agregaron documentos de runbook y modelo de amenazas para los tres handlers en `docs/` con copias reflejadas de `.codex/`"
     ]
   },
   "2026-02-20-advanced-memory-ipc-hardening": {
-    "title": "Advanced Memory IPC Hardening and Operational Readiness",
-    "summary": "Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.",
+    "title": "Memoria avanzada IPC Refuerzo y preparación operativa",
+    "summary": "Manejo de errores y reintentos estandarizados de memoria avanzada IPC, informes de estado de telemetría agregados, manejo mejorado de fallas del renderizador y guía documentada de runbook/modelo de amenazas.",
     "items": [
-      "- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior",
-      "- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel",
-      "- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)",
-      "- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging",
-      "- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)"
+      "- Metadatos de error de memoria avanzada estandarizados con comportamiento de carga útil consistente `errorCode`, `messageKey`, `retryable`, `uiState` y fallback",
+      "- Se agregó soporte de reintento limitado para fallas transitorias IPC y telemetría de reintento/falla/éxito con seguimiento por canal",
+      "- Se agregó `advancedMemory:health` punto final con métricas de canal y presupuestos de rendimiento explícitos (rápido/estándar/pesado)",
+      "- Se actualizó el manejo de fallas del enlace de memoria del procesador para consumir metadatos IPC y proporcionar mensajes fallback traducidos.",
+      "- Se agregaron documentos de runbook y modelo de amenazas: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` y `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ espejos `.codex`)"
     ]
   },
   "2026-02-20-voice-ipc-hardening-and-observability": {
-    "title": "Voice IPC Hardening, Telemetry, and Health Dashboard",
-    "summary": "Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.",
+    "title": "Panel de control de salud, telemetría y endurecimiento de voz IPC",
+    "summary": "Políticas de validación y fallas de voz reforzadas IPC handler, telemetría agregada y seguimiento de presupuesto, y operaciones documentadas y orientación sobre modelado de amenazas.",
     "items": [
-      "- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events",
-      "- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures",
-      "- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics",
-      "- Updated web fallback bridge and integration tests for voice health and validation metadata behavior",
-      "- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)"
+      "- Se agregaron protecciones de validación de esquemas de entrada para transcripciones, configuraciones, comandos, cargas útiles de síntesis y eventos de voz emitidos.",
+      "- Metadatos de voz estandarizados IPC (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) y manejo de reintentos limitados para fallas transitorias",
+      "- Se agregaron métricas de telemetría por canal con presupuestos de regresión y diagnósticos `voice:health` expuestos.",
+      "- Pruebas de integración y puente web fallback actualizadas para el comportamiento de los metadatos de validación y el estado de la voz",
+      "- Se agregaron documentos operativos y de seguridad de voz: `docs/IPC_VOICE_RUNBOOK.md` y `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` espejos)"
     ]
   },
   "2026-02-21-renderer-backlog-0201-0250-coverage-and-hardening": {
-    "title": "Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening",
-    "summary": "Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.",
+    "title": "Trabajo pendiente del renderizador 0201-0250 Prueba, validación, estado y refuerzo de operaciones",
+    "summary": "Se completó la cobertura del trabajo pendiente del renderizador y el refuerzo para la barra de herramientas del terminal, el mensaje de idioma, la configuración de MCP, el editor de código y el almacén del centro de notificaciones.",
     "items": [
-      "- Added unit and integration/regression tests for all target surfaces",
-      "- Added input validation guards, standardized retry/fallback paths, and component error codes",
-      "- Added component health telemetry stores with explicit performance budgets",
-      "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor",
-      "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies"
+      "- Se agregaron pruebas unitarias y de integración/regresión para todas las superficies objetivo.",
+      "- Se agregaron protecciones de validación de entrada, reintentos estandarizados/rutas fallback y códigos de error de componentes.",
+      "- Se agregaron almacenes de telemetría de estado de componentes con presupuestos de rendimiento explícitos.",
+      "- Manejo mejorado de carga/vacío/fallo UX en el mensaje de idioma, la pestaña de configuración de MCP y el editor de código",
+      "- Se agregó documentación de runbook, modelo de amenazas y presupuesto de rendimiento en documentos/con copias reflejadas de .codex."
     ]
   },
   "2026-02-23-agent-service-hardening": {
-    "title": "Agent Collaboration and Checkpoint Service Hardening",
-    "summary": "Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.",
+    "title": "Colaboración de agentes y refuerzo del servicio de puntos de control",
+    "summary": "Se implementó una validación runtime integral, manejo de errores estandarizado y cobertura i18n completa para los servicios de colaboración de agentes y puntos de control.",
     "items": [
-      "- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.",
-      "- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.",
-      "- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.",
-      "- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).",
-      "- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages."
+      "- **Validación**: Se agregaron protecciones de integridad y validación de entrada basadas en esquemas de Zod para todos los flujos de tareas, votaciones y puntos de control de los agentes.",
+      "- **Manejo de errores**: clases de error estandarizadas (`AgentCollaborationError`, `AgentCheckpointError`) con códigos descriptivos legibles por máquina y mensajes traducidos.",
+      "- **Confiabilidad**: Se implementó la huella digital del estado de la tarea para la detección de sincronización duplicada y la compresión optimizada del punto de control.",
+      "- **Cumplimiento de la NASA**: métodos de servicio centrales refactorizados para mejorar la mantenibilidad y la confiabilidad (regla del poder de los diez n.° 3).",
+      "- **I18N**: Se agregó localización completa en inglés y turco para todos los mensajes de estado de puntos de control y colaboración de agentes."
     ]
   },
   "2026-02-22-backlog-0251-0281-unit-test-coverage": {
-    "title": "Backlog 0251-0281 Unit-Test Edge Coverage Expansion",
-    "summary": "Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.",
+    "title": "Trabajo pendiente 0251-0281 Expansión de cobertura de borde de prueba unitaria",
+    "summary": "Cobertura ampliada de unidades de casos extremos para servicios de memoria, recuperación, incrustación y análisis de proyectos y seguimiento TODO alineado para tareas de prueba completadas.",
     "items": [
-      "- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths",
-      "- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior",
-      "- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection",
-      "- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors",
-      "- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md"
+      "- Se agregaron pruebas de casos extremos de AdvancedMemoryService para reemplazar importaciones existentes, incrustar continuación de fallas, fijación de límites de exportación y rutas de edición/reversión faltantes.",
+      "- Se agregaron pruebas de casos extremos de ContextRetrievalService para resolución de ruta de proyecto, tolerancia parcial a fallas de búsqueda, análisis de solicitudes fallidas y comportamiento de análisis de consultas en blanco.",
+      "- Se agregaron pruebas de casos extremos de EmbeddingService para inmutabilidad de caché, comportamiento de borrado de caché, manejo de entradas en blanco, falla del proveedor fallback y selección de modelo predeterminado",
+      "- Se agregaron pruebas de casos extremos de ProjectService para normalización vinculada a paginación y comportamientos de análisis/persistencia de .env",
+      "- Marcado BACKLOG-0251, BACKLOG-0261, BACKLOG-0271 y BACKLOG-0281 como completado en docs/TODO.md"
     ]
   },
   "2026-02-22-backlog-0252-0283-service-hardening": {
-    "title": "Backlog 0252-0283 Service Hardening and Operational Coverage",
-    "summary": "Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.",
+    "title": "Backlog 0252-0283 Fortalecimiento del Servicio y Cobertura Operativa",
+    "summary": "Cobertura de integración/regresión completa y refuerzo runtime para memoria, recuperación, incrustación y servicios de proyectos, incluidas métricas de estado y documentación de operaciones.",
     "items": [
-      "- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records",
-      "- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
-      "- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics",
-      "- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases",
-      "- Added English and Turkish i18n coverage for new service health message keys",
-      "- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
-      "- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md"
+      "- Se agregaron protecciones de esquema para cargas útiles avanzadas de recuperación/importación de memoria, incorporación de entradas de texto, rutas raíz del proyecto y claves/registros de var env.",
+      "- Se agregó reintento limitado y comportamiento fallback con códigos de error estandarizados y contadores de telemetría en AdvancedMemoryService, ContextRetrievalService y EmbeddingService.",
+      "- Se agregaron instantáneas del estado del servicio con UI superficies de clave de mensaje/estado y métricas de tasa de error/presupuesto excedido",
+      "- Se agregaron pruebas de regresión/integración para fallas de validación, recuperación de reintentos, comportamiento fallback y casos extremos de entorno/ruta del proyecto.",
+      "- Se agregó cobertura i18n en inglés y turco para nuevas claves de mensajes de salud del servicio.",
+      "- Se agregó documentación de runbook, presupuesto de rendimiento y modelo de amenazas para AdvancedMemoryService, ContextRetrievalService y EmbeddingService.",
+      "- Tareas marcadas de BACKLOG-0252 a BACKLOG-0283 como completadas en docs/TODO.md"
     ]
   },
   "2026-02-25-image-settings-refactoring": {
-    "title": "Image Settings Tab Refactoring and Test Suite Reliability",
-    "summary": "Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.",
+    "title": "Ficha Configuración de imagen Refactorización y confiabilidad del conjunto de pruebas",
+    "summary": "Se refactorizó el complejo componente ImageSettingsTab en subcomponentes y ganchos modulares, mejorando la mantenibilidad y resolviendo violaciones de ESLint. Además, se corrigieron varias fallas de prueba de integración y contrato.",
     "items": [
-      "- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.",
-      "- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.",
-      "- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.",
-      "- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification."
+      "- **Modularización**: Se extrajeron `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider` y `ImageSettingsRuntime` del monolítico `ImageSettingsTab.tsx`.",
+      "- **Calidad del código**: se eliminó la anulación de `max-lines-per-function` ESLint y se resolvieron los problemas de tipo `any` en el módulo de configuración.",
+      "- **Fiabilidad de la prueba**: Se corrigieron `require-yield` violaciones y variables no utilizadas en `chat.integration.test.ts`.",
+      "- **API Contratos**: se corrigió la ruta del archivo de especificación OpenAPI en `api-openapi.contract.test.ts` para garantizar una verificación de contrato válida."
     ]
   }
 }

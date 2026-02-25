@@ -230,9 +230,7 @@ describe('MonitoringService', () => {
             vi.mocked(os.platform).mockReturnValue('linux');
 
             // First call to get battery list, second to get details
-            let callCount = 0;
             mockExec.mockImplementation((command, _options, callback) => {
-                callCount++;
                 if (command.includes('-e')) {
                     callback(null, '/org/freedesktop/UPower/devices/battery_BAT0\n', '');
                 } else if (command.includes('-i')) {

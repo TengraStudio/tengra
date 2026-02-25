@@ -1,4 +1,14 @@
 {
+  "2026-02-25-i18n-refactoring-and-marketplace": {
+    "title": "i18n Çoklu Dil Yeniden Yapılandırması ve Pazaryeri Arayüzü",
+    "summary": "Uluslararasılaştırma sistemini modüler dosyalara böldük ve yeni bir Pazaryeri arayüzü ile birlikte 10 ana dil desteği ekledik.",
+    "items": [
+      "- **Modüler i18n**: Çevirileri daha iyi bakım yapılabilirlik için ayrı dosyalara (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) ayırdık.",
+      "- **Genişletilmiş Diller**: Almanca, Fransızca, İspanyolca, Japonca, Çince, Korece, Portekizce ve Rusça için yüksek kaliteli yerel çeviriler eklendi.",
+      "- **Pazaryeri Arayüzü**: Arama, kategori filtreleri ve topluluk kaynak tablosu içeren başlangıç Pazaryeri sayfası yayına alındı.",
+      "- **UX İyileştirmeleri**: Navbar'a localStorage sürekliliği olan Dünya simgeli bir dil seçicisi eklendi."
+    ]
+  },
   "2026-02-25-image-settings-refactoring": {
     "title": "Görüntü Ayarları Sekmesi Refaktörü ve Test Paketi Güvenilirliği",
     "summary": "Karmaşık ImageSettingsTab bileşeni modüler alt bileşenlere ve hook'lara ayrıştırıldı, bakımı iyileştirildi ve ESLint ihlalleri giderildi. Ayrıca birkaç entegrasyon ve sözleşme testi hatası düzeltildi.",

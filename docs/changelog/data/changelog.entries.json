@@ -4,6 +4,47 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-25-i18n-refactoring-and-marketplace",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "feature",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "i18n",
+        "Marketplace",
+        "Navbar"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "i18n Multi-Language Refactoring and Marketplace UI",
+          "summary": "Refactored the internationalization system into modular files and added support for 10 native-quality languages, along with a new Marketplace interface.",
+          "items": [
+            "- **Modular i18n**: Split monolithic translations into separate files (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) for better maintainability.",
+            "- **Expanded Locales**: Added high-quality native translations for German, French, Spanish, Japanese, Chinese, Korean, Portuguese, and Russian.",
+            "- **Marketplace UI**: Launched the initial Marketplace page with search, category filters (Plugins, Prompts, Workflows, Model Presets), and community resource grid.",
+            "- **UX Improvements**: Added a Globe-icon language picker in the Navbar with localStorage persistence."
+          ]
+        },
+        "tr": {
+          "title": "i18n Çoklu Dil Yeniden Yapılandırması ve Pazaryeri Arayüzü",
+          "summary": "Uluslararasılaştırma sistemini modüler dosyalara böldük ve yeni bir Pazaryeri arayüzü ile birlikte 10 ana dil desteği ekledik.",
+          "items": [
+            "- **Modüler i18n**: Çevirileri daha iyi bakım yapılabilirlik için ayrı dosyalara (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) ayırdık.",
+            "- **Genişletilmiş Diller**: Almanca, Fransızca, İspanyolca, Japonca, Çince, Korece, Portekizce ve Rusça için yüksek kaliteli yerel çeviriler eklendi.",
+            "- **Pazaryeri Arayüzü**: Arama, kategori filtreleri ve topluluk kaynak tablosu içeren başlangıç Pazaryeri sayfası yayına alındı.",
+            "- **UX İyileştirmeleri**: Navbar'a localStorage sürekliliği olan Dünya simgeli bir dil seçicisi eklendi."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-25-image-settings-refactoring",
       "date": "2026-02-25",
       "channel": "stable",

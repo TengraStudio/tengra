@@ -1,7 +1,7 @@
 
 # Tengra Project - Comprehensive TODO List
 
-> Last updated: 2026-02-20
+> Last updated: 2026-02-25
 > **Total Tasks: 1020+** | **Status: In Development**
 
 ## Release Milestones
@@ -417,6 +417,13 @@ Owner tags:
 - [owner:quality-automation] Test and quality gate tasks
 
 ### Marketplace System (VSCode-style Extensions)
+
+#### Core Infrastructure & Centralization
+- ( ) **MKT-INFRA-09**: Implement Centralized Marketplace Indexer Service (VPS-side).
+  - ( ) Migrate HF/Ollama scraping from client-side to VPS for improved privacy and performance.
+  - ( ) Build automated metadata crawler for extensions, prompts, and model presets.
+  - ( ) Create secure REST API for model discovery and searching.
+  - ( ) Implement caching layer for fast search results across all clients.
 
 #### UI Components
   - Location: `src/renderer/features/marketplace/`

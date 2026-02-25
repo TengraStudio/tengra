@@ -411,10 +411,11 @@ export function useAgentEvents(props: UseAgentEventsProps) {
             processTelemetryEvent(type, data, controllerWithActiveId);
         });
 
+        const recentEventDedupeKeys = recentEventDedupeKeysRef.current;
         return () => {
             // Mark as unmounted before unsubscribing
             isMountedRef.current = false;
-            recentEventDedupeKeysRef.current.clear();
+            recentEventDedupeKeys.clear();
             unsubscribe();
         };
     }, []);

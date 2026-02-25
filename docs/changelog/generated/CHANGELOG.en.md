@@ -2,6 +2,17 @@
 
 ## [2026-02-25]
 
+### i18n Multi-Language Refactoring and Marketplace UI
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Refactored the internationalization system into modular files and added support for 10 native-quality languages, along with a new Marketplace interface.
+
+- **Modular i18n**: Split monolithic translations into separate files (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) for better maintainability.
+- **Expanded Locales**: Added high-quality native translations for German, French, Spanish, Japanese, Chinese, Korean, Portuguese, and Russian.
+- **Marketplace UI**: Launched the initial Marketplace page with search, category filters (Plugins, Prompts, Workflows, Model Presets), and community resource grid.
+- **UX Improvements**: Added a Globe-icon language picker in the Navbar with localStorage persistence.
+
 ### Image Settings Tab Refactoring and Test Suite Reliability
 
 - **Type**: refactor
@@ -3987,4 +3998,3 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 -   - Replaced silent error catches and console calls with `appLogger` across core services.
 - **Docs**: Consolidated 19 markdown files into 6 themed documents.
 - **Audit**: Completed initial small cleanup tasks from `TODO.md`.
-

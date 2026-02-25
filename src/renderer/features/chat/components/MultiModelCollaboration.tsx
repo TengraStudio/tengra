@@ -406,11 +406,13 @@ export function MultiModelCollaboration({
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={async () => {
-                                const link = `tengra://share/${sessionId}?guest=${allowGuests ? '1' : '0'}`;
-                                setShareLink(link);
-                                await navigator.clipboard.writeText(link).catch(() => {});
-                                appendRecordingEvent(t('chat.collaboration.linkGenerated'));
+                            onClick={() => {
+                                void (async () => {
+                                    const link = `tengra://share/${sessionId}?guest=${allowGuests ? '1' : '0'}`;
+                                    setShareLink(link);
+                                    await navigator.clipboard.writeText(link).catch(() => {});
+                                    appendRecordingEvent(t('chat.collaboration.linkGenerated'));
+                                })();
                             }}
                         >
                             <Copy className="w-3 h-3 mr-1" />

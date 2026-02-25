@@ -55,7 +55,11 @@ class ThemeMetricsStore {
                 totalDurationMs: 0
             });
         }
-        return this.metrics.get(operation)!;
+        const operationMetrics = this.metrics.get(operation);
+        if (!operationMetrics) {
+            throw new Error(`Theme metrics missing for operation: ${operation}`);
+        }
+        return operationMetrics;
     }
 
     recordSuccess(operation: string, durationMs: number): void {

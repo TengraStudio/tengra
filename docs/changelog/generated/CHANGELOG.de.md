@@ -2,30 +2,41 @@
 
 ## [2026-02-25]
 
-### Image Settings Tab Refactoring and Test Suite Reliability
+### i18n Mehrsprachiges Refactoring und Marketplace UI
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Das Internationalisierungssystem wurde in modulare Dateien umgestaltet und Unterstützung für 10 Sprachen in nativer Qualität sowie eine neue Marketplace-Schnittstelle hinzugefügt.
+
+- **Modular i18n**: Teilen Sie monolithische Übersetzungen in separate Dateien auf (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) für eine bessere Wartbarkeit.
+- **Erweiterte Gebietsschemas**: Hochwertige muttersprachliche Übersetzungen für Deutsch, Französisch, Spanisch, Japanisch, Chinesisch, Koreanisch, Portugiesisch und Russisch hinzugefügt.
+- **Marketplace UI**: Start der ersten Marktplatzseite mit Suche, Kategoriefiltern (Plugins, Eingabeaufforderungen, Arbeitsabläufe, Modellvoreinstellungen) und Community-Ressourcenraster.
+- **UX Verbesserungen**: In der Navigationsleiste wurde eine Sprachauswahl für Globussymbole mit localStorage-Persistenz hinzugefügt.
+
+### Refactoring der Registerkarte „Bildeinstellungen“ und Zuverlässigkeit der Testsuite
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.
+- **Summary**: Die komplexe ImageSettingsTab-Komponente wurde in modulare Unterkomponenten und Hooks umgestaltet, um die Wartbarkeit zu verbessern und ESLint-Verstöße zu beheben. Darüber hinaus wurden mehrere Integrations- und Vertragstestfehler behoben.
 
-- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.
-- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.
-- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
-- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
+- **Modularisierung**: `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider` und `ImageSettingsRuntime` aus dem monolithischen `ImageSettingsTab.tsx` extrahiert.
+- **Codequalität**: Die ESLint-Überschreibung `max-lines-per-function` wurde entfernt und Probleme mit dem Typ `any` im Einstellungsmodul behoben.
+- **Testzuverlässigkeit**: Verstöße gegen `require-yield` und nicht verwendete Variablen in `chat.integration.test.ts` behoben.
+- **API Verträge**: Der Pfad der OpenAPI-Spezifikationsdatei in `api-openapi.contract.test.ts` wurde korrigiert, um eine gültige Vertragsüberprüfung sicherzustellen.
 
 ## [2026-02-23]
 
-### Agent Collaboration and Checkpoint Service Hardening
+### Agentenzusammenarbeit und Checkpoint-Service-Härtung
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.
+- **Summary**: Implementierte umfassende runtime-Validierung, standardisierte Fehlerbehandlung und vollständige i18n-Abdeckung für Agent Collaboration- und Checkpoint-Dienste.
 
-- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.
-- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.
-- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.
-- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).
-- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages.
+- **Validierung**: Zod-Schema-gesteuerte Eingabevalidierung und Integritätswächter für alle Agentenaufgaben-, Abstimmungs- und Prüfpunktabläufe hinzugefügt.
+- **Fehlerbehandlung**: Standardisierte Fehlerklassen (`AgentCollaborationError`, `AgentCheckpointError`) mit beschreibenden maschinenlesbaren Codes und übersetzten Nachrichten.
+- **Zuverlässigkeit**: Task-Status-Fingerabdruck zur Erkennung doppelter Synchronisierungen und optimierte Prüfpunktkomprimierung implementiert.
+- **NASA-Konformität**: Umgestaltete Kerndienstmethoden für verbesserte Wartbarkeit und Zuverlässigkeit (Potenz der Zehn-Regel Nr. 3).
+- **I18N**: Vollständige englische und türkische Lokalisierung für alle Agentenzusammenarbeits- und Checkpoint-Statusmeldungen hinzugefügt.
 
 ### Resolution von Council IPC und Project Agent TypeScript
 
@@ -52,73 +63,73 @@
 
 ## [2026-02-22]
 
-### Backlog 0251-0281 Unit-Test Edge Coverage Expansion
+### Backlog 0251-0281 Unit-Test Edge Coverage-Erweiterung
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.
+- **Summary**: Erweiterte Edge-Case-Einheitenabdeckung für Speicher-, Abruf-, Einbettungs- und Projektanalysedienste sowie angepasste TODO-Verfolgung für abgeschlossene Testaufgaben.
 
-- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths
-- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior
-- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection
-- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors
-- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md
+– AdvancedMemoryService-Edge-Case-Tests für „replaceExisting“-Importe, Einbettungsfehlerfortsetzung, Exportlimit-Begrenzung und fehlende Bearbeitungs-/Rollback-Pfade hinzugefügt
+– ContextRetrievalService-Edge-Case-Tests für Projektpfadauflösung, Teilsuchfehlertoleranz, Analyse fehlgeschlagener Anfragen und Analyseverhalten bei leeren Abfragen hinzugefügt
+– EmbeddingService-Edge-Case-Tests für Cache-Unveränderlichkeit, Cache-Löschverhalten, Verarbeitung leerer Eingaben, Anbieterfehler fallback und Standardmodellauswahl hinzugefügt
+– ProjectService-Edge-Case-Tests für paginierungsgebundene Normalisierung und .env-Parsing-/Persistenzverhalten hinzugefügt
+- BACKLOG-0251, BACKLOG-0261, BACKLOG-0271 und BACKLOG-0281 in docs/TODO.md als abgeschlossen markiert
 
-### Backlog 0252-0283 Service Hardening and Operational Coverage
+### Backlog 0252-0283 Service-Härtung und Betriebsabdeckung
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.
+- **Summary**: Integrations-/Regressionsabdeckung und runtime Härtung für Speicher, Abruf, Einbettung und Projektdienste, einschließlich Zustandsmetriken und Betriebsdokumentation, abgeschlossen.
 
-- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records
-- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics
-- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases
-- Added English and Turkish i18n coverage for new service health message keys
-- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md
+– Schema-Schutzvorrichtungen für erweiterten Speicherabruf/-import von Nutzlasten, Einbettung von Texteingaben, Projektstammpfaden und Umgebungsvariablenschlüsseln/-datensätzen hinzugefügt
+– Begrenzter Wiederholungsversuch und fallback-Verhalten mit standardisierten Fehlercodes und Telemetriezählern für AdvancedMemoryService, ContextRetrievalService und EmbeddingService hinzugefügt
+– Dienstzustands-Snapshots mit UI Status-/Nachrichtenschlüsseloberflächen und Budgetüberschreitungs-/Fehlerratenmetriken hinzugefügt
+– Regressions-/Integrationstests für Validierungsfehler, Wiederherstellungswiederholung, fallback-Verhalten und Projektumgebungs-/Pfad-Edge-Fälle hinzugefügt
+- Englische und türkische i18n-Abdeckung für neue Nachrichtenschlüssel zum Dienstzustand hinzugefügt
+– Runbook-, Leistungsbudget- und Bedrohungsmodelldokumentation für AdvancedMemoryService, ContextRetrievalService und EmbeddingService hinzugefügt
+– Die Aufgaben BACKLOG-0252 bis BACKLOG-0283 wurden in docs/TODO.md als abgeschlossen markiert
 
 ## [2026-02-21]
 
-### Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening
+### Renderer-Backlog 0201-0250 Test, Validierung, Zustand und Betriebshärtung
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.
+- **Summary**: Die Abdeckung und Härtung des Renderer-Backlogs für die Terminal-Symbolleiste, die Spracheingabeaufforderung, die MCP-Einstellungen, den Code-Editor und den Benachrichtigungscenter-Speicher wurde abgeschlossen.
 
-- Added unit and integration/regression tests for all target surfaces
-- Added input validation guards, standardized retry/fallback paths, and component error codes
-- Added component health telemetry stores with explicit performance budgets
-- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor
-- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies
+- Einheiten- und Integrations-/Regressionstests für alle Zieloberflächen hinzugefügt
+– Eingabevalidierungsschutz, standardisierte Wiederholungs-/fallback-Pfade und Komponentenfehlercodes hinzugefügt
+- Telemetriespeicher für den Komponentenzustand mit expliziten Leistungsbudgets hinzugefügt
+– Verbesserte Handhabung von Lade-/Leer-/Fehlermeldungen UX in der Spracheingabeaufforderung, auf der Registerkarte „MCP-Einstellungen“ und im Code-Editor
+– Runbook-, Bedrohungsmodell- und Leistungsbudgetdokumentation unter docs/ mit gespiegelten .codex-Kopien hinzugefügt
 
 ## [2026-02-20]
 
-### Advanced Memory IPC Hardening and Operational Readiness
+### Erweiterter Speicher IPC Härtung und Betriebsbereitschaft
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.
+- **Summary**: Standardisierte Fehlerbehandlung und Wiederholungsversuche für den erweiterten Speicher IPC, hinzugefügte Telemetrie-Zustandsberichte, verbesserte Renderer-Fehlerbehandlung und dokumentierte Anleitung zu Runbooks/Bedrohungsmodellen.
 
-- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior
-- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel
-- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)
-- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging
-- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)
+– Standardisierte Advanced-Memory-Fehlermetadaten mit konsistentem Nutzlastverhalten `errorCode`, `messageKey`, `retryable`, `uiState` und fallback
+– Begrenzte Wiederholungsunterstützung für vorübergehende IPC-Fehler und nachverfolgte Wiederholungs-/Fehler-/Erfolgstelemetrie pro Kanal hinzugefügt
+– Endpunkt `advancedMemory:health` mit Kanalmetriken und expliziten Leistungsbudgets hinzugefügt (schnell/standard/stark)
+– Aktualisierte Renderer-Speicher-Hook-Fehlerbehandlung, um IPC-Metadaten zu nutzen und übersetzte fallback-Nachrichten bereitzustellen
+– Runbook- und Bedrohungsmodelldokumente hinzugefügt: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` und `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` Spiegelungen)
 
-### IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent
+### IPC Härtung für Code Sandbox, MCP Marketplace und Legacy Project Agent
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.
+- **Summary**: Standardisierte Fehlermetadaten und Wiederholungs-/fallback-Verhalten, hinzugefügte telemetriegestützte Gesundheits-Dashboards und Budgets sowie dokumentierte Vorgänge und Bedrohungsmodelle für drei IPC-Oberflächen.
 
-- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels
-- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics
-- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`
-- Wired preload/web bridge and renderer typings for new health channels
-- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies
+- Standardisierte Antwortmetadaten (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) für Code-Sandbox- und MCP-Marketplace-Kanäle handlers und Legacy-Kanäle `project-agent:*`
+– Begrenzte Wiederholungsrichtlinien und Telemetrieverfolgung pro Kanal hinzugefügt, einschließlich Wiederholungs-/Validierungs-/Budgetüberschreitungsmetriken
+– Gesundheitsendpunkte hinzugefügt: `code-sandbox:health`, `mcp:marketplace:health` und `project-agent:health`
+- Kabelgebundene Preload-/Webbridge- und Renderer-Typisierungen für neue Gesundheitskanäle
+– Runbook- und Bedrohungsmodelldokumente für alle drei handlers unter `docs/` mit gespiegelten `.codex/`-Kopien hinzugefügt
 
-### Resolution of Core Technical Debt and Type Failures
+### Lösung wesentlicher technischer Schulden und Typfehler
 
 - **Type**: fix
 - **Status**: completed
@@ -128,239 +139,243 @@
 - IPC and shared type regressions were resolved.
 - Health and telemetry-related missing type keys were completed.
 - Related test regressions were updated.
+- **Qualität**: Testregressionen in `ModelSelectorModal` und `WorkspaceExplorer` behoben, die durch veraltete Importe und Komponenten-Snapshots verursacht wurden.
 
-### Voice-First Interface Implementation (UI-11)
+### Implementierung der Voice-First-Schnittstelle (UI-11)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.
+- **Summary**: Implementierung eines umfassenden Sprachsteuerungssystems mit einer speziellen Registerkarte für Einstellungen, globalen Sprachaktionen und visuellem Echtzeit-Feedback.
 
-- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.
-- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.
-- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.
-- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.
-- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions.
+- **Spracheinstellungen**: Es wurde eine neue Registerkarte zum Konfigurieren von Aktivierungswörtern, Sprachsynthese und benutzerdefinierten Befehlen hinzugefügt.
+- **Sprachüberlagerung**: Ein visuelles Feedbacksystem für die Sprach-zu-Text-Transkription und den Status in Echtzeit wurde implementiert.
+- **Audio-Feedback**: Gesprochene Bestätigung für sprachgesteuerte Aktionen und Systemstatus hinzugefügt.
+- **Freihändige Navigation**: Navigation und Befehlsausführung über Sprachereignisse in der gesamten Anwendung aktiviert.
+- **Benutzerdefinierte Befehle**: Unterstützung für benutzerdefinierte Sprachphrasen hinzugefügt, die Systemaktionen zugeordnet sind.
 
-### Voice IPC Hardening, Telemetry, and Health Dashboard
+### Voice IPC Härtung, Telemetrie und Gesundheits-Dashboard
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.
+- **Summary**: Gehärtete Sprachvalidierungs- und Fehlerrichtlinien, zusätzliche Telemetrie- und Budgetverfolgung sowie dokumentierte Betriebs- und Bedrohungsmodellierungsanleitungen.
 
-- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events
-- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures
-- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics
-- Updated web fallback bridge and integration tests for voice health and validation metadata behavior
-- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)
+– Validierungsschutz für Eingabeschemata für Transkripte, Einstellungen, Befehle, Synthesenutzlasten und ausgegebene Sprachereignisse hinzugefügt
+- Standardisierte Sprachmetadaten IPC (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) und begrenzte Wiederholungsbehandlung für vorübergehende Fehler
+– Telemetriemetriken pro Kanal mit Regressionsbudgets und offengelegten `voice:health`-Diagnosen hinzugefügt
+– Aktualisierte Web-fallback-Bridge- und Integrationstests für Sprachzustand und Validierungsmetadatenverhalten
+- Sprachbetriebs- und Sicherheitsdokumente hinzugefügt: `docs/IPC_VOICE_RUNBOOK.md` und `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` Spiegelungen)
 
 ## [2026-02-18]
 
-### Advanced Memory Versioning & Sharing (MEM-03/07/08)
+### Erweiterte Speicherversionierung und -freigabe (MEM-03/07/08)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.
+- **Summary**: Erweitertes Speicherlebenszyklusmanagement implementiert, einschließlich Versionierung, Rollback, Ablauf und projektübergreifender Freigabe.
 
-- **Versioning**: Added support for tracking memory history and rolling back to previous versions.
-- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.
-- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.
-- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.
-- **Automation**: Integrated expiration checks into the memory decay maintenance loop.
+- **Versionierung**: Unterstützung für die Verfolgung des Speicherverlaufs und das Zurücksetzen auf frühere Versionen hinzugefügt.
+- **Ablauf**: Automatische Archivierung für Erinnerungen mit einem Ablaufzeitstempel implementiert.
+- **Freigabe**: Speicherfreigabe über mehrere Projekte hinweg unter Beibehaltung der Quelllinks aktiviert.
+- **Kategorisierung**: LLM-gesteuerte automatische Neukategorisierung für sich entwickelnde Erinnerungen hinzugefügt.
+- **Automatisierung**: Ablaufprüfungen in die Speicherabfall-Wartungsschleife integriert.
 
-### Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions
+### Agentendebatte/Speicheranalyse, Sprachworkflows, Code-Sandbox und Marketplace-Sicherheitserweiterungen
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.
+- **Summary**: AGENT/VOICE/FEAT und Marketplace-Erweiterungs-Sicherheitsspuren mit neuen IPC-Workflows, Schutzmaßnahmen und Metadatenabdeckung abgeschlossen.
 
-- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows
-- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking
-- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search
-- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs
-- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints
-- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking
+- Verkabelte, gemeinsam genutzte Namespace-Operationen für erweiterten Speicher über IPC (Erstellen/Synchronisieren/Analytik/Suchen) für projektübergreifende Arbeitsspeicher-Zusammenarbeitsabläufe
+– Dedizierte Code-Sandbox IPC mit typisierter Sprachunterstützung (`javascript`, `typescript`, `python`, `shell`), begrenzter Ausführung und Blockierung von Sicherheitsmustern hinzugefügt
+- Sprach-IPC-Workflows für die Erkennung von Aktivierungswortabsichten, die Behandlung von Sprachsitzungsrunden mit Unterbrechungssignalen und die Zusammenfassung/Suche von Sprachnotizen mit künstlicher Intelligenz hinzugefügt
+– Erweiterte Metadaten der MCP-Marktplatzerweiterung mit Erweiterungstypen, OAuth-/Anmeldeinformationen-/Sicherheits-/Telemetriefeldern und Vorlagen-/Entwurfserweiterungs-APIs
+– Marketplace-Vertrauens- und Sicherheitskontrollen hinzugefügt: Verifizierung vertrauenswürdiger Herausgeber, Signatur-Widerrufsprüfungen, Sicherheitsscan-Datensätze, Überprüfungsmoderation und Telemetrie-/Absturz-Endpunkte
+- Markierter Abschluss für MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 im TODO-Tracking
 
-### AUD-ARCH 001-020 Completion
-
-- **Type**: refactor
-- **Status**: completed
-- **Summary**: Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.
-
-- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.
-- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.
-- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.
-- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation.
-
-### AUD-ARCH Initial Reliability Hardening
+### AUD-ARCH 001-020 Fertigstellung
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.
+- **Summary**: Abgeschlossene Architekturprüfungsaufgaben mit Preload-/Startup-Zerlegung, wrapper-Standardisierung und zuverlässigkeitsorientierter Testabdeckung.
 
-- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.
-- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.
-- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.
-- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling.
+- **Preload/Startup**: Domänenbasierte Preload-Bridge-Module und Startup-Lifecycle-Composition-Helfer mit Regressionstests hinzugefügt.
+- **IPC Härtung**: Der verbleibende Legacy-Marketplace handlers wurde auf den validierten wrappers migriert und die Abdeckungstests von Regex/Smoke auf Verhaltenszusicherungen aktualisiert.
+- **Service-Zuverlässigkeit**: Nur Smoke-Service-Tests durch funktionale Assertionen ersetzt und Terminal-Sitzungslebenszyklus-/Persistenztests hinzugefügt.
+- **Fehlerpfade**: Negativpfadtests für Projektscans und Anbieter-fallback-Fehler bei der lokalen Image-Generierung hinzugefügt.
 
-### AUD-SEC 003-030 Security Hardening Complete
+### AUD-ARCH anfängliche Zuverlässigkeitshärtung
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Der erste Batch zur Architekturzuverlässigkeit wurde abgeschlossen, indem IPC-Schemata verschärft und stille Fehlerpfade entfernt wurden.
+
+- **AUD-ARCH-005/006**: Verwendung von `as any` in der Chat-Registrierung IPC entfernt und freizügige `z.any()`-Chatschemata durch `z.unknown()`-basierte Validierung ersetzt.
+- **AUD-ARCH-007/008**: Freizügiges DB-Projekt-Argumentenschema ersetzt und Ratenbegrenzer-Dekorator-Typisierung verstärkt.
+- **AUD-ARCH-015/017**: Stille Fehler in den Terminalbereinigungs- und Projektscanpfaden wurden entfernt und durch explizite Warnungen ersetzt.
+- **AUD-ARCH-019**: Es wurden Fehler bei der Bereinigung veralteter temporärer Bilder mit expliziten Warnprotokollen und Fehlersignalisierung angezeigt.
+
+### AUD-SEC 003-030 Sicherheitshärtung abgeschlossen
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.
+- **Summary**: Die Härtung der Sicherheitsüberprüfung über IPC-Vertrauensgrenzen hinweg, die Durchsetzung des Dateisystempfads, die API-Authentifizierung, OAuth-Rückrufe und die Handhabung von Geheimnissen wurde abgeschlossen.
 
-- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.
-- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.
-- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.
-- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses.
+- **IPC/Window**: Erzwungene Absendervalidierung und verstärkte externe Öffnungs-/Cookie-/Protokollierungsschutzmaßnahmen für kritische IPC-Module.
+- **Dateisystem/Protokoll**: Präfixprüfungen durch relative Pfadgrenzenvalidierung ersetzt und Symlink-/Junction-Escape-Blockierung hinzugefügt.
+- **API/OAuth**: Erzwungener strikter, nur lokaler Token-Endpunktzugriff, Loopback-Bindung, authentifizierte Websocket-Sitzungen und strikte Rückrufstatusvalidierung.
+- **Geheimnisse/SSH**: Die Unterstützung für den Klartext-Hauptschlüssel fallback wurde entfernt und sichergestellt, dass SSH-empfindliche Felder nicht für Renderer-Antworten verfügbar gemacht werden.
 
-### AUD-SEC Preload API Hardening (001/002)
+### AUD-SEC Preload API Härtung (001/002)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.
+- **Summary**: Reduzierte unsichere generische IPC-Oberfläche durch Ersetzen generischer Renderer-Bridge-APIs durch explizite kanalspezifische Methoden.
 
-- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.
-- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.
-- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer.
+- **AUD-SEC-001**: Die generische `window.electron.invoke`-Belichtung wurde entfernt und Aufrufer auf explizite API-Methoden migriert.
+– **AUD-SEC-002**: Die generische `window.electron.on`-Brücke wurde entfernt und Listener durch benannte Abonnementmethoden für Chat-, Agent- und SD-CPP-Ereignisse ersetzt.
+- **Sicherheit**: Dedizierte `modelDownloader`-Bridge-Methoden hinzugefügt, um dynamische Kanalaufrufe vom Renderer zu vermeiden.
 
-### AUD-UX 001-025 Accessibility and Interaction Improvements
+### AUD-UX 001-025 Verbesserungen der Zugänglichkeit und Interaktion
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.
+- **Summary**: Der Aufgabensatz AUD-UX wurde mit Tastatur-, Fokus-, Semantik- und Lokalisierungsverbesserungen auf allen UI-Kernoberflächen abgeschlossen.
 
-- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.
-- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.
-- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.
-- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
-- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
+- **Chat UX**: Live-Regionsankündigungen hinzugefügt, Listensemantik korrigiert und Tastaturhilfe/Befehlsvorschläge verbessert.
+- **Befehlspalette**: Erzwungenes modales Focus-Trap-Verhalten und verbesserte semantische Struktur für genaue Kontrollen und Ergebnisse.
+- **Basis UI**: Verbesserte gemeinsame Modal- und Fehlergrenzen-Angebote mit klareren Kontrollen und Wiederherstellungsaktionen.
+- **Sitzung und Navigation**: Session-Lock-Fokus/Escape-Handhabung und bewegliche Tastaturnavigation in der Seitenleiste und in den Aktivitätsbereichen hinzugefügt.
+- **Titelleiste/Schnellaktionen**: Fehlende Beschriftungen, Barrierefreiheitsbezeichnungen für Änderungsprotokollfilter und Erkennbarkeit der Tastatur für schnelle Aktionen hinzugefügt.
 
-### Documentation Hardening and Codex Implementation
+### Dokumentationshärtung und Codex-Implementierung
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.
+- **Summary**: Für eine bessere Compliance wurden ein eingeschränktes .codex-Dokumentationsverzeichnis und strengere KI-Agent-Regeln mit Beendigungswarnungen implementiert.
 
-- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.
-- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.
-- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
-- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
+- **Codex**: Verzeichnis `.codex/` erstellt und Dokumentspiegelung für Kernanweisungen und Architektur implementiert.
+- **Regeldurchsetzung**: `MASTER_COMMANDMENTS.md` und `AI_RULES.md` mit expliziten Beendigungswarnungen und Null-Toleranz-Richtlinien aktualisiert.
+- **Wartung**: Fehlerhafte absolute Pfade im Dokumentations-Hub behoben und `LINT_ISSUES.md` für die systematische Verfolgung technischer Schulden erstellt.
+- **Struktur**: `PROJECT_STRUCTURE.md` aktualisiert, um die neuen Organisationsmuster `.codex` und `.agent` widerzuspiegeln.
 
-### Git Panel Section State Indicators
+### Zustandsindikatoren des Git-Panel-Abschnitts
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.
+- **Summary**: Lade- und Fehlerindikatoren auf Abschnittsebene für Projekt-Git-Dashboard-Panels hinzugefügt, um die Diagnosetransparenz zu verbessern.
 
-- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes
-- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback
-- Completed AUD-PROJ-009 and updated project TODO tracking
+– Abschnittsstatus-Metadaten in der Git-Datenladepipeline für Status/Aktionen/Remotes/Commits/Änderungen hinzugefügt
+- Lade-/Fehler-/Bereitschafts-Chips pro Abschnitt in ProjectGitTab gerendert für feinkörniges Feedback
+- AUD-PROJ-009 abgeschlossen und Projekt-TODO-Verfolgung aktualisiert
 
-### Strict AI Rule Enforcement & Friday Deployment Ban
-
-- **Type**: docs
-- **Status**: completed
-- **Summary**: Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.
-
-- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.
-- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.
-- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.
-- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.
-- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory.
-
-### Advanced IPC Hardening & Zod Contract Rules
+### Strikte Durchsetzung der KI-Regeln und Einsatzverbot am Freitag
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.
+- **Summary**: Es wurden noch strengere Regeln für KI-Agenten implementiert, einschließlich eines obligatorischen Commit-Verbots am Freitag und erzwungener Regelleseprotokolle.
 
-- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.
-- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.
-- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.
-- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.
-- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs.
+- **Freitagsverbot**: Es wurde eine Null-Toleranz-Richtlinie für Commits und größere Bereitstellungen an Freitagen implementiert.
+- **Regelprotokolle**: Vorgeschriebene `view_file`-Aufrufe für Regeldateien zu Beginn jeder Sitzung, um die Agentenkonformität sicherzustellen.
+- **Testdurchsetzung**: Vor jedem Commit wird ein obligatorischer 100-prozentiger Testerfolg (`npm run test`) erzwungen.
+- **Typsicherheit**: Die Verwendung von `as any` und `as unknown` ohne explizite `// SAFETY`-Begründungskommentare wurde verboten.
+- **Guide-Updates**: `AGENTS.md` synchronisiert und alle Regelaktualisierungen im Verzeichnis `.codex/` gespiegelt.
 
-### LLM Security Hardening & Performance Optimization
+### Erweiterte IPC Hardening- und Zod-Vertragsregeln
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Es wurden verifizierte architektonische Härtungsregeln implementiert, um IPC-Nichtübereinstimmungen zu verhindern und eine strikte Zod-Schemaparität durchzusetzen.
+
+- **Strikte Verträge**: Vorgeschriebene duale Zod-Schemas (Args + Antwort) für alle IPC handlers, um stille Typfehler zu verhindern.
+- **Schemaparität**: `@shared/schemas` als einzige Quelle der Wahrheit für Haupt- und Renderer-Prozesse erzwungen.
+- **Speicherisolation**: `useState` für Anwendungsstatus gesperrt; vorgeschriebene `useSyncExternalStore`-Muster.
+- **Disposal Guard**: Erforderliche explizite `dispose()`-Verifizierung in allen Servicetests.
+- **Protokollierungsrichtlinie**: Verzeichnisbeschränkung `logs/` für alle temporären Debug-Ausgaben erzwungen.
+
+### LLM Sicherheitshärtung und Leistungsoptimierung
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced prompt security measures and optimized application load time via lazy loading.
+- **Summary**: Erweiterte Sofortsicherheitsmaßnahmen implementiert und Anwendungsladezeit durch Lazy Loading optimiert.
 
-- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.
+- **LLM-09.3**: Strenge Begrenzung der Eingabeaufforderungslänge (128.000 Zeichen) hinzugefügt, um Angriffe mit großer Nutzlast zu verhindern.
 - **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.
 - **DEBT-01**: Cleaned up obsolete feature flags.
 - **DEBT-06**: Reduced bundle size via lazy loading.
 - **Testing**: Added unit tests for security validation.
 
-### MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion
+### MCP Marketplace, Image Ops, SSH-Profiltest und i18n-Abschluss
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.
+- **Summary**: MCP-Marktplatzeinstellungen UX aktiviert, Bildgenerierungsvorgänge im Backend/UI abgeschlossen, SSH-Profiltests hinzugefügt und vollständige Gebietsschemaschlüsselparität erreicht.
 
 - Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix
-- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison
-- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries
-- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback
-- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows
+– SD-CPP-Image-Operation IPC/preload Bridge für Verlauf, Neugenerierung, Analyse, Voreinstellungen, Planung, Warteschlangenstatistiken, Bearbeitung, Stapelgenerierung und Vergleich hinzugefügt
+– Bildoperationen UI in den Einstellungen für Verlauf/Neugenerierung, voreingestelltes CRUD, Planung/Warteschlangensteuerung, Stapelläufe, Bearbeitungsanforderungen und Vergleichszusammenfassungen hinzugefügt
+– SSH-Verbindungsprofil-Testaktion (Dienst + IPC + Vorladen + modale Schaltfläche) mit Latenz-/Fehlerrückmeldung hinzugefügt
+– i18n-Locale-Schlüsselparität für tr/en/de/fr/es/ja/zh/ar abgeschlossen und fehlende Schlüssel für neue Einstellungen/SSH-Flows hinzugefügt
 
-### Project Terminal Diagnostics Tab
+### Registerkarte „Projekt-Terminaldiagnose“.
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.
+- **Summary**: Projektwarnungen/-fehler wurden vom Dashboard „Probleme“ auf eine spezielle Registerkarte „Terminaldiagnose“ verschoben und die automatische Aktualisierung der Dashboard-Analyse hinzugefügt.
 
-- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation
-- Removed Issues tab wiring from workspace/project dashboard navigation surfaces
-- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)
+- Nicht schließbare Registerkarte „Projektprobleme“ im Terminalbereich mit Navigation zum Aktualisieren und Öffnen von Dateien hinzugefügt
+- Die Verknüpfung der Registerkarte „Probleme“ wurde von den Navigationsoberflächen des Arbeitsbereichs/Projekt-Dashboards entfernt
+– Regelmäßige automatische Aktualisierungsrichtlinie für Projektanalysen in der Dashboard-Logik hinzugefügt (AUD-PROJ-008)
 
-### SEC-007/009 + LLM-05 + I18N-05 Follow-up
+### SEC-007/009 + LLM-05 + I18N-05 Folgemaßnahmen
 
 - **Type**: feature
 - **Status**: completed
 - **Summary**: Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.
 
-- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.
-- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.
-- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.
-- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.
+- **SEC-007**: API-Schlüsselzugriffsüberwachungsprotokollierung in den Einstellungen IPC und Dateisystemoperationsüberwachungsprotokollierung wrappers in den Dateien IPC hinzugefügt.
+– **SEC-009**: Bestätigte Prompt-Bereinigung und Sicherheitsvalidierungsabdeckung in LLM-Anforderungsverarbeitungspfaden.
+- **LLM-05**: Erweiterte Anhangsverarbeitung für den Audio-/Video-Vorschaukontext und umfassendere multimodale Nachrichtenvorbereitung.
+- **I18N-05**: Länderspezifische Antwortanleitung und länderspezifische Standardmodellauswahl fallback hinzugefügt.
 - **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.
+- **AGENT-04/05/09**: Komprimierte Checkpoint-Aufbewahrung + Dedup-Synchronisierungslogik, Abstimmungsanalyse-/Überschreibungs-/Konfigurations-APIs und integrierte Abstimmungs-/Zustandsmaschinen-Panels in ProjectAgentView hinzugefügt.
+- **MKT-INFRA-01..08**: Erweiterte Marketplace-Server-Metadaten, Abhängigkeits-/Konfliktvalidierung, Update-Integritätsüberprüfung, Speicherisolation/Kontingent-Umgebungsverkabelung und schemagesteuerte MCP-Konfigurationsbearbeitung.
+- **Wartung**: Ausgefüllte TODO-Kontrollkästchen entfernt und mehrere verbleibende `as unknown as`-Umwandlungen auf sicherere Eingaben reduziert.
 
-### Sidebar Enhancements: Accessibility and Clear History
+### Verbesserungen der Seitenleiste: Barrierefreiheit und klarer Verlauf
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.
+- **Summary**: Verbesserte Zugänglichkeit der Seitenleiste mit Titelattributen und Hinzufügung der Funktion „Alle löschen“ für den Chatverlauf.
 
-- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.
+- **Verlauf löschen**: Dem Abschnitt „Letzte Chats“ wurde eine Schaltfläche „Verlauf löschen“ mit einem sicheren Bestätigungsmodal hinzugefügt.
 - **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.
-- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.
+- **Wartung**: Die TODO-Liste des Projekts wurde bereinigt, indem abgeschlossene Aufgaben entfernt und 10 vorrangige Elemente für die nächste Entwicklungsphase ausgewählt wurden.
 - **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management.
 
-### Terminal IPC Renderer Migration
+### Terminal IPC Renderer-Migration
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the migration of Terminal renderer components to use type-safe IPC communication.
+- **Summary**: Die Migration der Terminal-Renderer-Komponenten zur Verwendung der typsicheren IPC-Kommunikation wurde abgeschlossen.
 
-- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.
-- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.
-- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.
-- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector.
+- **Typsicherheit**: `useTerminal`, `TerminalConnectionSelector` und andere Komponenten wurden migriert, um `invokeTypedIpc` mit `TerminalIpcContract` zu verwenden.
+- **Validierung**: Zod-Schemavalidierung für Terminal-IPC-Antworten im Renderer erzwungen.
+- **Code-Bereinigung**: Unformatierte `window.electron.terminal`-Aufrufe und nicht verwendete Importe wurden entfernt.
+- **Fehlerbehebung**: Die Behandlung des Rückgabetyps `getDockerContainers` im Verbindungsselektor wurde korrigiert.
 
-### Comprehensive Test Suite Stabilization and IPC Fixes
+### Umfassende Stabilisierung der Testsuite und IPC-Korrekturen
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.
+- **Summary**: Kritische Integrations- und Renderer-Testfehler in mehreren Modulen, einschließlich Copilot-, MCP- und UI-Komponenten, wurden behoben.
 
-- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.
-- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.
-- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.
-- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.
-- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations.
+- **IPC Stabilisierung**: Fehlschlagende Integrationstests wurden behoben, indem synchrone Service-Mocks korrigiert und ein gültiger Absender-Validierungskontext bereitgestellt wurden.
+- **Copilot-Korrekturen**: Korrekte Token-Aktualisierungslogik mit gültigen Client-IDs implementiert und zugehörige Servicetests behoben.
+- **Renderer-Tests**: Fehlgeschlagene Renderer-Tests wurden wiederhergestellt, indem die obligatorische IPC-Vertragsverhandlung simuliert und die ARIA-Rollenerwartungen für UI-Komponenten aktualisiert wurden.
+- **Eingabeaufforderungsvorlagen**: Die Integrationstests für LLM-Eingabeaufforderungsvorlagen wurden korrigiert, um sie an die synchrone Natur der zugrunde liegenden Dienste anzupassen.
+- **Marketplace**: MCP-Marketplace-Clienttests wurden behoben, indem bei typisierten Aufrufen eine ordnungsgemäße IPC-Vertragsversionierung sichergestellt wurde.
 
-### Workspace Branch Switch Popover
+### Arbeitsbereich Branch Popover wechseln
 
 - **Type**: feature
 - **Status**: completed
@@ -370,15 +385,15 @@
 - Show loading and empty states for branch discovery
 - Switch branch directly from popover with status feedback
 
-### Workspace Editor Tab Power Actions
+### Power-Aktionen auf der Registerkarte „Arbeitsbereich-Editor“.
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.
+- **Summary**: Erweiterte Editor-Tab-Kontextaktionen für das Anheften, Massenschließvorgänge, Pfadkopie und Explorer-Anzeige im Projektarbeitsbereich hinzugefügt.
 
-- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others
-- Added clipboard actions for absolute and relative file paths from editor tabs
-- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip
+- Aktionen für das Tab-Kontextmenü hinzugefügt: Anheften/Lösen, Tab schließen, alle schließen, nach rechts schließen und andere schließen
+- Zwischenablageaktionen für absolute und relative Dateipfade aus Editor-Registerkarten hinzugefügt
+– Aktion „Im Datei-Explorer anzeigen“ und visuelle Anzeige für angeheftete Registerkarten in der Registerkartenleiste des Arbeitsbereich-Editors hinzugefügt
 
 ## [2026-02-17]
 
@@ -386,67 +401,78 @@
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.
+- **Summary**: Implementierung einer umfassenden Leistungsüberwachung für autonome Agenten mit Fehlerratenverfolgung und Ressourcennutzungsmetriken.
 
 - **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).
-- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.
-- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.
-- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.
+- **AGENT-08.4**: Ressourcennutzungsverfolgung für Speicher, CPU, API Aufrufe, Token und Kosten mit konfigurierbaren Warnungen implementiert.
+- **Metrics Service**: `AgentPerformanceService` erstellt, um Abschlussraten und Ausführungszeiten zu verfolgen und Leistungswarnungen zu generieren.
+- **Integration**: Integrierte Leistungsmetriken in `ProjectState` und `AgentTaskHistoryItem` zur historischen Analyse.
+- **Automatisierte Überwachung**: Hintergrundressourcenüberwachung alle 5 Sekunden für aktive Agentenaufgaben hinzugefügt.
 
-### Copilot Token Refresh Refactor
+### Copilot-Token-Refresh-Refactor
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.
+- **Summary**: Die Copilot-Token-Aktualisierungslogik wurde zur Verbesserung der Zuverlässigkeit auf den Rust-basierten tengra-token-service migriert.
 
-- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.
-- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
-- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
-- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
+- **Architektur**: Copilot-Token-Aktualisierung von TypeScript in den Rust-basierten Sidecar `tengra-token-service` verschoben.
+- **Zuverlässigkeit**: VSCode-kompatible Header und Hintergrundaktualisierung in Rust implementiert, um sicherzustellen, dass Sitzungstoken gültig bleiben.
+- **Integration**: `TokenService` aktualisiert, um von Rust verwaltete Token mit `AuthService` zu synchronisieren.
+- **Optimierung**: `CopilotService` wurde überarbeitet, um synchronisierte Token zu priorisieren und so den Hauptprozess-Overhead zu reduzieren.
 
-### LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.
-
-- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.
-- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.
-- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.
-- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).
-
-### LLM Security & Robust Attachments
+### LLM-05 Fortschritt: Multimodale Anhangsverarbeitung und Erweiterung des Prüfrückstands
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.
+- **Summary**: LLM-05-Dateityperkennung und Bildgrößenoptimierung in Chat-Anhängen implementiert und anschließend einen großen umsetzbaren Audit-Rückstand in Bezug auf Sicherheit, Leistung, UX und Architektur hinzugefügt.
 
-- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
-- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **LLM-05.4**: Stärkere Dateityperkennung für Anhänge mit MIME + Erweiterung fallback und sicherere Anhangtypzuordnung hinzugefügt.
+- **LLM-05.5**: Clientseitige Bildvorverarbeitung und Größenoptimierung für große Bildanhänge vor der Modellübermittlung hinzugefügt.
+- **Chat-Fluss**: Die Chat-Sendepipeline wurde aktualisiert, um fertige Bildanhänge als multimodale Bildeingaben einzubeziehen und Nicht-Bild-Anhangskontext in Eingabeaufforderungen einzubeziehen.
+- **Backlog-Erweiterung**: Über 100 neue umsetzbare TODO-Elemente in `docs/TODO.md` aus Repository-weiten Audits (Sicherheit, Leistung, Zugänglichkeit/UX, Architektur/Tests) hinzugefügt.
+- **Leistungsbatch Nr. 1**: Schlüssel-PERF-Refaktoren abgeschlossen, einschließlich MessageList-Renderpfadstatusentfernung, Seitenleisten-Ordner-Chat-Vorberechnung, MessageBubble-Komparatoroptimierung (entfernte `JSON.stringify`-Deep-Vergleiche), Projektsuchindex-Caching und verzögerte/indizierte Seitenleistensuche mit zwischengespeicherten angehefteten/aktuellen Ableitungen.
+– **Leistungsbatch Nr. 2**: MessageList-Aktion handlers für stabile Zeilenrückrufe gespeichert und Projektsortierfluss geändert, um einmal pro aktivem Sortiermodus zu sortieren und dann das sortierte Ergebnis zu filtern.
+- **Leistungsbatch Nr. 3**: Verzögerte + indizierte Nachrichtensuche in `useChatManager` hinzugefügt, um wiederholte Kleinbuchstaben pro Nachricht zu reduzieren und Suchaktualisierungen während der Eingabe zu erleichtern.
+- **Leistungsbatch Nr. 4**: Optimierte Stream-Aktualisierungspfade durch Ersetzen von Callback-Statuslese-Hacks durch lokale Nachrichten-Snapshots in Tool-Schleifen, Drosselung des Multi-Modell-Streaming-Fanouts, Reduzierung der verschachtelten Chat-/Nachrichtenzuordnung bei Streaming-Ticks, Zusammenführung von DB-Stream-Speicherungen während des Flugs und Verschiebung unkritischer Startdienste bis zum ersten Mal.
+- **Performance Batch #5**: Virtualisierung für den Projektlistenmodus und bestätigte Speicher hinzugefügt, um den Renderer-Aufwand für große Datensätze zu reduzieren.
+- **Leistungsbatch Nr. 6**: Die Chat-Start-Hydratisierung wurde auf „Metadaten-zuerst-Laden“ und „Lazy Message Fetch“ pro ausgewähltem Chat umgestellt, um das Laden der vollständigen Nachrichtennutzlast beim App-Start zu vermeiden.
+- **Leistungsbatch Nr. 7**: Serialisierte Hintergrund-PDF-Exportwarteschlange hinzugefügt und Datenmigrationsflüsse von synchronen Dateisystemaufrufen in asynchrone Chunked-Vorgänge konvertiert.
+- **Leistungsbatch Nr. 8**: Paginierter SELECT-Helfer auf Repository-Ebene hinzugefügt und auf Chat-/Projekt-/Wissenslesepfade mit hohem Volumen angewendet, um unbegrenzte In-Memory-Scans zu vermeiden.
+- **Leistungsbatch Nr. 9**: Verbleibende Renderer-PERF-Elemente mit Virtualisierung der Seitenleisten-Chatliste, zwischengespeichertem Think/Plan-Abschnitts-Parsing, gespeicherter Markdown-Ausgabe für stabile Nachrichten, verzögert geladenem Markdown-Renderer-Modul und geteilten Root-App-Callbacks/Abonnements zur Reduzierung vermeidbarer Baum-Rerenderings fertiggestellt.
+
+### LLM Sicherheit und robuste Anhänge
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Verbesserte KI-Sicherheit mit sofortiger Eingabebereinigung und verbesserten Datei-Uploads mit Erkennung binärer Signaturen.
+
+- **LLM-09.2**: Dienstprogramm zur Bereinigung von HTML/JS-Eingabeaufforderungen hinzugefügt, um potenzielle XSS-/Injektionsvektoren zu verhindern und gleichzeitig die Lesbarkeit des Codes durch Entity-Escape zu gewährleisten.
+- **LLM-05.4**: Robuste Dateityperkennung mithilfe binärer Signaturen (magische Zahlen) implementiert, um Spoofing von Dateierweiterungen zu verhindern.
 - **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
+- **DEBT-03**: Ungenutzte `cheerio`-Abhängigkeit entfernt, um die Bundle-Größe zu reduzieren.
 
-### Comprehensive TODO List Reorganization
+### Umfassende Neuorganisation der TODO-Liste
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.
+- **Summary**: Die TODO-Liste des Projekts wurde neu organisiert, um die Lesbarkeit zu verbessern, ein Inhaltsverzeichnis hinzugefügt und alle abgeschlossenen Aufgaben in einen speziellen Archivbereich verschoben.
 
-- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.
-- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.
+- **Struktur**: Ein anklickbares Inhaltsverzeichnis hinzugefügt und Release-Meilensteine ​​zur besseren Sichtbarkeit des Projekts nach oben verschoben.
+- **Klarheit**: Quick Wins nach Status (Ausstehend/Abgeschlossen) gruppiert und leere Kategorieabschnitte bereinigt.
 - **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.
-- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories.
+- **Wartung**: Standardisierte Formatierung und konsolidierte zukünftige Funktionsanfragen in logische Unterkategorien.
 
-### Token Rotation Hardening (SEC-001)
+### Token-Rotationshärtung (SEC-001)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
+- **Summary**: Implementierung eines robusten Token-Rotationsmechanismus mit exponentiellem Backoff und proaktiven Aktualisierungspuffern, um Sitzungszeitüberschreitungen zu verhindern.
 
-- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
-- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
-- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
-- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
-- **Verification**: Verified clean build, lint, and type-check across both components.
+- **TokenService (TS)**: 5-minütiger proaktiver Aktualisierungspuffer und Dienstprogramm `withRetry` für exponentiellen Backoff bei Fehlern hinzugefügt.
+- **tengra-token-service (Rust)**: Gehärtete Hintergrundaktualisierungsschleife mit Wiederholungslogik und hinzugefügtem `/health`-Endpunkt.
+- **Gesundheitsüberwachung**: `getTokenHealth` API in TypeScript und Rust für die Token-Statusverfolgung in Echtzeit implementiert.
+- **Ereignisbehandlung**: Ereignis `token:permanent_failure` hinzugefügt, um widerrufene oder abgelaufene Anmeldeinformationen zu erkennen und zu verarbeiten.
+- **Verifizierung**: Verifizierter sauberer Build, Lint und Typprüfung für beide Komponenten.
 
 ## [2026-02-16]
 
@@ -460,16 +486,16 @@
 - **Kontextmanagement**: Automatisches Bereinigen des Verlaufs und LLM-basierte Zusammenfassung implementiert, um den Agentenkontext in langen Sitzungen zu erhalten.
 - **Fehlerbehebung**: Multi-Kategorie-Fehlerklassifizierung und intelligente Wiederholungsstrategien mit Wiederherstellungshinweisen für den Agenten hinzugefügt.
 
-### Internationalization Core & RTL Support
+### Internationalisierungskern- und RTL-Unterstützung
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+- **Summary**: Implementierung einer robusten I18N-Infrastruktur mit RTL-Unterstützung, Pluralisierung und einer Eingabeaufforderung zur Sprachauswahl bei der ersten Ausführung.
 
-- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
-- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
-- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
-- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+- **I18N Core**: Automatische Spracherkennung, `Intl`-Formatierungsdienstprogramme und Pluralisierungsunterstützung hinzugefügt.
+- **RTL-Unterstützung**: Logische CSS-Eigenschaften, richtungsabhängiges Umdrehen von Symbolen und dynamische Layoutanpassung für RTL-Sprachen (Arabisch, Hebräisch) implementiert.
+- **Onboarding**: Es wurde ein `LanguageSelectionPrompt` hinzugefügt, damit Benutzer beim ersten Start ihre bevorzugte Sprache auswählen können.
+- **Verifizierung**: Pluralisierung in `ProjectsHeader` integriert und Prüfskripte für Übersetzungsschlüssel hinzugefügt.
 
 ### IPC-Eingabevalidierungsverbesserung
 
@@ -485,16 +511,16 @@
 
 ## [2026-02-14]
 
-### Enhanced Error Display
+### Erweiterte Fehleranzeige
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved the application error screen to show detailed error messages and stack traces for better debugging.
+- **Summary**: Der Anwendungsfehlerbildschirm wurde verbessert, um detaillierte Fehlermeldungen und Stack-Traces für ein besseres Debugging anzuzeigen.
 
-- **Transparency**: Added detailed error message display instead of generic text.
-- **Debugging**: Included collapsible stack trace for technical troubleshooting.
-- **Usability**: Added 'Copy Details' button to easily share error information.
-- **UX**: Automatic error state reset when navigating between different views.
+- **Transparenz**: Detaillierte Fehlermeldungsanzeige anstelle von allgemeinem Text hinzugefügt.
+- **Debugging**: Reduzierbarer Stack-Trace zur technischen Fehlerbehebung enthalten.
+- **Benutzerfreundlichkeit**: Schaltfläche „Details kopieren“ hinzugefügt, um Fehlerinformationen einfach weiterzugeben.
+- **UX**: Automatisches Zurücksetzen des Fehlerstatus beim Navigieren zwischen verschiedenen Ansichten.
 
 ### IPC-Ereignisschleifen-Sicherheitsverbesserungen
 
@@ -515,34 +541,35 @@
 - **Fix**: Absturz `o?.forEach is not a function` in der Marktplatz-Kategoriefilterung behoben.
 - **Zwischenablage**: Implementierung eines sicheren IPC-basierten Dienstes für die Zwischenablage, um Browser-Berechtigungseinschränkungen zu umgehen.
 - **Fehlerbehandlung**: Die Fehleranzeige wurde aktualisiert, um den neuen sicheren Dienst für das Kopieren von Fehlerdetails zu nutzen.
+- **Fehlerbehandlung**: Fehler Fallback aktualisiert, um den neuen sicheren Zwischenablagedienst zum Kopieren von Fehlerdetails zu verwenden.
 
-### Marketplace UI Error Handling
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
-
-- **UI**: Display user-friendly error message when model fetching fails.
-- **UX**: Added a retry button to recover from transient network or service errors.
-
-### SD-CPP Binary Discovery Fix
+### Marketplace UI Fehlerbehandlung
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+- **Summary**: Dem Model Marketplace-Raster wurde eine ordnungsgemäße Fehlerbehandlung und ein Wiederholungsmechanismus hinzugefügt.
 
-- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
-- **Robustness**: Improved recursive binary discovery to handle various release structures.
-- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
+- **UI**: Benutzerfreundliche Fehlermeldung anzeigen, wenn das Abrufen des Modells fehlschlägt.
+- **UX**: Es wurde eine Schaltfläche „Wiederholen“ hinzugefügt, um vorübergehende Netzwerk- oder Dienstfehler wiederherzustellen.
 
-### Chat Generation Shimmer Animation
+### SD-CPP-Binärerkennungs-Fix
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Es wurde ein Problem behoben, bei dem die ausführbare Datei „stable-diffusion.cpp“ aufgrund unterschiedlicher Namenskonventionen nach dem Download nicht gefunden werden konnte.
+
+- **Fix**: Unterstützung für die Erkennung von `sd-cli.exe` und `stable-diffusion.exe` zusätzlich zu `sd.exe` hinzugefügt.
+- **Robustheit**: Verbesserte rekursive Binärerkennung zur Handhabung verschiedener Release-Strukturen.
+- **Codequalität**: Verbotene `eslint-disable`-Kommentare entfernt und strenge Dienstabhängigkeitsprüfungen hinzugefügt.
+
+### Shimmer-Animation zur Chat-Generierung
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
+- **Summary**: Dem Chattitel in der Seitenleiste wurde eine subtile Schimmeranimation hinzugefügt, wenn die KI eine Antwort generiert.
 
-- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
-- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+- **UI**: Klasse `animate-text-shimmer` für einen Premium-Ladeeffekt implementiert.
+- **Seitenleiste**: Der Schimmereffekt wurde auf die Beschriftung des Chat-Elements angewendet, wenn `isGenerating` wahr ist.
 
 ## [2026-02-13]
 
@@ -557,17 +584,17 @@
 - Blockierung gefährlicher Erweiterungen (.exe, .bat, .sh, .ps1, etc.) für Sicherheit hinzugefügt.
 - Toast-Fehlermeldung wird angezeigt, wenn ungültige Dateien abgelegt werden.
 
-### Core HuggingFace Integration & GGUF Support
+### Kern-HuggingFace-Integration und GGUF-Unterstützung
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+- **Summary**: Implementierung der Grundlage für die HuggingFace-Modellintegration, einschließlich eines dedizierten Scrapers, eines GGUF-Metadatenparsers und eines robusten Download-Managers.
 
-- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
-- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
-- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
-- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
-- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+- **Scraper-Dienst**: `HuggingFaceService` zum Suchen und Abrufen von Modellmetadaten mit lokalem Caching erstellt.
+- **GGUF-Parsing**: Teilweiser GGUF-Header-Parser hinzugefügt, um Modellarchitektur und Kontextlänge zu extrahieren.
+- **Download-Manager**: Fortsetzbare Downloads mit SHA256-Überprüfung und Echtzeit-Fortschrittsverfolgung implementiert.
+- **Service-Integration**: `HuggingFaceService` über Abhängigkeitsinjektion mit `ModelRegistryService` und `LLMService` verbunden.
+- **Tests**: Umfassende Komponententests für `ModelRegistryService` und `LLMService` wurden aktualisiert, um die Integrationsstabilität sicherzustellen.
 
 ### Erweiterung der IPC-Handler-Tests & TEST-01-Fix
 
@@ -580,37 +607,37 @@
 - **IPC-Abdeckung**: „project-agent.integration.test.ts“ erstellt, das Start-, Stopp-, Status- und HIL-Handler abdeckt.
 - **Code Intelligence**: Diskrepanzen zwischen TypeScript-Parametertypen in „code-intelligence.integration.test.ts“ wurden behoben.
 
-### IPC Security Audit: Input Validation (SEC-003)
+### IPC Sicherheitsaudit: Eingabevalidierung (SEC-003)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.
+- **Summary**: Strenge Zod-Schemavalidierung für Agent und Terminal IPC handlers implementiert, um eine Injektion zu verhindern.
 
-- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.
-- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.
-- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.
-- **Type Safety**: Ensured explicit types for handler arguments and return policies.
+- **Agent IPC**: Manuelle Validierung durch `createValidatedIpcHandler` ersetzt und Zod-Schemata für alle 7 handlers hinzugefügt.
+- **Terminal IPC**: `terminal.ts` umgestaltet, um `createValidatedIpcHandler` mit Schemata für Profil-, Sitzungs- und Suchvorgänge zu verwenden.
+- **Common Util**: `createValidatedIpcHandler` erweitert, um `defaultValue` für eine sichere Fehlerbehandlung fallback zu unterstützen.
+- **Typsicherheit**: Garantierte explizite Typen für handler-Argumente und Rückgaberichtlinien.
 
-### LLM Service Improvements: Fallback & Caching
+### LLM Serviceverbesserungen: Fallback und Caching
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+- **Summary**: Der LLM-Dienst wurde um das Modell fallback, das Antwort-Caching und die verbesserte Streaming-Antwortverwaltung erweitert.
 
-- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
-- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
-- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
-- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+- **Modell Fallback**: `ModelFallbackService` für automatisches Failover zwischen LLM-Anbietern hinzugefügt, um die Dienstkontinuität sicherzustellen.
+- **Antwort-Caching**: `ResponseCacheService` implementiert, um Assistentenantworten zwischenzuspeichern und wiederzuverwenden, wodurch die Leistung verbessert und die Kosten gesenkt werden.
+- **Streaming-Verbesserungen**: Verbesserte `AbortSignal`-Verarbeitung und implementierte Teilantwortspeicherung für abgebrochene Streams.
+- **Zuverlässigkeit**: Integrierte Leistungsschaltermuster über den fallback-Dienst für proaktives Fehlermanagement.
 
-### Ollama Abort Fix & Chat Refactor
+### Ollama Fix & Chat Refactor abbrechen
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+- **Summary**: Der Fehler „Kein handler für ollama:abort registriert“ wurde behoben und Ollama Chat handlers umgestaltet, um den robusten OllamaService zu verwenden.
 
-- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
-- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
-- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
+- **IPC**: Fehlende `ollama:abort` IPC handler hinzugefügt, um das Abbrechen von Chat-Anfragen zu unterstützen.
+- **Refactor**: `ollama:chat` und `ollama:chatStream` wurden aktualisiert, um `OllamaService` anstelle von `LocalAIService` fallback zu verwenden, was echte Streaming- und Abbruchfunktionen ermöglicht.
+- **Tests**: Aktualisierte Integrationstests, um die Abbruchfunktionalität zu überprüfen und `OllamaService`-Methoden korrekt nachzuahmen.
 
 ### Verbesserte Genauigkeit der Token-Zählung
 
@@ -656,7 +683,7 @@ Umfassende Unit-Tests hinzugefügt, um die Genauigkeit der Token-Zählung für v
 – Für addCustom-Tests wurden die richtigen Felder „Kategorie/Quelle/isCustom“ hinzugefügt
 – runtime handler-Mocks (Installation/Deinstallation) mit ordnungsgemäßem Spotten von Dienstinstanzen behoben
 - Alle 21 Thementests sind jetzt bestanden
-
+- [x] **theme.integration.test.ts – KOMPLETTES NEUSCHREIBEN**: Alle 21 Tests neu geschrieben, damit sie mit dem tatsächlichen theme.ts übereinstimmen API
 **Highlights der Berichterstattung:**
 - Eingabevalidierung für alle Parameter (IDs, Pfade, URLs, Modellnamen, Schlüssel)
 - Sicherheit: URL-Whitelisting (Domäne HuggingFace), Bereinigung des Anbieternamens, Schlüsselmaskierung im Status
@@ -664,7 +691,7 @@ Umfassende Unit-Tests hinzugefügt, um die Genauigkeit der Token-Zählung für v
 - Ratenbegrenzende Integration in allen LLM-bezogenen handlers
 - Weiterleitung von Fortschrittsereignissen (Downloads, Pulls, Streams)
 - Komplexe Dienstabhängigkeiten (Ollama Gesundheit, Scraper, Vergleich)
-
+**Highlights der Berichterstattung:**
 **Teststatistik:**
 - **Vorher:** 721/748 bestanden (96,4 %)
 - **Nachher:** 789/789 bestanden (100 %) 🎉
@@ -672,8 +699,16 @@ Umfassende Unit-Tests hinzugefügt, um die Genauigkeit der Token-Zählung für v
 - **Feste Tests:** +20 Tests (Thema)
 - **Neue Testdateien:** +7 Dateien
 - **Umgeschriebene Testdateien:** 1 Datei (theme.integration.test.ts)
-
+**Teststatistik:**
 **TODO.md-Updates:**
+- Huggingface.ts, llama.ts, ollama.ts, multi-model.ts, key-rotation.ts, migration.ts, prompt-templates.ts als getestet markiert
+- **Nach Charge 3:** 852/852 bestanden (100 %) 🎉
+**Angewandte Testmuster:**
+- Statische Importe oben (kein dynamisches Erfordernis – VI-Heben)
+- Scheinfabriken innerhalb von vi.mock()-Blöcken
+- Umfassende Parametervalidierungstests
+- Fehlerpfadabdeckung mit sicheren handler-Standardwerten
+- Testen der Serviceverfügbarkeit fallback
 - Huggingface.ts, llama.ts, ollama.ts, multi-model.ts, key-rotation.ts, migration.ts, prompt-templates.ts als getestet markiert
 
 **Angewandte Testmuster:**
@@ -2904,7 +2939,7 @@ const id = eventBus.on(
 'auth:geändert',
 Nutzlast => {
 console.log('Auth geändert:', Nutzlast);
-},
+    },
 { einmal: wahr, Priorität: 10 }
 );
 // Benutzerdefinierte Ereignisse
@@ -3165,7 +3200,7 @@ const data = JSON.parse(untrustedInput);
 // Nachher: ​​Sicher mit Standardeinstellungen
 const data = safeJsonParse(untrustedInput, {
 sensibleDefaults: 'hier',
-});
+    });
     ```
 **Vorteile**:
 - **Absturzverhinderung**: Das fehlerhafte JSON führt nicht mehr zum Absturz der Anwendung
@@ -3963,4 +3998,3 @@ Richtig.
 - - Stille Fehlerabfänge und Konsolenaufrufe wurden in allen Kerndiensten durch `appLogger` ersetzt.
 - **Dokumente**: 19 Markdown-Dateien in 6 thematische Dokumente konsolidiert.
 - **Prüfung**: Erste kleine Bereinigungsaufgaben von `TODO.md` abgeschlossen.
-

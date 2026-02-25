@@ -289,7 +289,7 @@ describe('ModelSelectorModal', () => {
             const { rerender } = render(<ModelSelectorModal {...props} />);
 
             const searchInput = screen.getByPlaceholderText('modelSelector.searchModels');
-            await fireEvent.change(searchInput, { target: { value: 'test' } });
+            fireEvent.change(searchInput, { target: { value: 'test' } });
 
             // Close the modal
             props.isOpen = false;
@@ -312,7 +312,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const modelButton = screen.getByText('Test Model 1').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             expect(onSelect).toHaveBeenCalledWith('test-provider', 'model-1', false, false);
         });
@@ -324,7 +324,7 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Should switch to reasoning tab
             expect(screen.getByRole('dialog')).toHaveTextContent('reasoning');
@@ -337,7 +337,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const modelButton = screen.getByText('Test Model 1').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             expect(onClose).toHaveBeenCalled();
         });
@@ -351,7 +351,7 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Should show reasoning level buttons
             expect(screen.getByText('Low')).toBeInTheDocument();
@@ -366,11 +366,11 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Click on a thinking level
             const highLevelButton = screen.getByText('High');
-            await fireEvent.click(highLevelButton);
+            fireEvent.click(highLevelButton);
 
             expect(onThinkingLevelChange).toHaveBeenCalledWith('high');
         });
@@ -382,7 +382,7 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Confirm button should be disabled initially
             const confirmButton = screen.getByText('modelSelector.selectLevelFirst');
@@ -390,7 +390,7 @@ describe('ModelSelectorModal', () => {
 
             // Select a thinking level
             const mediumLevelButton = screen.getByText('Medium');
-            await fireEvent.click(mediumLevelButton);
+            fireEvent.click(mediumLevelButton);
 
             // Now confirm button should be enabled
             expect(screen.getByText('modelSelector.confirmModel')).not.toBeDisabled();
@@ -403,7 +403,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ onClose });
             render(<ModelSelectorModal {...props} />);
 
-            await fireEvent.keyDown(document, { key: 'Escape' });
+            fireEvent.keyDown(document, { key: 'Escape' });
 
             expect(onClose).toHaveBeenCalled();
         });
@@ -415,10 +415,10 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels to trigger reasoning selection
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Press Escape - should not close, should cancel pending
-            await fireEvent.keyDown(document, { key: 'Escape' });
+            fireEvent.keyDown(document, { key: 'Escape' });
 
             expect(onClose).not.toHaveBeenCalled();
             expect(screen.queryByText('Low')).not.toBeInTheDocument();
@@ -432,7 +432,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const backdrop = screen.getByRole('dialog');
-            await fireEvent.click(backdrop);
+            fireEvent.click(backdrop);
 
             expect(onClose).toHaveBeenCalled();
         });
@@ -444,7 +444,7 @@ describe('ModelSelectorModal', () => {
 
             const modalContent = screen.getByRole('dialog').parentElement;
             if (modalContent) {
-                await fireEvent.click(modalContent);
+                fireEvent.click(modalContent);
             }
 
             expect(onClose).not.toHaveBeenCalled();
@@ -457,11 +457,11 @@ describe('ModelSelectorModal', () => {
 
             // Click on model with thinking levels
             const modelButton = screen.getByText('Test Model 2').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Try to click backdrop
             const backdrop = screen.getByRole('dialog');
-            await fireEvent.click(backdrop);
+            fireEvent.click(backdrop);
 
             expect(onClose).not.toHaveBeenCalled();
         });
@@ -489,7 +489,7 @@ describe('ModelSelectorModal', () => {
 
             const modelButton = screen.getByText('Test Model 1').closest('button')!;
             // Simulate shift+click for multi-select
-            await fireEvent.click(modelButton, { shiftKey: true });
+            fireEvent.click(modelButton, { shiftKey: true });
 
             // The onSelect should be called with isMulti=true and keepOpen=true
             expect(onSelect).toHaveBeenCalledWith('test-provider', 'model-1', true, true);
@@ -544,7 +544,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const agentModeButton = screen.getByText('agent');
-            await fireEvent.click(agentModeButton);
+            fireEvent.click(agentModeButton);
 
             expect(onChatModeChange).toHaveBeenCalledWith('agent');
         });
@@ -586,7 +586,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const modelButton = screen.getByText('No Thinking Model').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Should not show reasoning tab
             expect(screen.queryByText('Low')).not.toBeInTheDocument();
@@ -612,7 +612,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             const modelButton = screen.getByText('Empty Thinking Model').closest('button')!;
-            await fireEvent.click(modelButton);
+            fireEvent.click(modelButton);
 
             // Should not show reasoning tab for empty thinkingLevels
             expect(screen.queryByText('Low')).not.toBeInTheDocument();
@@ -642,7 +642,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...mockProps} />);
 
             const searchInput = screen.getByPlaceholderText('modelSelector.searchModels');
-            await fireEvent.change(searchInput, { target: { value: '!@#$%^&*()' } });
+            fireEvent.change(searchInput, { target: { value: '!@#$%^&*()' } });
 
             expect(searchInput).toHaveValue('!@#$%^&*()');
         });
@@ -702,3 +702,4 @@ describe('ModelSelectorModal', () => {
         });
     });
 });
+

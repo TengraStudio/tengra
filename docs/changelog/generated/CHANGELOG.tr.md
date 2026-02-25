@@ -2,6 +2,17 @@
 
 ## [2026-02-25]
 
+### i18n Çoklu Dil Yeniden Yapılandırması ve Pazaryeri Arayüzü
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Uluslararasılaştırma sistemini modüler dosyalara böldük ve yeni bir Pazaryeri arayüzü ile birlikte 10 ana dil desteği ekledik.
+
+- **Modüler i18n**: Çevirileri daha iyi bakım yapılabilirlik için ayrı dosyalara (`en`, `tr`, `de`, `fr`, `es`, `ja`, `zh`, `ko`, `pt`, `ru`) ayırdık.
+- **Genişletilmiş Diller**: Almanca, Fransızca, İspanyolca, Japonca, Çince, Korece, Portekizce ve Rusça için yüksek kaliteli yerel çeviriler eklendi.
+- **Pazaryeri Arayüzü**: Arama, kategori filtreleri ve topluluk kaynak tablosu içeren başlangıç Pazaryeri sayfası yayına alındı.
+- **UX İyileştirmeleri**: Navbar'a localStorage sürekliliği olan Dünya simgeli bir dil seçicisi eklendi.
+
 ### Görüntü Ayarları Sekmesi Refaktörü ve Test Paketi Güvenilirliği
 
 - **Type**: refactor

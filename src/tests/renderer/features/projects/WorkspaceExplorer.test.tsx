@@ -201,7 +201,7 @@ describe('WorkspaceExplorer', () => {
             render(<WorkspaceExplorer {...props} />);
 
             const addButton = screen.getByTitle('workspace.addConnection');
-            await fireEvent.click(addButton);
+            fireEvent.click(addButton);
 
             expect(onAddMount).toHaveBeenCalled();
         });
@@ -212,7 +212,7 @@ describe('WorkspaceExplorer', () => {
             render(<WorkspaceExplorer {...props} />);
 
             const removeButton = screen.getByTestId('remove-mount-1');
-            await fireEvent.click(removeButton);
+            fireEvent.click(removeButton);
 
             expect(onRemoveMount).toHaveBeenCalledWith('mount-1');
         });
@@ -237,7 +237,7 @@ describe('WorkspaceExplorer', () => {
             render(<WorkspaceExplorer {...mockProps} />);
 
             const toggleButton = screen.getByTestId('toggle-mount-1');
-            await fireEvent.click(toggleButton);
+            fireEvent.click(toggleButton);
 
             expect(toggleMount).toHaveBeenCalledWith('mount-1');
         });
@@ -253,7 +253,7 @@ describe('WorkspaceExplorer', () => {
             });
 
             const { container } = render(<WorkspaceExplorer {...props} />);
-            await fireEvent.keyDown(container.firstElementChild!, { key: 'F2' });
+            fireEvent.keyDown(container.firstElementChild!, { key: 'F2' });
 
             expect(onContextAction).toHaveBeenCalledWith({
                 type: 'rename',
@@ -270,7 +270,7 @@ describe('WorkspaceExplorer', () => {
             });
 
             const { container } = render(<WorkspaceExplorer {...props} />);
-            await fireEvent.keyDown(container.firstElementChild!, { key: 'Delete' });
+            fireEvent.keyDown(container.firstElementChild!, { key: 'Delete' });
 
             expect(onContextAction).toHaveBeenCalledWith({
                 type: 'delete',
@@ -287,7 +287,7 @@ describe('WorkspaceExplorer', () => {
             });
 
             const { container } = render(<WorkspaceExplorer {...props} />);
-            await fireEvent.keyDown(container.firstElementChild!, { key: 'Enter' });
+            fireEvent.keyDown(container.firstElementChild!, { key: 'Enter' });
 
             expect(onOpenFile).toHaveBeenCalledWith(entry);
         });
@@ -300,7 +300,7 @@ describe('WorkspaceExplorer', () => {
             });
 
             const { container } = render(<WorkspaceExplorer {...props} />);
-            await fireEvent.keyDown(container.firstElementChild!, { key: 'F2' });
+            fireEvent.keyDown(container.firstElementChild!, { key: 'F2' });
 
             expect(onContextAction).not.toHaveBeenCalled();
         });
@@ -350,7 +350,7 @@ describe('WorkspaceExplorer', () => {
             render(<WorkspaceExplorer {...mockProps} />);
 
             const closeButton = screen.getByText('Close');
-            await fireEvent.click(closeButton);
+            fireEvent.click(closeButton);
 
             expect(closeContextMenu).toHaveBeenCalled();
         });
@@ -419,7 +419,7 @@ describe('WorkspaceExplorer', () => {
             const { container } = render(<WorkspaceExplorer {...props} />);
 
             const rootElement = container.firstElementChild!;
-            await fireEvent.keyDown(rootElement, { key: 'Delete' });
+            fireEvent.keyDown(rootElement, { key: 'Delete' });
 
             // Should use the last entry for the action
             expect(onContextAction).toHaveBeenCalledWith({
@@ -487,3 +487,4 @@ describe('WorkspaceExplorer', () => {
         });
     });
 });
+
