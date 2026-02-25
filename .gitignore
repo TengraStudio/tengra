@@ -169,3 +169,7 @@ resources/bin/
 vendor/**/*.exe
 reports/**
 .claude/settings.local.json
+
+# Nested standalone repositories
+website/tengra-frontend/
+website/tengra-backend/
