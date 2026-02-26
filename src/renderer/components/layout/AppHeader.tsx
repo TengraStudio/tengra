@@ -9,6 +9,7 @@ import {
     Search,
     Settings as SettingsIcon,
     Square,
+    Terminal as TerminalIcon,
     X as ClearIcon,
     X,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ interface AppHeaderProps {
     settingsSearchQuery?: string;
     setSettingsSearchQuery?: (query: string) => void;
     onExtensionClick?: () => void;
+    onExtensionDevToolsClick?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -32,6 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     settingsSearchQuery,
     setSettingsSearchQuery,
     onExtensionClick,
+    onExtensionDevToolsClick,
 }) => {
     const { chats, currentChatId, clearMessages } = useChat();
     const { language } = useAuth();
@@ -142,6 +145,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 >
                                     <Puzzle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                                 </button>
+                                {onExtensionDevToolsClick && (
+                                    <button
+                                        onClick={onExtensionDevToolsClick}
+                                        className="p-2 hover:bg-primary/10 hover:text-primary rounded-lg text-muted-foreground transition-colors group"
+                                        title="Extension Developer Tools"
+                                    >
+                                        <TerminalIcon className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                                    </button>
+                                )}
                                 <div className="h-4 w-[1px] bg-border/50 mx-1" />
                             </>
                         )}
@@ -168,7 +180,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         </button>
                     </div>
                 </div>
-            </header>
+            </header >
 
             <Modal
                 isOpen={isChangelogOpen}

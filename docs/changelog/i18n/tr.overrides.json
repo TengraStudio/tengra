@@ -1,4 +1,15 @@
 {
+  "2026-02-26-mkt-dev-03-extension-devtools": {
+    "title": "MKT-DEV-03: Yerel Eklenti Geliştirme Modu ve Geliştirici Araçları",
+    "summary": "Sıcak yenileme (hot reload), gerçek zamanlı log akışı ve özel bir Geliştirici Araçları paneli içeren yerel eklentiler için kapsamlı bir geliştirme ortamı uygulandı.",
+    "items": [
+      "- **ExtensionService**: Yerel kaynak dosyaları değiştirildiğinde otomatik eklenti yenileme (Sıcak Yenileme) için `fs.watch` entegrasyonu eklendi.",
+      "- **Log Akışı**: Yeni bir IPC tabanlı gözlemci modeli aracılığıyla eklentilerden render sürecine gerçek zamanlı kapsamlı log akışı etkinleştirildi.",
+      "- **ExtensionDevTools**: Eklenti yönetimi, manuel yenileme ve gerçek zamanlı log incelemesi için sağ kenar çubuğunda yeni bir panel oluşturuldu.",
+      "- **Düzen Entegrasyonu**: Ana `LayoutManager` bileşenine sağ kenar çubuğu desteği eklendi ve terminal simgesi üzerinden DevTools paneline erişim sağlandı.",
+      "- **Tip Güvenliği**: Eklenti IPC sözleşmeleri için %100 tip güvenliği sağlandı ve çeşitli teknik borçlar giderildi."
+    ]
+  },
   "2026-02-26-quick-wins-refactor": {
     "title": "NASA On Gücü: Hızlı Kazanımlar Refaktörü",
     "summary": "NASA On Gücü kuralı #3'e (60 satır fonksiyon sınırı) uymak için birkaç büyük dosya yeniden düzenlendi ve kod tabanı modülerliği artırıldı.",

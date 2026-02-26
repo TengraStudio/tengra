@@ -10,6 +10,22 @@
   - (x) Create secure REST API for model discovery and searching.
   - (x) Implement caching layer for fast search results across all clients.
 
+## Data Catalog Expansion (Marketplace)
+
+- ( ) **MKT-DATA-10**: Expand marketplace catalog with ready-to-use prompt packs and theme packs.
+  - ( ) Define DB schema additions for prompt pack metadata (category, language, tags, quality score, maintainer).
+  - ( ) Define DB schema additions for theme pack metadata (palette, contrast score, accessibility score, compatibility).
+  - ( ) Add curated seed data pipeline for initial prompt/theme inventory.
+  - ( ) Build ingestion validation for prompt/theme records (required fields, sanitization, dedupe).
+  - ( ) Add admin moderation flow for prompt/theme acceptance, rejection, and revision requests.
+  - ( ) Add prompt/theme versioning and changelog support in catalog records.
+  - ( ) Add prompt/theme compatibility labels for Tengra app versions.
+
+- ( ) **MKT-DATA-11**: Keep Hub system removed and streamline marketplace taxonomy.
+  - ( ) Remove/avoid Hub-specific navigation labels from marketplace context.
+  - ( ) Consolidate top-level content types into Models, Prompts, Themes, Workflows, Extensions.
+  - ( ) Update discovery heuristics to avoid Hub-specific grouping assumptions.
+
 ## UI Components
 
 Location: `src/renderer/features/marketplace/`
@@ -40,6 +56,25 @@ Location: `src/renderer/features/marketplace/`
 - (x) Add search suggestions
 - (x) Implement search history
 - (x) Add advanced search syntax
+
+### Advanced Filtering & Sorting (Next Iteration)
+- ( ) **MKT-DISC-20**: Add advanced multi-dimensional filters for marketplace browsing.
+  - ( ) Filter by content type (model, prompt, theme, workflow, extension).
+  - ( ) Filter by provider/source (huggingface, ollama, github, community).
+  - ( ) Filter by license family and commercial-usage eligibility.
+  - ( ) Filter by language and multilingual support.
+  - ( ) Filter by update recency windows (24h, 7d, 30d, 90d).
+  - ( ) Filter by quality/trust labels (verified, curated, security-scanned).
+  - ( ) Filter by size/runtime requirements for models.
+  - ( ) Add combinational filter chips with clear-all and saved views.
+
+- ( ) **MKT-DISC-21**: Extend sorting options with marketplace-relevant ranking signals.
+  - ( ) Sort by newest, recently updated, most downloaded, most liked, highest rated.
+  - ( ) Sort by trend score (short-term growth), not only cumulative popularity.
+  - ( ) Sort by quality score and trust/security score.
+  - ( ) Sort by install success rate and low failure rate.
+  - ( ) Support user-selectable default sort per content type.
+  - ( ) Add backend-supported stable sorting with deterministic tie-breakers.
 
 ### Extension Detail Page
 - (x) README rendering with markdown support
@@ -180,6 +215,17 @@ Location: `src/renderer/features/marketplace/`
 - ( ) Add review response system
 - ( ) Create review analytics
 
+## User Interaction Backlog (TODO)
+
+- ( ) **MKT-UX-30**: Add user interaction layer for marketplace entities.
+  - ( ) Ratings and text reviews for models/prompts/themes/extensions.
+  - ( ) Favorites/bookmarks and custom user collections.
+  - ( ) Follow publisher/maintainer and item update notifications.
+  - ( ) One-click feedback after install/use (success, issue type, satisfaction).
+  - ( ) "Helpful" voting and review quality scoring.
+  - ( ) Abuse/report workflow for malicious or low-quality content.
+  - ( ) Interaction analytics dashboard for admin moderation insights.
+
 ### Telemetry & Compliance
 - ( ) Optional usage analytics
 - ( ) Automatic crash report submission
@@ -198,19 +244,19 @@ Location: `src/renderer/features/marketplace/`
 - ( ) Implement extension profiling
 - ( ) Add extension documentation generator
 
-- ( ) **MKT-DEV-02**: Extension developer documentation
-  - ( ) Getting started guide
-  - ( ) API reference
-  - ( ) Best practices
-  - ( ) Example extensions
+- [x] **MKT-DEV-02**: Extension developer documentation
+  - [x] Getting started guide
+  - [x] API reference
+  - [x] Best practices
+  - [x] Example extensions
   - ( ) Add video tutorials
   - ( ) Create API playground
   - ( ) Add interactive examples
 
-- ( ) **MKT-DEV-03**: Local extension development mode
-  - ( ) Hot reload for local extensions
-  - ( ) Debug logging and inspection
-  - ( ) Extension DevTools panel
+- [/] **MKT-DEV-03**: Local extension development mode
+  - [/] Hot reload for local extensions
+  - [/] Debug logging and inspection
+  - [/] Extension DevTools panel
   - ( ) Add extension reload shortcut
   - ( ) Implement extension state inspection
   - ( ) Add performance profiling

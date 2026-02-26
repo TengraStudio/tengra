@@ -37,11 +37,13 @@ export class CommandService {
         const child = this.activeProcesses.get(id);
         if (child) {
             try {
-                // Kill process tree
-                const killCmd = `taskkill /PID ${child.pid} /T /F`;
-                exec(killCmd, (err) => {
-                    if (err) { appLogger.error('CommandService', `Failed to kill process tree: ${getErrorMessage(err as Error)}`); }
-                });
+                if (typeof child.pid === 'number' && Number.isFinite(child.pid)) {
+                    // Suppress noisy "process not found" errors from taskkill for already-exited children.
+                    const killCmd = `cmd /c "taskkill /PID ${child.pid} /T /F 2>nul"`;
+                    exec(killCmd, () => {
+                        // Intentionally ignored: child may already be gone.
+                    });
+                }
                 // Also try direct kill safety net
                 child.kill();
                 this.activeProcesses.delete(id);

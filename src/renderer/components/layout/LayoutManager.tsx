@@ -10,6 +10,9 @@ interface LayoutManagerProps {
     mainContent: React.ReactNode;
     panelContent?: React.ReactNode;
     showPanel?: boolean;
+    rightSidebarContent?: React.ReactNode;
+    showRightSidebar?: boolean;
+    rightSidebarWidth?: number;
     isSidebarCollapsed?: boolean;
     setIsSidebarCollapsed?: (collapsed: boolean) => void;
 }
@@ -19,6 +22,9 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
     mainContent,
     panelContent,
     showPanel = false,
+    rightSidebarContent,
+    showRightSidebar = false,
+    rightSidebarWidth = 400,
     isSidebarCollapsed = false,
     setIsSidebarCollapsed: _setIsSidebarCollapsed,
 }) => {
@@ -52,7 +58,7 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 h-full min-w-0 flex flex-col overflow-hidden">
+            <div className="flex-1 h-full min-w-0 flex flex-col overflow-hidden relative">
                 {showPanel && panelContent ? (
                     <>
                         <div className="flex-1 min-h-0 overflow-hidden">{mainContent}</div>
@@ -65,6 +71,16 @@ export const LayoutManager: React.FC<LayoutManagerProps> = ({
                     <div className="h-full w-full flex flex-col overflow-hidden">{mainContent}</div>
                 )}
             </div>
+
+            {/* Right Sidebar */}
+            {showRightSidebar && rightSidebarContent && (
+                <div
+                    className="h-full flex-shrink-0 border-l border-border bg-background z-30 animate-in slide-in-from-right duration-300"
+                    style={{ width: rightSidebarWidth }}
+                >
+                    {rightSidebarContent}
+                </div>
+            )}
         </div>
     );
 };

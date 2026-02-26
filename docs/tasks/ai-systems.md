@@ -147,3 +147,13 @@
   - ( ) Create embedding visualization
   - ( ) Add batch processing
   - ( ) Performance benchmarking
+
+- ( ) **LOCAL-03**: Build hardware-aware model fit estimator (llmfit-style).
+  - ( ) Collect local system profile (CPU, RAM, GPU, VRAM, storage, OS) with user consent.
+  - ( ) Create compatibility matrix mapping model families/sizes to hardware requirements.
+  - ( ) Estimate expected tokens-per-second (TPS) ranges per model on detected hardware.
+  - ( ) Estimate memory pressure, load time, and recommended quantization levels.
+  - ( ) Add "Runs Smoothly / Runs with Limits / Not Recommended" fit labels.
+  - ( ) Provide side-by-side recommended models for each user system profile.
+  - ( ) Store benchmark feedback from real local runs to continuously improve estimates.
+  - ( ) Add fallback suggestions when selected model is not suitable for the system.

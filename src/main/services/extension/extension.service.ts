@@ -18,7 +18,7 @@ import {
     ExtensionTestOptions,
     ExtensionTestResult,
 } from '@shared/types/extension';
-import { createExtensionLogger,createExtensionState, validateManifest } from '@shared/utils/extension.util';
+import { createExtensionLogger, createExtensionState, validateManifest } from '@shared/utils/extension.util';
 import { BrowserWindow, ipcMain } from 'electron';
 
 /** Extension instance */
@@ -33,6 +33,7 @@ interface ExtensionInstance {
 /** Extension service state */
 interface ExtensionServiceState {
     extensions: Map<string, ExtensionInstance>;
+    watchers: Map<string, fs.FSWatcher>;
     mainWindow: BrowserWindow | null;
     extensionsPath: string;
 }
@@ -44,6 +45,7 @@ interface ExtensionServiceState {
 export class ExtensionService extends BaseService {
     private state: ExtensionServiceState = {
         extensions: new Map(),
+        watchers: new Map(),
         mainWindow: null,
         extensionsPath: '',
     };
@@ -69,6 +71,12 @@ export class ExtensionService extends BaseService {
 
     override async cleanup(): Promise<void> {
         this.logInfo('Cleaning up Extension Service...');
+
+        // Stop all watchers
+        for (const [extensionId, watcher] of this.state.watchers) {
+            watcher.close();
+            this.state.watchers.delete(extensionId);
+        }
 
         // Deactivate all extensions
         for (const [extensionId] of this.state.extensions) {
@@ -128,16 +136,24 @@ export class ExtensionService extends BaseService {
         const extensions = Array.from(this.state.extensions.values()).map((instance) => ({
             manifest: instance.manifest,
             status: instance.status,
+            isDev: this.state.watchers.has(instance.manifest.id),
         }));
         return { success: true, extensions };
     }
 
-    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus } } {
+    private handleGet(_event: Electron.IpcMainInvokeEvent, extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus; isDev: boolean } } {
         const instance = this.state.extensions.get(extensionId);
         if (!instance) {
             return { success: false };
         }
-        return { success: true, extension: { manifest: instance.manifest, status: instance.status } };
+        return {
+            success: true,
+            extension: {
+                manifest: instance.manifest,
+                status: instance.status,
+                isDev: this.state.watchers.has(extensionId),
+            },
+        };
     }
 
     private async handleInstall(_event: Electron.IpcMainInvokeEvent, extensionPath: string): Promise<{ success: boolean; extensionId?: string; error?: string }> {
@@ -220,12 +236,20 @@ export class ExtensionService extends BaseService {
 
     /** Get all extensions */
     getAllExtensions(): { success: boolean; extensions: Array<{ manifest: ExtensionManifest; status: ExtensionStatus }> } {
-        return this.handleGetAll();
+        const result = this.handleGetAll();
+        return {
+            success: result.success,
+            extensions: result.extensions.map(e => ({ manifest: e.manifest, status: e.status }))
+        };
     }
 
     /** Get single extension */
     getExtension(extensionId: string): { success: boolean; extension?: { manifest: ExtensionManifest; status: ExtensionStatus } } {
-        return this.handleGet({} as Electron.IpcMainInvokeEvent, extensionId);
+        const result = this.handleGet({} as Electron.IpcMainInvokeEvent, extensionId);
+        return {
+            success: result.success,
+            extension: result.extension ? { manifest: result.extension.manifest, status: result.extension.status } : undefined
+        };
     }
 
     /** Validate manifest */
@@ -262,10 +286,10 @@ export class ExtensionService extends BaseService {
             workspaceState: createExtensionState(`${manifest.id}:workspace`),
             subscriptions: [],
             logger: createExtensionLogger(manifest.id, {
-                info: (message, ...args) => this.logInfo(message, ...args),
-                warn: (message, ...args) => this.logWarn(message, ...args),
-                error: (message, error) => this.logError(message, error),
-                debug: (message, ...args) => this.logDebug(message, ...args),
+                info: (message, ...args) => this.streamLog(manifest.id, 'info', message, ...args),
+                warn: (message, ...args) => this.streamLog(manifest.id, 'warn', message, ...args),
+                error: (message, error) => this.streamLog(manifest.id, 'error', message, error as Error),
+                debug: (message, ...args) => this.streamLog(manifest.id, 'debug', message, ...args),
             }),
             configuration: this.createConfigAccessor(manifest.id),
         };
@@ -296,6 +320,26 @@ export class ExtensionService extends BaseService {
         return { success: true, extensionId: manifest.id };
     }
 
+    /** Helper to stream logs via IPC */
+    private streamLog(extensionId: string, level: string, message: string, ...args: unknown[]): void {
+        const fullMessage = `[Extension: ${extensionId}] ${message}`;
+        switch (level) {
+            case 'info': this.logInfo(fullMessage, ...args as []); break;
+            case 'warn': this.logWarn(fullMessage, ...args as []); break;
+            case 'error': this.logError(fullMessage, args[0] as Error); break;
+            case 'debug': this.logDebug(fullMessage, ...args as []); break;
+        }
+
+        if (this.state.mainWindow) {
+            this.state.mainWindow.webContents.send('extension:log-update', {
+                extensionId,
+                level,
+                message,
+                timestamp: Date.now(),
+            });
+        }
+    }
+
     /** Uninstall an extension */
     async uninstallExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
         const instance = this.state.extensions.get(extensionId);
@@ -306,6 +350,13 @@ export class ExtensionService extends BaseService {
         // Deactivate first if active
         if (instance.status === 'active') {
             await this.deactivateExtension(extensionId);
+        }
+
+        // Stop watcher if any
+        const watcher = this.state.watchers.get(extensionId);
+        if (watcher) {
+            watcher.close();
+            this.state.watchers.delete(extensionId);
         }
 
         // Clean up subscriptions
@@ -342,7 +393,7 @@ export class ExtensionService extends BaseService {
             const modulePath = path.join(instance.context.extensionPath, instance.manifest.main);
             if (fs.existsSync(modulePath)) {
                 // In a real implementation, this would load the module in a sandboxed context
-                // For now, we just mark it as loaded
+                // For now, we just mock activity
                 instance.module = {};
             }
 
@@ -377,7 +428,7 @@ export class ExtensionService extends BaseService {
             if (
                 instance.module &&
                 typeof (instance.module as { deactivate?: () => Promise<void> | void }).deactivate ===
-                    'function'
+                'function'
             ) {
                 await (instance.module as { deactivate: () => Promise<void> | void }).deactivate();
             }
@@ -403,7 +454,7 @@ export class ExtensionService extends BaseService {
         }
     }
 
-    /** Start development server */
+    /** Start development server (Hot Reload) */
     async startDevServer(options: ExtensionDevOptions): Promise<{ success: boolean; error?: string }> {
         // Install extension first
         const installResult = await this.installExtension(options.extensionPath);
@@ -411,18 +462,41 @@ export class ExtensionService extends BaseService {
             return { success: false, error: installResult.error };
         }
 
+        const extensionId = installResult.extensionId;
+
         // Activate extension
-        const activateResult = await this.activateExtension(installResult.extensionId);
+        const activateResult = await this.activateExtension(extensionId);
         if (!activateResult.success) {
             return { success: false, error: activateResult.error };
         }
 
-        this.logInfo(`Dev server started for ${installResult.extensionId}`);
+        // Start file watcher
+        if (!this.state.watchers.has(extensionId)) {
+            let debounceTimer: NodeJS.Timeout | null = null;
+            const watcher = fs.watch(options.extensionPath, { recursive: true }, (_event, filename) => {
+                if (filename && (filename.endsWith('.js') || filename.endsWith('package.json'))) {
+                    // Debounce reload
+                    if (debounceTimer) { clearTimeout(debounceTimer); }
+                    debounceTimer = setTimeout(() => {
+                        this.logInfo(`File change detected in ${extensionId}: ${filename}. Reloading...`);
+                        void this.reloadExtension(extensionId);
+                    }, 300);
+                }
+            });
+            this.state.watchers.set(extensionId, watcher);
+        }
+
+        this.logInfo(`Dev server started for ${extensionId} with Hot Reload`);
         return { success: true };
     }
 
     /** Stop development server */
     async stopDevServer(extensionId: string): Promise<{ success: boolean; error?: string }> {
+        const watcher = this.state.watchers.get(extensionId);
+        if (watcher) {
+            watcher.close();
+            this.state.watchers.delete(extensionId);
+        }
         await this.deactivateExtension(extensionId);
         this.logInfo(`Dev server stopped for ${extensionId}`);
         return { success: true };
@@ -500,4 +574,3 @@ export function getExtensionService(): ExtensionService {
     }
     return extensionServiceInstance;
 }
-

@@ -1,7 +1,7 @@
+import { SSHProfileTestResult } from '@shared/types/ssh';
 import { useCallback, useState } from 'react';
 
 import { recordProjectsPageHealthEvent } from '@/store/projects-page-health.store';
-import { SSHProfileTestResult } from '@shared/types/ssh';
 import { MountForm, WorkspaceMount } from '@/types';
 
 import {

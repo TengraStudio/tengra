@@ -157,6 +157,11 @@ export class DatabaseClientService extends BaseService {
             if (port) {
                 return port;
             }
+            const managedPort = this.processManager.getServicePort(SERVICE_NAME);
+            if (managedPort) {
+                this.logInfo(`Using managed db-service port from process manager: ${managedPort}`);
+                return managedPort;
+            }
             await this.sleep(100);
         }
 
@@ -167,42 +172,47 @@ export class DatabaseClientService extends BaseService {
      * Discover the service port from the port file
      */
     private async discoverService(): Promise<number | null> {
-        const portFile = this.getPortFilePath();
-        if (!fs.existsSync(portFile)) {
-            return null;
-        }
-
-        try {
-            const content = fs.readFileSync(portFile, 'utf8').trim();
-            const port = parseInt(content, 10);
-            if (isNaN(port)) {
-                return null;
+        const portFiles = this.getPortFileCandidates();
+        for (const portFile of portFiles) {
+            if (!fs.existsSync(portFile)) {
+                continue;
             }
 
-            // Verify the port is open
-            const isOpen = await this.isPortOpen(port);
-            if (!isOpen) {
-                // Clean up stale port file
-                try {
-                    fs.unlinkSync(portFile);
-                } catch {
-                    /* ignore */
+            try {
+                const content = fs.readFileSync(portFile, 'utf8').trim();
+                const port = parseInt(content, 10);
+                if (isNaN(port)) {
+                    continue;
                 }
-                return null;
-            }
 
-            return port;
-        } catch {
-            return null;
+                // Verify the port is open
+                const isOpen = await this.isPortOpen(port);
+                if (!isOpen) {
+                    // Clean up stale port file
+                    try {
+                        fs.unlinkSync(portFile);
+                    } catch {
+                        /* ignore */
+                    }
+                    continue;
+                }
+
+                return port;
+            } catch {
+                continue;
+            }
         }
+
+        return null;
     }
 
     /**
      * Get the port file path
      */
-    private getPortFilePath(): string {
+    private getPortFileCandidates(): string[] {
         const appData = app.getPath('appData');
-        return path.join(appData, 'tengra', 'services', `${SERVICE_NAME}.port`);
+        const roots = ['Tengra', 'tengra'];
+        return roots.map(root => path.join(appData, root, 'services', `${SERVICE_NAME}.port`));
     }
 
     /**
@@ -671,4 +681,3 @@ export class DatabaseClientService extends BaseService {
         // Note: We don't stop the service as it's persistent
     }
 }
-

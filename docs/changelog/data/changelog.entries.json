@@ -4,6 +4,39 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-26-mkt-dev-03-extension-devtools",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "feat",
+      "category": "extensions",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "user"
+      ],
+      "components": [
+        "ExtensionService",
+        "ExtensionDevTools",
+        "LayoutManager",
+        "AppHeader"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-26-quick-wins-refactor",
       "date": "2026-02-26",
       "channel": "stable",

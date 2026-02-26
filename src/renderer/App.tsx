@@ -38,6 +38,7 @@ const ExtensionInstallPrompt = lazy(() => import('@renderer/components/Extension
 const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
+const ExtensionDevTools = lazy(() => import('@renderer/features/extensions/components/ExtensionDevTools').then(m => ({ default: m.ExtensionDevTools })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
@@ -296,6 +297,7 @@ function MainApp() {
                                         settingsSearchQuery={settingsSearchQuery}
                                         setSettingsSearchQuery={setSettingsSearchQuery}
                                         onExtensionClick={() => setShowExtensionModal(true)}
+                                        onExtensionDevToolsClick={() => appState.setShowExtensionDevTools(!appState.showExtensionDevTools)}
                                     />
                                     <ErrorFallback
                                         error={error || new Error(t('errors.unexpected'))}
@@ -420,6 +422,7 @@ function MainApp() {
                                     settingsSearchQuery={settingsSearchQuery}
                                     setSettingsSearchQuery={setSettingsSearchQuery}
                                     onExtensionClick={() => setShowExtensionModal(true)}
+                                    onExtensionDevToolsClick={() => appState.setShowExtensionDevTools(!appState.showExtensionDevTools)}
                                 />
                                 <DragDropWrapper
                                     isDragging={appState.isDragging}
@@ -455,6 +458,12 @@ function MainApp() {
                                     <div id="modal-root" />
                                 </DragDropWrapper>
                             </>
+                        }
+                        showRightSidebar={appState.showExtensionDevTools}
+                        rightSidebarContent={
+                            <Suspense fallback={null}>
+                                <ExtensionDevTools onClose={() => appState.setShowExtensionDevTools(false)} />
+                            </Suspense>
                         }
                     />
                 </div>

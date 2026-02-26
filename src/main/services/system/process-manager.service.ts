@@ -1,14 +1,17 @@
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, exec, spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as net from 'net';
 import path from 'path';
+import { promisify } from 'util';
 
 import { LifecycleAware } from '@main/core/container';
 import { appLogger } from '@main/logging/logger';
 import { getErrorMessage } from '@shared/utils/error.util';
 import axios from 'axios';
 import { app } from 'electron';
+
+const execAsync = promisify(exec);
 
 interface ProcessOptions {
     name: string;
@@ -37,11 +40,46 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         this.killAll(true);
     }
 
-    private getPortFilePath(name: string): string {
-        const appData =
-            process.env.APPDATA ??
-            path.join(process.env.HOME ?? '', 'Library', 'Application Support');
-        return path.join(appData, 'Tengra', 'services', `${name}.port`);
+    private getPortFileCandidates(name: string): string[] {
+        const appData = app.getPath('appData');
+        const roots = ['Tengra', 'tengra'];
+        return roots.map(root => path.join(appData, root, 'services', `${name}.port`));
+    }
+
+    private parseListeningPort(text: string): number | null {
+        const match = text.match(/(?:listening on|127\.0\.0\.1:|localhost:)(\d{2,5})/i);
+        if (!match) {
+            return null;
+        }
+        const port = parseInt(match[1], 10);
+        return Number.isNaN(port) ? null : port;
+    }
+
+    private async discoverPortFromPid(pid: number): Promise<number | null> {
+        try {
+            const command = `netstat -ano -p tcp | findstr " ${pid}"`;
+            const { stdout } = await execAsync(command, { windowsHide: true });
+            const lines = stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            for (const line of lines) {
+                const columns = line.split(/\s+/);
+                if (columns.length < 4) {
+                    continue;
+                }
+                const localAddress = columns[1];
+                const lastColon = localAddress.lastIndexOf(':');
+                if (lastColon < 0) {
+                    continue;
+                }
+                const rawPort = localAddress.slice(lastColon + 1);
+                const port = parseInt(rawPort, 10);
+                if (!Number.isNaN(port) && port > 0) {
+                    return port;
+                }
+            }
+        } catch {
+            // Ignore and continue with other discovery methods.
+        }
+        return null;
     }
 
     private async isPortOpen(port: number): Promise<boolean> {
@@ -68,42 +106,45 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         name: string,
         cleanupStale: boolean = true
     ): Promise<number | null> {
-        const portFile = this.getPortFilePath(name);
-        if (!fs.existsSync(portFile)) {
-            return null;
-        }
-
-        try {
-            const content = fs.readFileSync(portFile, 'utf8').trim();
-            const port = parseInt(content);
-            if (isNaN(port)) {
-                return null;
+        const portFiles = this.getPortFileCandidates(name);
+        for (const portFile of portFiles) {
+            if (!fs.existsSync(portFile)) {
+                continue;
             }
 
-            // Ping service to verify it's alive
-            const alive = await this.isPortOpen(port);
-            if (alive) {
-                return port;
-            }
-
-            // Dead port - cleanup stale file only if requested
-            if (cleanupStale) {
-                appLogger.warn(
-                    'ProcessManager',
-                    `Cleaning up stale port file for ${name} at port ${port}`
-                );
-                try {
-                    fs.unlinkSync(portFile);
-                } catch {
-                    /* ignore */
+            try {
+                const content = fs.readFileSync(portFile, 'utf8').trim();
+                const port = parseInt(content);
+                if (isNaN(port)) {
+                    continue;
                 }
+
+                // Ping service to verify it's alive
+                const alive = await this.isPortOpen(port);
+                if (alive) {
+                    return port;
+                }
+
+                // Dead port - cleanup stale file only if requested
+                if (cleanupStale) {
+                    appLogger.warn(
+                        'ProcessManager',
+                        `Cleaning up stale port file for ${name} at port ${port} (${portFile})`
+                    );
+                    try {
+                        fs.unlinkSync(portFile);
+                    } catch {
+                        /* ignore */
+                    }
+                }
+            } catch (e) {
+                appLogger.debug(
+                    'ProcessManager',
+                    `Failed to read/verify port file for ${name} (${portFile}): ${getErrorMessage(e)}`
+                );
             }
-        } catch (e) {
-            appLogger.debug(
-                'ProcessManager',
-                `Failed to read/verify port file for ${name}: ${getErrorMessage(e)}`
-            );
         }
+
         return null;
     }
 
@@ -147,8 +188,25 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
 
             child.unref(); // Electron won't wait for it to exit
 
+            const markServiceReady = (port: number): void => {
+                if (this.servicePorts.get(options.name) === port) {
+                    return;
+                }
+                this.servicePorts.set(options.name, port);
+                appLogger.info(
+                    'ProcessManager',
+                    `Service ${options.name} ready on port ${port}`
+                );
+                this.emit(`${options.name}:ready`, port);
+            };
+
             child.stdout.on('data', (data: Buffer) => {
-                appLogger.debug('ProcessManager', `[${options.name}] stdout: ${data.toString()}`);
+                const output = data.toString();
+                appLogger.debug('ProcessManager', `[${options.name}] stdout: ${output}`);
+                const parsedPort = this.parseListeningPort(output);
+                if (parsedPort) {
+                    markServiceReady(parsedPort);
+                }
             });
 
             child.stderr.on('data', (data: Buffer) => {
@@ -232,12 +290,7 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                         .then(p => {
                             if (p) {
                                 clearInterval(checkPort);
-                                this.servicePorts.set(options.name, p);
-                                appLogger.info(
-                                    'ProcessManager',
-                                    `Service ${options.name} ready on port ${p}`
-                                );
-                                this.emit(`${options.name}:ready`, p);
+                                markServiceReady(p);
                                 resolve();
                             }
                         })
@@ -251,6 +304,21 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                     attempts++;
                     if (attempts >= maxAttempts) {
                         clearInterval(checkPort);
+                        if (typeof child.pid === 'number' && Number.isFinite(child.pid)) {
+                            void this.discoverPortFromPid(child.pid).then(port => {
+                                if (port) {
+                                    markServiceReady(port);
+                                    resolve();
+                                    return;
+                                }
+                                appLogger.error(
+                                    'ProcessManager',
+                                    `Timed out waiting for ${options.name} to report port`
+                                );
+                                resolve();
+                            });
+                            return;
+                        }
                         appLogger.error(
                             'ProcessManager',
                             `Timed out waiting for ${options.name} to report port`
@@ -369,6 +437,10 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         }
     }
 
+    getServicePort(name: string): number | undefined {
+        return this.servicePorts.get(name);
+    }
+
     async sendGetRequest<T>(name: string, endpoint: string): Promise<T> {
         let port = this.servicePorts.get(name);
 
@@ -414,11 +486,17 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
     }
 
     private getBinaryPath(executable: string): string {
-        const binName = executable.endsWith('.exe') ? executable : `${executable}.exe`;
+        const normalizedExecutable = executable.endsWith('.exe') ? executable.slice(0, -4) : executable;
+        const binName = `${normalizedExecutable}.exe`;
+        const crateName = executable
+            .replace(/\.exe$/i, '')
+            .replace(/^tengra-/, '');
         const candidates = this.isDev
             ? [
                   path.join(process.cwd(), 'resources', 'bin', binName),
                   path.join(process.cwd(), 'resources', 'resources', 'bin', binName),
+                  path.join(process.cwd(), 'src', 'native', 'target', 'release', binName),
+                  path.join(process.cwd(), 'src', 'native', crateName, 'target', 'release', binName),
               ]
             : [
                   path.join(process.resourcesPath, 'bin', binName),
@@ -437,4 +515,3 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
         return candidates[0];
     }
 }
-

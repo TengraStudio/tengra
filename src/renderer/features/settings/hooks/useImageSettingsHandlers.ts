@@ -1,3 +1,4 @@
+import { AppSettings } from '@shared/types/settings';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -7,7 +8,6 @@ import {
     ImageProvider,
     ImageScheduleEntry,
 } from '../types';
-import { AppSettings } from '@shared/types/settings';
 
 /**
  * Props required by the image settings handlers hook.

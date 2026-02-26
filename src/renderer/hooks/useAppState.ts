@@ -35,6 +35,8 @@ export interface AppState {
     setShowSSHManager: (show: boolean) => void
     showShortcuts: boolean
     setShowShortcuts: (show: boolean) => void
+    showExtensionDevTools: boolean
+    setShowExtensionDevTools: (show: boolean) => void
     showFileMenu: boolean
     setShowFileMenu: (show: boolean) => void
     showScrollButton: boolean
@@ -69,6 +71,7 @@ export function useAppState(): AppState {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [showSSHManager, setShowSSHManager] = useState(false);
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showExtensionDevTools, setShowExtensionDevTools] = useState(false);
     const [showFileMenu, setShowFileMenu] = useState(false);
     const [showScrollButton, setShowScrollButton] = useState(false);
     const [isAudioOverlayOpen, setIsAudioOverlayOpen] = useState(false);
@@ -116,6 +119,8 @@ export function useAppState(): AppState {
         setShowSSHManager,
         showShortcuts,
         setShowShortcuts,
+        showExtensionDevTools,
+        setShowExtensionDevTools,
         showFileMenu,
         setShowFileMenu,
         showScrollButton,
@@ -147,6 +152,8 @@ export function useAppState(): AppState {
         setShowCommandPalette,
         setShowSSHManager,
         setShowShortcuts,
+        showExtensionDevTools,
+        setShowExtensionDevTools,
         setShowFileMenu,
         setShowScrollButton,
         setIsAudioOverlayOpen

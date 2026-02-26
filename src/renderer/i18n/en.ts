@@ -2997,6 +2997,18 @@ export const en = {
         formatMarkdown: 'Markdown (.md)',
         formatPdf: 'PDF (.pdf)',
     },
+    extensionDev: {
+        devtools: 'Extension DevTools',
+        extensions: 'Extensions',
+        activate: 'Activate',
+        deactivate: 'Deactivate',
+        reload: 'Reload',
+        searchLogs: 'Search logs...',
+        clearLogs: 'Clear logs',
+        noLogs: 'No log entries yet',
+        noExtensionSelected: 'No Extension Selected',
+        selectExtensionPrompt: 'Select an extension from the sidebar to view logs and manage status.',
+    },
     extensionPrompt: {
         title: 'Enhance Your Experience',
         subtitle: 'Install the Tengra Browser Extension',

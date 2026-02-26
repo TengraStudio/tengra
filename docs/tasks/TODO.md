@@ -20,6 +20,11 @@
 - [x] **MKT-AUTH-001**: Implement Secure User Registration & Login (C++).
 - [x] **MKT-SUB-001**: Implement Extension Submission System (GitHub URL).
 - [x] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
+- ( ) **MKT-DATA-10**: Add ready prompt/theme catalogs to marketplace DB and moderation flow.
+- ( ) **MKT-DISC-20**: Add advanced marketplace filtering dimensions (type/provider/license/language/trust/runtime).
+- ( ) **MKT-DISC-21**: Add expanded sorting strategies (trend/quality/trust/install-success).
+- ( ) **MKT-UX-30**: User interaction layer (ratings, reviews, favorites, follows, reports) [TODO].
+- ( ) **LOCAL-03**: Hardware-aware model fit estimator (llmfit-style TPS/compatibility recommendations).
 
 ### Frontend Hardening & Completion (website/tengra-frontend)
 - [x] **MKT-FE-001**: Remove hardcoded backend URLs and standardize API base usage (`VITE_API_BASE_URL`).
@@ -628,10 +633,10 @@ Owner tags:
   - ( ) Create API playground
   - ( ) Add interactive examples
 
-- ( ) **MKT-DEV-03**: Local extension development mode
-  - ( ) Hot reload for local extensions
-  - ( ) Debug logging and inspection
-  - ( ) Extension DevTools panel
+- [x] **MKT-DEV-03**: Local extension development mode
+  - [x] Hot reload for local extensions
+  - [x] Debug logging and inspection
+  - [x] Extension DevTools panel
   - ( ) Add extension reload shortcut
   - ( ) Implement extension state inspection
   - ( ) Add performance profiling
