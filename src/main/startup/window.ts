@@ -221,7 +221,7 @@ function setupWebContentsSecurity(win: BrowserWindow) {
                 appLogger.warn('Security', `Blocked untrusted navigation to: ${redactUrlForLogs(url)}`);
                 event.preventDefault();
             }
-        } catch (error) {
+        } catch {
             appLogger.warn('Security', `Blocked invalid navigation URL: ${redactUrlForLogs(url)}`);
             event.preventDefault();
         }
