@@ -1651,7 +1651,19 @@ export const tr = {
         "delete": "Sil",
         "steps": "Adım",
         "cfg": "CFG",
-        "seed": "Seed"
+        "seed": "Seed",
+        "selectImage": "Görseli seç",
+        "selectedCount": "{{count}} seçildi",
+        "selectedCount_one": "1 seçildi",
+        "selectedCount_other": "{{count}} seçildi",
+        "clearSelection": "Seçimi temizle",
+        "downloadSelected": "Seçilenleri indir",
+        "downloadingSelected": "İndiriliyor...",
+        "openPreview": "Önizlemeyi aç",
+        "zoomIn": "Yakınlaştır",
+        "zoomOut": "Uzaklaştır",
+        "resetView": "Görünümü sıfırla",
+        "closePreview": "Önizlemeyi kapat"
     },
     "advanced": {
         "systemInfo": "Sistem Bilgisi",

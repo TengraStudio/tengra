@@ -2,15 +2,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use axum::{
-    extract::{Path, Query, State},
-    routing::{get, post},
+    extract::State,
+    routing::post,
     Json, Router,
 };
-use chrono::{Datelike, Local, Timelike, Weekday};
 use reqwest::Client;
-use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::error::Error;
 use std::fs;
 use std::net::SocketAddr;
@@ -67,111 +65,6 @@ struct Response {
     error: Option<String>,
 }
 
-/// Scraped model from Ollama library
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-struct OllamaScrapedModel {
-    name: String,
-    href: String,
-    pulls: String,
-    tag_count: i32,
-    last_updated: String,
-    categories: Vec<String>,
-    short_description: String,
-    long_description_html: String,
-    tags: Vec<OllamaTagVersion>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-struct OllamaTagVersion {
-    version: String,
-    size: String,
-    max_context: String,
-    input_type: String,
-    digest: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DbApiResponse<T> {
-    success: bool,
-    data: Option<T>,
-    error: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DbMarketplaceModelsResponse {
-    total: i64,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct DbUpsertMarketplaceModelsRequest {
-    models: Vec<DbMarketplaceModelInput>,
-}
-
-#[derive(Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-struct DbMarketplaceModelInput {
-    name: String,
-    provider: String,
-    pulls: Option<String>,
-    tag_count: i32,
-    last_updated: Option<String>,
-    categories: Vec<String>,
-    short_description: Option<String>,
-    downloads: Option<i64>,
-    likes: Option<i64>,
-    author: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DbUpsertResponse {
-    count: usize,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct OllamaMarketplaceDetail {
-    name: String,
-    short_description: String,
-    long_description_html: String,
-    versions: Vec<OllamaTagVersion>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct OllamaMarketplaceDetailResponse {
-    success: bool,
-    data: Option<OllamaMarketplaceDetail>,
-    error: Option<String>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct HuggingFaceMarketplaceDetail {
-    name: String,
-    short_description: String,
-    long_description_markdown: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct HuggingFaceMarketplaceDetailResponse {
-    success: bool,
-    data: Option<HuggingFaceMarketplaceDetail>,
-    error: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct HuggingFaceModelDetailsQuery {
-    model_id: String,
-}
-
 struct AppState {
     client: Client,
 }
@@ -189,30 +82,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
         client: Client::new(),
     });
 
-    // Run startup sync only if DB has no Ollama marketplace data
-    let state_clone = state.clone();
-    tokio::spawn(async move {
-        if let Err(e) = run_startup_sync_if_db_empty(&state_clone).await {
-            eprintln!("Startup marketplace sync failed: {}", e);
-        }
-    });
-
-    // Start weekly scheduler (runs every Sunday at 03:00)
-    let state_for_scheduler = state.clone();
-    tokio::spawn(async move {
-        run_weekly_scheduler(state_for_scheduler).await;
-    });
-
     let app = Router::new()
         .route("/fetch", post(fetch_models))
-        .route(
-            "/marketplace/ollama/:model_name",
-            get(get_ollama_marketplace_model_details),
-        )
-        .route(
-            "/marketplace/huggingface",
-            get(get_huggingface_marketplace_model_details),
-        )
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state);
 
@@ -352,30 +223,12 @@ async fn fetch_ollama(client: &Client) -> Response {
 }
 
 async fn fetch_huggingface(client: &Client) -> Response {
-    match scrape_huggingface_marketplace_models(client).await {
-        Ok(data) => {
-            let models = data
-                .into_iter()
-                .take(200)
-                .map(|m| ModelInfo {
-                    id: m.name.clone(),
-                    name: m.name,
-                    provider: "huggingface".into(),
-                    description: m.short_description,
-                    downloads: m.downloads.map(|d| d.max(0) as u64),
-                    pricing: None,
-                    thinking_levels: None,
-                    percentage: None,
-                    reset: None,
-                    quota_info: None,
-                })
-                .collect();
-            Response {
-                success: true,
-                models,
-                error: None,
-            }
-        }
+    match fetch_huggingface_models(client).await {
+        Ok(models) => Response {
+            success: true,
+            models,
+            error: None,
+        },
         Err(e) => Response {
             success: false,
             models: vec![],
@@ -2193,32 +2046,13 @@ impl ModelInfo {
 }
 
 // ============================================================================
-// OLLAMA LIBRARY SCRAPER
+// HUGGINGFACE PROVIDER CATALOG
 // ============================================================================
 
-const OLLAMA_LIBRARY_URL: &str = "https://ollama.com/library";
-const OLLAMA_BASE_URL: &str = "https://ollama.com";
 const HUGGINGFACE_API_MODELS: &str = "https://huggingface.co/api/models";
-const HUGGINGFACE_BASE_URL: &str = "https://huggingface.co";
-const HF_SUPPORTED_EXTENSIONS: [&str; 3] = [".safetensors", ".ckpt", ".gguf"];
-const HF_IMAGE_PIPELINE_TAGS: [&str; 4] = [
-    "text-to-image",
-    "image-to-image",
-    "inpainting",
-    "unconditional-image-generation",
-];
-const HF_TEXT_PIPELINE_TAGS: [&str; 3] =
-    ["text-generation", "text2text-generation", "conversational"];
-const HF_PAGE_SIZE: usize = 100;
-const HF_MAX_PAGES_PER_QUERY: usize = 20;
-const HF_MAX_RESULTS_PER_QUERY: usize = 2000;
-const SCRAPER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
+const MODEL_FETCH_USER_AGENT: &str =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
 const REQUEST_TIMEOUT_SECS: u64 = 15;
-
-#[derive(Deserialize, Debug, Clone)]
-struct HfApiSibling {
-    rfilename: Option<String>,
-}
 
 #[derive(Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
@@ -2234,302 +2068,10 @@ struct HfApiModel {
     #[serde(rename = "modelId")]
     model_id: Option<String>,
     downloads: Option<i64>,
-    likes: Option<i64>,
-    author: Option<String>,
-    #[serde(rename = "lastModified")]
-    last_modified: Option<String>,
-    tags: Option<Vec<String>>,
     private: Option<bool>,
     gated: Option<serde_json::Value>,
-    siblings: Option<Vec<HfApiSibling>>,
     #[serde(rename = "cardData")]
     card_data: Option<HfApiCardData>,
-}
-
-fn db_service_port_file() -> Result<std::path::PathBuf, Box<dyn Error + Send + Sync>> {
-    let appdata = std::env::var("APPDATA")?;
-    Ok(std::path::Path::new(&appdata)
-        .join("Tengra")
-        .join("services")
-        .join("db-service.port"))
-}
-
-async fn discover_db_service_base_url(
-    client: &Client,
-) -> Result<String, Box<dyn Error + Send + Sync>> {
-    for _ in 0..20 {
-        let port_file = db_service_port_file()?;
-        if let Ok(port_text) = fs::read_to_string(&port_file) {
-            if let Ok(port) = port_text.trim().parse::<u16>() {
-                let base_url = format!("http://127.0.0.1:{}", port);
-                let health_url = format!("{}/health", base_url);
-                if let Ok(resp) = client.get(&health_url).send().await {
-                    if resp.status().is_success() {
-                        return Ok(base_url);
-                    }
-                }
-            }
-        }
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    }
-
-    Err("Could not discover healthy db-service".into())
-}
-
-async fn is_marketplace_provider_empty(
-    client: &Client,
-    db_base_url: &str,
-    provider: &str,
-) -> Result<bool, Box<dyn Error + Send + Sync>> {
-    let url = format!(
-        "{}/api/v1/marketplace/models?provider={}&limit=1&offset=0",
-        db_base_url, provider
-    );
-
-    let response = client
-        .get(&url)
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!(
-            "DB get marketplace models failed: HTTP {}",
-            response.status()
-        )
-        .into());
-    }
-
-    let payload = response
-        .json::<DbApiResponse<DbMarketplaceModelsResponse>>()
-        .await?;
-
-    if !payload.success {
-        return Err(payload
-            .error
-            .unwrap_or_else(|| "DB get marketplace models failed".to_string())
-            .into());
-    }
-
-    Ok(payload.data.map(|d| d.total == 0).unwrap_or(true))
-}
-
-async fn upsert_ollama_models_to_database(
-    client: &Client,
-    db_base_url: &str,
-    models: &[OllamaScrapedModel],
-) -> Result<usize, Box<dyn Error + Send + Sync>> {
-    let request = DbUpsertMarketplaceModelsRequest {
-        models: models
-            .iter()
-            .map(|m| DbMarketplaceModelInput {
-                name: m.name.clone(),
-                provider: "ollama".to_string(),
-                pulls: if m.pulls.is_empty() {
-                    None
-                } else {
-                    Some(m.pulls.clone())
-                },
-                tag_count: m.tag_count,
-                last_updated: if m.last_updated.is_empty() {
-                    None
-                } else {
-                    Some(m.last_updated.clone())
-                },
-                categories: m.categories.clone(),
-                short_description: if m.short_description.is_empty() {
-                    None
-                } else {
-                    Some(m.short_description.clone())
-                },
-                downloads: None,
-                likes: None,
-                author: None,
-            })
-            .collect(),
-    };
-
-    let url = format!("{}/api/v1/marketplace/models", db_base_url);
-    let response = client
-        .post(&url)
-        .json(&request)
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!("DB upsert failed: HTTP {}", response.status()).into());
-    }
-
-    let payload = response.json::<DbApiResponse<DbUpsertResponse>>().await?;
-    if !payload.success {
-        return Err(payload
-            .error
-            .unwrap_or_else(|| "DB upsert failed".to_string())
-            .into());
-    }
-
-    Ok(payload.data.map(|d| d.count).unwrap_or(0))
-}
-
-async fn upsert_huggingface_models_to_database(
-    client: &Client,
-    db_base_url: &str,
-    models: &[DbMarketplaceModelInput],
-) -> Result<usize, Box<dyn Error + Send + Sync>> {
-    let request = DbUpsertMarketplaceModelsRequest {
-        models: models.to_vec(),
-    };
-
-    let url = format!("{}/api/v1/marketplace/models", db_base_url);
-    let response = client
-        .post(&url)
-        .json(&request)
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!("DB upsert failed: HTTP {}", response.status()).into());
-    }
-
-    let payload = response.json::<DbApiResponse<DbUpsertResponse>>().await?;
-    if !payload.success {
-        return Err(payload
-            .error
-            .unwrap_or_else(|| "DB upsert failed".to_string())
-            .into());
-    }
-
-    Ok(payload.data.map(|d| d.count).unwrap_or(0))
-}
-
-async fn run_startup_sync_if_db_empty(
-    state: &Arc<AppState>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let db_base_url = discover_db_service_base_url(&state.client).await?;
-    let ollama_empty = is_marketplace_provider_empty(&state.client, &db_base_url, "ollama").await?;
-    let huggingface_empty =
-        is_marketplace_provider_empty(&state.client, &db_base_url, "huggingface").await?;
-
-    if ollama_empty {
-        eprintln!("Marketplace DB has no Ollama data, running initial sync...");
-        run_ollama_scraper(state).await?;
-    }
-
-    if huggingface_empty {
-        eprintln!("Marketplace DB has no HuggingFace data, running initial sync...");
-        run_huggingface_marketplace_sync(state).await?;
-    }
-
-    if !ollama_empty && !huggingface_empty {
-        eprintln!("Marketplace DB already has Ollama and HuggingFace data, skipping initial sync.");
-    }
-
-    Ok(())
-}
-
-/// Weekly scheduler - runs scraper every Sunday at 03:00
-async fn run_weekly_scheduler(state: Arc<AppState>) {
-    loop {
-        let now = Local::now();
-        let is_sunday = now.weekday() == Weekday::Sun;
-        let is_target_hour = now.hour() == 3 && now.minute() < 5;
-
-        if is_sunday && is_target_hour {
-            eprintln!("Weekly scraper job triggered (Sunday 03:00)");
-            if let Err(e) = run_ollama_scraper(&state).await {
-                eprintln!("Weekly Ollama scrape failed: {}", e);
-            }
-            if let Err(e) = run_huggingface_marketplace_sync(&state).await {
-                eprintln!("Weekly HuggingFace scrape failed: {}", e);
-            }
-            // Sleep for 1 hour to avoid re-triggering
-            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
-        } else {
-            // Check every 5 minutes
-            tokio::time::sleep(tokio::time::Duration::from_secs(300)).await;
-        }
-    }
-}
-
-/// Runs the Ollama library scraper
-async fn run_ollama_scraper(state: &Arc<AppState>) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let client = &state.client;
-    let db_base_url = discover_db_service_base_url(client).await?;
-
-    eprintln!("Scraping Ollama library: {}", OLLAMA_LIBRARY_URL);
-    let response = client
-        .get(OLLAMA_LIBRARY_URL)
-        .header("User-Agent", SCRAPER_USER_AGENT)
-        .header("Accept", "text/html,application/xhtml+xml")
-        .header("Accept-Language", "en-US,en;q=0.9")
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!("Library page request failed: HTTP {}", response.status()).into());
-    }
-
-    let html = response.text().await?;
-    let mut models = parse_library_page(&html);
-    eprintln!("Scraped {} models from Ollama library list", models.len());
-
-    for model in &mut models {
-        if !model.href.is_empty() {
-            if let Ok((short_description, long_description_html)) =
-                fetch_model_details(client, &model.href).await
-            {
-                model.short_description = short_description;
-                model.long_description_html = long_description_html;
-            }
-
-            if let Ok(tags) = fetch_model_tags(client, &model.href).await {
-                if model.tag_count == 0 {
-                    model.tag_count = tags.len() as i32;
-                }
-                model.tags = tags;
-            }
-        }
-    }
-
-    let upserted = upsert_ollama_models_to_database(client, &db_base_url, &models).await?;
-    eprintln!("Upserted {} Ollama marketplace models into DB", upserted);
-
-    Ok(())
-}
-
-fn hf_model_identifier(model: &HfApiModel) -> String {
-    model
-        .model_id
-        .clone()
-        .or_else(|| model.id.clone())
-        .unwrap_or_default()
-}
-
-fn hf_has_supported_extension(filename: &str) -> bool {
-    let lower = filename.to_lowercase();
-    HF_SUPPORTED_EXTENSIONS
-        .iter()
-        .any(|ext| lower.ends_with(ext))
-}
-
-fn hf_extract_formats(siblings: &[HfApiSibling]) -> Vec<String> {
-    let mut formats = HashSet::new();
-    for sibling in siblings {
-        if let Some(filename) = &sibling.rfilename {
-            let lower = filename.to_lowercase();
-            for ext in HF_SUPPORTED_EXTENSIONS {
-                if lower.ends_with(ext) {
-                    formats.insert(ext.trim_start_matches('.').to_string());
-                }
-            }
-        }
-    }
-    let mut list: Vec<String> = formats.into_iter().collect();
-    list.sort();
-    list
 }
 
 fn hf_is_gated(model: &HfApiModel) -> bool {
@@ -2541,594 +2083,64 @@ fn hf_is_gated(model: &HfApiModel) -> bool {
     }
 }
 
-fn hf_categorize_model(model_name: &str, tags: &[String], formats: &[String]) -> Vec<String> {
-    let haystack = format!(
-        "{} {} {}",
-        model_name.to_lowercase(),
-        tags.join(" ").to_lowercase(),
-        formats.join(" ").to_lowercase()
-    );
-    let mut categories = HashSet::new();
-
-    if haystack.contains("text-generation")
-        || haystack.contains("chat")
-        || haystack.contains("instruct")
-    {
-        categories.insert("text".to_string());
-    }
-    if haystack.contains("image")
-        || haystack.contains("diffusion")
-        || haystack.contains("inpainting")
-    {
-        categories.insert("image".to_string());
-    }
-    if formats.iter().any(|f| f == "gguf") {
-        categories.insert("llama.cpp".to_string());
-    }
-    if formats
-        .iter()
-        .any(|f| f == "gguf" || f == "safetensors" || f == "ckpt")
-    {
-        categories.insert("sd-cpp".to_string());
-    }
-
-    for format in formats {
-        categories.insert(format.clone());
-    }
-    let mut out: Vec<String> = categories.into_iter().collect();
-    out.sort();
-    out
+fn hf_model_identifier(model: &HfApiModel) -> String {
+    model
+        .model_id
+        .clone()
+        .or_else(|| model.id.clone())
+        .unwrap_or_default()
 }
 
-async fn fetch_hf_models_by_pipeline(
+async fn fetch_huggingface_models(
     client: &Client,
-    pipeline_tag: &str,
-) -> Result<Vec<HfApiModel>, Box<dyn Error + Send + Sync>> {
-    fetch_hf_models_paginated(client, &[("pipeline_tag", pipeline_tag)]).await
-}
-
-async fn fetch_hf_models_by_gguf_filter(
-    client: &Client,
-) -> Result<Vec<HfApiModel>, Box<dyn Error + Send + Sync>> {
-    fetch_hf_models_paginated(client, &[("filter", "gguf")]).await
-}
-
-fn parse_hf_next_cursor(link_header: &str) -> Option<String> {
-    for part in link_header.split(',') {
-        if !part.contains("rel=\"next\"") {
-            continue;
-        }
-        let start = part.find('<')?;
-        let end = part.find('>')?;
-        let url = &part[start + 1..end];
-        if let Ok(parsed) = reqwest::Url::parse(url) {
-            for (key, value) in parsed.query_pairs() {
-                if key == "cursor" {
-                    return Some(value.into_owned());
-                }
-            }
-        }
-    }
-    None
-}
-
-async fn fetch_hf_models_paginated(
-    client: &Client,
-    extra_query: &[(&str, &str)],
-) -> Result<Vec<HfApiModel>, Box<dyn Error + Send + Sync>> {
-    let mut all = Vec::new();
-    let mut cursor: Option<String> = None;
-    let limit_str = HF_PAGE_SIZE.to_string();
-
-    for _ in 0..HF_MAX_PAGES_PER_QUERY {
-        let mut request = client
-            .get(HUGGINGFACE_API_MODELS)
-            .query(&[
-                ("sort", "downloads"),
-                ("direction", "-1"),
-                ("limit", limit_str.as_str()),
-                ("full", "true"),
-            ]);
-
-        for (k, v) in extra_query {
-            request = request.query(&[(*k, *v)]);
-        }
-        if let Some(cursor_value) = &cursor {
-            request = request.query(&[("cursor", cursor_value.as_str())]);
-        }
-
-        let response = request
-            .header("User-Agent", SCRAPER_USER_AGENT)
-            .header("Accept", "application/json")
-            .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            break;
-        }
-
-        let next_cursor = response
-            .headers()
-            .get(reqwest::header::LINK)
-            .and_then(|v| v.to_str().ok())
-            .and_then(parse_hf_next_cursor);
-
-        let chunk = response.json::<Vec<HfApiModel>>().await?;
-        if chunk.is_empty() {
-            break;
-        }
-
-        all.extend(chunk);
-        if all.len() >= HF_MAX_RESULTS_PER_QUERY {
-            all.truncate(HF_MAX_RESULTS_PER_QUERY);
-            break;
-        }
-
-        if let Some(next) = next_cursor {
-            cursor = Some(next);
-        } else {
-            break;
-        }
-    }
-
-    Ok(all)
-}
-
-async fn scrape_huggingface_marketplace_models(
-    client: &Client,
-) -> Result<Vec<DbMarketplaceModelInput>, Box<dyn Error + Send + Sync>> {
-    let mut merged: HashMap<String, HfApiModel> = HashMap::new();
-
-    for tag in HF_IMAGE_PIPELINE_TAGS
-        .iter()
-        .chain(HF_TEXT_PIPELINE_TAGS.iter())
-    {
-        let models = fetch_hf_models_by_pipeline(client, tag).await?;
-        for model in models {
-            let id = hf_model_identifier(&model);
-            if id.is_empty() {
-                continue;
-            }
-            let current_downloads = model.downloads.unwrap_or(0);
-            match merged.get(&id) {
-                Some(existing) if existing.downloads.unwrap_or(0) >= current_downloads => {}
-                _ => {
-                    merged.insert(id, model);
-                }
-            }
-        }
-    }
-
-    for model in fetch_hf_models_by_gguf_filter(client).await? {
-        let id = hf_model_identifier(&model);
-        if id.is_empty() {
-            continue;
-        }
-        let current_downloads = model.downloads.unwrap_or(0);
-        match merged.get(&id) {
-            Some(existing) if existing.downloads.unwrap_or(0) >= current_downloads => {}
-            _ => {
-                merged.insert(id, model);
-            }
-        }
-    }
-
-    let mut models: Vec<DbMarketplaceModelInput> = merged
-        .into_values()
-        .filter(|m| !m.private.unwrap_or(false) && !hf_is_gated(m))
-        .filter_map(|m| {
-            let name = hf_model_identifier(&m);
-            if name.is_empty() {
-                return None;
-            }
-            let siblings = m.siblings.unwrap_or_default();
-            if !siblings.iter().any(|s| {
-                s.rfilename
-                    .as_deref()
-                    .map(hf_has_supported_extension)
-                    .unwrap_or(false)
-            }) {
-                return None;
-            }
-            let tags = m.tags.unwrap_or_default();
-            let formats = hf_extract_formats(&siblings);
-            let categories = hf_categorize_model(&name, &tags, &formats);
-            let short_description = m
-                .card_data
-                .and_then(|c| c.short_description.or(c.summary))
-                .filter(|s| !s.trim().is_empty());
-
-            Some(DbMarketplaceModelInput {
-                name,
-                provider: "huggingface".to_string(),
-                pulls: None,
-                tag_count: tags.len() as i32,
-                last_updated: m.last_modified,
-                categories,
-                short_description,
-                downloads: m.downloads,
-                likes: m.likes,
-                author: m.author,
-            })
-        })
-        .collect();
-
-    models.sort_by(|a, b| b.downloads.unwrap_or(0).cmp(&a.downloads.unwrap_or(0)));
-    Ok(models)
-}
-
-async fn run_huggingface_marketplace_sync(
-    state: &Arc<AppState>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let client = &state.client;
-    let db_base_url = discover_db_service_base_url(client).await?;
-    let models = scrape_huggingface_marketplace_models(client).await?;
-    eprintln!("Scraped {} HuggingFace marketplace models", models.len());
-    let upserted = upsert_huggingface_models_to_database(client, &db_base_url, &models).await?;
-    eprintln!(
-        "Upserted {} HuggingFace marketplace models into DB",
-        upserted
-    );
-    Ok(())
-}
-
-/// Parse a single library page
-fn parse_library_page(html: &str) -> Vec<OllamaScrapedModel> {
-    let document = Html::parse_document(html);
-    let mut models = Vec::new();
-
-    let item_selector =
-        Selector::parse("div[x-test-repos] ul[role=\"list\"] li[x-test-model]").unwrap();
-    let link_selector = Selector::parse("a[href^=\"/library/\"]").unwrap();
-    let name_selector = Selector::parse("div[x-test-model-title]").unwrap();
-    let name_span_selector = Selector::parse("h2 > div > span").unwrap();
-    let pulls_selector = Selector::parse("[x-test-pull-count]").unwrap();
-    let tag_count_selector = Selector::parse("[x-test-tag-count]").unwrap();
-    let updated_selector = Selector::parse("[x-test-updated]").unwrap();
-    let updated_title_selector = Selector::parse("span[title]").unwrap();
-    let capability_selector = Selector::parse("[x-test-capability]").unwrap();
-
-    for item in document.select(&item_selector) {
-        let (href, source) = if let Some(anchor) = item.select(&link_selector).next() {
-            (
-                anchor
-                    .value()
-                    .attr("href")
-                    .map(|s| s.to_string())
-                    .unwrap_or_default(),
-                anchor,
-            )
-        } else {
-            (String::new(), item)
-        };
-
-        let name = source
-            .select(&name_selector)
-            .next()
-            .and_then(|el| el.value().attr("title").map(|s| s.to_string()))
-            .or_else(|| {
-                source
-                    .select(&name_span_selector)
-                    .next()
-                    .map(|el| el.text().collect::<String>().trim().to_string())
-            })
-            .unwrap_or_default();
-
-        if name.is_empty() {
-            continue;
-        }
-
-        let pulls = source
-            .select(&pulls_selector)
-            .next()
-            .map(|el| el.text().collect::<String>().trim().to_string())
-            .unwrap_or_default();
-
-        let tag_count = source
-            .select(&tag_count_selector)
-            .next()
-            .and_then(|el| el.text().collect::<String>().trim().parse::<i32>().ok())
-            .unwrap_or(0);
-
-        let mut last_updated = String::new();
-        for el in source.select(&updated_title_selector) {
-            if el.select(&updated_selector).next().is_some() {
-                last_updated = el.value().attr("title").unwrap_or("").to_string();
-                break;
-            }
-        }
-        if last_updated.is_empty() {
-            last_updated = source
-                .select(&updated_selector)
-                .next()
-                .map(|el| el.text().collect::<String>().trim().to_string())
-                .unwrap_or_default();
-        }
-
-        let categories: Vec<String> = source
-            .select(&capability_selector)
-            .map(|el| el.text().collect::<String>().trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
-
-        models.push(OllamaScrapedModel {
-            name,
-            href,
-            pulls,
-            tag_count,
-            last_updated,
-            categories,
-            short_description: String::new(),
-            long_description_html: String::new(),
-            tags: vec![],
-        });
-    }
-
-    models
-}
-
-async fn fetch_model_details(
-    client: &Client,
-    href: &str,
-) -> Result<(String, String), Box<dyn Error + Send + Sync>> {
-    let url = format!("{}{}", OLLAMA_BASE_URL, href);
+) -> Result<Vec<ModelInfo>, Box<dyn Error + Send + Sync>> {
     let response = client
-        .get(&url)
-        .header("User-Agent", SCRAPER_USER_AGENT)
-        .header("Accept", "text/html,application/xhtml+xml")
-        .header("Accept-Language", "en-US,en;q=0.9")
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!("Model page request failed: {} ({})", url, response.status()).into());
-    }
-
-    let html = response.text().await?;
-    let document = Html::parse_document(&html);
-    let summary_selector = Selector::parse("span#summary-content").unwrap();
-    let display_selector = Selector::parse("div#display").unwrap();
-
-    let short_description = document
-        .select(&summary_selector)
-        .next()
-        .map(|el| el.text().collect::<String>().trim().to_string())
-        .unwrap_or_default();
-
-    let long_description_html = document
-        .select(&display_selector)
-        .next()
-        .map(|el| el.inner_html())
-        .unwrap_or_default();
-
-    Ok((short_description, long_description_html))
-}
-
-async fn fetch_model_tags(
-    client: &Client,
-    href: &str,
-) -> Result<Vec<OllamaTagVersion>, Box<dyn Error + Send + Sync>> {
-    let url = format!("{}{}{}", OLLAMA_BASE_URL, href, "/tags");
-    let response = client
-        .get(&url)
-        .header("User-Agent", SCRAPER_USER_AGENT)
-        .header("Accept", "text/html,application/xhtml+xml")
-        .header("Accept-Language", "en-US,en;q=0.9")
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Ok(vec![]);
-    }
-
-    let html = response.text().await?;
-    let document = Html::parse_document(&html);
-    let row_selector = Selector::parse("div.group.px-4.py-3").unwrap();
-    let version_anchor_selector = Selector::parse("span a[href^=\"/library/\"]").unwrap();
-    let anchor_selector = Selector::parse("a[href^=\"/library/\"]").unwrap();
-    let p_selector = Selector::parse("p").unwrap();
-    let input_selector = Selector::parse("div.col-span-2").unwrap();
-    let digest_selector = Selector::parse("span.font-mono").unwrap();
-    let mut seen_versions = HashSet::new();
-    let mut result = Vec::new();
-
-    for row in document.select(&row_selector) {
-        let version = row
-            .select(&version_anchor_selector)
-            .next()
-            .and_then(|el| el.value().attr("href").map(|s| s.to_string()))
-            .and_then(|href| href.strip_prefix("/library/").map(|s| s.to_string()))
-            .or_else(|| {
-                row.select(&anchor_selector)
-                    .filter_map(|el| el.value().attr("href"))
-                    .find_map(|href| href.strip_prefix("/library/").map(|s| s.to_string()))
-            })
-            .unwrap_or_default();
-
-        if version.is_empty() || seen_versions.contains(&version) {
-            continue;
-        }
-
-        let p_values: Vec<String> = row
-            .select(&p_selector)
-            .map(|el| el.text().collect::<String>().trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
-
-        let size = p_values.first().cloned().unwrap_or_default();
-        let max_context = p_values.get(1).cloned().unwrap_or_default();
-        let input_type = row
-            .select(&input_selector)
-            .next()
-            .map(|el| el.text().collect::<String>().trim().to_string())
-            .unwrap_or_default();
-        let digest = row
-            .select(&digest_selector)
-            .next()
-            .map(|el| el.text().collect::<String>().trim().to_string())
-            .unwrap_or_default();
-
-        seen_versions.insert(version.clone());
-        result.push(OllamaTagVersion {
-            version,
-            size,
-            max_context,
-            input_type,
-            digest,
-        });
-    }
-
-    Ok(result)
-}
-
-fn encode_hf_repo_path(model_id: &str) -> String {
-    model_id
-        .split('/')
-        .map(|segment| {
-            let mut out = String::new();
-            for byte in segment.as_bytes() {
-                let ch = *byte as char;
-                if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '~') {
-                    out.push(ch);
-                } else {
-                    out.push_str(&format!("%{:02X}", byte));
-                }
-            }
-            out
-        })
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-async fn fetch_huggingface_readme_markdown(
-    client: &Client,
-    model_id: &str,
-) -> Result<String, Box<dyn Error + Send + Sync>> {
-    let repo_path = encode_hf_repo_path(model_id);
-    let url = format!("{}/{}/raw/main/README.md", HUGGINGFACE_BASE_URL, repo_path);
-    let response = client
-        .get(&url)
-        .header("User-Agent", SCRAPER_USER_AGENT)
-        .header("Accept", "text/markdown, text/plain")
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Ok(String::new());
-    }
-
-    let markdown = response.text().await?.trim().to_string();
-    if markdown.starts_with("<!doctype html") || markdown.starts_with("<html") {
-        return Ok(String::new());
-    }
-    Ok(markdown)
-}
-
-async fn fetch_huggingface_short_description(
-    client: &Client,
-    model_id: &str,
-) -> Result<String, Box<dyn Error + Send + Sync>> {
-    let encoded = encode_hf_repo_path(model_id);
-    let url = format!("{}/{}", HUGGINGFACE_API_MODELS, encoded);
-    let response = client
-        .get(&url)
-        .header("User-Agent", SCRAPER_USER_AGENT)
+        .get(HUGGINGFACE_API_MODELS)
+        .query(&[
+            ("sort", "downloads"),
+            ("direction", "-1"),
+            ("limit", "200"),
+            ("full", "true"),
+        ])
+        .header("User-Agent", MODEL_FETCH_USER_AGENT)
         .header("Accept", "application/json")
         .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
         .send()
         .await?;
 
     if !response.status().is_success() {
-        return Ok(String::new());
+        return Err(format!("HuggingFace HTTP {}", response.status()).into());
     }
 
-    let model = response.json::<HfApiModel>().await?;
-    let short = model
-        .card_data
-        .and_then(|c| c.short_description.or(c.summary))
-        .unwrap_or_default();
-    Ok(short)
-}
-
-async fn get_ollama_marketplace_model_details(
-    Path(model_name): Path<String>,
-    State(state): State<Arc<AppState>>,
-) -> Json<OllamaMarketplaceDetailResponse> {
-    let href = format!("/library/{}", model_name);
-    let details = fetch_model_details(&state.client, &href).await;
-    let versions = fetch_model_tags(&state.client, &href).await;
-
-    match (details, versions) {
-        (Ok((short_description, long_description_html)), Ok(versions)) => {
-            Json(OllamaMarketplaceDetailResponse {
-                success: true,
-                data: Some(OllamaMarketplaceDetail {
-                    name: model_name,
-                    short_description,
-                    long_description_html,
-                    versions,
-                }),
-                error: None,
+    let models = response.json::<Vec<HfApiModel>>().await?;
+    let mut result: Vec<ModelInfo> = models
+        .into_iter()
+        .filter(|m| !m.private.unwrap_or(false) && !hf_is_gated(m))
+        .filter_map(|m| {
+            let id = hf_model_identifier(&m);
+            if id.is_empty() {
+                return None;
+            }
+            let description = m
+                .card_data
+                .and_then(|c| c.short_description.or(c.summary))
+                .filter(|v| !v.trim().is_empty());
+            Some(ModelInfo {
+                id: id.clone(),
+                name: id,
+                provider: "huggingface".into(),
+                description,
+                downloads: m.downloads.map(|d| d.max(0) as u64),
+                thinking_levels: None,
+                pricing: None,
+                percentage: None,
+                reset: None,
+                quota_info: None,
             })
-        }
-        (Err(e), _) => Json(OllamaMarketplaceDetailResponse {
-            success: false,
-            data: None,
-            error: Some(format!("Failed to fetch model details: {}", e)),
-        }),
-        (_, Err(e)) => Json(OllamaMarketplaceDetailResponse {
-            success: false,
-            data: None,
-            error: Some(format!("Failed to fetch model tags: {}", e)),
-        }),
-    }
-}
+        })
+        .collect();
 
-async fn get_huggingface_marketplace_model_details(
-    Query(query): Query<HuggingFaceModelDetailsQuery>,
-    State(state): State<Arc<AppState>>,
-) -> Json<HuggingFaceMarketplaceDetailResponse> {
-    let model_id = query.model_id.trim().to_string();
-    if model_id.is_empty() {
-        return Json(HuggingFaceMarketplaceDetailResponse {
-            success: false,
-            data: None,
-            error: Some("Missing modelId query parameter".to_string()),
-        });
-    }
-
-    let short_description = fetch_huggingface_short_description(&state.client, &model_id).await;
-    let long_description = fetch_huggingface_readme_markdown(&state.client, &model_id).await;
-
-    match (short_description, long_description) {
-        (Ok(short_description), Ok(long_description_markdown)) => {
-            Json(HuggingFaceMarketplaceDetailResponse {
-                success: true,
-                data: Some(HuggingFaceMarketplaceDetail {
-                    name: model_id,
-                    short_description,
-                    long_description_markdown,
-                }),
-                error: None,
-            })
-        }
-        (Err(e), _) => Json(HuggingFaceMarketplaceDetailResponse {
-            success: false,
-            data: None,
-            error: Some(format!(
-                "Failed to fetch HuggingFace short description: {}",
-                e
-            )),
-        }),
-        (_, Err(e)) => Json(HuggingFaceMarketplaceDetailResponse {
-            success: false,
-            data: None,
-            error: Some(format!("Failed to fetch HuggingFace README: {}", e)),
-        }),
-    }
+    result.sort_by(|a, b| (b.downloads.unwrap_or(0)).cmp(&a.downloads.unwrap_or(0)));
+    Ok(result)
 }
 

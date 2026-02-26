@@ -2,7 +2,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const SERVICES_DIR = path.join(__dirname, '../src/services');
+const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const BIN_DIR = path.join(__dirname, '../resources/bin');
 const GO_PROXY_DIR = path.join(__dirname, '../vendor/cliproxyapi');

@@ -1,5 +1,19 @@
 # 変更履歴
 
+## [2026-02-26]
+
+### NASA Power of Ten: クイックウィン・リファクタリング
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: NASA Power of Ten ルール #3（関数あたり 60 行制限）に準拠し、コードのモジュール性を向上させるために、複数の大規模ファイルをリファクタリングしました。
+
+- **ImageSettingsTab**: 10 個以上のハンドラー・コールバックと関連する状態を新しい `useImageSettingsHandlers` フックに抽出し、コンポーネントのサイズを約 65% 削減しました。
+- **useWorkspaceManager**: マウント管理ロジック（マウントの追加/削除、SSH テスト、フォルダー選択）を新しい `useMountManagement` フックに抽出し、メインフックのサイズを約 60% 削減しました。
+- **extension.util**: 67 行の `validateManifest` 関数を専用の検証ユーティリティ（`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`）に分割しました。
+- **型安全性**: フック抽出中に導入された SSH プロファイル・テストと設定ストレージ・ハンドラーの二次的な型回帰を修正しました。
+- **検証済み**: すべてのリファクタリングされたファイルには、60 行の制限を大幅に下回る関数が含まれています。ビルド、リント、およびワークスペースのテストスイートが合格しました。
+
 ## [2026-02-25]
 
 ### i18nマルチ言語リファクタリングとマーケットプレイスUI
@@ -24,17 +38,66 @@
 - **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
 - **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
 
-### Marketplace C++ Backend Initialization
+### Marketplace 認証および送信システム
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.
+- **Summary**: C++ Marketplace バックエンド用に安全なユーザー登録/ログインシステムと拡張機能送信パイプラインを実装しました。
 
-- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.
-- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.
-- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
-- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
-- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+- **ユーザー管理**: パスワードハッシュ（SHA256+ソルト）とロールベースのアクセス制御を備えた `users` テーブルを追加しました。
+- **認証 API**: トークンベースの認可を備えた `/register` および `/login` エンドポイントを実装しました。
+- **送信パイプライン**: ユーザーが手動レビューのために GitHub リポジトリ URL を送信できる `/submit` エンドポイントを作成しました。
+- **管理監督**: 管理者が新しい入力を監視およびレビューするための `/admin/submissions` エンドポイントを追加しました。
+- **スキーマの更新**: すべてのマーケットプレイス資産でユーザー所有権をサポートするようにデータベース移行を更新しました。
+
+### Marketplace バックエンドの強化と分析パイプライン
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: C++ Marketplace バックエンドにセキュリティヘッダー、レート制限、および堅牢な分析収集パイプラインを実装しました。
+
+- **セキュリティヘッダー**: HSTS、CSP、XSS-Protection、X-Robots-Tag を含むグローバルセキュリティヘッダーを適用しました。
+- **レート制限**: 認証エンドポイントに IP ベースのレート制限（10 回の試行 / 5 分）を追加しました。
+- **分析パイプライン**: 匿名テレメトリおよびトラフィック分類（人間 vs AI vs ボット）用の `/analytics/collect` エンドポイントを実装しました。
+- **管理監督**: リアルタイムのヘルスモニタリング、訪問者統計、およびアクティブユーザー追跡により `AdminController` を強化しました。
+- **サニタイズ**: すべてのユーザー提供メタデータおよび GitHub URL の入力サニタイズを標準化しました。
+
+### Marketplace C++ バックエンドの初期化
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Drogon フレームワーク、PostgreSQL、および Redis を使用して、低メモリ消費（< 500MB RAM）の高パフォーマンス C++ バックエンドを開始しました。
+
+- **C++ バックエンド**: C++20 と Drogon フレームワークを使用して、`website/tengra-backend` の下に新しいサービスをセットアップしました。
+- **最適化されたフットプリント**: 非ブロッキング I/O を使用して 500MB RAM の範囲内で動作するように設計されています。
+- **スキーマ設計**: AI モデル、拡張機能（テーマ/VSCode）、プロンプト、およびワークフローの PostgreSQL スキーマを定義しました。
+- **キャッシュ層**: メタデータへの高速アクセスとマーケットプレイスのインデックス作成のために Redis 統合を追加しました。
+- **プロセス管理**: C++ バックエンドと React フロントエンドを管理するための PM2 エコシステム構成を追加しました。
+
+### MKT-FE-003: Marketplace 認証および送信モーダルの i18n 移行
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: AuthModal と SubmissionModal のハードコードされた isTurkish 三項演算子文字列を、型付き i18n 辞書ルックアップに置き換えました。
+
+- **AuthModal**: 約 20 個のインライン isTurkish 三項演算子を t.authModal.* ルックアップに置き換えました。
+- **SubmissionModal**: 約 12 個のインライン三項演算子を t.submissionModal.* ルックアップに置き換えました。
+- **Null 安全性**: オプションの i18n セクションに Null ガードを追加しました。
+- **検証**: TypeScript コンパイルと Vite プロダクションビルドがエラーなしで合格しました。
+
+### プロジェクト構造のリファクタリング: src/services → src/native およびテスト・セットアップの統合
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Electron メインプロセスのサービスとの命名の混乱を避けるため、Rust ワークスペースのディレクトリ名を src/services から src/native に変更しました。また、src/test/setup.ts を src/tests/main/setup.ts に移動してテスト設定を統合しました。
+
+- **BACKLOG-0501**: ネイティブの Rust/Go マイクロサービスと Electron メインプロセスサービスを明確に区别するため、`src/services/` ディレクトリを `src/native/` に変更しました。
+- **BACKLOG-0502**: `src/test/setup.ts` を `src/tests/main/setup.ts` に移動し、冗長な `src/test/` ディレクトリを削除しました。
+- `scripts/build-native.js` が `src/native/` パスを参照するように更新しました。
+- `scripts/install-db-service.ps1` が `src/native/` パスを参照するように更新しました。
+- `.gitignore` の Rust ターゲット無視パターンを `src/services/**/target` から `src/native/**/target` に更新しました。
+- `vitest.config.ts` のセットアップファイルパスを `src/tests/main/setup.ts` に更新しました。
+- 新しいディレクトリレイアウトを反映するように `.codex/PROJECT_STRUCTURE.md` を更新しました。
 
 ## [2026-02-23]
 

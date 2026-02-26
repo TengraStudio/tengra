@@ -3,7 +3,7 @@
  * MKT-DEV-01: Extension SDK/templates/CLI
  */
 
-import { JsonObject,JsonValue } from '@shared/types/common';
+import { JsonObject, JsonValue } from '@shared/types/common';
 import {
     Disposable,
     ExtensionCommand,
@@ -95,17 +95,10 @@ export function createExtensionLogger(
     };
 }
 
-/** Validate extension manifest */
-export function validateManifest(manifest: unknown): { valid: boolean; errors: string[] } {
+/** Validate required manifest scalar fields. */
+function validateRequiredFields(m: Partial<ExtensionManifest>): string[] {
     const errors: string[] = [];
 
-    if (!manifest || typeof manifest !== 'object') {
-        return { valid: false, errors: ['Manifest must be an object'] };
-    }
-
-    const m = manifest as Partial<ExtensionManifest>;
-
-    // Required fields
     if (!m.id || typeof m.id !== 'string') {
         errors.push('Missing required field: id');
     } else if (!/^[a-z0-9-]+\.[a-z0-9-]+$/.test(m.id)) {
@@ -125,40 +118,57 @@ export function validateManifest(manifest: unknown): { valid: boolean; errors: s
     if (!m.description || typeof m.description !== 'string') {
         errors.push('Missing required field: description');
     }
-
     if (!m.main || typeof m.main !== 'string') {
         errors.push('Missing required field: main');
     }
-
     if (!m.license || typeof m.license !== 'string') {
         errors.push('Missing required field: license');
     }
 
-    // Author validation
-    if (!m.author || typeof m.author !== 'object') {
-        errors.push('Missing required field: author');
-    } else {
-        if (!m.author.name || typeof m.author.name !== 'string') {
-            errors.push('Missing required field: author.name');
-        }
-    }
+    return errors;
+}
 
-    // Optional field validation
+/** Validate the author object in a manifest. */
+function validateAuthor(m: Partial<ExtensionManifest>): string[] {
+    if (!m.author || typeof m.author !== 'object') {
+        return ['Missing required field: author'];
+    }
+    if (!m.author.name || typeof m.author.name !== 'string') {
+        return ['Missing required field: author.name'];
+    }
+    return [];
+}
+
+/** Validate optional manifest array/object fields. */
+function validateOptionalFields(m: Partial<ExtensionManifest>): string[] {
+    const errors: string[] = [];
     if (m.permissions && !Array.isArray(m.permissions)) {
         errors.push('Field "permissions" must be an array');
     }
-
     if (m.capabilities && !Array.isArray(m.capabilities)) {
         errors.push('Field "capabilities" must be an array');
     }
-
     if (m.activationEvents && !Array.isArray(m.activationEvents)) {
         errors.push('Field "activationEvents" must be an array');
     }
-
     if (m.dependencies && typeof m.dependencies !== 'object') {
         errors.push('Field "dependencies" must be an object');
     }
+    return errors;
+}
+
+/** Validate extension manifest */
+export function validateManifest(manifest: unknown): { valid: boolean; errors: string[] } {
+    if (!manifest || typeof manifest !== 'object') {
+        return { valid: false, errors: ['Manifest must be an object'] };
+    }
+
+    const m = manifest as Partial<ExtensionManifest>;
+    const errors = [
+        ...validateRequiredFields(m),
+        ...validateAuthor(m),
+        ...validateOptionalFields(m),
+    ];
 
     return { valid: errors.length === 0, errors };
 }
@@ -256,6 +266,7 @@ export function createDefaultManifest(options: {
 export class ExtensionCommandRegistry {
     private commands = new Map<string, { command: ExtensionCommand; handler: (...args: JsonValue[]) => JsonValue | Promise<JsonValue> }>();
 
+    /** Register a command with its handler. */
     register(
         command: ExtensionCommand,
         handler: (...args: JsonValue[]) => JsonValue | Promise<JsonValue>
@@ -264,14 +275,17 @@ export class ExtensionCommandRegistry {
         return createDisposable(() => this.commands.delete(command.id));
     }
 
+    /** Get a command entry by ID. */
     get(commandId: string): { command: ExtensionCommand; handler: (...args: JsonValue[]) => JsonValue | Promise<JsonValue> } | undefined {
         return this.commands.get(commandId);
     }
 
+    /** Get all registered commands. */
     getAll(): ExtensionCommand[] {
         return Array.from(this.commands.values()).map((c) => c.command);
     }
 
+    /** Execute a registered command by ID. */
     async execute<T>(commandId: string, ...args: JsonValue[]): Promise<T> {
         const entry = this.commands.get(commandId);
         if (!entry) {
@@ -285,19 +299,23 @@ export class ExtensionCommandRegistry {
 export class ExtensionToolRegistry {
     private tools = new Map<string, { tool: ExtensionTool; handler: (args: JsonObject) => Promise<JsonValue> }>();
 
+    /** Register a tool with its handler. */
     register(tool: ExtensionTool, handler: (args: JsonObject) => Promise<JsonValue>): Disposable {
         this.tools.set(tool.id, { tool, handler });
         return createDisposable(() => this.tools.delete(tool.id));
     }
 
+    /** Get a tool entry by ID. */
     get(toolId: string): { tool: ExtensionTool; handler: (args: JsonObject) => Promise<JsonValue> } | undefined {
         return this.tools.get(toolId);
     }
 
+    /** Get all registered tools. */
     getAll(): ExtensionTool[] {
         return Array.from(this.tools.values()).map((t) => t.tool);
     }
 
+    /** Execute a registered tool by ID. */
     async execute<T>(toolId: string, args: JsonObject): Promise<T> {
         const entry = this.tools.get(toolId);
         if (!entry) {
@@ -311,15 +329,18 @@ export class ExtensionToolRegistry {
 export class ExtensionViewRegistry {
     private views = new Map<string, { view: ExtensionView; provider: ViewProvider }>();
 
+    /** Register a view with its provider. */
     register(view: ExtensionView, provider: ViewProvider): Disposable {
         this.views.set(view.id, { view, provider });
         return createDisposable(() => this.views.delete(view.id));
     }
 
+    /** Get a view entry by ID. */
     get(viewId: string): { view: ExtensionView; provider: ViewProvider } | undefined {
         return this.views.get(viewId);
     }
 
+    /** Get all registered views. */
     getAll(): ExtensionView[] {
         return Array.from(this.views.values()).map((v) => v.view);
     }
@@ -333,6 +354,7 @@ export class ExtensionAPIImpl {
 
     constructor(public readonly context: ExtensionContext) { }
 
+    /** Register a command and track its subscription. */
     registerCommand(
         command: ExtensionCommand,
         handler: (...args: JsonValue[]) => JsonValue | Promise<JsonValue>
@@ -342,22 +364,26 @@ export class ExtensionAPIImpl {
         return disposable;
     }
 
+    /** Register a tool and track its subscription. */
     registerTool(tool: ExtensionTool, handler: (args: JsonObject) => Promise<JsonValue>): Disposable {
         const disposable = this.toolRegistry.register(tool, handler);
         this.context.subscriptions.push(disposable);
         return disposable;
     }
 
+    /** Register a view and track its subscription. */
     registerView(view: ExtensionView, provider: ViewProvider): Disposable {
         const disposable = this.viewRegistry.register(view, provider);
         this.context.subscriptions.push(disposable);
         return disposable;
     }
 
+    /** Show a message via the extension logger. */
     async showMessage(message: string, type: 'info' | 'warn' | 'error' = 'info'): Promise<void> {
         this.context.logger[type](message);
     }
 
+    /** Show an input dialog with validation support. */
     async showInput(options: InputBoxOptions): Promise<string | undefined> {
         // Headless fallback: we can only return provided defaults when host UI input is unavailable.
         if (typeof options.value === 'string') {
@@ -373,24 +399,29 @@ export class ExtensionAPIImpl {
         return undefined;
     }
 
+    /** Show a quick pick dialog. */
     async showQuickPick(items: QuickPickItem[], _options?: QuickPickOptions): Promise<QuickPickItem | undefined> {
         // This would be implemented by the host application
         return items[0];
     }
 
+    /** Execute a registered command by name. */
     async executeCommand<T>(command: string, ...args: JsonValue[]): Promise<T> {
         return this.commandRegistry.execute<T>(command, ...args);
     }
 
+    /** Get the extension configuration accessor. */
     getConfiguration(_section?: string): ExtensionConfigAccessor {
         return this.context.configuration;
     }
 
+    /** Create a terminal instance. */
     createTerminal(_options: TerminalOptions): Terminal {
         // This would be implemented by the host application
         throw new Error('Terminal creation not implemented');
     }
 
+    /** Register a text document content provider for a given scheme. */
     registerTextDocumentContentProvider(_scheme: string, _provider: TextDocumentContentProvider): Disposable {
         // This would be implemented by the host application
         return createDisposable(() => { });

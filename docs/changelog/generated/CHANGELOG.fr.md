@@ -1,5 +1,19 @@
 # Journal des modifications
 
+## [2026-02-26]
+
+### NASA Power of Ten: Refactorisation Quick-Wins
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Refactorisation de plusieurs fichiers volumineux pour respecter la règle NASA Power of Ten n°3 (limite de 60 lignes par fonction) et améliorer la modularité du code.
+
+- **ImageSettingsTab**: Extraction de plus de 10 rappels de gestionnaire et de l'état associé dans un nouveau hook `useImageSettingsHandlers`, réduisant la taille du composant d'environ 65 %.
+- **useWorkspaceManager**: Extraction de la logique de gestion des montages (ajout/suppression de montages, tests SSH, sélection de dossiers) dans un nouveau hook `useMountManagement`, réduisant la taille du hook principal d'environ 60 %.
+- **extension.util**: Division de la fonction `validateManifest` de 67 lignes en utilitaires de validation spécialisés (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
+- **Sécurité des types**: Correction des régressions de type secondaires dans les tests de profil SSH et les gestionnaires de stockage de paramètres introduits lors de l'extraction des hooks.
+- **Vérifié**: Tous les fichiers refactorisés contiennent désormais des fonctions largement inférieures à la limite de 60 lignes. Les suites de tests de build, de lint et de workspace ont réussi.
+
 ## [2026-02-25]
 
 ### Refactorisation i18n multi-langues et interface Marketplace
@@ -24,17 +38,66 @@
 - **Test de fiabilité**: correction des violations de `require-yield` et des variables inutilisées dans `chat.integration.test.ts`.
 - **API Contrats**: correction du chemin du fichier de spécification OpenAPI dans `api-openapi.contract.test.ts` pour garantir une vérification valide du contrat.
 
-### Marketplace C++ Backend Initialization
+### Système d'authentification et de soumission du Marketplace
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.
+- **Summary**: Système d'enregistrement/connexion sécurisé et pipeline de soumission d'extensions implémentés pour le backend C++ du Marketplace.
 
-- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.
-- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.
-- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
-- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
-- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+- **Gestion des utilisateurs** : Ajout de la table `users` avec hachage de mot de passe (SHA256+Salt) et contrôle d'accès basé sur les rôles.
+- **API d'authentification** : Implémentation des points de terminaison `/register` et `/login` avec autorisation par jeton.
+- **Pipeline de soumission** : Création du point de terminaison `/submit` où les utilisateurs peuvent envoyer des URL de dépôt GitHub pour examen manuel.
+- **Supervision administrative** : Ajout du point de terminaison `/admin/submissions` pour que les administrateurs puissent surveiller et examiner les nouvelles entrées.
+- **Mise à jour du schéma** : Mise à jour des migrations de base de données pour prendre en charge la propriété des utilisateurs pour tous les actifs du Marketplace.
+
+### Renforcement du backend du Marketplace et pipeline d'analyse
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implémentation d'en-têtes de sécurité, limitation du débit et d'un pipeline robuste de collecte d'analyses pour le backend C++ du Marketplace.
+
+- **En-têtes de sécurité** : Application d'en-têtes de sécurité globaux comprenant HSTS, CSP, XSS-Protection et X-Robots-Tag.
+- **Limitation du débit** : Ajout d'une limitation de débit par IP (10 tentatives/5 min) pour les points de terminaison d'authentification.
+- **Pipeline d'analyse** : Implémentation du point de terminaison `/analytics/collect` pour la télémétrie anonyme et la classification du trafic (Humain vs IA vs Bot).
+- **Supervision administrative** : Amélioration de `AdminController` avec une surveillance de l'état en temps réel, des statistiques sur les visiteurs et un suivi des utilisateurs actifs.
+- **Assainissement** : Standardisation de l'assainissement des entrées pour toutes les métadonnées fournies par les utilisateurs et les URL GitHub.
+
+### Initialisation du backend C++ du Marketplace
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Lancement d'un backend C++ haute performance avec une faible empreinte mémoire (< 500 Mo de RAM) utilisant le framework Drogon, PostgreSQL et Redis.
+
+- **Backend C++** : Nouveau service mis en place sous `website/tengra-backend` avec C++20 et le framework Drogon.
+- **Empreinte optimisée** : Conçu pour fonctionner dans les limites de 500 Mo de RAM avec des E/S non bloquantes.
+- **Conception du schéma** : Schéma PostgreSQL défini pour les modèles d'IA, les extensions (thèmes/VSCode), des prompts et les workflows.
+- **Couche de cache** : Intégration de Redis ajoutée pour un accès rapide aux métadonnées et l'indexation du Marketplace.
+- **Gestion des processus** : Ajout de la configuration de l'écosystème PM2 pour gérer le backend C++ et le frontend React.
+
+### MKT-FE-003 : Migration i18n des modales Auth et Submission
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Remplacement de toutes les strings ternaires isTurkish codees en dur dans AuthModal et SubmissionModal par des lookups de dictionnaire i18n types.
+
+- **AuthModal**: ~20 ternaires isTurkish inline remplaces par des lookups t.authModal.*.
+- **SubmissionModal**: ~12 ternaires inline remplaces par des lookups t.submissionModal.*.
+- **Securite Null**: Guards null ajoutes pour les sections i18n optionnelles.
+- **Verification**: Compilation TypeScript et build de production Vite passes sans erreur.
+
+### Refactorisation de la structure du projet : src/services → src/native et consolidation de la configuration des tests
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Renommage du répertoire de l'espace de travail Rust de src/services en src/native pour éliminer la confusion de nommage avec les services de processus principal Electron. Consolidation de la configuration des tests en déplaçant src/test/setup.ts vers src/tests/main/setup.ts.
+
+- **BACKLOG-0501**: Renommage du répertoire `src/services/` en `src/native/` pour distinguer clairement les microservices Rust/Go natifs des services de processus principal Electron.
+- **BACKLOG-0502**: Déplacement de `src/test/setup.ts` vers `src/tests/main/setup.ts` et suppression du répertoire `src/test/` redondant.
+- Mise à jour de `scripts/build-native.js` pour référencer le chemin `src/native/`.
+- Mise à jour de `scripts/install-db-service.ps1` pour référencer le chemin `src/native/`.
+- Mise à jour du motif d'exclusion de la cible Rust dans `.gitignore` de `src/services/**/target` à `src/native/**/target`.
+- Mise à jour du chemin du fichier de configuration dans `vitest.config.ts` vers `src/tests/main/setup.ts`.
+- Mise à jour de `.codex/PROJECT_STRUCTURE.md` pour refléter la nouvelle disposition des répertoires.
 
 ## [2026-02-23]
 

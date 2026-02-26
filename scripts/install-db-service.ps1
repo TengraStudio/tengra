@@ -32,8 +32,8 @@ $ProjectRoot = Split-Path -Parent $ScriptDir
 # Check if we're in dev or production
 if (Test-Path "$ProjectRoot\resources\bin\tengra-db-service.exe") {
     $BinaryPath = "$ProjectRoot\resources\bin\tengra-db-service.exe"
-} elseif (Test-Path "$ProjectRoot\src\services\target\release\tengra-db-service.exe") {
-    $BinaryPath = "$ProjectRoot\src\services\target\release\tengra-db-service.exe"
+} elseif (Test-Path "$ProjectRoot\src\native\target\release\tengra-db-service.exe") {
+    $BinaryPath = "$ProjectRoot\src\native\target\release\tengra-db-service.exe"
 } else {
     Write-Error "tengra-db-service.exe not found. Build it first with: cargo build --release -p tengra-db-service"
     exit 1

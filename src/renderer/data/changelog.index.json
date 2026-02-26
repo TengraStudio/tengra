@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-25T13:56:29.817Z",
+  "generatedAt": "2026-02-26T01:25:50.366Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,114 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-26-quick-wins-refactor",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "ImageSettingsTab",
+        "useWorkspaceManager",
+        "extension.util",
+        "Refactoring"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "NASA Power of Ten: Quick Wins Refactoring",
+          "summary": "Refactored several oversized files to comply with the NASA Power of Ten rule #3 (60-line function limit) and improved codebase modularity.",
+          "items": [
+            "- **ImageSettingsTab**: Extracted 10+ handler callbacks and associated state into a new `useImageSettingsHandlers` hook, reducing component size by ~65%.",
+            "- **useWorkspaceManager**: Extracted mount management logic (add/remove mounts, SSH testing, folder picking) into a new `useMountManagement` hook, reducing main hook size by ~60%.",
+            "- **extension.util**: Split the 67-line `validateManifest` function into specialized validation helpers (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **Type Safety**: Resolved secondary type regressions in SSH profile testing and settings save handlers introduced during hook extraction.",
+            "- **Verified**: All refactored files now contain functions well under the 60-line limit. Build, lint, and workspace test suites pass."
+          ]
+        },
+        "tr": {
+          "title": "NASA On Gücü: Hızlı Kazanımlar Refaktörü",
+          "summary": "NASA On Gücü kuralı #3'e (60 satır fonksiyon sınırı) uymak için birkaç büyük dosya yeniden düzenlendi ve kod tabanı modülerliği artırıldı.",
+          "items": [
+            "- **ImageSettingsTab**: 10'dan fazla geri çağırma ve ilgili durum yeni bir `useImageSettingsHandlers` hook'una taşınarak bileşen boyutu %65 azaltıldı.",
+            "- **useWorkspaceManager**: Bağlantı yönetimi mantığı yeni bir `useMountManagement` hook'una taşınarak ana hook boyutu %60 azaltıldı.",
+            "- **extension.util**: 67 satırlık `validateManifest` fonksiyonu özelleşmiş yardımcı fonksiyonlara (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`) bölündü.",
+            "- **Tip Güvenliği**: Hook ayrıştırma sırasında oluşan SSH profil testi ve ayar kaydetme işleyicilerindeki tip sorunları giderildi.",
+            "- **Doğrulama**: Refaktör edilen tüm dosyalar artık 60 satır sınırının altındaki fonksiyonlar içeriyor. Derleme, lint ve çalışma alanı testleri başarıyla geçiyor."
+          ]
+        },
+        "de": {
+          "title": "NASA Power of Ten: Quick-Wins-Refactoring",
+          "summary": "Überarbeitung mehrerer überdimensionaler Dateien zur Einhaltung der NASA Power of Ten-Regel #3 (60-Zeilen-Funktionslimit) und Verbesserung der Code-Modularität.",
+          "items": [
+            "- **ImageSettingsTab**: Extraktion von über 10 Handler-Callbacks und des zugehörigen Status in einen neuen `useImageSettingsHandlers`-Hook, wodurch die Komponentengröße um ca. 65 % reduziert wurde.",
+            "- **useWorkspaceManager**: Extraktion der Mount-Management-Logik (Hinzufügen/Entfernen von Mounts, SSH-Tests, Ordnerauswahl) in einen neuen `useMountManagement`-Hook, wodurch die Größe des Haupt-Hooks um ca. 60 % reduziert wurde.",
+            "- **extension.util**: Aufteilung der 67-zeiligen `validateManifest`-Funktion in spezialisierte Validierungshilfen (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **Typsicherheit**: Behebung sekundärer Typ-Regressionen bei SSH-Profiltests und Einstellungs-Speicher-Handlern, die während der Hook-Extraktion eingeführt wurden.",
+            "- **Verifiziert**: Alle refaktorierten Dateien enthalten jetzt Funktionen, die deutlich unter dem Limit von 60 Zeilen liegen. Build-, Lint- und Workspace-Test-Suiten bestanden."
+          ]
+        },
+        "fr": {
+          "title": "NASA Power of Ten: Refactorisation Quick-Wins",
+          "summary": "Refactorisation de plusieurs fichiers volumineux pour respecter la règle NASA Power of Ten n°3 (limite de 60 lignes par fonction) et améliorer la modularité du code.",
+          "items": [
+            "- **ImageSettingsTab**: Extraction de plus de 10 rappels de gestionnaire et de l'état associé dans un nouveau hook `useImageSettingsHandlers`, réduisant la taille du composant d'environ 65 %.",
+            "- **useWorkspaceManager**: Extraction de la logique de gestion des montages (ajout/suppression de montages, tests SSH, sélection de dossiers) dans un nouveau hook `useMountManagement`, réduisant la taille du hook principal d'environ 60 %.",
+            "- **extension.util**: Division de la fonction `validateManifest` de 67 lignes en utilitaires de validation spécialisés (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **Sécurité des types**: Correction des régressions de type secondaires dans les tests de profil SSH et les gestionnaires de stockage de paramètres introduits lors de l'extraction des hooks.",
+            "- **Vérifié**: Tous les fichiers refactorisés contiennent désormais des fonctions largement inférieures à la limite de 60 lignes. Les suites de tests de build, de lint et de workspace ont réussi."
+          ]
+        },
+        "es": {
+          "title": "NASA Power of Ten: Refactorización Quick-Wins",
+          "summary": "Refactorización de varios archivos de gran tamaño para cumplir con la regla n.º 3 de NASA Power of Ten (límite de 60 líneas por función) y mejorar la modularidad del código.",
+          "items": [
+            "- **ImageSettingsTab**: Extracción de más de 10 devoluciones de llamada del manejador y el estado asociado en un nuevo hook `useImageSettingsHandlers`, reduciendo el tamaño del componente en aproximadamente un 65 %.",
+            "- **useWorkspaceManager**: Extracción de la lógica de gestión de montajes (agregar/eliminar montajes, pruebas SSH, selección de carpetas) en un nuevo hook `useMountManagement`, reduciendo el tamaño del hook principal en aproximadamente un 60 %.",
+            "- **extension.util**: División de la función `validateManifest` de 67 líneas en utilidades de validación especialisées (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **Seguridad de tipos**: Corrección de regresiones de tipos secundarias en las pruebas de perfil SSH y los manejadores de almacenamiento de configuraciones introducidos durante la extracción de hooks.",
+            "- **Verificado**: Todos los archivos refactorizados contienen ahora funciones muy por debajo del límite de 60 líneas. Las suites de pruebas de compilación, lint y espacio de trabajo pasaron."
+          ]
+        },
+        "ja": {
+          "title": "NASA Power of Ten: クイックウィン・リファクタリング",
+          "summary": "NASA Power of Ten ルール #3（関数あたり 60 行制限）に準拠し、コードのモジュール性を向上させるために、複数の大規模ファイルをリファクタリングしました。",
+          "items": [
+            "- **ImageSettingsTab**: 10 個以上のハンドラー・コールバックと関連する状態を新しい `useImageSettingsHandlers` フックに抽出し、コンポーネントのサイズを約 65% 削減しました。",
+            "- **useWorkspaceManager**: マウント管理ロジック（マウントの追加/削除、SSH テスト、フォルダー選択）を新しい `useMountManagement` フックに抽出し、メインフックのサイズを約 60% 削減しました。",
+            "- **extension.util**: 67 行の `validateManifest` 関数を専用の検証ユーティリティ（`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`）に分割しました。",
+            "- **型安全性**: フック抽出中に導入された SSH プロファイル・テストと設定ストレージ・ハンドラーの二次的な型回帰を修正しました。",
+            "- **検証済み**: すべてのリファクタリングされたファイルには、60 行の制限を大幅に下回る関数が含まれています。ビルド、リント、およびワークスペースのテストスイートが合格しました。"
+          ]
+        },
+        "zh": {
+          "title": "NASA Power of Ten: 快速获胜重构",
+          "summary": "重构了多个大型文件，以符合 NASA Power of Ten 规则 #3（每函数 60 行限制）并提高代码模块化程度。",
+          "items": [
+            "- **ImageSettingsTab**: 将 10 多个处理程序回调及相关状态提取到新的 `useImageSettingsHandlers` 钩子中，使组件大小减少了约 65%。",
+            "- **useWorkspaceManager**: 将挂载管理逻辑（添加/删除挂载、SSH 测试、文件夹选择）提取到新的 `useMountManagement` 钩子中，使主钩子的大小减少了约 60%。",
+            "- **extension.util**: 将 67 行的 `validateManifest` 函数拆分为专门的验证工具（`validateRequiredFields`、`validateAuthor`、`validateOptionalFields`）。",
+            "- **类型安全**: 修复了在提取钩子过程中引入的 SSH 配置测试和设置存储处理程序的二次类型回归。",
+            "- **已验证**: 所有重构的文件现在包含的函数均远低于 60 行限制。构建、lint 和工作区测试套件均已通过。"
+          ]
+        },
+        "ar": {
+          "title": "NASA Power of Ten: إعادة بناء المكاسب السريعة",
+          "summary": "إعادة بناء عدة ملفات كبيرة للامتثال لقاعدة NASA Power of Ten رقم 3 (حد 60 سطرًا لكل وظيفة) وتحسين نمطية البرمجية.",
+          "items": [
+            "- **ImageSettingsTab**: استخراج أكثر من 10 استدعاءات للمناولة والحالة المرتبطة بها في خطاف `useImageSettingsHandlers` جديد، مما قلل من حجم المكون بنسبة 65% تقريبًا.",
+            "- **useWorkspaceManager**: استخراج منطق إدارة نقاط التثبيت (إضافة/إزالة النقاط، اختبارات SSH، اختيار المجلدات) في خطاف `useMountManagement` جديد، مما قلل من حجم الخطاف الرئيسي بنسبة 60% تقريبًا.",
+            "- **extension.util**: تقسيم وظيفة `validateManifest` المكونة من 67 سطرًا إلى أدوات تحقق متخصصة (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **سلامة الأنواع**: إصلاح تراجعات الأنواع الثانوية في اختبارات ملف تعريف SSH ومناولي تخزين الإعدادات التي تم إدخالها أثناء استخراج الخطافات.",
+            "- **تم التحقق**: تحتوي جميع الملفات التي تمت إعادة بنائها الآن على وظائف أقل بكثير من حد 60 سطرًا. نجحت مجموعات اختبار البناء و lint ومساحة العمل."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-25-i18n-refactoring-and-marketplace",
       "date": "2026-02-25",
@@ -212,6 +320,223 @@
       }
     },
     {
+      "id": "2026-02-25-marketplace-auth-submission-system",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "Marketplace Backend",
+        "Authentication",
+        "User Submissions",
+        "Admin Dashboard"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Marketplace Authentication and User Submission System",
+          "summary": "Implemented a secure user registration/login system and an extension submission pipeline for the C++ Marketplace backend.",
+          "items": [
+            "- **User Management**: Added `users` table with password hashing (SHA256+Salt) and role-based access control.",
+            "- **Authentication API**: Implemented `/register` and `/login` endpoints with token-based authorization.",
+            "- **Submission Pipeline**: Created `/submit` endpoint for users to submit GitHub repository URLs for manual review.",
+            "- **Admin Oversight**: Added `/admin/submissions` endpoint for administrators to monitor and review new entries.",
+            "- **Schema Update**: Updated database migrations to support user ownership across all marketplace entities."
+          ]
+        },
+        "tr": {
+          "title": "Pazaryeri Kimlik Doğrulama ve Kullanıcı Gönderim Sistemi",
+          "summary": "C++ Pazaryeri arka ucu için güvenli kullanıcı kayıt/giriş sistemi ve uzantı gönderim hattı uygulandı.",
+          "items": [
+            "- **Kullanıcı Yönetimi**: Parola özetleme (SHA256+Tuz) ve rol tabanlı erişim kontrolü içeren `users` tablosu eklendi.",
+            "- **Kimlik Doğrulama API'si**: Token tabanlı yetkilendirme ile `/register` ve `/login` uç noktaları uygulandı.",
+            "- **Gönderim Hattı**: Kullanıcıların manuel inceleme için GitHub depo URL'lerini gönderebilecekleri `/submit` uç noktası oluşturuldu.",
+            "- **Yönetici Denetimi**: Yöneticilerin yeni girişleri izlemesi ve incelemesi için `/admin/submissions` uç noktası eklendi.",
+            "- **Şema Güncellemesi**: Tüm pazaryeri varlıklarında kullanıcı sahipliğini desteklemek için veritabanı geçişleri güncellendi."
+          ]
+        },
+        "de": {
+          "title": "Marktplatz-Authentifizierungs- und Einreichungssystem",
+          "summary": "Sicheres Registrierungs-/Login-System und Einreichungspipeline für Erweiterungen für das C++ Marktplatz-Backend implementiert.",
+          "items": [
+            "- **Benutzerverwaltung**: `users`-Tabelle mit Passwort-Hashing (SHA256+Salt) und rollenbasierter Zugriffskontrolle hinzugefügt.",
+            "- **Authentifizierungs-API**: `/register`- und `/login`-Endpunkte mit Token-basierter Autorisierung implementiert.",
+            "- **Einreichungspipeline**: `/submit`-Endpunkt erstellt, an den Benutzer GitHub-Repository-URLs für die manuelle Überprüfung senden können.",
+            "- **Admin-Aufsicht**: `/admin/submissions`-Endpunkt für Administratoren zur Überwachung und Überprüfung neuer Einträge hinzugefügt.",
+            "- **Schema-Update**: Datenbankmigrationen aktualisiert, um die Benutzerzuständigkeit für alle Marktplatz-Assets zu unterstützen."
+          ]
+        },
+        "fr": {
+          "title": "Système d'authentification et de soumission du Marketplace",
+          "summary": "Système d'enregistrement/connexion sécurisé et pipeline de soumission d'extensions implémentés pour le backend C++ du Marketplace.",
+          "items": [
+            "- **Gestion des utilisateurs** : Ajout de la table `users` avec hachage de mot de passe (SHA256+Salt) et contrôle d'accès basé sur les rôles.",
+            "- **API d'authentification** : Implémentation des points de terminaison `/register` et `/login` avec autorisation par jeton.",
+            "- **Pipeline de soumission** : Création du point de terminaison `/submit` où les utilisateurs peuvent envoyer des URL de dépôt GitHub pour examen manuel.",
+            "- **Supervision administrative** : Ajout du point de terminaison `/admin/submissions` pour que les administrateurs puissent surveiller et examiner les nouvelles entrées.",
+            "- **Mise à jour du schéma** : Mise à jour des migrations de base de données pour prendre en charge la propriété des utilisateurs pour tous les actifs du Marketplace."
+          ]
+        },
+        "es": {
+          "title": "Sistema de autenticación y envío del Marketplace",
+          "summary": "Se ha implementado un sistema seguro de registro/inicio de sesión y un pipeline de envío de extensiones para el backend de C++ del Marketplace.",
+          "items": [
+            "- **Gestión de usuarios**: Se ha añadido la tabla `users` con hash de contraseña (SHA256+Salt) y control de acceso basado en roles.",
+            "- **API de autenticación**: Implementación de los puntos de conexión `/register` y `/login` con autorización basada en tokens.",
+            "- **Pipeline de envío**: Creación del punto de conexión `/submit` donde los usuarios pueden enviar URL de repositorios de GitHub para su revisión manual.",
+            "- **Supervisión administrativa**: Se ha añadido el punto de conexión `/admin/submissions` para que los administradores supervisen y revisen las nuevas entradas.",
+            "- **Actualización del esquema**: Se han actualizado las migraciones de la base de datos para admitir la propiedad del usuario en todos los activos del Marketplace."
+          ]
+        },
+        "ja": {
+          "title": "Marketplace 認証および送信システム",
+          "summary": "C++ Marketplace バックエンド用に安全なユーザー登録/ログインシステムと拡張機能送信パイプラインを実装しました。",
+          "items": [
+            "- **ユーザー管理**: パスワードハッシュ（SHA256+ソルト）とロールベースのアクセス制御を備えた `users` テーブルを追加しました。",
+            "- **認証 API**: トークンベースの認可を備えた `/register` および `/login` エンドポイントを実装しました。",
+            "- **送信パイプライン**: ユーザーが手動レビューのために GitHub リポジトリ URL を送信できる `/submit` エンドポイントを作成しました。",
+            "- **管理監督**: 管理者が新しい入力を監視およびレビューするための `/admin/submissions` エンドポイントを追加しました。",
+            "- **スキーマの更新**: すべてのマーケットプレイス資産でユーザー所有権をサポートするようにデータベース移行を更新しました。"
+          ]
+        },
+        "zh": {
+          "title": "Marketplace 身份验证与提交系统",
+          "summary": "为 C++ Marketplace 后端实现了安全的用户注册/登录系统和扩展提交管道。",
+          "items": [
+            "- **用户管理**: 添加了具有密码哈希（SHA256+盐）和基于角色的访问控制的 `users` 表。",
+            "- **身份验证 API**: 实现了具有基于令牌授权的 `/register` 和 `/login` 端点。",
+            "- **提交管道**: 创建了 `/submit` 端点，用户可以在其中提交 GitHub 存储库 URL 以供手动审核。",
+            "- **管理监督**: 添加了 `/admin/submissions` 端点，供管理员监控和审核新条目。",
+            "- **架构更新**: 更新了数据库迁移，以支持所有 Marketplace 资产的用户所有权。"
+          ]
+        },
+        "ar": {
+          "title": "نظام المصادقة والتقديم للمتجر (Marketplace)",
+          "summary": "تم تنفيذ نظام آمن لتسجيل/تسجيل دخول المستخدمين ونظام لتقديم الإضافات للواجهة الخلفية للمتجر بلغة C++.",
+          "items": [
+            "- **إدارة المستخدمين**: تمت إضافة جدول `users` مع تشفير كلمات المرور (SHA256+Salt) والتحكم في الوصول بناءً على الأدوار.",
+            "- **واجهة المصادقة**: تم تنفيذ نقاط نهاية `/register` و`/login` مع تفويض يعتمد على التوكن.",
+            "- **نظام التقديم**: تم إنشاء نقطة نهاية `/submit` حيث يمكن للمستخدمين إرسال روابط مستودعات GitHub للمراجعة اليدوية.",
+            "- **الإشراف الإداري**: تمت إضافة نقطة نهاية `/admin/submissions` للمشرفين لمراقبة ومراجعة الإدخالات الجديدة.",
+            "- **تحديث المخطط**: تم تحديث عمليات ترحيل قاعدة البيانات لدعم ملكية المستخدم لجميع أصول المتجر."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-marketplace-backend-hardening-analytics",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Marketplace Backend",
+        "Analytics",
+        "Security",
+        "Admin Panel"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Marketplace Backend Hardening and Analytics Pipeline",
+          "summary": "Implemented security headers, rate limiting, and a robust analytics collection pipeline for the C++ Marketplace backend.",
+          "items": [
+            "- **Security Headers**: Applied global security headers including HSTS, CSP, XSS-Protection, and X-Robots-Tag.",
+            "- **Rate Limiting**: Added IP-based rate limiting (10 attempts/5 min) for authentication endpoints.",
+            "- **Analytics Pipeline**: Implemented `/analytics/collect` endpoint for anonymous telemetry and traffic classification (Human vs AI vs Bot).",
+            "- **Admin Oversight**: Enhanced `AdminController` with real-time health monitoring, visitor statistics, and active user tracking.",
+            "- **Sanitization**: Standardized input sanitization for all user-contributed metadata and GitHub URLs."
+          ]
+        },
+        "tr": {
+          "title": "Pazaryeri Arka Uç Sertleştirme ve Analiz Hattı",
+          "summary": "C++ Pazaryeri arka ucu için güvenlik başlıkları, hız sınırlama ve sağlam bir analiz toplama hattı uygulandı.",
+          "items": [
+            "- **Güvenlik Başlıkları**: HSTS, CSP, XSS Koruması ve X-Robots-Tag dahil olmak üzere genel güvenlik başlıkları uygulandı.",
+            "- **Hız Sınırlama**: Kimlik doğrulama uç noktaları için IP tabanlı hız sınırlama (10 deneme/5 dakika) eklendi.",
+            "- **Analiz Hattı**: Anonim telemetri ve trafik sınıflandırması (İnsan - Yapay Zeka - Bot) için `/analytics/collect` uç noktası uygulandı.",
+            "- **Yönetici Denetimi**: `AdminController`, gerçek zamanlı sağlık izleme, ziyaretçi istatistikleri ve aktif kullanıcı takibi ile geliştirildi.",
+            "- **Sanitizasyon**: Kullanıcı tarafından sağlanan tüm metadatalar ve GitHub URL'leri için standartlaştırılmış giriş temizleme işlemi uygulandı."
+          ]
+        },
+        "de": {
+          "title": "Marketplace-Backend-Härtung und Analytics-Pipeline",
+          "summary": "Implementierung von Sicherheits-Headern, Ratenbegrenzung und einer robusten Analytics-Erfassungspipeline für das C++ Marktplatz-Backend.",
+          "items": [
+            "- **Sicherheits-Header**: Anwendung globaler Sicherheits-Header wie HSTS, CSP, XSS-Protection und X-Robots-Tag.",
+            "- **Ratenbegrenzung**: Hinzufügen einer IP-basierten Ratenbegrenzung (10 Versuche/5 Min) für Authentifizierungs-Endpunkte.",
+            "- **Analytics-Pipeline**: Implementierung des `/analytics/collect`-Endpunkts für anonyme Telemetrie und Verkehrsklassifizierung (Mensch vs. KI vs. Bot).",
+            "- **Admin-Aufsicht**: Erweiterung des `AdminController` um Echtzeit-Zustandsüberwachung, Besucherstatistiken und Tracking aktiver Benutzer.",
+            "- **Bereinigung**: Standardisierung der Eingabebereinigung für alle benutzergesteuerten Metadaten und GitHub-URLs."
+          ]
+        },
+        "fr": {
+          "title": "Renforcement du backend du Marketplace et pipeline d'analyse",
+          "summary": "Implémentation d'en-têtes de sécurité, limitation du débit et d'un pipeline robuste de collecte d'analyses pour le backend C++ du Marketplace.",
+          "items": [
+            "- **En-têtes de sécurité** : Application d'en-têtes de sécurité globaux comprenant HSTS, CSP, XSS-Protection et X-Robots-Tag.",
+            "- **Limitation du débit** : Ajout d'une limitation de débit par IP (10 tentatives/5 min) pour les points de terminaison d'authentification.",
+            "- **Pipeline d'analyse** : Implémentation du point de terminaison `/analytics/collect` pour la télémétrie anonyme et la classification du trafic (Humain vs IA vs Bot).",
+            "- **Supervision administrative** : Amélioration de `AdminController` avec une surveillance de l'état en temps réel, des statistiques sur les visiteurs et un suivi des utilisateurs actifs.",
+            "- **Assainissement** : Standardisation de l'assainissement des entrées pour toutes les métadonnées fournies par les utilisateurs et les URL GitHub."
+          ]
+        },
+        "es": {
+          "title": "Refuerzo del backend del Marketplace y pipeline de analíticas",
+          "summary": "Implementación de cabeceras de seguridad, limitación de tasa y un robusto pipeline de recolección de analíticas para el backend de C++ del Marketplace.",
+          "items": [
+            "- **Cabeceras de seguridad**: Aplicación de cabeceras de seguridad globales incluyendo HSTS, CSP, XSS-Protection y X-Robots-Tag.",
+            "- **Limitación de tasa**: Se ha añadido limitación de tasa basada en IP (10 intentos/5 min) para los puntos de conexión de autenticación.",
+            "- **Pipeline de analíticas**: Implementación del punto de conexión `/analytics/collect` para telemetría anónima y clasificación de tráfico (Humano vs IA vs Bot).",
+            "- **Supervisión administrativa**: Se ha mejorado `AdminController` con monitoreo de salud en tiempo real, estadísticas de visitantes y seguimiento de usuarios activos.",
+            "- **Saneamiento**: Estandarización del saneamiento de entradas para todos los metadatos proporcionados por el usuario y las URL de GitHub."
+          ]
+        },
+        "ja": {
+          "title": "Marketplace バックエンドの強化と分析パイプライン",
+          "summary": "C++ Marketplace バックエンドにセキュリティヘッダー、レート制限、および堅牢な分析収集パイプラインを実装しました。",
+          "items": [
+            "- **セキュリティヘッダー**: HSTS、CSP、XSS-Protection、X-Robots-Tag を含むグローバルセキュリティヘッダーを適用しました。",
+            "- **レート制限**: 認証エンドポイントに IP ベースのレート制限（10 回の試行 / 5 分）を追加しました。",
+            "- **分析パイプライン**: 匿名テレメトリおよびトラフィック分類（人間 vs AI vs ボット）用の `/analytics/collect` エンドポイントを実装しました。",
+            "- **管理監督**: リアルタイムのヘルスモニタリング、訪問者統計、およびアクティブユーザー追跡により `AdminController` を強化しました。",
+            "- **サニタイズ**: すべてのユーザー提供メタデータおよび GitHub URL の入力サニタイズを標準化しました。"
+          ]
+        },
+        "zh": {
+          "title": "Marketplace 后端强化与分析管道",
+          "summary": "为 C++ Marketplace 后端实现了安全请求头、速率限制以及强大的分析收集管道。",
+          "items": [
+            "- **安全请求头**: 应用了包括 HSTS、CSP、XSS-Protection 和 X-Robots-Tag 在内的全局安全请求头。",
+            "- **速率限制**: 为身份验证端点添加了基于 IP 的速率限制（每 5 分钟 10 次尝试）。",
+            "- **分析管道**: 实现了用于匿名遥测和流量分类（人类 vs AI vs 机器人）的 `/analytics/collect` 端点。",
+            "- **管理监督**: 通过实时运行状况监测、访问者统计和活动用户跟踪增强了 `AdminController`。",
+            "- **清理**: 标准化了所有用户贡献的元数据和 GitHub URL 的输入清理。"
+          ]
+        },
+        "ar": {
+          "title": "تحصين الواجهة الخلفية للمتجر (Marketplace) ونظام التحليلات",
+          "summary": "تم تنفيذ رؤوس الأمان، وتحديد معدل الطلبات، ونظام قوي لجمع التحليلات للواجهة الخلفية للمتجر بلغة C++.",
+          "items": [
+            "- **رؤوس الأمان**: تم تطبيق رؤوس أمان عالمية بما في ذلك HSTS وCSP وحماية XSS وX-Robots-Tag.",
+            "- **تحديد معدل الطلبات**: تمت إضافة تحديد معدل الطلبات بناءً على IP (10 محاولات/5 دقائق) لنقاط نهاية المصادقة.",
+            "- **نظام التحليلات**: تم تنفيذ نقطة نهاية `/analytics/collect` للقياس عن بُعد المجهول وتصنيف حركة المرور (بشر مقابل ذكاء اصطناعي مقابل بوت).",
+            "- **الإشراف الإداري**: تم تحسين `AdminController` بمراقبة الحالة في الوقت الفعلي، وإحصائيات الزوار، وتتبع المستخدمين النشطين.",
+            "- **التنقية**: تم توحيد تنقية المدخلات لجميع البيانات الوصفية التي يساهم بها المستخدم وروابط GitHub."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-25-marketplace-cpp-backend-init",
       "date": "2026-02-25",
       "channel": "stable",
@@ -254,69 +579,292 @@
           ]
         },
         "de": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "Marktplatz C++ Backend Initialisierung",
+          "summary": "Hochleistungs-C++-Backend mit geringem Speicherverbrauch (< 500 MB RAM) unter Verwendung des Drogon-Frameworks, PostgreSQL und Redis gestartet.",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **C++ Backend**: Neuer Dienst unter `website/tengra-backend` mit C++20 und dem Drogon-Framework eingerichtet.",
+            "- **Optimierter Footprint**: Entwickelt für den Betrieb innerhalb von 500 MB RAM-Grenzen mit nicht-blockierendem I/O.",
+            "- **Schema-Design**: PostgreSQL-Schema für KI-Modelle, Erweiterungen (Themen/VSCode), Prompts und Workflows definiert.",
+            "- **Cache-Ebene**: Redis-Integration für schnellen Metadatenzugriff und Marktplatz-Indizierung hinzugefügt.",
+            "- **Prozessmanagement**: PM2-Ökosystemkonfiguration zum Verwalten des C++-Backends und des React-Frontends hinzugefügt."
           ]
         },
         "fr": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "Initialisation du backend C++ du Marketplace",
+          "summary": "Lancement d'un backend C++ haute performance avec une faible empreinte mémoire (< 500 Mo de RAM) utilisant le framework Drogon, PostgreSQL et Redis.",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **Backend C++** : Nouveau service mis en place sous `website/tengra-backend` avec C++20 et le framework Drogon.",
+            "- **Empreinte optimisée** : Conçu pour fonctionner dans les limites de 500 Mo de RAM avec des E/S non bloquantes.",
+            "- **Conception du schéma** : Schéma PostgreSQL défini pour les modèles d'IA, les extensions (thèmes/VSCode), des prompts et les workflows.",
+            "- **Couche de cache** : Intégration de Redis ajoutée pour un accès rapide aux métadonnées et l'indexation du Marketplace.",
+            "- **Gestion des processus** : Ajout de la configuration de l'écosystème PM2 pour gérer le backend C++ et le frontend React."
           ]
         },
         "es": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "Inicialización del backend de C++ del Marketplace",
+          "summary": "Lanzamiento de un backend de C++ de alto rendimiento con bajo consumo de memoria (< 500 MB de RAM) utilizando el framework Drogon, PostgreSQL y Redis.",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **Backend de C++**: Se ha configurado un nuevo servicio en `website/tengra-backend` con C++20 y el framework Drogon.",
+            "- **Huella optimizada**: Diseñado para operar dentro de los límites de 500 MB de RAM con E/S no bloqueante.",
+            "- **Diseño del esquema**: Esquema de PostgreSQL definido para modelos de IA, extensiones (temas/VSCode), prompts y flujos de trabajo.",
+            "- **Capa de caché**: Se ha añadido la integración de Redis para un acceso rápido a los metadatos e indexación del Marketplace.",
+            "- **Gestión de procesos**: Se ha añadido la configuración del ecosistema PM2 para gestionar el backend de C++ y el frontend de React."
           ]
         },
         "ja": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "Marketplace C++ バックエンドの初期化",
+          "summary": "Drogon フレームワーク、PostgreSQL、および Redis を使用して、低メモリ消費（< 500MB RAM）の高パフォーマンス C++ バックエンドを開始しました。",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **C++ バックエンド**: C++20 と Drogon フレームワークを使用して、`website/tengra-backend` の下に新しいサービスをセットアップしました。",
+            "- **最適化されたフットプリント**: 非ブロッキング I/O を使用して 500MB RAM の範囲内で動作するように設計されています。",
+            "- **スキーマ設計**: AI モデル、拡張機能（テーマ/VSCode）、プロンプト、およびワークフローの PostgreSQL スキーマを定義しました。",
+            "- **キャッシュ層**: メタデータへの高速アクセスとマーケットプレイスのインデックス作成のために Redis 統合を追加しました。",
+            "- **プロセス管理**: C++ バックエンドと React フロントエンドを管理するための PM2 エコシステム構成を追加しました。"
           ]
         },
         "zh": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "Marketplace C++ 后端初始化",
+          "summary": "使用 Drogon 框架、PostgreSQL 和 Redis 启动了低内存消耗（< 500MB RAM）的高性能 C++ 后端。",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **C++ 后端**: 使用 C++20 和 Drogon 框架在 `website/tengra-backend` 下建立了新服务。",
+            "- **优化占用空间**: 旨在使用非阻塞 I/O 在 500MB RAM 限制内运行。",
+            "- **架构设计**: 为 AI 模型、扩展（主题/VSCode）、提示和工作流定义了 PostgreSQL 架构。",
+            "- **缓存层**: 添加了 Redis 集成，用于快速元数据访问和 Marketplace 索引。",
+            "- **进程管理**: 添加了 PM2 生态系统配置，用于管理 C++ 后端和 React 前端。"
           ]
         },
         "ar": {
-          "title": "Marketplace C++ Backend Initialization",
-          "summary": "Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.",
+          "title": "تهيئة الواجهة الخلفية للمتجر (Marketplace) بلغة C++",
+          "summary": "تم إطلاق واجهة خلفية عالية الأداء بلغة C++ مع استهلاك منخفض للذاكرة (أقل من 500 ميجابايت رام) باستخدام إطار Drogon وPostgreSQL وRedis.",
           "items": [
-            "- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.",
-            "- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.",
-            "- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.",
-            "- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.",
-            "- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend."
+            "- **الواجهة الخلفية C++**: تم إعداد خدمة جديدة تحت `website/tengra-backend` باستخدام C++20 وإطار Drogon.",
+            "- **بصمة محسنة**: مصممة للعمل ضمن حدود 500 ميجابايت من ذاكرة الوصول العشوائي مع إدخال/إخراج غير محظور.",
+            "- **تصميم المخطط**: تم تحديد مخطط PostgreSQL لنماذج الذكاء الاصطناعي، والإضافات (الثيمات/VSCode)، والمطالبات، وسير العمل.",
+            "- **طبقة التخزين المؤقت**: تمت إضافة تكامل Redis للوصول السريع إلى البيانات الوصفية وفهرسة المتجر.",
+            "- **إدارة العمليات**: تمت إضافة تكوين نظام PM2 لإدارة الواجهة الخلفية C++ والواجهة الأمامية React."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-mkt-fe-003-i18n-auth-submission",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AuthModal",
+        "SubmissionModal",
+        "i18n",
+        "Marketplace Frontend"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "MKT-FE-003: Auth and Submission Modal i18n Migration",
+          "summary": "Replaced all hardcoded isTurkish ternary strings in AuthModal and SubmissionModal with typed i18n dictionary lookups using the existing AuthModalTranslations and SubmissionModalTranslations interfaces.",
+          "items": [
+            "- **AuthModal**: Replaced ~20 inline `isTurkish ? 'TR' : 'EN'` ternaries with `t.authModal.*` lookups covering login/register titles, descriptions, labels, buttons, and error messages.",
+            "- **SubmissionModal**: Replaced ~12 inline ternaries with `t.submissionModal.*` lookups covering submission title, description, form labels, extension type options, and status messages.",
+            "- **Null Safety**: Added null guards for optional `authModal` and `submissionModal` i18n sections to gracefully handle locales that haven't been translated yet.",
+            "- **Verification**: TypeScript compilation and Vite production build both pass with zero errors."
+          ]
+        },
+        "tr": {
+          "title": "MKT-FE-003: Auth ve Gönderim Modalı i18n Geçişi",
+          "summary": "AuthModal ve SubmissionModal bileşenlerindeki tüm sabit kodlanmış isTurkish üçlü ifadeleri, mevcut AuthModalTranslations ve SubmissionModalTranslations arayüzleri kullanılarak yazılmış i18n sözlük aramalarıyla değiştirildi.",
+          "items": [
+            "- **AuthModal**: Giriş/kayıt başlıkları, açıklamalar, etiketler, düğmeler ve hata mesajlarını kapsayan yaklaşık 20 satır içi `isTurkish ? 'TR' : 'EN'` üçlü ifadesi `t.authModal.*` aramalarıyla değiştirildi.",
+            "- **SubmissionModal**: Gönderim başlığı, açıklama, form etiketleri, uzantı türü seçenekleri ve durum mesajlarını kapsayan yaklaşık 12 satır içi üçlü ifade `t.submissionModal.*` aramalarıyla değiştirildi.",
+            "- **Null Güvenliği**: Henüz çevrilmemiş diller için isteğe bağlı `authModal` ve `submissionModal` i18n bölümlerine null koruyucuları eklendi.",
+            "- **Doğrulama**: TypeScript derlemesi ve Vite üretim derlemesi sıfır hatayla geçti."
+          ]
+        },
+        "de": {
+          "title": "MKT-FE-003: Auth- und Submission-Modal i18n-Migration",
+          "summary": "Alle hartcodierten isTurkish-Ternary-Strings in AuthModal und SubmissionModal durch typisierte i18n-Dictionary-Lookups ersetzt.",
+          "items": [
+            "- **AuthModal**: ~20 inline isTurkish-Ternaries durch t.authModal.*-Lookups ersetzt.",
+            "- **SubmissionModal**: ~12 inline Ternaries durch t.submissionModal.*-Lookups ersetzt.",
+            "- **Null-Sicherheit**: Null-Guards fuer optionale i18n-Abschnitte hinzugefuegt.",
+            "- **Verifizierung**: TypeScript-Kompilierung und Vite-Produktionsbuild bestanden fehlerfrei."
+          ]
+        },
+        "fr": {
+          "title": "MKT-FE-003 : Migration i18n des modales Auth et Submission",
+          "summary": "Remplacement de toutes les strings ternaires isTurkish codees en dur dans AuthModal et SubmissionModal par des lookups de dictionnaire i18n types.",
+          "items": [
+            "- **AuthModal**: ~20 ternaires isTurkish inline remplaces par des lookups t.authModal.*.",
+            "- **SubmissionModal**: ~12 ternaires inline remplaces par des lookups t.submissionModal.*.",
+            "- **Securite Null**: Guards null ajoutes pour les sections i18n optionnelles.",
+            "- **Verification**: Compilation TypeScript et build de production Vite passes sans erreur."
+          ]
+        },
+        "es": {
+          "title": "MKT-FE-003: Migración i18n de los modales de autenticación y envío",
+          "summary": "Se han reemplazado todas las cadenas ternarias isTurkish codificadas de forma rígida en AuthModal y SubmissionModal por búsquedas de diccionario i18n tipadas.",
+          "items": [
+            "- **AuthModal**: Se han reemplazado ~20 ternarios isTurkish en línea con búsquedas t.authModal.*.",
+            "- **SubmissionModal**: Se han reemplazado ~12 ternarios en línea con búsquedas t.submissionModal.*.",
+            "- **Seguridad nula**: Se han añadido protectores nulos para las secciones i18n opcionales.",
+            "- **Verificación**: La compilación de TypeScript y la compilación de producción de Vite pasaron con cero errores."
+          ]
+        },
+        "ja": {
+          "title": "MKT-FE-003: Marketplace 認証および送信モーダルの i18n 移行",
+          "summary": "AuthModal と SubmissionModal のハードコードされた isTurkish 三項演算子文字列を、型付き i18n 辞書ルックアップに置き換えました。",
+          "items": [
+            "- **AuthModal**: 約 20 個のインライン isTurkish 三項演算子を t.authModal.* ルックアップに置き換えました。",
+            "- **SubmissionModal**: 約 12 個のインライン三項演算子を t.submissionModal.* ルックアップに置き換えました。",
+            "- **Null 安全性**: オプションの i18n セクションに Null ガードを追加しました。",
+            "- **検証**: TypeScript コンパイルと Vite プロダクションビルドがエラーなしで合格しました。"
+          ]
+        },
+        "zh": {
+          "title": "MKT-FE-003: Marketplace 身份验证与提交模态框 i18n 迁移",
+          "summary": "将 AuthModal 和 SubmissionModal 中所有硬编码的 isTurkish 三元字符串替换为类型化 i18n 字典查找。",
+          "items": [
+            "- **AuthModal**: 约 20 个内联 isTurkish 三元运算符替换为 t.authModal.* 查找。",
+            "- **SubmissionModal**: 约 12 个内联三元运算符替换为 t.submissionModal.* 查找。",
+            "- **Null 安全**: 为可选的 i18n 部分添加了 Null 守卫。",
+            "- **验证**: TypeScript 编译和 Vite 生产构建均零错误通过。"
+          ]
+        },
+        "ar": {
+          "title": "MKT-FE-003: ترحيل i18n لنوافذ المصادقة والتقديم في المتجر",
+          "summary": "تم استبدال جميع سلاسل isTurkish الثلاثية المشفرة في AuthModal وSubmissionModal بعمليات بحث في قاموس i18n المحددة النوع.",
+          "items": [
+            "- **AuthModal**: تم استبدال حوالي 20 عملية ثلاثية isTurkish مضمنة بعمليات بحث t.authModal.*.",
+            "- **SubmissionModal**: تم استبدال حوالي 12 عملية ثلاثية مضمنة بعمليات بحث t.submissionModal.*.",
+            "- **أمان Null**: تمت إضافة حراس Null للأقسام i18n الاختيارية.",
+            "- **التحقق**: اجتاز تجميع TypeScript وبناء إنتاج Vite بدون أخطاء."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-project-structure-refactor",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Build System",
+        "Testing",
+        "Project Structure"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Project Structure Refactor: Rename src/services to src/native and Consolidate Test Setup",
+          "summary": "Renamed the Rust workspace directory from src/services to src/native to eliminate naming confusion with Electron main process services. Consolidated test setup by moving src/test/setup.ts to src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: Renamed `src/services/` directory to `src/native/` to clearly distinguish native Rust/Go microservices from Electron main process services.",
+            "- **BACKLOG-0502**: Moved `src/test/setup.ts` to `src/tests/main/setup.ts` and removed redundant `src/test/` directory.",
+            "- Updated `scripts/build-native.js` to reference `src/native/` path.",
+            "- Updated `scripts/install-db-service.ps1` to reference `src/native/` path.",
+            "- Updated `.gitignore` Rust target ignore pattern from `src/services/**/target` to `src/native/**/target`.",
+            "- Updated `vitest.config.ts` setup file path to `src/tests/main/setup.ts`.",
+            "- Updated `.codex/PROJECT_STRUCTURE.md` to reflect new directory layout."
+          ]
+        },
+        "tr": {
+          "title": "Proje Yapısı Yeniden Düzenleme: src/services → src/native ve Test Yapılandırması Birleştirme",
+          "summary": "Rust çalışma alanı dizini, Electron ana süreç servisleri ile isim karışıklığını ortadan kaldırmak için src/services'den src/native'e yeniden adlandırıldı. Test kurulum dosyası src/test/setup.ts'den src/tests/main/setup.ts'ye taşınarak birleştirildi.",
+          "items": [
+            "- **BACKLOG-0501**: Yerel Rust/Go mikro hizmetlerini Electron ana süreç servislerinden net bir şekilde ayırt etmek için `src/services/` dizini `src/native/` olarak yeniden adlandırıldı.",
+            "- **BACKLOG-0502**: `src/test/setup.ts` dosyası `src/tests/main/setup.ts`'ye taşındı ve gereksiz `src/test/` dizini kaldırıldı.",
+            "- `scripts/build-native.js` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.",
+            "- `scripts/install-db-service.ps1` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.",
+            "- `.gitignore` Rust hedef yok sayma deseni `src/services/**/target`'dan `src/native/**/target`'a güncellendi.",
+            "- `vitest.config.ts` kurulum dosyası yolu `src/tests/main/setup.ts` olarak güncellendi.",
+            "- `.codex/PROJECT_STRUCTURE.md` yeni dizin düzenini yansıtacak şekilde güncellendi."
+          ]
+        },
+        "de": {
+          "title": "Projektstruktur-Refactoring: src/services → src/native and Test-Setup-Konsolidierung",
+          "summary": "Umbenennung des Rust-Workspace-Verzeichnisses von src/services in src/native zur Vermeidung von Namenskonflikten mit Electron-Hauptprozess-Diensten. Konsolidierung des Test-Setups durch Verschieben von src/test/setup.ts nach src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: Umbenennung des Verzeichnisses `src/services/` in `src/native/`, um native Rust/Go-Mikrodienste klar von Electron-Hauptprozess-Diensten zu unterscheiden.",
+            "- **BACKLOG-0502**: Verschieben von `src/test/setup.ts` nach `src/tests/main/setup.ts` und Entfernen des redundanten Verzeichnisses `src/test/`.",
+            "- Aktualisierung von `scripts/build-native.js` auf den Pfad `src/native/`.",
+            "- Aktualisierung von `scripts/install-db-service.ps1` auf den Pfad `src/native/`.",
+            "- Aktualisierung des Rust-Target-Ignore-Musters in `.gitignore` von `src/services/**/target` zu `src/native/**/target`.",
+            "- Aktualisierung des Setup-Dateipfads in `vitest.config.ts` auf `src/tests/main/setup.ts`.",
+            "- Aktualisierung von `.codex/PROJECT_STRUCTURE.md` zur Spiegelung des neuen Verzeichnis-Layouts."
+          ]
+        },
+        "fr": {
+          "title": "Refactorisation de la structure du projet : src/services → src/native et consolidation de la configuration des tests",
+          "summary": "Renommage du répertoire de l'espace de travail Rust de src/services en src/native pour éliminer la confusion de nommage avec les services de processus principal Electron. Consolidation de la configuration des tests en déplaçant src/test/setup.ts vers src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: Renommage du répertoire `src/services/` en `src/native/` pour distinguer clairement les microservices Rust/Go natifs des services de processus principal Electron.",
+            "- **BACKLOG-0502**: Déplacement de `src/test/setup.ts` vers `src/tests/main/setup.ts` et suppression du répertoire `src/test/` redondant.",
+            "- Mise à jour de `scripts/build-native.js` pour référencer le chemin `src/native/`.",
+            "- Mise à jour de `scripts/install-db-service.ps1` pour référencer le chemin `src/native/`.",
+            "- Mise à jour du motif d'exclusion de la cible Rust dans `.gitignore` de `src/services/**/target` à `src/native/**/target`.",
+            "- Mise à jour du chemin du fichier de configuration dans `vitest.config.ts` vers `src/tests/main/setup.ts`.",
+            "- Mise à jour de `.codex/PROJECT_STRUCTURE.md` pour refléter la nouvelle disposition des répertoires."
+          ]
+        },
+        "es": {
+          "title": "Refactorización de la estructura del proyecto: src/services → src/native y consolidación de la configuración de pruebas",
+          "summary": "Cambio de nombre del directorio del espacio de trabajo de Rust de src/services a src/native para eliminar la confusión de nombres con los servicios del proceso principal de Electron. Consolidación de la configuración de pruebas moviendo src/test/setup.ts a src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: Cambio de nombre del directorio `src/services/` a `src/native/` para distinguir claramente los microservicios nativos de Rust/Go de los servicios del proceso principal de Electron.",
+            "- **BACKLOG-0502**: Movimiento de `src/test/setup.ts` a `src/tests/main/setup.ts` y eliminación del directorio redundante `src/test/`.",
+            "- Actualización de `scripts/build-native.js` para hacer referencia a la ruta `src/native/`.",
+            "- Actualización de `scripts/install-db-service.ps1` para hacer referencia a la ruta `src/native/`.",
+            "- Actualización del patrón de ignorar el destino de Rust en `.gitignore` de `src/services/**/target` a `src/native/**/target`.",
+            "- Actualización de la ruta del archivo de configuración en `vitest.config.ts` a `src/tests/main/setup.ts`.",
+            "- Actualización de `.codex/PROJECT_STRUCTURE.md` para reflejar el nuevo diseño del directorio."
+          ]
+        },
+        "ja": {
+          "title": "プロジェクト構造のリファクタリング: src/services → src/native およびテスト・セットアップの統合",
+          "summary": "Electron メインプロセスのサービスとの命名の混乱を避けるため、Rust ワークスペースのディレクトリ名を src/services から src/native に変更しました。また、src/test/setup.ts を src/tests/main/setup.ts に移動してテスト設定を統合しました。",
+          "items": [
+            "- **BACKLOG-0501**: ネイティブの Rust/Go マイクロサービスと Electron メインプロセスサービスを明確に区别するため、`src/services/` ディレクトリを `src/native/` に変更しました。",
+            "- **BACKLOG-0502**: `src/test/setup.ts` を `src/tests/main/setup.ts` に移動し、冗長な `src/test/` ディレクトリを削除しました。",
+            "- `scripts/build-native.js` が `src/native/` パスを参照するように更新しました。",
+            "- `scripts/install-db-service.ps1` が `src/native/` パスを参照するように更新しました。",
+            "- `.gitignore` の Rust ターゲット無視パターンを `src/services/**/target` から `src/native/**/target` に更新しました。",
+            "- `vitest.config.ts` のセットアップファイルパスを `src/tests/main/setup.ts` に更新しました。",
+            "- 新しいディレクトリレイアウトを反映するように `.codex/PROJECT_STRUCTURE.md` を更新しました。"
+          ]
+        },
+        "zh": {
+          "title": "项目结构重构：src/services → src/native 及整合测试设置",
+          "summary": "将 Rust 工作区目录从 src/services 重命名为 src/native，以消除与 Electron 主进程服务的命名混淆。通过将 src/test/setup.ts 移动到 src/tests/main/setup.ts 来整合测试设置。",
+          "items": [
+            "- **BACKLOG-0501**: 将 `src/services/` 目录重命名为 `src/native/`，以明确区分原生 Rust/Go 微服务与 Electron 主进程服务。",
+            "- **BACKLOG-0502**: 将 `src/test/setup.ts` 移动到 `src/tests/main/setup.ts` 并删除了冗余的 `src/test/` 目录。",
+            "- 更新 `scripts/build-native.js` 以引用 `src/native/` 路径。",
+            "- 更新 `scripts/install-db-service.ps1` 以引用 `src/native/` 路径。",
+            "- 将 `.gitignore` 中的 Rust 目标忽略模式从 `src/services/**/target` 更新为 `src/native/**/target`。",
+            "- 将 `vitest.config.ts` 中的设置文件路径更新为 `src/tests/main/setup.ts`。",
+            "- 更新 `.codex/PROJECT_STRUCTURE.md` 以反映新的目录布局。"
+          ]
+        },
+        "ar": {
+          "title": "إعادة بناء هيكل المشروع: src/services ← src/native وتوحيد إعداد الاختبار",
+          "summary": "تمت إعادة تسمية دليل مساحة عمل Rust من src/services إلى src/native للتخلص من ارتباك التسمية مع خدمات عملية Electron الرئيسية. تم توحيد إعداد الاختبار عن طريق نقل src/test/setup.ts إلى src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: إعادة تسمية دليل `src/services/` إلى `src/native/` للتمييز بوضوح بين خدمات Rust/Go المصغرة الأصلية وخدمات عملية Electron الرئيسية.",
+            "- **BACKLOG-0502**: نقل `src/test/setup.ts` إلى `src/tests/main/setup.ts` وإزالة دليل `src/test/` الزائد.",
+            "- تحديث `scripts/build-native.js` للإشارة إلى مسار `src/native/`.",
+            "- تحديث `scripts/install-db-service.ps1` للإشارة إلى مسار `src/native/`.",
+            "- تحديث نمط تجاهل هدف Rust في `.gitignore` من `src/services/**/target` إلى `src/native/**/target`.",
+            "- تحديث مسار ملف الإعداد في `vitest.config.ts` إلى `src/tests/main/setup.ts`.",
+            "- تحديث `.codex/PROJECT_STRUCTURE.md` ليعكس تخطيط الدليل الجديد."
           ]
         }
       }

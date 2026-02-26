@@ -158,8 +158,6 @@ export class ProcessManagerService extends EventEmitter implements LifecycleAwar
                 const isKnownProgressLine =
                     options.name === 'model-service' &&
                     (lower.includes('scraping page') ||
-                        lower.includes('running initial ollama library scrape') ||
-                        lower.includes('reached page limit') ||
                         lower.includes('scraped ') ||
                         lower.includes('using http auth store on port') ||
                         lower.includes('starting cliproxyapi'));

@@ -1,18 +1,16 @@
 /**
  * Marketplace Service
- * Reads marketplace models from database. Data sync is handled by model-service.
+ * Reads marketplace models from database. Data sync is handled by website backend.
  */
 
 import { BaseService } from '@main/services/base.service';
 import { DatabaseClientService } from '@main/services/data/database-client.service';
 import { JobSchedulerService } from '@main/services/system/job-scheduler.service';
-import { ProcessManagerService } from '@main/services/system/process-manager.service';
 import { DbMarketplaceModel } from '@shared/types/db-api';
 
 export interface MarketplaceServiceDeps {
     databaseClient: DatabaseClientService;
     jobScheduler: JobSchedulerService;
-    processManager: ProcessManagerService;
 }
 
 export interface MarketplaceRefreshResult {
@@ -77,40 +75,17 @@ export class MarketplaceService extends BaseService {
     }
 
     async getModelDetails(
-        modelName: string,
-        provider: 'ollama' | 'huggingface' = 'ollama'
+        _modelName: string,
+        _provider: 'ollama' | 'huggingface' = 'ollama'
     ): Promise<MarketplaceModelDetails | null> {
-        try {
-            const response = provider === 'huggingface'
-                ? await this.deps.processManager.sendGetRequest<{
-                    success: boolean;
-                    data?: HuggingFaceMarketplaceModelDetails;
-                    error?: string;
-                }>(
-                    'model-service',
-                    `/marketplace/huggingface?modelId=${encodeURIComponent(modelName)}`
-                )
-                : await this.deps.processManager.sendGetRequest<{
-                    success: boolean;
-                    data?: OllamaMarketplaceModelDetails;
-                    error?: string;
-                }>('model-service', `/marketplace/ollama/${encodeURIComponent(modelName)}`);
-
-            if (!response.success || !response.data) {
-                return null;
-            }
-
-            return response.data;
-        } catch {
-            return null;
-        }
+        return null;
     }
 
     async refresh(): Promise<MarketplaceRefreshResult> {
         return {
             success: false,
             count: 0,
-            error: 'Manual marketplace refresh is disabled; model-service syncs automatically.',
+            error: 'Manual marketplace refresh is disabled; website backend syncs automatically.',
         };
     }
 

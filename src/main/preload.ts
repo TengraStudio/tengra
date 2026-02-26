@@ -1893,6 +1893,15 @@ export interface ElectronAPI {
         delete: (path: string) => Promise<boolean>;
         open: (path: string) => Promise<boolean>;
         reveal: (path: string) => Promise<boolean>;
+        batchDownload: (input: {
+            filePaths: string[];
+            targetDirectory: string;
+        }) => Promise<{
+            success: boolean;
+            copied: number;
+            skipped: number;
+            errors: string[];
+        }>;
     };
 
     onChatGenerationStatus: (
@@ -3800,6 +3809,7 @@ const api: ElectronAPI = {
         delete: path => ipcRenderer.invoke('gallery:delete', path),
         open: path => ipcRenderer.invoke('gallery:open', path),
         reveal: path => ipcRenderer.invoke('gallery:reveal', path),
+        batchDownload: input => ipcRenderer.invoke('gallery:batch-download', input),
     },
 
     onChatGenerationStatus: callback => {

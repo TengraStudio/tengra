@@ -1,5 +1,19 @@
 # سجل التغييرات
 
+## [2026-02-26]
+
+### NASA Power of Ten: إعادة بناء المكاسب السريعة
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: إعادة بناء عدة ملفات كبيرة للامتثال لقاعدة NASA Power of Ten رقم 3 (حد 60 سطرًا لكل وظيفة) وتحسين نمطية البرمجية.
+
+- **ImageSettingsTab**: استخراج أكثر من 10 استدعاءات للمناولة والحالة المرتبطة بها في خطاف `useImageSettingsHandlers` جديد، مما قلل من حجم المكون بنسبة 65% تقريبًا.
+- **useWorkspaceManager**: استخراج منطق إدارة نقاط التثبيت (إضافة/إزالة النقاط، اختبارات SSH، اختيار المجلدات) في خطاف `useMountManagement` جديد، مما قلل من حجم الخطاف الرئيسي بنسبة 60% تقريبًا.
+- **extension.util**: تقسيم وظيفة `validateManifest` المكونة من 67 سطرًا إلى أدوات تحقق متخصصة (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
+- **سلامة الأنواع**: إصلاح تراجعات الأنواع الثانوية في اختبارات ملف تعريف SSH ومناولي تخزين الإعدادات التي تم إدخالها أثناء استخراج الخطافات.
+- **تم التحقق**: تحتوي جميع الملفات التي تمت إعادة بنائها الآن على وظائف أقل بكثير من حد 60 سطرًا. نجحت مجموعات اختبار البناء و lint ومساحة العمل.
+
 ## [2026-02-25]
 
 ### إعادة هيكلة i18n وتحديث واجهة المتجر
@@ -24,17 +38,66 @@
 - **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
 - **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
 
-### Marketplace C++ Backend Initialization
+### نظام المصادقة والتقديم للمتجر (Marketplace)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.
+- **Summary**: تم تنفيذ نظام آمن لتسجيل/تسجيل دخول المستخدمين ونظام لتقديم الإضافات للواجهة الخلفية للمتجر بلغة C++.
 
-- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.
-- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.
-- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
-- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
-- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+- **إدارة المستخدمين**: تمت إضافة جدول `users` مع تشفير كلمات المرور (SHA256+Salt) والتحكم في الوصول بناءً على الأدوار.
+- **واجهة المصادقة**: تم تنفيذ نقاط نهاية `/register` و`/login` مع تفويض يعتمد على التوكن.
+- **نظام التقديم**: تم إنشاء نقطة نهاية `/submit` حيث يمكن للمستخدمين إرسال روابط مستودعات GitHub للمراجعة اليدوية.
+- **الإشراف الإداري**: تمت إضافة نقطة نهاية `/admin/submissions` للمشرفين لمراقبة ومراجعة الإدخالات الجديدة.
+- **تحديث المخطط**: تم تحديث عمليات ترحيل قاعدة البيانات لدعم ملكية المستخدم لجميع أصول المتجر.
+
+### تحصين الواجهة الخلفية للمتجر (Marketplace) ونظام التحليلات
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تم تنفيذ رؤوس الأمان، وتحديد معدل الطلبات، ونظام قوي لجمع التحليلات للواجهة الخلفية للمتجر بلغة C++.
+
+- **رؤوس الأمان**: تم تطبيق رؤوس أمان عالمية بما في ذلك HSTS وCSP وحماية XSS وX-Robots-Tag.
+- **تحديد معدل الطلبات**: تمت إضافة تحديد معدل الطلبات بناءً على IP (10 محاولات/5 دقائق) لنقاط نهاية المصادقة.
+- **نظام التحليلات**: تم تنفيذ نقطة نهاية `/analytics/collect` للقياس عن بُعد المجهول وتصنيف حركة المرور (بشر مقابل ذكاء اصطناعي مقابل بوت).
+- **الإشراف الإداري**: تم تحسين `AdminController` بمراقبة الحالة في الوقت الفعلي، وإحصائيات الزوار، وتتبع المستخدمين النشطين.
+- **التنقية**: تم توحيد تنقية المدخلات لجميع البيانات الوصفية التي يساهم بها المستخدم وروابط GitHub.
+
+### تهيئة الواجهة الخلفية للمتجر (Marketplace) بلغة C++
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تم إطلاق واجهة خلفية عالية الأداء بلغة C++ مع استهلاك منخفض للذاكرة (أقل من 500 ميجابايت رام) باستخدام إطار Drogon وPostgreSQL وRedis.
+
+- **الواجهة الخلفية C++**: تم إعداد خدمة جديدة تحت `website/tengra-backend` باستخدام C++20 وإطار Drogon.
+- **بصمة محسنة**: مصممة للعمل ضمن حدود 500 ميجابايت من ذاكرة الوصول العشوائي مع إدخال/إخراج غير محظور.
+- **تصميم المخطط**: تم تحديد مخطط PostgreSQL لنماذج الذكاء الاصطناعي، والإضافات (الثيمات/VSCode)، والمطالبات، وسير العمل.
+- **طبقة التخزين المؤقت**: تمت إضافة تكامل Redis للوصول السريع إلى البيانات الوصفية وفهرسة المتجر.
+- **إدارة العمليات**: تمت إضافة تكوين نظام PM2 لإدارة الواجهة الخلفية C++ والواجهة الأمامية React.
+
+### MKT-FE-003: ترحيل i18n لنوافذ المصادقة والتقديم في المتجر
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: تم استبدال جميع سلاسل isTurkish الثلاثية المشفرة في AuthModal وSubmissionModal بعمليات بحث في قاموس i18n المحددة النوع.
+
+- **AuthModal**: تم استبدال حوالي 20 عملية ثلاثية isTurkish مضمنة بعمليات بحث t.authModal.*.
+- **SubmissionModal**: تم استبدال حوالي 12 عملية ثلاثية مضمنة بعمليات بحث t.submissionModal.*.
+- **أمان Null**: تمت إضافة حراس Null للأقسام i18n الاختيارية.
+- **التحقق**: اجتاز تجميع TypeScript وبناء إنتاج Vite بدون أخطاء.
+
+### إعادة بناء هيكل المشروع: src/services ← src/native وتوحيد إعداد الاختبار
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: تمت إعادة تسمية دليل مساحة عمل Rust من src/services إلى src/native للتخلص من ارتباك التسمية مع خدمات عملية Electron الرئيسية. تم توحيد إعداد الاختبار عن طريق نقل src/test/setup.ts إلى src/tests/main/setup.ts.
+
+- **BACKLOG-0501**: إعادة تسمية دليل `src/services/` إلى `src/native/` للتمييز بوضوح بين خدمات Rust/Go المصغرة الأصلية وخدمات عملية Electron الرئيسية.
+- **BACKLOG-0502**: نقل `src/test/setup.ts` إلى `src/tests/main/setup.ts` وإزالة دليل `src/test/` الزائد.
+- تحديث `scripts/build-native.js` للإشارة إلى مسار `src/native/`.
+- تحديث `scripts/install-db-service.ps1` للإشارة إلى مسار `src/native/`.
+- تحديث نمط تجاهل هدف Rust في `.gitignore` من `src/services/**/target` إلى `src/native/**/target`.
+- تحديث مسار ملف الإعداد في `vitest.config.ts` إلى `src/tests/main/setup.ts`.
+- تحديث `.codex/PROJECT_STRUCTURE.md` ليعكس تخطيط الدليل الجديد.
 
 ## [2026-02-23]
 

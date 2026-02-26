@@ -1,5 +1,39 @@
 {
-  "2026-02-25-marketplace-auth-submissions": {
+  "2026-02-26-quick-wins-refactor": {
+    "title": "NASA On Gücü: Hızlı Kazanımlar Refaktörü",
+    "summary": "NASA On Gücü kuralı #3'e (60 satır fonksiyon sınırı) uymak için birkaç büyük dosya yeniden düzenlendi ve kod tabanı modülerliği artırıldı.",
+    "items": [
+      "- **ImageSettingsTab**: 10'dan fazla geri çağırma ve ilgili durum yeni bir `useImageSettingsHandlers` hook'una taşınarak bileşen boyutu %65 azaltıldı.",
+      "- **useWorkspaceManager**: Bağlantı yönetimi mantığı yeni bir `useMountManagement` hook'una taşınarak ana hook boyutu %60 azaltıldı.",
+      "- **extension.util**: 67 satırlık `validateManifest` fonksiyonu özelleşmiş yardımcı fonksiyonlara (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`) bölündü.",
+      "- **Tip Güvenliği**: Hook ayrıştırma sırasında oluşan SSH profil testi ve ayar kaydetme işleyicilerindeki tip sorunları giderildi.",
+      "- **Doğrulama**: Refaktör edilen tüm dosyalar artık 60 satır sınırının altındaki fonksiyonlar içeriyor. Derleme, lint ve çalışma alanı testleri başarıyla geçiyor."
+    ]
+  },
+  "2026-02-25-mkt-fe-003-i18n-auth-submission": {
+    "title": "MKT-FE-003: Auth ve Gönderim Modalı i18n Geçişi",
+    "summary": "AuthModal ve SubmissionModal bileşenlerindeki tüm sabit kodlanmış isTurkish üçlü ifadeleri, mevcut AuthModalTranslations ve SubmissionModalTranslations arayüzleri kullanılarak yazılmış i18n sözlük aramalarıyla değiştirildi.",
+    "items": [
+      "- **AuthModal**: Giriş/kayıt başlıkları, açıklamalar, etiketler, düğmeler ve hata mesajlarını kapsayan yaklaşık 20 satır içi `isTurkish ? 'TR' : 'EN'` üçlü ifadesi `t.authModal.*` aramalarıyla değiştirildi.",
+      "- **SubmissionModal**: Gönderim başlığı, açıklama, form etiketleri, uzantı türü seçenekleri ve durum mesajlarını kapsayan yaklaşık 12 satır içi üçlü ifade `t.submissionModal.*` aramalarıyla değiştirildi.",
+      "- **Null Güvenliği**: Henüz çevrilmemiş diller için isteğe bağlı `authModal` ve `submissionModal` i18n bölümlerine null koruyucuları eklendi.",
+      "- **Doğrulama**: TypeScript derlemesi ve Vite üretim derlemesi sıfır hatayla geçti."
+    ]
+  },
+  "2026-02-25-project-structure-refactor": {
+    "title": "Proje Yapısı Yeniden Düzenleme: src/services → src/native ve Test Yapılandırması Birleştirme",
+    "summary": "Rust çalışma alanı dizini, Electron ana süreç servisleri ile isim karışıklığını ortadan kaldırmak için src/services'den src/native'e yeniden adlandırıldı. Test kurulum dosyası src/test/setup.ts'den src/tests/main/setup.ts'ye taşınarak birleştirildi.",
+    "items": [
+      "- **BACKLOG-0501**: Yerel Rust/Go mikro hizmetlerini Electron ana süreç servislerinden net bir şekilde ayırt etmek için `src/services/` dizini `src/native/` olarak yeniden adlandırıldı.",
+      "- **BACKLOG-0502**: `src/test/setup.ts` dosyası `src/tests/main/setup.ts`'ye taşındı ve gereksiz `src/test/` dizini kaldırıldı.",
+      "- `scripts/build-native.js` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.",
+      "- `scripts/install-db-service.ps1` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.",
+      "- `.gitignore` Rust hedef yok sayma deseni `src/services/**/target`'dan `src/native/**/target`'a güncellendi.",
+      "- `vitest.config.ts` kurulum dosyası yolu `src/tests/main/setup.ts` olarak güncellendi.",
+      "- `.codex/PROJECT_STRUCTURE.md` yeni dizin düzenini yansıtacak şekilde güncellendi."
+    ]
+  },
+  "2026-02-25-marketplace-auth-submission-system": {
     "title": "Pazaryeri Kimlik Doğrulama ve Kullanıcı Gönderim Sistemi",
     "summary": "C++ Pazaryeri arka ucu için güvenli kullanıcı kayıt/giriş sistemi ve uzantı gönderim hattı uygulandı.",
     "items": [
@@ -8,6 +42,17 @@
       "- **Gönderim Hattı**: Kullanıcıların manuel inceleme için GitHub depo URL'lerini gönderebilecekleri `/submit` uç noktası oluşturuldu.",
       "- **Yönetici Denetimi**: Yöneticilerin yeni girişleri izlemesi ve incelemesi için `/admin/submissions` uç noktası eklendi.",
       "- **Şema Güncellemesi**: Tüm pazaryeri varlıklarında kullanıcı sahipliğini desteklemek için veritabanı geçişleri güncellendi."
+    ]
+  },
+  "2026-02-25-marketplace-backend-hardening-analytics": {
+    "title": "Pazaryeri Arka Uç Sertleştirme ve Analiz Hattı",
+    "summary": "C++ Pazaryeri arka ucu için güvenlik başlıkları, hız sınırlama ve sağlam bir analiz toplama hattı uygulandı.",
+    "items": [
+      "- **Güvenlik Başlıkları**: HSTS, CSP, XSS Koruması ve X-Robots-Tag dahil olmak üzere genel güvenlik başlıkları uygulandı.",
+      "- **Hız Sınırlama**: Kimlik doğrulama uç noktaları için IP tabanlı hız sınırlama (10 deneme/5 dakika) eklendi.",
+      "- **Analiz Hattı**: Anonim telemetri ve trafik sınıflandırması (İnsan - Yapay Zeka - Bot) için `/analytics/collect` uç noktası uygulandı.",
+      "- **Yönetici Denetimi**: `AdminController`, gerçek zamanlı sağlık izleme, ziyaretçi istatistikleri ve aktif kullanıcı takibi ile geliştirildi.",
+      "- **Sanitizasyon**: Kullanıcı tarafından sağlanan tüm metadatalar ve GitHub URL'leri için standartlaştırılmış giriş temizleme işlemi uygulandı."
     ]
   },
   "2026-02-25-marketplace-cpp-backend-init": {

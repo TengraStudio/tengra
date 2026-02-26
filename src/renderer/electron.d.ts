@@ -1690,6 +1690,15 @@ export interface ElectronAPI {
         delete: (path: string) => Promise<boolean>;
         open: (path: string) => Promise<boolean>;
         reveal: (path: string) => Promise<boolean>;
+        batchDownload: (input: {
+            filePaths: string[];
+            targetDirectory: string;
+        }) => Promise<{
+            success: boolean;
+            copied: number;
+            skipped: number;
+            errors: string[];
+        }>;
     };
 
     // Ideas feature

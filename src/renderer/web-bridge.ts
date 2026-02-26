@@ -1257,6 +1257,12 @@ export const webElectronMock: ElectronAPI = {
         delete: async (_path: string) => true,
         open: async (_path: string) => true,
         reveal: async (_path: string) => true,
+        batchDownload: async (_input: { filePaths: string[]; targetDirectory: string }) => ({
+            success: true,
+            copied: 0,
+            skipped: 0,
+            errors: [],
+        }),
     },
 
     getUserDataPath: async () => '',

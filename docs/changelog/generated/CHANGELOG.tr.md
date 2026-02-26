@@ -1,5 +1,19 @@
 # Değişiklik Günlüğü
 
+## [2026-02-26]
+
+### NASA On Gücü: Hızlı Kazanımlar Refaktörü
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: NASA On Gücü kuralı #3'e (60 satır fonksiyon sınırı) uymak için birkaç büyük dosya yeniden düzenlendi ve kod tabanı modülerliği artırıldı.
+
+- **ImageSettingsTab**: 10'dan fazla geri çağırma ve ilgili durum yeni bir `useImageSettingsHandlers` hook'una taşınarak bileşen boyutu %65 azaltıldı.
+- **useWorkspaceManager**: Bağlantı yönetimi mantığı yeni bir `useMountManagement` hook'una taşınarak ana hook boyutu %60 azaltıldı.
+- **extension.util**: 67 satırlık `validateManifest` fonksiyonu özelleşmiş yardımcı fonksiyonlara (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`) bölündü.
+- **Tip Güvenliği**: Hook ayrıştırma sırasında oluşan SSH profil testi ve ayar kaydetme işleyicilerindeki tip sorunları giderildi.
+- **Doğrulama**: Refaktör edilen tüm dosyalar artık 60 satır sınırının altındaki fonksiyonlar içeriyor. Derleme, lint ve çalışma alanı testleri başarıyla geçiyor.
+
 ## [2026-02-25]
 
 ### i18n Çoklu Dil Yeniden Yapılandırması ve Pazaryeri Arayüzü
@@ -24,6 +38,30 @@
 - **Test Güvenilirliği**: chat.integration.test.ts dosyasındaki require-yield ihlalleri ve kullanılmayan değişkenler düzeltildi.
 - **API Sözleşmeleri**: api-openapi.contract.test.ts dosyasındaki OpenAPI spesifikasyon dosyası yolu, geçerli sözleşme doğrulamasını sağlamak için düzeltildi.
 
+### Pazaryeri Kimlik Doğrulama ve Kullanıcı Gönderim Sistemi
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: C++ Pazaryeri arka ucu için güvenli kullanıcı kayıt/giriş sistemi ve uzantı gönderim hattı uygulandı.
+
+- **Kullanıcı Yönetimi**: Parola özetleme (SHA256+Tuz) ve rol tabanlı erişim kontrolü içeren `users` tablosu eklendi.
+- **Kimlik Doğrulama API'si**: Token tabanlı yetkilendirme ile `/register` ve `/login` uç noktaları uygulandı.
+- **Gönderim Hattı**: Kullanıcıların manuel inceleme için GitHub depo URL'lerini gönderebilecekleri `/submit` uç noktası oluşturuldu.
+- **Yönetici Denetimi**: Yöneticilerin yeni girişleri izlemesi ve incelemesi için `/admin/submissions` uç noktası eklendi.
+- **Şema Güncellemesi**: Tüm pazaryeri varlıklarında kullanıcı sahipliğini desteklemek için veritabanı geçişleri güncellendi.
+
+### Pazaryeri Arka Uç Sertleştirme ve Analiz Hattı
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: C++ Pazaryeri arka ucu için güvenlik başlıkları, hız sınırlama ve sağlam bir analiz toplama hattı uygulandı.
+
+- **Güvenlik Başlıkları**: HSTS, CSP, XSS Koruması ve X-Robots-Tag dahil olmak üzere genel güvenlik başlıkları uygulandı.
+- **Hız Sınırlama**: Kimlik doğrulama uç noktaları için IP tabanlı hız sınırlama (10 deneme/5 dakika) eklendi.
+- **Analiz Hattı**: Anonim telemetri ve trafik sınıflandırması (İnsan - Yapay Zeka - Bot) için `/analytics/collect` uç noktası uygulandı.
+- **Yönetici Denetimi**: `AdminController`, gerçek zamanlı sağlık izleme, ziyaretçi istatistikleri ve aktif kullanıcı takibi ile geliştirildi.
+- **Sanitizasyon**: Kullanıcı tarafından sağlanan tüm metadatalar ve GitHub URL'leri için standartlaştırılmış giriş temizleme işlemi uygulandı.
+
 ### Pazaryeri C++ Arka Uç Başlatma
 
 - **Type**: feature
@@ -35,6 +73,31 @@
 - **Şema Tasarımı**: Yapay zeka modelleri, uzantılar (temalar/VSCode), istemler ve iş akışları için PostgreSQL şeması tanımlandı.
 - **Önbellek Katmanı**: Hızlı metadata erişimi ve pazaryeri indeksleme için Redis entegrasyonu yapıldı.
 - **Birleşik Süreç Yönetimi**: Hem C++ arka ucunu hem de React ön ucunu yönetmek için PM2 ekosistem yapılandırması eklendi.
+
+### MKT-FE-003: Auth ve Gönderim Modalı i18n Geçişi
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: AuthModal ve SubmissionModal bileşenlerindeki tüm sabit kodlanmış isTurkish üçlü ifadeleri, mevcut AuthModalTranslations ve SubmissionModalTranslations arayüzleri kullanılarak yazılmış i18n sözlük aramalarıyla değiştirildi.
+
+- **AuthModal**: Giriş/kayıt başlıkları, açıklamalar, etiketler, düğmeler ve hata mesajlarını kapsayan yaklaşık 20 satır içi `isTurkish ? 'TR' : 'EN'` üçlü ifadesi `t.authModal.*` aramalarıyla değiştirildi.
+- **SubmissionModal**: Gönderim başlığı, açıklama, form etiketleri, uzantı türü seçenekleri ve durum mesajlarını kapsayan yaklaşık 12 satır içi üçlü ifade `t.submissionModal.*` aramalarıyla değiştirildi.
+- **Null Güvenliği**: Henüz çevrilmemiş diller için isteğe bağlı `authModal` ve `submissionModal` i18n bölümlerine null koruyucuları eklendi.
+- **Doğrulama**: TypeScript derlemesi ve Vite üretim derlemesi sıfır hatayla geçti.
+
+### Proje Yapısı Yeniden Düzenleme: src/services → src/native ve Test Yapılandırması Birleştirme
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Rust çalışma alanı dizini, Electron ana süreç servisleri ile isim karışıklığını ortadan kaldırmak için src/services'den src/native'e yeniden adlandırıldı. Test kurulum dosyası src/test/setup.ts'den src/tests/main/setup.ts'ye taşınarak birleştirildi.
+
+- **BACKLOG-0501**: Yerel Rust/Go mikro hizmetlerini Electron ana süreç servislerinden net bir şekilde ayırt etmek için `src/services/` dizini `src/native/` olarak yeniden adlandırıldı.
+- **BACKLOG-0502**: `src/test/setup.ts` dosyası `src/tests/main/setup.ts`'ye taşındı ve gereksiz `src/test/` dizini kaldırıldı.
+- `scripts/build-native.js` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.
+- `scripts/install-db-service.ps1` dosyası `src/native/` yolunu referans alacak şekilde güncellendi.
+- `.gitignore` Rust hedef yok sayma deseni `src/services/**/target`'dan `src/native/**/target`'a güncellendi.
+- `vitest.config.ts` kurulum dosyası yolu `src/tests/main/setup.ts` olarak güncellendi.
+- `.codex/PROJECT_STRUCTURE.md` yeni dizin düzenini yansıtacak şekilde güncellendi.
 
 ## [2026-02-23]
 

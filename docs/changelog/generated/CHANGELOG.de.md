@@ -1,5 +1,19 @@
 # Änderungsprotokoll
 
+## [2026-02-26]
+
+### NASA Power of Ten: Quick-Wins-Refactoring
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Überarbeitung mehrerer überdimensionaler Dateien zur Einhaltung der NASA Power of Ten-Regel #3 (60-Zeilen-Funktionslimit) und Verbesserung der Code-Modularität.
+
+- **ImageSettingsTab**: Extraktion von über 10 Handler-Callbacks und des zugehörigen Status in einen neuen `useImageSettingsHandlers`-Hook, wodurch die Komponentengröße um ca. 65 % reduziert wurde.
+- **useWorkspaceManager**: Extraktion der Mount-Management-Logik (Hinzufügen/Entfernen von Mounts, SSH-Tests, Ordnerauswahl) in einen neuen `useMountManagement`-Hook, wodurch die Größe des Haupt-Hooks um ca. 60 % reduziert wurde.
+- **extension.util**: Aufteilung der 67-zeiligen `validateManifest`-Funktion in spezialisierte Validierungshilfen (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
+- **Typsicherheit**: Behebung sekundärer Typ-Regressionen bei SSH-Profiltests und Einstellungs-Speicher-Handlern, die während der Hook-Extraktion eingeführt wurden.
+- **Verifiziert**: Alle refaktorierten Dateien enthalten jetzt Funktionen, die deutlich unter dem Limit von 60 Zeilen liegen. Build-, Lint- und Workspace-Test-Suiten bestanden.
+
 ## [2026-02-25]
 
 ### i18n Mehrsprachiges Refactoring und Marketplace UI
@@ -24,17 +38,66 @@
 - **Testzuverlässigkeit**: Verstöße gegen `require-yield` und nicht verwendete Variablen in `chat.integration.test.ts` behoben.
 - **API Verträge**: Der Pfad der OpenAPI-Spezifikationsdatei in `api-openapi.contract.test.ts` wurde korrigiert, um eine gültige Vertragsüberprüfung sicherzustellen.
 
-### Marketplace C++ Backend Initialization
+### Marktplatz-Authentifizierungs- und Einreichungssystem
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Initialized a high-performance C++ backend for the Marketplace system using the Drogon framework, PostgreSQL, and Redis, optimized for low memory footprint.
+- **Summary**: Sicheres Registrierungs-/Login-System und Einreichungspipeline für Erweiterungen für das C++ Marktplatz-Backend implementiert.
 
-- **C++ Backend**: Set up a new backend service under `website/tengra-backend` using C++20 and the Drogon framework.
-- **Optimized Footprint**: Designed to run within 500MB RAM with high-performance non-blocking I/O.
-- **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
-- **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
-- **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+- **Benutzerverwaltung**: `users`-Tabelle mit Passwort-Hashing (SHA256+Salt) und rollenbasierter Zugriffskontrolle hinzugefügt.
+- **Authentifizierungs-API**: `/register`- und `/login`-Endpunkte mit Token-basierter Autorisierung implementiert.
+- **Einreichungspipeline**: `/submit`-Endpunkt erstellt, an den Benutzer GitHub-Repository-URLs für die manuelle Überprüfung senden können.
+- **Admin-Aufsicht**: `/admin/submissions`-Endpunkt für Administratoren zur Überwachung und Überprüfung neuer Einträge hinzugefügt.
+- **Schema-Update**: Datenbankmigrationen aktualisiert, um die Benutzerzuständigkeit für alle Marktplatz-Assets zu unterstützen.
+
+### Marketplace-Backend-Härtung und Analytics-Pipeline
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implementierung von Sicherheits-Headern, Ratenbegrenzung und einer robusten Analytics-Erfassungspipeline für das C++ Marktplatz-Backend.
+
+- **Sicherheits-Header**: Anwendung globaler Sicherheits-Header wie HSTS, CSP, XSS-Protection und X-Robots-Tag.
+- **Ratenbegrenzung**: Hinzufügen einer IP-basierten Ratenbegrenzung (10 Versuche/5 Min) für Authentifizierungs-Endpunkte.
+- **Analytics-Pipeline**: Implementierung des `/analytics/collect`-Endpunkts für anonyme Telemetrie und Verkehrsklassifizierung (Mensch vs. KI vs. Bot).
+- **Admin-Aufsicht**: Erweiterung des `AdminController` um Echtzeit-Zustandsüberwachung, Besucherstatistiken und Tracking aktiver Benutzer.
+- **Bereinigung**: Standardisierung der Eingabebereinigung für alle benutzergesteuerten Metadaten und GitHub-URLs.
+
+### Marktplatz C++ Backend Initialisierung
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Hochleistungs-C++-Backend mit geringem Speicherverbrauch (< 500 MB RAM) unter Verwendung des Drogon-Frameworks, PostgreSQL und Redis gestartet.
+
+- **C++ Backend**: Neuer Dienst unter `website/tengra-backend` mit C++20 und dem Drogon-Framework eingerichtet.
+- **Optimierter Footprint**: Entwickelt für den Betrieb innerhalb von 500 MB RAM-Grenzen mit nicht-blockierendem I/O.
+- **Schema-Design**: PostgreSQL-Schema für KI-Modelle, Erweiterungen (Themen/VSCode), Prompts und Workflows definiert.
+- **Cache-Ebene**: Redis-Integration für schnellen Metadatenzugriff und Marktplatz-Indizierung hinzugefügt.
+- **Prozessmanagement**: PM2-Ökosystemkonfiguration zum Verwalten des C++-Backends und des React-Frontends hinzugefügt.
+
+### MKT-FE-003: Auth- und Submission-Modal i18n-Migration
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Alle hartcodierten isTurkish-Ternary-Strings in AuthModal und SubmissionModal durch typisierte i18n-Dictionary-Lookups ersetzt.
+
+- **AuthModal**: ~20 inline isTurkish-Ternaries durch t.authModal.*-Lookups ersetzt.
+- **SubmissionModal**: ~12 inline Ternaries durch t.submissionModal.*-Lookups ersetzt.
+- **Null-Sicherheit**: Null-Guards fuer optionale i18n-Abschnitte hinzugefuegt.
+- **Verifizierung**: TypeScript-Kompilierung und Vite-Produktionsbuild bestanden fehlerfrei.
+
+### Projektstruktur-Refactoring: src/services → src/native and Test-Setup-Konsolidierung
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Umbenennung des Rust-Workspace-Verzeichnisses von src/services in src/native zur Vermeidung von Namenskonflikten mit Electron-Hauptprozess-Diensten. Konsolidierung des Test-Setups durch Verschieben von src/test/setup.ts nach src/tests/main/setup.ts.
+
+- **BACKLOG-0501**: Umbenennung des Verzeichnisses `src/services/` in `src/native/`, um native Rust/Go-Mikrodienste klar von Electron-Hauptprozess-Diensten zu unterscheiden.
+- **BACKLOG-0502**: Verschieben von `src/test/setup.ts` nach `src/tests/main/setup.ts` und Entfernen des redundanten Verzeichnisses `src/test/`.
+- Aktualisierung von `scripts/build-native.js` auf den Pfad `src/native/`.
+- Aktualisierung von `scripts/install-db-service.ps1` auf den Pfad `src/native/`.
+- Aktualisierung des Rust-Target-Ignore-Musters in `.gitignore` von `src/services/**/target` zu `src/native/**/target`.
+- Aktualisierung des Setup-Dateipfads in `vitest.config.ts` auf `src/tests/main/setup.ts`.
+- Aktualisierung von `.codex/PROJECT_STRUCTURE.md` zur Spiegelung des neuen Verzeichnis-Layouts.
 
 ## [2026-02-23]
 

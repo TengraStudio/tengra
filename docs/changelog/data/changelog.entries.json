@@ -4,7 +4,146 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
-      "id": "2026-02-25-marketplace-auth-submissions",
+      "id": "2026-02-26-quick-wins-refactor",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "ImageSettingsTab",
+        "useWorkspaceManager",
+        "extension.util",
+        "Refactoring"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "NASA Power of Ten: Quick Wins Refactoring",
+          "summary": "Refactored several oversized files to comply with the NASA Power of Ten rule #3 (60-line function limit) and improved codebase modularity.",
+          "items": [
+            "- **ImageSettingsTab**: Extracted 10+ handler callbacks and associated state into a new `useImageSettingsHandlers` hook, reducing component size by ~65%.",
+            "- **useWorkspaceManager**: Extracted mount management logic (add/remove mounts, SSH testing, folder picking) into a new `useMountManagement` hook, reducing main hook size by ~60%.",
+            "- **extension.util**: Split the 67-line `validateManifest` function into specialized validation helpers (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
+            "- **Type Safety**: Resolved secondary type regressions in SSH profile testing and settings save handlers introduced during hook extraction.",
+            "- **Verified**: All refactored files now contain functions well under the 60-line limit. Build, lint, and workspace test suites pass."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-mkt-fe-003-i18n-auth-submission",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "refactor",
+      "category": "i18n",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AuthModal",
+        "SubmissionModal",
+        "i18n",
+        "Marketplace Frontend"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "MKT-FE-003: Auth and Submission Modal i18n Migration",
+          "summary": "Replaced all hardcoded isTurkish ternary strings in AuthModal and SubmissionModal with typed i18n dictionary lookups using the existing AuthModalTranslations and SubmissionModalTranslations interfaces.",
+          "items": [
+            "- **AuthModal**: Replaced ~20 inline `isTurkish ? 'TR' : 'EN'` ternaries with `t.authModal.*` lookups covering login/register titles, descriptions, labels, buttons, and error messages.",
+            "- **SubmissionModal**: Replaced ~12 inline ternaries with `t.submissionModal.*` lookups covering submission title, description, form labels, extension type options, and status messages.",
+            "- **Null Safety**: Added null guards for optional `authModal` and `submissionModal` i18n sections to gracefully handle locales that haven't been translated yet.",
+            "- **Verification**: TypeScript compilation and Vite production build both pass with zero errors."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-project-structure-refactor",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "fix",
+      "category": "architecture",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Build System",
+        "Testing",
+        "Project Structure"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Project Structure Refactor: Rename src/services to src/native and Consolidate Test Setup",
+          "summary": "Renamed the Rust workspace directory from src/services to src/native to eliminate naming confusion with Electron main process services. Consolidated test setup by moving src/test/setup.ts to src/tests/main/setup.ts.",
+          "items": [
+            "- **BACKLOG-0501**: Renamed `src/services/` directory to `src/native/` to clearly distinguish native Rust/Go microservices from Electron main process services.",
+            "- **BACKLOG-0502**: Moved `src/test/setup.ts` to `src/tests/main/setup.ts` and removed redundant `src/test/` directory.",
+            "- Updated `scripts/build-native.js` to reference `src/native/` path.",
+            "- Updated `scripts/install-db-service.ps1` to reference `src/native/` path.",
+            "- Updated `.gitignore` Rust target ignore pattern from `src/services/**/target` to `src/native/**/target`.",
+            "- Updated `vitest.config.ts` setup file path to `src/tests/main/setup.ts`.",
+            "- Updated `.codex/PROJECT_STRUCTURE.md` to reflect new directory layout."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-marketplace-backend-hardening-analytics",
+      "date": "2026-02-25",
+      "channel": "stable",
+      "type": "feature",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Marketplace Backend",
+        "Analytics",
+        "Security",
+        "Admin Panel"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Marketplace Backend Hardening and Analytics Pipeline",
+          "summary": "Implemented security headers, rate limiting, and a robust analytics collection pipeline for the C++ Marketplace backend.",
+          "items": [
+            "- **Security Headers**: Applied global security headers including HSTS, CSP, XSS-Protection, and X-Robots-Tag.",
+            "- **Rate Limiting**: Added IP-based rate limiting (10 attempts/5 min) for authentication endpoints.",
+            "- **Analytics Pipeline**: Implemented `/analytics/collect` endpoint for anonymous telemetry and traffic classification (Human vs AI vs Bot).",
+            "- **Admin Oversight**: Enhanced `AdminController` with real-time health monitoring, visitor statistics, and active user tracking.",
+            "- **Sanitization**: Standardized input sanitization for all user-contributed metadata and GitHub URLs."
+          ]
+        },
+        "tr": {
+          "title": "Pazaryeri Arka Uç Sertleştirme ve Analiz Hattı",
+          "summary": "C++ Pazaryeri arka ucu için güvenlik başlıkları, hız sınırlama ve sağlam bir analiz toplama hattı uygulandı.",
+          "items": [
+            "- **Güvenlik Başlıkları**: HSTS, CSP, XSS Koruması ve X-Robots-Tag dahil olmak üzere genel güvenlik başlıkları uygulandı.",
+            "- **Hız Sınırlama**: Kimlik doğrulama uç noktaları için IP tabanlı hız sınırlama (10 deneme/5 dakika) eklendi.",
+            "- **Analiz Hattı**: Anonim telemetri ve trafik sınıflandırması (İnsan - Yapay Zeka - Bot) için `/analytics/collect` uç noktası uygulandı.",
+            "- **Yönetici Denetimi**: `AdminController`, gerçek zamanlı sağlık izleme, ziyaretçi istatistikleri ve aktif kullanıcı takibi ile geliştirildi.",
+            "- **Sanitizasyon**: Kullanıcı tarafından sağlanan tüm metadatalar ve GitHub URL'leri için standartlaştırılmış giriş temizleme işlemi uygulandı."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-25-marketplace-auth-submission-system",
       "date": "2026-02-25",
       "channel": "stable",
       "type": "feature",

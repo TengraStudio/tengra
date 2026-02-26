@@ -1,0 +1,45 @@
+name: website-backend-linux-ci
+
+on:
+  push:
+    paths:
+      - "website/tengra-backend/**"
+      - ".github/workflows/website-backend-linux-ci.yml"
+  pull_request:
+    paths:
+      - "website/tengra-backend/**"
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config curl libssl-dev libjsoncpp-dev libhiredis-dev zlib1g-dev libbrotli-dev
+
+      - name: Configure
+        working-directory: website/tengra-backend
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        working-directory: website/tengra-backend
+        run: cmake --build build --parallel
+
+      - name: Run server
+        working-directory: website/tengra-backend
+        run: |
+          ./build/tengra_backend > /tmp/tengra_backend.log 2>&1 &
+          echo $! > /tmp/tengra_backend.pid
+          sleep 3
+
+      - name: Security smoke tests
+        working-directory: website/tengra-backend
+        run: bash tests/security-smoke.sh http://127.0.0.1:8080
+
+      - name: Stop server
+        if: always()
+        run: |
+          kill "$(cat /tmp/tengra_backend.pid)" || true

@@ -1,5 +1,19 @@
 # Changelog
 
+## [2026-02-26]
+
+### NASA Power of Ten: Quick Wins Refactoring
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Refactored several oversized files to comply with the NASA Power of Ten rule #3 (60-line function limit) and improved codebase modularity.
+
+- **ImageSettingsTab**: Extracted 10+ handler callbacks and associated state into a new `useImageSettingsHandlers` hook, reducing component size by ~65%.
+- **useWorkspaceManager**: Extracted mount management logic (add/remove mounts, SSH testing, folder picking) into a new `useMountManagement` hook, reducing main hook size by ~60%.
+- **extension.util**: Split the 67-line `validateManifest` function into specialized validation helpers (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
+- **Type Safety**: Resolved secondary type regressions in SSH profile testing and settings save handlers introduced during hook extraction.
+- **Verified**: All refactored files now contain functions well under the 60-line limit. Build, lint, and workspace test suites pass.
+
 ## [2026-02-25]
 
 ### i18n Multi-Language Refactoring and Marketplace UI
@@ -24,6 +38,30 @@
 - **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
 - **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
 
+### Marketplace Authentication and User Submission System
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a secure user registration/login system and an extension submission pipeline for the C++ Marketplace backend.
+
+- **User Management**: Added `users` table with password hashing (SHA256+Salt) and role-based access control.
+- **Authentication API**: Implemented `/register` and `/login` endpoints with token-based authorization.
+- **Submission Pipeline**: Created `/submit` endpoint for users to submit GitHub repository URLs for manual review.
+- **Admin Oversight**: Added `/admin/submissions` endpoint for administrators to monitor and review new entries.
+- **Schema Update**: Updated database migrations to support user ownership across all marketplace entities.
+
+### Marketplace Backend Hardening and Analytics Pipeline
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented security headers, rate limiting, and a robust analytics collection pipeline for the C++ Marketplace backend.
+
+- **Security Headers**: Applied global security headers including HSTS, CSP, XSS-Protection, and X-Robots-Tag.
+- **Rate Limiting**: Added IP-based rate limiting (10 attempts/5 min) for authentication endpoints.
+- **Analytics Pipeline**: Implemented `/analytics/collect` endpoint for anonymous telemetry and traffic classification (Human vs AI vs Bot).
+- **Admin Oversight**: Enhanced `AdminController` with real-time health monitoring, visitor statistics, and active user tracking.
+- **Sanitization**: Standardized input sanitization for all user-contributed metadata and GitHub URLs.
+
 ### Marketplace C++ Backend Initialization
 
 - **Type**: feature
@@ -35,6 +73,31 @@
 - **Schema Design**: Defined PostgreSQL schema for AI models, extensions (themes/VSCode), prompts, and workflows.
 - **Caching Layer**: Integrated Redis for fast metadata retrieval and marketplace indexing.
 - **Unified Process Management**: Added a PM2 ecosystem configuration to manage both the C++ backend and the React frontend.
+
+### MKT-FE-003: Auth and Submission Modal i18n Migration
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Replaced all hardcoded isTurkish ternary strings in AuthModal and SubmissionModal with typed i18n dictionary lookups using the existing AuthModalTranslations and SubmissionModalTranslations interfaces.
+
+- **AuthModal**: Replaced ~20 inline `isTurkish ? 'TR' : 'EN'` ternaries with `t.authModal.*` lookups covering login/register titles, descriptions, labels, buttons, and error messages.
+- **SubmissionModal**: Replaced ~12 inline ternaries with `t.submissionModal.*` lookups covering submission title, description, form labels, extension type options, and status messages.
+- **Null Safety**: Added null guards for optional `authModal` and `submissionModal` i18n sections to gracefully handle locales that haven't been translated yet.
+- **Verification**: TypeScript compilation and Vite production build both pass with zero errors.
+
+### Project Structure Refactor: Rename src/services to src/native and Consolidate Test Setup
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Renamed the Rust workspace directory from src/services to src/native to eliminate naming confusion with Electron main process services. Consolidated test setup by moving src/test/setup.ts to src/tests/main/setup.ts.
+
+- **BACKLOG-0501**: Renamed `src/services/` directory to `src/native/` to clearly distinguish native Rust/Go microservices from Electron main process services.
+- **BACKLOG-0502**: Moved `src/test/setup.ts` to `src/tests/main/setup.ts` and removed redundant `src/test/` directory.
+- Updated `scripts/build-native.js` to reference `src/native/` path.
+- Updated `scripts/install-db-service.ps1` to reference `src/native/` path.
+- Updated `.gitignore` Rust target ignore pattern from `src/services/**/target` to `src/native/**/target`.
+- Updated `vitest.config.ts` setup file path to `src/tests/main/setup.ts`.
+- Updated `.codex/PROJECT_STRUCTURE.md` to reflect new directory layout.
 
 ## [2026-02-23]
 

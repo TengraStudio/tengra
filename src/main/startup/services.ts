@@ -631,12 +631,10 @@ function registerLazyServices() {
     lazyServiceRegistry.register('marketplaceService', async () => {
         const databaseClient = container.resolve<DatabaseClientService>('databaseClientService');
         const jobScheduler = container.resolve<JobSchedulerService>('jobSchedulerService');
-        const processManager = container.resolve<ProcessManagerService>('processManagerService');
         const { MarketplaceService } = await import('@main/services/llm/marketplace.service');
         return new MarketplaceService({
             databaseClient,
             jobScheduler,
-            processManager,
         });
     });
 }

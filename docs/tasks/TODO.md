@@ -19,7 +19,19 @@
 - [x] **MKT-CORE-004**: Set up PM2 Process Management.
 - [x] **MKT-AUTH-001**: Implement Secure User Registration & Login (C++).
 - [x] **MKT-SUB-001**: Implement Extension Submission System (GitHub URL).
-- [ ] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
+- [x] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
+
+### Frontend Hardening & Completion (website/tengra-frontend)
+- [x] **MKT-FE-001**: Remove hardcoded backend URLs and standardize API base usage (`VITE_API_BASE_URL`).
+- [x] **MKT-FE-002**: Replace marketplace mock list with live backend API data (no hardcoded content).
+- [x] **MKT-FE-003**: Move all admin/auth/submission user-facing strings into i18n dictionaries.
+- [x] **MKT-FE-004**: Strengthen admin gate UX with backend-driven auth check and explicit unauthorized state.
+- [x] **MKT-FE-005**: Add admin panel quality features (empty states, retry flow, pagination, filter/sort).
+- [x] **MKT-FE-006**: Add analytics delivery resilience (retry/queue, offline-safe flush, error budget).
+- [x] **MKT-FE-007**: Upgrade bot/human detection signal model in tracker payload.
+- [x] **MKT-FE-008**: Add admin audit-log page (approval/reject timeline with actor and reason).
+- [x] **MKT-FE-009**: Add marketplace submission-detail page (review metadata and moderation notes).
+- [x] **MKT-FE-010**: Add status page for website/backend/database uptime and incident timeline.
 
 
 
@@ -30,8 +42,8 @@
 - ( ) Advanced memory features
 
 ### Backlog Range: BACKLOG-0501 to BACKLOG-0510 (Project Health & Maintenance)
-- ( ) **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
-- ( ) **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
+- [x] **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
+- [x] **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
 - ( ) **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
 - ( ) **BACKLOG-0504**: Enforce Component Promotion Rules: Perform cleanup of feature-local components in `src/renderer/features`.
 - ( ) **BACKLOG-0505**: Root Directory Hygiene: Move `tengra_key.txt` to `.env` or secure storage.
@@ -417,14 +429,13 @@ Selected small/contained tasks that are realistic to ship quickly:
 ### Pending Quick Wins
   - [x] `src/main/ipc/mcp-marketplace.ts` (`registerMcpMarketplaceHandlers`)
   - [/] `src/renderer/features/projects/components/ProjectWorkspace.tsx`
-  - ( ) `src/renderer/features/settings/components/ImageSettingsTab.tsx`
+  - [x] `src/renderer/features/settings/components/ImageSettingsTab.tsx`
   - ( ) Applied targeted lint override to unblock quality gate; follow-up refactor remains.
-- [/] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
+- [x] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
   - [x] `src/renderer/features/extensions/hooks/useExtensions.ts`
   - ( ) `src/renderer/features/projects/hooks/useAgentHandlers.ts`
-  - ( ) `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
-  - ( ) `src/renderer/features/projects/utils/workspace-mount-validation.ts`
-  - ( ) `src/shared/utils/extension.util.ts`
+  - [x] `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
+  - [x] `src/shared/utils/extension.util.ts`
 - ( ) **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).
 - ( ) **AUD-2026-02-20-07**: Investigate `npm run build` timeout in CI/dev shell and document stable timeout/memory settings for local and GitHub Actions.
 ---
@@ -1096,5 +1107,17 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0499**: Write an operational runbook and troubleshooting guide for DatabaseService.
 - ( ) **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
 
+### Website Backend Security Hardening (Execution Order)
+- (x) **WEBSEC-P0-001**: Replace legacy password hashing with PBKDF2/Argon2-compatible secure format and legacy-hash migration on login.
+- (x) **WEBSEC-P0-002**: Replace custom auth token with standards-based JWT (exp/iat/nbf/iss/aud) and refresh token rotation.
+- (x) **WEBSEC-P0-003**: Move auth rate-limits and admin abuse-protection from in-memory to Redis-backed distributed throttling.
+- (x) **WEBSEC-P0-004**: Enforce production HTTPS end-to-end (proxy trust, forwarded proto validation, strict redirect policy, secure cookies).
+- (x) **WEBSEC-P0-005**: Add backend integration tests for auth/admin/analytics security-critical paths (authorization bypass, malformed payloads, replay).
+- (x) **WEBSEC-P1-001**: Add centralized request schema validation and standardized error code model for all website backend endpoints.
+- (x) **WEBSEC-P1-002**: Add audit trail for admin actions and security events with trace id propagation.
+- (x) **WEBSEC-P1-003**: Add Redis queue + batch ingestion for analytics events with retry/dead-letter handling.
+- (x) **WEBSEC-P1-004**: Add bot/AI traffic confidence scoring (UA + behavior + ASN/reverse DNS) with risk labels.
+- (x) **WEBSEC-P2-001**: Add Linux CI parity pipeline (build + lint + smoke test) and release artifact checks.
+- (x) **WEBSEC-P2-002**: Add retention/deletion policy tooling for analytics data (privacy controls and compliance workflows).
 
 

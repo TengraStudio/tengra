@@ -43,6 +43,35 @@ interface GalleryItem {
     }
 }
 
+interface GalleryBatchDownloadInput {
+    filePaths: string[]
+    targetDirectory: string
+}
+
+interface GalleryBatchDownloadResult {
+    success: boolean
+    copied: number
+    skipped: number
+    errors: string[]
+}
+
+async function resolveUniqueTargetPath(targetDirectory: string, originalFileName: string): Promise<string> {
+    const parsedPath = path.parse(originalFileName);
+    for (let duplicateSuffix = 0; duplicateSuffix <= 10000; duplicateSuffix++) {
+        const candidateName = duplicateSuffix === 0
+            ? originalFileName
+            : `${parsedPath.name}-${duplicateSuffix}${parsedPath.ext}`;
+        const candidatePath = path.join(targetDirectory, candidateName);
+        try {
+            await fs.promises.access(candidatePath);
+        } catch {
+            return candidatePath;
+        }
+    }
+
+    throw new Error('Unable to determine unique target file path');
+}
+
 /**
  * Registers IPC handlers for gallery media management
  * @param galleryPath - Root directory for gallery media files
@@ -174,4 +203,65 @@ export function registerGalleryIpc(galleryPath: string, databaseService?: Databa
             return false;
         }
     }, false));
+
+    ipcMain.handle('gallery:batch-download', createSafeIpcHandler('gallery:batch-download', async (
+        _event: IpcMainInvokeEvent,
+        rawInput: unknown
+    ): Promise<GalleryBatchDownloadResult> => {
+        if (typeof rawInput !== 'object' || rawInput === null) {
+            throw new Error('Invalid batch download input');
+        }
+
+        const input = rawInput as Partial<GalleryBatchDownloadInput>;
+        if (!Array.isArray(input.filePaths)) {
+            throw new Error('Invalid file paths input');
+        }
+
+        const targetDirectory = validateFilePath(input.targetDirectory);
+        if (!targetDirectory) {
+            throw new Error('Invalid target directory');
+        }
+
+        const resolvedTargetDirectory = path.resolve(targetDirectory);
+        await fs.promises.mkdir(resolvedTargetDirectory, { recursive: true });
+        appLogger.info('Gallery', `Batch download started: ${input.filePaths.length} files to ${resolvedTargetDirectory}`);
+
+        const result: GalleryBatchDownloadResult = {
+            success: true,
+            copied: 0,
+            skipped: 0,
+            errors: []
+        };
+
+        for (const rawFilePath of input.filePaths) {
+            const filePath = validateFilePath(rawFilePath);
+            if (!filePath) {
+                result.skipped++;
+                result.success = false;
+                result.errors.push('Invalid file path in filePaths');
+                appLogger.warn('Gallery', 'Skipped invalid gallery file path in batch download');
+                continue;
+            }
+
+            try {
+                const safePath = resolveGalleryPath(filePath);
+                const fileName = path.basename(safePath);
+                const uniqueTargetPath = await resolveUniqueTargetPath(resolvedTargetDirectory, fileName);
+                await fs.promises.copyFile(safePath, uniqueTargetPath);
+                result.copied++;
+            } catch (error) {
+                const message = `Failed to copy ${filePath}: ${String(error)}`;
+                result.skipped++;
+                result.success = false;
+                result.errors.push(message);
+                appLogger.error('Gallery', message);
+            }
+        }
+
+        appLogger.info(
+            'Gallery',
+            `Batch download completed: copied=${result.copied}, skipped=${result.skipped}, errors=${result.errors.length}`
+        );
+        return result;
+    }, { success: false, copied: 0, skipped: 0, errors: ['Batch download failed'] }));
 }

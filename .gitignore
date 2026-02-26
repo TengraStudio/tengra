@@ -146,7 +146,7 @@ release/
 Thumbs.db
 
 # Rust target
-src/services/**/target
+src/native/**/target
 lint_errors.txt
 
 # SBOM and security reports
@@ -169,4 +169,3 @@ resources/bin/
 vendor/**/*.exe
 reports/**
 .claude/settings.local.json
- 

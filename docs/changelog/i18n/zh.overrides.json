@@ -1,4 +1,28 @@
 {
+  "2026-02-26-quick-wins-refactor": {
+    "title": "NASA Power of Ten: 快速获胜重构",
+    "summary": "重构了多个大型文件，以符合 NASA Power of Ten 规则 #3（每函数 60 行限制）并提高代码模块化程度。",
+    "items": [
+      "- **ImageSettingsTab**: 将 10 多个处理程序回调及相关状态提取到新的 `useImageSettingsHandlers` 钩子中，使组件大小减少了约 65%。",
+      "- **useWorkspaceManager**: 将挂载管理逻辑（添加/删除挂载、SSH 测试、文件夹选择）提取到新的 `useMountManagement` 钩子中，使主钩子的大小减少了约 60%。",
+      "- **extension.util**: 将 67 行的 `validateManifest` 函数拆分为专门的验证工具（`validateRequiredFields`、`validateAuthor`、`validateOptionalFields`）。",
+      "- **类型安全**: 修复了在提取钩子过程中引入的 SSH 配置测试和设置存储处理程序的二次类型回归。",
+      "- **已验证**: 所有重构的文件现在包含的函数均远低于 60 行限制。构建、lint 和工作区测试套件均已通过。"
+    ]
+  },
+  "2026-02-25-project-structure-refactor": {
+    "title": "项目结构重构：src/services → src/native 及整合测试设置",
+    "summary": "将 Rust 工作区目录从 src/services 重命名为 src/native，以消除与 Electron 主进程服务的命名混淆。通过将 src/test/setup.ts 移动到 src/tests/main/setup.ts 来整合测试设置。",
+    "items": [
+      "- **BACKLOG-0501**: 将 `src/services/` 目录重命名为 `src/native/`，以明确区分原生 Rust/Go 微服务与 Electron 主进程服务。",
+      "- **BACKLOG-0502**: 将 `src/test/setup.ts` 移动到 `src/tests/main/setup.ts` 并删除了冗余的 `src/test/` 目录。",
+      "- 更新 `scripts/build-native.js` 以引用 `src/native/` 路径。",
+      "- 更新 `scripts/install-db-service.ps1` 以引用 `src/native/` 路径。",
+      "- 将 `.gitignore` 中的 Rust 目标忽略模式从 `src/services/**/target` 更新为 `src/native/**/target`。",
+      "- 将 `vitest.config.ts` 中的设置文件路径更新为 `src/tests/main/setup.ts`。",
+      "- 更新 `.codex/PROJECT_STRUCTURE.md` 以反映新的目录布局。"
+    ]
+  },
   "2026-02-25-i18n-refactoring-and-marketplace": {
     "title": "i18n 多语言重构与市场界面",
     "summary": "将国际化系统拆分为模块化文件，增加了 10 种原汁原味的语言支持，并实现了全新的市场界面。",
@@ -3792,6 +3816,49 @@
       "- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.",
       "- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.",
       "- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification."
+    ]
+  },
+  "2026-02-25-mkt-fe-003-i18n-auth-submission": {
+    "title": "MKT-FE-003: Marketplace 身份验证与提交模态框 i18n 迁移",
+    "summary": "将 AuthModal 和 SubmissionModal 中所有硬编码的 isTurkish 三元字符串替换为类型化 i18n 字典查找。",
+    "items": [
+      "- **AuthModal**: 约 20 个内联 isTurkish 三元运算符替换为 t.authModal.* 查找。",
+      "- **SubmissionModal**: 约 12 个内联三元运算符替换为 t.submissionModal.* 查找。",
+      "- **Null 安全**: 为可选的 i18n 部分添加了 Null 守卫。",
+      "- **验证**: TypeScript 编译和 Vite 生产构建均零错误通过。"
+    ]
+  },
+  "2026-02-25-marketplace-auth-submission-system": {
+    "title": "Marketplace 身份验证与提交系统",
+    "summary": "为 C++ Marketplace 后端实现了安全的用户注册/登录系统和扩展提交管道。",
+    "items": [
+      "- **用户管理**: 添加了具有密码哈希（SHA256+盐）和基于角色的访问控制的 `users` 表。",
+      "- **身份验证 API**: 实现了具有基于令牌授权的 `/register` 和 `/login` 端点。",
+      "- **提交管道**: 创建了 `/submit` 端点，用户可以在其中提交 GitHub 存储库 URL 以供手动审核。",
+      "- **管理监督**: 添加了 `/admin/submissions` 端点，供管理员监控和审核新条目。",
+      "- **架构更新**: 更新了数据库迁移，以支持所有 Marketplace 资产的用户所有权。"
+    ]
+  },
+  "2026-02-25-marketplace-backend-hardening-analytics": {
+    "title": "Marketplace 后端强化与分析管道",
+    "summary": "为 C++ Marketplace 后端实现了安全请求头、速率限制以及强大的分析收集管道。",
+    "items": [
+      "- **安全请求头**: 应用了包括 HSTS、CSP、XSS-Protection 和 X-Robots-Tag 在内的全局安全请求头。",
+      "- **速率限制**: 为身份验证端点添加了基于 IP 的速率限制（每 5 分钟 10 次尝试）。",
+      "- **分析管道**: 实现了用于匿名遥测和流量分类（人类 vs AI vs 机器人）的 `/analytics/collect` 端点。",
+      "- **管理监督**: 通过实时运行状况监测、访问者统计和活动用户跟踪增强了 `AdminController`。",
+      "- **清理**: 标准化了所有用户贡献的元数据和 GitHub URL 的输入清理。"
+    ]
+  },
+  "2026-02-25-marketplace-cpp-backend-init": {
+    "title": "Marketplace C++ 后端初始化",
+    "summary": "使用 Drogon 框架、PostgreSQL 和 Redis 启动了低内存消耗（< 500MB RAM）的高性能 C++ 后端。",
+    "items": [
+      "- **C++ 后端**: 使用 C++20 和 Drogon 框架在 `website/tengra-backend` 下建立了新服务。",
+      "- **优化占用空间**: 旨在使用非阻塞 I/O 在 500MB RAM 限制内运行。",
+      "- **架构设计**: 为 AI 模型、扩展（主题/VSCode）、提示和工作流定义了 PostgreSQL 架构。",
+      "- **缓存层**: 添加了 Redis 集成，用于快速元数据访问和 Marketplace 索引。",
+      "- **进程管理**: 添加了 PM2 生态系统配置，用于管理 C++ 后端和 React 前端。"
     ]
   }
 }

@@ -10,7 +10,7 @@ tengra/
 │   ├── main/           # Node.js code for the Electron Main process
 │   ├── renderer/       # React code for the Electron Renderer process
 │   ├── shared/         # Universal types and constants used across processes
-│   └── services/       # Native microservices (Rust and Go)
+│   └── native/         # Native microservices (Rust and Go)
 ├── docs/               # Technical documentation and project guides
 ├── resources/          # Static assets, icons, and native binaries for distribution
 ├── scripts/            # Automation scripts for builds, linting, and environment setup
@@ -205,12 +205,12 @@ src/shared/
     └── ...
 ```
 
-## Native Microservices (src/services)
+## Native Microservices (src/native)
 
 Source code for systems-level microservices:
 
 ```text
-src/services/
+src/native/
 ├── token-service/          # Rust token refresh service
 │   ├── Cargo.toml
 │   └── src/main.rs
