@@ -60,5 +60,9 @@ The build process is complex because it involves multiple languages.
 3. **Frontend Build**: Vite bundles the React code, assets, and styles for the renderer process.
 4. **Native Compilation**: A custom script (`scripts/build-native.js`) triggers `go build` and `cargo build`, then moves the resulting binaries to the `resources/bin` directory.
 5. **Packaging**: Electron Builder packages the binaries and assets into an executable installer.
+## Marketplace & Extensions
 
-
+For information on how to build, test, and publish extensions for the Tengra Marketplace, see the following guides:
+- [Marketplace Developer Guide](MARKETPLACE_DEVELOPER_GUIDE.md)
+- [Marketplace API Reference](../api/MARKETPLACE_API.md)
+- [Extension Quality Gates](../tasks/marketplace-system.md)

@@ -3,6 +3,7 @@ const path = require('path');
 const websiteRoot = __dirname;
 const backendRoot = path.join(websiteRoot, 'tengra-backend');
 const frontendRoot = path.join(websiteRoot, 'tengra-frontend');
+const userHome = process.env.USERPROFILE || 'C:\\Users\\agnes';
 
 module.exports = {
     apps: [
@@ -12,7 +13,7 @@ module.exports = {
             cwd: backendRoot,
             instances: 1,
             exec_mode: 'fork',
-            autorestart: false,
+            autorestart: true,
             watch: false,
             max_memory_restart: '500M',
             merge_logs: true,
@@ -22,6 +23,8 @@ module.exports = {
             env: {
                 NODE_ENV: 'production',
                 TENGRA_BACKEND_CONFIGURATION: 'Debug',
+                TENGRA_CONFIG_PATH: path.join(backendRoot, 'config.json'),
+                TENGRA_ENABLE_REDIS: '0',
                 TENGRA_LOG_PATH: path.join(backendRoot, 'logs'),
                 TENGRA_LOG_LEVEL: 'INFO',
                 TENGRA_LOG_TO_PM2: '1'
