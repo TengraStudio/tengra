@@ -2,6 +2,30 @@
 
 ## [2026-02-26]
 
+### Universal Logger Improvements: Terminal Visibility & New Levels
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.
+
+- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.
+- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.
+- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.
+- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.
+- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules.
+
+### MKT-DEV-03: Local Extension Development Mode & DevTools
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.
+
+- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.
+- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.
+- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.
+- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.
+- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service.
+
 ### NASA Power of Ten: Quick-Wins-Refactoring
 
 - **Type**: refactor
@@ -13,6 +37,17 @@
 - **extension.util**: Aufteilung der 67-zeiligen `validateManifest`-Funktion in spezialisierte Validierungshilfen (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
 - **Typsicherheit**: Behebung sekundärer Typ-Regressionen bei SSH-Profiltests und Einstellungs-Speicher-Handlern, die während der Hook-Extraktion eingeführt wurden.
 - **Verifiziert**: Alle refaktorierten Dateien enthalten jetzt Funktionen, die deutlich unter dem Limit von 60 Zeilen liegen. Build-, Lint- und Workspace-Test-Suiten bestanden.
+
+### Critical Stability: Infinite Loop & Security Header Hardening
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+
+- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
+- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
+- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
 
 ## [2026-02-25]
 

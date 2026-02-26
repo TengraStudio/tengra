@@ -141,55 +141,90 @@ function setupWindowReadyState(win: BrowserWindow, settingsService?: SettingsSer
 
 /**
  * Hardens WebContents security with CSP and permission restrictions.
+ * AUD-SEC-012: Robust CSP and Security headers
  */
 function setupWebContentsSecurity(win: BrowserWindow) {
-    const nonce = randomBytes(16).toString('base64');
     const isDev = !app.isPackaged;
-    const scriptSources = [
-        `'self'`,
-        `'nonce-${nonce}'`,
-        'blob:',
-        ...(isDev ? [`'unsafe-eval'`] : [])
-    ];
-    const csp = [
-        `default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*`,
-        `script-src ${scriptSources.join(' ')}`,
-        `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-        `img-src 'self' data: safe-file: https: http://localhost:*`,
-        `media-src 'self' safe-file: https:`,
-        `font-src 'self' data: https://fonts.gstatic.com`,
-        `connect-src 'self' https: http://localhost:* ws://localhost:* wss://localhost:*`,
-        `object-src 'none'`,
-        `base-uri 'self'`,
-        `frame-ancestors 'none'`
-    ].join('; ');
 
-    // Security: Set Content-Security-Policy
+    // Security: Filter headers to ensure strong CSP and prevent information disclosure
     win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        const nonce = randomBytes(16).toString('base64');
+
+        // Build CSP sources based on environment
+        const scriptSources = [
+            `'self'`,
+            `'nonce-${nonce}'`,
+            'blob:',
+            ...(isDev ? [`'unsafe-eval'`, `'unsafe-inline'`] : [])
+        ];
+
+        const csp = [
+            `default-src 'self' safe-file: https: http://localhost:* ws://localhost:* wss://localhost:*`,
+            `script-src ${scriptSources.join(' ')}`,
+            `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+            `img-src 'self' data: blob: safe-file: https: http://localhost:*`,
+            `media-src 'self' safe-file: https:`,
+            `font-src 'self' data: https://fonts.gstatic.com`,
+            `connect-src 'self' https: http://localhost:* ws://localhost:* wss://localhost:* http://127.0.0.1:*`,
+            `object-src 'none'`,
+            `base-uri 'self'`,
+            `frame-ancestors 'none'`,
+            `form-action 'self'`,
+            `worker-src 'self' blob:`
+        ].join('; ');
+
         callback({
             responseHeaders: {
                 ...details.responseHeaders,
-                'Content-Security-Policy': [
-                    csp,
-                ],
+                'Content-Security-Policy': [csp],
+                'X-Content-Type-Options': ['nosniff'],
+                'X-Frame-Options': ['DENY'],
+                'X-XSS-Protection': ['1; mode=block'],
+                'Referrer-Policy': ['no-referrer-when-downgrade'],
+                ...(app.isPackaged ? { 'Strict-Transport-Security': ['max-age=31536000; includeSubDomains'] } : {})
             },
         });
     });
 
+    // Monitor for CSP violations
     win.webContents.on('console-message', event => {
         if (event.message.includes('Content Security Policy')) {
             appLogger.warn('Security', `CSP violation observed: ${event.message}`);
         }
     });
 
+    // Hardened permission handlers
     win.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
-        appLogger.warn('Security', `Permission request denied for: ${permission}`);
+        const allowedPermissions = new Set(['notifications', 'fullscreen']);
+        if (allowedPermissions.has(permission)) {
+            appLogger.debug('Security', `Permission allowed: ${permission}`);
+            return callback(true);
+        }
+        appLogger.warn('Security', `Permission request denied: ${permission}`);
         return callback(false);
     });
 
     win.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-        appLogger.debug('Security', `Permission check for: ${permission}`);
-        return false;
+        const allowedPermissions = new Set(['notifications', 'fullscreen']);
+        return allowedPermissions.has(permission);
+    });
+
+    // Restrict navigation to untrusted sites
+    win.webContents.on('will-navigate', (event, url) => {
+        try {
+            const parsed = new URL(url);
+            const isLocal = !app.isPackaged && process.env['ELECTRON_RENDERER_URL']
+                ? url.startsWith(process.env['ELECTRON_RENDERER_URL'])
+                : url.startsWith('file://');
+
+            if (!isLocal && parsed.protocol !== 'safe-file:') {
+                appLogger.warn('Security', `Blocked untrusted navigation to: ${redactUrlForLogs(url)}`);
+                event.preventDefault();
+            }
+        } catch (error) {
+            appLogger.warn('Security', `Blocked invalid navigation URL: ${redactUrlForLogs(url)}`);
+            event.preventDefault();
+        }
     });
 }
 

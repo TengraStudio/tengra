@@ -6,6 +6,15 @@ const SERVICES_DIR = path.join(__dirname, '../src/native');
 const TARGET_DIR = path.join(SERVICES_DIR, 'target/release');
 const BIN_DIR = path.join(__dirname, '../resources/bin');
 const GO_PROXY_DIR = path.join(__dirname, '../vendor/cliproxyapi');
+const SERVICE_BASENAMES = ['db-service', 'token-service', 'model-service', 'quota-service', 'memory-service'];
+
+function resolveCargoCommand() {
+    const localCargo = path.join(process.env.USERPROFILE || '', '.cargo', 'bin', 'cargo.exe');
+    if (fs.existsSync(localCargo)) {
+        return `"${localCargo}"`;
+    }
+    return 'cargo';
+}
 
 function copyWithRetry(src, dest) {
     let retries = 10;
@@ -40,6 +49,44 @@ function copyWithRetry(src, dest) {
     }
 }
 
+function ensureBinDir() {
+    if (!fs.existsSync(BIN_DIR)) {
+        fs.mkdirSync(BIN_DIR, { recursive: true });
+    }
+}
+
+function getNativeBinaryMappings() {
+    return SERVICE_BASENAMES.map(base => {
+        const output = `tengra-${base}.exe`;
+        return { output };
+    });
+}
+
+function copyNativeBinariesFromTarget() {
+    ensureBinDir();
+    const mappings = getNativeBinaryMappings();
+    const missingBinaries = [];
+
+    for (const mapping of mappings) {
+        const src = path.join(TARGET_DIR, mapping.output);
+        const dest = path.join(BIN_DIR, mapping.output);
+
+        if (!fs.existsSync(src)) {
+            missingBinaries.push(src);
+            continue;
+        }
+
+        copyWithRetry(src, dest);
+        console.log(`Copied ${mapping.output} to resources/bin`);
+    }
+
+    if (missingBinaries.length > 0) {
+        throw new Error(
+            `Missing required tengra binaries after Rust build:\n${missingBinaries.join('\n')}`
+        );
+    }
+}
+
 function buildGoProxy() {
     console.log('Building Go proxy server...');
 
@@ -69,9 +116,7 @@ function buildGoProxy() {
         });
 
         // Create output dir if needed
-        if (!fs.existsSync(BIN_DIR)) {
-            fs.mkdirSync(BIN_DIR, { recursive: true });
-        }
+        ensureBinDir();
 
         // Copy binary to resources/bin
         const src = path.join(embedDir, 'cliproxy-embed.exe');
@@ -92,31 +137,26 @@ function buildGoProxy() {
 
 function buildNative() {
     console.log('Building native services...');
+    const mappings = getNativeBinaryMappings();
+    const cargoCommand = resolveCargoCommand();
 
     try {
         // Ensure cargo exists
-        execSync('cargo --version', { stdio: 'ignore' });
+        execSync(`${cargoCommand} --version`, { stdio: 'ignore' });
     } catch {
-        console.warn('Rust toolchain not found. Skipping native build.');
-        return;
+        throw new Error(
+            'Rust toolchain not found. Native services must be built to produce tengra-* executables.'
+        );
     }
 
     try {
         // Kill existing services to prevent EBUSY errors
         console.log('Stopping running services...');
-        const binaries = [
-            'tengra-db-service.exe',
-            'tengra-token-service.exe',
-            'tengra-model-service.exe',
-            'tengra-quota-service.exe',
-            'tengra-memory-service.exe'
-        ];
-
-        for (const bin of [...binaries]) {
+        for (const mapping of mappings) {
             try {
                 // /F = force, /IM = image name, 2>NUL to hide stderr
-                execSync(`taskkill /F /IM ${bin} 2>NUL`, { stdio: 'ignore' });
-            } catch (e) {
+                execSync(`taskkill /F /IM ${mapping.output} 2>NUL`, { stdio: 'ignore' });
+            } catch {
                 // Process not running, ignore
             }
         }
@@ -129,7 +169,7 @@ function buildNative() {
         console.log('Compiling Rust binaries...');
 
         // Prepare command
-        let buildCmd = 'cargo build --release';
+        let buildCmd = `${cargoCommand} build --release`;
         let env = { ...process.env };
 
         // Check if cl.exe is in PATH
@@ -166,7 +206,7 @@ function buildNative() {
             if (vcvarsPath) {
                 console.log(`Found vcvarsall.bat at: ${vcvarsPath}`);
                 // Chain the commands: setup env -> build
-                buildCmd = `call "${vcvarsPath}" x64 && cargo build --release`;
+                buildCmd = `call "${vcvarsPath}" x64 && ${cargoCommand} build --release`;
                 delete env.CC;
                 delete env.CXX;
             } else {
@@ -183,25 +223,7 @@ function buildNative() {
             env: env
         });
 
-        // Create output dir
-        if (!fs.existsSync(BIN_DIR)) {
-            fs.mkdirSync(BIN_DIR, { recursive: true });
-        }
-
-        // Copy binaries
-        // Copy binaries
-
-        for (const bin of binaries) {
-            const src = path.join(TARGET_DIR, bin);
-            const dest = path.join(BIN_DIR, bin);
-
-            if (fs.existsSync(src)) {
-                copyWithRetry(src, dest);
-                console.log(`Copied ${bin} to resources/bin`);
-            } else {
-                console.error(`Binary not found: ${src}`);
-            }
-        }
+        copyNativeBinariesFromTarget();
 
     } catch (error) {
         console.error('Failed to build native services:', error);

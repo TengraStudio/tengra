@@ -164,8 +164,5 @@ docs/components_checklist.md
 docs/changelog/i18n/.tr.translation.cache.json
 
 # Binaries
-*.exe
-resources/bin/
-vendor/**/*.exe
 reports/**
 .claude/settings.local.json

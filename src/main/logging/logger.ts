@@ -1,16 +1,19 @@
 /* eslint-disable no-console */
 import * as fs from 'fs';
 import * as path from 'path';
+import * as util from 'util';
 import * as zlib from 'zlib';
 
 import { AppError, JsonValue } from '@shared/types/common';
 import { app } from 'electron';
 
 export enum LogLevel {
+    TRACE = -1,
     DEBUG = 0,
     INFO = 1,
     WARN = 2,
     ERROR = 3,
+    FATAL = 4,
 }
 
 export interface LoggerConfig {
@@ -102,18 +105,39 @@ class AppLogger {
         }
 
         this.logDir = logDir ?? this.determineLogDir();
-        this.logPath = path.join(this.logDir, 'app.log');
-        if (!fs.existsSync(this.logDir)) {
-            fs.mkdirSync(this.logDir, { recursive: true, mode: 0o700 });
+
+        // Organize logs by day and separate by session to avoid log mixture
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const timeStr = now.toLocaleTimeString('en-GB', { hour12: false }).replace(/:/g, '-'); // HH-mm-ss
+
+        const dayDir = path.join(this.logDir, dateStr);
+        if (!fs.existsSync(dayDir)) {
+            fs.mkdirSync(dayDir, { recursive: true, mode: 0o700 });
         }
+
+        // Unique log file for this individual application run
+        this.logPath = path.join(dayDir, `session-${timeStr}-${process.pid}.log`);
+
         this.size = 0;
-        void this.refreshCurrentLogSize();
         this.initialized = true;
 
         // Start cleanup scheduler (runs every 24 hours)
         this.startCleanupScheduler();
 
-        this.info('Logger', `Logger initialized at ${this.logPath}`);
+        this.info('Logger', `Logger initialized for session at ${this.logPath} (Level: ${LogLevel[this.currentLevel]})`);
+    }
+
+    /**
+     * Logs a trace message (very verbose).
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
+    trace(context: string, message: string, data?: JsonValue | Error | AppError) {
+        if (this.currentLevel <= LogLevel.TRACE) {
+            this.write({ level: LogLevel.TRACE, message, context, data });
+        }
     }
 
     /**
@@ -260,6 +284,18 @@ class AppLogger {
         }
     }
 
+    /**
+     * Logs a fatal message.
+     * @param context - The context or service name.
+     * @param message - The log message.
+     * @param data - Optional metadata or error.
+     */
+    fatal(context: string, message: string, data?: JsonValue | Error | AppError) {
+        if (this.currentLevel <= LogLevel.FATAL) {
+            this.write({ level: LogLevel.FATAL, message, context, data });
+        }
+    }
+
     private write(payload: LogPayload) {
         if (!this.initialized) {
             this.init();
@@ -267,13 +303,45 @@ class AppLogger {
 
         const line = this.config.jsonFormat ? formatLineJson(payload) : formatLine(payload);
 
-        // Console Output (with colors if possible)
-        const color = getLevelColor(payload.level);
-        const reset = '\x1b[0m';
-        const levelStr = LogLevel[payload.level].padEnd(5);
+        // Console Output (with enhanced visibility and local timestamps)
         if (this.originalConsole) {
-            const consoleMsg = `${color}[${levelStr}] [${payload.context}] ${payload.message}${reset}`;
-            if (payload.level === LogLevel.ERROR) {
+            const color = getLevelColor(payload.level);
+            const reset = '\x1b[0m';
+            const levelStr = LogLevel[payload.level].padEnd(5);
+
+            // Full ISO-ish local timestamp for precision
+            const now = new Date();
+            const timestamp = `${now.toISOString().split('T')[0]} ${now.toLocaleTimeString('en-GB', { hour12: false })}`;
+
+            let consoleMsg = `${color}[${timestamp}] [${levelStr}] [${payload.context}] ${payload.message}${reset}`;
+
+            if (payload.data !== undefined) {
+                // Determine if data is an Error or AppError even if across IPC (checking shape)
+                const isErr = payload.data instanceof Error || isAppError(payload.data);
+
+                if (isErr) {
+                    // Use util.inspect for reliable error serialization (includes message, code, stack)
+                    const formattedError = util.inspect(payload.data, {
+                        colors: true,
+                        depth: 5,
+                        breakLength: 100,
+                    });
+                    consoleMsg += `\n${formattedError}`;
+                } else if (typeof payload.data === 'object' && payload.data !== null) {
+                    const formattedData = util.inspect(payload.data, {
+                        colors: true,
+                        depth: 4,
+                        compact: false,
+                        breakLength: 100,
+                        showHidden: false,
+                    });
+                    consoleMsg += `\n${formattedData}`;
+                } else {
+                    consoleMsg += ` | Data: ${String(payload.data)}`;
+                }
+            }
+
+            if (payload.level >= LogLevel.ERROR) {
                 this.safeConsoleCall('error', consoleMsg);
             } else if (payload.level === LogLevel.WARN) {
                 this.safeConsoleCall('warn', consoleMsg);
@@ -382,17 +450,28 @@ class AppLogger {
         let deleted = 0;
 
         try {
-            const files = await fs.promises.readdir(this.logDir);
-            const maxFilesToCleanup = 1000;
-            const processFiles = files.slice(0, maxFilesToCleanup).filter(file => this.isLogFile(file));
-            for (const file of processFiles) {
-                const filePath = path.join(this.logDir, file);
-                const stat = await fs.promises.stat(filePath);
-                if (now - stat.mtime.getTime() > retentionMs) {
-                    await fs.promises.unlink(filePath);
-                    deleted++;
+            // Recursive scan to handle partitioned YYYY-MM-DD directories
+            const scan = async (dir: string) => {
+                const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory()) {
+                        await scan(fullPath);
+                        // Clean up empty day directories
+                        const subEntries = await fs.promises.readdir(fullPath);
+                        if (subEntries.length === 0) {
+                            await fs.promises.rmdir(fullPath);
+                        }
+                    } else if (this.isLogFile(entry.name)) {
+                        const stat = await fs.promises.stat(fullPath);
+                        if (now - stat.mtime.getTime() > retentionMs) {
+                            await fs.promises.unlink(fullPath);
+                            deleted++;
+                        }
+                    }
                 }
-            }
+            };
+            await scan(this.logDir);
         } catch (err) {
             if (this.originalConsole) {
                 this.originalConsole.error('Failed to cleanup old logs', err);
@@ -454,37 +533,34 @@ class AppLogger {
             return { totalFiles: 0, totalSize: 0, oldestLog: null, newestLog: null };
         }
 
-        let totalFiles = 0;
-        let totalSize = 0;
-        let oldestLog: Date | null = null;
-        let newestLog: Date | null = null;
+        const stats = { totalFiles: 0, totalSize: 0, oldestLog: null as Date | null, newestLog: null as Date | null };
 
         try {
-            const files = fs.readdirSync(this.logDir);
-            const maxFilesToProcess = 1000;
-            const processCount = Math.min(files.length, maxFilesToProcess);
-
-            for (let i = 0; i < processCount; i++) {
-                const file = files[i];
-                if (!this.isLogFile(file)) {
-                    continue;
+            const scan = (dir: string) => {
+                const entries = fs.readdirSync(dir, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(dir, entry.name);
+                    if (entry.isDirectory()) {
+                        scan(fullPath);
+                    } else if (this.isLogFile(entry.name)) {
+                        const stat = fs.statSync(fullPath);
+                        stats.totalFiles++;
+                        stats.totalSize += stat.size;
+                        if (!stats.oldestLog || stat.mtime < stats.oldestLog) {
+                            stats.oldestLog = stat.mtime;
+                        }
+                        if (!stats.newestLog || stat.mtime > stats.newestLog) {
+                            stats.newestLog = stat.mtime;
+                        }
+                    }
                 }
-
-                const stat = fs.statSync(path.join(this.logDir, file));
-                totalFiles++;
-                totalSize += stat.size;
-                if (!oldestLog || stat.mtime.getTime() < oldestLog.getTime()) {
-                    oldestLog = stat.mtime;
-                }
-                if (!newestLog || stat.mtime.getTime() > newestLog.getTime()) {
-                    newestLog = stat.mtime;
-                }
-            }
+            };
+            scan(this.logDir);
         } catch {
             // ignore
         }
 
-        return { totalFiles, totalSize, oldestLog, newestLog };
+        return stats;
     }
 
     private isLogFile(file: string): boolean {
@@ -501,18 +577,12 @@ class AppLogger {
         }
     }
 
-    private async refreshCurrentLogSize(): Promise<void> {
-        try {
-            const stat = await fs.promises.stat(this.logPath);
-            this.size = stat.size;
-        } catch {
-            this.size = 0;
-        }
-    }
 }
 
 function getLevelColor(level: LogLevel): string {
     switch (level) {
+        case LogLevel.TRACE:
+            return '\x1b[90m'; // Grey
         case LogLevel.DEBUG:
             return '\x1b[36m'; // Cyan
         case LogLevel.INFO:
@@ -521,6 +591,8 @@ function getLevelColor(level: LogLevel): string {
             return '\x1b[33m'; // Yellow
         case LogLevel.ERROR:
             return '\x1b[31m'; // Red
+        case LogLevel.FATAL:
+            return '\x1b[41m\x1b[37m'; // Red Background, White Text
         default:
             return '';
     }
@@ -582,6 +654,15 @@ export class Logger {
      */
     static error(context: string, message: string, data?: JsonValue | Error | AppError) {
         appLogger.error(context, message, data);
+    }
+    /**
+     * Logs a fatal message statically.
+     * @param context - Context name.
+     * @param message - Log message.
+     * @param data - Optional data.
+     */
+    static fatal(context: string, message: string, data?: JsonValue | Error | AppError) {
+        appLogger.fatal(context, message, data);
     }
 }
 

@@ -2,6 +2,31 @@
 
 ## [2026-02-26]
 
+### Evrensel Kayıt Sistemi İyileştirmeleri: Bölümlenmiş Oturumlar ve Gelişmiş Görünürlük
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Günlük kayıt sistemi, oturum bazlı bölümlendirme, günlük klasör organizasyonu ve süreçler arası hata denetimi ile güçlendirildi.
+
+- **Bölümlenmiş Kayıt**: Logların uygulama her açıldığında karışmasını önlemek için tarih tabanlı dizin yapısı (logs/YYYY-MM-DD/) ve benzersiz oturum dosyaları (session-HH-mm-ss-PID.log) uygulandı.
+- **Terminal Görünürlüğü**: Terminal çıktısı, tam tarih/saat damgaları ve `util.inspect` kullanılarak derinlemesine incelenebilen renkli JSON/Hata nesnesi görünümü ile güncellendi.
+- **Dayanıklı Hata İzleme**: Süreçler arası (IPC) ve iç içe geçmiş hata nesnelerinin terminalde tam olarak serileştirilmesi sağlanarak hata ayıklama görünürlüğü artırıldı.
+- **Özyinelemeli Bakım**: Log temizleme ve istatistik toplama işlemleri, yeni hiyerarşik klasör yapısına uyum sağlamak üzere özyinelemeli (recursive) hale getirildi.
+- **Yeni Kayıt Seviyeleri**: Hata ayıklama için `TRACE` ve kritik hatalar için `FATAL` seviyeleri tanıtıldı.
+- **IPC ve Renderer Uyumu**: LogLevel numaralandırmaları tüm süreçler arasında senkronize edildi.
+
+### MKT-DEV-03: Yerel Eklenti Geliştirme Modu ve Geliştirici Araçları
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Sıcak yenileme (hot reload), gerçek zamanlı log akışı ve özel bir Geliştirici Araçları paneli içeren yerel eklentiler için kapsamlı bir geliştirme ortamı uygulandı.
+
+- **ExtensionService**: Yerel kaynak dosyaları değiştirildiğinde otomatik eklenti yenileme (Sıcak Yenileme) için `fs.watch` entegrasyonu eklendi.
+- **Log Akışı**: Yeni bir IPC tabanlı gözlemci modeli aracılığıyla eklentilerden render sürecine gerçek zamanlı kapsamlı log akışı etkinleştirildi.
+- **ExtensionDevTools**: Eklenti yönetimi, manuel yenileme ve gerçek zamanlı log incelemesi için sağ kenar çubuğunda yeni bir panel oluşturuldu.
+- **Düzen Entegrasyonu**: Ana `LayoutManager` bileşenine sağ kenar çubuğu desteği eklendi ve terminal simgesi üzerinden DevTools paneline erişim sağlandı.
+- **Tip Güvenliği**: Eklenti IPC sözleşmeleri için %100 tip güvenliği sağlandı ve çeşitli teknik borçlar giderildi.
+
 ### NASA On Gücü: Hızlı Kazanımlar Refaktörü
 
 - **Type**: refactor
@@ -13,6 +38,17 @@
 - **extension.util**: 67 satırlık `validateManifest` fonksiyonu özelleşmiş yardımcı fonksiyonlara (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`) bölündü.
 - **Tip Güvenliği**: Hook ayrıştırma sırasında oluşan SSH profil testi ve ayar kaydetme işleyicilerindeki tip sorunları giderildi.
 - **Doğrulama**: Refaktör edilen tüm dosyalar artık 60 satır sınırının altındaki fonksiyonlar içeriyor. Derleme, lint ve çalışma alanı testleri başarıyla geçiyor.
+
+### Critical Stability: Infinite Loop & Security Header Hardening
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+
+- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
+- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
+- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
 
 ## [2026-02-25]
 

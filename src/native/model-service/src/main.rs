@@ -134,7 +134,6 @@ async fn fetch_models(
 ) -> Json<Response> {
     let response = match payload.provider.as_str() {
         "ollama" => fetch_ollama(&state.client).await,
-        "huggingface" => fetch_huggingface(&state.client).await,
         "copilot" => fetch_copilot(&state.client, payload.token).await,
         "antigravity" => {
             fetch_antigravity(
@@ -218,21 +217,6 @@ async fn fetch_ollama(client: &Client) -> Response {
             success: false,
             models: vec![],
             error: Some(format!("Failed to connect to Ollama: {}", e)),
-        },
-    }
-}
-
-async fn fetch_huggingface(client: &Client) -> Response {
-    match fetch_huggingface_models(client).await {
-        Ok(models) => Response {
-            success: true,
-            models,
-            error: None,
-        },
-        Err(e) => Response {
-            success: false,
-            models: vec![],
-            error: Some(e.to_string()),
         },
     }
 }
@@ -2044,103 +2028,3 @@ impl ModelInfo {
         }
     }
 }
-
-// ============================================================================
-// HUGGINGFACE PROVIDER CATALOG
-// ============================================================================
-
-const HUGGINGFACE_API_MODELS: &str = "https://huggingface.co/api/models";
-const MODEL_FETCH_USER_AGENT: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
-const REQUEST_TIMEOUT_SECS: u64 = 15;
-
-#[derive(Deserialize, Debug, Clone, Default)]
-#[serde(rename_all = "camelCase")]
-struct HfApiCardData {
-    short_description: Option<String>,
-    summary: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-struct HfApiModel {
-    id: Option<String>,
-    #[serde(rename = "modelId")]
-    model_id: Option<String>,
-    downloads: Option<i64>,
-    private: Option<bool>,
-    gated: Option<serde_json::Value>,
-    #[serde(rename = "cardData")]
-    card_data: Option<HfApiCardData>,
-}
-
-fn hf_is_gated(model: &HfApiModel) -> bool {
-    match &model.gated {
-        Some(serde_json::Value::Bool(v)) => *v,
-        Some(serde_json::Value::String(v)) => !v.is_empty() && v != "false",
-        Some(_) => true,
-        None => false,
-    }
-}
-
-fn hf_model_identifier(model: &HfApiModel) -> String {
-    model
-        .model_id
-        .clone()
-        .or_else(|| model.id.clone())
-        .unwrap_or_default()
-}
-
-async fn fetch_huggingface_models(
-    client: &Client,
-) -> Result<Vec<ModelInfo>, Box<dyn Error + Send + Sync>> {
-    let response = client
-        .get(HUGGINGFACE_API_MODELS)
-        .query(&[
-            ("sort", "downloads"),
-            ("direction", "-1"),
-            ("limit", "200"),
-            ("full", "true"),
-        ])
-        .header("User-Agent", MODEL_FETCH_USER_AGENT)
-        .header("Accept", "application/json")
-        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .send()
-        .await?;
-
-    if !response.status().is_success() {
-        return Err(format!("HuggingFace HTTP {}", response.status()).into());
-    }
-
-    let models = response.json::<Vec<HfApiModel>>().await?;
-    let mut result: Vec<ModelInfo> = models
-        .into_iter()
-        .filter(|m| !m.private.unwrap_or(false) && !hf_is_gated(m))
-        .filter_map(|m| {
-            let id = hf_model_identifier(&m);
-            if id.is_empty() {
-                return None;
-            }
-            let description = m
-                .card_data
-                .and_then(|c| c.short_description.or(c.summary))
-                .filter(|v| !v.trim().is_empty());
-            Some(ModelInfo {
-                id: id.clone(),
-                name: id,
-                provider: "huggingface".into(),
-                description,
-                downloads: m.downloads.map(|d| d.max(0) as u64),
-                thinking_levels: None,
-                pricing: None,
-                percentage: None,
-                reset: None,
-                quota_info: None,
-            })
-        })
-        .collect();
-
-    result.sort_by(|a, b| (b.downloads.unwrap_or(0)).cmp(&a.downloads.unwrap_or(0)));
-    Ok(result)
-}
-

@@ -1,6 +1,6 @@
 import { appLogger } from '@main/logging/logger';
 import { BaseService } from '@main/services/base.service';
-import { HFModel, HuggingFaceService } from '@main/services/llm/huggingface.service';
+import { HuggingFaceService } from '@main/services/llm/huggingface.service';
 import { RegionalPreferenceService } from '@main/services/llm/regional-preference.service';
 import { getTokenEstimationService } from '@main/services/llm/token-estimation.service';
 import { ProxyService } from '@main/services/proxy/proxy.service';
@@ -167,107 +167,12 @@ export class ModelRegistryService extends BaseService {
      * - Proxy models (GitHub Models, Claude, Gemini, etc.)
      * - Llama C++ models
      */
+    /**
+     * Get all available models from all sources.
+     * This is a cache-aware wrapper around getRemoteModels.
+     */
     async getAllModels(): Promise<ModelProviderInfo[]> {
-        const proxyPort = this.deps.proxyService.getEmbeddedProxyStatus().port ?? 8317;
-        const proxyKey = await this.deps.proxyService.getProxyKey();
-
-        const promises: Promise<ModelProviderInfo[]>[] = [
-            // Always fetch these providers
-            this.fetchModelProvider('ollama', proxyPort, proxyKey),
-            // Llama-cpp is not yet supported in Rust service (it involves local file scanning),
-            // but the user requested explicit cleanup. We will assume 'ollama' covers local for now
-            // or we might need to implement 'llama' file scanning in Rust.
-            // For now, we follow instructions: "rust service will do all model fetching".
-            // If Rust doesn't support 'llama-cpp' explicitly yet, we might miss it,
-            // but 'ollama' covers the primary local use case.
-            this.fetchModelProvider('opencode', proxyPort, proxyKey),
-        ];
-
-        // Copilot (Configured check moved to Rust or simplified: just try to fetch if we have a token?)
-        // The Rust service needs a token for Copilot.
-        // We need to manage tokens. Copilot token management was in CopilotService.
-        // We can't verify configuration without CopilotService?
-        // Wait, AuthService doesn't handle Copilot tokens?
-        // CopilotService had `ensureCopilotToken`.
-        // If we removed CopilotService, how do we get the token?
-        // The user said "rust service does all fetching". It didn't say "move auth logic to Rust".
-        // But I'm forced to remove CopilotService from HERE to obey "one structure".
-        // Use AuthService if possible, or specialized Copilot token logic needs to be somewhere.
-        // For now, I will omit Copilot fetching if I can't get the token, OR I assume AuthService *should* handle it.
-        // Let's check AuthService later. For now, we'll try to get 'github' token if existing.
-
-        // Dynamically add cloud providers if authenticated
-        const cloudProviders: ModelProviderId[] = [
-            'antigravity',
-            'codex',
-            'claude',
-            'copilot',
-            'nvidia',
-            'openai',
-        ];
-        for (const p of cloudProviders) {
-            // Proactively refresh tokens for cloud providers before fetching models
-            try {
-                await this.deps.tokenService.ensureFreshToken(p);
-            } catch (err) {
-                appLogger.warn(
-                    'ModelRegistry',
-                    `Failed to ensure fresh token for ${p}: ${getErrorMessage(err)}`
-                );
-            }
-
-            let token: string | undefined;
-            try {
-                token = await this.resolveProviderToken(p);
-            } catch (err) {
-                appLogger.warn(
-                    'ModelRegistry',
-                    `Failed to resolve token for ${p}: ${getErrorMessage(err)}`
-                );
-                token = undefined;
-            }
-
-            if (token) {
-                promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
-            }
-        }
-
-        const results = await Promise.all(promises);
-        const all = results.flat();
-
-        // Add NVIDIA models to ensure high-quality ones are always visible
-        const nvidiaToken = await this.resolveProviderToken('nvidia');
-        if (nvidiaToken) {
-            all.push(...this.getNvidiaModels());
-        }
-
-        // Add OpenAI Image Models
-        const openaiToken = await this.resolveProviderToken('openai');
-        if (openaiToken) {
-            all.push(...this.getOpenAIImageModels());
-        }
-
-        const unique = new Map<string, ModelProviderInfo>();
-        all.forEach(m => {
-            const key = `${m.provider}:${m.id}`;
-            unique.set(key, m);
-        });
-
-        // Add SD-CPP if provider is configured or it's a core component
-        unique.set('sd-cpp:stable-diffusion-v1-5', {
-            id: 'stable-diffusion-v1-5',
-            name: 'Stable Diffusion v1.5 (Local)',
-            provider: 'sd-cpp',
-            description: 'Local image generation via stable-diffusion.cpp',
-            capabilities: { image_generation: true, text_generation: false, embedding: false },
-            tags: ['local', 'image-gen', 'sd-cpp']
-        });
-
-        const allModels = Array.from(unique.values());
-        const settings = this.deps.settingsService.getSettings();
-        const locale = settings.general?.language ?? 'en';
-
-        return RegionalPreferenceService.applyPreferences(allModels, locale);
+        return this.getRemoteModels();
     }
 
     private async resolveProviderToken(provider: ModelProviderId): Promise<string | undefined> {
@@ -523,36 +428,91 @@ export class ModelRegistryService extends BaseService {
     }
 
     private async fetchRemoteModels(): Promise<ModelProviderInfo[]> {
-        const models: ModelProviderInfo[] = [];
-        models.push(...(await this.fetchHuggingFaceModels()));
-        return models.sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0));
-    }
+        const proxyPort = this.deps.proxyService.getEmbeddedProxyStatus().port ?? 8317;
+        const proxyKey = await this.deps.proxyService.getProxyKey();
 
-    /**
-     * Fetches models from HuggingFace using the HuggingFaceService.
-     */
-    private async fetchHuggingFaceModels(): Promise<ModelProviderInfo[]> {
-        try {
-            const { models } = await this.deps.huggingFaceService.searchModels('', 50);
+        const promises: Promise<ModelProviderInfo[]>[] = [
+            this.fetchModelProvider('ollama', proxyPort, proxyKey),
+            this.fetchModelProvider('opencode', proxyPort, proxyKey),
+        ];
 
-            return models.map((m: HFModel) => ({
-                id: m.id,
-                name: m.name,
-                provider: 'huggingface',
-                description: m.description,
-                tags: m.tags,
-                downloads: m.downloads,
-                likes: m.likes,
-                author: m.author,
-                lastModified: m.lastModified,
-                capabilities: {
-                    text_generation: true
-                }
-            }));
-        } catch (error) {
-            appLogger.error('ModelRegistryService', `Failed to fetch HF models: ${getErrorMessage(error as Error)}`);
-            return [];
+        // Fetch from HuggingFace (as expected by tests and as a fallback)
+        promises.push((async () => {
+            try {
+                const results = await this.deps.huggingFaceService.searchModels('GGUF', 50, 0, 'downloads');
+                return results.models.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    provider: 'huggingface' as ModelProviderId,
+                    description: m.description,
+                    tags: m.tags,
+                    downloads: m.downloads,
+                    likes: m.likes,
+                    capabilities: { text_generation: true }
+                }));
+            } catch (err) {
+                appLogger.warn('ModelRegistry', `Failed to fetch HuggingFace models: ${getErrorMessage(err)}`);
+                return [];
+            }
+        })());
+
+        const cloudProviders: ModelProviderId[] = [
+            'antigravity',
+            'codex',
+            'claude',
+            'copilot',
+            'nvidia',
+            'openai',
+        ];
+
+        for (const p of cloudProviders) {
+            try {
+                await this.deps.tokenService.ensureFreshToken(p);
+            } catch (err) {
+                appLogger.warn('ModelRegistry', `Token refresh failed for ${p}: ${getErrorMessage(err)}`);
+            }
+
+            const token = await this.resolveProviderToken(p);
+            if (token) {
+                promises.push(this.fetchModelProvider(p, proxyPort, proxyKey, token));
+            }
         }
+
+        const results = await Promise.all(promises);
+        const all = results.flat();
+
+        // Add curated static models
+        const nvidiaToken = await this.resolveProviderToken('nvidia');
+        if (nvidiaToken) {
+            all.push(...this.getNvidiaModels());
+        }
+
+        const openaiToken = await this.resolveProviderToken('openai');
+        if (openaiToken) {
+            all.push(...this.getOpenAIImageModels());
+        }
+
+        const unique = new Map<string, ModelProviderInfo>();
+        all.forEach(m => {
+            const key = `${m.provider}:${m.id}`;
+            unique.set(key, m);
+        });
+
+        // Add SD-CPP
+        unique.set('sd-cpp:stable-diffusion-v1-5', {
+            id: 'stable-diffusion-v1-5',
+            name: 'Stable Diffusion v1.5 (Local)',
+            provider: 'sd-cpp',
+            description: 'Local image generation via stable-diffusion.cpp',
+            capabilities: { image_generation: true, text_generation: false, embedding: false },
+            tags: ['local', 'image-gen', 'sd-cpp']
+        });
+
+        const allModels = Array.from(unique.values());
+        const settings = this.deps.settingsService.getSettings();
+        const locale = settings.general?.language ?? 'en';
+
+        return RegionalPreferenceService.applyPreferences(allModels, locale);
     }
 
     /**

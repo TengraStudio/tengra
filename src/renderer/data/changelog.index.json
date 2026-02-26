@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-26T03:05:17.870Z",
+  "generatedAt": "2026-02-26T06:55:45.290Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,225 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-26-logger-system-improvements",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AppLogger",
+        "LoggingIPC",
+        "RendererLogger"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Universal Logger Improvements: Partitioned Sessions & Enhanced Visibility",
+          "summary": "Enhanced the logging system with session-based partitioning, daily folder organization, and improved terminal visibility with timestamps and robust cross-process error inspection.",
+          "items": [
+            "- **Partitioned Logging**: Implemented a date-based directory structure (logs/YYYY-MM-DD/) and unique session files (session-HH-mm-ss-PID.log) to prevent log mixing between application runs.",
+            "- **Terminal Visibility**: Updated terminal output with full date/time stamps and colorized JSON object/error inspection using `util.inspect` with deeper recursion.",
+            "- **Robust Error Tracing**: Improved terminal visibility for nested error objects and cross-IPC errors by ensuring full object serialization and stack trace presence.",
+            "- **Recursive Maintenance**: Updated log cleanup and statistics gathering to work recursively across the new partitioned folder structure.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger."
+          ]
+        },
+        "tr": {
+          "title": "Evrensel Kayıt Sistemi İyileştirmeleri: Bölümlenmiş Oturumlar ve Gelişmiş Görünürlük",
+          "summary": "Günlük kayıt sistemi, oturum bazlı bölümlendirme, günlük klasör organizasyonu ve süreçler arası hata denetimi ile güçlendirildi.",
+          "items": [
+            "- **Bölümlenmiş Kayıt**: Logların uygulama her açıldığında karışmasını önlemek için tarih tabanlı dizin yapısı (logs/YYYY-MM-DD/) ve benzersiz oturum dosyaları (session-HH-mm-ss-PID.log) uygulandı.",
+            "- **Terminal Görünürlüğü**: Terminal çıktısı, tam tarih/saat damgaları ve `util.inspect` kullanılarak derinlemesine incelenebilen renkli JSON/Hata nesnesi görünümü ile güncellendi.",
+            "- **Dayanıklı Hata İzleme**: Süreçler arası (IPC) ve iç içe geçmiş hata nesnelerinin terminalde tam olarak serileştirilmesi sağlanarak hata ayıklama görünürlüğü artırıldı.",
+            "- **Özyinelemeli Bakım**: Log temizleme ve istatistik toplama işlemleri, yeni hiyerarşik klasör yapısına uyum sağlamak üzere özyinelemeli (recursive) hale getirildi.",
+            "- **Yeni Kayıt Seviyeleri**: Hata ayıklama için `TRACE` ve kritik hatalar için `FATAL` seviyeleri tanıtıldı.",
+            "- **IPC ve Renderer Uyumu**: LogLevel numaralandırmaları tüm süreçler arasında senkronize edildi."
+          ]
+        },
+        "de": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        },
+        "fr": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        },
+        "es": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        },
+        "ja": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        },
+        "zh": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        },
+        "ar": {
+          "title": "Universal Logger Improvements: Terminal Visibility & New Levels",
+          "summary": "Enhanced the logging system with improved terminal visibility, new log levels (TRACE/FATAL), and structured data formatting for better debugging experience.",
+          "items": [
+            "- **Terminal Visibility**: Updated terminal output to include full multiline stack traces and colorized JSON object inspection using `util.inspect`.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
+            "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
+            "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-26-mkt-dev-03-extension-devtools",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "ExtensionService",
+        "ExtensionDevTools",
+        "LayoutManager",
+        "AppHeader"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "tr": {
+          "title": "MKT-DEV-03: Yerel Eklenti Geliştirme Modu ve Geliştirici Araçları",
+          "summary": "Sıcak yenileme (hot reload), gerçek zamanlı log akışı ve özel bir Geliştirici Araçları paneli içeren yerel eklentiler için kapsamlı bir geliştirme ortamı uygulandı.",
+          "items": [
+            "- **ExtensionService**: Yerel kaynak dosyaları değiştirildiğinde otomatik eklenti yenileme (Sıcak Yenileme) için `fs.watch` entegrasyonu eklendi.",
+            "- **Log Akışı**: Yeni bir IPC tabanlı gözlemci modeli aracılığıyla eklentilerden render sürecine gerçek zamanlı kapsamlı log akışı etkinleştirildi.",
+            "- **ExtensionDevTools**: Eklenti yönetimi, manuel yenileme ve gerçek zamanlı log incelemesi için sağ kenar çubuğunda yeni bir panel oluşturuldu.",
+            "- **Düzen Entegrasyonu**: Ana `LayoutManager` bileşenine sağ kenar çubuğu desteği eklendi ve terminal simgesi üzerinden DevTools paneline erişim sağlandı.",
+            "- **Tip Güvenliği**: Eklenti IPC sözleşmeleri için %100 tip güvenliği sağlandı ve çeşitli teknik borçlar giderildi."
+          ]
+        },
+        "de": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "fr": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "es": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "ja": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "zh": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        },
+        "ar": {
+          "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
+          "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+          "items": [
+            "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
+            "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
+            "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
+            "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
+            "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-26-quick-wins-refactor",
       "date": "2026-02-26",
@@ -116,6 +335,108 @@
             "- **extension.util**: تقسيم وظيفة `validateManifest` المكونة من 67 سطرًا إلى أدوات تحقق متخصصة (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).",
             "- **سلامة الأنواع**: إصلاح تراجعات الأنواع الثانوية في اختبارات ملف تعريف SSH ومناولي تخزين الإعدادات التي تم إدخالها أثناء استخراج الخطافات.",
             "- **تم التحقق**: تحتوي جميع الملفات التي تمت إعادة بنائها الآن على وظائف أقل بكثير من حد 60 سطرًا. نجحت مجموعات اختبار البناء و lint ومساحة العمل."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-26-security-stability-fixes",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Security",
+        "ViewManager",
+        "CSP",
+        "Renderer"
+      ],
+      "breaking": false,
+      "security": true,
+      "contentByLocale": {
+        "en": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Navigation Protection**: Restricted application navigation to trusted origins and local files, preventing unauthorized redirection to untrusted sites.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "tr": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "de": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "fr": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "es": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "ja": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "zh": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        },
+        "ar": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
           ]
         }
       }

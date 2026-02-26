@@ -119,8 +119,15 @@ function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: L
 
     logToApp(level, context, message, data);
 
-    const levelNames: Array<'debug' | 'info' | 'warn' | 'error'> = ['debug', 'info', 'warn', 'error'];
-    const levelStr = levelNames[level] || 'info';
+    let levelStr: 'debug' | 'info' | 'warn' | 'error' = 'info';
+    if (level <= LogLevel.DEBUG) {
+        levelStr = 'debug';
+    } else if (level === LogLevel.WARN) {
+        levelStr = 'warn';
+    } else if (level >= LogLevel.ERROR) {
+        levelStr = 'error';
+    }
+
     pushLogEntry(levelStr, context, message);
 }
 
@@ -130,9 +137,11 @@ function handleLogWrite(event: Electron.IpcMainEvent, arg1: string | { level?: L
  */
 function parseLevel(levelStr: string): LogLevel {
     const upper = levelStr.toUpperCase();
+    if (upper === 'TRACE') { return LogLevel.TRACE; }
     if (upper === 'DEBUG') { return LogLevel.DEBUG; }
     if (upper === 'WARN') { return LogLevel.WARN; }
     if (upper === 'ERROR') { return LogLevel.ERROR; }
+    if (upper === 'FATAL') { return LogLevel.FATAL; }
     return LogLevel.INFO;
 }
 
@@ -145,9 +154,11 @@ function parseLevel(levelStr: string): LogLevel {
  */
 function logToApp(level: LogLevel, context: string, message: string, data?: JsonValue | Error) {
     switch (level) {
+        case LogLevel.TRACE: appLogger.trace(context, message, data); break;
         case LogLevel.DEBUG: appLogger.debug(context, message, data); break;
         case LogLevel.INFO: appLogger.info(context, message, data); break;
         case LogLevel.WARN: appLogger.warn(context, message, data); break;
         case LogLevel.ERROR: appLogger.error(context, message, data); break;
+        case LogLevel.FATAL: appLogger.fatal(context, message, data); break;
     }
 }

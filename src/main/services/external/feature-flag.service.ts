@@ -59,7 +59,7 @@ export class FeatureFlagService extends BaseService {
                 }
             });
 
-            this.logInfo('Feature flags loaded', { count: this.flags.size });
+            this.logInfo('Feature flags loaded');
         } catch (error) {
             this.logError('Failed to load feature flags', error);
             // Fallback to defaults in memory

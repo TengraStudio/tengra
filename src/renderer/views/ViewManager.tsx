@@ -4,7 +4,7 @@ import { useModel } from '@renderer/context/ModelContext';
 import { useProject } from '@renderer/context/ProjectContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
-import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';
 import { renderViewSkeleton } from '@/components/ui/view-skeletons';
@@ -129,21 +129,13 @@ export const ViewManager: React.FC<ViewManagerProps> = (props) => {
     const { currentView, onNavigateToProject } = props;
     const { language } = useAuth();
     const { t } = useTranslation(language);
-    const { stopListening, isListening, isLoading } = useChat();
+    const { stopListening, isListening } = useChat();
     const { setIsModelMenuOpen } = useModel();
     const { handleOpenTerminal } = useProject();
     const prefersReducedMotion = usePrefersReducedMotion();
-    const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
 
-    useEffect(() => {
-        const setStartTime = () => setLoadingStartTime(Date.now());
-        const clearStartTime = () => setLoadingStartTime(null);
-        if (isLoading) {
-            setStartTime();
-        } else {
-            clearStartTime();
-        }
-    }, [isLoading, loadingStartTime]);
+
+
 
     const pagePreset = useMemo(
         () => resolveAnimationPreset('page', prefersReducedMotion),

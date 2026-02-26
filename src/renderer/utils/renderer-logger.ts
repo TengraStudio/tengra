@@ -4,10 +4,12 @@
  */
 
 export enum LogLevel {
+    TRACE = -1,
     DEBUG = 0,
     INFO = 1,
     WARN = 2,
-    ERROR = 3
+    ERROR = 3,
+    FATAL = 4,
 }
 
 type LogData = string | number | boolean | object | null | undefined | Error;
@@ -15,10 +17,12 @@ type LogData = string | number | boolean | object | null | undefined | Error;
 class RendererLogger {
     private currentLevel: LogLevel = LogLevel.INFO;
     private readonly electronLevelMethod: Record<LogLevel, 'debug' | 'info' | 'warn' | 'error'> = {
+        [LogLevel.TRACE]: 'debug',
         [LogLevel.DEBUG]: 'debug',
         [LogLevel.INFO]: 'info',
         [LogLevel.WARN]: 'warn',
-        [LogLevel.ERROR]: 'error'
+        [LogLevel.ERROR]: 'error',
+        [LogLevel.FATAL]: 'error'
     };
 
     setLevel(level: LogLevel): void {
@@ -27,6 +31,12 @@ class RendererLogger {
 
     getLevel(): LogLevel {
         return this.currentLevel;
+    }
+
+    trace(context: string, message: string, data?: LogData): void {
+        if (this.currentLevel <= LogLevel.TRACE) {
+            this.log(LogLevel.TRACE, context, message, data);
+        }
     }
 
     debug(context: string, message: string, data?: LogData): void {
@@ -50,6 +60,12 @@ class RendererLogger {
     error(context: string, message: string, data?: LogData): void {
         if (this.currentLevel <= LogLevel.ERROR) {
             this.log(LogLevel.ERROR, context, message, data);
+        }
+    }
+
+    fatal(context: string, message: string, data?: LogData): void {
+        if (this.currentLevel <= LogLevel.FATAL) {
+            this.log(LogLevel.FATAL, context, message, data);
         }
     }
 
@@ -83,16 +99,20 @@ class RendererLogger {
 
     private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
         switch (level) {
+            case LogLevel.TRACE:
+                return console.debug.bind(console);
             case LogLevel.DEBUG:
-                return console.warn.bind(console);
+                return console.debug.bind(console);
             case LogLevel.INFO:
-                return console.warn.bind(console);
+                return console.info.bind(console);
             case LogLevel.WARN:
                 return console.warn.bind(console);
             case LogLevel.ERROR:
                 return console.error.bind(console);
+            case LogLevel.FATAL:
+                return console.error.bind(console);
             default:
-                return console.warn.bind(console);
+                return console.log.bind(console);
         }
     }
 }

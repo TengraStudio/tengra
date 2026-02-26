@@ -16,6 +16,7 @@ import { registerIpcHandlers } from '@main/startup/ipc';
 import { container, createServices } from '@main/startup/services';
 import { ToolExecutor } from '@main/tools/tool-executor';
 import { validateEnvironmentVariables } from '@main/utils/env-validator.util';
+import { getErrorMessage } from '@shared/utils/error.util';
 
 import { registerLifecycleHandlers } from './startup/lifecycle';
 import { preRegisterProtocols, registerProtocols } from './startup/protocols';
@@ -184,7 +185,9 @@ app.whenReady().then(async () => {
 
 }).catch(e => {
     closeSplashWindow();
-    appLogger.error('Main', 'Critical failure on startup', e as Error);
+    const normalizedError = e instanceof Error ? e : new Error(getErrorMessage(e));
+    appLogger.error('Main', 'Critical failure on startup', normalizedError);
+    appLogger.error('Main', `Critical failure details: ${getErrorMessage(e)}`);
     app.exit(1);
 });
 

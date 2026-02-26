@@ -2,6 +2,31 @@
 
 ## [2026-02-26]
 
+### Universal Logger Improvements: Partitioned Sessions & Enhanced Visibility
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Enhanced the logging system with session-based partitioning, daily folder organization, and improved terminal visibility with timestamps and robust cross-process error inspection.
+
+- **Partitioned Logging**: Implemented a date-based directory structure (logs/YYYY-MM-DD/) and unique session files (session-HH-mm-ss-PID.log) to prevent log mixing between application runs.
+- **Terminal Visibility**: Updated terminal output with full date/time stamps and colorized JSON object/error inspection using `util.inspect` with deeper recursion.
+- **Robust Error Tracing**: Improved terminal visibility for nested error objects and cross-IPC errors by ensuring full object serialization and stack trace presence.
+- **Recursive Maintenance**: Updated log cleanup and statistics gathering to work recursively across the new partitioned folder structure.
+- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.
+- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.
+
+### MKT-DEV-03: Local Extension Development Mode & DevTools
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.
+
+- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.
+- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.
+- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.
+- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.
+- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service.
+
 ### NASA Power of Ten: Quick Wins Refactoring
 
 - **Type**: refactor
@@ -13,6 +38,18 @@
 - **extension.util**: Split the 67-line `validateManifest` function into specialized validation helpers (`validateRequiredFields`, `validateAuthor`, `validateOptionalFields`).
 - **Type Safety**: Resolved secondary type regressions in SSH profile testing and settings save handlers introduced during hook extraction.
 - **Verified**: All refactored files now contain functions well under the 60-line limit. Build, lint, and workspace test suites pass.
+
+### Critical Stability: Infinite Loop & Security Header Hardening
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+
+- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
+- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
+- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **Navigation Protection**: Restricted application navigation to trusted origins and local files, preventing unauthorized redirection to untrusted sites.
+- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
 
 ## [2026-02-25]
 

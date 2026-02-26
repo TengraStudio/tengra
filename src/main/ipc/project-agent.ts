@@ -437,11 +437,6 @@ export function registerProjectAgentIpc(
         await projectAgentService.resumeFromCheckpoint(checkpointId);
     }, undefined));
 
-    ipcMain.handle('project:get-task-history', createSafeIpcHandler('project:get-task-history', async (_, projectId: string) => {
-        validateString(projectId, 'projectId');
-        return await projectAgentService.getTaskHistory(projectId);
-    }, []));
-
     ipcMain.handle('project:get-checkpoints', createSafeIpcHandler('project:get-checkpoints', async (_, taskId: string) => {
         validateString(taskId, 'taskId');
         return await projectAgentService.getCheckpoints(taskId);

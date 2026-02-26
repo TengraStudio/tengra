@@ -56,6 +56,12 @@
 - (x) **BACKLOG-0507**: Website Submodule Integration: Remove `website/tengra-*` from root `.gitignore` and properly integrate as git submodules or manage separately.
 - (x) **BACKLOG-0508**: Documentation Reorganization: Group files in `docs/` into subdirectories (`architecture`, `api`, `guides`, `tasks`).
 
+### Security & Stability Hardening
+- [x] **SEC-STAB-01**: Fix critical infinite re-render loop in `ViewManager` (React Error #185).
+- [x] **SEC-STAB-02**: Harden Electron Content Security Policy (CSP) with robust sources and headers.
+- [x] **SEC-STAB-03**: Consolidate CSP management into Main process and remove redundant meta tags.
+- [x] **SEC-STAB-04**: Restrict WebContents navigation to trusted origins and local files.
+
 ### v2.0.0 (Target: Q4 2026)
 - ( ) Plugin ecosystem
 - ( ) Collaborative sessions

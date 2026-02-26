@@ -95,7 +95,7 @@ describe('ModelRegistryService', () => {
     describe('getRemoteModels', () => {
         it('should fetch and cache remote models', async () => {
             const models = await service.getRemoteModels();
-            expect(models.length).toBe(1);
+            expect(models.some(m => m.provider === 'huggingface')).toBe(true);
             expect(mockHuggingFaceService.searchModels).toHaveBeenCalled();
             expect(service.getHealthMetrics().cacheUpdates).toBe(1);
             expect(mockEventBus.emit).toHaveBeenCalledWith(
@@ -109,7 +109,7 @@ describe('ModelRegistryService', () => {
             vi.mocked(mockHuggingFaceService.searchModels!).mockClear();
 
             const models = await service.getRemoteModels();
-            expect(models.length).toBe(1);
+            expect(models.some(m => m.provider === 'huggingface')).toBe(true);
             expect(mockHuggingFaceService.searchModels).not.toHaveBeenCalled();
         });
 
@@ -202,7 +202,7 @@ describe('ModelRegistryService', () => {
             vi.mocked(mockHuggingFaceService.searchModels!).mockRejectedValue(new Error('Failed'));
 
             const models = await service.getRemoteModels();
-            expect(models.length).toBe(0);
+            expect(models.some(m => m.provider === 'huggingface')).toBe(false);
         });
 
         it('should track provider fetch failures in health metrics', async () => {

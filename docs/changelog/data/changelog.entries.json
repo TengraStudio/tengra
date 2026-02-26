@@ -4,15 +4,81 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-26-security-stability-fixes",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "fix",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "Security",
+        "ViewManager",
+        "CSP",
+        "Renderer"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Critical Stability: Infinite Loop & Security Header Hardening",
+          "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+          "items": [
+            "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
+            "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
+            "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
+            "- **Navigation Protection**: Restricted application navigation to trusted origins and local files, preventing unauthorized redirection to untrusted sites.",
+            "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-26-logger-system-improvements",
+      "date": "2026-02-26",
+      "channel": "stable",
+      "type": "feature",
+      "category": "quality",
+      "status": "completed",
+      "audience": [
+        "developer",
+        "end-user"
+      ],
+      "components": [
+        "AppLogger",
+        "LoggingIPC",
+        "RendererLogger"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Universal Logger Improvements: Partitioned Sessions & Enhanced Visibility",
+          "summary": "Enhanced the logging system with session-based partitioning, daily folder organization, and improved terminal visibility with timestamps and robust cross-process error inspection.",
+          "items": [
+            "- **Partitioned Logging**: Implemented a date-based directory structure (logs/YYYY-MM-DD/) and unique session files (session-HH-mm-ss-PID.log) to prevent log mixing between application runs.",
+            "- **Terminal Visibility**: Updated terminal output with full date/time stamps and colorized JSON object/error inspection using `util.inspect` with deeper recursion.",
+            "- **Robust Error Tracing**: Improved terminal visibility for nested error objects and cross-IPC errors by ensuring full object serialization and stack trace presence.",
+            "- **Recursive Maintenance**: Updated log cleanup and statistics gathering to work recursively across the new partitioned folder structure.",
+            "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
+            "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-26-mkt-dev-03-extension-devtools",
       "date": "2026-02-26",
       "channel": "stable",
-      "type": "feat",
+      "type": "feature",
       "category": "extensions",
       "status": "completed",
       "audience": [
         "developer",
-        "user"
+        "end-user"
       ],
       "components": [
         "ExtensionService",
