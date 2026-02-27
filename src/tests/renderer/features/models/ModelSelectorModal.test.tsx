@@ -208,6 +208,15 @@ function createMockProps(overrides?: Partial<React.ComponentProps<typeof ModelSe
     };
 }
 
+function getModelButton(label: string | RegExp): HTMLButtonElement {
+    const modelLabels = screen.getAllByText(label);
+    expect(modelLabels.length).toBeGreaterThan(0);
+
+    const button = modelLabels[0]?.closest('button');
+    expect(button).not.toBeNull();
+    return button as HTMLButtonElement;
+}
+
 describe('ModelSelectorModal', () => {
     let mockProps: ReturnType<typeof createMockProps>;
 
@@ -280,7 +289,7 @@ describe('ModelSelectorModal', () => {
             await user.type(searchInput, 'Model 1');
 
             // The filtered categories should only contain matching models
-            expect(screen.getByText('Test Model 1').closest('button')!).toBeInTheDocument();
+            expect(getModelButton('Test Model 1')).toBeInTheDocument();
         });
 
         it('should clear search query when modal closes', async () => {
@@ -311,7 +320,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ onSelect });
             render(<ModelSelectorModal {...props} />);
 
-            const modelButton = screen.getByText('Test Model 1').closest('button')!;
+            const modelButton = getModelButton('Test Model 1');
             fireEvent.click(modelButton);
 
             expect(onSelect).toHaveBeenCalledWith('test-provider', 'model-1', false, false);
@@ -323,7 +332,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Should switch to reasoning tab
@@ -336,7 +345,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ onClose, onSelect });
             render(<ModelSelectorModal {...props} />);
 
-            const modelButton = screen.getByText('Test Model 1').closest('button')!;
+            const modelButton = getModelButton('Test Model 1');
             fireEvent.click(modelButton);
 
             expect(onClose).toHaveBeenCalled();
@@ -350,7 +359,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Should show reasoning level buttons
@@ -365,7 +374,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Click on a thinking level
@@ -381,7 +390,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Confirm button should be disabled initially
@@ -414,7 +423,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels to trigger reasoning selection
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Press Escape - should not close, should cancel pending
@@ -456,7 +465,7 @@ describe('ModelSelectorModal', () => {
             render(<ModelSelectorModal {...props} />);
 
             // Click on model with thinking levels
-            const modelButton = screen.getByText('Test Model 2').closest('button')!;
+            const modelButton = getModelButton('Test Model 2');
             fireEvent.click(modelButton);
 
             // Try to click backdrop
@@ -487,7 +496,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ onClose, onSelect });
             render(<ModelSelectorModal {...props} />);
 
-            const modelButton = screen.getByText('Test Model 1').closest('button')!;
+            const modelButton = getModelButton('Test Model 1');
             // Simulate shift+click for multi-select
             fireEvent.click(modelButton, { shiftKey: true });
 
@@ -585,7 +594,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ categories });
             render(<ModelSelectorModal {...props} />);
 
-            const modelButton = screen.getByText('No Thinking Model').closest('button')!;
+            const modelButton = getModelButton('No Thinking Model');
             fireEvent.click(modelButton);
 
             // Should not show reasoning tab
@@ -611,7 +620,7 @@ describe('ModelSelectorModal', () => {
             const props = createMockProps({ categories });
             render(<ModelSelectorModal {...props} />);
 
-            const modelButton = screen.getByText('Empty Thinking Model').closest('button')!;
+            const modelButton = getModelButton('Empty Thinking Model');
             fireEvent.click(modelButton);
 
             // Should not show reasoning tab for empty thinkingLevels
@@ -635,7 +644,7 @@ describe('ModelSelectorModal', () => {
             ]);
             const props = createMockProps({ categories });
             render(<ModelSelectorModal {...props} />);
-            expect(screen.getByText(/AAAA+/).closest('button')!).toBeInTheDocument();
+            expect(getModelButton(/AAAA+/)).toBeInTheDocument();
         });
 
         it('should handle special characters in search query', async () => {

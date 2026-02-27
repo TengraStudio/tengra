@@ -31,6 +31,23 @@ const COOKIE_CAPTURE_ALLOWED_HOSTS = new Set([
     'api.anthropic.com',
     'github.com'
 ]);
+const RUN_COMMAND_ALLOWED_EXECUTABLES = new Set([
+    'git',
+    'npm',
+    'npx',
+    'node',
+    'pnpm',
+    'yarn',
+    'python',
+    'python3',
+    'pip',
+    'pip3',
+    'cargo',
+    'rustc',
+    'go',
+    'docker',
+    'kubectl'
+]);
 
 interface DetachedTerminalWindowOptions {
     sessionId: string;
@@ -73,6 +90,13 @@ function redactUrlForLogs(rawUrl: string): string {
     } catch {
         return rawUrl;
     }
+}
+
+function normalizeExecutableName(command: string): string {
+    const trimmed = command.trim();
+    const normalized = process.platform === 'win32' ? trimmed.toLowerCase() : trimmed;
+    const base = path.basename(normalized);
+    return base.replace(/\.(exe|cmd|bat)$/i, '');
 }
 
 /**
@@ -444,6 +468,21 @@ function registerShellHandlers(getMainWindow: () => BrowserWindow | null, allowe
                 appLogger.warn('WindowIPC', 'Argument exceeds maximum length');
                 return { stdout: '', stderr: 'Argument too long', code: 1, error: 'Command validation failed' };
             }
+            if (/[\r\n\0]/.test(arg)) {
+                appLogger.warn('WindowIPC', 'Argument contains forbidden control characters');
+                return { stdout: '', stderr: 'Invalid argument', code: 1, error: 'Command validation failed' };
+            }
+        }
+
+        const executable = normalizeExecutableName(command);
+        if (!RUN_COMMAND_ALLOWED_EXECUTABLES.has(executable)) {
+            appLogger.warn('WindowIPC', `Blocked shell:runCommand executable: ${executable}`);
+            return { stdout: '', stderr: 'Executable is not allowed', code: 1, error: 'Command validation failed' };
+        }
+
+        if (cwd && !isPathAllowed(cwd, allowedRoots)) {
+            appLogger.warn('WindowIPC', `Blocked shell:runCommand cwd outside allowed roots: ${cwd}`);
+            return { stdout: '', stderr: 'Working directory is not allowed', code: 1, error: 'Command validation failed' };
         }
 
         return new Promise(resolve => {

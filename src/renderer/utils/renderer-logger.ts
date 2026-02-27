@@ -100,11 +100,11 @@ class RendererLogger {
     private getConsoleMethod(level: LogLevel): (...args: unknown[]) => void {
         switch (level) {
             case LogLevel.TRACE:
-                return console.debug.bind(console);
+                return console.warn.bind(console);
             case LogLevel.DEBUG:
-                return console.debug.bind(console);
+                return console.warn.bind(console);
             case LogLevel.INFO:
-                return console.info.bind(console);
+                return console.warn.bind(console);
             case LogLevel.WARN:
                 return console.warn.bind(console);
             case LogLevel.ERROR:
@@ -112,7 +112,7 @@ class RendererLogger {
             case LogLevel.FATAL:
                 return console.error.bind(console);
             default:
-                return console.log.bind(console);
+                return console.warn.bind(console);
         }
     }
 }

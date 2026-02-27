@@ -233,6 +233,20 @@ const useProjectListOperations = (
     dispatch: React.Dispatch<ProjectListAction>,
     onError?: (error: string) => void
 ) => {
+    const normalizePathKey = useCallback((value: string): string => {
+        return value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+    }, []);
+
+    const buildMountKey = useCallback((mount: WorkspaceMount): string => {
+        if (mount.type === 'ssh') {
+            const host = mount.ssh?.host?.toLowerCase() ?? '';
+            const user = mount.ssh?.username?.toLowerCase() ?? '';
+            const port = mount.ssh?.port ?? 22;
+            return `ssh:${user}@${host}:${port}:${normalizePathKey(mount.rootPath)}`;
+        }
+        return `local:${normalizePathKey(mount.rootPath)}`;
+    }, [normalizePathKey]);
+
     const executeUpdate = useCallback(async (): Promise<boolean> => {
         if (state.status !== 'editing' || !state.targetProject) { return false; }
         dispatch({ type: 'OPERATION_START', message: 'Updating project...' });
@@ -310,6 +324,28 @@ const useProjectListOperations = (
                 type: 'local' as const,
                 rootPath: path
             }];
+            const existingProjects = await window.electron.db.getProjects();
+            const existingMounts = new Set<string>();
+            for (const project of existingProjects) {
+                const projectMounts = Array.isArray(project.mounts) && project.mounts.length > 0
+                    ? project.mounts
+                    : [{
+                        id: `local-${project.id}`,
+                        name: project.title,
+                        type: 'local' as const,
+                        rootPath: project.path
+                    }];
+                for (const projectMount of projectMounts) {
+                    existingMounts.add(buildMountKey(projectMount));
+                }
+            }
+
+            for (const mount of mounts) {
+                if (existingMounts.has(buildMountKey(mount))) {
+                    throw new Error('Invalid input');
+                }
+            }
+
             await window.electron.db.createProject(name, path, description, JSON.stringify(mounts));
             dispatch({ type: 'OPERATION_SUCCESS' });
             return true;
@@ -319,7 +355,7 @@ const useProjectListOperations = (
             onError?.(msg);
             return false;
         }
-    }, [dispatch, onError]);
+    }, [buildMountKey, dispatch, onError]);
 
     return {
         executeUpdate,

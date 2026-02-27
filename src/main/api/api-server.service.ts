@@ -55,6 +55,8 @@ const WS_MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 const ipTokenRequestCounts = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 100; // per window per IP+token
+const TOKEN_CHALLENGE_TTL_MS = 30 * 1000; // 30 seconds
+const tokenChallenges = new Map<string, number>();
 
 /**
  * Configuration options for the API server.
@@ -255,6 +257,9 @@ export class ApiServerService extends BaseService {
      * /api/proxy/status:
      *   get:
      *     description: Get status of the proxy process
+     * /api/auth/token/challenge:
+     *   get:
+     *     description: Get one-time challenge for local token access
      * /api/auth/token:
      *   get:
      *     description: Get the current API token (local only)
@@ -276,6 +281,24 @@ export class ApiServerService extends BaseService {
             return true;
         }
 
+        // Token challenge endpoint (one-time nonce for local callers)
+        if (pathname === '/api/auth/token/challenge' && method === 'GET') {
+            if (!this.isStrictLocalRequest(req)) {
+                this.sendJson(res, 403, {
+                    success: false,
+                    error: 'Forbidden',
+                    message: 'Local access required'
+                });
+                return true;
+            }
+            this.sendJson(res, 200, {
+                success: true,
+                challenge: this.createTokenChallenge(),
+                expiresInMs: TOKEN_CHALLENGE_TTL_MS
+            });
+            return true;
+        }
+
         // Token endpoint
         if (pathname === '/api/auth/token' && method === 'GET') {
             if (!this.isStrictLocalRequest(req)) {
@@ -283,6 +306,16 @@ export class ApiServerService extends BaseService {
                     success: false,
                     error: 'Forbidden',
                     message: 'Local access required'
+                });
+                return true;
+            }
+            const challengeHeader = req.headers['x-tengra-token-challenge'];
+            const challenge = typeof challengeHeader === 'string' ? challengeHeader : '';
+            if (!challenge || !this.consumeTokenChallenge(challenge)) {
+                this.sendJson(res, 401, {
+                    success: false,
+                    error: 'Unauthorized',
+                    message: 'Missing or invalid token challenge'
                 });
                 return true;
             }
@@ -351,17 +384,22 @@ export class ApiServerService extends BaseService {
             return headerToken.trim();
         }
 
-        try {
-            const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-            const queryToken = requestUrl.searchParams.get('token');
-            if (queryToken && queryToken.trim().length > 0) {
-                return queryToken.trim();
-            }
-        } catch {
-            return null;
-        }
-
         return null;
+    }
+
+    private createTokenChallenge(): string {
+        const challenge = randomBytes(16).toString('hex');
+        tokenChallenges.set(challenge, Date.now() + TOKEN_CHALLENGE_TTL_MS);
+        return challenge;
+    }
+
+    private consumeTokenChallenge(challenge: string): boolean {
+        const expiresAt = tokenChallenges.get(challenge);
+        tokenChallenges.delete(challenge);
+        if (!expiresAt) {
+            return false;
+        }
+        return Date.now() <= expiresAt;
     }
 
     /**

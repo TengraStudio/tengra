@@ -1,7 +1,7 @@
 
 # Tengra Project - Comprehensive TODO List
 
-> Last updated: 2026-02-25
+> Last updated: 2026-02-27
 > **Total Tasks: 1020+** | **Status: In Development**
 
 ## Release Milestones
@@ -20,10 +20,10 @@
 - [x] **MKT-AUTH-001**: Implement Secure User Registration & Login (C++).
 - [x] **MKT-SUB-001**: Implement Extension Submission System (GitHub URL).
 - [x] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
-- ( ) **MKT-DATA-10**: Add ready prompt/theme catalogs to marketplace DB and moderation flow.
-- ( ) **MKT-DISC-20**: Add advanced marketplace filtering dimensions (type/provider/license/language/trust/runtime).
-- ( ) **MKT-DISC-21**: Add expanded sorting strategies (trend/quality/trust/install-success).
-- ( ) **MKT-UX-30**: User interaction layer (ratings, reviews, favorites, follows, reports) [TODO].
+- (x) **MKT-DATA-10**: Add ready prompt/theme catalogs to marketplace DB and moderation flow.
+- (x) **MKT-DISC-20**: Add advanced marketplace filtering dimensions (type/provider/license/language/trust/runtime).
+- (x) **MKT-DISC-21**: Add expanded sorting strategies (trend/quality/trust/install-success).
+- (x) **MKT-UX-30**: User interaction layer (ratings, reviews, favorites, follows, reports) [TODO].
 - ( ) **LOCAL-03**: Hardware-aware model fit estimator (llmfit-style TPS/compatibility recommendations).
 
 ### Frontend Hardening & Completion (website/tengra-frontend)
@@ -50,7 +50,7 @@
 ### Backlog Range: BACKLOG-0501 to BACKLOG-0510 (Project Health & Maintenance)
 - [x] **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
 - [x] **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
-- ( ) **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
+- [x] **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
 - ( ) **BACKLOG-0504**: Enforce Component Promotion Rules: Perform cleanup of feature-local components in `src/renderer/features`.
 - ( ) **BACKLOG-0505**: Root Directory Hygiene: Move `tengra_key.txt` to `.env` or secure storage.
 - ( ) **BACKLOG-0506**: Build Artifact Hygiene: Move `stats.html` generation to `dist/` or `build/`.
@@ -1131,5 +1131,19 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - (x) **WEBSEC-P1-004**: Add bot/AI traffic confidence scoring (UA + behavior + ASN/reverse DNS) with risk labels.
 - (x) **WEBSEC-P2-001**: Add Linux CI parity pipeline (build + lint + smoke test) and release artifact checks.
 - (x) **WEBSEC-P2-002**: Add retention/deletion policy tooling for analytics data (privacy controls and compliance workflows).
+
+### Security Audit Findings (2026-02-27)
+- ( ) **AUD-2026-02-27-01**: Remove access-token exposure from auth IPC response (`auth:poll-token` returns raw token).
+  - ( ) Return account metadata only; never return `access_token` to renderer.
+  - ( ) Add regression test to assert token is not present in IPC payload.
+  - ( ) Verify Copilot/GitHub link flow still works after response contract change.
+- ( ) **AUD-2026-02-27-02**: Harden local API token handling in `ApiServerService`.
+  - ( ) Remove query-string token fallback (`?token=`) to prevent token leakage in logs/history.
+  - ( ) Deprecate or gate `/api/auth/token` behind explicit one-time consent/nonce handshake.
+  - ( ) Add tests covering denied query token and local-only endpoint abuse attempts.
+- ( ) **AUD-2026-02-27-03**: Restrict `shell:runCommand` IPC surface with allowlist + policy layer.
+  - ( ) Enforce executable allowlist and per-command argument schema.
+  - ( ) Add blocked-command audit logs and rate limiting for execution attempts.
+  - ( ) Add security tests for path traversal and arbitrary executable invocation.
 
 

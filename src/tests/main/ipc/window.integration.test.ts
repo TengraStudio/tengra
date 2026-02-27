@@ -109,7 +109,7 @@ describe('Window IPC Handlers', () => {
         mockMainWindow.isDestroyed.mockReturnValue(false);
 
         // Trigger registration
-        registerWindowIpc(() => mockMainWindow as any, new Set<string>());
+        registerWindowIpc(() => mockMainWindow as any, new Set<string>(['/app']));
     });
 
     const mockEvent = { sender: { id: 1 } } as any;
@@ -318,7 +318,7 @@ describe('Window IPC Handlers', () => {
             const handler = mockIpcMainHandlers.get('shell:runCommand');
             expect(handler).toBeDefined();
 
-            const result = await handler!(mockEvent, 'git', ['status'], '/project');
+            const result = await handler!(mockEvent, 'git', ['status'], '/app');
 
 
             expect(result).toEqual({ stdout: '', stderr: '', code: 0, error: '' });

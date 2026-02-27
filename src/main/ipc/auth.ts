@@ -114,7 +114,15 @@ export function registerAuthIpc(deps: AuthIpcDependencies) {
                 copilotService.setGithubToken(token);
             }
 
-            return { success: true, token };
+            return {
+                success: true,
+                account: {
+                    provider,
+                    email,
+                    displayName,
+                    avatarUrl
+                }
+            };
         } catch (error) {
             await auditLogService?.logAuthenticationEvent('auth.poll-token.link-account', false, {
                 error: getErrorMessage(error as Error)
