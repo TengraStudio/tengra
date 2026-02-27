@@ -1,4 +1,16 @@
 {
+  "2026-02-27-project-wizard-redesign": {
+    "title": "Üst Düzey Proje Sihirbazı: Yenilenen UX ve Hareket Entegrasyonu",
+    "summary": "Proje Sihirbazı, temel bir formdan; rafine tipografi, dinamik kategori seçimi ve akıcı ilerleme takibi ile üst düzey, etkileşimli bir deneyime dönüştürüldü.",
+    "items": [
+      "- **Görsel Tasarım**: Modern, geniş bir düzen ve modal yapısında zarif cam morfolojisi efektleri uygulandı.",
+      "- **Gelişmiş Seçiciler**: Dikey ikonografi ve gerçek zamanlı seçim geri bildirimi içeren büyük, yüksek kontrastlı kartlarla kategori seçimi yükseltildi.",
+      "- **İlerleme Takibi**: Proje oluşturma sürecinin net bir görsel yol haritasını sunmak için sihirbazın üst kısmına animasyonlu bir adım göstergesi eklendi.",
+      "- **Üst Düzey Navigasyon**: Alt bilgi, yüksek kontrastlı, gölgeli eylem düğmeleri ve akıcı mikro etkileşimlerle rafine edildi.",
+      "- **Giriş Alanları**: Form elemanları, daha iyi kullanılabilirlik için zarif kenarlıklar, odak durumları ve belirgin animasyonlu hata mesajlarıyla parlatıldı.",
+      "- **Hareket Tasarımı**: Daha duyarlı ve canlı bir arayüz oluşturmak için geçişler ve etkileşimli durumlar için mikro animasyonlar entegre edildi."
+    ]
+  },
   "2026-02-26-logger-system-improvements": {
     "title": "Evrensel Kayıt Sistemi İyileştirmeleri: Bölümlenmiş Oturumlar ve Gelişmiş Görünürlük",
     "summary": "Günlük kayıt sistemi, oturum bazlı bölümlendirme, günlük klasör organizasyonu ve süreçler arası hata denetimi ile güçlendirildi.",
@@ -3871,6 +3883,16 @@
       "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
       "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
       "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+    ]
+  },
+  "2025-07-25-service-threat-model": {
+    "title": "Kapsamlı Servis Tehdit Modeli ve Kötüye Kullanım Senaryosu İncelemesi",
+    "summary": "12 arka uç servisi için tehdit analizi, azaltma önlemleri ve kötüye kullanım senaryolarını kapsayan docs/guides/SERVICE_THREAT_MODEL.md oluşturuldu.",
+    "items": [
+      "- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 tamamlandı",
+      "- Servis başına T-kodları, açıklamalar ve mevcut azaltma önlemleri ile 30+ tehdit vektörü belgelendi",
+      "- Prompt enjeksiyonu, kaynak tüketimi, komut enjeksiyonu, yol geçişi ve kimlik bilgisi hırsızlığını kapsayan 24+ kötüye kullanım senaryosu belirlendi",
+      "- Özet risk matrisi ve 6 uygulanabilir güvenlik önerisi eklendi"
     ]
   }
 }

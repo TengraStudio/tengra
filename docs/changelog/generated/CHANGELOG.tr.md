@@ -1,5 +1,20 @@
 # Değişiklik Günlüğü
 
+## [2026-02-27]
+
+### Üst Düzey Proje Sihirbazı: Yenilenen UX ve Hareket Entegrasyonu
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Proje Sihirbazı, temel bir formdan; rafine tipografi, dinamik kategori seçimi ve akıcı ilerleme takibi ile üst düzey, etkileşimli bir deneyime dönüştürüldü.
+
+- **Görsel Tasarım**: Modern, geniş bir düzen ve modal yapısında zarif cam morfolojisi efektleri uygulandı.
+- **Gelişmiş Seçiciler**: Dikey ikonografi ve gerçek zamanlı seçim geri bildirimi içeren büyük, yüksek kontrastlı kartlarla kategori seçimi yükseltildi.
+- **İlerleme Takibi**: Proje oluşturma sürecinin net bir görsel yol haritasını sunmak için sihirbazın üst kısmına animasyonlu bir adım göstergesi eklendi.
+- **Üst Düzey Navigasyon**: Alt bilgi, yüksek kontrastlı, gölgeli eylem düğmeleri ve akıcı mikro etkileşimlerle rafine edildi.
+- **Giriş Alanları**: Form elemanları, daha iyi kullanılabilirlik için zarif kenarlıklar, odak durumları ve belirgin animasyonlu hata mesajlarıyla parlatıldı.
+- **Hareket Tasarımı**: Daha duyarlı ve canlı bir arayüz oluşturmak için geçişler ve etkileşimli durumlar için mikro animasyonlar entegre edildi.
+
 ## [2026-02-26]
 
 ### Evrensel Kayıt Sistemi İyileştirmeleri: Bölümlenmiş Oturumlar ve Gelişmiş Görünürlük
@@ -4071,3 +4086,16 @@ doğru.
 - - Temel hizmetlerde sessiz hata yakalamaları ve konsol çağrıları `appLogger` ile değiştirildi.
 - **Dokümanlar**: 19 işaretleme dosyası 6 temalı belgede birleştirildi.
 - **Denetim**: `TODO.md` tarihinden itibaren ilk küçük temizleme görevleri tamamlandı.
+
+## [2025-07-25]
+
+### Kapsamlı Servis Tehdit Modeli ve Kötüye Kullanım Senaryosu İncelemesi
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: 12 arka uç servisi için tehdit analizi, azaltma önlemleri ve kötüye kullanım senaryolarını kapsayan docs/guides/SERVICE_THREAT_MODEL.md oluşturuldu.
+
+- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 tamamlandı
+- Servis başına T-kodları, açıklamalar ve mevcut azaltma önlemleri ile 30+ tehdit vektörü belgelendi
+- Prompt enjeksiyonu, kaynak tüketimi, komut enjeksiyonu, yol geçişi ve kimlik bilgisi hırsızlığını kapsayan 24+ kötüye kullanım senaryosu belirlendi
+- Özet risk matrisi ve 6 uygulanabilir güvenlik önerisi eklendi

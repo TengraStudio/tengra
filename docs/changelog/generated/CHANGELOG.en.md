@@ -1,5 +1,20 @@
 # Changelog
 
+## [2026-02-27]
+
+### Premium Project Wizard: Redesigned UX & Motion Integration
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Transformed the Project Wizard from a basic form into a premium, interactive experience with refined typography, dynamic category selection, and smooth progress tracking.
+
+- **Visual Redesign**: Implemented a modern, spacious layout with premium typography and subtle glassmorphism effects in the modal structure.
+- **Enhanced Selectors**: Upgraded category selection with large, high-contrast cards featuring vertical iconography and real-time selection feedback.
+- **Progress Tracking**: Added an animated step indicator at the top of the wizard to provide clear visual roadmap of the project creation process.
+- **Premium Navigation**: Refined the footer with high-contrast, shadowed action buttons and smooth hover micro-interactions.
+- **Input Refinement**: Polished form elements with elegant borders, focus states, and distinct animated error messaging for better usability.
+- **Motion Design**: Integrated micro-animations for transitions and interactive states to create a more responsive and alive interface.
+
 ## [2026-02-26]
 
 ### Universal Logger Improvements: Partitioned Sessions & Enhanced Visibility
@@ -4110,3 +4125,16 @@ Successfully migrated the entire `Ideas` module to the centralized theme system,
 -   - Replaced silent error catches and console calls with `appLogger` across core services.
 - **Docs**: Consolidated 19 markdown files into 6 themed documents.
 - **Audit**: Completed initial small cleanup tasks from `TODO.md`.
+
+## [2025-07-25]
+
+### Comprehensive Service Threat Model & Abuse Case Review
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Created docs/guides/SERVICE_THREAT_MODEL.md covering threat analysis for all 12 backend services with threat vectors, mitigations, and abuse scenarios.
+
+- Completed BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500
+- Documented 30+ threat vectors with T-codes, descriptions, and existing mitigations per service
+- Identified 24+ abuse cases covering prompt injection, resource exhaustion, command injection, path traversal, and credential theft
+- Added summary risk matrix and 6 actionable security recommendations

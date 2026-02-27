@@ -1,5 +1,20 @@
 # سجل التغييرات
 
+## [2026-02-27]
+
+### معالج المشروع المتميز: UX المعاد تصميمه وتكامل الحركة
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تم تحويل Project Wizard من نموذج أساسي إلى تجربة تفاعلية متميزة مع طباعة محسنة واختيار ديناميكي للفئة وتتبع التقدم بسلاسة.
+
+- **إعادة التصميم المرئي**: تم تنفيذ تصميم حديث وواسع مع طباعة متميزة وتأثيرات زجاجية دقيقة في البنية الشكلية.
+- **المحددات المحسّنة**: اختيار فئة تمت ترقيته باستخدام بطاقات كبيرة عالية التباين تتميز بأيقونات رأسية وتعليقات اختيار في الوقت الفعلي.
+- **تتبع التقدم**: تمت إضافة مؤشر خطوة متحرك أعلى المعالج لتوفير خريطة طريق مرئية واضحة لعملية إنشاء المشروع.
+- **التنقل المميز**: تم تحسين التذييل باستخدام أزرار الإجراءات المظللة عالية التباين والتفاعلات الدقيقة التي تتحرك بسلاسة.
+- **تحسين الإدخال**: عناصر نموذج مصقولة ذات حدود أنيقة وحالات تركيز ورسائل خطأ متحركة مميزة لسهولة الاستخدام بشكل أفضل.
+- **تصميم الحركة**: رسوم متحركة دقيقة مدمجة للانتقالات والحالات التفاعلية لإنشاء واجهة أكثر استجابة وحيوية.
+
 ## [2026-02-26]
 
 ### Universal Logger Improvements: Terminal Visibility & New Levels
@@ -13,18 +28,19 @@
 - **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.
 - **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.
 - **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules.
+- **IPC وتكافؤ العارض**: تعدادات LogLevel المتزامنة والأساليب عبر العملية الرئيسية، IPC handlers، ومسجل العارض.
 
-### MKT-DEV-03: Local Extension Development Mode & DevTools
+### MKT-DEV-03: وضع تطوير الامتداد المحلي وأدوات التطوير
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.
+- **Summary**: تم تنفيذ بيئة تطوير كاملة للإضافات المحلية، تتميز بإعادة التحميل السريع، وتدفق السجل في الوقت الفعلي، ولوحة DevTools UI المخصصة.
 
-- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.
-- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.
-- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.
-- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.
-- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service.
+- **ExtensionService**: تمت إضافة تكامل `fs.watch` لإعادة تحميل الامتداد تلقائيًا (إعادة التحميل السريع) عند تعديل ملفات المصدر المحلية.
+- **تدفق السجل**: تمكين تدفق السجل غير المحدد في الوقت الفعلي من الامتدادات إلى عملية العارض عبر نمط مراقب جديد مدعوم بـ IPC.
+- **ExtensionDevTools**: تم إنشاء لوحة UI جديدة في الشريط الجانبي الأيمن لإدارة الملحقات، وتشغيل عمليات إعادة التحميل اليدوية، وفحص السجلات في الوقت الفعلي.
+- **تكامل التخطيط**: تمت إضافة دعم الشريط الجانبي الأيمن إلى `LayoutManager` الرئيسي ودمج لوحة DevTools للوصول الفوري عبر الرأس.
+- **سلامة النوع**: ضمان أمان النوع بنسبة 100% لعقود التمديد IPC وحل العديد من بنود الديون الفنية في خدمة الإرشاد.
 
 ### NASA Power of Ten: إعادة بناء المكاسب السريعة
 
@@ -38,16 +54,17 @@
 - **سلامة الأنواع**: إصلاح تراجعات الأنواع الثانوية في اختبارات ملف تعريف SSH ومناولي تخزين الإعدادات التي تم إدخالها أثناء استخراج الخطافات.
 - **تم التحقق**: تحتوي جميع الملفات التي تمت إعادة بنائها الآن على وظائف أقل بكثير من حد 60 سطرًا. نجحت مجموعات اختبار البناء و lint ومساحة العمل.
 
-### Critical Stability: Infinite Loop & Security Header Hardening
+### الاستقرار الحرج: حلقة لا نهائية وتصلب رأس الأمان
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+- **Summary**: تم حل مشكلة استقرار العارض الرئيسية وتعزيز أمان التطبيق من خلال سياسة أمان المحتوى القوية (CSP) ورؤوس الأمان الإضافية.
 
-- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
-- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
-- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **الاستقرار**: تم إصلاح حلقة إعادة عرض لا نهائية حرجة في `ViewManager` يتم تشغيلها بواسطة تبعيات `useEffect` غير الصحيحة، مما يؤدي إلى حل "تجاوز الحد الأقصى لعمق التحديث" (React الخطأ رقم 185).
+- **تعزيز الأمان**: تم استبدال CSP الأساسي بسياسة قوية متعددة الطبقات في العملية الرئيسية، تغطي البرامج النصية والإطارات والعاملين.
+- **تعزيز الرأس**: تم تنفيذ رؤوس الأمان الإلزامية: `X-Content-Type-Options: nosniff`، `X-Frame-Options: DENY`، `X-XSS-Protection`، و`Referrer-Policy` الصارمة.
 - **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
+- **بنية أساسية نظيفة**: تمت إزالة العلامات الوصفية غير الآمنة والمشفرة لـ CSP من `index.html`، مما أدى إلى دمج إدارة الأمان في العملية الرئيسية Electron.
 
 ## [2026-02-25]
 
@@ -62,16 +79,16 @@
 - **واجهة المتجر**: إطلاق صفحة المتجر الأولية مع ميزات البحث، فلاتر الفئات (Plugins, Prompts, Workflows, Model Presets)، وشبكة موارد المجتمع.
 - **تحسينات تجربة المستخدم**: إضافة أداة اختيار اللغة (أيقونة الكرة الأرضية) في شريط التنقل مع حفظ الخيار في localStorage.
 
-### Image Settings Tab Refactoring and Test Suite Reliability
+### إعادة بناء علامة التبويب "إعدادات الصورة" واختبار موثوقية المجموعة
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.
+- **Summary**: تمت إعادة هيكلة مكون ImageSettingsTab المعقد إلى مكونات فرعية معيارية وخطافات، مما يؤدي إلى تحسين إمكانية الصيانة وحل انتهاكات ESLint. بالإضافة إلى ذلك، تم إصلاح العديد من حالات فشل اختبار التكامل والعقد.
 
-- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.
-- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.
-- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
-- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
+- **النموذجية**: تم استخراج `ImageSettingsHistory`، `ImageSettingsPresets`، `ImageSettingsSchedules`، `ImageSettingsEdit`، `ImageSettingsProvider`، و`ImageSettingsRuntime` من `ImageSettingsTab.tsx` المتجانسة.
+- **جودة الكود**: تمت إزالة تجاوز `max-lines-per-function` ESLint وحل مشكلات الكتابة `any` في وحدة الإعدادات.
+- **موثوقية الاختبار**: تم إصلاح مخالفات `require-yield` والمتغيرات غير المستخدمة في `chat.integration.test.ts`.
+- **API العقود**: تم تصحيح مسار ملف مواصفات OpenAPI في `api-openapi.contract.test.ts` لضمان التحقق من صحة العقد.
 
 ### نظام المصادقة والتقديم للمتجر (Marketplace)
 
@@ -136,17 +153,17 @@
 
 ## [2026-02-23]
 
-### Agent Collaboration and Checkpoint Service Hardening
+### تعاون الوكيل وتقوية خدمة نقاط التفتيش
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.
+- **Summary**: تم تنفيذ التحقق الشامل من صحة runtime والتعامل الموحد مع الأخطاء وتغطية i18n الكاملة لخدمات تعاون الوكلاء ونقاط التفتيش.
 
-- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.
-- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.
-- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.
-- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).
-- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages.
+- **التحقق من الصحة**: تمت إضافة أدوات التحقق من صحة المدخلات المستندة إلى مخطط Zod وحماية النزاهة لجميع مهام الوكيل والتصويت وتدفقات نقاط التفتيش.
+- **معالجة الأخطاء**: فئات الأخطاء القياسية (`AgentCollaborationError`، `AgentCheckpointError`) مع رموز وصفية يمكن قراءتها آليًا ورسائل مترجمة.
+- **الموثوقية**: تم تنفيذ بصمات حالة المهمة للكشف عن المزامنة المكررة وضغط نقاط التفتيش الأمثل.
+- **الامتثال لوكالة ناسا**: أساليب الخدمة الأساسية المُعاد تصميمها لتحسين إمكانية الصيانة والموثوقية (قاعدة قوة العشرة رقم 3).
+- **I18N**: تمت إضافة الترجمة الإنجليزية والتركية الكاملة لجميع رسائل حالة تعاون الوكيل ونقطة التفتيش.
 
 ### حل TypeScript لوكيل المشروع و Council IPC
 
@@ -173,73 +190,73 @@
 
 ## [2026-02-22]
 
-### Backlog 0251-0281 Unit-Test Edge Coverage Expansion
+### Backlog 0251-0281 توسيع تغطية حافة اختبار الوحدة
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.
+- **Summary**: تغطية موسعة لوحدة حالة الحافة لخدمات الذاكرة والاسترجاع والتضمين وتحليل المشروع وتتبع TODO المتوافق لمهام الاختبار المكتملة.
 
-- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths
-- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior
-- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection
-- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors
-- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md
+- تمت إضافة اختبارات حالة الحافة لـ AdvancedMemoryService لاستبدال الواردات الموجودة، وتضمين استمرار الفشل، وتثبيت حد التصدير، ومسارات التحرير/التراجع المفقودة
+- تمت إضافة اختبارات حالة الحافة contextRetrievalService لتحليل مسار المشروع، والتسامح الجزئي مع فشل البحث، وتحليلات الطلبات الفاشلة، وسلوك تحليلات الاستعلام الفارغ
+- تمت إضافة اختبارات حالة الحافة EmbeddingService لثبات ذاكرة التخزين المؤقت، وسلوك مسح ذاكرة التخزين المؤقت، ومعالجة الإدخال الفارغ، وفشل الموفر fallback، واختيار النموذج الافتراضي
+- تمت إضافة اختبارات حالة حافة ProjectService للتطبيع المرتبط بالصفحات وسلوكيات تحليل/استمرار .env
+- تم وضع علامة على BACKLOG-0251 وBACKLOG-0261 وBACKLOG-0271 وBACKLOG-0281 على أنها مكتملة في docs/TODO.md
 
-### Backlog 0252-0283 Service Hardening and Operational Coverage
+### الأعمال المتراكمة 0252-0283 تصلب الخدمة والتغطية التشغيلية
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.
+- **Summary**: اكتملت تغطية التكامل/الانحدار وruntime لخدمات الذاكرة والاسترجاع والتضمين والمشروع، بما في ذلك المقاييس الصحية ووثائق العمليات.
 
-- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records
-- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics
-- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases
-- Added English and Turkish i18n coverage for new service health message keys
-- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md
+- تمت إضافة حراس المخطط لحمولات استدعاء/استيراد الذاكرة المتقدمة، وتضمين مدخلات النص، ومسارات جذر المشروع، ومفاتيح/سجلات env var
+- تمت إضافة إعادة المحاولة المحدودة وسلوك fallback مع رموز الخطأ القياسية وعدادات القياس عن بعد عبر AdvancedMemoryService وContextRetrievalService وEmbeddingService
+- تمت إضافة لقطات حالة الخدمة مع UI أسطح مفاتيح الحالة/الرسائل ومقاييس تجاوز الميزانية/معدل الخطأ
+- تمت إضافة اختبارات الانحدار/التكامل لحالات فشل التحقق من الصحة، وإعادة محاولة الاسترداد، وسلوك fallback، وحالات حافة مسار env/المسار
+- تمت إضافة تغطية i18n باللغتين الإنجليزية والتركية لمفاتيح الرسائل الصحية للخدمة الجديدة
+- تمت إضافة دليل التشغيل وميزانية الأداء ووثائق نموذج التهديد لـ AdvancedMemoryService وContextRetrievalService وEmbeddingService
+- تم وضع علامة على المهام BACKLOG-0252 حتى BACKLOG-0283 على أنها مكتملة في docs/TODO.md
 
 ## [2026-02-21]
 
-### Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening
+### تراكم العارض 0201-0250 الاختبار والتحقق والصحة وتقوية العمليات
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.
+- **Summary**: تم إكمال تغطية تراكم العارض وتقويته لشريط الأدوات الطرفي وموجه اللغة وإعدادات MCP ومحرر التعليمات البرمجية ومخزن مركز الإشعارات.
 
-- Added unit and integration/regression tests for all target surfaces
-- Added input validation guards, standardized retry/fallback paths, and component error codes
-- Added component health telemetry stores with explicit performance budgets
-- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor
-- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies
+- تمت إضافة اختبارات الوحدة والتكامل/الانحدار لجميع الأسطح المستهدفة
+- تمت إضافة حراس التحقق من صحة الإدخال، ومسارات إعادة المحاولة/fallback الموحدة، ورموز خطأ المكونات
+- تمت إضافة مخازن قياس صحة المكونات مع ميزانيات أداء واضحة
+- تحسين التعامل مع التحميل/الفارغ/الفشل UX في موجه اللغة، وعلامة تبويب إعدادات MCP، ومحرر التعليمات البرمجية
+- تمت إضافة دليل التشغيل ونموذج التهديد ووثائق ميزانية الأداء ضمن المستندات/ مع نسخ مخطوطة معكوسة
 
 ## [2026-02-20]
 
-### Advanced Memory IPC Hardening and Operational Readiness
+### الذاكرة المتقدمة IPC التصلب والاستعداد التشغيلي
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.
+- **Summary**: معالجة أخطاء الذاكرة المتقدمة القياسية IPC وإعادة المحاولة، وإضافة تقارير سلامة القياس عن بعد، وتحسين معالجة فشل جهاز العرض، وتوجيهات نموذج التشغيل/التهديدات الموثقة.
 
-- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior
-- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel
-- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)
-- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging
-- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)
+- بيانات تعريف موحدة لأخطاء الذاكرة المتقدمة مع سلوك الحمولة النافعة `errorCode`، `messageKey`، `retryable`، `uiState`، وfallback المتسق
+- تمت إضافة دعم إعادة المحاولة المحدود لحالات الفشل العابرة IPC وقياس إعادة المحاولة/الفشل/النجاح المتعقب لكل قناة
+- تمت إضافة نقطة نهاية `advancedMemory:health` بمقاييس القناة وميزانيات الأداء الصريحة (سريعة/قياسية/ثقيلة)
+- تم تحديث معالجة فشل ربط ذاكرة العارض لاستهلاك بيانات تعريف IPC وتوفير رسائل fallback مترجمة
+- تمت إضافة دليل التشغيل ومستندات نموذج التهديد: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` و`docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` المرايا)
 
-### IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent
+### IPC تقوية Code Sandbox وMCP Marketplace وLegacy Project Agent
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.
+- **Summary**: بيانات تعريف الأخطاء الموحدة وسلوك إعادة المحاولة/fallback، ولوحات المعلومات والميزانيات الصحية المدعومة بالقياس عن بعد، والعمليات الموثقة ونماذج التهديدات لثلاثة أسطح IPC.
 
-- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels
-- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics
-- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`
-- Wired preload/web bridge and renderer typings for new health channels
-- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies
+- البيانات الوصفية للاستجابة الموحدة (`errorCode`، `messageKey`، `retryable`، `uiState`، `fallbackUsed`) لقنوات وضع الحماية للكود وmcp-marketplace handlers والقنوات `project-agent:*` القديمة
+- تمت إضافة سياسات إعادة المحاولة المحدودة وتتبع القياس عن بعد لكل قناة، بما في ذلك مقاييس إعادة المحاولة/التحقق/تجاوز الميزانية
+- تمت إضافة نقاط النهاية الصحية: `code-sandbox:health`، و`mcp:marketplace:health`، و`project-agent:health`
+- التحميل المسبق السلكي/جسر الويب وكتابات العارض للقنوات الصحية الجديدة
+- تمت إضافة دليل التشغيل ومستندات نموذج التهديد لجميع handlers ضمن `docs/` مع نسخ `.codex/` معكوسة
 
-### Resolution of Core Technical Debt and Type Failures
+### حل الديون الفنية الأساسية وفشل النوع
 
 - **Type**: fix
 - **Status**: completed
@@ -249,239 +266,243 @@
 - IPC and shared type regressions were resolved.
 - Health and telemetry-related missing type keys were completed.
 - Related test regressions were updated.
+- **الجودة**: تم إصلاح تراجعات الاختبار في `ModelSelectorModal` و`WorkspaceExplorer` الناتجة عن عمليات الاستيراد القديمة ولقطات المكونات.
 
-### Voice-First Interface Implementation (UI-11)
+### تنفيذ الواجهة الصوتية الأولى (UI-11)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.
+- **Summary**: تم تنفيذ نظام تحكم صوتي شامل مع علامة تبويب إعدادات مخصصة وإجراءات صوتية عالمية وتعليقات مرئية في الوقت الفعلي.
 
-- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.
-- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.
-- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.
-- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.
-- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions.
+- **إعدادات الصوت**: تمت إضافة علامة تبويب جديدة لتكوين كلمات التنبيه، وتركيب الكلام، والأوامر المخصصة.
+- **التراكب الصوتي**: تم تنفيذ نظام تعليقات مرئية لتحويل الكلام إلى نص وحالته في الوقت الفعلي.
+- **التعليقات الصوتية**: تمت إضافة التأكيد المنطوق للإجراءات الصوتية وحالة النظام.
+- **التنقل بدون استخدام اليدين**: تمكين التنقل وتنفيذ الأوامر عبر الأحداث الصوتية عبر التطبيق.
+- **الأوامر المخصصة**: تمت إضافة دعم للعبارات الصوتية المحددة من قبل المستخدم والتي تم تعيينها لإجراءات النظام.
 
-### Voice IPC Hardening, Telemetry, and Health Dashboard
+### الصوت IPC لوحة معلومات التعزيز والقياس عن بعد والصحة
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.
+- **Summary**: الصوت المتشدد IPC handler سياسات التحقق من الصحة والفشل، والقياس الإضافي وتتبع الميزانية، والعمليات الموثقة وإرشادات نمذجة التهديدات.
 
-- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events
-- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures
-- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics
-- Updated web fallback bridge and integration tests for voice health and validation metadata behavior
-- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)
+- تمت إضافة حراس التحقق من صحة مخطط الإدخال للنص والإعدادات والأوامر وحمولات التوليف والأحداث الصوتية المنبعثة
+- البيانات الوصفية الصوتية IPC (`errorCode`، `messageKey`، `retryable`، `uiState`، `fallbackUsed`) ومعالجة إعادة المحاولة المحدودة للفشل العابر
+- تمت إضافة مقاييس القياس عن بعد لكل قناة مع ميزانيات الانحدار وتشخيصات `voice:health` المكشوفة
+- تم تحديث اختبارات الجسر والتكامل fallback على الويب من أجل صحة الصوت وسلوك البيانات الوصفية للتحقق من الصحة
+- تمت إضافة المستندات الصوتية التشغيلية والأمنية: `docs/IPC_VOICE_RUNBOOK.md` و`docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` المرايا)
 
 ## [2026-02-18]
 
-### Advanced Memory Versioning & Sharing (MEM-03/07/08)
+### إصدار الذاكرة المتقدمة ومشاركتها (MEM-03/07/08)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.
+- **Summary**: تم تنفيذ إدارة دورة حياة الذاكرة المتقدمة بما في ذلك إصدار الإصدارات والتراجع وانتهاء الصلاحية والمشاركة عبر المشروعات.
 
-- **Versioning**: Added support for tracking memory history and rolling back to previous versions.
-- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.
-- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.
-- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.
-- **Automation**: Integrated expiration checks into the memory decay maintenance loop.
+- **إصدار**: تمت إضافة دعم لتتبع سجل الذاكرة والعودة إلى الإصدارات السابقة.
+- **انتهاء الصلاحية**: تم تنفيذ الأرشفة التلقائية للذكريات مع طابع زمني لانتهاء الصلاحية.
+- **المشاركة**: تمكين مشاركة الذاكرة عبر مشاريع متعددة مع الحفاظ على روابط المصدر.
+- **التصنيف**: تمت إضافة إعادة تصنيف تلقائية تعتمد على LLM للذكريات المتطورة.
+- **الأتمتة**: التحقق من انتهاء الصلاحية المتكامل في حلقة صيانة تسوس الذاكرة.
 
-### Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions
+### تحليلات مناقشة/الذاكرة للوكلاء، وسير العمل الصوتي، ووضع الحماية للكود، وملحقات أمان Marketplace
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.
+- **Summary**: تم إكمال مسارات AGENT/VOICE/FEAT ومسارات أمان امتداد Marketplace مع سير عمل IPC الجديد والضمانات وتغطية البيانات التعريفية.
 
-- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows
-- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking
-- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search
-- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs
-- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints
-- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking
+- عمليات مساحة الاسم المشتركة للذاكرة المتقدمة السلكية من خلال IPC (إنشاء/مزامنة/تحليلات/بحث) لتدفقات التعاون في الذاكرة عبر المشروعات
+- تمت إضافة وضع الحماية للكود المخصص IPC مع دعم اللغة المكتوبة (`javascript`، `typescript`، `python`، `shell`)، والتنفيذ المحدود، وحظر نمط الأمان
+- تمت إضافة مسارات عمل IPC الصوتية للكشف عن نية كلمة التنبيه، والتعامل مع جلسة الكلام مع إشارات المقاطعة، وتلخيص/بحث الملاحظات الصوتية بالذكاء الاصطناعي
+- البيانات الوصفية الموسعة لسوق MCP مع أنواع الامتدادات وحقول OAuth/بيانات الاعتماد/الأمان/القياس عن بعد وواجهات برمجة تطبيقات الامتداد للقالب/المسودة
+- تمت إضافة ضوابط الثقة والأمان في Marketplace: التحقق من الناشر الموثوق به، وعمليات التحقق من إبطال التوقيع، وسجلات الفحص الأمني، والإشراف على المراجعة، ونقاط النهاية للقياس عن بعد/التعطل
+- إكمال ملحوظ لـ MKT-EXT-01..07، MKT-SEC-01..05، FEAT-01، FEAT-03، VOICE-01..03، AGENT-13..15 في تتبع المهام
 
-### AUD-ARCH 001-020 Completion
-
-- **Type**: refactor
-- **Status**: completed
-- **Summary**: Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.
-
-- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.
-- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.
-- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.
-- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation.
-
-### AUD-ARCH Initial Reliability Hardening
+### AUD-ARCH 001-020 الانتهاء
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.
+- **Summary**: تم إكمال مهام تدقيق البنية مع تحليل التحميل المسبق/بدء التشغيل، وتوحيد wrapper، وتغطية الاختبار التي تركز على الموثوقية.
 
-- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.
-- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.
-- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.
-- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling.
+- **التحميل المسبق/بدء التشغيل**: تمت إضافة وحدات جسر التحميل المسبق القائمة على المجال ومساعدي تكوين دورة حياة بدء التشغيل مع اختبارات الانحدار.
+- **IPC التعزيز**: تم ترحيل Marketplace القديم المتبقي handlers إلى wrappers الذي تم التحقق من صحته واختبارات التغطية المحسنة من regex/smoke إلى تأكيدات السلوك.
+- **موثوقية الخدمة**: تم استبدال اختبارات خدمة الدخان فقط بالتأكيدات الوظيفية وإضافة اختبارات دورة حياة/استمرارية الجلسة النهائية.
+- **مسارات الفشل**: تمت إضافة اختبارات المسار السلبي لفحص المشروع وفشل الموفر fallback في إنشاء الصور المحلية.
 
-### AUD-SEC 003-030 Security Hardening Complete
+### AUD-ARCH تصلب الموثوقية الأولية
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: أكملت الدفعة الأولى من موثوقية البنية من خلال تشديد مخططات IPC وإزالة مسارات الفشل الصامتة.
+
+- **AUD-ARCH-005/006**: تمت إزالة استخدام `as any` في تسجيل IPC للدردشة واستبدال مخططات الدردشة `z.any()` المسموح بها بالتحقق المستند إلى `z.unknown()`.
+- **AUD-ARCH-007/008**: تم استبدال مخطط وسيطات مشروع قاعدة البيانات المسموح بها وتعزيز كتابة مصمم الديكور لمحدد المعدل.
+- **AUD-ARCH-015/017**: تمت إزالة أدوات الالتقاط الصامتة في عملية تنظيف الوحدة الطرفية ومسارات فحص المشروع، واستبدالها بتحذيرات صريحة.
+- **AUD-ARCH-019**: حالات فشل تنظيف الصورة المؤقتة التي لا معنى لها مع وجود سجلات تحذيرية واضحة وإشارات فشل.
+
+### AUD-SEC 003-030 اكتمال التعزيز الأمني
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.
+- **Summary**: تم إكمال تدقيق الأمان عبر حدود الثقة IPC وفرض مسار نظام الملفات ومصادقة API وعمليات رد اتصال OAuth والمعالجة السرية.
 
-- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.
-- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.
-- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.
-- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses.
+- **IPC/Window**: التحقق الإجباري من صحة المرسل وإجراءات حماية مشددة للفتح الخارجي/ملفات تعريف الارتباط/التسجيل عبر وحدات IPC الهامة.
+- **نظام الملفات/البروتوكول**: تم استبدال عمليات التحقق من البادئة بالتحقق من صحة حدود المسار النسبي وإضافة حظر الهروب من الارتباط الرمزي/الوصلة.
+- **API/OAuth**: الوصول الصارم إلى نقطة نهاية الرمز المميز المحلي فقط، وربط الاسترجاع، وجلسات websocket المصادق عليها، والتحقق الصارم من صحة حالة رد الاتصال.
+- **الأسرار/SSH**: تمت إزالة دعم المفتاح الرئيسي للنص العادي fallback والتأكد من عدم تعرض حقول SSH الحساسة لاستجابات العارض.
 
-### AUD-SEC Preload API Hardening (001/002)
+### التحميل المسبق لـ AUD-SEC API التصلب (001/002)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.
+- **Summary**: تم تقليل سطح IPC العام غير الآمن عن طريق استبدال واجهات برمجة تطبيقات جسر العارض العام بأساليب صريحة خاصة بالقناة.
 
-- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.
-- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.
-- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer.
+- **AUD-SEC-001**: تمت إزالة التعرض العام `window.electron.invoke` وترحيل المتصلين إلى أساليب API الصريحة.
+- **AUD-SEC-002**: تمت إزالة جسر `window.electron.on` العام واستبدال المستمعين بطرق اشتراك محددة للدردشة والوكيل وأحداث SD-CPP.
+- **السلامة**: تمت إضافة طرق جسر `modelDownloader` مخصصة لتجنب استدعاء القناة الديناميكية من العارض.
 
-### AUD-UX 001-025 Accessibility and Interaction Improvements
+### AUD-UX 001-025 تحسينات إمكانية الوصول والتفاعل
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.
+- **Summary**: أكملت مجموعة المهام AUD-UX مع تحسينات لوحة المفاتيح والتركيز والدلالات والترجمة عبر أسطح UI الأساسية.
 
-- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.
-- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.
-- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.
-- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
-- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
+- **الدردشة UX**: تمت إضافة إعلانات المنطقة المباشرة ودلالات القائمة المصححة واقتراحات المساعدة/الأوامر المحسنة للوحة المفاتيح.
+- **لوحة الأوامر**: سلوك مصيدة التركيز المشروط القسري والبنية الدلالية المحسنة لعناصر التحكم والنتائج القريبة.
+- **Base UI**: تحسين إمكانيات الوسائط المشتركة وحدود الأخطاء مع عناصر تحكم وإجراءات استرداد أكثر وضوحًا.
+- **الجلسة والتنقل**: تمت إضافة التركيز على قفل الجلسة/التعامل مع الهروب والتنقل عبر لوحة المفاتيح المتجولة في الشريط الجانبي ومناطق النشاط.
+- **شريط العنوان/الإجراءات السريعة**: تمت إضافة التصنيفات المفقودة، وتسميات إمكانية الوصول لمرشح سجل التغيير، وإمكانية اكتشاف لوحة المفاتيح للإجراءات السريعة.
 
-### Documentation Hardening and Codex Implementation
+### تعزيز التوثيق وتنفيذ الدستور الغذائي
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.
+- **Summary**: تم تنفيذ دليل وثائق .codex مقيد وقواعد وكيل الذكاء الاصطناعي المشددة مع تحذيرات الإنهاء لتحسين الامتثال.
 
-- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.
-- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.
-- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
-- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
+- **المخطوطة**: تم إنشاء دليل `.codex/` وتنفيذ عكس المستند للتوجيهات والهندسة الأساسية.
+- **إنفاذ القواعد**: تم تحديث `MASTER_COMMANDMENTS.md` و`AI_RULES.md` مع تحذيرات صريحة بالإنهاء وسياسات عدم التسامح مطلقًا.
+- **الصيانة**: تم إصلاح المسارات المطلقة المعطلة في مركز التوثيق وإنشاء `LINT_ISSUES.md` لتتبع الديون التقنية بشكل منهجي.
+- **الهيكل**: تم تحديث `PROJECT_STRUCTURE.md` ليعكس الأنماط التنظيمية الجديدة `.codex` و`.agent`.
 
-### Git Panel Section State Indicators
+### مؤشرات حالة قسم لوحة Git
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.
+- **Summary**: تمت إضافة مؤشرات التحميل والخطأ على مستوى القسم للوحات معلومات Git للمشروع لتحسين رؤية التشخيص.
 
-- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes
-- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback
-- Completed AUD-PROJ-009 and updated project TODO tracking
+- تمت إضافة بيانات تعريف حالة القسم في خط أنابيب تحميل بيانات git للحالة/الإجراءات/أجهزة التحكم عن بعد/الالتزامات/التغييرات
+- عرض شرائح التحميل/الخطأ/الجاهزة لكل قسم في ProjectGitTab للحصول على تعليقات دقيقة
+- تم الانتهاء من AUD-PROJ-009 وتحديث تتبع مهام المشروع
 
-### Strict AI Rule Enforcement & Friday Deployment Ban
-
-- **Type**: docs
-- **Status**: completed
-- **Summary**: Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.
-
-- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.
-- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.
-- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.
-- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.
-- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory.
-
-### Advanced IPC Hardening & Zod Contract Rules
+### تطبيق صارم لقواعد الذكاء الاصطناعي وحظر النشر يوم الجمعة
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.
+- **Summary**: تم تنفيذ قواعد أكثر صرامة لوكلاء الذكاء الاصطناعي، بما في ذلك الحظر الإلزامي للالتزام يوم الجمعة وبروتوكولات قراءة القواعد القسرية.
 
-- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.
-- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.
-- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.
-- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.
-- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs.
+- **الحظر يوم الجمعة**: تم تنفيذ سياسة عدم التسامح مطلقًا مع الالتزامات وعمليات النشر الرئيسية في أيام الجمعة.
+- **بروتوكولات القواعد**: يستدعي `view_file` الإلزامي ملفات القاعدة في بداية كل جلسة لضمان امتثال الوكيل.
+- **إنفاذ الاختبار**: فرض اختبار نجاح إلزامي بنسبة 100% (`npm run test`) قبل أي التزام.
+- **سلامة النوع**: تم حظر استخدام `as any` و`as unknown` بدون تعليقات مبررة `// SAFETY` صريحة.
+- **تحديثات الدليل**: تمت مزامنة `AGENTS.md` وعكس جميع تحديثات القواعد إلى الدليل `.codex/`.
 
-### LLM Security Hardening & Performance Optimization
+### متقدم IPC قواعد عقد التصلب والزود
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: تم تنفيذ قواعد تقوية معمارية تم التحقق منها لمنع عدم تطابق IPC وفرض تكافؤ مخطط Zod بشكل صارم.
+
+- **العقود الصارمة**: مخططات Zod المزدوجة الإلزامية (Args + Response) لجميع IPC handlers لمنع أخطاء الكتابة الصامتة.
+- **تماثل المخطط**: تم فرض `@shared/schemas` باعتباره المصدر الوحيد للحقيقة لكل من العمليات الرئيسية وعمليات العارض.
+- **عزل المتجر**: محظور `useState` لحالة التطبيق؛ أنماط `useSyncExternalStore` الإلزامية.
+- **حارس التخلص**: مطلوب التحقق الصريح من `dispose()` في جميع اختبارات الخدمة.
+- **سياسة التسجيل**: فرض قيود على الدليل `logs/` لجميع مخرجات تصحيح الأخطاء المؤقتة.
+
+### LLM تعزيز الأمان وتحسين الأداء
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced prompt security measures and optimized application load time via lazy loading.
+- **Summary**: تم تنفيذ إجراءات أمنية سريعة متقدمة وتحسين وقت تحميل التطبيق من خلال التحميل البطيء.
 
-- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.
+- **LLM-09.3**: تمت إضافة حدود صارمة لطول المطالبة (128 ألف حرف) لمنع هجمات الحمولة الكبيرة.
 - **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.
 - **DEBT-01**: Cleaned up obsolete feature flags.
 - **DEBT-06**: Reduced bundle size via lazy loading.
 - **Testing**: Added unit tests for security validation.
 
-### MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion
+### MCP Marketplace، وImage Ops، واختبار ملف تعريف SSH، وإكمال i18n
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.
+- **Summary**: تم تنشيط إعدادات سوق MCP UX، وإكمال عمليات إنشاء الصور عبر الواجهة الخلفية/UI، وإضافة اختبار ملف تعريف SSH، والوصول إلى التكافؤ الكامل لمفتاح الإعدادات المحلية.
 
 - Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix
-- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison
-- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries
-- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback
-- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows
+- تمت إضافة عملية صورة SD-CPP IPC/جسر التحميل المسبق للتاريخ والتجديد والتحليلات والإعدادات المسبقة والجدولة وإحصائيات قائمة الانتظار والتحرير وإنشاء الدُفعات والمقارنة
+- تمت إضافة عمليات الصورة UI في إعدادات السجل/التجديد، والإعداد المسبق CRUD، وعناصر التحكم في الجدولة/قائمة الانتظار، وتشغيل الدُفعات، وطلبات التحرير، وملخصات المقارنة
+- تمت إضافة إجراء اختبار ملف تعريف اتصال SSH (الخدمة + IPC + التحميل المسبق + الزر المشروط) مع زمن الاستجابة/ملاحظات الخطأ
+- إكمال تكافؤ مفتاح لغة i18n عبر tr/en/de/fr/es/ja/zh/ar وإضافة المفاتيح المفقودة للإعدادات الجديدة/تدفقات SSH
 
-### Project Terminal Diagnostics Tab
+### علامة التبويب تشخيصات محطة المشروع
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.
+- **Summary**: تم نقل تحذيرات/أخطاء المشروع من مشكلات لوحة المعلومات إلى علامة تبويب تشخيصات طرفية مخصصة وإضافة التحديث التلقائي لتحليل لوحة المعلومات.
 
-- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation
-- Removed Issues tab wiring from workspace/project dashboard navigation surfaces
-- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)
+- تمت إضافة علامة تبويب مشكلات المشروع غير القابلة للإغلاق في اللوحة الطرفية مع التحديث والتنقل بفتح الملف
+- تمت إزالة أسلاك علامة التبويب "المشكلات" من أسطح التنقل في مساحة العمل/لوحة معلومات المشروع
+- تمت إضافة سياسة التحديث التلقائي لتحليل المشروع الدوري في منطق لوحة المعلومات (AUD-PROJ-008)
 
-### SEC-007/009 + LLM-05 + I18N-05 Follow-up
+### SEC-007/009 + LLM-05 + I18N-05 متابعة
 
 - **Type**: feature
 - **Status**: completed
 - **Summary**: Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.
 
-- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.
-- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.
-- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.
-- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.
+- **SEC-007**: تمت إضافة API-تسجيل تدقيق الوصول إلى المفتاح في الإعدادات IPC وتسجيل تدقيق تشغيل نظام الملفات wrappers في الملفات IPC.
+- **SEC-009**: تأكيد التعقيم الفوري وتغطية التحقق من السلامة في LLM مسارات معالجة الطلب.
+- **LLM-05**: معالجة موسعة للمرفقات لسياق معاينة الصوت/الفيديو وإعداد رسائل متعددة الوسائط بشكل أكثر ثراءً.
+- **I18N-05**: تمت إضافة إرشادات الاستجابة المدركة للغة وتحديد النموذج الافتراضي المستند إلى اللغة fallback.
 - **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.
+- **AGENT-04/05/09**: تمت إضافة الاحتفاظ بنقاط التفتيش المضغوطة + منطق مزامنة dedup، وتحليلات التصويت/التجاوز/واجهات برمجة التطبيقات للتكوين، ولوحات أجهزة التصويت/الحالة المدمجة في ProjectAgentView.
+- **MKT-INFRA-01..08**: بيانات تعريف خادم Marketplace الموسعة، والتحقق من صحة التبعية/التعارض، والتحقق من سلامة التحديث، وعزل التخزين/أسلاك بيئة الحصص، وتحرير تكوين MCP القائم على المخطط.
+- **الصيانة**: تمت إزالة مربعات اختيار المهام المكتملة وتقليل عدد عمليات الإرسال المتبقية في `as unknown as` إلى كتابة أكثر أمانًا.
 
-### Sidebar Enhancements: Accessibility and Clear History
+### تحسينات الشريط الجانبي: إمكانية الوصول ومسح السجل
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.
+- **Summary**: تم تحسين إمكانية الوصول إلى الشريط الجانبي باستخدام سمات العنوان وإضافة ميزة "مسح الكل" لسجل الدردشة.
 
-- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.
+- **مسح السجل**: تمت إضافة زر "مسح السجل" إلى قسم الدردشات الأخيرة باستخدام نموذج تأكيد آمن.
 - **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.
-- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.
+- **الصيانة**: قم بتنظيف قائمة مهام المشروع عن طريق إزالة المهام المكتملة واختيار 10 عناصر ذات أولوية لمرحلة التطوير التالية.
 - **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management.
 
-### Terminal IPC Renderer Migration
+### المحطة الطرفية IPC ترحيل العارض
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the migration of Terminal renderer components to use type-safe IPC communication.
+- **Summary**: تم إكمال ترحيل مكونات العارض الطرفي لاستخدام اتصال IPC الآمن من النوع.
 
-- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.
-- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.
-- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.
-- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector.
+- **نوع الأمان**: تم ترحيل `useTerminal` و`TerminalConnectionSelector` والمكونات الأخرى لاستخدام `invokeTypedIpc` مع `TerminalIpcContract`.
+- **التحقق**: التحقق القسري من مخطط Zod لاستجابات IPC الطرفية في العارض.
+- **تنظيف الكود**: تمت إزالة مكالمات `window.electron.terminal` الأولية والواردات غير المستخدمة.
+- **إصلاح الأخطاء**: تم إصلاح معالجة نوع الإرجاع `getDockerContainers` في محدد الاتصال.
 
-### Comprehensive Test Suite Stabilization and IPC Fixes
+### تثبيت مجموعة الاختبار الشامل وإصلاحات IPC
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.
+- **Summary**: تم حل حالات الفشل الحرجة في اختبار التكامل والعارض عبر وحدات متعددة، بما في ذلك مكونات Copilot وMCP وUI.
 
-- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.
-- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.
-- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.
-- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.
-- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations.
+- **IPC التثبيت**: تم إصلاح اختبارات التكامل الفاشلة عن طريق تصحيح نماذج الخدمة المتزامنة وتوفير سياق صالح للتحقق من صحة المرسل.
+- **إصلاحات مساعد الطيار**: تم تنفيذ منطق تحديث الرمز المميز الصحيح مع معرفات العميل الصالحة واختبارات الخدمة المرتبطة الثابتة.
+- **اختبارات العارض**: تمت استعادة اختبارات العارض الفاشلة من خلال الاستهزاء بمفاوضات عقد IPC الإلزامية وتحديث توقعات دور ARIA لمكونات UI.
+- **نماذج المطالبة**: اختبارات التكامل المصححة لقوالب المطالبة LLM لتتوافق مع الطبيعة المتزامنة للخدمات الأساسية.
+- **Marketplace**: تم إصلاح اختبارات عميل سوق MCP من خلال ضمان إصدار عقد IPC المناسب أثناء الدعوات المكتوبة.
 
-### Workspace Branch Switch Popover
+### مساحة العمل Branch تبديل Popover
 
 - **Type**: feature
 - **Status**: completed
@@ -491,15 +512,15 @@
 - Show loading and empty states for branch discovery
 - Switch branch directly from popover with status feedback
 
-### Workspace Editor Tab Power Actions
+### إجراءات الطاقة لعلامة تبويب محرر مساحة العمل
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.
+- **Summary**: تمت إضافة إجراءات سياق علامة تبويب المحرر المتقدمة للتثبيت وعمليات الإغلاق المجمعة ونسخ المسار وكشف المستكشف في مساحة عمل المشروع.
 
-- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others
-- Added clipboard actions for absolute and relative file paths from editor tabs
-- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip
+- تمت إضافة إجراءات قائمة سياق علامة التبويب: التثبيت/إلغاء التثبيت، وإغلاق علامة التبويب، وإغلاق الكل، والإغلاق من اليمين، وإغلاق الآخرين
+- تمت إضافة إجراءات الحافظة لمسارات الملفات المطلقة والنسبية من علامات تبويب المحرر
+- تمت إضافة إجراء الكشف في مستكشف الملف والمؤشر المرئي لعلامة التبويب المثبتة في شريط علامات تبويب محرر مساحة العمل
 
 ## [2026-02-17]
 
@@ -507,67 +528,78 @@
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.
+- **Summary**: تم تنفيذ مراقبة شاملة للأداء للوكلاء المستقلين من خلال تتبع معدل الأخطاء ومقاييس استخدام الموارد.
 
 - **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).
-- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.
-- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.
-- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.
+- **AGENT-08.4**: تم تنفيذ تتبع استخدام الموارد للذاكرة، CPU، API المكالمات والرموز المميزة والتكاليف مع تنبيهات قابلة للتكوين.
+- **خدمة المقاييس**: تم إنشاء `AgentPerformanceService` لتتبع معدلات الإكمال وأوقات التنفيذ وإنشاء تنبيهات الأداء.
+- **التكامل**: مقاييس الأداء المتكاملة في `ProjectState` و`AgentTaskHistoryItem` للتحليل التاريخي.
+- **المراقبة الآلية**: تمت إضافة مراقبة موارد الخلفية كل 5 ثوانٍ لمهام الوكيل النشطة.
 
-### Copilot Token Refresh Refactor
+### إعادة تحديث رمز مساعد الطيار
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.
+- **Summary**: تم ترحيل منطق تحديث رمز Copilot المميز إلى خدمة Tengra-token المستندة إلى Rust لتحسين الموثوقية.
 
-- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.
-- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
-- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
-- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
+- **الهندسة المعمارية**: تم نقل تحديث الرمز المميز لـ Copilot من TypeScript إلى العربة الجانبية `tengra-token-service` المستندة إلى Rust.
+- **الموثوقية**: تم تنفيذ الرؤوس المتوافقة مع VSCode وتحديث الخلفية في Rust لضمان بقاء الرموز المميزة للجلسة صالحة.
+- **التكامل**: تم تحديث `TokenService` لمزامنة الرموز المميزة المُدارة بواسطة Rust مع `AuthService`.
+- **التحسين**: تمت إعادة هيكلة `CopilotService` لتحديد أولويات الرموز المميزة المتزامنة، مما يقلل من عبء العملية الرئيسية.
 
-### LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.
-
-- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.
-- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.
-- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.
-- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).
-
-### LLM Security & Robust Attachments
+### LLM-05 التقدم: معالجة المرفقات متعددة الوسائط وتوسيع أعمال التدقيق المتراكمة
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.
+- **Summary**: تم تنفيذ LLM-05 الكشف عن نوع الملف وتحسين حجم الصورة في مرفقات الدردشة، ثم إضافة تراكم تدقيق كبير قابل للتنفيذ عبر الأمان والأداء وUX والهندسة المعمارية.
 
-- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
-- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **LLM-05.4**: تمت إضافة اكتشاف أقوى لنوع ملف المرفقات باستخدام امتداد MIME + fallback وتعيين أكثر أمانًا لنوع المرفقات.
+- **LLM-05.5**: تمت إضافة المعالجة المسبقة للصور من جانب العميل وتحسين الحجم لمرفقات الصور الكبيرة قبل إرسال النموذج.
+- **تدفق الدردشة**: تحديث مسار إرسال الدردشة ليشمل مرفقات الصور الجاهزة كمدخلات صور متعددة الوسائط ويتضمن سياق مرفقات غير الصورة في المطالبات.
+- **توسيع الأعمال المتراكمة**: تمت إضافة أكثر من 100 عنصر TODO جديد قابل للتنفيذ في `docs/TODO.md` من عمليات التدقيق على مستوى المستودع (الأمان والأداء وإمكانية الوصول/UX والهندسة المعمارية/الاختبار).
+- **دفعة الأداء رقم 1**: عوامل إعادة تشكيل PERF الرئيسية المكتملة، بما في ذلك إزالة حالة مسار العرض لـMessageList، والحوسبة المسبقة للدردشة في مجلد الشريط الجانبي، وتحسين مقارنة messageBubble (تمت إزالة `JSON.stringify` المقارنات العميقة)، والتخزين المؤقت لفهرس بحث المشروع، وبحث الشريط الجانبي المؤجل/المفهرس مع الاشتقاقات المثبتة/الحديثة المخزنة مؤقتًا.
+- **دفعة الأداء رقم 2**: إجراء قائمة الرسائل المحفوظة handlers لاستدعاءات الصفوف الثابتة وتغيير تدفق فرز المشروع للفرز مرة واحدة لكل وضع فرز نشط، ثم تصفية النتيجة التي تم فرزها.
+- **دفعة الأداء رقم 3**: تمت إضافة بحث مؤجل + مفهرسة في `useChatManager` لتقليل الأحرف الصغيرة المتكررة لكل رسالة وتحديثات البحث السلس أثناء الكتابة.
+- **دفعة الأداء رقم 4**: تحسين مسارات تحديث الدفق عن طريق استبدال عمليات اختراق قراءة حالة رد الاتصال بلقطات الرسائل المحلية في حلقات الأدوات، وتقييد تدفق التدفق متعدد النماذج، وتقليل تعيين الدردشة/الرسائل المتداخلة على علامات الدفق، ودمج عمليات حفظ دفق قاعدة البيانات أثناء الرحلة، وتأجيل خدمات بدء التشغيل غير المهمة حتى الطلاء الأول.
+- **دفعة الأداء رقم 5**: تمت إضافة المحاكاة الافتراضية لوضع قائمة المشاريع والذكريات المؤكدة لتقليل عمل العارض لمجموعات البيانات الكبيرة.
+- **دفعة الأداء رقم 6**: تم تحويل ترطيب بدء تشغيل الدردشة إلى تحميل البيانات الوصفية أولاً وجلب الرسائل البطيئة لكل دردشة محددة لتجنب تحميل حمولة الرسائل الكاملة عند بدء التطبيق.
+- **دفعة الأداء رقم 7**: تمت إضافة قائمة انتظار تصدير ملفات PDF الخلفية المتسلسلة وتحويل تدفقات ترحيل البيانات من استدعاءات نظام الملفات المتزامنة إلى العمليات المقسمة غير المتزامنة.
+- **دفعة الأداء رقم 8**: تمت إضافة مساعد SELECT المرقّم على مستوى المستودع وتطبيقه على مسارات قراءة الدردشة/المشروع/المعرفة ذات الحجم الكبير لتجنب عمليات الفحص غير المحدودة في الذاكرة.
+- **دفعة الأداء رقم 9**: تم الانتهاء من عناصر PERF للعارض المتبقي مع المحاكاة الافتراضية لقائمة الدردشة على الشريط الجانبي، وتحليل قسم التفكير/الخطة المخزن مؤقتًا، وإخراج تخفيض السعر المحفوظ للرسائل المستقرة، ووحدة عارض تخفيض السعر المحملة البطيئة، واستدعاءات/اشتراكات تطبيق الجذر المقسم لتقليل عمليات إعادة عرض الشجرة التي يمكن تجنبها.
+
+### LLM الأمان والمرفقات القوية
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: أمان الذكاء الاصطناعي المحسّن مع التعقيم الفوري للمدخلات وتحسين تحميل الملفات من خلال اكتشاف التوقيع الثنائي.
+
+- **LLM-09.2**: تمت إضافة أداة مساعدة لتطهير HTML/JS لمنع متجهات XSS/injection المحتملة مع الحفاظ على إمكانية قراءة التعليمات البرمجية عبر هروب الكيان.
+- **LLM-05.4**: تم تنفيذ اكتشاف قوي لنوع الملف باستخدام التوقيعات الثنائية (الأرقام السحرية) لمنع انتحال امتداد الملف.
 - **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
+- **DEBT-03**: تمت إزالة تبعية `cheerio` غير المستخدمة لتقليل حجم الحزمة.
 
-### Comprehensive TODO List Reorganization
+### إعادة تنظيم قائمة المهام الشاملة
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.
+- **Summary**: تمت إعادة تنظيم قائمة مهام المشروع لتحسين إمكانية القراءة وإضافة جدول محتويات ونقل جميع المهام المكتملة إلى قسم أرشيف مخصص.
 
-- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.
-- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.
+- **الهيكل**: تمت إضافة جدول محتويات قابل للنقر عليه ونقل معالم الإصدار إلى الأعلى لتحسين رؤية المشروع.
+- **الوضوح**: تم تجميع المكاسب السريعة حسب الحالة (معلق/مكتمل) وتنظيف أقسام الفئات الفارغة.
 - **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.
-- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories.
+- **الصيانة**: التنسيق الموحد وطلبات الميزات المستقبلية المدمجة في فئات فرعية منطقية.
 
-### Token Rotation Hardening (SEC-001)
+### تصلب دوران الرمز (SEC-001)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
+- **Summary**: تم تنفيذ آلية قوية لتدوير الرمز المميز مع تراجع أسي ومخازن مؤقتة للتحديث الاستباقي لمنع انتهاء مهلة الجلسة.
 
-- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
-- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
-- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
-- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
-- **Verification**: Verified clean build, lint, and type-check across both components.
+- **TokenService (TS)**: تمت إضافة مخزن مؤقت للتحديث الاستباقي مدته 5 دقائق وأداة مساعدة `withRetry` للتراجع الأسي في حالات الفشل.
+- **tengra-token-service (Rust)**: حلقة تحديث خلفية معززة مع منطق إعادة المحاولة وإضافة `/health` نقطة النهاية.
+- **مراقبة الصحة**: تم تنفيذ `getTokenHealth` API في TypeScript وRust لتتبع حالة الرمز المميز في الوقت الفعلي.
+- **التعامل مع الأحداث**: تمت إضافة حدث `token:permanent_failure` لاكتشاف بيانات الاعتماد الملغاة أو منتهية الصلاحية والتعامل معها.
+- **التحقق**: تم التحقق من البنية النظيفة والوبر والتحقق من النوع عبر كلا المكونين.
 
 ## [2026-02-16]
 
@@ -581,16 +613,16 @@
 - **إدارة السياق**: تنفيذ التقليم التلقائي للسجل والتلخيص القائم على LLM للحفاظ على سياق الوكيل في الجلسات الطويلة.
 - **استرداد الأخطاء**: إضافة تصنيفات أخطاء متعددة الفئات واستراتيجيات إعادة محاولة ذكية مع نصائح استرداد للوكيل.
 
-### Internationalization Core & RTL Support
+### التدويل الأساسي ودعم RTL
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+- **Summary**: تم تنفيذ بنية أساسية قوية لـ I18N مع دعم RTL والجمع ومطالبة اختيار اللغة التي يتم تشغيلها لأول مرة.
 
-- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
-- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
-- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
-- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+- **I18N Core**: تمت إضافة الكشف التلقائي عن اللغة، وأدوات التنسيق `Intl`، ودعم صيغة الجمع.
+- **دعم RTL**: تم تنفيذ خصائص CSS المنطقية، وتقليب الأيقونات الحساسة للاتجاه، وتعديل التخطيط الديناميكي للغات RTL (العربية والعبرية).
+- **الإعداد**: تمت إضافة `LanguageSelectionPrompt` للسماح للمستخدمين باختيار لغتهم المفضلة عند الإطلاق لأول مرة.
+- **التحقق**: الجمع المتكامل في `ProjectsHeader` وإضافة نصوص تدقيق لمفاتيح الترجمة.
 
 ### تحسين التحقق من مدخلات IPC
 
@@ -606,16 +638,16 @@
 
 ## [2026-02-14]
 
-### Enhanced Error Display
+### عرض الخطأ المحسن
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved the application error screen to show detailed error messages and stack traces for better debugging.
+- **Summary**: تم تحسين شاشة خطأ التطبيق لإظهار رسائل خطأ مفصلة وتتبعات المكدس لتصحيح الأخطاء بشكل أفضل.
 
-- **Transparency**: Added detailed error message display instead of generic text.
-- **Debugging**: Included collapsible stack trace for technical troubleshooting.
-- **Usability**: Added 'Copy Details' button to easily share error information.
-- **UX**: Automatic error state reset when navigating between different views.
+- **الشفافية**: تمت إضافة عرض رسالة خطأ تفصيلية بدلاً من النص العام.
+- **تصحيح الأخطاء**: تم تضمين تتبع المكدس القابل للطي لاستكشاف الأخطاء وإصلاحها الفنية.
+- **سهولة الاستخدام**: تمت إضافة زر "نسخ التفاصيل" لمشاركة معلومات الخطأ بسهولة.
+- **UX**: إعادة تعيين حالة الخطأ تلقائيًا عند التنقل بين طرق العرض المختلفة.
 
 ### تحسينات أمان حلقة أحداث IPC
 
@@ -636,34 +668,35 @@
 - **إصلاح**: تم حل تعطل `o?.forEach is not a function` في تصفية فئات المتجر.
 - **الحافظة**: تم تنفيذ خدمة حافظة آمنة تعتمد على IPC لتجاوز قيود أذونات المتصفح.
 - **معالجة الأخطاء**: تم تحديث شاشة الخطأ لاستخدام الخدمة الآمنة الجديدة لنسخ تفاصيل الخطأ.
+- **معالجة الأخطاء**: حدث خطأ Fallback لاستخدام خدمة الحافظة الآمنة الجديدة لنسخ تفاصيل الخطأ.
 
-### Marketplace UI Error Handling
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
-
-- **UI**: Display user-friendly error message when model fetching fails.
-- **UX**: Added a retry button to recover from transient network or service errors.
-
-### SD-CPP Binary Discovery Fix
+### Marketplace UI معالجة الأخطاء
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+- **Summary**: تمت إضافة معالجة الأخطاء المناسبة وآلية إعادة المحاولة إلى شبكة Model Marketplace.
 
-- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
-- **Robustness**: Improved recursive binary discovery to handle various release structures.
-- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
+- **UI**: عرض رسالة خطأ سهلة الاستخدام عند فشل جلب النموذج.
+- **UX**: تمت إضافة زر إعادة المحاولة للتعافي من أخطاء الشبكة العابرة أو الخدمة.
 
-### Chat Generation Shimmer Animation
+### إصلاح اكتشاف ثنائي SD-CPP
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: تم إصلاح مشكلة عدم إمكانية العثور على الملف القابل للتنفيذ Stable-diffusion.cpp بعد التنزيل بسبب اختلافات في اصطلاحات التسمية.
+
+- **الإصلاح**: تمت إضافة دعم لاكتشاف `sd-cli.exe` و`stable-diffusion.exe` بالإضافة إلى `sd.exe`.
+- **المتانة**: اكتشاف ثنائي متكرر محسّن للتعامل مع هياكل الإصدار المختلفة.
+- **جودة الكود**: تمت إزالة تعليقات `eslint-disable` المحظورة وإضافة فحوصات صارمة لتبعية الخدمة.
+
+### دردشة جيل وميض الرسوم المتحركة
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
+- **Summary**: تمت إضافة رسم متحرك لامع إلى عنوان الدردشة في الشريط الجانبي عندما يقوم الذكاء الاصطناعي بإنشاء استجابة.
 
-- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
-- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+- **UI**: تم تنفيذ فئة `animate-text-shimmer` للحصول على تأثير تحميل متميز.
+- **الشريط الجانبي**: تم تطبيق التأثير اللامع على تسمية عنصر الدردشة عندما يكون `isGenerating` صحيحًا.
 
 ## [2026-02-13]
 
@@ -678,17 +711,17 @@
 - تمت إضافة حظر الامتدادات الخطيرة (.exe و.bat و.sh و.ps1 وما إلى ذلك).
 - يتم عرض إشعار خطأ عند إسقاط ملفات غير صالحة.
 
-### Core HuggingFace Integration & GGUF Support
+### التكامل الأساسي HuggingFace ودعم GGUF
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+- **Summary**: تم تنفيذ الأساس لتكامل نموذج HuggingFace، بما في ذلك أداة استخراج مخصصة ومحلل بيانات تعريف GGUF ومدير تنزيل قوي.
 
-- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
-- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
-- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
-- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
-- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+- **خدمة Scraper**: تم إنشاء `HuggingFaceService` للبحث عن البيانات التعريفية للنموذج وجلبها باستخدام التخزين المؤقت المحلي.
+- **تحليل GGUF**: تمت إضافة محلل جزئي لرأس GGUF لاستخراج بنية النموذج وطول السياق.
+- **إدارة التنزيلات**: تم تنفيذ التنزيلات القابلة للاستئناف من خلال التحقق من SHA256 وتتبع التقدم في الوقت الفعلي.
+- **تكامل الخدمة**: تم توصيل `HuggingFaceService` إلى `ModelRegistryService` و`LLMService` عبر حقن التبعية.
+- **الاختبارات**: تم تحديث اختبارات الوحدة الشاملة لـ `ModelRegistryService` و`LLMService` لضمان استقرار التكامل.
 
 ### IPC Handler توسيع الاختبارات وإصلاح TEST-01
 
@@ -701,37 +734,37 @@
 - **IPC التغطية**: تم إنشاء `project-agent.integration.test.ts` يغطي البداية والإيقاف والحالة وHIL handlers.
 - **ذكاء الكود**: تم إصلاح عدم تطابق نوع معلمة TypeScript في `code-intelligence.integration.test.ts`.
 
-### IPC Security Audit: Input Validation (SEC-003)
+### IPC تدقيق الأمان: التحقق من صحة الإدخال (SEC-003)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.
+- **Summary**: تم تنفيذ التحقق الصارم من مخطط Zod للوكيل والمحطة الطرفية IPC handlers لمنع الحقن.
 
-- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.
-- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.
-- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.
-- **Type Safety**: Ensured explicit types for handler arguments and return policies.
+- **الوكيل IPC**: تم استبدال التحقق اليدوي بـ `createValidatedIpcHandler` وإضافة مخططات Zod لجميع handlers السبعة.
+- **المحطة الطرفية IPC**: تمت إعادة هيكلة `terminal.ts` لاستخدام `createValidatedIpcHandler` مع مخططات الملف الشخصي والجلسة وعمليات البحث.
+- **الأداة المشتركة**: تم تحسين `createValidatedIpcHandler` لدعم `defaultValue` للتعامل الآمن مع الأخطاء fallback.
+- **سلامة النوع**: أنواع صريحة مضمونة لوسيطات handler وسياسات الإرجاع.
 
-### LLM Service Improvements: Fallback & Caching
+### LLM تحسينات الخدمة: Fallback والتخزين المؤقت
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+- **Summary**: تم تحسين خدمة LLM باستخدام النموذج fallback والتخزين المؤقت للاستجابة وتحسين إدارة استجابة البث.
 
-- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
-- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
-- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
-- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+- **النموذج Fallback**: تمت إضافة `ModelFallbackService` لتجاوز الفشل التلقائي بين موفري LLM لضمان استمرارية الخدمة.
+- **التخزين المؤقت للاستجابة**: تم تنفيذ `ResponseCacheService` للتخزين المؤقت للاستجابات المساعدة وإعادة استخدامها، مما يؤدي إلى تحسين الأداء وخفض التكاليف.
+- **تحسينات البث**: تم تحسين التعامل مع `AbortSignal` وتنفيذ توفير الاستجابة الجزئية للتدفقات الملغاة.
+- **الموثوقية**: أنماط قواطع الدائرة المتكاملة عبر خدمة fallback لإدارة الأخطاء بشكل استباقي.
 
-### Ollama Abort Fix & Chat Refactor
+### Ollama إلغاء الإصلاح وإعادة صياغة الدردشة
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+- **Summary**: تم إصلاح الخطأ "لم يتم تسجيل handler لـ ollama:abort" وإعادة صياغة دردشة Ollama handlers لاستخدام خدمة OllamaService القوية.
 
-- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
-- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
-- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
+- **IPC**: تمت إضافة `ollama:abort` IPC handler المفقود لدعم إلغاء طلبات الدردشة.
+- **Refactor**: تم تحديث `ollama:chat` و`ollama:chatStream` لاستخدام `OllamaService` بدلاً من `LocalAIService` fallback، مما يتيح إمكانات البث والإيقاف الحقيقية.
+- **الاختبارات**: تم تحديث اختبارات التكامل للتحقق من وظيفة الإجهاض ومحاكاة أساليب `OllamaService` بشكل صحيح.
 
 ### دقة عد الرموز المحسنة
 
@@ -3033,7 +3066,7 @@ console.log("تم تغيير المصادقة:"، payload);
 "المصادقة: تم التغيير"،
 الحمولة => {
 console.log("تم تغيير المصادقة:"، payload);
-},
+    },
 { مرة واحدة: صحيح، الأولوية: 10 }
 );
 // الأحداث المخصصة
@@ -3294,7 +3327,7 @@ eventsBus.emitCustom('my:custom:event', { data: 'value' });
 // بعد: آمن مع الإعدادات الافتراضية
 بيانات ثابتة = SafeJsonParse(untrustedInput, {
 sensibleDefaults: "هنا"،
-});
+    });
     ```
 **فوائد**:
 - **منع الأعطال**: لم يعد JSON المشوه يعطل التطبيق
@@ -4092,3 +4125,16 @@ sensibleDefaults: "هنا"،
 - - تم استبدال عمليات اكتشاف الأخطاء الصامتة ومكالمات وحدة التحكم بـ `appLogger` عبر الخدمات الأساسية.
 - **المستندات**: تم دمج 19 ملفًا تخفيض السعر في 6 مستندات ذات طابع خاص.
 - **التدقيق**: تم إكمال مهام التنظيف الصغيرة الأولية من `TODO.md`.
+
+## [2025-07-25]
+
+### نموذج تهديدات الخدمات الشامل ومراجعة حالات إساءة الاستخدام
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: إنشاء docs/guides/SERVICE_THREAT_MODEL.md يغطي تحليل التهديدات لجميع خدمات الواجهة الخلفية الـ12 مع متجهات التهديد والتخفيفات وسيناريوهات إساءة الاستخدام.
+
+- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 مكتملة
+- توثيق أكثر من 30 متجه تهديد بأكواد T والأوصاف وإجراءات التخفيف الحالية لكل خدمة
+- تحديد أكثر من 24 حالة إساءة استخدام تشمل حقن الموجهات واستنزاف الموارد وحقن الأوامر واجتياز المسار وسرقة بيانات الاعتماد
+- إضافة مصفوفة مخاطر ملخصة و6 توصيات أمنية قابلة للتنفيذ

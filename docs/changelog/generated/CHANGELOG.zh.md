@@ -1,5 +1,20 @@
 # 更新日志
 
+## [2026-02-27]
+
+### 高级项目向导：重新设计的 UX 和运动集成
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 将项目向导从基本形式转变为具有精致排版、动态类别选择和流畅进度跟踪的高级交互式体验。
+
+- **视觉重新设计**：在模态结构中采用优质排版和微妙的玻璃形态效果，实现了现代、宽敞的布局。
+- **增强的选择器**：使用具有垂直图像和实时选择反馈的大、高对比度卡片升级类别选择。
+- **进度跟踪**：在向导顶部添加了动画步骤指示器，以提供项目创建过程的清晰可视路线图。
+- **高级导航**：通过高对比度、阴影操作按钮和流畅的悬停微交互来完善页脚。
+- **输入细化**：改进的表单元素具有优雅的边框、焦点状态和独特的动画错误消息，以提高可用性。
+- **运动设计**：集成微动画用于过渡和交互状态，以创建响应更快、更生动的界面。
+
 ## [2026-02-26]
 
 ### Universal Logger Improvements: Terminal Visibility & New Levels
@@ -13,18 +28,19 @@
 - **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.
 - **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.
 - **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules.
+- **IPC 和渲染器奇偶校验**：跨主进程、IPC handlers 和渲染器记录器同步 LogLevel 枚举和方法。
 
-### MKT-DEV-03: Local Extension Development Mode & DevTools
+### MKT-DEV-03：本地扩展开发模式和开发工具
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.
+- **Summary**: 为本地扩展实现了完整的开发环境，具有热重载、实时日志流和专用的 DevTools UI 面板。
 
-- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.
-- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.
-- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.
-- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.
-- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service.
+- **ExtensionService**：添加了 `fs.watch` 集成，以便在修改本地源文件时自动重新加载扩展（热重载）。
+- **日志流**：通过新的 IPC 支持的观察者模式，启用从扩展到渲染器进程的实时无范围日志流。
+- **ExtensionDevTools**：在右侧边栏中创建了一个新的 UI 面板，用于管理扩展、触发手动重新加载和检查实时日志。
+- **布局集成**：为主 `LayoutManager` 添加了右侧边栏支持，并集成了 DevTools 面板，以便通过标题进行即时访问。
+- **类型安全**：确保扩展 IPC 合约的 100% 类型安全，并解决了扩展服务中的多个技术债务项目。
 
 ### NASA Power of Ten: 快速获胜重构
 
@@ -38,16 +54,17 @@
 - **类型安全**: 修复了在提取钩子过程中引入的 SSH 配置测试和设置存储处理程序的二次类型回归。
 - **已验证**: 所有重构的文件现在包含的函数均远低于 60 行限制。构建、lint 和工作区测试套件均已通过。
 
-### Critical Stability: Infinite Loop & Security Header Hardening
+### 关键稳定性：无限循环和安全标头强化
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+- **Summary**: 通过强大的内容安全策略 (CSP) 和附加安全标头解决了主要的渲染器稳定性问题并强化了应用程序安全性。
 
-- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
-- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
-- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **稳定性**：修复了 `ViewManager` 中由不正确的 `useEffect` 依赖项触发的关键无限重新渲染循环，解决了“超出最大更新深度”（React 错误 #185）。
+- **安全强化**：在主进程中用强大的多层策略替换了基本的 CSP，涵盖脚本、框架和工作线程。
+- **标头强化**：实现了强制安全标头：`X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`X-XSS-Protection` 和严格的 `Referrer-Policy`。
 - **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
+- **清洁基础设施**：从 `index.html` 中删除了不安全的硬编码 CSP 元标记，在 Electron 主进程中巩固了安全管理。
 
 ## [2026-02-25]
 
@@ -62,16 +79,16 @@
 - **市场 UI**：发布了初始市场页面，包含搜索、类别筛选（插件、提示词、工作流、模型预设）和社区资源网格。
 - **UX 改进**：在导航栏增加了带地球图标的语言选择器，并支持 localStorage 持久化。
 
-### Image Settings Tab Refactoring and Test Suite Reliability
+### 图像设置选项卡重构和测试套件可靠性
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.
+- **Summary**: 将复杂的 ImageSettingsTab 组件重构为模块化子组件和挂钩，提高可维护性并解决 ESLint 违规问题。另外修复了一些集成和合同测试失败的问题。
 
-- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.
-- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.
-- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.
-- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification.
+- **模块化**：从整体 `ImageSettingsTab.tsx` 中提取 `ImageSettingsHistory`、`ImageSettingsPresets`、`ImageSettingsSchedules`、`ImageSettingsEdit`、`ImageSettingsProvider` 和 `ImageSettingsRuntime`。
+- **代码质量**：删除了 `max-lines-per-function` ESLint 覆盖并解决了设置模块中的 `any` 类型问题。
+- **测试可靠性**：修复了 `require-yield` 违规和 `chat.integration.test.ts` 中未使用的变量。
+- **API 合约**：更正了 `api-openapi.contract.test.ts` 中的 OpenAPI 规范文件路径，以确保有效的合约验证。
 
 ### Marketplace 身份验证与提交系统
 
@@ -136,17 +153,17 @@
 
 ## [2026-02-23]
 
-### Agent Collaboration and Checkpoint Service Hardening
+### 代理协作和检查点服务强化
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.
+- **Summary**: 为代理协作和检查点服务实施了全面的 runtime 验证、标准化错误处理以及完整的国际化覆盖。
 
-- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.
-- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.
-- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.
-- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).
-- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages.
+- **验证**：为所有代理任务、投票和检查点流程添加了 Zod 模式驱动的输入验证和完整性保护。
+- **错误处理**：标准化错误类（`AgentCollaborationError`、`AgentCheckpointError`），具有描述性机器可读代码和翻译消息。
+- **可靠性**：实现了用于重复同步检测和优化检查点压缩的任务状态指纹识别。
+- **NASA 合规性**：重构核心服务方法，以提高可维护性和可靠性（十的幂规则#3）。
+- **I18N**：为所有代理协作和检查点状态消息添加了完整的英语和土耳其语本地化。
 
 ### Council IPC 及项目代理 TypeScript 解决方案
 
@@ -173,73 +190,73 @@
 
 ## [2026-02-22]
 
-### Backlog 0251-0281 Unit-Test Edge Coverage Expansion
+### Backlog 0251-0281 单元测试边缘覆盖范围扩展
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.
+- **Summary**: 扩展了内存、检索、嵌入和项目分析服务的边缘情况单元覆盖范围，并为已完成的测试任务调整了 TODO 跟踪。
 
-- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths
-- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior
-- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection
-- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors
-- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md
+- 添加了 AdvancedMemoryService 边缘情况测试，用于替换现有导入、嵌入失败延续、导出限制限制以及缺少编辑/回滚路径
+- 添加了 ContextRetrievalService 边缘情况测试，用于项目路径解析、部分搜索容错、失败请求分析和空白查询分析行为
+- 添加了 EmbeddingService 边缘情况测试，用于缓存不变性、缓存清除行为、空白输入处理、提供程序故障 fallback 和默认模型选择
+- 添加了针对分页绑定规范化和 .env 解析/持久行为的 ProjectService 边缘情况测试
+- 在 docs/TODO.md 中将 BACKLOG-0251、BACKLOG-0261、BACKLOG-0271 和 BACKLOG-0281 标记为已完成
 
-### Backlog 0252-0283 Service Hardening and Operational Coverage
+### Backlog 0252-0283 服务强化和运营覆盖范围
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.
+- **Summary**: 完成了内存、检索、嵌入和项目服务的集成/回归覆盖和 runtime 强化，包括运行状况指标和操作文档。
 
-- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records
-- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics
-- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases
-- Added English and Turkish i18n coverage for new service health message keys
-- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService
-- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md
+- 添加了用于高级内存调用/导入有效负载、嵌入文本输入、项目根路径和环境变量键/记录的模式保护
+- 通过 AdvancedMemoryService、ContextRetrievalService 和 EmbeddingService 的标准化错误代码和遥测计数器添加了有界重试和 fallback 行为
+- 添加了带有 UI 状态/消息键表面和超出预算/错误率指标的服务运行状况快照
+- 添加了针对验证失败、重试恢复、fallback 行为和项目环境/路径边缘情况的回归/集成测试
+- 为新服务健康消息密钥添加了英语和土耳其语 i18n 覆盖范围
+- 添加了 AdvancedMemoryService、ContextRetrievalService 和 EmbeddingService 的运行手册、性能预算和威胁模型文档
+- 在 docs/TODO.md 中将 BACKLOG-0252 到 BACKLOG-0283 任务标记为已完成
 
 ## [2026-02-21]
 
-### Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening
+### 渲染器待办事项 0201-0250 测试、验证、运行状况和操作强化
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.
+- **Summary**: 完成了终端工具栏、语言提示、MCP 设置、代码编辑器和通知中心存储的渲染器积压覆盖和强化。
 
-- Added unit and integration/regression tests for all target surfaces
-- Added input validation guards, standardized retry/fallback paths, and component error codes
-- Added component health telemetry stores with explicit performance budgets
-- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor
-- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies
+- 为所有目标表面添加了单元和集成/回归测试
+- 添加了输入验证防护、标准化重试/fallback 路径和组件错误代码
+- 添加了具有明确性能预算的组件运行状况遥测存储
+- 改进了语言提示、MCP 设置选项卡和代码编辑器中的加载/清空/失败 UX 处理
+- 在 docs/ 下添加了运行手册、威胁模型和性能预算文档以及镜像 .codex 副本
 
 ## [2026-02-20]
 
-### Advanced Memory IPC Hardening and Operational Readiness
+### 高级内存 IPC 强化和操作准备
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.
+- **Summary**: 标准化高级内存 IPC 错误处理和重试、添加遥测运行状况报告、改进渲染器故障处理以及记录的运行手册/威胁模型指南。
 
-- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior
-- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel
-- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)
-- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging
-- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)
+- 标准化高级内存错误元数据，具有一致的 `errorCode`、`messageKey`、`retryable`、`uiState` 和 fallback 负载行为
+- 添加了对瞬态 IPC 失败的有界重试支持，并跟踪每个通道的重试/失败/成功遥测
+- 添加了带有通道指标和明确性能预算（快速/标准/重）的 `advancedMemory:health` 端点
+- 更新了渲染器内存挂钩故障处理以使用 IPC 元数据并提供翻译后的 fallback 消息传递
+- 添加了运行手册和威胁模型文档：`docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` 和 `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md`（+ `.codex` 镜像）
 
-### IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent
+### IPC 代码沙箱、MCP Marketplace和遗留项目代理的强化
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.
+- **Summary**: 标准化错误元数据和重试/fallback 行为，添加了遥测支持的运行状况仪表板和预算，以及三个 IPC 表面的记录操作和威胁模型。
 
-- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels
-- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics
-- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`
-- Wired preload/web bridge and renderer typings for new health channels
-- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies
+- 用于代码沙箱和 mcp-marketplace handlers 和旧版 `project-agent:*` 通道的标准化响应元数据（`errorCode`、`messageKey`、`retryable`、`uiState`、`fallbackUsed`）
+- 添加了有界重试策略和每通道遥测跟踪，包括重试/验证/超出预算指标
+- 添加了运行状况端点：`code-sandbox:health`、`mcp:marketplace:health` 和 `project-agent:health`
+- 新健康频道的有线预加载/网桥和渲染器类型
+- 为 `docs/` 下的所有三个 handlers 添加了运行手册和威胁模型文档，并带有镜像 `.codex/` 副本
 
-### Resolution of Core Technical Debt and Type Failures
+### 核心技术债务和类型故障的解决
 
 - **Type**: fix
 - **Status**: completed
@@ -249,239 +266,243 @@
 - IPC and shared type regressions were resolved.
 - Health and telemetry-related missing type keys were completed.
 - Related test regressions were updated.
+- **质量**：修复了由于过时的导入和组件快照导致的 `ModelSelectorModal` 和 `WorkspaceExplorer` 中的测试回归。
 
-### Voice-First Interface Implementation (UI-11)
+### 语音优先接口实现 (UI-11)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.
+- **Summary**: 实施了一个全面的语音控制系统，具有专用的设置选项卡、全局语音操作和实时视觉反馈。
 
-- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.
-- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.
-- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.
-- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.
-- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions.
+- **语音设置**：添加了一个新选项卡，用于配置唤醒词、语音合成和自定义命令。
+- **语音叠加**：实施了用于实时语音到文本转录和状态的视觉反馈系统。
+- **音频反馈**：添加了语音触发操作和系统状态的语音确认。
+- **免提导航**：通过应用程序中的语音事件启用导航和命令执行。
+- **自定义命令**：添加了对映射到系统操作的用户定义语音短语的支持。
 
-### Voice IPC Hardening, Telemetry, and Health Dashboard
+### 语音 IPC 强化、遥测和运行状况仪表板
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.
+- **Summary**: 强化语音 IPC handler 验证和故障策略，添加遥测和预算跟踪，以及记录的操作和威胁建模指南。
 
-- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events
-- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures
-- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics
-- Updated web fallback bridge and integration tests for voice health and validation metadata behavior
-- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)
+- 为转录、设置、命令、合成有效负载和发出的语音事件添加了输入模式验证保护
+- 标准化语音 IPC 元数据（`errorCode`、`messageKey`、`retryable`、`uiState`、`fallbackUsed`）和针对瞬时故障的有界重试处理
+- 添加了每通道遥测指标以及回归预算和公开的 `voice:health` 诊断
+- 更新了针对语音健康状况和验证元数据行为的网络 fallback 桥接和集成测试
+- 添加了语音操作和安全文档：`docs/IPC_VOICE_RUNBOOK.md` 和 `docs/IPC_VOICE_THREAT_MODEL.md`（+ `.codex` 镜像）
 
 ## [2026-02-18]
 
-### Advanced Memory Versioning & Sharing (MEM-03/07/08)
+### 高级内存版本控制和共享 (MEM-03/07/08)
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.
+- **Summary**: 实施了高级内存生命周期管理，包括版本控制、回滚、过期和跨项目共享。
 
-- **Versioning**: Added support for tracking memory history and rolling back to previous versions.
-- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.
-- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.
-- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.
-- **Automation**: Integrated expiration checks into the memory decay maintenance loop.
+- **版本控制**：添加了对跟踪内存历史记录和回滚到以前版本的支持。
+- **过期**：实现了带有过期时间戳的内存自动归档。
+- **共享**：在维护源链接的同时启用跨多个项目的内存共享。
+- **分类**：添加了 LLM 驱动的自动重新分类，以适应不断变化的记忆。
+- **自动化**：将过期检查集成到内存衰减维护循环中。
 
-### Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions
+### 代理辩论/内存分析、语音工作流程、代码沙箱和Marketplace安全扩展
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.
+- **Summary**: 通过新的 IPC 工作流程、保护措施和元数据覆盖范围，完成了代理/语音/FEAT 和Marketplace扩展安全轨道。
 
-- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows
-- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking
-- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search
-- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs
-- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints
-- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking
+- 通过 IPC（创建/同步/分析/搜索）进行有线高级内存共享命名空间操作，以实现跨项目内存协作流程
+- 添加了专用代码沙箱 IPC，具有类型化语言支持（`javascript`、`typescript`、`python`、`shell`）、有界执行和安全模式阻止
+- 添加了语音 IPC 工作流程，用于唤醒词意图检测、带有中断信号的语音会话轮流处理以及 AI 语音笔记摘要/搜索
+- 扩展 MCP Marketplace扩展元数据，包括扩展类型、OAuth/凭证/安全/遥测字段和模板/草稿扩展 API
+- 添加了Marketplace信任和安全控制：受信任的发布者验证、签名撤销检查、安全扫描记录、审核审核和遥测/崩溃端点
+- TODO 跟踪中的 MKT-EXT-01..07、MKT-SEC-01..05、FEAT-01、FEAT-03、VOICE-01..03、AGENT-13..15 标记完成
 
-### AUD-ARCH 001-020 Completion
-
-- **Type**: refactor
-- **Status**: completed
-- **Summary**: Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.
-
-- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.
-- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.
-- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.
-- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation.
-
-### AUD-ARCH Initial Reliability Hardening
+### AUD-ARCH 001-020 完成
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.
+- **Summary**: 通过预加载/启动分解、wrapper 标准化和以可靠性为中心的测试覆盖率完成了架构审核任务。
 
-- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.
-- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.
-- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.
-- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling.
+- **预加载/启动**：添加了基于域的预加载桥模块和带有回归测试的启动生命周期组合助手。
+- **IPC 强化**：将剩余的旧Marketplace handlers 迁移到经过验证的 wrappers 并将覆盖测试从正则表达式/烟雾升级到行为断言。
+- **服务可靠性**：用功能断言替换了仅冒烟的服务测试，并添加了终端会话生命周期/持久性测试。
+- **失败路径**：添加了针对项目扫描和本地映像生成中提供程序 fallback 失败的负路径测试。
 
-### AUD-SEC 003-030 Security Hardening Complete
+### AUD-ARCH 初始可靠性强化
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: 通过收紧 IPC 模式并删除静默故障路径，完成了第一个架构可靠性批次。
+
+- **AUD-ARCH-005/006**：删除了聊天 IPC 注册中的 `as any` 用法，并使用基于 `z.unknown()` 的验证替换了宽松的 `z.any()` 聊天模式。
+- **AUD-ARCH-007/008**：替换了宽松的数据库项目参数架构并增强了速率限制器装饰器类型。
+- **AUD-ARCH-015/017**：删除了终端清理和项目扫描路径中的静默捕获，用明确的警告替换它们。
+- **AUD-ARCH-019**：显示过时的临时图像清理失败，并带有明确的警告日志和失败信号。
+
+### AUD-SEC 003-030 安全强化完成
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.
+- **Summary**: 完成了跨 IPC 信任边界、文件系统路径强制、API 身份验证、OAuth 回调和秘密处理的安全审核强化。
 
-- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.
-- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.
-- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.
-- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses.
+- **IPC/Window**：跨关键 IPC 模块强制执行发件人验证并强化外部打开/cookie/日志记录保护措施。
+- **文件系统/协议**：用相对路径边界验证替换了前缀检查，并添加了符号链接/连接转义阻止。
+- **API/OAuth**：强制执行严格的仅限本地令牌端点访问、环回绑定、经过身份验证的 Websocket 会话和严格的回调状态验证。
+- **Secrets/SSH**：删除了纯文本主密钥 fallback 支持，并确保 SSH 敏感字段不会暴露给渲染器响应。
 
-### AUD-SEC Preload API Hardening (001/002)
+### AUD-SEC 预载 API 强化 (001/002)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.
+- **Summary**: 通过使用显式特定于通道的方法替换通用渲染器桥 API，减少了不安全的通用 IPC 表面。
 
-- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.
-- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.
-- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer.
+- **AUD-SEC-001**：删除了通用 `window.electron.invoke` 暴露并将调用者迁移到显式 API 方法。
+- **AUD-SEC-002**：删除了通用 `window.electron.on` 桥，并用聊天、代理和 SD-CPP 事件的命名订阅方法替换了侦听器。
+- **安全**：添加了专用的 `modelDownloader` 桥接方法，以避免渲染器调用动态通道。
 
-### AUD-UX 001-025 Accessibility and Interaction Improvements
+### AUD-UX 001-025 辅助功能和交互改进
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.
+- **Summary**: 完成了 AUD-UX 任务集，并在核心 UI 界面上进行了键盘、焦点、语义和本地化改进。
 
-- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.
-- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.
-- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.
-- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.
-- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions.
+- **聊天 UX**：添加了实时区域公告，更正了列表语义，并改进了键盘帮助/命令建议。
+- **命令面板**：强制模式焦点陷阱行为并改进语义结构以实现紧密控制和结果。
+- **基础 UI**：通过更清晰的控制和恢复操作改进了共享模式和错误边界可供性。
+- **会话和导航**：在侧边栏和活动区域中添加了会话锁定焦点/转义处理和移动键盘导航。
+- **标题栏/快速操作**：添加了缺失的标签、更改日志过滤器可访问性标签以及用于快速操作的键盘可发现性。
 
-### Documentation Hardening and Codex Implementation
+### 文档强化和法典实施
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.
+- **Summary**: 实施了受限制的 .codex 文档目录并强化了 AI 代理规则，并提供终止警告以提高合规性。
 
-- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.
-- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.
-- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.
-- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns.
+- **Codex**：创建 `.codex/` 目录并实现核心指令和架构的文档镜像。
+- **规则执行**：使用明确的终止警告和零容忍政策更新了 `MASTER_COMMANDMENTS.md` 和 `AI_RULES.md`。
+- **维护**：修复了文档中心中损坏的绝对路径，并为系统技术债务跟踪创建了 `LINT_ISSUES.md`。
+- **结构**：更新了 `PROJECT_STRUCTURE.md` 以反映新的 `.codex` 和 `.agent` 组织模式。
 
-### Git Panel Section State Indicators
+### Git 面板部分状态指示器
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.
+- **Summary**: 为项目 Git 仪表板面板添加了部分级加载和错误指示器，以提高诊断可见性。
 
-- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes
-- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback
-- Completed AUD-PROJ-009 and updated project TODO tracking
+- 在状态/操作/远程/提交/更改的 git 数据加载管道中添加了部分状态元数据
+- 在 ProjectGitTab 中渲染每个部分的加载/错误/就绪芯片，以获得细粒度的反馈
+- 完成 AUD-PROJ-009 并更新项目 TODO 跟踪
 
-### Strict AI Rule Enforcement & Friday Deployment Ban
-
-- **Type**: docs
-- **Status**: completed
-- **Summary**: Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.
-
-- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.
-- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.
-- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.
-- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.
-- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory.
-
-### Advanced IPC Hardening & Zod Contract Rules
+### 严格的人工智能规则执行和周五部署禁令
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.
+- **Summary**: 实施了更严格的人工智能代理规则，包括强制性的周五提交禁令和强制规则阅读协议。
 
-- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.
-- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.
-- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.
-- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.
-- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs.
+- **周五禁令**：对周五的提交和重大部署实施零容忍政策。
+- **规则协议**：强制 `view_file` 在每个会话开始时调用规则文件，以确保代理合规性。
+- **测试执行**：在任何提交之前强制执行 100% 测试成功 (`npm run test`)。
+- **类型安全**：禁止在没有明确 `// SAFETY` 理由注释的情况下使用 `as any` 和 `as unknown` 。
+- **指南更新**：同步 `AGENTS.md` 并将所有规则更新镜像到 `.codex/` 目录。
 
-### LLM Security Hardening & Performance Optimization
+### 高级 IPC 强化和 Zod 合约规则
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: 实施了经过验证的架构强化规则，以防止 IPC 不匹配并强制执行严格的 Zod 模式奇偶校验。
+
+- **严格契约**：为所有 IPC handlers 强制使用双重 Zod 模式（参数 + 响应），以防止静默类型错误。
+- **架构奇偶性**：强制 `@shared/schemas` 作为主进程和渲染进程的单一事实来源。
+- **存储隔离**：针对应用程序状态禁止 `useState`；强制的 `useSyncExternalStore` 模式。
+- **Disposal Guard**：在所有服务测试中都需要显式 `dispose()` 验证。
+- **日志记录策略**：对所有临时调试输出强制执行 `logs/` 目录限制。
+
+### LLM 安全强化和性能优化
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented advanced prompt security measures and optimized application load time via lazy loading.
+- **Summary**: 实施先进的提示安全措施并通过延迟加载优化应用程序加载时间。
 
-- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.
+- **LLM-09.3**：添加了严格的提示长度限制（128k 个字符）以防止大负载攻击。
 - **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.
 - **DEBT-01**: Cleaned up obsolete feature flags.
 - **DEBT-06**: Reduced bundle size via lazy loading.
 - **Testing**: Added unit tests for security validation.
 
-### MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion
+### MCP Marketplace、图像操作、SSH 配置文件测试和 i18n 完成
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.
+- **Summary**: 激活 MCP Marketplace设置 UX，完成跨后端/UI 的图像生成操作，添加 SSH 配置文件测试，并达到完整的区域设置密钥奇偶校验。
 
 - Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix
-- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison
-- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries
-- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback
-- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows
+- 添加了 SD-CPP 图像操作 IPC/预加载桥，用于历史记录、重新生成、分析、预设、调度、队列统计、编辑、批量生成和比较
+- 在历史记录/重新生成、预设 CRUD、调度/队列控制、批处理运行、编辑请求和比较摘要的设置中添加了图像操作 UI
+- 添加了带有延迟/错误反馈的 SSH 连接配置文件测试操作（服务 + IPC + 预加载 + 模式按钮）
+- 完成了 tr/en/de/fr/es/ja/zh/ar 之间的 i18n 语言环境密钥奇偶校验，并为新设置/SSH 流程添加了缺失的密钥
 
-### Project Terminal Diagnostics Tab
+### 项目终端诊断选项卡
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.
+- **Summary**: 将项目警告/错误从仪表板问题移至专用终端诊断选项卡，并添加仪表板分析自动刷新。
 
-- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation
-- Removed Issues tab wiring from workspace/project dashboard navigation surfaces
-- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)
+- 在终端面板中添加了不可关闭的“项目问题”选项卡，具有刷新和文件打开导航功能
+- 从工作区/项目仪表板导航表面删除了“问题”选项卡接线
+- 在仪表板逻辑中添加了定期项目分析自动刷新策略（AUD-PROJ-008）
 
-### SEC-007/009 + LLM-05 + I18N-05 Follow-up
+### SEC-007/009 + LLM-05 + I18N-05 后续
 
 - **Type**: feature
 - **Status**: completed
 - **Summary**: Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.
 
-- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.
-- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.
-- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.
-- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.
+- **SEC-007**：在设置 IPC 中添加了 API 键访问审核日志记录，在文件 IPC 中添加了文件系统操作审核日志记录 wrappers。
+- **SEC-009**：确认 LLM 请求处理路径中的提示清理和安全验证覆盖范围。
+- **LLM-05**：扩展附件处理，用于音频/视频预览上下文和更丰富的多模式消息准备。
+- **I18N-05**：添加了区域设置感知响应指南和基于区域设置的默认模型 fallback 选择。
 - **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.
+- **AGENT-04/05/09**：在 ProjectAgentView 中添加了压缩检查点保留 + 重复数据删除同步逻辑、投票分析/覆盖/配置 API 以及集成投票/状态机面板。
+- **MKT-INFRA-01..08**：扩展的Marketplace服务器元数据、依赖性/冲突验证、更新完整性验证、存储隔离/配额环境接线以及模式驱动的 MCP 配置编辑。
+- **维护**：删除了已完成的 TODO 复选框，并减少了几个剩余的 `as unknown as` 转换，以实现更安全的打字。
 
-### Sidebar Enhancements: Accessibility and Clear History
+### 侧边栏增强功能：辅助功能和清晰的历史记录
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.
+- **Summary**: 通过标题属性改进了侧边栏的可访问性，并添加了聊天历史记录的“全部清除”功能。
 
-- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.
+- **清除历史记录**：使用安全确认模式在最近的聊天部分添加了“清除历史记录”按钮。
 - **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.
-- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.
+- **维护**：通过删除已完成的任务并为下一开发阶段选择 10 个优先项目来清理项目 TODO 列表。
 - **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management.
 
-### Terminal IPC Renderer Migration
+### 终端 IPC 渲染器迁移
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Completed the migration of Terminal renderer components to use type-safe IPC communication.
+- **Summary**: 完成了终端渲染器组件的迁移，以使用类型安全的 IPC 通信。
 
-- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.
-- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.
-- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.
-- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector.
+- **类型安全**：迁移了 `useTerminal`、`TerminalConnectionSelector` 和其他组件，以将 `invokeTypedIpc` 与 `TerminalIpcContract` 一起使用。
+- **验证**：对渲染器中的终端 IPC 响应强制执行 Zod 架构验证。
+- **代码清理**：删除了原始 `window.electron.terminal` 调用和未使用的导入。
+- **错误修复**：修复了连接选择器中的 `getDockerContainers` 返回类型处理。
 
-### Comprehensive Test Suite Stabilization and IPC Fixes
+### 全面的测试套件稳定性和 IPC 修复
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.
+- **Summary**: 解决了跨多个模块（包括 Copilot、MCP 和 UI 组件）的关键集成和渲染器测试失败问题。
 
-- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.
-- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.
-- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.
-- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.
-- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations.
+- **IPC 稳定**：通过更正同步服务模拟并提供有效的发送者验证上下文来修复失败的集成测试。
+- **Copilot 修复**：使用有效的客户端 ID 实施正确的令牌刷新逻辑并修复相关的服务测试。
+- **渲染器测试**：通过模拟强制 IPC 合约协商并更新 UI 组件的 ARIA 角色期望来恢复失败的渲染器测试。
+- **提示模板**：更正了 LLM 提示模板的集成测试，以匹配底层服务的同步性质。
+- **Marketplace**：通过确保键入调用期间正确的 IPC 合约版本控制来修复 MCP Marketplace客户端测试。
 
-### Workspace Branch Switch Popover
+### 工作区 Branch 切换弹出窗口
 
 - **Type**: feature
 - **Status**: completed
@@ -491,15 +512,15 @@
 - Show loading and empty states for branch discovery
 - Switch branch directly from popover with status feedback
 
-### Workspace Editor Tab Power Actions
+### 工作区编辑器选项卡电源操作
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.
+- **Summary**: 添加了高级编辑器选项卡上下文操作，用于在项目工作区中固定、批量关闭操作、路径复制和资源管理器显示。
 
-- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others
-- Added clipboard actions for absolute and relative file paths from editor tabs
-- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip
+- 添加了选项卡上下文菜单操作：固定/取消固定、关闭选项卡、关闭全部、靠近右侧以及关闭其他选项卡
+- 添加了编辑器选项卡中绝对和相对文件路径的剪贴板操作
+- 在工作区编辑器选项卡条中添加了显示文件资源管理器操作和固定选项卡视觉指示器
 
 ## [2026-02-17]
 
@@ -507,67 +528,78 @@
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.
+- **Summary**: 通过错误率跟踪和资源使用指标对自主代理实施全面的性能监控。
 
 - **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).
-- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.
-- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.
-- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis.
+- **AGENT-08.4**：通过可配置的警报实现了内存、CPU、API 调用、令牌和成本的资源使用情况跟踪。
+- **指标服务**：创建 `AgentPerformanceService` 来跟踪完成率、执行时间并生成性能警报。
+- **集成**：将性能指标集成到 `ProjectState` 和 `AgentTaskHistoryItem` 中以进行历史分析。
+- **自动监控**：为活动代理任务添加每 5 秒一次的后台资源监控。
 
-### Copilot Token Refresh Refactor
+### Copilot 令牌刷新重构
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.
+- **Summary**: 将 Copilot 令牌刷新逻辑迁移到基于 Rust 的 tengra-token-service，以提高可靠性。
 
-- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.
-- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.
-- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.
-- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead.
+- **架构**：将 Copilot 令牌刷新从 TypeScript 移至基于 Rust 的 `tengra-token-service` sidecar。
+- **可靠性**：在 Rust 中实现了与 VSCode 兼容的标头和后台刷新，以确保会话令牌保持有效。
+- **集成**：更新了 `TokenService` 以将 Rust 管理的令牌同步到 `AuthService`。
+- **优化**：重构 `CopilotService` 以优先考虑同步令牌，减少主进程开销。
 
-### LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion
-
-- **Type**: feature
-- **Status**: completed
-- **Summary**: Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.
-
-- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.
-- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.
-- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.
-- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing).
-
-### LLM Security & Robust Attachments
+### LLM-05 进展：多模式附件处理和审核积压工作扩展
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.
+- **Summary**: 在聊天附件中实施了 LLM-05 文件类型检测和图像大小优化，然后在安全性、性能、UX 和架构方面添加了大量可操作的审核积压工作。
 
-- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.
-- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.
+- **LLM-05.4**：使用 MIME + 扩展名 fallback 添加了更强大的附件文件类型检测以及更安全的附件类型映射。
+- **LLM-05.5**：在模型提交之前添加了客户端图像预处理和大图像附件的大小优化。
+- **聊天流程**：更新了聊天发送管道，以包含准备好的图像附件作为多模式图像输入，并在提示中包含非图像附件上下文。
+- **待办事项扩展**：通过存储库范围的审核（安全性、性能、可访问性/UX、架构/测试）在 `docs/TODO.md` 中添加了 100 多个新的可操作 TODO 项目。
+- **性能批次 #1**：完成了关键 PERF 重构，包括 MessageList 渲染路径状态删除、侧边栏文件夹聊天预计算、MessageBubble 比较器优化（删除了 `JSON.stringify` 深度比较）、项目搜索索引缓存以及带有缓存固定/最近派生的延迟/索引侧边栏搜索。
+- **性能批次 #2**：记忆 MessageList 操作 handlers 用于稳定行回调，并将项目排序流程更改为每个活动排序模式排序一次，然后过滤排序结果。
+- **性能批次 #3**：在 `useChatManager` 中添加了延迟 + 索引消息搜索，以减少每条消息的重复小写并在键入时平滑搜索更新。
+- **性能批次＃4**：通过在工具循环中用本地消息快照替换回调状态读取黑客、限制多模型流扇出、减少流滴答上的嵌套聊天/消息映射、合并正在进行的数据库流保存以及将非关键启动服务推迟到第一次绘制来优化流更新路径。
+- **性能批次 #5**：添加了项目列表模式的虚拟化和确认内存，以减少大型数据集的渲染器工作。
+- **性能批次#6**：将聊天启动水合作用切换为元数据优先加载和每个选定聊天的延迟消息获取，以避免在应用程序启动时加载完整消息有效负载。
+- **性能批次#7**：添加了序列化后台 PDF 导出排队以及从同步文件系统调用到异步分块操作的转换数据迁移流程。
+- **性能批次#8**：添加了存储库级分页 SELECT 帮助程序，并将其应用于大容量聊天/项目/知识读取路径，以避免无限制的内存扫描。
+- **性能批次#9**：完成了剩余的渲染器 PERF 项目，包括侧边栏聊天列表虚拟化、缓存的思考/计划部分解析、稳定消息的记忆 Markdown 输出、延迟加载的 Markdown 渲染器模块以及拆分根应用程序回调/订阅以减少可避免的树重新渲染。
+
+### LLM 安全和强大的附件
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 通过及时输入清理增强人工智能安全性，并通过二进制签名检测改进文件上传。
+
+- **LLM-09.2**：添加了 HTML/JS 提示清理实用程序，以防止潜在的 XSS/注入向量，同时通过实体转义保持代码可读性。
+- **LLM-05.4**：使用二进制签名（幻数）实现强大的文件类型检测，以防止文件扩展名欺骗。
 - **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.
+- **DEBT-03**：删除了未使用的 `cheerio` 依赖项以减少包大小。
 
-### Comprehensive TODO List Reorganization
+### 全面的 TODO 列表重组
 
 - **Type**: docs
 - **Status**: completed
-- **Summary**: Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.
+- **Summary**: 重新组织了项目 TODO 列表以提高可读性，添加了目录，并将所有已完成的任务移至专用的存档部分。
 
-- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.
-- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.
+- **结构**：添加了可单击的目录，并将发布里程碑移至顶部，以获得更好的项目可见性。
+- **清晰度**：按状态（待处理/已完成）对快速获胜进行分组，并清理空的类别部分。
 - **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.
-- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories.
+- **维护**：标准化格式并将未来的功能请求合并到逻辑子类别中。
 
-### Token Rotation Hardening (SEC-001)
+### 令牌旋转强化 (SEC-001)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.
+- **Summary**: 实施了强大的令牌轮换机制，具有指数退避和主动刷新缓冲区，以防止会话超时。
 
-- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.
-- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.
-- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.
-- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.
-- **Verification**: Verified clean build, lint, and type-check across both components.
+- **TokenService (TS)**：添加了 5 分钟主动刷新缓冲区和 `withRetry` 实用程序，用于在失败时进行指数退避。
+- **tengra-token-service (Rust)**：使用重试逻辑强化后台刷新循环并添加 `/health` 端点。
+- **健康监控**：在 TypeScript 和 Rust 中实现 `getTokenHealth` API 以进行实时令牌状态跟踪。
+- **事件处理**：添加了 `token:permanent_failure` 事件来检测和处理撤销或过期的凭据。
+- **验证**：验证两个组件的干净构建、lint 和类型检查。
 
 ## [2026-02-16]
 
@@ -581,16 +613,16 @@
 - **上下文管理**：实现了自动历史修剪和基于 LLM 的摘要，以在长会话中维护代理上下文。
 - **错误恢复**：增加了多类别错误分类和智能重试策略，并为代理提供恢复建议。
 
-### Internationalization Core & RTL Support
+### 国际化核心和 RTL 支持
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.
+- **Summary**: 实施了强大的 I18N 基础设施，具有 RTL 支持、多元化和首次运行语言选择提示。
 
-- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.
-- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).
-- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.
-- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys.
+- **I18N Core**：添加了自动语言检测、`Intl` 格式化实用程序和复数支持。
+- **RTL 支持**：实现了 RTL 语言（阿拉伯语、希伯来语）的 CSS 逻辑属性、方向敏感图标翻转和动态布局调整。
+- **入门**：添加了 `LanguageSelectionPrompt` 以允许用户在首次启动时选择他们的首选语言。
+- **验证**：在 `ProjectsHeader` 中集成复数并添加翻译密钥的审核脚本。
 
 ### IPC 输入验证增强
 
@@ -606,16 +638,16 @@
 
 ## [2026-02-14]
 
-### Enhanced Error Display
+### 增强的错误显示
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Improved the application error screen to show detailed error messages and stack traces for better debugging.
+- **Summary**: 改进了应用程序错误屏幕，以显示详细的错误消息和堆栈跟踪，以便更好地进行调试。
 
-- **Transparency**: Added detailed error message display instead of generic text.
-- **Debugging**: Included collapsible stack trace for technical troubleshooting.
-- **Usability**: Added 'Copy Details' button to easily share error information.
-- **UX**: Automatic error state reset when navigating between different views.
+- **透明度**：添加了详细的错误消息显示而不是通用文本。
+- **调试**：包括用于技术故障排除的可折叠堆栈跟踪。
+- **可用性**：添加了“复制详细信息”按钮以轻松共享错误信息。
+- **UX**：在不同视图之间导航时自动重置错误状态。
 
 ### IPC 事件循环安全性改进
 
@@ -636,113 +668,114 @@
 - **修复**: 修复了市场类别过滤中的 `o?.forEach is not a function` 崩溃。
 - **剪贴板**: 实现了基于 IPC 的安全剪贴板服务，以绕过浏览器的权限限制。
 - **错误处理**: 更新了错误回退机制，以使用新的安全剪贴板服务复制错误详情。
+- **错误处理**：更新了错误 Fallback 以使用新的安全剪贴板服务来复制错误详细信息。
 
-### Marketplace UI Error Handling
-
-- **Type**: fix
-- **Status**: completed
-- **Summary**: Added proper error handling and retry mechanism to the Model Marketplace grid.
-
-- **UI**: Display user-friendly error message when model fetching fails.
-- **UX**: Added a retry button to recover from transient network or service errors.
-
-### SD-CPP Binary Discovery Fix
+### Marketplace UI 错误处理
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.
+- **Summary**: 向模型Marketplace网格添加了适当的错误处理和重试机制。
 
-- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.
-- **Robustness**: Improved recursive binary discovery to handle various release structures.
-- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks.
+- **UI**：模型获取失败时显示用户友好的错误消息。
+- **UX**：添加了重试按钮以从暂时的网络或服务错误中恢复。
 
-### Chat Generation Shimmer Animation
+### SD-CPP 二进制发现修复
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: 修复了由于命名约定差异而导致下载后无法找到 stable-diffusion.cpp 可执行文件的问题。
+
+- **修复**：除了 `sd.exe` 之外，还添加了对检测 `sd-cli.exe` 和 `stable-diffusion.exe` 的支持。
+- **稳健性**：改进了递归二进制发现以处理各种发布结构。
+- **代码质量**：删除了禁止的 `eslint-disable` 注释并添加了严格的服务依赖性检查。
+
+### 聊天生成微光动画
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.
+- **Summary**: 当人工智能生成响应时，在侧边栏中的聊天标题中添加了微妙的闪烁动画。
 
-- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.
-- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true.
+- **UI**：实现了 `animate-text-shimmer` 类以实现高级加载效果。
+- **侧边栏**：当 `isGenerating` 为 true 时，将闪烁效果应用于聊天项目标签。
 
 ## [2026-02-13]
 
-### Added Drop Validation for File Attachments
+### 添加了文件附件的删除验证
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced security for drag-and-drop file attachments with file type validation, size limits, and dangerous extension blocking.
+- **Summary**: 通过文件类型验证、大小限制和危险扩展名阻止，增强了拖放文件附件的安全性。
 
-Added file type whitelist allowing text, JSON, PDF, images, and common document formats.
-Implemented 10MB maximum file size limit to prevent large file DoS.
-Added dangerous extension blocking (.exe, .bat, .sh, .ps1, etc.) for security.
-Shows toast error notification when invalid files are dropped.
+添加了允许文本、JSON、PDF、图像和常见文档格式的文件类型白名单。
+实施 10MB 最大文件大小限制以防止大文件 DoS。
+为了安全起见，添加了危险扩展名阻止（.exe、.bat、.sh、.ps1 等）。
+当删除无效文件时显示 toast 错误通知。
 
-### Core HuggingFace Integration & GGUF Support
+### 核心 HuggingFace 集成和 GGUF 支持
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.
+- **Summary**: 实现了 HuggingFace 模型集成的基础，包括专用的抓取器、GGUF 元数据解析器和强大的下载管理器。
 
-- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.
-- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.
-- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.
-- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.
-- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability.
+- **Scraper 服务**：创建 `HuggingFaceService` 用于通过本地缓存搜索和获取模型元数据。
+- **GGUF 解析**：添加了部分 GGUF 标头解析器以提取模型架构和上下文长度。
+- **下载管理器**：通过 SHA256 验证和实时进度跟踪实现可断点下载。
+- **服务集成**：通过依赖项注入将 `HuggingFaceService` 连接到 `ModelRegistryService` 和 `LLMService` 中。
+- **测试**：更新了 `ModelRegistryService` 和 `LLMService` 的综合单元测试，以确保集成稳定性。
 
-### IPC Handler Tests expansion & TEST-01 Fix
+### IPC Handler 测试扩展和 TEST-01 修复
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.
+- **Summary**: 解决了 TEST-01（检查点恢复测试）并完成了数据库和项目代理 handlers 的 IPC 测试覆盖率。
 
-- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.
-- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.
-- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.
-- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`.
+- **测试**：修复了检查点恢复测试中的 `agent-executor.service.test.ts` 期望不匹配。
+- **IPC 覆盖范围**：创建了 `db.integration.test.ts`，涵盖聊天、项目和文件夹 handlers。
+- **IPC 覆盖范围**：创建了 `project-agent.integration.test.ts`，涵盖开始、停止、状态和 HIL handlers。
+- **代码智能**：修复了 `code-intelligence.integration.test.ts` 中的 TypeScript 参数类型不匹配问题。
 
-### IPC Security Audit: Input Validation (SEC-003)
+### IPC 安全审核：输入验证 (SEC-003)
 
 - **Type**: security
 - **Status**: completed
-- **Summary**: Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.
+- **Summary**: 对代理和终端 IPC handlers 实施严格的 Zod 架构验证以防止注入。
 
-- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.
-- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.
-- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.
-- **Type Safety**: Ensured explicit types for handler arguments and return policies.
+- **代理 IPC**：用 `createValidatedIpcHandler` 替换了手动验证，并为所有 7 个 handlers 添加了 Zod 架构。
+- **终端 IPC**：重构 `terminal.ts` 以将 `createValidatedIpcHandler` 与配置文件、会话和搜索操作的架构结合使用。
+- **通用实用程序**：增强了 `createValidatedIpcHandler` 以支持 `defaultValue` 以实现安全错误处理 fallback。
+- **类型安全**：确保 handler 参数和返回策略的显式类型。
 
-### LLM Service Improvements: Fallback & Caching
+### LLM 服务改进：Fallback 和缓存
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Enhanced the LLM service with model fallback, response caching, and improved streaming response management.
+- **Summary**: 使用模型 fallback、响应缓存和改进的流响应管理增强了 LLM 服务。
 
-- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.
-- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.
-- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.
-- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management.
+- **模型 Fallback**：添加了 `ModelFallbackService`，用于 LLM 提供程序之间的自动故障转移，以确保服务连续性。
+- **响应缓存**：实施 `ResponseCacheService` 来缓存和重用助理响应，从而提高性能并降低成本。
+- **流增强**：改进了 `AbortSignal` 处理并为取消的流实现了部分响应保存。
+- **可靠性**：通过 fallback 服务集成断路器模式，以进行主动错误管理。
 
-### Ollama Abort Fix & Chat Refactor
+### Ollama 中止修复和聊天重构
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.
+- **Summary**: 修复了“没有为 ollama:abort 注册 handler”错误，并重构了 Ollama 聊天 handlers 以使用强大的 OllamaService。
 
-- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.
-- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.
-- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly.
+- **IPC**：添加了缺失的 `ollama:abort` IPC handler 以支持取消聊天请求。
+- **重构**：更新了 `ollama:chat` 和 `ollama:chatStream` 以使用 `OllamaService` 而不是 `LocalAIService` fallback，从而实现真正的流式传输和中止功能。
+- **测试**：更新了集成测试以验证中止功能并正确模拟 `OllamaService` 方法。
 
-### Improved Token Counting Accuracy
+### 提高令牌计数准确性
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.
+- **Summary**: 集成 js-tiktoken，用于跨 GPT、Claude 和 Llama 模型进行精确的代币估计。
 
-Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.
-Improved context window management with precise model limits for major LLM providers.
-Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.
-Added comprehensive unit tests to verify token counting accuracy for various models.
+集成 `js-tiktoken` 用于准确标记化映射到 cl100k_base 和 o200k_base 编码。
+改进了上下文窗口管理，为主要 LLM 提供程序提供了精确的模型限制。
+对不受支持的模型维护基于启发式的回退，以确保估计的连续性。
+添加了全面的单元测试来验证各种模型的令牌计数准确性。
 
 ## [2026-02-12]
 
@@ -872,15 +905,15 @@ Added comprehensive unit tests to verify token counting accuracy for various mod
 - [x] **UI Wiring**: 将 `ExecutionPlanView` 的操作按钮经由 `TaskExecutionView` 与 `ProjectAgentTab` 连接到后端。
 - [x] **Verification**: 验证了所有 IPC 通道及步骤级控制操作的类型安全性。
 
-### Renderer Logging Refactor
+### 渲染器日志重构
 
 - **Type**: refactor
 - **Status**: completed
-- **Summary**: Replaced remaining `console.*` calls in the renderer process with `appLogger` for better persistence and observability.
+- **Summary**: 将渲染器进程中剩余的 `console.*` 调用替换为 `appLogger`，以获得更好的持久性和可观察性。
 
-- **Logging**: Migrated all renderer features (Terminal, SSH, Projects, Settings) and utilities to use `appLogger`.
-- **Code Quality**: Applied Boy Scout Rule to fix import sorting and type issues in refactored files.
-- **Observability**: Standardized log format with context tags for easier debugging in production.
+- **日志记录**：迁移所有渲染器功能（终端、SSH、项目、设置）和实用程序以使用 `appLogger`。
+- **代码质量**：应用童子军规则来修复重构文件中的导入排序和类型问题。
+- **可观察性**：带有上下文标签的标准化日志格式，以便在生产中更轻松地进行调试。
 
 ### SD-CPP 核心优化
 
@@ -3657,438 +3690,451 @@ sensibleDefaults: '这里',
 **修改的文件总数**：自动和手动修复了 150 多个文件
 **总变化**：消除了 351 个警告
 
-### Phase 18 - Internationalization (Completed)
+### 第 18 阶段 - 国际化（已完成）
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Phase 18 - Internationalization (Completed) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 18 阶段 - 国际化（已完成）在目标范围内交付了计划的重构、结构清理和验证。
 
-- **UI Components**:
-    - Replaced hardcoded strings with `t()` calls in `MCPStore.tsx`, `ModelComparison.tsx`, `ProjectDashboard.tsx`, `AgentDashboard.tsx`, `AgentCouncil.tsx`, and `ToolDisplay.tsx`.
-    - Resolved key collisions (e.g., `gitStatus`) and updated `ToolDisplay` to properly handle nested translations.
-- **Translations**:
-    - Updated `en.ts` and `tr.ts` with comprehensive coverage for new UI sections.
-    - Verified strict type safety for all new translation keys.
+- **UI 组件**：
+- 在 `MCPStore.tsx`、`ModelComparison.tsx`、`ProjectDashboard.tsx`、`AgentDashboard.tsx`、`AgentCouncil.tsx` 和 `ToolDisplay.tsx` 中将硬编码字符串替换为 `t()` 调用。
+- 解决了按键冲突（例如 `gitStatus`）并更新了 `ToolDisplay` 以正确处理嵌套翻译。
+- **翻译**：
+- 更新了 `en.ts` 和 `tr.ts`，全面覆盖了新的 UI 部分。
+- 验证了所有新翻译键的严格类型安全性。
 
 ## [2026-01-18]
 
-### Claude Authentication & Service Reliability
+### 克劳德身份验证和服务可靠性
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Claude Authentication & Service Reliability improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: Claude 身份验证和服务可靠性改进了关键工作流程中的 runtime 性能、稳定性和操作一致性。
 
-- **Claude Authentication**:
-    - Implemented **headless session capture** for Claude (claude.ai) using Electron cookies, moving away from internal browser windows.
-    - Added **manual sessionKey fallback** in the UI for cases where automatic capture fails.
-    - Updated `ProxyService` and `QuotaService` to handle `sessionToken` throughout the authentication lifecycle.
-- **Service Reliability**:
-    - Fixed `QuotaService` and `ProxyService` unit tests by ensuring all dependencies (`DataService`, `ProcessManagerService`, etc.) are correctly mocked and injected.
-    - Resolved TypeScript and ESLint errors in `ProxyService` and `LocalAuthServer` related to `any` types and redundant conditionals.
-    - Standardized `getCopilotQuota` and `getClaudeQuota` return types to handle multi-account structures.
-- **Type Safety**:
-    - Achieved cleaner type-check results by adding missing types to `@shared/types/quota`.
+- **克劳德认证**：
+- 使用 Electron cookie 为 Claude (claude.ai) 实现了**无头会话捕获**，远离内部浏览器窗口。
+- 在 UI 中添加了 **手动 sessionKey fallback**，以应对自动捕获失败的情况。
+- 更新了 `ProxyService` 和 `QuotaService` 以在整个身份验证生命周期中处理 `sessionToken`。
+- **服务可靠性**：
+- 通过确保正确模拟和注入所有依赖项（`DataService`、`ProcessManagerService` 等），修复了 `QuotaService` 和 `ProxyService` 单元测试。
+- 解决了 `ProxyService` 和 `LocalAuthServer` 中与 `any` 类型和冗余条件相关的 TypeScript 和 ESLint 错误。
+- 标准化 `getCopilotQuota` 和 `getClaudeQuota` 返回类型来处理多帐户结构。
+- **类型安全**：
+- 通过将缺失的类型添加到 `@shared/types/quota` 中，获得了更清晰的类型检查结果。
 
 ## [2026-01-17]
 
-### Antigravity Model Fetching Refinement
+### 反重力模型获取细化
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Antigravity Model Fetching Refinement introduced coordinated maintenance and quality improvements across the related modules.
+- **Summary**: 反重力模型获取细化引入了相关模块的协调维护和质量改进。
 
-- **Antigravity Executor**:
-    - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.
-    - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.
-    - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application.
+- **反重力执行者**：
+- 精炼了 `FetchAntigravityModels` 以从发现 API 响应中提取详细的元数据（`displayName`、`description`）。
+- 更新了模型别名逻辑，以确保原始上游 ID 和静态配置之间的一致映射，以实现思维支持和令牌限制。
+- 将 `gemini-3-pro-high` 和 `gemini-3-flash` 与其各自的预览别名对齐，以启用正确的配置应用程序。
 
 ## [2026-01-16]
 
-### Phase 17 - Stability & Reliability
+### 第 17 阶段 - 稳定性和可靠性
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 17 - Stability & Reliability delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 17 阶段 - 稳定性和可靠性在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Critical Fixes**:
-    - Fixed production crash ("Blank Page") by correcting `preload` and `index.html` path resolution in `src/main/main.ts`.
-    - Resolved React crash (circular dependency) by removing problematic `react-vendor` chunk in `vite.config.ts`.
-    - Fixed `SidebarItem` not registering clicks by propagating `data-testid` and other props correctly.
-- **Testing**:
-    - Achieved 100% E2E Test Pass Rate (11/11 tests).
-    - Refactored `chat.spec.ts` to use robust `toBeVisible` assertions.
-    - Added `data-testid` to Window Actions and critical UI flows.
+- **关键修复**：
+- 通过更正 `src/main/main.ts` 中的 `preload` 和 `index.html` 路径解析来修复生产崩溃（“空白页”）。
+- 通过删除 `vite.config.ts` 中有问题的 `react-vendor` 块，解决了 React 崩溃（循环依赖）。
+- 修复了 `SidebarItem` 未通过正确传播 `data-testid` 和其他道具来注册点击的问题。
+- **测试**：
+- 实现 100% E2E 测试通过率（11/11 测试）。
+- 重构 `chat.spec.ts` 以使用可靠的 `toBeVisible` 断言。
+- 将 `data-testid` 添加到窗口操作和关键 UI 流程。
 
-### Phase 18 - Internationalization (Prioritized)
+### 第 18 阶段 - 国际化（优先）
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 18 - Internationalization (Prioritized) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 18 阶段 - 国际化（优先）在目标范围内交付计划的重构、结构清理和验证。
 
-- **Hardcoded String Fixes**:
-    - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).
-    - Replaced hardcoded placeholders in `SSHManager.tsx` and `NginxWizard.tsx`.
-    - Replaced hardcoded preset names and labels in `ParameterPresets.tsx` & `AdvancedTab.tsx`.
-    - Replaced hardcoded prompt management text in `PromptManagerModal.tsx`.
-    - Replaced hardcoded loader text in `CodeEditor.tsx`.
-- **Translations**:
-    - Added `ssh.nginx`, `ssh.presets`, `ssh.promptManager`, and `ssh.editor` keys to `en.ts` and `tr.ts`.
-    - Fixed hardcoded Turkish text in `AdvancedTab.tsx` presets.
+- **硬编码字符串修复**：
+- 替换了 `ThemeStore.tsx` 中的硬编码字符串（主题、过滤器）。
+- 替换了 `SSHManager.tsx` 和 `NginxWizard.tsx` 中的硬编码占位符。
+- 替换了 `ParameterPresets.tsx` 和 `AdvancedTab.tsx` 中的硬编码预设名称和标签。
+- 替换了 `PromptManagerModal.tsx` 中的硬编码提示管理文本。
+- 替换了 `CodeEditor.tsx` 中的硬编码加载程序文本。
+- **翻译**：
+- 向 `en.ts` 和 `tr.ts` 添加了 `ssh.nginx`、`ssh.presets`、`ssh.promptManager` 和 `ssh.editor` 键。
+- 修复了 `AdvancedTab.tsx` 预设中的硬编码土耳其语文本。
 
-### Phase 19 - Technical Debt & Security (Current)
+### 第 19 阶段 - 技术债务和安全（当前）
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 19 - Technical Debt & Security (Current) delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 19 阶段 - 技术债务和安全（当前）在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Security**:
-    - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.
-    - Implemented robust command argument handling for Windows platforms.
-- **Refactoring**:
-    - **SSHManager**: Reduced complexity by extracting `SSHConnectionList`, `SSHTerminal`, and `AddConnectionModal` components and `useSSHConnections` hook.
-    - **WorkspaceToolbar**: Extracted `DashboardTabs`.
-    - **Settings**: Implemented `SettingsContext` and refactored `useSettingsLogic` into sub-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).
-- **Internationalization**:
-    - Completed hardcoded string replacements in `SSHManager`, `WorkspaceToolbar`, `ModelComparison`, and others.
-    - Fixed Turkish translation quality issues.
-    - Added Turkish translations for `modelExplorer`, `docker`, `onboarding`, and missing `workspace` keys.
-- **Type Safety**:
-    - Resolved `exactOptionalPropertyTypes` violations and `any` usage.
-    - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`.
+- **安全**：
+- 通过强制执行 `shell: false` 修复了 `dispatcher.ts` 和 `window.ts` 中的严重 shell 注入漏洞。
+- 为 Windows 平台实现了强大的命令参数处理。
+- **重构**：
+- **SSHManager**：通过提取 `SSHConnectionList`、`SSHTerminal` 和 `AddConnectionModal` 组件以及 `useSSHConnections` 挂钩来降低复杂性。
+- **工作区工具栏**：提取`DashboardTabs`。
+- **设置**：实现 `SettingsContext` 并将 `useSettingsLogic` 重构为子钩子（`useSettingsAuth`、`useSettingsStats`、`useSettingsPersonas`）。
+- **国际化**：
+- 完成了 `SSHManager`、`WorkspaceToolbar`、`ModelComparison` 等中的硬编码字符串替换。
+- 修复了土耳其语翻译质量问题。
+- 添加了 `modelExplorer`、`docker`、`onboarding` 的土耳其语翻译，并缺少 `workspace` 键。
+- **类型安全**：
+- 解决了 `exactOptionalPropertyTypes` 违规和 `any` 使用问题。
+- 修复了 `dispatcher.ts` 和 `SSHManager.tsx` 中未等待的承诺。
 
-### Phase 20 - Independent Microservices Architecture
+### 第20阶段——独立微服务架构
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 20 - Independent Microservices Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 20 阶段 - 独立微服务架构在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Microservices Refactoring**:
-    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.
-    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\Tengra\services\{service}.port` for discovery.
-    - Services can run **completely independently** of the main Electron application.
-- **ProcessManagerService**:
-    - Updated to use **HTTP requests** via axios instead of stdin pipes.
-    - Implemented **port discovery** mechanism - checks for already-running services before spawning new ones.
-    - Services are now started with `detached: true` to allow independent lifecycle.
-- **Windows Startup Integration**:
-    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.
-    - Services start automatically at Windows login, even before Tengra app is launched.
-    - Supports `-Status`, `-Uninstall` flags for management.
-- **Default Settings**:
-    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.
-    - Tengra now minimizes to **System Tray** by default instead of closing.
+- **微服务重构**：
+- 将所有 Rust 服务（`token-service`、`model-service`、`quota-service`、`memory-service`）从 stdin/stdout 管道重构为 **独立的 HTTP 服务器**。
+- 现在，每个服务都绑定到一个 **临时端口** 并将其端口写入 `%APPDATA%\Tengra\services\{service}.port` 以便发现。
+- 服务可以**完全独立**主 Electron 应用程序运行。
+- **流程管理器服务**：
+- 更新为通过 axios 而不是 stdin 管道使用 **HTTP 请求**。
+- 实施**端口发现**机制 - 在生成新服务之前检查已运行的服务。
+- 服务现在以 `detached: true` 启动，以允许独立的生命周期。
+- **Windows 启动集成**：
+- 创建 `scripts/register-services.ps1` 将服务注册为 **Windows 计划任务**。
+- 服务在 Windows 登录时自动启动，甚至在 Tengra 应用程序启动之前也是如此。
+- 支持 `-Status`、`-Uninstall` 标志进行管理。
+- **默认设置**：
+- 更改了默认值：`startOnStartup: true`、`workAtBackground: true`。
+- Tengra 现在默认最小化到 **系统托盘**，而不是关闭。
 
 ## [2026-01-15]
 
-### Build Fixes & Type Safety
+### 构建修复和类型安全
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Build Fixes & Type Safety strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 构建修复和类型安全通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-- **SettingsService**: Converted all synchronous file operations (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) to async equivalents (`fs.promises`). Added `initialize()` lifecycle method for proper async loading.
-- **BackupService**: Already using async file operations - verified and confirmed no changes needed.
-- **Tests**: Updated `settings.service.test.ts` to use async patterns and mock `fs.promises` API.
-- **LlamaService**: Fixed missing `path.join` references causing build failures.
-- **HistoryImportService**: Fixed Date type errors - now correctly creates Date objects for `createdAt`/`updatedAt` fields.
-- **AgentCouncilService**: Fixed CouncilSession type mismatch by aligning imports with DatabaseService types.
-- **AgentService**: Added proper type annotations for database query results.
-- **DatabaseService**: Fixed multiple type errors including unused generics, `projectId` property, and query result typing.
-- **IPC/db.ts**: Fixed Chat type mismatch between shared types and database service.
-- **Cleanup**: Removed unused imports in `registry.ts` and `ipc.ts`.
-- **Types**: Aligned `CouncilSession` status types across shared and database definitions (added `planning`, `reviewing` states).
+- **SettingsService**：将所有同步文件操作（`fs.readFileSync`、`fs.writeFileSync`、`fs.existsSync`）转换为异步等效操作（`fs.promises`）。添加了 `initialize()` 生命周期方法以实现正确的异步加载。
+- **BackupService**：已使用异步文件操作 - 已验证并确认无需更改。
+- **测试**：更新了 `settings.service.test.ts` 以使用异步模式并模拟 `fs.promises` API。
+- **LlamaService**：修复了缺少 `path.join` 引用导致构建失败的问题。
+- **HistoryImportService**：修复了日期类型错误 - 现在可以正确地为 `createdAt`/`updatedAt` 字段创建日期对象。
+- **AgentCouncilService**：通过将导入与 DatabaseService 类型对齐来修复 CouncilSession 类型不匹配的问题。
+- **AgentService**：为数据库查询结果添加了适当的类型注释。
+- **DatabaseService**：修复了多个类型错误，包括未使用的泛型、`projectId` 属性和查询结果类型。
+- **IPC/db.ts**：修复了共享类型和数据库服务之间的聊天类型不匹配的问题。
+- **清理**：删除了 `registry.ts` 和 `ipc.ts` 中未使用的导入。
+- **类型**：跨共享和数据库定义对齐 `CouncilSession` 状态类型（添加了 `planning`、`reviewing` 状态）。
 
-### Critical TODO Items Resolved
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Critical TODO Items Resolved introduced coordinated maintenance and quality improvements across the related modules.
-
-- **TypeScript**: Fixed 13 compilation errors across `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts`, and `audit-log.service.test.ts`.
-- **Logging**: Replaced ~25 `console.log`/`console.error` statements with `appLogger` in `main.ts`, `dispatcher.ts`, and `window.ts`.
-- **Types**: Added `idToken` and `email` fields to `AuthToken` interface.
-- **Async**: Fixed missing `await` on `getAllTokens()` calls in `main.ts` and `settings.service.ts`.
-- **Memory Leaks**: Verified all 8 services with `setInterval` have proper `cleanup()` methods.
-- **Shell Injection**: Strengthened command sanitization in `window.ts` (blocks: backticks, $(), braces, brackets, newlines).
-- **Security**: Removed hardcoded client secret fallbacks in `token.service.ts` and `quota.service.ts`. Added validation before usage.
-- **Logging**: Replaced all console.log/error/warn with appLogger in `token.service.ts` (20 instances) and `ssh.service.ts` (7 instances).
-- **Code Quality**: Fixed 22+ `||` to `??` nullish coalescing conversions in `token.service.ts` and `ssh.service.ts`. Fixed unused variables.
-
-### Database Migrations (Legacy JSON to PostgreSQL)
+### 已解决的关键 TODO 项目
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Database Migrations (Legacy JSON to PostgreSQL) improved data model consistency and migration reliability across affected services.
+- **Summary**: 已解决的关键待办事项引入了跨相关模块的协调维护和质量改进。
 
-- **AuthService**: Migrated from file-based JSON storage to `auth_tokens` table. Implemented secure token encryption/decryption in the database layer.
-- **TokenService**: Complete rewrite to remove synchronous file I/O dependencies. Now uses `AuthService` for token management and `JobSchedulerService` for refresh tasks.
-- **CopilotService**: Updated to support asynchronous token retrieval from `AuthService`, resolving startup race conditions.
-- **UsageTrackingService**: Migrated user activity tracking to `usage_events` table.
-- **PromptTemplatesService**: Migrated custom prompt templates to `prompt_templates` table.
-- **AuditLogService**: Migrated security audit logs to `audit_logs` table.
-- **JobSchedulerService**: Migrated job state persistence to `scheduler_state` table.
-- **Cleanup**: Removed legacy JSON file handling (reading/writing/encryption) from migrated services.
-- **Schema**: Added new tables: `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`.
+- **TypeScript**：修复了 `main.ts`、`settings.service.ts`、`auth.service.ts`、`database.service.ts` 和 `audit-log.service.test.ts` 中的 13 个编译错误。
+- **日志记录**：将 `main.ts`、`dispatcher.ts` 和 `window.ts` 中的约 25 条 `console.log`/`console.error` 语句替换为 `appLogger`。
+- **类型**：向 `AuthToken` 接口添加了 `idToken` 和 `email` 字段。
+- **异步**：修复了 `main.ts` 和 `settings.service.ts` 中 `getAllTokens()` 调用中缺少 `await` 的问题。
+- **内存泄漏**：已验证所有 8 个具有 `setInterval` 的服务是否具有正确的 `cleanup()` 方法。
+- **Shell 注入**：加强了 `window.ts` 中的命令清理（块：反引号、$()、大括号、方括号、换行符）。
+- **安全**：删除了 `token.service.ts` 和 `quota.service.ts` 中硬编码的客户端秘密回退。添加使用前验证。
+- **日志记录**：将 `token.service.ts` （20 个实例）和 `ssh.service.ts` （7 个实例）中的所有 console.log/error/warn 替换为 appLogger。
+- **代码质量**：修复了 `token.service.ts` 和 `ssh.service.ts` 中 22+ `||` 到 `??` 无效合并转换。修复了未使用的变量。
 
-### Phase 10 - Full Database Migration
+### 数据库迁移（旧版 JSON 到 PostgreSQL）
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: 数据库迁移（旧版 JSON 到 PostgreSQL）提高了受影响服务之间的数据模型一致性和迁移可靠性。
+
+- **AuthService**：从基于文件的 JSON 存储迁移到 `auth_tokens` 表。在数据库层实现安全令牌加密/解密。
+- **TokenService**：完全重写以删除同步文件 I/O 依赖性。现在使用 `AuthService` 进行令牌管理，使用 `JobSchedulerService` 进行刷新任务。
+- **CopilotService**：更新为支持从 `AuthService` 检索异步令牌，解决启动竞争条件。
+- **UsageTrackingService**：将用户活动跟踪迁移到 `usage_events` 表。
+- **PromptTemplatesService**：将自定义提示模板迁移到 `prompt_templates` 表。
+- **AuditLogService**：将安全审核日志迁移到 `audit_logs` 表。
+- **JobSchedulerService**：将作业状态持久性迁移到 `scheduler_state` 表。
+- **清理**：从迁移的服务中删除了遗留的 JSON 文件处理（读/写/加密）。
+- **架构**：添加了新表：`auth_tokens`、`usage_events`、`prompt_templates`、`audit_logs`、`scheduler_state`。
+
+### 第 10 阶段 - 完整数据库迁移
 
 - **Type**: docs
 - **Status**: unknown
-- **Summary**: Phase 10 - Full Database Migration delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 10 阶段 - 完整数据库迁移在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Legacy Data Migration**:
-    - Implemented `handleChatMigration` and `handleMessageMigration` in `DatabaseService` to import legacy SQLite data into PGlite.
-    - Added `chatsPath` and `messagesPath` to `DatabaseService` constructor for migration path management.
-    - Verified end-to-end migration for `UsageTrackingService`, `PromptTemplatesService`, `AuditLogService`, and `JobSchedulerService`.
-- **Data Export**:
-    - Exported `chats` and `messages` tables from legacy `chats.db` SQLite to JSON using CLI tools.
-    - Moved exported files to `runtime/data/db/` for automatic pickup by migration logic.
-- **Documentation**:
-    - Updated `task.md` to reflect Phase 10 progress.
-    - Created `walkthrough.md` documenting the migration implementation.
+- **旧数据迁移**：
+- 在 `DatabaseService` 中实现了 `handleChatMigration` 和 `handleMessageMigration`，以将旧版 SQLite 数据导入 PGlite。
+- 将 `chatsPath` 和 `messagesPath` 添加到 `DatabaseService` 构造函数以进行迁移路径管理。
+- 已验证 `UsageTrackingService`、`PromptTemplatesService`、`AuditLogService` 和 `JobSchedulerService` 的端到端迁移。
+- **数据导出**：
+- 使用 CLI 工具将 `chats` 和 `messages` 表从旧版 `chats.db` SQLite 导出到 JSON。
+- 将导出的文件移至 `runtime/data/db/`，以便通过迁移逻辑自动拾取。
+- **文档**：
+- 更新了 `task.md` 以反映第 10 阶段的进展。
+- 创建了 `walkthrough.md` 记录迁移实施。
 
-### Phase 11 - Test Coverage & Database Optimization
+### 第 11 阶段 - 测试覆盖率和数据库优化
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 11 - Test Coverage & Database Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 11 阶段 - 测试覆盖率和数据库优化在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Test Coverage**:
-    - Added `JobSchedulerService` unit tests (7 tests) covering scheduling, recurring jobs, and cleanup.
-    - Enhanced `ModelRegistryService` unit tests (8 tests) with proper types and error handling coverage.
-- **Database Optimization**:
-    - Verified comprehensive indexes already in migration ID 7 for performance optimization.
-- **Type Safety**:
-    - Verified `stream-parser.util.ts` and `agent.service.ts` have no `any` types.
+- **测试覆盖率**：
+- 添加了 `JobSchedulerService` 单元测试（7 个测试），涵盖调度、重复作业和清理。
+- 增强了 `ModelRegistryService` 单元测试（8 个测试），具有正确的类型和错误处理覆盖率。
+- **数据库优化**：
+- 验证迁移 ID 7 中已有的综合索引以实现性能优化。
+- **类型安全**：
+- 已验证 `stream-parser.util.ts` 和 `agent.service.ts` 没有 `any` 类型。
 
-### Phase 12 - Code Quality & E2E Testing
+### 第 12 阶段 - 代码质量和端到端测试
 
 - **Type**: refactor
 - **Status**: unknown
-- **Summary**: Phase 12 - Code Quality & E2E Testing delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 12 阶段 - 代码质量和 E2E 测试在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Code Quality**:
-    - Verified ESLint configuration runs successfully on individual files.
-    - Audited `TerminalPanel.tsx` (9 useEffect hooks) - all have proper cleanup.
-    - Audited `ChatView.tsx` - pure presentation component, no useEffect hooks needed.
-- **E2E Testing**:
-    - Verified existing E2E tests in `chat.spec.ts` cover chat creation, input display, and keyboard shortcuts.
-    - Verified `app.spec.ts` covers app launch.
+- **代码质量**：
+- 已验证的 ESLint 配置在各个文件上成功运行。
+- 已审核 `TerminalPanel.tsx` （9 个 useEffect 挂钩） - 全部都有适当的清理。
+- 已审核 `ChatView.tsx` - 纯演示组件，无需 useEffect 挂钩。
+- **端到端测试**：
+- 验证了 `chat.spec.ts` 中现有的 E2E 测试，涵盖聊天创建、输入显示和键盘快捷键。
+- 已验证 `app.spec.ts` 涵盖应用程序启动。
 
-### Phase 13 - Type Safety & Service Architecture
+### 第 13 阶段 - 类型安全和服务架构
 
 - **Type**: feature
 - **Status**: unknown
-- **Summary**: Phase 13 - Type Safety & Service Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 13 阶段 - 类型安全和服务架构在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Type Safety**:
-    - Verified `quota.service.ts`, `preload.ts`, and `ipc/ollama.ts` have no `any` types.
-- **Async Operations**:
-    - Verified `quota.service.ts` has no synchronous file operations.
-- **Service Architecture**:
-    - Audited 30+ services extending `BaseService` for consistent lifecycle management.
+- **类型安全**：
+- 已验证 `quota.service.ts`、`preload.ts` 和 `ipc/ollama.ts` 没有 `any` 类型。
+- **异步操作**：
+- 已验证 `quota.service.ts` 没有同步文件操作。
+- **服务架构**：
+- 审核了 30 多项扩展 `BaseService` 的服务，以实现一致的生命周期管理。
 
-### Phase 14 - Deployment Readiness
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 14 - Deployment Readiness delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Build Fixes**:
-    - Fixed unused `init` method error in `ProxyService` by implementing `initialize`.
-    - Removed unused `fs` import in `proxy.service.test.ts` to fix `tsc` error.
-    - Updated `tsconfig.node.json` and `eslint.config.mjs` to resolve lint paths.
-    - Temporarily removed `lint` step from build script to unblock urgent deployment (pending comprehensive lint fix in tests).
-    - **Build Verified**: `npm run build` passes successfully. Code is ready for deployment.
-
-### Phase 15 - Linting Recovery & Cleanup
+### 第 14 阶段 - 部署准备
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 15 - Linting Recovery & Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 14 阶段 - 部署准备在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Project Structure**:
-    - Deleted redundant `job-scheduler.service.test.ts` (consolidated into `services/system/`).
-- **Development Health**:
-    - Restored `lint` step to build pipeline.
-    - Configured ESLint to allow `any` types in test files (`src/tests/`), fixing 355+ blocking errors in CI while maintaining strictness for production code.
-- **Documentation**:
-    - Updated `TODO.md` to mark Service Architecture, Database Migration, and Testing gaps as resolved.
+- **构建修复**：
+- 通过实现 `initialize` 修复了 `ProxyService` 中未使用的 `init` 方法错误。
+- 删除了 `proxy.service.test.ts` 中未使用的 `fs` 导入以修复 `tsc` 错误。
+- 更新了 `tsconfig.node.json` 和 `eslint.config.mjs` 以解决 lint 路径。
+- 暂时从构建脚本中删除 `lint` 步骤以解锁紧急部署（测试中等待全面的 lint 修复）。
+- **构建验证**：`npm run build` 成功通过。代码已准备好部署。
 
-### Phase 16 - Bundle Optimization
+### 第 15 阶段 - 棉绒恢复和清理
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: 第 15 阶段 - Linting 恢复和清理在目标范围内提供了计划的重构、结构清理和验证。
+
+- **项目结构**：
+- 删除了多余的 `job-scheduler.service.test.ts` （合并到 `services/system/` 中）。
+- **发展健康**：
+- 恢复了构建管道的 `lint` 步骤。
+- 配置 ESLint 以允许测试文件 (`src/tests/`) 中使用 `any` 类型，修复 CI 中的 355 个以上阻塞错误，同时保持生产代码的严格性。
+- **文档**：
+- 更新了 `TODO.md` 以将服务架构、数据库迁移和测试差距标记为已解决。
+
+### 第 16 阶段 - 捆绑优化
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 16 - Bundle Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 16 阶段 - 捆绑优化在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Performance**:
-    - Implemented granular code splitting in `vite.config.ts`.
-    - Created separate chunks for heavy dependencies: `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.
-    - Lazy loaded `SSHManager` and `AudioChatOverlay` to improve initial application startup.
-    - Reduced initial bundle load by deferring unused features.
+- **表现**：
+- 在 `vite.config.ts` 中实现了粒度代码分割。
+- 为严重依赖项创建单独的块：`monaco-editor`、`framer-motion`、`ssh2`、`react-vendor`。
+- 延迟加载 `SSHManager` 和 `AudioChatOverlay` 以改进初始应用程序启动。
+- 通过推迟未使用的功能来减少初始捆绑负载。
 
-### Phase 4 - Silent Error Handling Cleanup
-
-- **Type**: security
-- **Status**: unknown
-- **Summary**: Phase 4 - Silent Error Handling Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Error Handling**: Systematically eliminated silent error swallowing in `UtilityService`, `SecurityService`, `SystemService`, and `QuotaService`. All catch blocks now log errors via `appLogger`.
-- **Standardization**: Refactored `BaseService` to inherit from `appLogger`, providing `this.logError`, `this.logDebug`, etc., to all derived services.
-- **Refactoring**: Significantly reduced cyclomatic complexity in `logger.ts` (`init`, `getStats`, `formatValue`) and replaced forbidden `require('electron')` with safe ESM imports.
-- **QuotaService**: Fixed unawaited promises, replaced debug `console.log` with `appLogger.debug`, and resolved numerous logical operator and type lints.
-
-### Phase 5 - Critical Async Conversions & Type Safety
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 5 - Critical Async Conversions & Type Safety delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Database Service**:
-    - Successfully removed ALL explicit `any` types from `DatabaseService.ts` (2,200+ lines).
-    - Modularized high-complexity methods (`searchChats`, `getDetailedStats`, `performChatDuplication`) into granular helpers, satisfying strict cyclomatic complexity limits.
-    - Restored and standardized legacy migration paths for `Folders` and `Prompts`, ensuring reliable data transition to PostgreSQL.
-    - Implemented a generic `DatabaseAdapter` pattern for type-safe transactions and query execution. Fixed `affectedRows` vs `rowsAffected` API mismatches.
-- **Backup Service**: Synchronized with the updated `DatabaseService` API and implemented the `RestoreChatData` interface to ensure strict type safety during JSON restoration.
-- **Async I/O Transitions**: Converted blocking synchronous `fs` operations to `fs.promises` across `UsageTrackingService`, `ProxyService`, and `SettingsService`, eliminating main-process blocking bottlenecks.
-- **Code Quality**:
-    - Resolved `no-case-declarations` and lexical scoping issues in `ChatEventService`.
-    - Harmonized nullish coalescing (`??`) across 50+ locations in core services.
-    - Reduced cyclomatic complexity and nesting depth in critical service paths (NASA Power of Ten compliance).
-    - Standardized all error reporting to use `appLogger` and centralized error utilities.
-    - Modularized `TokenService` logic into explicit provider checks (`isGoogleProvider`, `isCodexProvider`, etc.) and helper methods.
-- **Types**: Rigorous typing for `AuthToken`, `ChatMessage`, `Prompt`, and `Folder` structures ensuring full type safety from the DB layer to the service API.
-- **Verification**: Zero build errors, zero type-check failures, and zero critical lints remaining in the service layer.
-
-### Phase 6 - Test Infrastructure Repair & Verification
-
-- **Type**: fix
-- **Status**: unknown
-- **Summary**: Phase 6 - Test Infrastructure Repair & Verification delivered planned refactors, structural cleanup, and verification across the targeted scope.
-
-- **Test Configuration**:
-    - Resolved `vitest` vs `playwright` conflict by explicitly excluding E2E tests from the unit test runner in `vitest.config.ts`.
-- **Test Fixes**:
-    - **LLM Settings**: Fixed `ReferenceError` in integration tests by correcting `vi.mock` hoisting logic.
-    - **Audit Log**: Updated `fs` mocks to include missing `mkdirSync`, enabling proper `AppLogger` initialization during tests.
-    - **Backup Service**: Aligned test expectations with actual error handling for missing files.
-- **Verification Status**:
-    - **Pass Rate**: 100% (298/298 tests passed).
-    - **Coverage**: All 36 test suites executed successfully.
-
-### Phase 7 - Service Architecture Refactoring & SSH Modernization
+### 第 4 阶段 - 静默错误处理清理
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Phase 7 - Service Architecture Refactoring & SSH Modernization delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 4 阶段 - 静默错误处理清理在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Service Architecture**:
-    - Systematically relocated 30+ services into domain-specific folders (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).
-    - Standardized directory structure for better modularity and maintainability.
-- **Import Migration**:
-    - Updated imports across the entire codebase to use the new domain-based structure.
-    - Enforced use of path aliases (`@main/services/`) for all service imports.
-- **SSH Service Modernization**:
-    - Converted all remaining synchronous `fs` operations to `fs.promises`.
-    - Achieved 100% type safety by removing all `any` types.
-    - Implemented a comprehensive unit test suite (9 tests) covering profile management, security, connection lifecycle, SFTP, and diagnostics.
-- **Dependency Injection**:
-    - Fixed a critical type mismatch in the `QuotaService` registration within `startup/services.ts`.
-- **IPC Layer**:
-    - Verified and updated all IPC handlers to work with the refactored service structure.
+- **错误处理**：系统地消除了 `UtilityService`、`SecurityService`、`SystemService` 和 `QuotaService` 中的静默错误吞噬。所有 catch 块现在都通过 `appLogger` 记录错误。
+- **标准化**：重构`BaseService`以继承`appLogger`，为所有派生服务提供`this.logError`、`this.logDebug`等。
+- **重构**：显着降低 `logger.ts`（`init`、`getStats`、`formatValue`）中的圈复杂度，并用安全 ESM 导入替换禁止的 `require('electron')`。
+- **QuotaService**：修复了未等待的承诺，用 `appLogger.debug` 替换了调试 `console.log`，并解决了许多逻辑运算符和类型 lint。
 
-### Phase 8 - Global Async & Type Safety Pass
+### 第 5 阶段 - 关键异步转换和类型安全
 
 - **Type**: fix
 - **Status**: unknown
-- **Summary**: Phase 8 - Global Async & Type Safety Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 5 阶段 - 关键异步转换和类型安全在目标范围内提供了计划的重构、结构清理和验证。
 
-- **Async Modernization**:
-    - Converted `TerminalService`, `GitService`, `MigrationService`, and `ExportService` to use `fs.promises` for all file I/O.
-    - Optimized the main process responsiveness by eliminating blocking synchronous calls in core data services.
-- **IPC Handler Hardening**:
-    - Modernized `dialog:saveFile` and `theme:export` handlers to be fully asynchronous.
-    - Implemented improved error catching and temporary file handling in the IPC layer.
-- **Type Safety Excellence**:
-    - Eliminated all `any` types from `message-normalizer.util.ts` and `ipc-wrapper.util.ts`.
-    - Modularized high-complexity logic in `MessageNormalizer` to comply with strict cyclomatic complexity standards (NASA Power of Ten).
-- **Service Refinement**:
-    - Polished `QuotaService` by fixing dependency injection and resolving lingering lint and type safety warnings.
-    - Verified and improved the `QuotaService` unit test suite.
+- **数据库服务**：
+- 成功从 `DatabaseService.ts` 中删除所有显式 `any` 类型（2,200 多行）。
+- 将高复杂性方法（`searchChats`、`getDetailedStats`、`performChatDuplication`）模块化为细粒度帮助程序，满足严格的圈复杂度限制。
+- 恢复并标准化了 `Folders` 和 `Prompts` 的旧迁移路径，确保可靠的数据迁移到 PostgreSQL。
+- 为类型安全事务和查询执行实现了通用 `DatabaseAdapter` 模式。修复了 `affectedRows` 与 `rowsAffected` API 不匹配的问题。
+- **备份服务**：与更新的`DatabaseService` API同步，并实现`RestoreChatData`接口，以确保JSON恢复过程中严格的类型安全。
+- **异步 I/O 转换**：将 `UsageTrackingService`、`ProxyService` 和 `SettingsService` 之间的阻塞同步 `fs` 操作转换为 `fs.promises`，消除了主进程阻塞瓶颈。
+- **代码质量**：
+- 解决了 `no-case-declarations` 和 `ChatEventService` 中的词法范围问题。
+- 核心服务中 50 多个位置的协调无效合并 (`??`)。
+- 降低了关键服务路径中的圈复杂度和嵌套深度（NASA 十次幂合规性）。
+- 标准化所有错误报告以使用 `appLogger` 和集中式错误实用程序。
+- 将 `TokenService` 逻辑模块化为显式提供程序检查（`isGoogleProvider`、`isCodexProvider` 等）和辅助方法。
+- **类型**：`AuthToken`、`ChatMessage`、`Prompt` 和 `Folder` 结构的严格类型，确保从数据库层到服务 API 的完全类型安全。
+- **验证**：服务层中剩余的零构建错误、零类型检查失败和零关键 lint。
 
-### Phase 9 - Comprehensive Error Handling & Testing Pass
+### 第 6 阶段 - 测试基础设施修复和验证
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: 第 6 阶段 - 测试基础设施修复和验证在目标范围内提供了计划的重构、结构清理和验证。
+
+- **测试配置**：
+- 通过从 `vitest.config.ts` 中的单元测试运行程序中显式排除 E2E 测试，解决了 `vitest` 与 `playwright` 冲突。
+- **测试修复**：
+- **LLM 设置**：通过更正 `vi.mock` 提升逻辑，修复了集成测试中的 `ReferenceError`。
+- **审核日志**：更新了 `fs` 模拟以包含缺失的 `mkdirSync`，从而在测试期间启用正确的 `AppLogger` 初始化。
+- **备份服务**：将测试预期与丢失文件的实际错误处理保持一致。
+- **验证状态**：
+- **通过率**：100%（通过了 298/298 次测试）。
+- **覆盖率**：所有 36 个测试套件均已成功执行。
+
+### 第 7 阶段 - 服务架构重构和 SSH 现代化
+
+- **Type**: security
+- **Status**: unknown
+- **Summary**: 第 7 阶段 - 服务架构重构和 SSH 现代化在目标范围内提供了计划的重构、结构清理和验证。
+
+- **服务架构**：
+- 系统地将 30 多个服务重新定位到特定于域的文件夹（`Security`、`System`、`Data`、`UI`、`LLM`、`External`、`Analysis`）。
+- 标准化目录结构，以实现更好的模块化和可维护性。
+- **导入迁移**：
+- 更新了整个代码库的导入以使用新的基于域的结构。
+- 对所有服务导入强制使用路径别名 (`@main/services/`)。
+- **SSH 服务现代化**：
+- 将所有剩余的同步 `fs` 操作转换为 `fs.promises`。
+- 通过删除所有 `any` 类型实现 100% 类型安全。
+- 实施了全面的单元测试套件（9 项测试），涵盖配置文件管理、安全性、连接生命周期、SFTP 和诊断。
+- **依赖注入**：
+- 修复了 `startup/services.ts` 内 `QuotaService` 注册中的关键类型不匹配问题。
+- **IPC 层**：
+- 验证并更新了所有 IPC handlers 以使用重构的服务结构。
+
+### 第 8 阶段 - 全局异步和类型安全通行证
+
+- **Type**: fix
+- **Status**: unknown
+- **Summary**: 第 8 阶段 - 全局异步和类型安全通行证在目标范围内提供了计划的重构、结构清理和验证。
+
+- **异步现代化**：
+- 转换 `TerminalService`、`GitService`、`MigrationService` 和 `ExportService` 以将 `fs.promises` 用于所有文件 I/O。
+- 通过消除核心数据服务中的阻塞同步调用来优化主流程响应能力。
+- **IPC Handler 强化**：
+- 将 `dialog:saveFile` 和 `theme:export` handlers 现代化为完全异步。
+- 在 IPC 层中实现了改进的错误捕获和临时文件处理。
+- **类型安全卓越**：
+- 从 `message-normalizer.util.ts` 和 `ipc-wrapper.util.ts` 中删除了所有 `any` 类型。
+- `MessageNormalizer` 中的模块化高复杂性逻辑符合严格的圈复杂度标准（NASA 的十次方）。
+- **服务细化**：
+- 通过修复依赖项注入并解决挥之不去的 lint 和类型安全警告来完善 `QuotaService`。
+- 验证并改进了 `QuotaService` 单元测试套件。
+
+### 第 9 阶段 - 全面的错误处理和测试通过
 
 - **Type**: perf
 - **Status**: unknown
-- **Summary**: Phase 9 - Comprehensive Error Handling & Testing Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.
+- **Summary**: 第 9 阶段 - 全面的错误处理和测试 通过在目标范围内交付计划的重构、结构清理和验证。
 
-- **ProxyService Modernization**:
-    - Complete reconstruction of `ProxyService` to eliminate all `any` types and modularize high-complexity logic.
-    - Standardized error handling with robust logging via `appLogger`.
-    - Added support for GitHub device code flow and improved proxy process lifecycle management.
-- **Database Service Enhancements**:
-    - Expanded unit tests for `searchChats`, `getDetailedStats`, and `duplicateChat`.
-    - Improved transaction reliability and verified data integrity across complex operations.
-- **Error Handling Standardization**:
-    - Conducted a comprehensive audit of `SettingsService` and `ProxyService`, replacing minimal catch blocks with proper recovery and logging.
-    - Verified `npm run type-check` success across the entire codebase, including all test suites.
-- **Test Infrastructure**:
-    - Refactored `TokenService` tests to cover advanced OAuth flows, refresh logic, and error states.
-    - Optimized `PGlite` and `electron.net` mocks for better stability in the development environment.
+- **代理服务现代化**：
+- 完全重构 `ProxyService` 以消除所有 `any` 类型并对高复杂性逻辑进行模块化。
+- 通过 `appLogger` 进行标准化错误处理和强大的日志记录。
+- 添加了对 GitHub 设备代码流的支持并改进了代理进程生命周期管理。
+- **数据库服务增强**：
+- 扩展了 `searchChats`、`getDetailedStats` 和 `duplicateChat` 的单元测试。
+- 提高了事务可靠性并验证了复杂操作中的数据完整性。
+- **错误处理标准化**：
+- 对 `SettingsService` 和 `ProxyService` 进行了全面审核，用适当的恢复和日志记录替换了最小的 catch 块。
+- 在整个代码库（包括所有测试套件）中验证 `npm run type-check` 是否成功。
+- **测试基础设施**：
+- 重构了 `TokenService` 测试以涵盖高级 OAuth 流程、刷新逻辑和错误状态。
+- 优化了 `PGlite` 和 `electron.net` 模拟，以提高开发环境的稳定性。
 
-### Security & Fixes
+### 安全与修复
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Security & Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.
+- **Summary**: 安全和修复通过解决已知问题和强化关键路径来增强可靠性和安全性。
 
-- **Security Check**: Fixed critical path traversal and shell injection vulnerabilities in `SSHService`.
-- **Memory Leak**: Fixed memory leak in `TokenService` by implementing proper interval cleanup.
-- **Secrets Management**: Removed hardcoded credentials and migrated vendor secrets (iFlow, Qwen, Codex, Claude, Gemini) to environment variables.
-- **XSS Protection**: Enforced `DOMPurify` sanitization for Mermaid diagrams in `MarkdownRenderer` and `MessageBubble`.
-- **Injection Prevention**: Hardened `LocalAIService` by removing unnecessary `shell: true`.
+- **安全检查**：修复了 `SSHService` 中的关键路径遍历和 shell 注入漏洞。
+- **内存泄漏**：通过实施适当的间隔清理来修复 `TokenService` 中的内存泄漏。
+- **秘密管理**：删除了硬编码凭据并将供应商秘密（iFlow、Qwen、Codex、Claude、Gemini）迁移到环境变量。
+- **XSS 保护**：对 `MarkdownRenderer` 和 `MessageBubble` 中的美人鱼图强制执行 `DOMPurify` 清理。
+- **注入预防**：通过删除不必要的 `shell: true` 来强化 `LocalAIService`。
 
 ## [2026-01-14]
 
-### Build Improvements
+### 构建改进
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Build Improvements improved UI consistency, maintainability, and end-user experience across related surfaces.
+- **Summary**: 构建改进改进了相关界面的 UI 一致性、可维护性和最终用户体验。
 
-- **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.
-- **IPC**: Standardized `onStreamChunk` return types.
-## Version History
-### v1.2.0: Unified Microservice Sync
-- Transitioned to HTTP-based bidirectional token synchronization.
-- Eliminated persistent file-based credentials for improved security.
-- Standardized cross-process communication between Electron and Go/Rust services.
-### v1.1.0: Multi-LLM Support
-### v1.0.0: Initial Release
-- Basic chat functionality with OpenAI and Anthropic.
-- Local Ollama support.
-- Project management view.
-- Theme support (Dark/Light).
+- **构建**：修复了与未使用的变量和不正确的返回类型相关的 TypeScript 错误。
+- **IPC**：标准化 `onStreamChunk` 返回类型。
+## 版本历史
+### v1.2.0：统一微服务同步
+- 转换为基于 HTTP 的双向令牌同步。
+- 消除了基于文件的持久凭据以提高安全性。
+- Electron 和 Go/Rust 服务之间的标准化跨进程通信。
+### v1.1.0：多LLM 支持
+### v1.0.0：初始版本
+- 使用 OpenAI 和 Anthropic 的基本聊天功能。
+- 本地 Ollama 支持。
+- 项目管理视图。
+- 主题支持（深色/浅色）。
 
-### Stats & Performance
+### 统计与表现
 
 - **Type**: security
 - **Status**: unknown
-- **Summary**: Stats & Performance improved runtime performance, stability, and operational consistency across key workflows.
+- **Summary**: 统计和性能改进了关键工作流程中的 runtime 性能、稳定性和操作一致性。
 
-- **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats`- [x] Development of the Statistics dashboard (Charts and Token Usage)
-  rectly.
-- **DatabaseService**: Replaced `console` calls with `appLogger` and cleaned up relative imports.
-- **SettingsService**: Integrated `appLogger`, cleaned up relative imports, and enhanced `JSON.parse` with recovery/error handling.
-- **SecurityService**: Integrated `appLogger` and improved error handling for encryption/decryption.
-- **IPC**: Hardened `window.ts` by removing dangerous shell execution fallbacks and sanitizing terminal commands.
-- **Imports**: Completed mass conversion of relative imports to path aliases (`@main`, `@renderer`, `@shared`) across the entire codebase (37+ files).
-- **Renderer**: Fixed UI regressions and corrupted imports in `AgentDashboard.tsx` and `AgentChatRoom.tsx`.
-- **Main**: Resolved parsing errors in `command.service.ts` and `git.service.ts`.
-- **Cleanup**: Removed several unused imports and unused variables identified during the cleanup process.
-- **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).
-- **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.
-- **Chat**: Resolved "placeholder ghosting" when API generation fails.
--   - Replaced silent error catches and console calls with `appLogger` across core services.
-- **Docs**: Consolidated 19 markdown files into 6 themed documents.
-- **Audit**: Completed initial small cleanup tasks from `TODO.md`.
+- **DatabaseService**：实施了 `getDetailedStats` 并修复了 `getTimeStats`- [x] 统计仪表板的开发（图表和令牌使用情况）
+正确地。
+- **DatabaseService**：用 `appLogger` 替换 `console` 调用并清理相关导入。
+- **SettingsService**：集成 `appLogger`，清理相关导入，并通过恢复/错误处理增强 `JSON.parse`。
+- **SecurityService**：集成 `appLogger` 并改进了加密/解密的错误处理。
+- **IPC**：通过删除危险的 shell 执行回退和清理终端命令来强化 `window.ts`。
+- **导入**：在整个代码库（37 个以上文件）中完成相对导入到路径别名（`@main`、`@renderer`、`@shared`）的批量转换。
+- **渲染器**：修复了 UI 回归以及 `AgentDashboard.tsx` 和 `AgentChatRoom.tsx` 中损坏的导入。
+- **主要**：解决了 `command.service.ts` 和 `git.service.ts` 中的解析错误。
+- **清理**：删除了清理过程中确定的多个未使用的导入和未使用的变量。
+- **安全性**：强化 `window` IPC handlers （清理 shell 命令并删除不安全的 exec fallback）。
+- **异步**：将 `QuotaService` 和 `TokenService` 中的同步文件操作转换为异步。
+- **聊天**：解决了 API 生成失败时的“占位符重影”问题。
+- - 在核心服务中用 `appLogger` 替换了静默错误捕获和控制台调用。
+- **文档**：将 19 个 Markdown 文件合并为 6 个主题文档。
+- **审核**：完成了 `TODO.md` 的初始小型清理任务。
+
+## [2025-07-25]
+
+### 全面的服务威胁模型与滥用案例审查
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: 创建 docs/guides/SERVICE_THREAT_MODEL.md，涵盖所有12个后端服务的威胁分析、缓解措施和滥用场景。
+
+- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 已完成
+- 为每个服务记录了30+威胁向量，包含T代码、描述和现有缓解措施
+- 识别了24+滥用案例，涵盖提示注入、资源耗尽、命令注入、路径遍历和凭据窃取
+- 添加了风险矩阵摘要和6项可操作的安全建议

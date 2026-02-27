@@ -1,5 +1,20 @@
 # Registro de cambios
 
+## [2026-02-27]
+
+### Asistente de proyectos premium: UX rediseñado e integración de movimiento
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Transformó el Asistente de proyectos de una forma básica a una experiencia interactiva premium con tipografía refinada, selección dinámica de categorías y seguimiento fluido del progreso.
+
+- **Rediseño visual**: se implementó un diseño moderno y espacioso con tipografía premium y sutiles efectos de morfismo de vidrio en la estructura modal.
+- **Selectores mejorados**: selección de categorías mejorada con tarjetas grandes y de alto contraste con iconografía vertical y comentarios de selección en tiempo real.
+- **Seguimiento del progreso**: se agregó un indicador de pasos animado en la parte superior del asistente para proporcionar una hoja de ruta visual clara del proceso de creación del proyecto.
+- **Navegación Premium**: se perfeccionó el pie de página con botones de acción sombreados de alto contraste y microinteracciones suaves al pasar el mouse.
+- **Refinamiento de entrada**: elementos de formulario pulidos con bordes elegantes, estados de enfoque y mensajes de error animados distintos para una mejor usabilidad.
+- **Motion Design**: Microanimaciones integradas para transiciones y estados interactivos para crear una interfaz más responsiva y viva.
+
 ## [2026-02-26]
 
 ### Universal Logger Improvements: Terminal Visibility & New Levels
@@ -13,18 +28,19 @@
 - **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.
 - **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.
 - **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules.
+- **IPC y paridad del procesador**: enumeraciones y métodos de LogLevel sincronizados en el proceso principal, IPC handlers y el registrador del procesador.
 
-### MKT-DEV-03: Local Extension Development Mode & DevTools
+### MKT-DEV-03: Modo de desarrollo de extensión local y DevTools
 
 - **Type**: feature
 - **Status**: completed
-- **Summary**: Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.
+- **Summary**: Implementé un entorno de desarrollo completo para extensiones locales, con recarga en caliente, transmisión de registros en tiempo real y un panel DevTools UI dedicado.
 
-- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.
-- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.
-- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.
-- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.
-- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service.
+- **ExtensionService**: Se agregó integración `fs.watch` para la recarga automática de extensiones (Hot Reload) cuando se modifican los archivos fuente locales.
+- **Transmisión de registros**: se habilitó la transmisión de registros sin alcance en tiempo real desde las extensiones al proceso de renderizado a través de un nuevo patrón de observador respaldado por IPC.
+- **ExtensionDevTools**: se creó un nuevo panel UI en la barra lateral derecha para administrar extensiones, activar recargas manuales e inspeccionar registros en tiempo real.
+- **Integración de diseño**: se agregó compatibilidad con la barra lateral derecha al `LayoutManager` principal e integró el panel DevTools para acceso instantáneo a través del encabezado.
+- **Seguridad de tipos**: Aseguré el 100% de seguridad de tipos para los contratos de extensión IPC y resolvió varios elementos de deuda técnica en el servicio de extensión.
 
 ### NASA Power of Ten: Refactorización Quick-Wins
 
@@ -38,16 +54,17 @@
 - **Seguridad de tipos**: Corrección de regresiones de tipos secundarias en las pruebas de perfil SSH y los manejadores de almacenamiento de configuraciones introducidos durante la extracción de hooks.
 - **Verificado**: Todos los archivos refactorizados contienen ahora funciones muy por debajo del límite de 60 líneas. Las suites de pruebas de compilación, lint y espacio de trabajo pasaron.
 
-### Critical Stability: Infinite Loop & Security Header Hardening
+### Estabilidad crítica: bucle infinito y refuerzo del encabezado de seguridad
 
 - **Type**: fix
 - **Status**: completed
-- **Summary**: Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.
+- **Summary**: Se resolvió un problema importante de estabilidad del renderizador y se fortaleció la seguridad de las aplicaciones con una sólida política de seguridad de contenido (CSP) y encabezados de seguridad adicionales.
 
-- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).
-- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.
-- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.
+- **Estabilidad**: se corrigió un bucle crítico de renderizado infinito en `ViewManager` provocado por dependencias incorrectas de `useEffect`, resolviendo 'Se excedió la profundidad de actualización máxima' (React Error #185).
+- **Reforzamiento de la seguridad**: se reemplazó el CSP básico con una política sólida de múltiples capas en el proceso principal, que cubre scripts, marcos y trabajadores.
+- **Refuerzo de encabezado**: Se implementaron encabezados de seguridad obligatorios: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection` y estricto `Referrer-Policy`.
 - **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.
+- **Infraestructura limpia**: se eliminaron metaetiquetas CSP codificadas e inseguras de `index.html`, consolidando la gestión de seguridad en el proceso principal Electron.
 
 ## [2026-02-25]
 
@@ -4108,3 +4125,16 @@ rectamente.
 - - Se reemplazaron capturas de errores silenciosas y llamadas de consola con `appLogger` en todos los servicios principales.
 - **Documentos**: Se consolidaron 19 archivos de rebajas en 6 documentos temáticos.
 - **Auditoría**: se completaron pequeñas tareas de limpieza iniciales de `TODO.md`.
+
+## [2025-07-25]
+
+### Modelo de Amenazas y Revisión de Casos de Abuso para Servicios
+
+- **Type**: docs
+- **Status**: completed
+- **Summary**: Creado docs/guides/SERVICE_THREAT_MODEL.md con análisis de amenazas para los 12 servicios backend con vectores de amenaza, mitigaciones y escenarios de abuso.
+
+- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 completados
+- 30+ vectores de amenaza documentados con códigos T, descripciones y mitigaciones existentes por servicio
+- 24+ casos de abuso identificados: inyección de prompt, agotamiento de recursos, inyección de comandos, traversal de ruta y robo de credenciales
+- Matriz de riesgo resumida y 6 recomendaciones de seguridad accionables añadidas

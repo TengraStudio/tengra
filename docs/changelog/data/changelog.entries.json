@@ -4,6 +4,51 @@
   "generatedAt": "2026-02-20T09:15:00Z",
   "entries": [
     {
+      "id": "2026-02-27-project-wizard-redesign",
+      "date": "2026-02-27",
+      "channel": "stable",
+      "type": "feature",
+      "category": "ux",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "ProjectWizard",
+        "Modal",
+        "WizardDetailsStep",
+        "WizardFooter"
+      ],
+      "breaking": false,
+      "security": false,
+      "translations": {
+        "en": {
+          "title": "Premium Project Wizard: Redesigned UX & Motion Integration",
+          "summary": "Transformed the Project Wizard from a basic form into a premium, interactive experience with refined typography, dynamic category selection, and smooth progress tracking.",
+          "items": [
+            "- **Visual Redesign**: Implemented a modern, spacious layout with premium typography and subtle glassmorphism effects in the modal structure.",
+            "- **Enhanced Selectors**: Upgraded category selection with large, high-contrast cards featuring vertical iconography and real-time selection feedback.",
+            "- **Progress Tracking**: Added an animated step indicator at the top of the wizard to provide clear visual roadmap of the project creation process.",
+            "- **Premium Navigation**: Refined the footer with high-contrast, shadowed action buttons and smooth hover micro-interactions.",
+            "- **Input Refinement**: Polished form elements with elegant borders, focus states, and distinct animated error messaging for better usability.",
+            "- **Motion Design**: Integrated micro-animations for transitions and interactive states to create a more responsive and alive interface."
+          ]
+        },
+        "tr": {
+          "title": "Üst Düzey Proje Sihirbazı: Yenilenen UX ve Hareket Entegrasyonu",
+          "summary": "Proje Sihirbazı, temel bir formdan; rafine tipografi, dinamik kategori seçimi ve akıcı ilerleme takibi ile üst düzey, etkileşimli bir deneyime dönüştürüldü.",
+          "items": [
+            "- **Görsel Tasarım**: Modern, geniş bir düzen ve modal yapısında zarif cam morfolojisi efektleri uygulandı.",
+            "- **Gelişmiş Seçiciler**: Dikey ikonografi ve gerçek zamanlı seçim geri bildirimi içeren büyük, yüksek kontrastlı kartlarla kategori seçimi yükseltildi.",
+            "- **İlerleme Takibi**: Proje oluşturma sürecinin net bir görsel yol haritasını sunmak için sihirbazın üst kısmına animasyonlu bir adım göstergesi eklendi.",
+            "- **Üst Düzey Navigasyon**: Alt bilgi, yüksek kontrastlı, gölgeli eylem düğmeleri ve akıcı mikro etkileşimlerle rafine edildi.",
+            "- **Giriş Alanları**: Form elemanları, daha iyi kullanılabilirlik için zarif kenarlıklar, odak durumları ve belirgin animasyonlu hata mesajlarıyla parlatıldı.",
+            "- **Hareket Tasarımı**: Daha duyarlı ve canlı bir arayüz oluşturmak için geçişler ve etkileşimli durumlar için mikro animasyonlar entegre edildi."
+          ]
+        }
+      }
+    },
+    {
       "id": "2026-02-26-security-stability-fixes",
       "date": "2026-02-26",
       "channel": "stable",
@@ -6815,6 +6860,55 @@
             "- Added component health telemetry stores with explicit performance budgets",
             "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor",
             "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies"
+          ]
+        }
+      }
+    },
+    {
+      "id": "2025-07-25-service-threat-model",
+      "date": "2025-07-25",
+      "channel": "stable",
+      "type": "docs",
+      "category": "security",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "AgentCollaborationService",
+        "AgentCheckpointService",
+        "RateLimitService",
+        "ProxyService",
+        "QuotaService",
+        "WorkflowService",
+        "FeatureFlagService",
+        "MonitoringService",
+        "TelemetryService",
+        "ThemeService",
+        "DataService",
+        "DatabaseService"
+      ],
+      "breaking": false,
+      "security": true,
+      "translations": {
+        "en": {
+          "title": "Comprehensive Service Threat Model & Abuse Case Review",
+          "summary": "Created docs/guides/SERVICE_THREAT_MODEL.md covering threat analysis for all 12 backend services with threat vectors, mitigations, and abuse scenarios.",
+          "items": [
+            "- Completed BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500",
+            "- Documented 30+ threat vectors with T-codes, descriptions, and existing mitigations per service",
+            "- Identified 24+ abuse cases covering prompt injection, resource exhaustion, command injection, path traversal, and credential theft",
+            "- Added summary risk matrix and 6 actionable security recommendations"
+          ]
+        },
+        "tr": {
+          "title": "Kapsamlı Servis Tehdit Modeli ve Kötüye Kullanım Senaryosu İncelemesi",
+          "summary": "12 arka uç servisi için tehdit analizi, azaltma önlemleri ve kötüye kullanım senaryolarını kapsayan docs/guides/SERVICE_THREAT_MODEL.md oluşturuldu.",
+          "items": [
+            "- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 tamamlandı",
+            "- Servis başına T-kodları, açıklamalar ve mevcut azaltma önlemleri ile 30+ tehdit vektörü belgelendi",
+            "- Prompt enjeksiyonu, kaynak tüketimi, komut enjeksiyonu, yol geçişi ve kimlik bilgisi hırsızlığını kapsayan 24+ kötüye kullanım senaryosu belirlendi",
+            "- Özet risk matrisi ve 6 uygulanabilir güvenlik önerisi eklendi"
           ]
         }
       }

@@ -37,6 +37,7 @@
 - [x] **MKT-FE-008**: Add admin audit-log page (approval/reject timeline with actor and reason).
 - [x] **MKT-FE-009**: Add marketplace submission-detail page (review metadata and moderation notes).
 - [x] **MKT-FE-010**: Add status page for website/backend/database uptime and incident timeline.
+- [x] **FE-WIZ-001**: Redesign Project Wizard Modal for better clarity and premium aesthetics.
 
 
 
@@ -447,8 +448,8 @@ Selected small/contained tasks that are realistic to ship quickly:
   - ( ) `src/renderer/features/projects/hooks/useAgentHandlers.ts`
   - [x] `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
   - [x] `src/shared/utils/extension.util.ts`
-- ( ) **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).
-- ( ) **AUD-2026-02-20-07**: Investigate `npm run build` timeout in CI/dev shell and document stable timeout/memory settings for local and GitHub Actions.
+- (x) **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).
+- (x) **AUD-2026-02-20-07**: Investigate `npm run build` timeout in CI/dev shell and document stable timeout/memory settings for local and GitHub Actions.
 ---
 
 ## High Priority
@@ -1002,12 +1003,12 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0336**: Profile performance and define regression budgets for AgentCollaborationService.
 - ( ) **BACKLOG-0337**: Improve loading, empty, and failure-state UX tied to AgentCollaborationService.
 - ( ) **BACKLOG-0339**: Write an operational runbook and troubleshooting guide for AgentCollaborationService.
-- ( ) **BACKLOG-0340**: Complete threat-model and abuse-case review for AgentCollaborationService.
+- (x) **BACKLOG-0340**: Complete threat-model and abuse-case review for AgentCollaborationService.
 - ( ) **BACKLOG-0345**: Add telemetry events and health dashboards for AgentCheckpointService.
 - ( ) **BACKLOG-0346**: Profile performance and define regression budgets for AgentCheckpointService.
 - ( ) **BACKLOG-0347**: Improve loading, empty, and failure-state UX tied to AgentCheckpointService.
 - ( ) **BACKLOG-0349**: Write an operational runbook and troubleshooting guide for AgentCheckpointService.
-- ( ) **BACKLOG-0350**: Complete threat-model and abuse-case review for AgentCheckpointService.
+- (x) **BACKLOG-0350**: Complete threat-model and abuse-case review for AgentCheckpointService.
 
 
 ### Backlog Range: BACKLOG-0351 to BACKLOG-0400
@@ -1023,7 +1024,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0407**: Improve loading, empty, and failure-state UX tied to RateLimitService.
 - ( ) **BACKLOG-0408**: Add full i18n key coverage for user-facing strings surfaced by RateLimitService.
 - ( ) **BACKLOG-0409**: Write an operational runbook and troubleshooting guide for RateLimitService.
-- ( ) **BACKLOG-0410**: Complete threat-model and abuse-case review for RateLimitService.
+- (x) **BACKLOG-0410**: Complete threat-model and abuse-case review for RateLimitService.
 - ( ) **BACKLOG-0411**: Add comprehensive unit tests for edge cases in ProxyService.
 - ( ) **BACKLOG-0412**: Add integration and regression coverage for critical flows in ProxyService.
 - ( ) **BACKLOG-0413**: Harden input validation and schema guards in ProxyService.
@@ -1033,7 +1034,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0417**: Improve loading, empty, and failure-state UX tied to ProxyService.
 - ( ) **BACKLOG-0418**: Add full i18n key coverage for user-facing strings surfaced by ProxyService.
 - ( ) **BACKLOG-0419**: Write an operational runbook and troubleshooting guide for ProxyService.
-- ( ) **BACKLOG-0420**: Complete threat-model and abuse-case review for ProxyService.
+- (x) **BACKLOG-0420**: Complete threat-model and abuse-case review for ProxyService.
 - ( ) **BACKLOG-0421**: Add comprehensive unit tests for edge cases in QuotaService.
 - ( ) **BACKLOG-0422**: Add integration and regression coverage for critical flows in QuotaService.
 - ( ) **BACKLOG-0423**: Harden input validation and schema guards in QuotaService.
@@ -1043,7 +1044,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0427**: Improve loading, empty, and failure-state UX tied to QuotaService.
 - ( ) **BACKLOG-0428**: Add full i18n key coverage for user-facing strings surfaced by QuotaService.
 - ( ) **BACKLOG-0429**: Write an operational runbook and troubleshooting guide for QuotaService.
-- ( ) **BACKLOG-0430**: Complete threat-model and abuse-case review for QuotaService.
+- (x) **BACKLOG-0430**: Complete threat-model and abuse-case review for QuotaService.
 - ( ) **BACKLOG-0431**: Add comprehensive unit tests for edge cases in WorkflowService.
 - ( ) **BACKLOG-0432**: Add integration and regression coverage for critical flows in WorkflowService.
 - ( ) **BACKLOG-0433**: Harden input validation and schema guards in WorkflowService.
@@ -1053,7 +1054,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0437**: Improve loading, empty, and failure-state UX tied to WorkflowService.
 - ( ) **BACKLOG-0438**: Add full i18n key coverage for user-facing strings surfaced by WorkflowService.
 - ( ) **BACKLOG-0439**: Write an operational runbook and troubleshooting guide for WorkflowService.
-- ( ) **BACKLOG-0440**: Complete threat-model and abuse-case review for WorkflowService.
+- (x) **BACKLOG-0440**: Complete threat-model and abuse-case review for WorkflowService.
 - ( ) **BACKLOG-0441**: Add comprehensive unit tests for edge cases in FeatureFlagService.
 - ( ) **BACKLOG-0442**: Add integration and regression coverage for critical flows in FeatureFlagService.
 - ( ) **BACKLOG-0443**: Harden input validation and schema guards in FeatureFlagService.
@@ -1063,7 +1064,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0447**: Improve loading, empty, and failure-state UX tied to FeatureFlagService.
 - ( ) **BACKLOG-0448**: Add full i18n key coverage for user-facing strings surfaced by FeatureFlagService.
 - ( ) **BACKLOG-0449**: Write an operational runbook and troubleshooting guide for FeatureFlagService.
-- ( ) **BACKLOG-0450**: Complete threat-model and abuse-case review for FeatureFlagService.
+- (x) **BACKLOG-0450**: Complete threat-model and abuse-case review for FeatureFlagService.
 
 
 ### Backlog Range: BACKLOG-0451 to BACKLOG-0500
@@ -1076,7 +1077,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0457**: Improve loading, empty, and failure-state UX tied to MonitoringService.
 - ( ) **BACKLOG-0458**: Add full i18n key coverage for user-facing strings surfaced by MonitoringService.
 - ( ) **BACKLOG-0459**: Write an operational runbook and troubleshooting guide for MonitoringService.
-- ( ) **BACKLOG-0460**: Complete threat-model and abuse-case review for MonitoringService.
+- (x) **BACKLOG-0460**: Complete threat-model and abuse-case review for MonitoringService.
 - ( ) **BACKLOG-0461**: Add comprehensive unit tests for edge cases in TelemetryService.
 - ( ) **BACKLOG-0462**: Add integration and regression coverage for critical flows in TelemetryService.
 - ( ) **BACKLOG-0463**: Harden input validation and schema guards in TelemetryService.
@@ -1086,7 +1087,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0467**: Improve loading, empty, and failure-state UX tied to TelemetryService.
 - ( ) **BACKLOG-0468**: Add full i18n key coverage for user-facing strings surfaced by TelemetryService.
 - ( ) **BACKLOG-0469**: Write an operational runbook and troubleshooting guide for TelemetryService.
-- ( ) **BACKLOG-0470**: Complete threat-model and abuse-case review for TelemetryService.
+- (x) **BACKLOG-0470**: Complete threat-model and abuse-case review for TelemetryService.
 - ( ) **BACKLOG-0471**: Add comprehensive unit tests for edge cases in ThemeService.
 - ( ) **BACKLOG-0472**: Add integration and regression coverage for critical flows in ThemeService.
 - ( ) **BACKLOG-0473**: Harden input validation and schema guards in ThemeService.
@@ -1096,7 +1097,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0477**: Improve loading, empty, and failure-state UX tied to ThemeService.
 - ( ) **BACKLOG-0478**: Add full i18n key coverage for user-facing strings surfaced by ThemeService.
 - ( ) **BACKLOG-0479**: Write an operational runbook and troubleshooting guide for ThemeService.
-- ( ) **BACKLOG-0480**: Complete threat-model and abuse-case review for ThemeService.
+- (x) **BACKLOG-0480**: Complete threat-model and abuse-case review for ThemeService.
 - ( ) **BACKLOG-0481**: Add comprehensive unit tests for edge cases in DataService.
 - ( ) **BACKLOG-0482**: Add integration and regression coverage for critical flows in DataService.
 - ( ) **BACKLOG-0483**: Harden input validation and schema guards in DataService.
@@ -1106,7 +1107,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0487**: Improve loading, empty, and failure-state UX tied to DataService.
 - ( ) **BACKLOG-0488**: Add full i18n key coverage for user-facing strings surfaced by DataService.
 - ( ) **BACKLOG-0489**: Write an operational runbook and troubleshooting guide for DataService.
-- ( ) **BACKLOG-0490**: Complete threat-model and abuse-case review for DataService.
+- (x) **BACKLOG-0490**: Complete threat-model and abuse-case review for DataService.
 - ( ) **BACKLOG-0491**: Add comprehensive unit tests for edge cases in DatabaseService.
 - ( ) **BACKLOG-0492**: Add integration and regression coverage for critical flows in DatabaseService.
 - ( ) **BACKLOG-0493**: Harden input validation and schema guards in DatabaseService.
@@ -1116,7 +1117,7 @@ Generated from current repository modules (`src/main`, `src/renderer`, `src/shar
 - ( ) **BACKLOG-0497**: Improve loading, empty, and failure-state UX tied to DatabaseService.
 - ( ) **BACKLOG-0498**: Add full i18n key coverage for user-facing strings surfaced by DatabaseService.
 - ( ) **BACKLOG-0499**: Write an operational runbook and troubleshooting guide for DatabaseService.
-- ( ) **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
+- (x) **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
 
 ### Website Backend Security Hardening (Execution Order)
 - (x) **WEBSEC-P0-001**: Replace legacy password hashing with PBKDF2/Argon2-compatible secure format and legacy-hash migration on login.

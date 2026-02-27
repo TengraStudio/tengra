@@ -55,52 +55,55 @@
     ]
   },
   "2026-02-18-hardened-ai-rules-v2": {
-    "title": "Strict AI Rule Enforcement & Friday Deployment Ban",
-    "summary": "Implemented even stricter AI agent rules, including a mandatory Friday commit ban and forced rule-reading protocols.",
+    "title": "厳格な AI ルールの施行と金曜日の導入禁止",
+    "summary": "金曜日のコミット禁止の強制やルール読み取りプロトコルの強制など、さらに厳格な AI エージェント ルールを実装しました。",
     "items": [
-      "- **Friday Ban**: Implemented a zero-tolerance policy for commits and major deployments on Fridays.",
-      "- **Rule Protocols**: Mandated `view_file` calls on rule files at the start of every session to ensure agent compliance.",
-      "- **Test Enforcement**: Enforced mandatory 100% test success (`npm run test`) before any commit.",
-      "- **Type Safety**: Banned the use of `as any` and `as unknown` without explicit `// SAFETY` justification comments.",
-      "- **Guide Updates**: Synchronized `AGENTS.md` and mirrored all rule updates to the `.codex/` directory."
+      "- **金曜日の禁止**: 金曜日のコミットと主要なデプロイメントに対するゼロトレランス ポリシーを実装しました。",
+      "- **ルール プロトコル**: 必須の `view_file` は、エージェントのコンプライアンスを確保するために、各セッションの開始時にルール ファイルを呼び出します。",
+      "- **テストの強制**: コミット前に 100% のテスト成功 (`npm run test`) を強制します。",
+      "- **タイプ セーフティ**: 明示的な `// SAFETY` 正当化コメントのない `as any` および `as unknown` の使用を禁止しました。",
+      "- **ガイドの更新**: `AGENTS.md` を同期し、すべてのルールの更新を `.codex/` ディレクトリにミラーリングしました。"
     ]
   },
   "2026-02-18-docs-and-rules-hardening": {
-    "title": "Documentation Hardening and Codex Implementation",
-    "summary": "Implemented a restricted .codex documentation directory and hardened AI agent rules with termination warnings for improved compliance.",
+    "title": "ドキュメントの強化とコーデックスの実装",
+    "summary": "制限された .codex ドキュメント ディレクトリを実装し、コンプライアンスを向上させるために終了警告を含む強化された AI エージェント ルールを実装しました。",
     "items": [
-      "- **Codex**: Created `.codex/` directory and implemented document mirroring for core directives and architecture.",
-      "- **Rule Enforcement**: Updated `MASTER_COMMANDMENTS.md` and `AI_RULES.md` with explicit termination warnings and zero-tolerance policies.",
-      "- **Maintenance**: Fixed broken absolute paths in the documentation hub and created `LINT_ISSUES.md` for systematic tech debt tracking.",
-      "- **Structure**: Updated `PROJECT_STRUCTURE.md` to reflect the new `.codex` and `.agent` organizational patterns."
+      "- **Codex**: `.codex/` ディレクトリを作成し、コア ディレクティブとアーキテクチャのドキュメント ミラーリングを実装しました。",
+      "- **ルールの適用**: `MASTER_COMMANDMENTS.md` と `AI_RULES.md` を更新し、明示的な終了警告とゼロ トレランス ポリシーを追加しました。",
+      "- **メンテナンス**: ドキュメント ハブ内の壊れた絶対パスを修正し、体系的な技術債務追跡のために `LINT_ISSUES.md` を作成しました。",
+      "- **構造**: 新しい `.codex` および `.agent` 組織パターンを反映するために `PROJECT_STRUCTURE.md` を更新しました。"
     ]
   },
   "2026-02-18-sec-llm-i18n-followup": {
-    "title": "SEC-007/009 + LLM-05 + I18N-05 Follow-up",
+    "title": "SEC-007/009 + LLM-05 + I18N-05 フォローアップ",
     "summary": "Completed audit logging integration and multimodal/i18n follow-up improvements, then reorganized TODO and reduced unsafe casts.",
     "items": [
-      "- **SEC-007**: Added API-key access audit logging in settings IPC and filesystem operation audit logging wrappers in files IPC.",
-      "- **SEC-009**: Confirmed prompt sanitization and safety validation coverage in LLM request handling paths.",
-      "- **LLM-05**: Extended attachment handling for audio/video preview context and richer multimodal message preparation.",
-      "- **I18N-05**: Added locale-aware response guidance and locale-based default model fallback selection.",
-      "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings."
+      "- **SEC-007**: 設定 IPC に API キー アクセス監査ログを追加し、ファイル IPC にファイル システム操作監査ログ wrappers を追加しました。",
+      "- **SEC-009**: LLM リクエスト処理パスでのプロンプト サニタイズと安全性検証の適用範囲を確認しました。",
+      "- **LLM-05**: オーディオ/ビデオ プレビュー コンテキストおよびより豊富なマルチモーダル メッセージ準備のための拡張された添付ファイル処理。",
+      "- **I18N-05**: ロケールを意識した応答ガイダンスとロケールベースのデフォルト モデル fallback の選択を追加しました。",
+      "- **Maintenance**: Removed completed TODO checkboxes and reduced several remaining `as unknown as` casts to safer typings.",
+      "- **AGENT-04/05/09**: 圧縮チェックポイント保持 + 重複排除同期ロジック、投票分析/オーバーライド/構成 API、および統合された投票/ステート マシン パネルを ProjectAgentView に追加しました。",
+      "- **MKT-INFRA-01..08**: Marketplace サーバーのメタデータ、依存関係/競合検証、更新整合性検証、ストレージ分離/クォータ環境のワイヤリング、およびスキーマ駆動の MCP 構成編集を拡張しました。",
+      "- **メンテナンス**: 完了した TODO チェックボックスを削除し、残りのいくつかの `as unknown as` キャストをより安全な入力に削減しました。"
     ]
   },
   "2026-02-18-aud-sec-completion": {
-    "title": "AUD-SEC 003-030 Security Hardening Complete",
-    "summary": "Completed security audit hardening across IPC trust boundaries, filesystem path enforcement, API auth, OAuth callbacks, and secret handling.",
+    "title": "AUD-SEC 003-030 セキュリティ強化の完了",
+    "summary": "IPC 信頼境界を越えたセキュリティ監査強化、ファイルシステム パスの強制、API 認証、OAuth コールバック、およびシークレット処理を完了しました。",
     "items": [
-      "- **IPC/Window**: Enforced sender validation and hardened external-open/cookie/logging safeguards across critical IPC modules.",
-      "- **Filesystem/Protocol**: Replaced prefix checks with relative-path boundary validation and added symlink/junction escape blocking.",
-      "- **API/OAuth**: Enforced strict local-only token endpoint access, loopback binding, authenticated websocket sessions, and strict callback state validation.",
-      "- **Secrets/SSH**: Removed plaintext master-key fallback support and ensured SSH sensitive fields are not exposed to renderer responses."
+      "- **IPC/Window**: 送信者の検証を強制し、重要な IPC モジュール全体で外部オープン/Cookie/ロギング保護を強化しました。",
+      "- **ファイルシステム/プロトコル**: プレフィックスチェックを相対パス境界検証に置き換え、シンボリックリンク/ジャンクションエスケープブロックを追加しました。",
+      "- **API/OAuth**: 厳密なローカル専用トークン エンドポイント アクセス、ループバック バインディング、認証された WebSocket セッション、および厳密なコールバック状態検証を強制します。",
+      "- **シークレット/SSH**: プレーンテキストのマスターキー fallback サポートを削除し、SSH 機密フィールドがレンダラー応答に公開されないようにしました。"
     ]
   },
   "2026-02-18-llm-security-v2": {
-    "title": "LLM Security Hardening & Performance Optimization",
-    "summary": "Implemented advanced prompt security measures and optimized application load time via lazy loading.",
+    "title": "LLM セキュリティ強化とパフォーマンスの最適化",
+    "summary": "高度なプロンプトセキュリティ対策を実装し、遅延読み込みによりアプリケーションの読み込み時間を最適化しました。",
     "items": [
-      "- **LLM-09.3**: Added strict prompt length limits (128k characters) to prevent large payload attacks.",
+      "- **LLM-09.3**: 大きなペイロード攻撃を防ぐために、厳格なプロンプト長制限 (128,000 文字) を追加しました。",
       "- **LLM-09.4**: Implemented suspicious pattern detection for prompt injection, PII, and shell injection attempts.",
       "- **DEBT-01**: Cleaned up obsolete feature flags.",
       "- **DEBT-06**: Reduced bundle size via lazy loading.",
@@ -109,42 +112,43 @@
   },
   "2026-02-17-agent-performance-metrics": {
     "title": "Autonomous Agent Performance Metrics (AGENT-08)",
-    "summary": "Implemented comprehensive performance monitoring for autonomous agents with error rate tracking and resource usage metrics.",
+    "summary": "エラー率追跡とリソース使用量メトリクスを備えた自律エージェントの包括的なパフォーマンス監視を実装しました。",
     "items": [
       "- **AGENT-08.3**: Added error rate monitoring with automatic alerts for high failure thresholds (>25% warning, >50% critical).",
-      "- **AGENT-08.4**: Implemented resource usage tracking for memory, CPU, API calls, tokens, and costs with configurable alerts.",
-      "- **Metrics Service**: Created `AgentPerformanceService` to track completion rates, execution times, and generate performance alerts.",
-      "- **Integration**: Integrated performance metrics into `ProjectState` and `AgentTaskHistoryItem` for historical analysis."
+      "- **AGENT-08.4**: 構成可能なアラートによる、メモリ、CPU、API 呼び出し、トークン、コストのリソース使用量追跡を実装しました。",
+      "- **メトリクス サービス**: 完了率、実行時間を追跡し、パフォーマンス アラートを生成するために `AgentPerformanceService` を作成しました。",
+      "- **統合**: 履歴分析のためにパフォーマンス メトリックを `ProjectState` および `AgentTaskHistoryItem` に統合しました。",
+      "- **自動監視**: アクティブなエージェント タスクに対して 5 秒ごとのバックグラウンド リソース監視を追加しました。"
     ]
   },
   "2026-02-18-sidebar-accessibility-and-clear-history": {
-    "title": "Sidebar Enhancements: Accessibility and Clear History",
-    "summary": "Improved sidebar accessibility with title attributes and added a 'Clear All' feature for chat history.",
+    "title": "サイドバーの機能強化: アクセシビリティと履歴の消去",
+    "summary": "タイトル属性によるサイドバーのアクセシビリティが向上し、チャット履歴の「すべてクリア」機能が追加されました。",
     "items": [
-      "- **Clear History**: Added a 'Clear History' button to the recent chats section with a secure confirmation modal.",
+      "- **履歴のクリア**: 安全な確認モーダルを備えた「履歴のクリア」ボタンを最近のチャット セクションに追加しました。",
       "- **Accessibility**: Added 'title' and 'aria-label' attributes to all sidebar navigation items and menu items for better Screen Reader support.",
-      "- **Maintenance**: Cleaned up the project TODO list by removing completed tasks and selecting 10 priority items for the next development phase.",
+      "- **メンテナンス**: 完了したタスクを削除し、次の開発フェーズの優先項目を 10 件選択することで、プロジェクトの TODO リストをクリーンアップしました。",
       "- **Code Quality**: Refactored 'bulkDeleteChats' into 'ChatContext' and 'useChatManager' for centralized history management."
     ]
   },
   "2026-02-17-todo-organization-v2": {
-    "title": "Comprehensive TODO List Reorganization",
-    "summary": "Reorganized the project TODO list to improve readability, added a Table of Contents, and moved all completed tasks to a dedicated archive section.",
+    "title": "包括的なTODOリストの再構成",
+    "summary": "プロジェクトの TODO リストを再編成して読みやすさを向上させ、目次を追加し、完了したすべてのタスクを専用のアーカイブ セクションに移動しました。",
     "items": [
-      "- **Structure**: Added a clickable Table of Contents and moved Release Milestones to the top for better project visibility.",
-      "- **Clarity**: Grouped Quick Wins by status (Pending/Completed) and cleaned up empty category sections.",
+      "- **構造**: プロジェクトの視認性を向上させるために、クリック可能な目次を追加し、リリース マイルストーンを上部に移動しました。",
+      "- **明確さ**: クイック ウィンをステータス (保留中/完了) ごとにグループ化し、空のカテゴリ セクションを整理しました。",
       "- **Archive**: Moved all completed tasks ([x]) with their full progress details to a new Completed Tasks section at the end of the file.",
-      "- **Maintenance**: Standardized formatting and consolidated future feature requests into logical sub-categories."
+      "- **メンテナンス**: フォーマットを標準化し、将来の機能リクエストを論理的なサブカテゴリに統合しました。"
     ]
   },
   "2026-02-16-i18n-core-rtl-onboarding": {
-    "title": "Internationalization Core & RTL Support",
-    "summary": "Implemented a robust I18N infrastructure with RTL support, pluralization, and a first-run language selection prompt.",
+    "title": "国際化コアと RTL サポート",
+    "summary": "RTL サポート、複数形化、初回実行時の言語選択プロンプトを備えた堅牢な I18N インフラストラクチャを実装しました。",
     "items": [
-      "- **I18N Core**: Added automatic language detection, `Intl` formatting utilities, and pluralization support.",
-      "- **RTL Support**: Implemented CSS logical properties, direction-sensitive icon flipping, and dynamic layout adjustment for RTL languages (Arabic, Hebrew).",
-      "- **Onboarding**: Added a `LanguageSelectionPrompt` to allow users to choose their preferred language on first launch.",
-      "- **Verification**: Integrated pluralization in `ProjectsHeader` and added audit scripts for translation keys."
+      "- **I18N コア**: 自動言語検出、`Intl` フォーマット ユーティリティ、および複数形化のサポートが追加されました。",
+      "- **RTL サポート**: CSS 論理プロパティ、方向依存のアイコン反転、RTL 言語 (アラビア語、ヘブライ語) の動的レイアウト調整を実装しました。",
+      "- **オンボーディング**: `LanguageSelectionPrompt` を追加して、ユーザーが初回起動時に好みの言語を選択できるようにしました。",
+      "- **検証**: `ProjectsHeader` に複数形化を統合し、変換キーの監査スクリプトを追加しました。"
     ]
   },
   "2026-02-16-ipc-validation-schemas": {
@@ -182,17 +186,18 @@
     "items": [
       "- **修正**: マーケットプレイスのカテゴリフィルタリングにおける `o?.forEach is not a function` クラッシュを修正しました。",
       "- **クリップボード**: ブラウザの権限制限を回避するため、安全なIPCベースのクリップボードサービスを実装しました。",
-      "- **エラーハンドリング**: エラー詳細のコピーに新しい安全なサービスを使用するようにエラーフォールバックを更新しました。"
+      "- **エラーハンドリング**: エラー詳細のコピーに新しい安全なサービスを使用するようにエラーフォールバックを更新しました。",
+      "- **エラー処理**: エラー詳細のコピーに新しい安全なクリップボード サービスを使用するようにエラー Fallback を更新しました。"
     ]
   },
   "2026-02-13-ipc-security-audit-input-validation-sec-003": {
-    "title": "IPC Security Audit: Input Validation (SEC-003)",
-    "summary": "Implemented strict Zod schema validation for Agent and Terminal IPC handlers to prevent injection.",
+    "title": "IPC セキュリティ監査: 入力検証 (SEC-003)",
+    "summary": "インジェクションを防ぐために、エージェントと端末 IPC handlers に対して厳密な Zod スキーマ検証を実装しました。",
     "items": [
-      "- **Agent IPC**: Replaced manual validation with `createValidatedIpcHandler` and added Zod schemas for all 7 handlers.",
-      "- **Terminal IPC**: Refactored `terminal.ts` to use `createValidatedIpcHandler` with schemas for profile, session, and search operations.",
-      "- **Common Util**: Enhanced `createValidatedIpcHandler` to support `defaultValue` for safe error handling fallback.",
-      "- **Type Safety**: Ensured explicit types for handler arguments and return policies."
+      "- **エージェント IPC**: 手動検証を `createValidatedIpcHandler` に置き換え、7 つすべての handlers に Zod スキーマを追加しました。",
+      "- **ターミナル IPC**: プロファイル、セッション、および検索操作のスキーマで `createValidatedIpcHandler` を使用するように `terminal.ts` をリファクタリングしました。",
+      "- **共通ユーティリティ**: fallback を安全に処理するために `defaultValue` をサポートするように `createValidatedIpcHandler` を強化しました。",
+      "- **タイプ セーフティ**: handler 引数とリターン ポリシーの明示的な型を確保しました。"
     ]
   },
   "2026-02-12-ipc-handler-tests-batch-4": {
@@ -2978,391 +2983,391 @@
     ]
   },
   "2026-01-18-claude-authentication-service-reliability": {
-    "title": "Claude Authentication & Service Reliability",
-    "summary": "Claude Authentication & Service Reliability improved runtime performance, stability, and operational consistency across key workflows.",
+    "title": "クロード認証とサービスの信頼性",
+    "summary": "クロード認証とサービスの信頼性により、runtime のパフォーマンス、安定性、および主要なワークフロー全体での運用の一貫性が向上しました。",
     "items": [
-      "- **Claude Authentication**:",
-      "    - Implemented **headless session capture** for Claude (claude.ai) using Electron cookies, moving away from internal browser windows.",
-      "    - Added **manual sessionKey fallback** in the UI for cases where automatic capture fails.",
-      "    - Updated `ProxyService` and `QuotaService` to handle `sessionToken` throughout the authentication lifecycle.",
-      "- **Service Reliability**:",
-      "    - Fixed `QuotaService` and `ProxyService` unit tests by ensuring all dependencies (`DataService`, `ProcessManagerService`, etc.) are correctly mocked and injected.",
-      "    - Resolved TypeScript and ESLint errors in `ProxyService` and `LocalAuthServer` related to `any` types and redundant conditionals.",
-      "    - Standardized `getCopilotQuota` and `getClaudeQuota` return types to handle multi-account structures.",
-      "- **Type Safety**:",
-      "    - Achieved cleaner type-check results by adding missing types to `@shared/types/quota`."
+      "- **クロード認証**:",
+      "- Electron Cookie を使用して、クロード (claude.ai) の **ヘッドレス セッション キャプチャ** を実装し、内部ブラウ​​ザ ウィンドウから移行しました。",
+      "- 自動取得が失敗した場合に備えて、UI に **手動 sessionKey fallback** を追加しました。",
+      "- 認証ライフサイクル全体で `sessionToken` を処理するために、`ProxyService` および `QuotaService` を更新しました。",
+      "- **サービスの信頼性**:",
+      "- すべての依存関係 (`DataService`、`ProcessManagerService` など) が正しくモック化され、注入されるようにすることで、`QuotaService` および `ProxyService` 単体テストを修正しました。",
+      "- `any` タイプと冗長な条件に関連する `ProxyService` および `LocalAuthServer` の TypeScript および ESLint エラーを解決しました。",
+      "- マルチアカウント構造を処理するために標準化された `getCopilotQuota` および `getClaudeQuota` 戻り値の型。",
+      "- **タイプセーフティ**:",
+      "- 不足している型を `@shared/types/quota` に追加することで、よりクリーンな型チェック結果を実現しました。"
     ]
   },
   "2026-01-17-antigravity-model-fetching-refinement": {
-    "title": "Antigravity Model Fetching Refinement",
-    "summary": "Antigravity Model Fetching Refinement introduced coordinated maintenance and quality improvements across the related modules.",
+    "title": "反重力モデルのフェッチの改良",
+    "summary": "反重力モデルのフェッチングの改良により、関連モジュール全体で調整されたメンテナンスと品質の向上が導入されました。",
     "items": [
-      "- **Antigravity Executor**:",
-      "    - Refined `FetchAntigravityModels` to extract detailed metadata (`displayName`, `description`) from the discovery API response.",
-      "    - Updated model aliasing logic to ensure consistent mapping between raw upstream IDs and static configurations for thinking support and token limits.",
-      "    - Aligned `gemini-3-pro-high` and `gemini-3-flash` with their respective preview aliases to enable correct configuration application."
+      "- **反重力実行者**:",
+      "- 検出 API 応答から詳細なメタデータ (`displayName`、`description`) を抽出するために `FetchAntigravityModels` を改良しました。",
+      "- モデルのエイリアシング ロジックを更新し、生のアップストリーム ID と静的構成の間で一貫したマッピングを確保し、サポートとトークン制限を考慮しました。",
+      "- `gemini-3-pro-high` と `gemini-3-flash` をそれぞれのプレビュー エイリアスと調整して、正しい構成アプリケーションを有効にしました。"
     ]
   },
   "2026-01-16-phase-20-independent-microservices-architecture": {
-    "title": "Phase 20 - Independent Microservices Architecture",
-    "summary": "Phase 20 - Independent Microservices Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 20 - 独立したマイクロサービス アーキテクチャ",
+    "summary": "フェーズ 20 - 独立したマイクロサービス アーキテクチャでは、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Microservices Refactoring**:",
-      "    - Refactored all Rust services (`token-service`, `model-service`, `quota-service`, `memory-service`) from stdin/stdout pipes to **independent HTTP servers**.",
-      "    - Each service now binds to an **ephemeral port** and writes its port to `%APPDATA%\\Tengra\\services\\{service}.port` for discovery.",
-      "    - Services can run **completely independently** of the main Electron application.",
+      "- **マイクロサービスのリファクタリング**:",
+      "- すべての Rust サービス (`token-service`、`model-service`、`quota-service`、`memory-service`) を stdin/stdout パイプから **独立した HTTP サーバー**にリファクタリングしました。",
+      "- 各サービスは **一時ポート**にバインドされ、検出のためにそのポートを `%APPDATA%\\Tengra\\services\\{service}.port` に書き込みます。",
+      "- サービスは、メインの Electron アプリケーションから**完全に独立して**実行できます。",
       "- **ProcessManagerService**:",
-      "    - Updated to use **HTTP requests** via axios instead of stdin pipes.",
-      "    - Implemented **port discovery** mechanism - checks for already-running services before spawning new ones.",
-      "    - Services are now started with `detached: true` to allow independent lifecycle.",
-      "- **Windows Startup Integration**:",
-      "    - Created `scripts/register-services.ps1` to register services as **Windows Scheduled Tasks**.",
-      "    - Services start automatically at Windows login, even before Tengra app is launched.",
-      "    - Supports `-Status`, `-Uninstall` flags for management.",
-      "- **Default Settings**:",
-      "    - Changed defaults: `startOnStartup: true`, `workAtBackground: true`.",
-      "    - Tengra now minimizes to **System Tray** by default instead of closing."
+      "- 標準入力パイプの代わりに axios 経由で **HTTP リクエスト**を使用するように更新されました。",
+      "- **ポート検出**メカニズムの実装 - 新しいサービスを生成する前に、すでに実行中のサービスをチェックします。",
+      "- 独立したライフサイクルを可能にするために、サービスは `detached: true` で開始されるようになりました。",
+      "- **Windows スタートアップの統合**:",
+      "- サービスを **Windows スケジュールされたタスク**として登録するために `scripts/register-services.ps1` を作成しました。",
+      "- Tengra アプリが起動される前であっても、Windows ログイン時にサービスが自動的に開始されます。",
+      "- 管理用に `-Status`、`-Uninstall` フラグをサポートします。",
+      "- **デフォルト設定**:",
+      "- 変更されたデフォルト: `startOnStartup: true`、`workAtBackground: true`。",
+      "- Tengra は、閉じるのではなく、デフォルトで **システム トレイ** に最小化されるようになりました。"
     ]
   },
   "2026-01-16-phase-19-technical-debt-security-current": {
-    "title": "Phase 19 - Technical Debt & Security (Current)",
-    "summary": "Phase 19 - Technical Debt & Security (Current) delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 19 - 技術的負債とセキュリティ (現在)",
+    "summary": "フェーズ 19 - 技術的負債とセキュリティ (現在) は、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証を実施しました。",
     "items": [
-      "- **Security**:",
-      "    - Fixed critical shell injection vulnerability in `dispatcher.ts` and `window.ts` by enforcing `shell: false`.",
-      "    - Implemented robust command argument handling for Windows platforms.",
-      "- **Refactoring**:",
-      "    - **SSHManager**: Reduced complexity by extracting `SSHConnectionList`, `SSHTerminal`, and `AddConnectionModal` components and `useSSHConnections` hook.",
-      "    - **WorkspaceToolbar**: Extracted `DashboardTabs`.",
-      "    - **Settings**: Implemented `SettingsContext` and refactored `useSettingsLogic` into sub-hooks (`useSettingsAuth`, `useSettingsStats`, `useSettingsPersonas`).",
-      "- **Internationalization**:",
-      "    - Completed hardcoded string replacements in `SSHManager`, `WorkspaceToolbar`, `ModelComparison`, and others.",
-      "    - Fixed Turkish translation quality issues.",
-      "    - Added Turkish translations for `modelExplorer`, `docker`, `onboarding`, and missing `workspace` keys.",
-      "- **Type Safety**:",
-      "    - Resolved `exactOptionalPropertyTypes` violations and `any` usage.",
-      "    - Fixed unawaited promises in `dispatcher.ts` and `SSHManager.tsx`."
+      "- **安全**：",
+      "- `shell: false` を強制することにより、`dispatcher.ts` および `window.ts` の重大なシェル インジェクションの脆弱性を修正しました。",
+      "- Windows プラットフォーム向けの堅牢なコマンド引数処理を実装しました。",
+      "- **リファクタリング**:",
+      "- **SSHManager**: `SSHConnectionList`、`SSHTerminal`、`AddConnectionModal` コンポーネントと `useSSHConnections` フックを抽出することで複雑さを軽減しました。",
+      "- **WorkspaceToolbar**: `DashboardTabs` が抽出されました。",
+      "- **設定**: `SettingsContext` を実装し、`useSettingsLogic` をサブフック (`useSettingsAuth`、`useSettingsStats`、`useSettingsPersonas`) にリファクタリングしました。",
+      "- **国際化**:",
+      "- `SSHManager`、`WorkspaceToolbar`、`ModelComparison` などのハードコードされた文字列の置換を完了しました。",
+      "- トルコ語の翻訳品質の問題を修正しました。",
+      "- `modelExplorer`、`docker`、`onboarding`、および欠落している `workspace` キーのトルコ語翻訳を追加しました。",
+      "- **タイプセーフティ**:",
+      "- `exactOptionalPropertyTypes` 違反と `any` の使用法を解決しました。",
+      "- `dispatcher.ts` および `SSHManager.tsx` の未待機の Promise を修正しました。"
     ]
   },
   "2026-01-16-phase-18-internationalization-prioritized": {
-    "title": "Phase 18 - Internationalization (Prioritized)",
-    "summary": "Phase 18 - Internationalization (Prioritized) delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 18 - 国際化 (優先)",
+    "summary": "フェーズ 18 - 国際化 (優先) では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Hardcoded String Fixes**:",
-      "    - Replaced hardcoded strings in `ThemeStore.tsx` (Themes, Filters).",
-      "    - Replaced hardcoded placeholders in `SSHManager.tsx` and `NginxWizard.tsx`.",
-      "    - Replaced hardcoded preset names and labels in `ParameterPresets.tsx` & `AdvancedTab.tsx`.",
-      "    - Replaced hardcoded prompt management text in `PromptManagerModal.tsx`.",
-      "    - Replaced hardcoded loader text in `CodeEditor.tsx`.",
-      "- **Translations**:",
-      "    - Added `ssh.nginx`, `ssh.presets`, `ssh.promptManager`, and `ssh.editor` keys to `en.ts` and `tr.ts`.",
-      "    - Fixed hardcoded Turkish text in `AdvancedTab.tsx` presets."
+      "- **ハードコードされた文字列の修正**:",
+      "- `ThemeStore.tsx` (テーマ、フィルター) のハードコードされた文字列を置き換えました。",
+      "- `SSHManager.tsx` および `NginxWizard.tsx` のハードコードされたプレースホルダーを置き換えました。",
+      "- `ParameterPresets.tsx` および `AdvancedTab.tsx` のハードコードされたプリセット名とラベルを置き換えました。",
+      "- `PromptManagerModal.tsx` のハードコードされたプロンプト管理テキストを置き換えました。",
+      "- `CodeEditor.tsx` のハードコードされたローダー テキストを置き換えました。",
+      "- **翻訳**:",
+      "- `ssh.nginx`、`ssh.presets`、`ssh.promptManager`、および `ssh.editor` キーを `en.ts` および `tr.ts` に追加しました。",
+      "- `AdvancedTab.tsx` プリセットのハードコードされたトルコ語テキストを修正しました。"
     ]
   },
   "2026-01-16-phase-17-stability-reliability": {
-    "title": "Phase 17 - Stability & Reliability",
-    "summary": "Phase 17 - Stability & Reliability delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 17 - 安定性と信頼性",
+    "summary": "フェーズ 17 - 安定性と信頼性では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Critical Fixes**:",
-      "    - Fixed production crash (\"Blank Page\") by correcting `preload` and `index.html` path resolution in `src/main/main.ts`.",
-      "    - Resolved React crash (circular dependency) by removing problematic `react-vendor` chunk in `vite.config.ts`.",
-      "    - Fixed `SidebarItem` not registering clicks by propagating `data-testid` and other props correctly.",
-      "- **Testing**:",
-      "    - Achieved 100% E2E Test Pass Rate (11/11 tests).",
-      "    - Refactored `chat.spec.ts` to use robust `toBeVisible` assertions.",
-      "    - Added `data-testid` to Window Actions and critical UI flows."
+      "- **重要な修正**:",
+      "- `src/main/main.ts` の `preload` および `index.html` のパス解決を修正することで、本番環境のクラッシュ (「空白ページ」) を修正しました。",
+      "- `vite.config.ts` の問題のある `react-vendor` チャンクを削除することで、React クラッシュ (循環依存関係) を解決しました。",
+      "- `data-testid` およびその他の小道具を正しく伝播することで、`SidebarItem` がクリックを登録しない問題を修正しました。",
+      "- **テスト**:",
+      "- 100% の E2E テスト合格率を達成 (11/11 テスト)。",
+      "- 堅牢な `toBeVisible` アサーションを使用するために `chat.spec.ts` をリファクタリングしました。",
+      "- `data-testid` をウィンドウ アクションと重要な UI フローに追加しました。"
     ]
   },
   "2026-01-15-phase-16-bundle-optimization": {
-    "title": "Phase 16 - Bundle Optimization",
-    "summary": "Phase 16 - Bundle Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 16 - バンドルの最適化",
+    "summary": "フェーズ 16 - バンドルの最適化では、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証が行われました。",
     "items": [
-      "- **Performance**:",
-      "    - Implemented granular code splitting in `vite.config.ts`.",
-      "    - Created separate chunks for heavy dependencies: `monaco-editor`, `framer-motion`, `ssh2`, `react-vendor`.",
-      "    - Lazy loaded `SSHManager` and `AudioChatOverlay` to improve initial application startup.",
-      "    - Reduced initial bundle load by deferring unused features."
+      "- **パフォーマンス**：",
+      "- `vite.config.ts` で詳細なコード分割を実装しました。",
+      "- 依存性の高いものに対して個別のチャンクを作成しました: `monaco-editor`、`framer-motion`、`ssh2`、`react-vendor`。",
+      "- アプリケーションの初期起動を改善するために、`SSHManager` と `AudioChatOverlay` を遅延ロードしました。",
+      "- 未使用の機能を延期することで、初期のバンドル負荷を軽減しました。"
     ]
   },
   "2026-01-15-phase-15-linting-recovery-cleanup": {
-    "title": "Phase 15 - Linting Recovery & Cleanup",
-    "summary": "Phase 15 - Linting Recovery & Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 15 - 糸くずの回復とクリーンアップ",
+    "summary": "フェーズ 15 - リンティングの回復とクリーンアップでは、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Project Structure**:",
-      "    - Deleted redundant `job-scheduler.service.test.ts` (consolidated into `services/system/`).",
-      "- **Development Health**:",
-      "    - Restored `lint` step to build pipeline.",
-      "    - Configured ESLint to allow `any` types in test files (`src/tests/`), fixing 355+ blocking errors in CI while maintaining strictness for production code.",
-      "- **Documentation**:",
-      "    - Updated `TODO.md` to mark Service Architecture, Database Migration, and Testing gaps as resolved."
+      "- **プロジェクトの構造**:",
+      "- 冗長な `job-scheduler.service.test.ts` を削除 (`services/system/` に統合)。",
+      "- **開発の健全性**:",
+      "- パイプラインを構築するための `lint` ステップを復元しました。",
+      "- テスト ファイル (`src/tests/`) で `any` タイプを許可するように ESLint を構成し、実稼働コードの厳密性を維持しながら CI の 355 以上のブロック エラーを修正しました。",
+      "- **ドキュメント**:",
+      "- `TODO.md` を更新して、サービス アーキテクチャ、データベース移行、およびテストのギャップを解決済みとしてマークしました。"
     ]
   },
   "2026-01-15-phase-14-deployment-readiness": {
-    "title": "Phase 14 - Deployment Readiness",
-    "summary": "Phase 14 - Deployment Readiness delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 14 - 導入の準備",
+    "summary": "フェーズ 14 - デプロイメントの準備では、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証が行われました。",
     "items": [
-      "- **Build Fixes**:",
-      "    - Fixed unused `init` method error in `ProxyService` by implementing `initialize`.",
-      "    - Removed unused `fs` import in `proxy.service.test.ts` to fix `tsc` error.",
-      "    - Updated `tsconfig.node.json` and `eslint.config.mjs` to resolve lint paths.",
-      "    - Temporarily removed `lint` step from build script to unblock urgent deployment (pending comprehensive lint fix in tests).",
-      "    - **Build Verified**: `npm run build` passes successfully. Code is ready for deployment."
+      "- **ビルドの修正**:",
+      "- `initialize` を実装することで、`ProxyService` の未使用の `init` メソッド エラーを修正しました。",
+      "- `tsc` エラーを修正するために、`proxy.service.test.ts` の未使用の `fs` インポートを削除しました。",
+      "- lint パスを解決するために `tsconfig.node.json` と `eslint.config.mjs` を更新しました。",
+      "- 緊急展開のブロックを解除するために、ビルド スクリプトから `lint` ステップを一時的に削除しました (テストでの包括的な lint 修正は保留中です)。",
+      "- **ビルド検証済み**: `npm run build` は正常に合格しました。コードをデプロイする準備ができました。"
     ]
   },
   "2026-01-15-phase-13-type-safety-service-architecture": {
-    "title": "Phase 13 - Type Safety & Service Architecture",
-    "summary": "Phase 13 - Type Safety & Service Architecture delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 13 - タイプ セーフティおよびサービス アーキテクチャ",
+    "summary": "フェーズ 13 - タイプ セーフティおよびサービス アーキテクチャでは、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証が行われました。",
     "items": [
-      "- **Type Safety**:",
-      "    - Verified `quota.service.ts`, `preload.ts`, and `ipc/ollama.ts` have no `any` types.",
-      "- **Async Operations**:",
-      "    - Verified `quota.service.ts` has no synchronous file operations.",
-      "- **Service Architecture**:",
-      "    - Audited 30+ services extending `BaseService` for consistent lifecycle management."
+      "- **タイプセーフティ**:",
+      "- `quota.service.ts`、`preload.ts`、および `ipc/ollama.ts` には `any` タイプがないことを確認しました。",
+      "- **非同期操作**:",
+      "- `quota.service.ts` には同期ファイル操作がないことを確認しました。",
+      "- **サービス アーキテクチャ**:",
+      "- 一貫したライフサイクル管理のために `BaseService` を拡張する 30 以上のサービスを監査しました。"
     ]
   },
   "2026-01-15-phase-12-code-quality-e2e-testing": {
-    "title": "Phase 12 - Code Quality & E2E Testing",
-    "summary": "Phase 12 - Code Quality & E2E Testing delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 12 - コード品質と E2E テスト",
+    "summary": "フェーズ 12 - コード品質と E2E テストでは、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Code Quality**:",
-      "    - Verified ESLint configuration runs successfully on individual files.",
-      "    - Audited `TerminalPanel.tsx` (9 useEffect hooks) - all have proper cleanup.",
-      "    - Audited `ChatView.tsx` - pure presentation component, no useEffect hooks needed.",
-      "- **E2E Testing**:",
-      "    - Verified existing E2E tests in `chat.spec.ts` cover chat creation, input display, and keyboard shortcuts.",
-      "    - Verified `app.spec.ts` covers app launch."
+      "- **コードの品質**:",
+      "- ESLint 構成が個々のファイルで正常に実行されることを確認しました。",
+      "- 監査済み `TerminalPanel.tsx` (9 つの useEffect フック) - すべてが適切にクリーンアップされています。",
+      "- 監査済み `ChatView.tsx` - 純粋なプレゼンテーション コンポーネント。useEffect フックは必要ありません。",
+      "- **E2E テスト**:",
+      "- `chat.spec.ts` の既存の E2E テストで、チャットの作成、入力表示、キーボード ショートカットがカバーされていることを確認しました。",
+      "- `app.spec.ts` がアプリの起動をカバーしていることを確認しました。"
     ]
   },
   "2026-01-15-phase-11-test-coverage-database-optimization": {
-    "title": "Phase 11 - Test Coverage & Database Optimization",
-    "summary": "Phase 11 - Test Coverage & Database Optimization delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 11 - テスト カバレッジとデータベースの最適化",
+    "summary": "フェーズ 11 - テスト カバレッジとデータベースの最適化では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Test Coverage**:",
-      "    - Added `JobSchedulerService` unit tests (7 tests) covering scheduling, recurring jobs, and cleanup.",
-      "    - Enhanced `ModelRegistryService` unit tests (8 tests) with proper types and error handling coverage.",
-      "- **Database Optimization**:",
-      "    - Verified comprehensive indexes already in migration ID 7 for performance optimization.",
-      "- **Type Safety**:",
-      "    - Verified `stream-parser.util.ts` and `agent.service.ts` have no `any` types."
+      "- **テスト範囲**:",
+      "- スケジュール、定期的なジョブ、クリーンアップをカバーする `JobSchedulerService` 単体テスト (7 つのテスト) を追加しました。",
+      "- 適切なタイプとエラー処理範囲を備えた `ModelRegistryService` 単体テスト (8 つのテスト) が強化されました。",
+      "- **データベースの最適化**:",
+      "- パフォーマンスの最適化のために、移行 ID 7 にすでに含まれている包括的なインデックスを検証しました。",
+      "- **タイプセーフティ**:",
+      "- `stream-parser.util.ts` と `agent.service.ts` には `any` タイプがないことを確認しました。"
     ]
   },
   "2026-01-15-phase-10-full-database-migration": {
-    "title": "Phase 10 - Full Database Migration",
-    "summary": "Phase 10 - Full Database Migration delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 10 - データベース全体の移行",
+    "summary": "フェーズ 10 - データベースの完全な移行では、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証が行われました。",
     "items": [
-      "- **Legacy Data Migration**:",
-      "    - Implemented `handleChatMigration` and `handleMessageMigration` in `DatabaseService` to import legacy SQLite data into PGlite.",
-      "    - Added `chatsPath` and `messagesPath` to `DatabaseService` constructor for migration path management.",
-      "    - Verified end-to-end migration for `UsageTrackingService`, `PromptTemplatesService`, `AuditLogService`, and `JobSchedulerService`.",
-      "- **Data Export**:",
-      "    - Exported `chats` and `messages` tables from legacy `chats.db` SQLite to JSON using CLI tools.",
-      "    - Moved exported files to `runtime/data/db/` for automatic pickup by migration logic.",
-      "- **Documentation**:",
-      "    - Updated `task.md` to reflect Phase 10 progress.",
-      "    - Created `walkthrough.md` documenting the migration implementation."
+      "- **レガシー データ移行**:",
+      "- レガシー SQLite データを PGlite にインポートするために、`DatabaseService` に `handleChatMigration` と `handleMessageMigration` を実装しました。",
+      "- 移行パス管理のために `DatabaseService` コンストラクターに `chatsPath` および `messagesPath` を追加しました。",
+      "- `UsageTrackingService`、`PromptTemplatesService`、`AuditLogService`、および `JobSchedulerService` のエンドツーエンドの移行を確認しました。",
+      "- **データのエクスポート**:",
+      "- CLI ツールを使用して、`chats` テーブルと `messages` テーブルを従来の `chats.db` SQLite から JSON にエクスポートしました。",
+      "- 移行ロジックによる自動ピックアップのために、エクスポートされたファイルを `runtime/data/db/` に移動しました。",
+      "- **ドキュメント**:",
+      "- フェーズ 10 の進捗状況を反映するために `task.md` を更新しました。",
+      "- 移行の実装を文書化した `walkthrough.md` を作成しました。"
     ]
   },
   "2026-01-15-phase-9-comprehensive-error-handling-testing-pass": {
-    "title": "Phase 9 - Comprehensive Error Handling & Testing Pass",
-    "summary": "Phase 9 - Comprehensive Error Handling & Testing Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 9 - 包括的なエラー処理とテスト パス",
+    "summary": "フェーズ 9 - 包括的なエラー処理とテスト パスでは、計画されたリファクタリング、構造のクリーンアップ、および対象範囲全体の検証が行われました。",
     "items": [
-      "- **ProxyService Modernization**:",
-      "    - Complete reconstruction of `ProxyService` to eliminate all `any` types and modularize high-complexity logic.",
-      "    - Standardized error handling with robust logging via `appLogger`.",
-      "    - Added support for GitHub device code flow and improved proxy process lifecycle management.",
-      "- **Database Service Enhancements**:",
-      "    - Expanded unit tests for `searchChats`, `getDetailedStats`, and `duplicateChat`.",
-      "    - Improved transaction reliability and verified data integrity across complex operations.",
-      "- **Error Handling Standardization**:",
-      "    - Conducted a comprehensive audit of `SettingsService` and `ProxyService`, replacing minimal catch blocks with proper recovery and logging.",
-      "    - Verified `npm run type-check` success across the entire codebase, including all test suites.",
-      "- **Test Infrastructure**:",
-      "    - Refactored `TokenService` tests to cover advanced OAuth flows, refresh logic, and error states.",
-      "    - Optimized `PGlite` and `electron.net` mocks for better stability in the development environment."
+      "- **ProxyService の最新化**:",
+      "- `ProxyService` を完全に再構築し、`any` タイプをすべて削除し、複雑さの高いロジックをモジュール化します。",
+      "- `appLogger` による堅牢なログによる標準化されたエラー処理。",
+      "- GitHub デバイス コード フローのサポートが追加され、プロキシ プロセスのライフサイクル管理が改善されました。",
+      "- **データベース サービスの強化**:",
+      "- `searchChats`、`getDetailedStats`、および `duplicateChat` の単体テストを拡張しました。",
+      "- トランザクションの信頼性が向上し、複雑な操作全体でデータの整合性が検証されました。",
+      "- **エラー処理の標準化**:",
+      "- `SettingsService` と `ProxyService` の包括的な監査を実施し、最小限の catch ブロックを適切なリカバリとログに置き換えました。",
+      "- すべてのテスト スイートを含むコードベース全体で `npm run type-check` が成功することを確認しました。",
+      "- **テストインフラストラクチャ**:",
+      "- `TokenService` テストをリファクタリングして、高度な OAuth フロー、リフレッシュ ロジック、エラー状態をカバーしました。",
+      "- 開発環境の安定性を向上させるために、`PGlite` および `electron.net` モックが最適化されました。"
     ]
   },
   "2026-01-15-phase-8-global-async-type-safety-pass": {
-    "title": "Phase 8 - Global Async & Type Safety Pass",
-    "summary": "Phase 8 - Global Async & Type Safety Pass delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 8 - グローバル非同期および型安全パス",
+    "summary": "フェーズ 8 - Global Async & Type Safety Pass では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Async Modernization**:",
-      "    - Converted `TerminalService`, `GitService`, `MigrationService`, and `ExportService` to use `fs.promises` for all file I/O.",
-      "    - Optimized the main process responsiveness by eliminating blocking synchronous calls in core data services.",
-      "- **IPC Handler Hardening**:",
-      "    - Modernized `dialog:saveFile` and `theme:export` handlers to be fully asynchronous.",
-      "    - Implemented improved error catching and temporary file handling in the IPC layer.",
-      "- **Type Safety Excellence**:",
-      "    - Eliminated all `any` types from `message-normalizer.util.ts` and `ipc-wrapper.util.ts`.",
-      "    - Modularized high-complexity logic in `MessageNormalizer` to comply with strict cyclomatic complexity standards (NASA Power of Ten).",
-      "- **Service Refinement**:",
-      "    - Polished `QuotaService` by fixing dependency injection and resolving lingering lint and type safety warnings.",
-      "    - Verified and improved the `QuotaService` unit test suite."
+      "- **非同期の最新化**:",
+      "- すべてのファイル I/O に `fs.promises` を使用するように、`TerminalService`、`GitService`、`MigrationService`、および `ExportService` を変換しました。",
+      "- コア データ サービスでの同期呼び出しのブロックを排除することで、メイン プロセスの応答性を最適化しました。",
+      "- **IPC Handler 強化**:",
+      "- `dialog:saveFile` および `theme:export` handlers が完全に非同期になるように最新化されました。",
+      "- IPC レイヤーでの改善されたエラー キャッチと一時ファイル処理を実装しました。",
+      "- **タイプ セーフティ エクセレンス**:",
+      "- `message-normalizer.util.ts` および `ipc-wrapper.util.ts` からすべての `any` タイプを削除しました。",
+      "- `MessageNormalizer` の高複雑度ロジックをモジュール化して、厳密な循環的複雑さの標準 (NASA Power of Ten) に準拠します。",
+      "- **サービスの改善**:",
+      "- 依存関係の注入を修正し、残る lint と型の安全性の警告を解決することにより、`QuotaService` を洗練しました。",
+      "- `QuotaService` 単体テスト スイートを検証および改善しました。"
     ]
   },
   "2026-01-15-phase-7-service-architecture-refactoring-ssh-modernization": {
-    "title": "Phase 7 - Service Architecture Refactoring & SSH Modernization",
-    "summary": "Phase 7 - Service Architecture Refactoring & SSH Modernization delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 7 - サービス アーキテクチャのリファクタリングと SSH の最新化",
+    "summary": "フェーズ 7 - サービス アーキテクチャのリファクタリングと SSH の最新化では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Service Architecture**:",
-      "    - Systematically relocated 30+ services into domain-specific folders (`Security`, `System`, `Data`, `UI`, `LLM`, `External`, `Analysis`).",
-      "    - Standardized directory structure for better modularity and maintainability.",
-      "- **Import Migration**:",
-      "    - Updated imports across the entire codebase to use the new domain-based structure.",
-      "    - Enforced use of path aliases (`@main/services/`) for all service imports.",
-      "- **SSH Service Modernization**:",
-      "    - Converted all remaining synchronous `fs` operations to `fs.promises`.",
-      "    - Achieved 100% type safety by removing all `any` types.",
-      "    - Implemented a comprehensive unit test suite (9 tests) covering profile management, security, connection lifecycle, SFTP, and diagnostics.",
-      "- **Dependency Injection**:",
-      "    - Fixed a critical type mismatch in the `QuotaService` registration within `startup/services.ts`.",
-      "- **IPC Layer**:",
-      "    - Verified and updated all IPC handlers to work with the refactored service structure."
+      "- **サービス アーキテクチャ**:",
+      "- 30 を超えるサービスをドメイン固有のフォルダー (`Security`、`System`、`Data`、`UI`、`LLM`、`External`、`Analysis`) に体系的に再配置しました。",
+      "- モジュール性と保守性を向上させるために標準化されたディレクトリ構造。",
+      "- **インポート移行**:",
+      "- 新しいドメインベースの構造を使用するために、コードベース全体にわたるインポートを更新しました。",
+      "- すべてのサービスのインポートに対してパス エイリアス (`@main/services/`) の使用を強制しました。",
+      "- **SSH サービスの最新化**:",
+      "- 残りのすべての同期 `fs` 操作を `fs.promises` に変換しました。",
+      "- すべての `any` 型を削除することで、100% の型安全性を達成しました。",
+      "- プロファイル管理、セキュリティ、接続ライフサイクル、SFTP、診断をカバーする包括的な単体テスト スイート (9 つのテスト) を実装しました。",
+      "- **依存性の注入**:",
+      "- `startup/services.ts` 内の `QuotaService` 登録における重大なタイプの不一致を修正しました。",
+      "- **IPC レイヤー**:",
+      "- リファクタリングされたサービス構造で動作するように、すべての IPC handlers を検証および更新しました。"
     ]
   },
   "2026-01-15-phase-5-critical-async-conversions-type-safety": {
-    "title": "Phase 5 - Critical Async Conversions & Type Safety",
-    "summary": "Phase 5 - Critical Async Conversions & Type Safety delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 5 - 重要な非同期変換と型安全性",
+    "summary": "フェーズ 5 - クリティカルな非同期変換とタイプ セーフティでは、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Database Service**:",
-      "    - Successfully removed ALL explicit `any` types from `DatabaseService.ts` (2,200+ lines).",
-      "    - Modularized high-complexity methods (`searchChats`, `getDetailedStats`, `performChatDuplication`) into granular helpers, satisfying strict cyclomatic complexity limits.",
-      "    - Restored and standardized legacy migration paths for `Folders` and `Prompts`, ensuring reliable data transition to PostgreSQL.",
-      "    - Implemented a generic `DatabaseAdapter` pattern for type-safe transactions and query execution. Fixed `affectedRows` vs `rowsAffected` API mismatches.",
-      "- **Backup Service**: Synchronized with the updated `DatabaseService` API and implemented the `RestoreChatData` interface to ensure strict type safety during JSON restoration.",
-      "- **Async I/O Transitions**: Converted blocking synchronous `fs` operations to `fs.promises` across `UsageTrackingService`, `ProxyService`, and `SettingsService`, eliminating main-process blocking bottlenecks.",
-      "- **Code Quality**:",
-      "    - Resolved `no-case-declarations` and lexical scoping issues in `ChatEventService`.",
-      "    - Harmonized nullish coalescing (`??`) across 50+ locations in core services.",
-      "    - Reduced cyclomatic complexity and nesting depth in critical service paths (NASA Power of Ten compliance).",
-      "    - Standardized all error reporting to use `appLogger` and centralized error utilities.",
-      "    - Modularized `TokenService` logic into explicit provider checks (`isGoogleProvider`, `isCodexProvider`, etc.) and helper methods.",
-      "- **Types**: Rigorous typing for `AuthToken`, `ChatMessage`, `Prompt`, and `Folder` structures ensuring full type safety from the DB layer to the service API.",
-      "- **Verification**: Zero build errors, zero type-check failures, and zero critical lints remaining in the service layer."
+      "- **データベース サービス**:",
+      "- `DatabaseService.ts` (2,200 行以上) からすべての明示的な `any` タイプを正常に削除しました。",
+      "- 複雑さの高いメソッド (`searchChats`、`getDetailedStats`、`performChatDuplication`) を詳細なヘルパーにモジュール化し、厳密な循環的複雑さの制限を満たします。",
+      "- `Folders` および `Prompts` のレガシー移行パスが復元および標準化され、PostgreSQL への信頼性の高いデータ移行が保証されます。",
+      "- タイプセーフなトランザクションとクエリ実行のための汎用 `DatabaseAdapter` パターンを実装しました。 `affectedRows` と `rowsAffected` API の不一致を修正しました。",
+      "- **バックアップ サービス**: 更新された `DatabaseService` API と同期され、JSON 復元中に厳密な型安全性を確保するために `RestoreChatData` インターフェイスが実装されました。",
+      "- **非同期 I/O 遷移**: `UsageTrackingService`、`ProxyService`、`SettingsService` にわたるブロッキング同期 `fs` 操作を `fs.promises` に変換し、メインプロセスのブロッキング ボトルネックを排除しました。",
+      "- **コードの品質**:",
+      "- `ChatEventService` の `no-case-declarations` および字句スコープの問題を解決しました。",
+      "- コア サービスの 50 以上の場所にわたる調和されたヌル結合 (`??`)。",
+      "- 重要なサービス パスにおける循環的複雑さとネストの深さを軽減 (NASA Power of Ten 準拠)。",
+      "- `appLogger` と集中エラー ユーティリティを使用するようにすべてのエラー レポートを標準化しました。",
+      "- `TokenService` ロジックを明示的なプロバイダー チェック (`isGoogleProvider`、`isCodexProvider` など) およびヘルパー メソッドにモジュール化しました。",
+      "- **型**: `AuthToken`、`ChatMessage`、`Prompt`、および `Folder` 構造体の厳密な型付けにより、DB 層からサービス API まで完全な型の安全性が保証されます。",
+      "- **検証**: ビルド エラー、型チェックの失敗、サービス層に残る重大な lint はゼロです。"
     ]
   },
   "2026-01-15-phase-6-test-infrastructure-repair-verification": {
-    "title": "Phase 6 - Test Infrastructure Repair & Verification",
-    "summary": "Phase 6 - Test Infrastructure Repair & Verification delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 6 - テスト インフラストラクチャの修復と検証",
+    "summary": "フェーズ 6 - テスト インフラストラクチャの修復と検証では、計画されたリファクタリング、構造のクリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Test Configuration**:",
-      "    - Resolved `vitest` vs `playwright` conflict by explicitly excluding E2E tests from the unit test runner in `vitest.config.ts`.",
-      "- **Test Fixes**:",
-      "    - **LLM Settings**: Fixed `ReferenceError` in integration tests by correcting `vi.mock` hoisting logic.",
-      "    - **Audit Log**: Updated `fs` mocks to include missing `mkdirSync`, enabling proper `AppLogger` initialization during tests.",
-      "    - **Backup Service**: Aligned test expectations with actual error handling for missing files.",
-      "- **Verification Status**:",
-      "    - **Pass Rate**: 100% (298/298 tests passed).",
-      "    - **Coverage**: All 36 test suites executed successfully."
+      "- **テスト構成**:",
+      "- `vitest.config.ts` の単体テスト ランナーから E2E テストを明示的に除外することで、`vitest` と `playwright` の競合を解決しました。",
+      "- **テストの修正**:",
+      "- **LLM 設定**: `vi.mock` ホイスティング ロジックを修正することで、統合テストの `ReferenceError` を修正しました。",
+      "- **監査ログ**: `fs` モックを更新して、不足している `mkdirSync` を含め、テスト中に適切な `AppLogger` 初期化を可能にしました。",
+      "- **バックアップ サービス**: テストの期待と、見つからないファイルに対する実際のエラー処理を調整します。",
+      "- **検証ステータス**:",
+      "- **合格率**: 100% (298/298 テスト合格)。",
+      "- **カバレッジ**: 36 個のテスト スイートすべてが正常に実行されました。"
     ]
   },
   "2026-01-15-phase-4-silent-error-handling-cleanup": {
-    "title": "Phase 4 - Silent Error Handling Cleanup",
-    "summary": "Phase 4 - Silent Error Handling Cleanup delivered planned refactors, structural cleanup, and verification across the targeted scope.",
+    "title": "フェーズ 4 - サイレント エラー処理のクリーンアップ",
+    "summary": "フェーズ 4 - サイレント エラー処理クリーンアップでは、計画されたリファクタリング、構造クリーンアップ、対象範囲全体の検証が行われました。",
     "items": [
-      "- **Error Handling**: Systematically eliminated silent error swallowing in `UtilityService`, `SecurityService`, `SystemService`, and `QuotaService`. All catch blocks now log errors via `appLogger`.",
-      "- **Standardization**: Refactored `BaseService` to inherit from `appLogger`, providing `this.logError`, `this.logDebug`, etc., to all derived services.",
-      "- **Refactoring**: Significantly reduced cyclomatic complexity in `logger.ts` (`init`, `getStats`, `formatValue`) and replaced forbidden `require('electron')` with safe ESM imports.",
-      "- **QuotaService**: Fixed unawaited promises, replaced debug `console.log` with `appLogger.debug`, and resolved numerous logical operator and type lints."
+      "- **エラー処理**: `UtilityService`、`SecurityService`、`SystemService`、および `QuotaService` を飲み込むサイレント エラーを体系的に排除しました。すべての catch ブロックは、`appLogger` を介してエラーをログに記録するようになりました。",
+      "- **標準化**: `appLogger` から継承するように `BaseService` をリファクタリングし、`this.logError`、`this.logDebug` などをすべての派生サービスに提供します。",
+      "- **リファクタリング**: `logger.ts` (`init`、`getStats`、`formatValue`) の循環的複雑さを大幅に軽減し、禁止された `require('electron')` を安全な ESM インポートに置き換えました。",
+      "- **QuotaService**: 待機していない Promise を修正し、デバッグ `console.log` を `appLogger.debug` に置き換え、多数の論理演算子と型の lint を解決しました。"
     ]
   },
   "2026-01-15-critical-todo-items-resolved": {
-    "title": "Critical TODO Items Resolved",
-    "summary": "Critical TODO Items Resolved introduced coordinated maintenance and quality improvements across the related modules.",
+    "title": "重要な TODO 項目が解決されました",
+    "summary": "解決された重要な TODO 項目では、関連モジュール全体で調整されたメンテナンスと品質の向上が導入されました。",
     "items": [
-      "- **TypeScript**: Fixed 13 compilation errors across `main.ts`, `settings.service.ts`, `auth.service.ts`, `database.service.ts`, and `audit-log.service.test.ts`.",
-      "- **Logging**: Replaced ~25 `console.log`/`console.error` statements with `appLogger` in `main.ts`, `dispatcher.ts`, and `window.ts`.",
-      "- **Types**: Added `idToken` and `email` fields to `AuthToken` interface.",
-      "- **Async**: Fixed missing `await` on `getAllTokens()` calls in `main.ts` and `settings.service.ts`.",
-      "- **Memory Leaks**: Verified all 8 services with `setInterval` have proper `cleanup()` methods.",
-      "- **Shell Injection**: Strengthened command sanitization in `window.ts` (blocks: backticks, $(), braces, brackets, newlines).",
-      "- **Security**: Removed hardcoded client secret fallbacks in `token.service.ts` and `quota.service.ts`. Added validation before usage.",
-      "- **Logging**: Replaced all console.log/error/warn with appLogger in `token.service.ts` (20 instances) and `ssh.service.ts` (7 instances).",
-      "- **Code Quality**: Fixed 22+ `||` to `??` nullish coalescing conversions in `token.service.ts` and `ssh.service.ts`. Fixed unused variables."
+      "- **TypeScript**: `main.ts`、`settings.service.ts`、`auth.service.ts`、`database.service.ts`、および `audit-log.service.test.ts` にわたる 13 件のコンパイル エラーを修正しました。",
+      "- **ログ**: `main.ts`、`dispatcher.ts`、および `window.ts` の ~25 の `console.log`/`console.error` ステートメントを `appLogger` に置き換えました。",
+      "- **タイプ**: `idToken` フィールドと `email` フィールドを `AuthToken` インターフェイスに追加しました。",
+      "- **非同期**: `main.ts` および `settings.service.ts` の `getAllTokens()` 呼び出しで欠落していた `await` を修正しました。",
+      "- **メモリ リーク**: `setInterval` を使用する 8 つのサービスすべてに、適切な `cleanup()` メソッドがあることを確認しました。",
+      "- **シェル インジェクション**: `window.ts` でのコマンドのサニタイズを強化しました (ブロック: バックティック、$()、中括弧、括弧、改行)。",
+      "- **セキュリティ**: `token.service.ts` および `quota.service.ts` のハードコーディングされたクライアント シークレット フォールバックを削除しました。使用前の検証を追加しました。",
+      "- **ログ**: `token.service.ts` (20 インスタンス) および `ssh.service.ts` (7 インスタンス) のすべての console.log/error/warn を appLogger に置き換えました。",
+      "- **コード品質**: `token.service.ts` および `ssh.service.ts` における 22 個以上の `||` から `??` へのヌル合体変換を修正しました。未使用の変数を修正しました。"
     ]
   },
   "2026-01-15-build-fixes-type-safety": {
-    "title": "Build Fixes & Type Safety",
-    "summary": "Build Fixes & Type Safety strengthened reliability and safety by addressing known issues and hardening critical paths.",
+    "title": "ビルドの修正とタイプ セーフティ",
+    "summary": "ビルド修正とタイプ セーフティは、既知の問題に対処し、クリティカル パスを強化することで、信頼性と安全性を強化しました。",
     "items": [
-      "- **SettingsService**: Converted all synchronous file operations (`fs.readFileSync`, `fs.writeFileSync`, `fs.existsSync`) to async equivalents (`fs.promises`). Added `initialize()` lifecycle method for proper async loading.",
-      "- **BackupService**: Already using async file operations - verified and confirmed no changes needed.",
-      "- **Tests**: Updated `settings.service.test.ts` to use async patterns and mock `fs.promises` API.",
-      "- **LlamaService**: Fixed missing `path.join` references causing build failures.",
-      "- **HistoryImportService**: Fixed Date type errors - now correctly creates Date objects for `createdAt`/`updatedAt` fields.",
-      "- **AgentCouncilService**: Fixed CouncilSession type mismatch by aligning imports with DatabaseService types.",
-      "- **AgentService**: Added proper type annotations for database query results.",
-      "- **DatabaseService**: Fixed multiple type errors including unused generics, `projectId` property, and query result typing.",
-      "- **IPC/db.ts**: Fixed Chat type mismatch between shared types and database service.",
-      "- **Cleanup**: Removed unused imports in `registry.ts` and `ipc.ts`.",
-      "- **Types**: Aligned `CouncilSession` status types across shared and database definitions (added `planning`, `reviewing` states)."
+      "- **SettingsService**: すべての同期ファイル操作 (`fs.readFileSync`、`fs.writeFileSync`、`fs.existsSync`) を同等の非同期操作 (`fs.promises`) に変換しました。適切な非同期読み込みのための `initialize()` ライフサイクル メソッドを追加しました。",
+      "- **BackupService**: すでに非同期ファイル操作を使用しています - 検証され、変更が必要ないことが確認されました。",
+      "- **テスト**: 非同期パターンを使用し、`fs.promises` API をモックするために `settings.service.test.ts` を更新しました。",
+      "- **LlamaService**: ビルド失敗の原因となる欠落している `path.join` 参照を修正しました。",
+      "- **HistoryImportService**: 日付型エラーを修正 - `createdAt`/`updatedAt` フィールドの日付オブジェクトを正しく作成するようになりました。",
+      "- **AgentCouncilService**: インポートを DatabaseService タイプと調整することで、CouncilSession タイプの不一致を修正しました。",
+      "- **AgentService**: データベース クエリ結果に適切な型の注釈を追加しました。",
+      "- **DatabaseService**: 未使用のジェネリックス、`projectId` プロパティ、クエリ結果の型指定などの複数の型エラーを修正しました。",
+      "- **IPC/db.ts**: 共有タイプとデータベース サービス間のチャット タイプの不一致を修正しました。",
+      "- **クリーンアップ**: `registry.ts` および `ipc.ts` の未使用のインポートを削除しました。",
+      "- **タイプ**: 共有定義およびデータベース定義全体で `CouncilSession` ステータス タイプを調整しました (`planning`、`reviewing` 状態を追加)。"
     ]
   },
   "2026-01-15-database-migrations-legacy-json-to-postgresql": {
-    "title": "Database Migrations (Legacy JSON to PostgreSQL)",
-    "summary": "Database Migrations (Legacy JSON to PostgreSQL) improved data model consistency and migration reliability across affected services.",
+    "title": "データベースの移行 (レガシー JSON から PostgreSQL)",
+    "summary": "データベースの移行 (レガシー JSON から PostgreSQL) により、影響を受けるサービス間でのデータ モデルの一貫性と移行の信頼性が向上しました。",
     "items": [
-      "- **AuthService**: Migrated from file-based JSON storage to `auth_tokens` table. Implemented secure token encryption/decryption in the database layer.",
-      "- **TokenService**: Complete rewrite to remove synchronous file I/O dependencies. Now uses `AuthService` for token management and `JobSchedulerService` for refresh tasks.",
-      "- **CopilotService**: Updated to support asynchronous token retrieval from `AuthService`, resolving startup race conditions.",
-      "- **UsageTrackingService**: Migrated user activity tracking to `usage_events` table.",
-      "- **PromptTemplatesService**: Migrated custom prompt templates to `prompt_templates` table.",
-      "- **AuditLogService**: Migrated security audit logs to `audit_logs` table.",
-      "- **JobSchedulerService**: Migrated job state persistence to `scheduler_state` table.",
-      "- **Cleanup**: Removed legacy JSON file handling (reading/writing/encryption) from migrated services.",
-      "- **Schema**: Added new tables: `auth_tokens`, `usage_events`, `prompt_templates`, `audit_logs`, `scheduler_state`."
+      "- **AuthService**: ファイルベースの JSON ストレージから `auth_tokens` テーブルに移行されました。データベース層に安全なトークンの暗号化/復号化を実装しました。",
+      "- **TokenService**: 同期ファイル I/O 依存関係を削除するために完全に書き直されました。トークン管理に `AuthService` を使用し、更新タスクに `JobSchedulerService` を使用するようになりました。",
+      "- **CopilotService**: `AuthService` からの非同期トークンの取得をサポートするように更新され、起動時の競合状態が解決されました。",
+      "- **UsageTrackingService**: ユーザー アクティビティの追跡を `usage_events` テーブルに移行しました。",
+      "- **PromptTemplatesService**: カスタム プロンプト テンプレートを `prompt_templates` テーブルに移行しました。",
+      "- **AuditLogService**: セキュリティ監査ログを `audit_logs` テーブルに移行しました。",
+      "- **JobSchedulerService**: ジョブ状態の永続性を `scheduler_state` テーブルに移行しました。",
+      "- **クリーンアップ**: 移行されたサービスから従来の JSON ファイル処理 (読み取り/書き込み/暗号化) を削除しました。",
+      "- **スキーマ**: 新しいテーブルを追加しました: `auth_tokens`、`usage_events`、`prompt_templates`、`audit_logs`、`scheduler_state`。"
     ]
   },
   "2026-01-15-security-fixes": {
-    "title": "Security & Fixes",
-    "summary": "Security & Fixes strengthened reliability and safety by addressing known issues and hardening critical paths.",
+    "title": "セキュリティと修正",
+    "summary": "セキュリティと修正は、既知の問題に対処し、クリティカル パスを強化することで、信頼性と安全性を強化しました。",
     "items": [
-      "- **Security Check**: Fixed critical path traversal and shell injection vulnerabilities in `SSHService`.",
-      "- **Memory Leak**: Fixed memory leak in `TokenService` by implementing proper interval cleanup.",
-      "- **Secrets Management**: Removed hardcoded credentials and migrated vendor secrets (iFlow, Qwen, Codex, Claude, Gemini) to environment variables.",
-      "- **XSS Protection**: Enforced `DOMPurify` sanitization for Mermaid diagrams in `MarkdownRenderer` and `MessageBubble`.",
-      "- **Injection Prevention**: Hardened `LocalAIService` by removing unnecessary `shell: true`."
+      "- **セキュリティ チェック**: `SSHService` のクリティカル パス トラバーサルとシェル インジェクションの脆弱性を修正しました。",
+      "- **メモリ リーク**: 適切な間隔クリーンアップを実装することで、`TokenService` のメモリ リークを修正しました。",
+      "- **シークレット管理**: ハードコードされた認証情報を削除し、ベンダー シークレット (iFlow、Qwen、Codex、Claude、Gemini) を環境変数に移行しました。",
+      "- **XSS 保護**: `MarkdownRenderer` および `MessageBubble` のマーメイド図に対して `DOMPurify` のサニタイズを強制しました。",
+      "- **インジェクション防止**: 不要な `shell: true` を削除することで `LocalAIService` を強化しました。"
     ]
   },
   "2026-01-14-stats-performance": {
-    "title": "Stats & Performance",
-    "summary": "Stats & Performance improved runtime performance, stability, and operational consistency across key workflows.",
+    "title": "統計とパフォーマンス",
+    "summary": "統計とパフォーマンスにより、runtime のパフォーマンス、安定性、主要なワークフロー全体での運用の一貫性が向上しました。",
     "items": [
-      "- **DatabaseService**: Implemented `getDetailedStats` and fixed `getTimeStats`- [x] Development of the Statistics dashboard (Charts and Token Usage)",
-      "  rectly.",
-      "- **DatabaseService**: Replaced `console` calls with `appLogger` and cleaned up relative imports.",
-      "- **SettingsService**: Integrated `appLogger`, cleaned up relative imports, and enhanced `JSON.parse` with recovery/error handling.",
-      "- **SecurityService**: Integrated `appLogger` and improved error handling for encryption/decryption.",
-      "- **IPC**: Hardened `window.ts` by removing dangerous shell execution fallbacks and sanitizing terminal commands.",
-      "- **Imports**: Completed mass conversion of relative imports to path aliases (`@main`, `@renderer`, `@shared`) across the entire codebase (37+ files).",
-      "- **Renderer**: Fixed UI regressions and corrupted imports in `AgentDashboard.tsx` and `AgentChatRoom.tsx`.",
-      "- **Main**: Resolved parsing errors in `command.service.ts` and `git.service.ts`.",
-      "- **Cleanup**: Removed several unused imports and unused variables identified during the cleanup process.",
-      "- **Security**: Hardened `window` IPC handlers (sanitized shell commands and removed unsafe exec fallback).",
-      "- **Async**: Converted synchronous file operations to asynchronous in `QuotaService` and `TokenService`.",
-      "- **Chat**: Resolved \"placeholder ghosting\" when API generation fails.",
-      "-   - Replaced silent error catches and console calls with `appLogger` across core services.",
-      "- **Docs**: Consolidated 19 markdown files into 6 themed documents.",
-      "- **Audit**: Completed initial small cleanup tasks from `TODO.md`."
+      "- **DatabaseService**: `getDetailedStats` を実装し、`getTimeStats` を修正しました。 - [x] 統計ダッシュボードの開発 (グラフとトークンの使用状況)",
+      "正しく。",
+      "- **DatabaseService**: `console` 呼び出しを `appLogger` に置き換え、相対インポートをクリーンアップしました。",
+      "- **SettingsService**: `appLogger` を統合し、相対的なインポートをクリーンアップし、回復/エラー処理を備えた `JSON.parse` を強化しました。",
+      "- **SecurityService**: `appLogger` を統合し、暗号化/復号化のエラー処理を改善しました。",
+      "- **IPC**: 危険なシェル実行フォールバックを削除し、端末コマンドをサニタイズすることにより、`window.ts` を強化しました。",
+      "- **インポート**: コードベース全体 (37 以上のファイル) で、相対インポートのパス エイリアス (`@main`、`@renderer`、`@shared`) への一括変換が完了しました。",
+      "- **レンダラー**: UI の回帰と、`AgentDashboard.tsx` および `AgentChatRoom.tsx` のインポートの破損を修正しました。",
+      "- **メイン**: `command.service.ts` および `git.service.ts` の解析エラーを解決しました。",
+      "- **クリーンアップ**: クリーンアップ プロセス中に特定されたいくつかの未使用のインポートと未使用の変数を削除しました。",
+      "- **セキュリティ**: 強化された `window` IPC handlers (シェル コマンドをサニタイズし、安全でない実行 fallback を削除)。",
+      "- **Async**: `QuotaService` および `TokenService` での同期ファイル操作を非同期に変換しました。",
+      "- **チャット**: API の生成が失敗した場合の「プレースホルダーのゴースト」を解決しました。",
+      "- - コア サービス全体でサイレント エラー キャッチとコンソール呼び出しを `appLogger` に置き換えました。",
+      "- **ドキュメント**: 19 個のマークダウン ファイルを 6 つのテーマ別ドキュメントに統合しました。",
+      "- **監査**: `TODO.md` からの最初の小規模なクリーンアップ タスクを完了しました。"
     ]
   },
   "2026-01-14-build-improvements": {
-    "title": "Build Improvements",
-    "summary": "Build Improvements improved UI consistency, maintainability, and end-user experience across related surfaces.",
+    "title": "ビルドの改善",
+    "summary": "ビルドの改善により、関連するサーフェス全体で UI の一貫性、保守性、エンドユーザー エクスペリエンスが向上しました。",
     "items": [
-      "- **Build**: Fixed TypeScript errors related to unused variables and incorrect return types.",
-      "- **IPC**: Standardized `onStreamChunk` return types.",
-      "## Version History",
-      "### v1.2.0: Unified Microservice Sync",
-      "- Transitioned to HTTP-based bidirectional token synchronization.",
-      "- Eliminated persistent file-based credentials for improved security.",
-      "- Standardized cross-process communication between Electron and Go/Rust services.",
-      "### v1.1.0: Multi-LLM Support",
-      "### v1.0.0: Initial Release",
-      "- Basic chat functionality with OpenAI and Anthropic.",
-      "- Local Ollama support.",
-      "- Project management view.",
-      "- Theme support (Dark/Light)."
+      "- **ビルド**: 未使用の変数と不正な戻り値の型に関連する TypeScript エラーを修正しました。",
+      "- **IPC**: 標準化された `onStreamChunk` 戻り値の型。",
+      "## バージョン履歴",
+      "### v1.2.0: 統合マイクロサービス同期",
+      "- HTTP ベースの双方向トークン同期に移行しました。",
+      "- セキュリティを向上させるために、永続的なファイルベースの認証情報を削除しました。",
+      "- Electron と Go/Rust サービス間の標準化されたクロスプロセス通信。",
+      "### v1.1.0: マルチ LLM のサポート",
+      "### v1.0.0: 初期リリース",
+      "- OpenAI および Anthropic を使用した基本的なチャット機能。",
+      "- ローカル Ollama のサポート。",
+      "- プロジェクト管理ビュー。",
+      "- テーマのサポート (ダーク/ライト)。"
     ]
   },
   "2026-02-12-message-normalizer-refactor": {
@@ -3442,231 +3447,241 @@
     ]
   },
   "2026-02-13-token-counting-accuracy": {
-    "title": "Improved Token Counting Accuracy",
-    "summary": "Integrated js-tiktoken for precise token estimation across GPT, Claude, and Llama models.",
+    "title": "トークンカウント精度の向上",
+    "summary": "GPT、Claude、Llama モデル全体で正確なトークン推定を行うための統合された js-tiktoken。",
     "items": [
-      "Integrated `js-tiktoken` for accurate tokenization mapping to cl100k_base and o200k_base encodings.",
-      "Improved context window management with precise model limits for major LLM providers.",
-      "Maintained heuristic-based fallbacks for unsupported models to ensure estimation continuity.",
-      "Added comprehensive unit tests to verify token counting accuracy for various models."
+      "cl100k_base および o200k_base エンコーディングへの正確なトークン化マッピングのために `js-tiktoken` が統合されました。",
+      "主要な LLM プロバイダーの正確なモデル制限により、コンテキスト ウィンドウの管理が改善されました。",
+      "推定の継続性を確保するために、サポートされていないモデルに対するヒューリスティック ベースのフォールバックが維持されました。",
+      "さまざまなモデルのトークンカウントの精度を検証するための包括的な単体テストが追加されました。"
     ]
   },
   "2026-02-13-llm-service-improvements": {
-    "title": "LLM Service Improvements: Fallback & Caching",
-    "summary": "Enhanced the LLM service with model fallback, response caching, and improved streaming response management.",
+    "title": "LLM サービスの改善: Fallback とキャッシュ",
+    "summary": "モデル fallback、応答キャッシュ、およびストリーミング応答管理の改善により、LLM サービスが強化されました。",
     "items": [
-      "- **Model Fallback**: Added `ModelFallbackService` for automatic failover between LLM providers to ensure service continuity.",
-      "- **Response Caching**: Implemented `ResponseCacheService` to cache and reuse assistant responses, improving performance and reducing costs.",
-      "- **Streaming Enhancements**: Improved `AbortSignal` handling and implemented partial response saving for cancelled streams.",
-      "- **Reliability**: Integrated circuit breaker patterns via the fallback service for proactive error management."
+      "- **モデル Fallback**: サービスの継続性を確保するため、LLM プロバイダー間の自動フェイルオーバー用に `ModelFallbackService` を追加しました。",
+      "- **応答キャッシュ**: アシスタントの応答をキャッシュして再利用するための `ResponseCacheService` が実装され、パフォーマンスが向上し、コストが削減されました。",
+      "- **ストリーミングの機能強化**: `AbortSignal` の処理が改善され、キャンセルされたストリームに対する部分応答の保存が実装されました。",
+      "- **信頼性**: プロアクティブなエラー管理のための fallback サービスを介した統合サーキット ブレーカー パターン。"
     ]
   },
   "2026-02-13-huggingface-integration-core": {
-    "title": "Core HuggingFace Integration & GGUF Support",
-    "summary": "Implemented the foundation for HuggingFace model integration, including a dedicated scraper, GGUF metadata parser, and robust download manager.",
+    "title": "コア HuggingFace の統合と GGUF のサポート",
+    "summary": "専用のスクレイパー、GGUF メタデータ パーサー、堅牢なダウンロード マネージャーなど、HuggingFace モデル統合の基盤を実装しました。",
     "items": [
-      "- **Scraper Service**: Created `HuggingFaceService` for searching and fetching model metadata with local caching.",
-      "- **GGUF Parsing**: Added partial GGUF header parser to extract model architecture and context length.",
-      "- **Download Manager**: Implemented resumable downloads with SHA256 verification and real-time progress tracking.",
-      "- **Service Integration**: Wired `HuggingFaceService` into `ModelRegistryService` and `LLMService` via dependency injection.",
-      "- **Tests**: Updated comprehensive unit tests for `ModelRegistryService` and `LLMService` to ensure integration stability."
+      "- **スクレイパー サービス**: ローカル キャッシュを使用してモデル メタデータを検索および取得するために `HuggingFaceService` を作成しました。",
+      "- **GGUF 解析**: モデル アーキテクチャとコンテキスト長を抽出するために、部分的な GGUF ヘッダー パーサーを追加しました。",
+      "- **ダウンロード マネージャー**: SHA256 検証とリアルタイムの進行状況追跡を備えた再開可能なダウンロードが実装されました。",
+      "- **サービス統合**: 依存関係注入を介して `HuggingFaceService` を `ModelRegistryService` および `LLMService` に接続しました。",
+      "- **テスト**: 統合の安定性を確保するために、`ModelRegistryService` および `LLMService` の包括的な単体テストを更新しました。"
     ]
   },
   "2026-02-13-ipc-handler-tests-expansion-batch-5-fix-test-01": {
-    "title": "IPC Handler Tests expansion & TEST-01 Fix",
-    "summary": "Resolved TEST-01 (checkpoint resume test) and completed IPC test coverage for Database and Project Agent handlers.",
+    "title": "IPC Handler テストの拡張と TEST-01 の修正",
+    "summary": "TEST-01 (チェックポイント再開テスト) を解決し、データベースおよびプロジェクト エージェント handlers の IPC テスト カバレッジを完了しました。",
     "items": [
-      "- **Tests**: Fixed `agent-executor.service.test.ts` expectation mismatch in checkpoint resume test.",
-      "- **IPC Coverage**: Created `db.integration.test.ts` covering Chat, Project, and Folder handlers.",
-      "- **IPC Coverage**: Created `project-agent.integration.test.ts` covering Start, Stop, Status, and HIL handlers.",
-      "- **Code Intelligence**: Fixed TypeScript parameter type mismatches in `code-intelligence.integration.test.ts`."
+      "- **テスト**: チェックポイント再開テストにおける `agent-executor.service.test.ts` の期待値の不一致を修正しました。",
+      "- **IPC の範囲**: チャット、プロジェクト、フォルダー handlers をカバーする `db.integration.test.ts` を作成しました。",
+      "- **IPC カバレッジ**: 開始、停止、ステータス、および HIL handlers をカバーする `project-agent.integration.test.ts` を作成しました。",
+      "- **コード インテリジェンス**: `code-intelligence.integration.test.ts` の TypeScript パラメーター タイプの不一致を修正しました。"
     ]
   },
   "2026-02-13-ollama-abort-fix-and-chat-refactor": {
-    "title": "Ollama Abort Fix & Chat Refactor",
-    "summary": "Fixed 'No handler registered for ollama:abort' error and refactored Ollama chat handlers to use the robust OllamaService.",
+    "title": "Ollama 修正の中止とチャットのリファクタリング",
+    "summary": "「ollama:abort に handler が登録されていません」エラーを修正し、堅牢な OllamaService を使用するように Ollama チャット handlers をリファクタリングしました。",
     "items": [
-      "- **IPC**: Added missing `ollama:abort` IPC handler to support cancellation of chat requests.",
-      "- **Refactor**: Updated `ollama:chat` and `ollama:chatStream` to use `OllamaService` instead of `LocalAIService` fallback, enabling true streaming and abort capabilities.",
-      "- **Tests**: Updated integration tests to verify abort functionality and mock `OllamaService` methods correctly."
+      "- **IPC**: チャット リクエストのキャンセルをサポートするために、欠落していた `ollama:abort` IPC handler を追加しました。",
+      "- **リファクタリング**: `LocalAIService` fallback の代わりに `OllamaService` を使用するように `ollama:chat` と `ollama:chatStream` を更新し、真のストリーミング機能と中止機能を有効にしました。",
+      "- **テスト**: 中止機能を検証し、`OllamaService` メソッドを正しく模擬するために統合テストを更新しました。"
     ]
   },
   "2026-02-14-ui-chat-shimmer-animation": {
-    "title": "Chat Generation Shimmer Animation",
-    "summary": "Added a subtle shimmer animation to the chat title in the sidebar when the AI is generating a response.",
+    "title": "チャット生成シマーアニメーション",
+    "summary": "AI が応答を生成しているときに、サイドバーのチャット タイトルに微妙に光るアニメーションを追加しました。",
     "items": [
-      "- **UI**: Implemented `animate-text-shimmer` class for a premium loading effect.",
-      "- **Sidebar**: Applied the shimmer effect to the chat item label when `isGenerating` is true."
+      "- **UI**: プレミアム ローディング効果のために `animate-text-shimmer` クラスを実装しました。",
+      "- **サイドバー**: `isGenerating` が true の場合、チャット アイテム ラベルにシマー効果を適用しました。"
     ]
   },
   "2026-02-14-marketplace-ui-error-handling": {
-    "title": "Marketplace UI Error Handling",
-    "summary": "Added proper error handling and retry mechanism to the Model Marketplace grid.",
+    "title": "Marketplace UI エラー処理",
+    "summary": "Model Marketplace グリッドに適切なエラー処理と再試行メカニズムが追加されました。",
     "items": [
-      "- **UI**: Display user-friendly error message when model fetching fails.",
-      "- **UX**: Added a retry button to recover from transient network or service errors."
+      "- **UI**: モデルの取得が失敗した場合に、わかりやすいエラー メッセージを表示します。",
+      "- **UX**: 一時的なネットワークまたはサービスのエラーから回復するための再試行ボタンを追加しました。"
     ]
   },
   "2026-02-14-error-fallback-enhancement": {
-    "title": "Enhanced Error Display",
-    "summary": "Improved the application error screen to show detailed error messages and stack traces for better debugging.",
+    "title": "強化されたエラー表示",
+    "summary": "アプリケーション エラー画面が改善され、詳細なエラー メッセージとスタック トレースが表示され、デバッグが容易になりました。",
     "items": [
-      "- **Transparency**: Added detailed error message display instead of generic text.",
-      "- **Debugging**: Included collapsible stack trace for technical troubleshooting.",
-      "- **Usability**: Added 'Copy Details' button to easily share error information.",
-      "- **UX**: Automatic error state reset when navigating between different views."
+      "- **透明性**: 一般的なテキストの代わりに詳細なエラー メッセージ表示を追加しました。",
+      "- **デバッグ**: 技術的なトラブルシューティングのための折りたたみ可能なスタック トレースが含まれています。",
+      "- **使いやすさ**: エラー情報を簡単に共有できるように「詳細をコピー」ボタンを追加しました。",
+      "- **UX**: 異なるビュー間を移動するときにエラー状態が自動的にリセットされます。"
     ]
   },
   "2026-02-14-sd-cpp-binary-discovery-fix": {
-    "title": "SD-CPP Binary Discovery Fix",
-    "summary": "Fixed an issue where the stable-diffusion.cpp executable could not be found after download due to naming convention differences.",
+    "title": "SD-CPP バイナリ検出の修正",
+    "summary": "命名規則の違いにより、stable-diffusion.cpp 実行可能ファイルがダウンロード後に見つからない問題を修正しました。",
     "items": [
-      "- **Fix**: Added support for detecting `sd-cli.exe` and `stable-diffusion.exe` in addition to `sd.exe`.",
-      "- **Robustness**: Improved recursive binary discovery to handle various release structures.",
-      "- **Code Quality**: Removed forbidden `eslint-disable` comments and added strict service dependency checks."
+      "- **修正**: `sd.exe` に加えて、`sd-cli.exe` および `stable-diffusion.exe` の検出のサポートを追加しました。",
+      "- **堅牢性**: さまざまなリリース構造を処理できるように再帰的バイナリ検出が改善されました。",
+      "- **コード品質**: 禁止されている `eslint-disable` コメントを削除し、厳密なサービス依存関係チェックを追加しました。"
     ]
   },
   "2026-02-17-token-rotation-hardening-sec-001": {
-    "title": "Token Rotation Hardening (SEC-001)",
-    "summary": "Implemented a robust token rotation mechanism with exponential backoff and proactive refresh buffers to prevent session timeouts.",
+    "title": "トークンローテーションハードニング (SEC-001)",
+    "summary": "セッション タイムアウトを防ぐために、指数バックオフとプロアクティブなリフレッシュ バッファーを備えた堅牢なトークン ローテーション メカニズムを実装しました。",
     "items": [
-      "- **TokenService (TS)**: Added 5-minute proactive refresh buffer and `withRetry` utility for exponential backoff on failures.",
-      "- **tengra-token-service (Rust)**: Hardened background refresh loop with retry logic and added `/health` endpoint.",
-      "- **Health Monitoring**: Implemented `getTokenHealth` API in TypeScript and Rust for real-time token status tracking.",
-      "- **Event Handling**: Added `token:permanent_failure` event to detect and handle revoked or expired credentials.",
-      "- **Verification**: Verified clean build, lint, and type-check across both components."
+      "- **TokenService (TS)**: 5 分間のプロアクティブな更新バッファーと、障害時の指数バックオフ用の `withRetry` ユーティリティを追加しました。",
+      "- **tengra-token-service (Rust)**: 再試行ロジックを使用してバックグラウンド更新ループを強化し、`/health` エンドポイントを追加しました。",
+      "- **ヘルスモニタリング**: リアルタイムのトークンステータス追跡のために、TypeScript と Rust に `getTokenHealth` API を実装しました。",
+      "- **イベント処理**: 取り消された資格情報または期限切れの資格情報を検出して処理するための `token:permanent_failure` イベントを追加しました。",
+      "- **検証**: 両方のコンポーネントにわたってクリーン ビルド、lint、および型チェックを検証しました。"
     ]
   },
   "2026-02-17-llm-05-attachments-and-audit-backlog": {
-    "title": "LLM-05 Progress: Multi-modal attachment handling and audit backlog expansion",
-    "summary": "Implemented LLM-05 file-type detection and image size optimization in chat attachments, then added a large actionable audit backlog across security, performance, UX, and architecture.",
+    "title": "LLM-05 進捗状況: マルチモーダルな添付ファイルの処理と監査バックログの拡張",
+    "summary": "チャット添付ファイルに LLM-05 ファイル タイプの検出と画像サイズの最適化を実装し、セキュリティ、パフォーマンス、UX、アーキテクチャ全体にわたって実用的な大規模な監査バックログを追加しました。",
     "items": [
-      "- **LLM-05.4**: Added stronger attachment file-type detection with MIME + extension fallback and safer attachment type mapping.",
-      "- **LLM-05.5**: Added client-side image preprocessing and size optimization for large image attachments before model submission.",
-      "- **Chat Flow**: Updated chat send pipeline to include ready image attachments as multimodal image inputs and include non-image attachment context in prompts.",
-      "- **Backlog Expansion**: Added 100+ new actionable TODO items in `docs/TODO.md` from repository-wide audits (security, performance, accessibility/UX, architecture/testing)."
+      "- **LLM-05.4**: MIME + 拡張子 fallback による強力な添付ファイル タイプ検出と、より安全な添付ファイル タイプ マッピングを追加しました。",
+      "- **LLM-05.5**: モデルの送信前に、クライアント側の画像前処理と大きな画像添付ファイルのサイズの最適化を追加しました。",
+      "- **チャット フロー**: チャット送信パイプラインを更新して、準備ができている画像添付ファイルをマルチモーダル画像入力として含め、プロンプトに非画像添付コンテキストを含めるようにしました。",
+      "- **バックログの拡張**: リポジトリ全体の監査 (セキュリティ、パフォーマンス、アクセシビリティ/UX、アーキテクチャ/テスト) から `docs/TODO.md` に 100 以上の新しい実行可能な TODO 項目を追加しました。",
+      "- **パフォーマンス バッチ #1**: MessageList レンダー パス状態の削除、サイドバー フォルダー チャットの事前計算、MessageBubble コンパレーターの最適化 (`JSON.stringify` ディープ コンペアの削除)、プロジェクト検索インデックス キャッシュ、キャッシュされた固定/最近の派生による遅延/インデックス付きサイドバー検索など、主要な PERF リファクターが完了しました。",
+      "- **パフォーマンス バッチ #2**: 安定した行コールバックのためのメモ化された MessageList アクション handlers と、アクティブな並べ替えモードごとに 1 回並べ替えてから、並べ替えられた結果をフィルターするようにプロジェクトの並べ替えフローが変更されました。",
+      "- **パフォーマンス バッチ #3**: `useChatManager` に遅延 + インデックス付きメッセージ検索を追加し、メッセージごとに繰り返される小文字化を減らし、入力中の検索更新をスムーズにします。",
+      "- **パフォーマンス バッチ #4**: ツール ループ内のコールバック状態読み取りハックをローカル メッセージ スナップショットに置き換え、マルチモデル ストリーミング ファンアウトを調整し、ストリーミング ティックでネストされたチャット/メッセージ マッピングを削減し、実行中の DB ストリーム保存を結合し、最初のペイントまで重要でないスタートアップ サービスを延期することにより、ストリーム更新パスを最適化しました。",
+      "- **パフォーマンス バッチ #5**: プロジェクト リスト モードに仮想化を追加し、大規模なデータセットのレンダラーの作業を軽減するためにメモリを確認しました。",
+      "- **パフォーマンス バッチ #6**: アプリ起動時の完全なメッセージ ペイロードの読み込みを回避するために、チャット起動時のハイドレーションをメタデータ優先読み込みと、選択したチャットごとの遅延メッセージ フェッチに切り替えました。",
+      "- **パフォーマンス バッチ #7**: シリアル化されたバックグラウンド PDF エクスポート キューを追加し、データ移行フローを同期ファイル システム呼び出しから非同期チャンク操作に変換しました。",
+      "- **パフォーマンス バッチ #8**: リポジトリ レベルでページ分割された SELECT ヘルパーを追加し、それを大量のチャット/プロジェクト/ナレッジ読み取りパスに適用して、無制限のメモリ内スキャンを回避しました。",
+      "- **パフォーマンス バッチ #9**: サイドバー チャット リストの仮想化、キャッシュされた思考/計画セクションの解析、安定したメッセージ用のメモ化されたマークダウン出力、遅延ロードされたマークダウン レンダラー モジュール、回避可能なツリー レンダリングを減らすためのルート アプリのコールバック/サブスクリプションの分割により、残りのレンダラー PERF アイテムが完成しました。"
     ]
   },
   "2026-02-17-llm-security-and-attachments": {
-    "title": "LLM Security & Robust Attachments",
-    "summary": "Enhanced AI security with prompt input sanitization and improved file uploads with binary signature detection.",
+    "title": "LLM セキュリティと堅牢な添付ファイル",
+    "summary": "プロンプト入力サニタイズにより AI セキュリティが強化され、バイナリ署名検出によりファイル アップロードが改善されました。",
     "items": [
-      "- **LLM-09.2**: Added HTML/JS prompt sanitization utility to prevent potential XSS/injection vectors while preserving code readability via entity escaping.",
-      "- **LLM-05.4**: Implemented robust file type detection using binary signatures (magic numbers) to prevent file extension spoofing.",
-      "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size."
+      "- **LLM-09.2**: エンティティ エスケープによってコードの可読性を維持しながら、潜在的な XSS/インジェクション ベクターを防ぐための HTML/JS プロンプト サニタイズ ユーティリティを追加しました。",
+      "- **LLM-05.4**: ファイル拡張子のスプーフィングを防ぐために、バイナリ署名 (マジック ナンバー) を使用した堅牢なファイル タイプ検出を実装しました。",
+      "- **DEBT-03**: Removed unused `cheerio` dependency to reduce bundle size.",
+      "- **DEBT-03**: バンドル サイズを削減するために、未使用の `cheerio` 依存関係を削除しました。"
     ]
   },
   "2026-02-17-copilot-token-refactor": {
-    "title": "Copilot Token Refresh Refactor",
-    "summary": "Migrated Copilot token refresh logic to the Rust-based tengra-token-service for improved reliability.",
+    "title": "コパイロットトークンリフレッシュリファクタリング",
+    "summary": "信頼性を向上させるために、Copilot トークンの更新ロジックを Rust ベースの tengra-token-service に移行しました。",
     "items": [
-      "- **Architecture**: Moved Copilot token refresh from TypeScript to the Rust-based `tengra-token-service` sidecar.",
-      "- **Reliability**: Implemented VSCode-compatible headers and background refresh in Rust to ensure session tokens remain valid.",
-      "- **Integration**: Updated `TokenService` to sync Rust-managed tokens to `AuthService`.",
-      "- **Optimization**: Refactored `CopilotService` to prioritize synced tokens, reducing main process overhead."
+      "- **アーキテクチャ**: Copilot トークンのリフレッシュを TypeScript から Rust ベースの `tengra-token-service` サイドカーに移動しました。",
+      "- **信頼性**: セッション トークンが有効なままであることを保証するために、Rust に VSCode 互換ヘッダーとバックグラウンド更新を実装しました。",
+      "- **統合**: Rust 管理のトークンを `AuthService` に同期するために `TokenService` を更新しました。",
+      "- **最適化**: `CopilotService` をリファクタリングして、同期されたトークンを優先し、メイン プロセスのオーバーヘッドを削減しました。"
     ]
   },
   "2026-02-18-aud-ux-accessibility": {
-    "title": "AUD-UX 001-025 Accessibility and Interaction Improvements",
-    "summary": "Completed the AUD-UX task set with keyboard, focus, semantics, and localization improvements across core UI surfaces.",
+    "title": "AUD-UX 001-025 アクセシビリティとインタラクションの改善",
+    "summary": "コア UI サーフェス全体にわたるキーボード、フォーカス、セマンティクス、およびローカリゼーションの改善を含む AUD-UX タスク セットを完了しました。",
     "items": [
-      "- **Chat UX**: Added live region announcements, corrected list semantics, and improved keyboard help/command suggestions.",
-      "- **Command Palette**: Enforced modal focus-trap behavior and improved semantic structure for close controls and results.",
-      "- **Base UI**: Improved shared modal and error boundary affordances with clearer controls and recovery actions.",
-      "- **Session & Navigation**: Added session lock focus/Escape handling and roving keyboard navigation in sidebar and activity areas.",
-      "- **Titlebar/Quick Actions**: Added missing labels, changelog filter accessibility labels, and keyboard discoverability for quick actions."
+      "- **チャット UX**: ライブ リージョンのアナウンスを追加し、リストのセマンティクスを修正し、キーボードのヘルプ/コマンドの提案を改善しました。",
+      "- **コマンド パレット**: モーダル フォーカス トラップ動作を強制し、厳密なコントロールと結果を実現するためのセマンティック構造を改善しました。",
+      "- **ベース UI**: より明確な制御と回復アクションにより、共有モーダルとエラー境界のアフォーダンスが改善されました。",
+      "- **セッションとナビゲーション**: サイドバーとアクティビティ領域にセッション ロック フォーカス/エスケープ処理とロービング キーボード ナビゲーションを追加しました。",
+      "- **タイトルバー/クイック アクション**: 欠落していたラベル、変更ログ フィルターのアクセシビリティ ラベル、およびクイック アクションのキーボード検出機能を追加しました。"
     ]
   },
   "2026-02-18-terminal-ipc-renderer-migration": {
-    "title": "Terminal IPC Renderer Migration",
-    "summary": "Completed the migration of Terminal renderer components to use type-safe IPC communication.",
+    "title": "ターミナル IPC レンダラーの移行",
+    "summary": "タイプセーフな IPC 通信を使用するためのターミナル レンダラー コンポーネントの移行が完了しました。",
     "items": [
-      "- **Type Safety**: Migrated `useTerminal`, `TerminalConnectionSelector`, and other components to use `invokeTypedIpc` with `TerminalIpcContract`.",
-      "- **Validation**: Enforced Zod schema validation for terminal IPC responses in the renderer.",
-      "- **Code Cleanup**: Removed raw `window.electron.terminal` calls and unused imports.",
-      "- **Bug Fix**: Fixed `getDockerContainers` return type handling in connection selector."
+      "- **タイプ セーフティ**: `useTerminal`、`TerminalConnectionSelector`、およびその他のコンポーネントが `invokeTypedIpc` と `TerminalIpcContract` を使用するように移行されました。",
+      "- **検証**: レンダラでの端末 IPC 応答の Zod スキーマ検証を強制しました。",
+      "- **コードのクリーンアップ**: 生の `window.electron.terminal` 呼び出しと未使用のインポートを削除しました。",
+      "- **バグ修正**: 接続セレクターでの `getDockerContainers` 戻り値の型の処理を修正しました。"
     ]
   },
   "2026-02-18-aud-arch-foundation": {
-    "title": "AUD-ARCH Initial Reliability Hardening",
-    "summary": "Completed the first architecture reliability batch by tightening IPC schemas and removing silent failure paths.",
+    "title": "AUD-ARCH 初期信頼性強化",
+    "summary": "IPC スキーマを強化し、サイレント障害パスを削除することで、最初のアーキテクチャ信頼性バッチを完了しました。",
     "items": [
-      "- **AUD-ARCH-005/006**: Removed `as any` usage in chat IPC registration and replaced permissive `z.any()` chat schemas with `z.unknown()` based validation.",
-      "- **AUD-ARCH-007/008**: Replaced permissive DB project args schema and strengthened rate limiter decorator typing.",
-      "- **AUD-ARCH-015/017**: Removed silent catches in terminal cleanup and project scanning paths, replacing them with explicit warnings.",
-      "- **AUD-ARCH-019**: Surfaced stale temp image cleanup failures with explicit warning logs and failure signaling."
+      "- **AUD-ARCH-005/006**: チャット IPC 登録での `as any` の使用を削除し、寛容な `z.any()` チャット スキーマを `z.unknown()` ベースの検証に置き換えました。",
+      "- **AUD-ARCH-007/008**: 許容的な DB プロジェクト引数スキーマを置き換え、レート リミッター デコレータ タイピングを強化しました。",
+      "- **AUD-ARCH-015/017**: ターミナルのクリーンアップとプロジェクトのスキャン パスのサイレント キャッチを削除し、明示的な警告に置き換えました。",
+      "- **AUD-ARCH-019**: 明示的な警告ログと失敗通知により、古い一時イメージのクリーンアップの失敗が明らかになりました。"
     ]
   },
   "2026-02-18-aud-arch-completion": {
-    "title": "AUD-ARCH 001-020 Completion",
-    "summary": "Completed architecture audit tasks with preload/startup decomposition, wrapper standardization, and reliability-focused test coverage.",
+    "title": "AUD-ARCH 001-020 完了",
+    "summary": "プリロード/起動分解、wrapper 標準化、および信頼性を重視したテスト カバレッジを含む、アーキテクチャ監査タスクを完了しました。",
     "items": [
-      "- **Preload/Startup**: Added domain-based preload bridge modules and startup lifecycle composition helpers with regression tests.",
-      "- **IPC Hardening**: Migrated remaining legacy marketplace handlers to validated wrappers and upgraded coverage tests from regex/smoke to behavior assertions.",
-      "- **Service Reliability**: Replaced smoke-only service tests with functional assertions and added terminal session lifecycle/persistence tests.",
-      "- **Failure Paths**: Added negative-path tests for project scanning and provider fallback failures in local image generation."
+      "- **プリロード/スタートアップ**: ドメインベースのプリロード ブリッジ モジュールと、回帰テストを備えたスタートアップ ライフサイクル構成ヘルパーを追加しました。",
+      "- **IPC の強化**: 残りのレガシー Marketplace handlers を検証済みの wrappers に移行し、カバレッジ テストを正規表現/スモークから動作アサーションにアップグレードしました。",
+      "- **サービスの信頼性**: スモークのみのサービス テストを機能アサーションに置き換え、ターミナル セッションのライフサイクル/永続性テストを追加しました。",
+      "- **障害パス**: ローカル イメージ生成におけるプロジェクト スキャンとプロバイダー fallback 障害に対するネガティブ パス テストを追加しました。"
     ]
   },
   "2026-02-18-aud-sec-preload-hardening": {
-    "title": "AUD-SEC Preload API Hardening (001/002)",
-    "summary": "Reduced unsafe generic IPC surface by replacing generic renderer bridge APIs with explicit channel-specific methods.",
+    "title": "AUD-SEC プリロード API 強化 (001/002)",
+    "summary": "汎用レンダラー ブリッジ API を明示的なチャネル固有のメソッドに置き換えることにより、安全でない汎用 IPC サーフェスを削減しました。",
     "items": [
-      "- **AUD-SEC-001**: Removed generic `window.electron.invoke` exposure and migrated callers to explicit API methods.",
-      "- **AUD-SEC-002**: Removed generic `window.electron.on` bridge and replaced listeners with named subscription methods for chat, agent, and SD-CPP events.",
-      "- **Safety**: Added dedicated `modelDownloader` bridge methods to avoid dynamic channel invocation from renderer."
+      "- **AUD-SEC-001**: 汎用 `window.electron.invoke` の露出を削除し、呼び出し元を明示的な API メソッドに移行しました。",
+      "- **AUD-SEC-002**: 汎用の `window.electron.on` ブリッジを削除し、リスナーをチャット、エージェント、および SD-CPP イベントの名前付きサブスクリプション メソッドに置き換えました。",
+      "- **安全性**: レンダラーからの動的なチャネル呼び出しを回避するために、専用の `modelDownloader` ブリッジ メソッドを追加しました。"
     ]
   },
   "2026-02-18-project-terminal-diagnostics": {
-    "title": "Project Terminal Diagnostics Tab",
-    "summary": "Moved project warnings/errors from dashboard Issues to a dedicated terminal diagnostics tab and added dashboard analysis auto-refresh.",
+    "title": "プロジェクトターミナルの診断タブ",
+    "summary": "プロジェクトの警告/エラーをダッシュ​​ボードの問題から専用の端末診断タブに移動し、ダッシュボード分析の自動更新を追加しました。",
     "items": [
-      "- Added non-closable Project Issues tab in terminal panel with refresh and file-open navigation",
-      "- Removed Issues tab wiring from workspace/project dashboard navigation surfaces",
-      "- Added periodic project analysis auto-refresh policy in dashboard logic (AUD-PROJ-008)"
+      "- ターミナル パネルに、更新およびファイルを開くナビゲーションを備えた、閉じることのできない [プロジェクトの問題] タブを追加しました",
+      "- ワークスペース/プロジェクト ダッシュボードのナビゲーション サーフェスから [問題] タブの配線を削除しました",
+      "- ダッシュボード ロジックに定期的なプロジェクト分析の自動更新ポリシーを追加しました (AUD-PROJ-008)"
     ]
   },
   "2026-02-18-test-stability-and-ipc-fixes": {
-    "title": "Comprehensive Test Suite Stabilization and IPC Fixes",
-    "summary": "Resolved critical integration and renderer test failures across multiple modules, including Copilot, MCP, and UI components.",
+    "title": "包括的なテスト スイートの安定化と IPC の修正",
+    "summary": "Copilot、MCP、UI コンポーネントを含む複数のモジュールにわたる重要な統合およびレンダラー テストの失敗を解決しました。",
     "items": [
-      "- **IPC Stabilization**: Fixed failing integration tests by correcting synchronous service mocks and providing valid sender validation context.",
-      "- **Copilot Fixes**: Implemented correct token refresh logic with valid client IDs and fixed associated service tests.",
-      "- **Renderer Tests**: Restored failing renderer tests by mocking the mandatory IPC contract negotiation and updating ARIA role expectations for UI components.",
-      "- **Prompt Templates**: Corrected integration tests for LLM prompt templates to match the synchronous nature of the underlying services.",
-      "- **Marketplace**: Fixed MCP marketplace client tests by ensuring proper IPC contract versioning during typed invocations."
+      "- **IPC 安定化**: 同期サービス モックを修正し、有効な送信者検証コンテキストを提供することにより、統合テストの失敗を修正しました。",
+      "- **コパイロットの修正**: 有効なクライアント ID を使用した正しいトークン更新ロジックを実装し、関連するサービス テストを修正しました。",
+      "- **レンダラー テスト**: 必須の IPC コントラクト ネゴシエーションをモックし、UI コンポーネントに対する ARIA ロールの期待値を更新することで、失敗したレンダラー テストを復元しました。",
+      "- **プロンプト テンプレート**: LLM プロンプト テンプレートの統合テストが、基礎となるサービスの同期の性質と一致するように修正されました。",
+      "- **Marketplace**: 型指定された呼び出し中に適切な IPC コントラクトのバージョン管理を保証することにより、MCP Marketplaceのクライアント テストを修正しました。"
     ]
   },
   "2026-02-18-ipc-hardening-and-zod-contracts": {
-    "title": "Advanced IPC Hardening & Zod Contract Rules",
-    "summary": "Implemented verified architectural hardening rules to prevent IPC mismatches and enforce strict Zod schema parity.",
+    "title": "高度な IPC 強化および Zod 契約ルール",
+    "summary": "IPC の不一致を防ぎ、厳密な Zod スキーマ パリティを強制するために、検証済みのアーキテクチャ強化ルールを実装しました。",
     "items": [
-      "- **Strict Contracts**: Mandated dual Zod schemas (Args + Response) for all IPC handlers to prevent silent type errors.",
-      "- **Schema Parity**: Enforced `@shared/schemas` as the single source of truth for both Main and Renderer processes.",
-      "- **Store Isolation**: Banned `useState` for application state; mandated `useSyncExternalStore` patterns.",
-      "- **Disposal Guard**: Required explicit `dispose()` verification in all service tests.",
-      "- **Logging Policy**: Enforced `logs/` directory restriction for all temporary debug outputs."
+      "- **厳密な契約**: サイレント型エラーを防ぐために、すべての IPC handlers に対してデュアル Zod スキーマ (引数 + 応答) を必須とします。",
+      "- **スキーマ パリティ**: `@shared/schemas` をメイン プロセスとレンダラー プロセスの両方の信頼できる単一ソースとして強制しました。",
+      "- **ストアの分離**: アプリケーション状態の `useState` を禁止しました。必須の `useSyncExternalStore` パターン。",
+      "- **廃棄ガード**: すべてのサービス テストで明示的な `dispose()` 検証が必要です。",
+      "- **ログ ポリシー**: すべての一時的なデバッグ出力に対して `logs/` ディレクトリ制限を適用しました。"
     ]
   },
   "2026-02-18-git-panel-section-states": {
-    "title": "Git Panel Section State Indicators",
-    "summary": "Added section-level loading and error indicators for project Git dashboard panels to improve diagnostics visibility.",
+    "title": "Git パネル セクションの状態インジケーター",
+    "summary": "診断の可視性を向上させるために、プロジェクト Git ダッシュボード パネルにセクション レベルの読み込みインジケーターとエラー インジケーターを追加しました。",
     "items": [
-      "- Added section status metadata in git data loading pipeline for status/actions/remotes/commits/changes",
-      "- Rendered per-section loading/error/ready chips in ProjectGitTab for fine-grained feedback",
-      "- Completed AUD-PROJ-009 and updated project TODO tracking"
+      "- git データ読み込みパイプラインにステータス/アクション/リモート/コミット/変更のセクション ステータス メタデータを追加しました",
+      "- きめ細かいフィードバックのために、ProjectGitTab でセクションごとにロード/エラー/準備完了チップをレンダリング",
+      "- AUD-PROJ-009 を完了し、プロジェクト TODO 追跡を更新しました"
     ]
   },
   "2026-02-18-workspace-editor-tab-actions": {
-    "title": "Workspace Editor Tab Power Actions",
-    "summary": "Added advanced editor-tab context actions for pinning, bulk close operations, path copy, and explorer reveal in the project workspace.",
+    "title": "ワークスペースエディタータブのパワーアクション",
+    "summary": "プロジェクト ワークスペースでの固定、一括クローズ操作、パスのコピー、およびエクスプローラーの表示のための高度なエディター タブのコンテキスト アクションが追加されました。",
     "items": [
-      "- Added tab context menu actions: pin/unpin, close tab, close all, close to right, and close others",
-      "- Added clipboard actions for absolute and relative file paths from editor tabs",
-      "- Added reveal-in-file-explorer action and pinned-tab visual indicator in the workspace editor tab strip"
+      "- 追加されたタブのコンテキスト メニュー アクション: ピン留め/ピン留め解除、タブを閉じる、すべて閉じる、右に閉じる、その他を閉じる",
+      "- エディタタブからの絶対および相対ファイルパスに対するクリップボードアクションを追加しました",
+      "- ファイルエクスプローラー内で公開アクションと、ワークスペースエディターのタブストリップに固定されたタブの視覚的インジケーターを追加しました"
     ]
   },
   "2026-02-18-workspace-branch-popover-switch": {
-    "title": "Workspace Branch Switch Popover",
+    "title": "ワークスペース Branch スイッチ ポップオーバー",
     "summary": "Added branch-switch popover support in the workspace command strip with branch loading and checkout actions.",
     "items": [
       "- Click branch label to open branch list popover",
@@ -3675,147 +3690,148 @@
     ]
   },
   "2026-02-18-advanced-memory-features": {
-    "title": "Advanced Memory Versioning & Sharing (MEM-03/07/08)",
-    "summary": "Implemented advanced memory lifecycle management including versioning, rollback, expiration, and cross-project sharing.",
+    "title": "高度なメモリのバージョニングと共有 (MEM-03/07/08)",
+    "summary": "バージョン管理、ロールバック、有効期限、プロジェクト間共有などの高度なメモリ ライフサイクル管理を実装しました。",
     "items": [
-      "- **Versioning**: Added support for tracking memory history and rolling back to previous versions.",
-      "- **Expiration**: Implemented automatic archiving for memories with an expiration timestamp.",
-      "- **Sharing**: Enabled memory sharing across multiple projects while maintaining source links.",
-      "- **Categorization**: Added LLM-driven automatic re-categorization for evolving memories.",
-      "- **Automation**: Integrated expiration checks into the memory decay maintenance loop."
+      "- **バージョン管理**: メモリ履歴の追跡と以前のバージョンへのロールバックのサポートが追加されました。",
+      "- **有効期限**: 有効期限タイムスタンプを持つメモリの自動アーカイブを実装しました。",
+      "- **共有**: ソース リンクを維持しながら、複数のプロジェクト間でメモリを共有できるようになりました。",
+      "- **分類**: 進化する記憶のための LLM による自動再分類を追加しました。",
+      "- **自動化**: 有効期限チェックをメモリ減衰メンテナンス ループに統合しました。"
     ]
   },
   "2026-02-18-mcp-image-ssh-i18n-sweep": {
-    "title": "MCP Marketplace, Image Ops, SSH Profile Test, and i18n Completion",
-    "summary": "Activated MCP marketplace settings UX, completed image generation operations across backend/UI, added SSH profile testing, and reached full locale key parity.",
+    "title": "MCP Marketplace、イメージ運用、SSH プロファイル テスト、および i18n の完了",
+    "summary": "MCP Marketplace設定 UX をアクティブ化し、バックエンド/UI 全体でのイメージ生成操作を完了し、SSH プロファイル テストを追加し、完全なロケール キー パリティに達しました。",
     "items": [
       "- Activated MCP marketplace settings tab and linked browse/installed/compare flows with cards, detail view, install wizard, ratings, and comparison matrix",
-      "- Added SD-CPP image operation IPC/preload bridge for history, regenerate, analytics, presets, scheduling, queue stats, edit, batch generation, and comparison",
-      "- Added image operations UI in settings for history/regenerate, preset CRUD, scheduling/queue controls, batch runs, edit requests, and comparison summaries",
-      "- Added SSH connection profile test action (service + IPC + preload + modal button) with latency/error feedback",
-      "- Completed i18n locale key parity across tr/en/de/fr/es/ja/zh/ar and added missing keys for new settings/SSH flows"
+      "- 履歴、再生成、分析、プリセット、スケジューリング、キュー統計、編集、バッチ生成、比較用の SD-CPP イメージ操作 IPC/プリロード ブリッジを追加しました。",
+      "- 履歴/再生成、プリセット CRUD、スケジュール/キュー制御、バッチ実行、編集リクエスト、比較概要の設定にイメージ操作 UI を追加しました",
+      "- レイテンシ/エラー フィードバックを伴う SSH 接続プロファイル テスト アクション (サービス + IPC + プリロード + モーダル ボタン) を追加しました",
+      "- tr/en/de/fr/es/ja/zh/ar 全体にわたる i18n ロケール キーのパリティを完了し、新しい設定/SSH フロー用に不足しているキーを追加しました"
     ]
   },
   "2026-02-18-agent-voice-sandbox-marketplace-sec-ext": {
-    "title": "Agent Debate/Memory Analytics, Voice Workflows, Code Sandbox, and Marketplace Security Extensions",
-    "summary": "Completed AGENT/VOICE/FEAT and marketplace extension-security tracks with new IPC workflows, safeguards, and metadata coverage.",
+    "title": "エージェント ディベート/メモリ分析、音声ワークフロー、コード サンドボックス、およびMarketplaceのセキュリティ拡張機能",
+    "summary": "新しい IPC ワークフロー、セーフガード、メタデータ カバレッジを備えた、AGENT/VOICE/FEAT およびMarketplaceの拡張セキュリティ トラックを完了しました。",
     "items": [
-      "- Wired advanced-memory shared namespace operations through IPC (create/sync/analytics/search) for cross-project memory collaboration flows",
-      "- Added dedicated code sandbox IPC with typed language support (`javascript`, `typescript`, `python`, `shell`), bounded execution, and security pattern blocking",
-      "- Added voice IPC workflows for wake-word intent detection, speech session turn handling with interruption signals, and AI voice note summarization/search",
-      "- Extended MCP marketplace extension metadata with extension types, OAuth/credentials/security/telemetry fields and template/draft extension APIs",
-      "- Added marketplace trust and security controls: trusted publisher verification, signature revocation checks, security scan records, review moderation, and telemetry/crash endpoints",
-      "- Marked completion for MKT-EXT-01..07, MKT-SEC-01..05, FEAT-01, FEAT-03, VOICE-01..03, AGENT-13..15 in TODO tracking"
+      "- プロジェクト間のメモリ コラボレーション フローのための、IPC (作成/同期/分析/検索) を介した有線アドバンスト メモリ共有名前空間操作",
+      "- 型付き言語サポート (`javascript`、`typescript`、`python`、`shell`)、制限付き実行、およびセキュリティ パターン ブロックを備えた専用コード サンドボックス IPC を追加しました。",
+      "- ウェイクワード意図検出、割り込み信号によるスピーチセッションターン処理、および AI 音声メモ要約/検索のための音声 IPC ワークフローを追加しました。",
+      "- 拡張タイプ、OAuth/認証情報/セキュリティ/テレメトリフィールド、およびテンプレート/ドラフト拡張APIを備えた拡張MCPMarketplace拡張メタデータ",
+      "- Marketplaceの信頼およびセキュリティ管理の追加: 信頼できる発行者の検証、署名失効チェック、セキュリティ スキャン レコード、レビュー モデレーション、およびテレメトリ/クラッシュ エンドポイント",
+      "- TODO 追跡で MKT-EXT-01..07、MKT-SEC-01..05、FEAT-01、FEAT-03、VOICE-01..03、AGENT-13..15 の完了マークを付けました"
     ]
   },
   "2026-02-20-voice-first-interface-ui-11": {
-    "title": "Voice-First Interface Implementation (UI-11)",
-    "summary": "Implemented a comprehensive voice control system with a dedicated settings tab, global voice actions, and real-time visual feedback.",
+    "title": "音声ファースト インターフェイスの実装 (UI-11)",
+    "summary": "専用の設定タブ、グローバル音声アクション、リアルタイムのビジュアルフィードバックを備えた包括的な音声制御システムを実装しました。",
     "items": [
-      "- **Voice Settings**: Added a new tab for configuring wake words, speech synthesis, and custom commands.",
-      "- **Voice Overlay**: Implemented a visual feedback system for real-time speech-to-text transcription and status.",
-      "- **Audio Feedback**: Added spoken confirmation for voice-triggered actions and system status.",
-      "- **Hands-free Navigation**: Enabled navigation and command execution via voice events across the application.",
-      "- **Custom Commands**: Added support for user-defined voice phrases mapped to system actions."
+      "- **音声設定**: ウェイク ワード、音声合成、カスタム コマンドを設定するための新しいタブを追加しました。",
+      "- **音声オーバーレイ**: リアルタイムの音声からテキストへの文字起こしとステータスのための視覚的なフィードバック システムを実装しました。",
+      "- **音声フィードバック**: 音声によるアクションとシステム ステータスの音声確認を追加しました。",
+      "- **ハンズフリー ナビゲーション**: アプリケーション全体で音声イベントを介したナビゲーションとコマンドの実行が可能になりました。",
+      "- **カスタム コマンド**: システム アクションにマップされたユーザー定義の音声フレーズのサポートが追加されました。"
     ]
   },
   "2026-02-20-tech-debt-and-type-failures-resolution": {
-    "title": "Resolution of Core Technical Debt and Type Failures",
+    "title": "コア技術的負債とタイプ障害の解決",
     "summary": "Fixed inherited type failures and contract mismatches across core services and IPC handlers.",
     "items": [
       "- Core service dependency and registration mismatches were fixed.",
       "- IPC and shared type regressions were resolved.",
       "- Health and telemetry-related missing type keys were completed.",
-      "- Related test regressions were updated."
+      "- Related test regressions were updated.",
+      "- **品質**: 古いインポートとコンポーネントのスナップショットが原因で発生した `ModelSelectorModal` および `WorkspaceExplorer` のテストのリグレッションを修正しました。"
     ]
   },
   "2026-02-20-code-sandbox-marketplace-project-agent-ipc-hardening": {
-    "title": "IPC Hardening for Code Sandbox, MCP Marketplace, and Legacy Project Agent",
-    "summary": "Standardized error metadata and retry/fallback behavior, added telemetry-backed health dashboards and budgets, and documented operations and threat models for three IPC surfaces.",
+    "title": "IPC コード サンドボックス、MCP Marketplace、レガシー プロジェクト エージェントの強化",
+    "summary": "エラー メタデータと再試行/fallback 動作の標準化、テレメトリに基づく正常性ダッシュボードと予算の追加、および 3 つの IPC サーフェスの運用と脅威モデルの文書化。",
     "items": [
-      "- Standardized response metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) for code-sandbox and mcp-marketplace handlers and legacy `project-agent:*` channels",
-      "- Added bounded retry policies and per-channel telemetry tracking, including retry/validation/budget-exceeded metrics",
-      "- Added health endpoints: `code-sandbox:health`, `mcp:marketplace:health`, and `project-agent:health`",
-      "- Wired preload/web bridge and renderer typings for new health channels",
-      "- Added runbook and threat-model docs for all three handlers under `docs/` with mirrored `.codex/` copies"
+      "- code-sandbox および mcp-marketplace handlers および従来の `project-agent:*` チャネル用の標準​​化された応答メタデータ (`errorCode`、`messageKey`、`retryable`、`uiState`、`fallbackUsed`)",
+      "- 制限付き再試行ポリシーと、再試行/検証/予算超過メトリクスを含むチャネルごとのテレメトリ追跡を追加しました",
+      "- 追加された正常性エンドポイント: `code-sandbox:health`、`mcp:marketplace:health`、および `project-agent:health`",
+      "- 新しいヘルス チャネルの有線プリロード/Web ブリッジおよびレンダラー タイピング",
+      "- ミラーリングされた `.codex/` コピーを持つ `docs/` の下の 3 つの handlers すべてに Runbook と脅威モデルのドキュメントを追加しました"
     ]
   },
   "2026-02-20-advanced-memory-ipc-hardening": {
-    "title": "Advanced Memory IPC Hardening and Operational Readiness",
-    "summary": "Standardized advanced-memory IPC error handling and retries, added telemetry health reporting, improved renderer failure handling, and documented runbook/threat model guidance.",
+    "title": "高度なメモリ IPC の強化と運用準備",
+    "summary": "標準化された高度なメモリ IPC エラー処理と再試行、テレメトリ正常性レポートの追加、レンダラー障害処理の改善、文書化された Runbook/脅威モデル ガイダンス。",
     "items": [
-      "- Standardized advanced-memory error metadata with consistent `errorCode`, `messageKey`, `retryable`, `uiState`, and fallback payload behavior",
-      "- Added bounded retry support for transient IPC failures and tracked retry/failure/success telemetry per channel",
-      "- Added `advancedMemory:health` endpoint with channel metrics and explicit performance budgets (fast/standard/heavy)",
-      "- Updated renderer memory hook failure handling to consume IPC metadata and provide translated fallback messaging",
-      "- Added runbook and threat-model docs: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` and `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` mirrors)"
+      "- 一貫した `errorCode`、`messageKey`、`retryable`、`uiState`、fallback ペイロード動作を備えた標準化されたアドバンスト メモリ エラー メタデータ",
+      "- 一時的な IPC 失敗に対する制限付き再試行サポートとチャネルごとの追​​跡された再試行/失敗/成功テレメトリを追加しました",
+      "- チャネル メトリクスと明示的なパフォーマンス バジェット (高速/標準/ヘビー) を備えた `advancedMemory:health` エンドポイントを追加しました",
+      "- IPC メタデータを消費し、翻訳された fallback メッセージングを提供するために、レンダラ メモリ フックの失敗処理を更新しました。",
+      "- ランブックと脅威モデルのドキュメントを追加しました: `docs/IPC_ADVANCED_MEMORY_RUNBOOK.md` および `docs/IPC_ADVANCED_MEMORY_THREAT_MODEL.md` (+ `.codex` ミラー)"
     ]
   },
   "2026-02-20-voice-ipc-hardening-and-observability": {
-    "title": "Voice IPC Hardening, Telemetry, and Health Dashboard",
-    "summary": "Hardened voice IPC handler validation and failure policies, added telemetry and budget tracking, and documented operations and threat modeling guidance.",
+    "title": "Voice IPC 強化、テレメトリ、および健全性ダッシュボード",
+    "summary": "強化された音声 IPC handler 検証および失敗ポリシー、追加されたテレメトリおよび予算追跡、文書化された運用および脅威モデリング ガイダンス。",
     "items": [
-      "- Added input schema validation guards for transcript, settings, commands, synthesis payloads, and emitted voice events",
-      "- Standardized voice IPC metadata (`errorCode`, `messageKey`, `retryable`, `uiState`, `fallbackUsed`) and bounded retry handling for transient failures",
-      "- Added per-channel telemetry metrics with regression budgets and exposed `voice:health` diagnostics",
-      "- Updated web fallback bridge and integration tests for voice health and validation metadata behavior",
-      "- Added voice operational and security docs: `docs/IPC_VOICE_RUNBOOK.md` and `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` mirrors)"
+      "- トランスクリプト、設定、コマンド、合成ペイロード、および放出された音声イベントに対する入力スキーマ検証ガードを追加しました",
+      "- 標準化された音声 IPC メタデータ (`errorCode`、`messageKey`、`retryable`、`uiState`、`fallbackUsed`) および一時的なエラーに対する制限付き再試行処理",
+      "- 回帰バジェットを備えたチャネルごとのテレメトリ メトリクスを追加し、`voice:health` 診断を公開しました",
+      "- 音声の健全性と検証メタデータの動作に関する Web fallback ブリッジと統合テストを更新しました",
+      "- 音声操作およびセキュリティに関するドキュメントを追加しました: `docs/IPC_VOICE_RUNBOOK.md` および `docs/IPC_VOICE_THREAT_MODEL.md` (+ `.codex` ミラー)"
     ]
   },
   "2026-02-21-renderer-backlog-0201-0250-coverage-and-hardening": {
-    "title": "Renderer Backlog 0201-0250 Test, Validation, Health, and Ops Hardening",
-    "summary": "Completed renderer backlog coverage and hardening for terminal toolbar, language prompt, MCP settings, code editor, and notification center store.",
+    "title": "レンダラー バックログ 0201-0250 テスト、検証、健全性、運用強化",
+    "summary": "レンダラーのバックログのカバレッジと、ターミナル ツールバー、言語プロンプト、MCP 設定、コード エディター、および通知センター ストアの強化が完了しました。",
     "items": [
-      "- Added unit and integration/regression tests for all target surfaces",
-      "- Added input validation guards, standardized retry/fallback paths, and component error codes",
-      "- Added component health telemetry stores with explicit performance budgets",
-      "- Improved loading/empty/failure UX handling in language prompt, MCP settings tab, and code editor",
-      "- Added runbook, threat model, and performance budget documentation under docs/ with mirrored .codex copies"
+      "- すべてのターゲット サーフェスに対する単体テストと統合/回帰テストを追加しました",
+      "- 入力検証ガード、標準化された再試行/fallback パス、およびコンポーネント エラー コードを追加しました。",
+      "- 明示的なパフォーマンス バジェットを備えたコンポーネント ヘルス テレメトリ ストアを追加しました",
+      "- 言語プロンプト、MCP 設定タブ、およびコード エディターでのロード/空/失敗 UX の処理を​​改善しました。",
+      "- ミラーリングされた .codex コピーを含む docs/ の下に Runbook、脅威モデル、およびパフォーマンス バジェットのドキュメントを追加しました"
     ]
   },
   "2026-02-23-agent-service-hardening": {
-    "title": "Agent Collaboration and Checkpoint Service Hardening",
-    "summary": "Implemented comprehensive runtime validation, standardized error handling, and full i18n coverage for Agent Collaboration and Checkpoint services.",
+    "title": "エージェントのコラボレーションとチェックポイント サービスの強化",
+    "summary": "包括的な runtime 検証、標準化されたエラー処理、エージェント コラボレーションおよびチェックポイント サービスの完全な i18n 対応が実装されました。",
     "items": [
-      "- **Validation**: Added Zod schema-driven input validation and integrity guards for all agent task, voting, and checkpoint flows.",
-      "- **Error Handling**: Standardized error classes (`AgentCollaborationError`, `AgentCheckpointError`) with descriptive machine-readable codes and translated messages.",
-      "- **Reliability**: Implemented task state fingerprinting for duplicate sync detection and optimized checkpoint compression.",
-      "- **NASA Compliance**: Refactored core service methods for improved maintainability and reliability (Power of Ten Rule #3).",
-      "- **I18N**: Added full English and Turkish localization for all agent collaboration and checkpoint status messages."
+      "- **検証**: すべてのエージェント タスク、投票、およびチェックポイント フローに Zod スキーマ主導の入力検証と整合性ガードを追加しました。",
+      "- **エラー処理**: 説明的な機械可読コードと翻訳されたメッセージを備えた標準化されたエラー クラス (`AgentCollaborationError`、`AgentCheckpointError`)。",
+      "- **信頼性**: 重複同期検出と最適化されたチェックポイント圧縮のためのタスク状態フィンガープリンティングを実装しました。",
+      "- **NASA コンプライアンス**: 保守性と信頼性を向上させるためにコア サービス メソッドをリファクタリングしました (Power of Ten Rule #3)。",
+      "- **I18N**: すべてのエージェント コラボレーションおよびチェックポイント ステータス メッセージに完全な英語とトルコ語のローカライズを追加しました。"
     ]
   },
   "2026-02-22-backlog-0251-0281-unit-test-coverage": {
-    "title": "Backlog 0251-0281 Unit-Test Edge Coverage Expansion",
-    "summary": "Expanded edge-case unit coverage for memory, retrieval, embedding, and project analysis services and aligned TODO tracking for completed test tasks.",
+    "title": "バックログ 0251-0281 単体テストのエッジ カバレッジ拡張",
+    "summary": "メモリ、取得、埋め込み、およびプロジェクト分析サービスのエッジケース ユニットの範囲を拡大し、完了したテスト タスクの調整された TODO 追跡を行います。",
     "items": [
-      "- Added AdvancedMemoryService edge-case tests for replaceExisting imports, embedding failure continuation, export limit clamping, and missing edit/rollback paths",
-      "- Added ContextRetrievalService edge-case tests for project-path resolution, partial search failure tolerance, failed-request analytics, and blank-query analytics behavior",
-      "- Added EmbeddingService edge-case tests for cache immutability, cache clearing behavior, blank input handling, provider failure fallback, and default-model selection",
-      "- Added ProjectService edge-case tests for pagination bound normalization and .env parsing/persistence behaviors",
-      "- Marked BACKLOG-0251, BACKLOG-0261, BACKLOG-0271, and BACKLOG-0281 as completed in docs/TODO.md"
+      "- replaceExisting インポート、埋め込み失敗継続、エクスポート制限クランプ、欠落している編集/ロールバック パスに対する AdvancedMemoryService エッジケース テストを追加しました",
+      "- プロジェクト パスの解決、部分検索の失敗耐性、失敗したリクエストの分析、および空のクエリの分析動作のための ContextRetrievalService エッジケース テストを追加しました。",
+      "- キャッシュの不変性、キャッシュのクリア動作、空の入力処理、プロバイダーの失敗 fallback、およびデフォルト モデルの選択のための EmbeddingService エッジケース テストを追加しました。",
+      "- ページネーション境界正規化と .env 解析/永続動作のための ProjectService エッジケース テストを追加しました",
+      "- docs/TODO.md で BACKLOG-0251、BACKLOG-0261、BACKLOG-0271、および BACKLOG-0281 を完了済みとしてマーク"
     ]
   },
   "2026-02-22-backlog-0252-0283-service-hardening": {
-    "title": "Backlog 0252-0283 Service Hardening and Operational Coverage",
-    "summary": "Completed integration/regression coverage and runtime hardening for memory, retrieval, embedding, and project services, including health metrics and operations documentation.",
+    "title": "バックログ 0252-0283 サービス強化と運用範囲",
+    "summary": "統合/回帰カバレッジと、メモリ、取得、埋め込み、および正常性メトリクスと運用ドキュメントを含むプロジェクト サービスの runtime 強化が完了しました。",
     "items": [
-      "- Added schema guards for advanced memory recall/import payloads, embedding text inputs, project root paths, and env var keys/records",
-      "- Added bounded retry and fallback behavior with standardized error codes and telemetry counters across AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
-      "- Added service health snapshots with UI state/message-key surfaces and budget-exceeded/error-rate metrics",
-      "- Added regression/integration tests for validation failures, retry recovery, fallback behavior, and project env/path edge cases",
-      "- Added English and Turkish i18n coverage for new service health message keys",
-      "- Added runbook, performance budget, and threat model documentation for AdvancedMemoryService, ContextRetrievalService, and EmbeddingService",
-      "- Marked BACKLOG-0252 through BACKLOG-0283 tasks as completed in docs/TODO.md"
+      "- 高度なメモリ リコール/インポート ペイロード、埋め込みテキスト入力、プロジェクト ルート パス、環境変数キー/レコード用のスキーマ ガードを追加しました。",
+      "- AdvancedMemoryService、ContextRetrievalService、および EmbeddingService にわたる標準化されたエラー コードとテレメトリ カウンターによる、制限付き再試行と fallback 動作を追加しました",
+      "- UI 状態/メッセージ キー サーフェスと予算超過/エラー率メトリクスを含むサービス正常性スナップショットを追加しました",
+      "- 検証の失敗、回復の再試行、fallback の動作、およびプロジェクトの環境/パスのエッジ ケースに対する回帰/統合テストを追加しました。",
+      "- 新しいサービス正常性メッセージ キーに英語とトルコ語の i18n 対応範囲を追加しました",
+      "- AdvancedMemoryService、ContextRetrievalService、および EmbeddingService のランブック、パフォーマンス バジェット、および脅威モデルのドキュメントを追加しました。",
+      "- docs/TODO.md で BACKLOG-0252 ～ BACKLOG-0283 タスクを完了済みとしてマーク"
     ]
   },
   "2026-02-25-image-settings-refactoring": {
-    "title": "Image Settings Tab Refactoring and Test Suite Reliability",
-    "summary": "Refactored the complex ImageSettingsTab component into modular sub-components and hooks, improving maintainability and resolving ESLint violations. Additionally fixed several integration and contract test failures.",
+    "title": "[イメージ設定] タブのリファクタリングとテスト スイートの信頼性",
+    "summary": "複雑な ImageSettingsTab コンポーネントをモジュール式のサブコンポーネントとフックにリファクタリングし、保守性を向上させ、ESLint 違反を解決しました。さらに、いくつかの統合テストと契約テストの失敗が修正されました。",
     "items": [
-      "- **Modularization**: Extracted `ImageSettingsHistory`, `ImageSettingsPresets`, `ImageSettingsSchedules`, `ImageSettingsEdit`, `ImageSettingsProvider`, and `ImageSettingsRuntime` from the monolithic `ImageSettingsTab.tsx`.",
-      "- **Code Quality**: Removed `max-lines-per-function` ESLint override and resolved `any` type issues in the settings module.",
-      "- **Test Reliability**: Fixed `require-yield` violations and unused variables in `chat.integration.test.ts`.",
-      "- **API Contracts**: Corrected the OpenAPI specification file path in `api-openapi.contract.test.ts` to ensure valid contract verification."
+      "- **モジュール化**: モノリシック `ImageSettingsTab.tsx` から `ImageSettingsHistory`、`ImageSettingsPresets`、`ImageSettingsSchedules`、`ImageSettingsEdit`、`ImageSettingsProvider`、および `ImageSettingsRuntime` を抽出しました。",
+      "- **コード品質**: `max-lines-per-function` ESLint オーバーライドを削除し、設定モジュールの `any` タイプの問題を解決しました。",
+      "- **テストの信頼性**: `require-yield` 違反と `chat.integration.test.ts` の未使用変数を修正しました。",
+      "- **API 契約**: 有効な契約検​​証を保証するために、`api-openapi.contract.test.ts` の OpenAPI 仕様ファイル パスを修正しました。"
     ]
   },
   "2026-02-25-mkt-fe-003-i18n-auth-submission": {
@@ -3869,28 +3885,53 @@
       "- **New Log Levels**: Introduced `TRACE` for hyper-verbose debugging and `FATAL` for critical application failures.",
       "- **IPC & Renderer Parity**: Synchronized LogLevel enums and methods across Main process, IPC handlers, and Renderer logger.",
       "- **Initialization Logging**: Added log level reporting during logger startup for better environment diagnostics.",
-      "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules."
+      "- **Code Quality**: Sorted imports and enforced strict type safety in all logging-related modules.",
+      "- **IPC およびレンダラー パリティ**: メイン プロセス、IPC handlers、およびレンダラー ロガー全体で同期された LogLevel 列挙型とメソッド。"
     ]
   },
   "2026-02-26-mkt-dev-03-extension-devtools": {
-    "title": "MKT-DEV-03: Local Extension Development Mode & DevTools",
-    "summary": "Implemented a complete development environment for local extensions, featuring hot reload, real-time log streaming, and a dedicated DevTools UI panel.",
+    "title": "MKT-DEV-03: ローカル拡張機能開発モードと DevTools",
+    "summary": "ホット リロード、リアルタイム ログ ストリーミング、専用の DevTools UI パネルを備えた、ローカル拡張機能用の完全な開発環境を実装しました。",
     "items": [
-      "- **ExtensionService**: Added `fs.watch` integration for automatic extension reloading (Hot Reload) when local source files are modified.",
-      "- **Log Streaming**: Enabled real-time unscoped log streaming from extensions to the renderer process via a new IPC-backed observer pattern.",
-      "- **ExtensionDevTools**: Created a new UI panel in the right sidebar for managing extensions, triggering manual reloads, and inspecting real-time logs.",
-      "- **Layout Integration**: Added right-sidebar support to the main `LayoutManager` and integrated the DevTools panel for instant access via the header.",
-      "- **Type Safety**: Ensured 100% type-safety for extension IPC contracts and resolved several technical debt items in the extension service."
+      "- **ExtensionService**: ローカル ソース ファイルが変更されたときの拡張機能の自動再ロード (ホット リロード) のための `fs.watch` 統合を追加しました。",
+      "- **ログ ストリーミング**: 新しい IPC をサポートするオブザーバー パターンを介して、拡張機能からレンダラー プロセスへのスコープ外のリアルタイム ログ ストリーミングが有効になりました。",
+      "- **ExtensionDevTools**: 拡張機能の管理、手動リロードのトリガー、およびリアルタイム ログの検査のために、右側のサイドバーに新しい UI パネルを作成しました。",
+      "- **レイアウトの統合**: メインの `LayoutManager` に右側のサイドバーのサポートが追加され、ヘッダー経由で即座にアクセスできるように DevTools パネルが統合されました。",
+      "- **タイプ セーフティ**: 拡張機能 IPC コントラクトに対して 100% のタイプ セーフティを確保し、拡張サービスにおけるいくつかの技術的負債項目を解決しました。"
     ]
   },
   "2026-02-26-security-stability-fixes": {
-    "title": "Critical Stability: Infinite Loop & Security Header Hardening",
-    "summary": "Resolved a major renderer stability issue and hardened application security with robust Content Security Policy (CSP) and additional security headers.",
+    "title": "クリティカルな安定性: 無限ループとセキュリティ ヘッダーの強化",
+    "summary": "主要なレンダラーの安定性の問題が解決され、堅牢なコンテンツ セキュリティ ポリシー (CSP) と追加のセキュリティ ヘッダーによってアプリケーション セキュリティが強化されました。",
     "items": [
-      "- **Stability**: Fixed a critical infinite re-render loop in `ViewManager` triggered by incorrect `useEffect` dependencies, resolving 'Maximum update depth exceeded' (React Error #185).",
-      "- **Security Hardening**: Replaced basic CSP with a robust, multi-layered policy in the Main process, covering scripts, frames, and workers.",
-      "- **Header Hardening**: Implemented mandatory security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection`, and strict `Referrer-Policy`.",
-      "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process."
+      "- **安定性**: 不正な `useEffect` 依存関係によって引き起こされる `ViewManager` の重大な無限再レンダリング ループを修正し、「最大更新深度を超えました」(React エラー #185) を解決しました。",
+      "- **セキュリティ強化**: 基本的な CSP を、スクリプト、フレーム、ワーカーをカバーするメイン プロセスの堅牢な多層ポリシーに置き換えました。",
+      "- **ヘッダー強化**: 必須のセキュリティ ヘッダー: `X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`X-XSS-Protection`、および厳密な `Referrer-Policy` を実装しました。",
+      "- **Clean Infrastructure**: Removed insecure, hardcoded CSP meta tags from `index.html`, consolidating security management in the Electron main process.",
+      "- **クリーンなインフラストラクチャ**: `index.html` から安全でないハードコーディングされた CSP メタ タグを削除し、Electron メイン プロセスでのセキュリティ管理を統合しました。"
+    ]
+  },
+  "2026-02-27-project-wizard-redesign": {
+    "title": "プレミアム プロジェクト ウィザード: 再設計された UX とモーションの統合",
+    "summary": "プロジェクト ウィザードを基本的な形式から、洗練されたタイポグラフィ、動的なカテゴリの選択、スムーズな進行状況の追跡を備えたプレミアムでインタラクティブなエクスペリエンスに変換しました。",
+    "items": [
+      "- **ビジュアル再デザイン**: モーダル構造にプレミアムなタイポグラフィーと微妙なグラスモーフィズム効果を備えたモダンで広々としたレイアウトを実装しました。",
+      "- **強化されたセレクター**: 縦方向の図像とリアルタイムの選択フィードバックを備えた大型のハイコントラスト カードを備えたアップグレードされたカテゴリ選択。",
+      "- **進行状況の追跡**: ウィザードの上部にアニメーション化されたステップ インジケーターを追加して、プロジェクト作成プロセスの明確な視覚的なロードマップを提供します。",
+      "- **プレミアム ナビゲーション**: ハイコントラストの影付きアクション ボタンとスムーズなホバー マイクロ インタラクションでフッターを洗練しました。",
+      "- **入力の洗練**: エレガントな境界線、フォーカス状態、明確なアニメーション エラー メッセージを備えた洗練されたフォーム要素により、使いやすさが向上しました。",
+      "- **モーション デザイン**: トランジションとインタラクティブな状態のための統合されたマイクロ アニメーションにより、より応答性が高く生き生きとしたインターフェイスが作成されます。"
+    ]
+  }
+,
+  "2025-07-25-service-threat-model": {
+    "title": "包括的なサービス脅威モデルと悪用ケースレビュー",
+    "summary": "12のバックエンドサービスの脅威分析、緩和策、悪用シナリオを網羅するdocs/guides/SERVICE_THREAT_MODEL.mdを作成。",
+    "items": [
+      "- BACKLOG-0340, 0350, 0410, 0420, 0430, 0440, 0450, 0460, 0470, 0480, 0490, 0500 完了",
+      "- サービスごとにTコード、説明、既存の緩和策を含む30以上の脅威ベクトルを文書化",
+      "- プロンプトインジェクション、リソース枯渇、コマンドインジェクション、パストラバーサル、資格情報窃取を含む24以上の悪用ケースを特定",
+      "- リスクマトリックスの要約と6つの実行可能なセキュリティ推奨事項を追加"
     ]
   }
 }
