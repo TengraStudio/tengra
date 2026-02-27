@@ -1,7 +1,7 @@
 import { Settings } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { AppSettings } from '@/types/settings';
 
 import { AntigravityLimitsSection } from './limits/AntigravityLimitsSection';

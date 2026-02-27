@@ -1,6 +1,6 @@
 import { MessageBubble } from '@renderer/features/chat/components/MessageBubble';
-import { ModelSelector } from '@renderer/features/models/components/ModelSelector';
-import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import { ModelSelector } from '@/components/shared/ModelSelector';
+import type { GroupedModels } from '@/types';
 import { AgentTaskHistoryItem } from '@shared/types/project-agent';
 import { ArrowLeft, Check, ClipboardList, Play, Users } from 'lucide-react';
 import React from 'react';

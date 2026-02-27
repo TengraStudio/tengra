@@ -9,7 +9,8 @@ import type { AppSettings } from '@/types/settings';
 
 import { InstalledModelsGrid } from '../components/InstalledModelsGrid';
 import { MarketplaceGrid } from '../components/MarketplaceGrid';
-import { fetchModels, type GroupedModels, groupModels, type ModelInfo } from '../utils/model-fetcher';
+import { fetchModels, groupModels } from '../utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 interface ModelsPageProps {
     language?: Language;

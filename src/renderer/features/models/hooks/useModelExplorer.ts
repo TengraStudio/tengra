@@ -1,6 +1,6 @@
 import { HFFile, HFModel, OllamaLibraryModel, UnifiedModel } from '@renderer/features/models/types';
 import { parsePulls } from '@renderer/features/models/utils/explorer-utils';
-import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import type { ModelInfo } from '@/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { appLogger } from '@/utils/renderer-logger';

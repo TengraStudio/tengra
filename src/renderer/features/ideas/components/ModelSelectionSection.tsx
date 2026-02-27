@@ -1,10 +1,10 @@
-import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import React from 'react';
 
 import { useTranslation } from '@/i18n';
 import type { AppSettings, CodexUsage, QuotaResponse } from '@/types';
 
-import { ModelSelector } from '../../models/components/ModelSelector';
+import { ModelSelector } from '@/components/shared/ModelSelector';
 
 interface ModelSelectionSectionProps {
 	selectedModel: string

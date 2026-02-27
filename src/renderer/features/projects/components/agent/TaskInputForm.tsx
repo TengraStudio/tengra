@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ModelSelector as FullModelSelector } from '@/features/models/components/ModelSelector';
-import type { GroupedModels } from '@/features/models/utils/model-fetcher';
+import { ModelSelector as FullModelSelector } from '@/components/shared/ModelSelector';
+import type { GroupedModels } from '@/types';
 import { cn } from '@/lib/utils';
 import { AppSettings, CodexUsage, QuotaResponse } from '@/types';
 

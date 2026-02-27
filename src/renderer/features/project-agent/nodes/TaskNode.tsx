@@ -15,7 +15,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { Message } from '@shared/types/chat';
 import {
     AgentProfile,
@@ -53,7 +53,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useModel } from '@/context/ModelContext';
-import { ModelSelector } from '@/features/models/components/ModelSelector';
+import { ModelSelector } from '@/components/shared/ModelSelector';
 import { LogConsole } from '@/features/project-agent/components/LogConsole';
 import { useProjectManager } from '@/features/projects/hooks/useProjectManager';
 import { useLanguage } from '@/i18n';

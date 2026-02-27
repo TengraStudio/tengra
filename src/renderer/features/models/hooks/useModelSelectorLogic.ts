@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { AppSettings, ClaudeQuota, CodexUsage, QuotaResponse } from '@/types';
 
-import type { GroupedModels } from '../utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 
 interface UseModelSelectorLogicProps {
     settings?: AppSettings;

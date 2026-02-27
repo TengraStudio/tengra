@@ -7,7 +7,7 @@ import { ProjectTodoTab } from '@renderer/features/projects/components/ProjectTo
 import { FileSearchResult } from '@shared/types/common';
 import React from 'react';
 
-import type { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
 import { AgentDefinition, AppSettings, CodexUsage, Project, ProjectAnalysis, ProjectDashboardTab, ProjectStats, QuotaResponse } from '@/types';
 

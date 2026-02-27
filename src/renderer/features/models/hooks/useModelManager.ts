@@ -1,6 +1,9 @@
-import { fetchModels, GroupedModels, groupModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { fetchModels, groupModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
+import { getModelLifecycleMeta } from '@renderer/features/models/utils/model-selector-metadata';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { pushNotification } from '@/store/notification-center.store';
 import { AppSettings } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';
 
@@ -34,6 +37,21 @@ function pickLocalePreferredModel(models: ModelInfo[], locale: string): { provid
         : null;
 }
 
+function hasCredential(value: string | undefined): boolean {
+    return typeof value === 'string' && value.trim() !== '' && value !== 'connected';
+}
+
+function isProviderConfigured(provider: string, settings: AppSettings | null): boolean {
+    const normalized = provider.toLowerCase();
+    if (normalized === 'nvidia') { return hasCredential(settings?.nvidia?.apiKey); }
+    if (normalized === 'openai') { return hasCredential(settings?.openai?.apiKey); }
+    if (normalized === 'codex') { return settings?.codex?.connected === true || hasCredential(settings?.openai?.apiKey); }
+    if (normalized === 'copilot' || normalized === 'github') { return settings?.copilot?.connected === true; }
+    if (normalized === 'anthropic' || normalized === 'claude') { return hasCredential(settings?.anthropic?.apiKey) || hasCredential(settings?.claude?.apiKey); }
+    if (normalized === 'antigravity') { return settings?.antigravity?.connected === true; }
+    return true;
+}
+
 export function useModelManager(
     appSettings: AppSettings | null,
     setAppSettings: (settings: AppSettings) => void
@@ -42,6 +60,7 @@ export function useModelManager(
     const [groupedModels, setGroupedModels] = useState<GroupedModels | null>(null);
     const [proxyModels, setProxyModels] = useState<ModelInfo[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const lifecycleNoticeRef = useRef<Set<string>>(new Set());
 
     const selection = useModelSelection(appSettings, setAppSettings);
     const {
@@ -91,11 +110,111 @@ export function useModelManager(
     useEffect(() => {
         const defaultModel = appSettings?.general.defaultModel;
         const locale = appSettings?.general.language ?? 'en';
-        if (!defaultModel) {
-            if (selectedModels.length > 0 || selectedModel !== '' || models.length === 0) {
+        const availableModels = models.filter(m => {
+            const provider = m.provider ?? '';
+            return provider !== '' && isProviderConfigured(provider, appSettings);
+        });
+
+        const resolveFallback = (): { provider: string; model: string } | null => {
+            const preferred = pickLocalePreferredModel(availableModels, locale);
+            if (preferred) {
+                return preferred;
+            }
+            const first = availableModels[0];
+            if (!first?.id || !first.provider) {
+                return null;
+            }
+            return { provider: first.provider, model: first.id };
+        };
+
+        const persistedProvider = appSettings?.general.lastProvider ?? '';
+        const persistedPairExists = availableModels.some(m =>
+            m.id === defaultModel && m.provider === persistedProvider
+        );
+        const selectedMeta = availableModels.find(m => m.id === defaultModel && m.provider === persistedProvider);
+        const lifecycleMeta = selectedMeta ? getModelLifecycleMeta(selectedMeta) : { lifecycle: 'active' as const };
+
+        if (defaultModel && persistedProvider && !persistedPairExists) {
+            const fallback = resolveFallback();
+            if (!fallback) {
                 return;
             }
-            const preferred = pickLocalePreferredModel(models, locale);
+            setSelectedModel(fallback.model);
+            setSelectedProvider(fallback.provider);
+            setSelectedModels([fallback]);
+            if (appSettings) {
+                setAppSettings({
+                    ...appSettings,
+                    general: {
+                        ...appSettings.general,
+                        defaultModel: fallback.model,
+                        lastProvider: fallback.provider
+                    }
+                });
+            }
+            pushNotification({
+                type: 'warning',
+                title: 'Default model switched',
+                message: `Previous default model is unavailable. Switched to ${fallback.model}.`,
+                source: 'models',
+            });
+            return;
+        }
+
+        if (defaultModel && persistedProvider && persistedPairExists && lifecycleMeta.lifecycle === 'retired') {
+            const replacementId = lifecycleMeta.replacementModelId;
+            const replacement = replacementId
+                ? availableModels.find(m => m.id?.toLowerCase() === replacementId.toLowerCase())
+                : null;
+            const fallback = replacement?.id && replacement.provider
+                ? { provider: replacement.provider, model: replacement.id }
+                : resolveFallback();
+            if (!fallback) {
+                return;
+            }
+            setSelectedModel(fallback.model);
+            setSelectedProvider(fallback.provider);
+            setSelectedModels([fallback]);
+            if (appSettings) {
+                setAppSettings({
+                    ...appSettings,
+                    general: {
+                        ...appSettings.general,
+                        defaultModel: fallback.model,
+                        lastProvider: fallback.provider
+                    }
+                });
+            }
+            pushNotification({
+                type: 'warning',
+                title: 'Retired model migrated',
+                message: `Default model ${defaultModel} is retired. Switched to ${fallback.model}.`,
+                source: 'models',
+            });
+            return;
+        }
+
+        if (defaultModel && persistedProvider && persistedPairExists && lifecycleMeta.lifecycle === 'deprecated') {
+            const key = `${persistedProvider}:${defaultModel}:deprecated`;
+            if (lifecycleNoticeRef.current.has(key)) {
+                return;
+            }
+            lifecycleNoticeRef.current.add(key);
+            pushNotification({
+                type: 'info',
+                title: 'Deprecated default model',
+                message: lifecycleMeta.replacementModelId
+                    ? `${defaultModel} is deprecated. Recommended replacement: ${lifecycleMeta.replacementModelId}.`
+                    : `${defaultModel} is deprecated. Consider selecting a newer model.`,
+                source: 'models',
+            });
+        }
+
+        if (!defaultModel) {
+            if (selectedModels.length > 0 || selectedModel !== '' || availableModels.length === 0) {
+                return;
+            }
+            const preferred = pickLocalePreferredModel(availableModels, locale);
             if (!preferred) {
                 return;
             }
@@ -105,7 +224,7 @@ export function useModelManager(
             return;
         }
 
-        const lastProvider = appSettings.general.lastProvider ?? '';
+        const lastProvider = persistedProvider;
         if (selectedModel !== defaultModel) {
             setSelectedModel(defaultModel);
         }
@@ -121,16 +240,25 @@ export function useModelManager(
             ]);
         }
     }, [
+        appSettings,
         appSettings?.general.defaultModel,
         appSettings?.general.lastProvider,
         appSettings?.general.language,
+        appSettings?.codex?.connected,
+        appSettings?.copilot?.connected,
+        appSettings?.antigravity?.connected,
+        appSettings?.openai?.apiKey,
+        appSettings?.anthropic?.apiKey,
+        appSettings?.claude?.apiKey,
+        appSettings?.nvidia?.apiKey,
         models,
         selectedModel,
         selectedProvider,
         selectedModels.length,
         setSelectedModel,
         setSelectedProvider,
-        setSelectedModels
+        setSelectedModels,
+        setAppSettings
     ]);
 
     const persistLastSelection = useCallback((provider: string, model: string) => {

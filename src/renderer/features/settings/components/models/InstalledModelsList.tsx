@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { ModelInfo } from '@/features/models/utils/model-fetcher';
+import type { ModelInfo } from '@/types';
 
 interface InstalledModelsListProps {
     filtered: Array<{ id: string; sources: string[]; details?: ModelInfo }>

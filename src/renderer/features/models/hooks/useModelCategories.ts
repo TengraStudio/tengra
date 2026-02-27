@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { AppSettings } from '@/types';
 
 import { ModelCategory, ModelListItem } from '../types';
-import type { GroupedModels, ModelInfo } from '../utils/model-fetcher';
+import { getModelLifecycleMeta } from '../utils/model-selector-metadata';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 interface UseModelCategoriesProps {
     groupedModels?: GroupedModels;
@@ -34,6 +35,7 @@ export function useModelCategories({
         populateCategories({
             cats,
             groupedModels,
+            settings,
             searchLower,
             favorites,
             hidden,
@@ -62,6 +64,7 @@ function createBaseCategories(t: (k: string) => string): ModelCategory[] {
 interface PopulateProps {
     cats: ModelCategory[],
     groupedModels: GroupedModels,
+    settings?: AppSettings,
     searchLower: string,
     favorites: Set<string>,
     hidden: Set<string>,
@@ -70,7 +73,7 @@ interface PopulateProps {
 }
 
 function populateCategories(props: PopulateProps) {
-    const { cats, groupedModels, searchLower, favorites, hidden, selectedModel, isModelDisabled } = props;
+    const { cats, groupedModels, settings, searchLower, favorites, hidden, selectedModel, isModelDisabled } = props;
     const brandsMapping: Record<string, string> = {
         ollama: 'ollama',
         copilot: 'copilot',
@@ -89,6 +92,7 @@ function populateCategories(props: PopulateProps) {
     for (const [key, catId] of Object.entries(brandsMapping)) {
         if (!(key in groupedModels)) { continue; }
         const group = groupedModels[key];
+        if (!isProviderAllowed(key, settings)) { continue; }
         const cat = cats.find(c => c.id === catId);
         if (!cat) { continue; }
 
@@ -102,6 +106,35 @@ function populateCategories(props: PopulateProps) {
             }
         }
     }
+}
+
+function hasCredential(value: string | undefined): boolean {
+    return typeof value === 'string' && value.trim() !== '' && value !== 'connected';
+}
+
+function isProviderAllowed(providerKey: string, settings?: AppSettings): boolean {
+    const provider = providerKey.toLowerCase();
+
+    if (provider === 'nvidia') {
+        return hasCredential(settings?.nvidia?.apiKey);
+    }
+    if (provider === 'codex') {
+        return settings?.codex?.connected === true || hasCredential(settings?.openai?.apiKey);
+    }
+    if (provider === 'openai') {
+        return hasCredential(settings?.openai?.apiKey);
+    }
+    if (provider === 'copilot' || provider === 'github') {
+        return settings?.copilot?.connected === true;
+    }
+    if (provider === 'anthropic' || provider === 'claude') {
+        return hasCredential(settings?.anthropic?.apiKey) || hasCredential(settings?.claude?.apiKey);
+    }
+    if (provider === 'antigravity') {
+        return settings?.antigravity?.connected === true;
+    }
+
+    return true;
 }
 
 function matchesSearch(m: ModelInfo, searchLower: string): boolean {
@@ -139,17 +172,33 @@ function mapModelToItem(
     const thinkingLevels = Array.isArray(m.thinkingLevels) ? m.thinkingLevels as string[] : undefined;
     const description = typeof m.description === 'string' ? m.description : undefined;
 
+    const provider = m.provider ?? '';
+    const disabled = ctx.isModelDisabled(id, provider);
+    const isLocalProvider = provider === 'ollama' || provider === 'local' || provider === 'lm_studio';
+    const pricing = extractPricing(m.pricing);
+    const isFree = (typeof m.label === 'string' && m.label.toLowerCase().includes('free')) ||
+        (typeof m.name === 'string' && m.name.toLowerCase().includes('free')) ||
+        (!pricing?.input && !pricing?.output);
+    const lifecycleMeta = getModelLifecycleMeta(m);
+
     return {
         id,
         label: formatDisplayLabel(m),
-        disabled: ctx.isModelDisabled(id, m.provider ?? ''),
-        provider: m.provider ?? '',
+        disabled,
+        disabledReason: disabled ? 'Usage limit reached' : undefined,
+        provider,
         type: typeof m.type === 'string' ? m.type : 'text',
         contextWindow: m.contextWindow,
-        pricing: extractPricing(m.pricing),
+        pricing,
         pinned: ctx.favorites.has(id),
         thinkingLevels,
-        description
+        description,
+        isLocal: isLocalProvider,
+        isFree,
+        supportsReasoning: Array.isArray(thinkingLevels) && thinkingLevels.length > 0,
+        lifecycle: lifecycleMeta.lifecycle,
+        replacementModelId: lifecycleMeta.replacementModelId,
+        sunsetDate: lifecycleMeta.sunsetDate,
     };
 }
 

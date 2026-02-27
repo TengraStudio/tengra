@@ -3,7 +3,7 @@ import { useChat } from '@renderer/context/ChatContext';
 import { useModel } from '@renderer/context/ModelContext';
 import { useProject } from '@renderer/context/ProjectContext';
 import { ChatTemplate } from '@renderer/features/chat/types';
-import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';

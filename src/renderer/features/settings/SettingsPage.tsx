@@ -5,8 +5,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 
 // Tab Components
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import type { ModelInfo } from '@/features/models/utils/model-fetcher';
-import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
 import { SettingsTabContent } from '@/features/settings/components';
 import {
     normalizeSettingsSearchQuery,

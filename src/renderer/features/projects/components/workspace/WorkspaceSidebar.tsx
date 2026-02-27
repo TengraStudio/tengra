@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { Language } from '@/i18n';
 import { AppSettings, CodexUsage, Message, QuotaResponse } from '@/types';
 

@@ -1,31 +1,9 @@
 import { categorizeModel } from '@renderer/features/models/utils/model-categorization';
 
-import type { JsonValue } from '@/types';
+// Re-export shared types for backward compatibility
+export type { GroupedModels, ModelInfo } from '@/types/model.types';
 
-export interface ModelInfo {
-    id?: string;
-    name?: string;
-    provider?: string;
-    quotaInfo?: { remainingQuota?: number; totalQuota?: number; resetTime?: string; remainingFraction?: number };
-    percentage?: number;
-    reset?: string;
-    label?: string;
-    contextWindow?: number;
-    pricing?: {
-        input?: number;
-        output?: number;
-    };
-    thinkingLevels?: string[];
-    description?: string;
-    [key: string]: JsonValue | undefined;
-}
-
-export interface GroupedModels {
-    [provider: string]: {
-        label: string;
-        models: ModelInfo[];
-    }
-}
+import type { GroupedModels, ModelInfo } from '@/types/model.types';
 
 // Simple in-memory cache for model fetches
 let modelCache: { data: ModelInfo[]; timestamp: number } | null = null;

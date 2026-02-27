@@ -57,7 +57,7 @@ vi.mock('@/features/chat/hooks/useChatInputController', () => ({
     useChatInputController: () => ctrl,
 }));
 
-vi.mock('@/features/models/components/ModelSelector', () => ({
+vi.mock('@/components/shared/ModelSelector', () => ({
     ModelSelector: () => <div data-testid="model-selector-mock" />,
 }));
 

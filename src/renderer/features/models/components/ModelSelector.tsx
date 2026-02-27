@@ -1,4 +1,4 @@
-import type { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
@@ -30,6 +30,8 @@ interface ModelSelectorProps {
     isIconOnly?: boolean;
     thinkingLevel?: string;
     onThinkingLevelChange?: (level: string) => void;
+    chatMode?: 'instant' | 'thinking' | 'agent';
+    onChatModeChange?: (mode: 'instant' | 'thinking' | 'agent') => void;
 }
 
 export function ModelSelector({
@@ -50,7 +52,9 @@ export function ModelSelector({
     toggleFavorite,
     isIconOnly,
     thinkingLevel,
-    onThinkingLevelChange
+    onThinkingLevelChange,
+    chatMode = 'instant',
+    onChatModeChange
 }: ModelSelectorProps) {
     const { t } = useTranslation(language);
     const [isOpen, setIsOpen] = useState(false);
@@ -156,6 +160,8 @@ export function ModelSelector({
                 toggleFavorite={toggleFavorite}
                 recentModels={recentModels}
                 t={t}
+                chatMode={chatMode}
+                onChatModeChange={onChatModeChange}
                 thinkingLevel={effectiveThinkingLevel}
                 onThinkingLevelChange={onThinkingLevelChange}
             />

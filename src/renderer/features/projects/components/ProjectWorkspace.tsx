@@ -16,7 +16,7 @@ import { AnimatePresence, motion } from '@renderer/lib/framer-motion-compat';
 import { Resizable } from 're-resizable';
 import React from 'react';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { TerminalPanel } from '@/features/terminal/TerminalPanel';
 import { Language } from '@/i18n';
 import { cn } from '@/lib/utils';

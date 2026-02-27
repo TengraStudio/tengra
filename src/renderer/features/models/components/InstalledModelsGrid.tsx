@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import type { AppSettings } from '@/types/settings';
 
 import type { ProviderAccounts, ProviderQuotas } from '../pages/ModelsPage';
-import type { GroupedModels, ModelInfo } from '../utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
 
 interface InstalledModelsGridProps {
     groupedModels: GroupedModels;

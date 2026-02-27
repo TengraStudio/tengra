@@ -1,4 +1,4 @@
-import { GroupedModels, ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
 import React, { lazy, Suspense, useCallback } from 'react';
 
 import { LoadingState } from '@/components/ui/LoadingState';

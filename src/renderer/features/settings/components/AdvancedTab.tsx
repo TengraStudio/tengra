@@ -4,7 +4,7 @@ import { Activity, Clock, MessageSquare, RefreshCw, Sliders, Thermometer, Zap } 
 import React, { useCallback, useMemo, useState } from 'react';
 
 import { SelectDropdown } from '@/components/ui/SelectDropdown';
-import type { ModelInfo } from '@/features/models/utils/model-fetcher';
+import type { ModelInfo } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface BenchmarkResult {

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import React, { memo, useEffect, useRef } from 'react';
 
-import { ModelSelector } from '@/features/models/components/ModelSelector';
+import { ModelSelector } from '@/components/shared/ModelSelector';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
 import { Attachment } from '@/types';
@@ -402,6 +402,7 @@ type ControllerType = ReturnType<typeof useChatInputController>;
 
 const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
     <div data-testid="model-selector">
+        {/** Map chat global system mode to selector mode tabs */}
         <ModelSelector
             selectedProvider={ctrl.selectedProvider}
             selectedModel={ctrl.selectedModel}
@@ -418,6 +419,16 @@ const ModelSelectorWrapper: React.FC<{ ctrl: ControllerType }> = ({ ctrl }) => (
             language={ctrl.language}
             toggleFavorite={ctrl.toggleFavorite}
             isFavorite={ctrl.isFavorite}
+            chatMode={
+                ctrl.systemMode === 'thinking'
+                    ? 'thinking'
+                    : ctrl.systemMode === 'agent'
+                        ? 'agent'
+                        : 'instant'
+            }
+            onChatModeChange={mode => {
+                ctrl.setSystemMode(mode === 'instant' ? 'fast' : mode);
+            }}
             thinkingLevel={ctrl.getModelReasoningLevel?.(ctrl.selectedModel)}
             onThinkingLevelChange={level =>
                 ctrl.setModelReasoningLevel?.(ctrl.selectedModel, level)

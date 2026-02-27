@@ -1,4 +1,4 @@
-import { GroupedModels } from '@renderer/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, QuotaResponse } from '@shared/types';
 import React, { lazy, Suspense } from 'react';
 

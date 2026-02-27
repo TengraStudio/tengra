@@ -2,7 +2,7 @@ import { ModelCard } from '@renderer/features/models/components/ModelCard';
 import { ModelDetailsPanel } from '@renderer/features/models/components/ModelDetailsPanel';
 import { useModelExplorer } from '@renderer/features/models/hooks/useModelExplorer';
 import { HFModel, OllamaLibraryModel } from '@renderer/features/models/types';
-import type { ModelInfo } from '@renderer/features/models/utils/model-fetcher';
+import type { ModelInfo } from '@/types';
 import { Box, ChevronLeft, ChevronRight, Database, Loader2, Search, X } from 'lucide-react';
 import React from 'react';
 

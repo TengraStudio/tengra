@@ -6,7 +6,7 @@ import { Archive, ArrowDownUp, Edit, FolderOpen, Monitor, Trash2 } from 'lucide-
 import React, { memo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { GroupedModels } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels } from '@/types';
 import { Language, useTranslation } from '@/i18n';
 import { Message, Project, TerminalTab } from '@/types';
 import { appLogger } from '@/utils/renderer-logger';

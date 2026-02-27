@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { GalleryView } from '@/features/chat/components/GalleryView';
-import { GroupedModels, ModelInfo } from '@/features/models/utils/model-fetcher';
+import type { GroupedModels, ModelInfo } from '@/types';
 import {
     AboutTab,
     AccountsTab,
