@@ -15,6 +15,8 @@ import { useQuickSwitch } from '@/features/projects/hooks/useQuickSwitch';
 import { useTerminalLayout } from '@/features/projects/hooks/useTerminalLayout';
 import { useWorkspaceBranchState } from '@/features/projects/hooks/useWorkspaceBranchState';
 import { useWorkspaceShortcuts } from '@/features/projects/hooks/useWorkspaceShortcuts';
+import { useRenderTracker } from '@/hooks/useRenderTracker';
+import { useWorkspaceProfiler } from '@/hooks/useWorkspaceProfiler';
 import { Language } from '@/i18n';
 import type { GroupedModels } from '@/types';
 import { AppSettings, CodexUsage, Message, Project, QuotaResponse, TerminalTab } from '@/types';
@@ -60,6 +62,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     messages,
     isLoading,
 }) => {
+    useRenderTracker('ProjectWorkspace');
+    const { onRender } = useWorkspaceProfiler();
+
     const { ps, wm, handleUpdateProject, submitEntryModal, entryBusy, t } =
         useProjectWorkspaceController({ project, language });
 
@@ -123,6 +128,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
     return (
         <div className="h-full flex flex-col bg-background relative overflow-hidden">
+            <React.Profiler id="WorkspaceToolbar" onRender={onRender}>
             <WorkspaceToolbar
                 project={project}
                 projectName={project.title}
@@ -143,8 +149,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 toggleAgentPanel={() => ps.setShowAgentPanel(!ps.showAgentPanel)}
                 mountStatus={wm.mountStatus}
             />
+            </React.Profiler>
 
             <div className="flex-1 flex overflow-hidden relative">
+                <React.Profiler id="ProjectExplorerPanel" onRender={onRender}>
                 <ProjectExplorerPanel
                     projectId={project.id}
                     ps={ps}
@@ -154,7 +162,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                         void wm.moveEntry(entry, targetDirPath);
                     }}
                 />
+                </React.Profiler>
 
+                <React.Profiler id="WorkspaceMain" onRender={onRender}>
                 <WorkspaceMain
                     dashboardTab={wm.dashboardTab}
                     openTabs={wm.openTabs}
@@ -183,7 +193,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     selectedEntry={ps.selectedEntries[0]}
                     onOpenFile={openWorkspaceFile}
                 />
+                </React.Profiler>
 
+                <React.Profiler id="WorkspaceSidebar" onRender={onRender}>
                 <WorkspaceSidebar
                     projectId={project.id}
                     showAgentPanel={ps.showAgentPanel}
@@ -218,8 +230,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                         });
                     }}
                 />
+                </React.Profiler>
             </div>
 
+            <React.Profiler id="WorkspaceTerminalLayer" onRender={onRender}>
             <WorkspaceTerminalLayer
                 showTerminal={ps.showTerminal}
                 isFloatingTerminal={tl.isFloatingTerminal}
@@ -243,6 +257,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 setActiveTabId={setActiveTabId}
                 onOpenFile={openWorkspaceFile}
             />
+            </React.Profiler>
             <WorkspaceDialogs
                 ps={ps}
                 wm={wm}

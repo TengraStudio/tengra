@@ -6,6 +6,7 @@ import { appLogger } from '@main/logging/logger';
 import { CatchError } from '@shared/types/common';
 import { safeJsonParse } from '@shared/utils/sanitize.util';
 import { net } from 'electron';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 /**
  * Represents the result of an initiated authentication flow.
@@ -67,6 +68,10 @@ export class LocalAuthServer {
     private static readonly AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
     /** Antigravity (Google) Token exchange endpoint */
     private static readonly TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+    /** Google JWKS endpoint for id_token signature verification */
+    private static readonly GOOGLE_JWKS_URL = new URL('https://www.googleapis.com/oauth2/v3/certs');
+    /** Google userinfo endpoint (fallback when JWT verification unavailable) */
+    private static readonly GOOGLE_USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
     // Claude Constants
     /** Client ID for Claude (Anthropic) OAuth */
@@ -75,6 +80,8 @@ export class LocalAuthServer {
     private static readonly CLAUDE_AUTH_ENDPOINT = 'https://claude.ai/oauth/authorize';
     /** Claude Token exchange endpoint */
     private static readonly CLAUDE_TOKEN_ENDPOINT = 'https://api.anthropic.com/v1/oauth/token';
+    /** Claude userinfo endpoint (fallback when id_token verification unavailable) */
+    private static readonly CLAUDE_USERINFO_ENDPOINT = 'https://api.anthropic.com/v1/me';
 
     /**
      * Handles the callback from Antigravity (Google) OAuth.
@@ -398,7 +405,7 @@ export class LocalAuthServer {
             request.on('response', (response) => {
                 let data = '';
                 response.on('data', chunk => data += chunk);
-                response.on('end', () => {
+                response.on('end', async () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Token exchange failed: ${response.statusCode} - ${data}`);
                         appLogger.error('LocalAuthServer', err.message);
@@ -409,16 +416,25 @@ export class LocalAuthServer {
                         const json = safeJsonParse<AuthCallbackData & { id_token?: string }>(data, {} as AuthCallbackData);
                         if (Object.keys(json).length === 0) { throw new Error('Malformed token response'); }
 
-                        // Extract email from id_token if present (Google/Antigravity)
+                        // Extract email from id_token if signature verification succeeds
                         if (json.id_token) {
                             try {
-                                const claims = LocalAuthServer.decodeJwt(json.id_token);
+                                const claims = await LocalAuthServer.verifyGoogleIdToken(json.id_token);
                                 if (claims['email']) {
                                     json.email = String(claims['email']);
-                                    appLogger.info('LocalAuthServer', `Captured email from id_token: ${json.email}`);
+                                    appLogger.info('LocalAuthServer', `Captured verified email from id_token: ${json.email}`);
                                 }
-                            } catch {
-                                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT');
+                            } catch (verifyErr) {
+                                appLogger.warn('LocalAuthServer', `id_token signature verification failed, will use userinfo fallback: ${verifyErr instanceof Error ? verifyErr.message : 'unknown'}`);
+                            }
+                        }
+
+                        // Fallback to userinfo endpoint if email not obtained from verified id_token
+                        if (!json.email && json.access_token) {
+                            const email = await LocalAuthServer.fetchGoogleUserInfo(json.access_token);
+                            if (email) {
+                                json.email = email;
+                                appLogger.info('LocalAuthServer', `Captured email from userinfo endpoint: ${email}`);
                             }
                         }
 
@@ -436,19 +452,50 @@ export class LocalAuthServer {
     }
 
     /**
-     * Decodes basic JWT payload without signature verification (we trust the HTTPS source).
+     * Verifies and decodes a Google id_token using JWKS, validating signature, issuer, and audience.
+     * Throws on verification failure — caller must handle the error and use userinfo fallback.
      */
-    private static decodeJwt(token: string): Record<string, unknown> {
-        try {
-            const parts = token.split('.');
-            if (parts.length < 2) { return {}; }
-            const payload = parts[1];
-            if (!payload) { return {}; }
-            const decoded = Buffer.from(payload, 'base64').toString('utf8');
-            return JSON.parse(decoded) as Record<string, unknown>;
-        } catch {
-            return {};
-        }
+    private static async verifyGoogleIdToken(token: string): Promise<Record<string, unknown>> {
+        const jwks = createRemoteJWKSet(LocalAuthServer.GOOGLE_JWKS_URL);
+        const { payload } = await jwtVerify(token, jwks, {
+            issuer: ['https://accounts.google.com', 'accounts.google.com'],
+            audience: LocalAuthServer.CLIENT_ID,
+        });
+        return payload as Record<string, unknown>;
+    }
+
+    /**
+     * Fetches user email from the Google userinfo endpoint using the access token.
+     * Used as fallback when id_token signature verification fails.
+     */
+    private static async fetchGoogleUserInfo(accessToken: string): Promise<string | undefined> {
+        return new Promise((resolve) => {
+            const request = net.request({
+                method: 'GET',
+                url: LocalAuthServer.GOOGLE_USERINFO_ENDPOINT,
+            });
+            request.setHeader('Authorization', `Bearer ${accessToken}`);
+
+            request.on('response', (response) => {
+                let data = '';
+                response.on('data', chunk => data += chunk);
+                response.on('end', () => {
+                    if (response.statusCode && response.statusCode >= 400) {
+                        appLogger.warn('LocalAuthServer', `Userinfo request failed: ${response.statusCode}`);
+                        resolve(undefined);
+                        return;
+                    }
+                    try {
+                        const userInfo = safeJsonParse<{ email?: string }>(data, {});
+                        resolve(userInfo.email ? String(userInfo.email) : undefined);
+                    } catch {
+                        resolve(undefined);
+                    }
+                });
+            });
+            request.on('error', () => resolve(undefined));
+            request.end();
+        });
     }
 
     /**
@@ -485,7 +532,7 @@ export class LocalAuthServer {
             request.on('response', (response) => {
                 let data = '';
                 response.on('data', chunk => data += chunk);
-                response.on('end', () => {
+                response.on('end', async () => {
                     if (response.statusCode && response.statusCode >= 400) {
                         const err = new Error(`Claude token exchange failed: ${response.statusCode} - ${data}`);
                         appLogger.error('LocalAuthServer', err.message);
@@ -498,6 +545,15 @@ export class LocalAuthServer {
                         appLogger.info('LocalAuthServer', 'Token exchange successful');
 
                         json.email = LocalAuthServer.extractEmailFromTokenData(json);
+
+                        // Fallback to Claude userinfo endpoint if email not obtained
+                        if (!json.email && json.access_token) {
+                            const email = await LocalAuthServer.fetchClaudeUserInfo(json.access_token);
+                            if (email) {
+                                json.email = email;
+                                appLogger.info('LocalAuthServer', `Captured email from Claude userinfo endpoint: ${email}`);
+                            }
+                        }
 
                         resolve(json);
                     } catch (e) {
@@ -515,26 +571,13 @@ export class LocalAuthServer {
 
     /**
      * Extract user email from token response data (multiple provider support).
+     * Prefers verified sources (account info, direct response) over unverified JWT claims.
      */
     private static extractEmailFromTokenData(json: AuthCallbackData & { account?: { email_address?: string }; id_token?: string }): string | undefined {
-        // Handle Claude's nested email field
+        // Handle Claude's nested email field (trusted: comes from token response body)
         if (json.account?.email_address) {
             appLogger.info('LocalAuthServer', `Captured email from Claude account info: ${json.account.email_address}`);
             return json.account.email_address;
-        }
-
-        // Fallback to id_token decoding (used by Codex/OpenAI and others)
-        if (!json.email && json.id_token) {
-            try {
-                const claims = LocalAuthServer.decodeJwt(json.id_token);
-                if (claims['email']) {
-                    const email = String(claims['email']);
-                    appLogger.info('LocalAuthServer', `Captured email from decoded id_token: ${email}`);
-                    return email;
-                }
-            } catch {
-                appLogger.warn('LocalAuthServer', 'Failed to decode id_token JWT in Claude flow');
-            }
         }
 
         if (json.email) {
@@ -542,7 +585,49 @@ export class LocalAuthServer {
             return json.email;
         }
 
+        // Do NOT fall back to decoding unsigned id_token claims (AUDIT-OAUTH-001).
+        // The caller should use fetchClaudeUserInfo() with the access_token instead.
+        if (json.id_token) {
+            appLogger.warn('LocalAuthServer', 'id_token present but unsigned JWT decode is disallowed; will use userinfo fallback');
+        }
+
         return undefined;
+    }
+
+    /**
+     * Fetches user email from the Claude/Anthropic userinfo endpoint using the access token.
+     * Used as fallback when email is not available from the token response body.
+     */
+    private static async fetchClaudeUserInfo(accessToken: string): Promise<string | undefined> {
+        return new Promise((resolve) => {
+            const request = net.request({
+                method: 'GET',
+                url: LocalAuthServer.CLAUDE_USERINFO_ENDPOINT,
+            });
+            request.setHeader('Authorization', `Bearer ${accessToken}`);
+            request.setHeader('Accept', 'application/json');
+
+            request.on('response', (response) => {
+                let data = '';
+                response.on('data', chunk => data += chunk);
+                response.on('end', () => {
+                    if (response.statusCode && response.statusCode >= 400) {
+                        appLogger.warn('LocalAuthServer', `Claude userinfo request failed: ${response.statusCode}`);
+                        resolve(undefined);
+                        return;
+                    }
+                    try {
+                        const userInfo = safeJsonParse<{ email?: string; email_address?: string }>(data, {});
+                        const email = userInfo.email ?? userInfo.email_address;
+                        resolve(email ? String(email) : undefined);
+                    } catch {
+                        resolve(undefined);
+                    }
+                });
+            });
+            request.on('error', () => resolve(undefined));
+            request.end();
+        });
     }
 }
 

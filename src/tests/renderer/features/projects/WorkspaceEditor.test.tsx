@@ -1,81 +1,129 @@
-/**
- * @fileoverview Comprehensive unit tests for WorkspaceEditor component
- * @description Tests edge cases, user interactions, and accessibility
- */
-
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WorkspaceEditor, WorkspaceEditorProps } from '@/features/projects/components/workspace/WorkspaceEditor';
+import type { ProjectSnippet } from '@/features/projects/utils/snippet-manager';
 import { EditorTab } from '@/types';
 
-// Mock CodeEditor component
-vi.mock('@/components/ui/CodeEditor', () => ({
-    CodeEditor: ({
-        value,
+const {
+    mockCreateShareCode,
+    mockFilterSnippets,
+    mockLoadProjectSnippets,
+    mockLoadReviewRuleConfig,
+    mockParseShareCode,
+    mockRunBugDetectionAnalysis,
+    mockRunCodeReviewAnalysis,
+    mockRunPerformanceSuggestionAnalysis,
+    mockSaveProjectSnippets,
+    mockSaveReviewRuleConfig,
+} = vi.hoisted(() => ({
+    mockCreateShareCode: vi.fn(() => 'share-code'),
+    mockFilterSnippets: vi.fn((snippets: ProjectSnippet[]) => snippets),
+    mockLoadProjectSnippets: vi.fn(() => [
+        {
+            id: 'snippet-1',
+            name: 'Reusable snippet',
+            language: 'typescript',
+            projectKey: 'test-project',
+            content: 'const snippet = true;',
+            createdAt: 1,
+        },
+    ]),
+    mockLoadReviewRuleConfig: vi.fn(() => ({
+        detectConsoleLog: true,
+        detectAnyType: true,
+        detectUnsafeEval: false,
+    })),
+    mockParseShareCode: vi.fn((): ProjectSnippet | null => null),
+    mockRunBugDetectionAnalysis: vi.fn(() => ({
+        classification: 'safe',
+        confidenceScore: 0.75,
+        fixSuggestions: ['fix-one'],
+        regressionSuggestions: ['regression-one'],
+    })),
+    mockRunCodeReviewAnalysis: vi.fn(async () => ({
+        reviewComments: ['review-one'],
+    })),
+    mockRunPerformanceSuggestionAnalysis: vi.fn(() => ({
+        profilingNotes: ['profile-one'],
+        databaseNotes: [],
+        bundleNotes: [],
+        cachingNotes: [],
+        lazyLoadingNotes: [],
+        performanceBudgets: [],
+        buildTimeNotes: [],
+        runtimeMonitoringNotes: [],
+    })),
+    mockSaveProjectSnippets: vi.fn(),
+    mockSaveReviewRuleConfig: vi.fn(),
+}));
+
+vi.mock('@/components/ui/CodeMirrorEditor', () => ({
+    CodeMirrorEditor: ({
+        content,
         language,
         onChange,
-        className,
-        showMinimap,
-        fontSize,
-        initialLine,
     }: {
-        value: string;
+        content: string;
         language: string;
-        onChange: (val: string | undefined) => void;
-        className: string;
-        showMinimap: boolean;
-        fontSize: number;
-        initialLine?: number;
+        onChange: (value?: string) => void;
     }) => (
-        <div
-            data-testid="code-editor"
-            data-language={language}
-            data-show-minimap={showMinimap}
-            data-font-size={fontSize}
-            data-initial-line={initialLine}
-            className={className}
-        >
+        <div data-testid="code-editor" data-language={language}>
             <textarea
-                value={value}
-                onChange={e => onChange(e.target.value)}
+                aria-label="code-editor-input"
                 data-testid="code-editor-input"
+                value={content}
+                onChange={event => onChange(event.target.value)}
             />
         </div>
     ),
 }));
 
-// Mock cn utility
-vi.mock('@/lib/utils', () => ({
-    cn: (...classes: string[]) => classes.filter(Boolean).join(' '),
+vi.mock('@/features/projects/utils/dev-ai-assistant', () => ({
+    loadReviewRuleConfig: mockLoadReviewRuleConfig,
+    runBugDetectionAnalysis: mockRunBugDetectionAnalysis,
+    runCodeReviewAnalysis: mockRunCodeReviewAnalysis,
+    runPerformanceSuggestionAnalysis: mockRunPerformanceSuggestionAnalysis,
+    saveReviewRuleConfig: mockSaveReviewRuleConfig,
 }));
 
-// Mock language-map
+vi.mock('@/features/projects/utils/snippet-manager', () => ({
+    createShareCode: mockCreateShareCode,
+    filterSnippets: mockFilterSnippets,
+    loadProjectSnippets: mockLoadProjectSnippets,
+    parseShareCode: mockParseShareCode,
+    saveProjectSnippets: mockSaveProjectSnippets,
+}));
+
+vi.mock('@/i18n', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+    }),
+}));
+
+vi.mock('@/lib/utils', () => ({
+    cn: (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(' '),
+}));
+
 vi.mock('@/utils/language-map', () => ({
     getLanguageFromExtension: (filename: string) => {
         const ext = filename.split('.').pop() ?? '';
         const map: Record<string, string> = {
             ts: 'typescript',
-            tsx: 'typescript',
             js: 'javascript',
-            jsx: 'javascript',
             json: 'json',
             md: 'markdown',
-            css: 'css',
-            html: 'html',
+            png: 'image',
         };
         return map[ext] ?? 'plaintext';
     },
 }));
 
-/**
- * Creates mock editor tab data
- */
 function createMockTab(overrides?: Partial<EditorTab>): EditorTab {
     return {
         id: 'tab-1',
         mountId: 'mount-1',
-        path: '/test/file.ts',
+        path: 'C:\\workspace\\file.ts',
         name: 'file.ts',
         content: 'const x = 1;',
         savedContent: 'const x = 1;',
@@ -85,349 +133,337 @@ function createMockTab(overrides?: Partial<EditorTab>): EditorTab {
     };
 }
 
-/**
- * Creates mock props for the WorkspaceEditor
- */
 function createMockProps(overrides?: Partial<WorkspaceEditorProps>): WorkspaceEditorProps {
     return {
         activeTab: null,
         updateTabContent: vi.fn(),
         projectKey: 'test-project',
-        emptyState: <div data-testid="empty-state">No file open</div>,
+        projectPath: 'C:\\workspace',
+        emptyState: <div data-testid="empty-state">empty-state</div>,
         ...overrides,
     };
 }
 
 describe('WorkspaceEditor', () => {
-    let mockProps: ReturnType<typeof createMockProps>;
-
     beforeEach(() => {
-        mockProps = createMockProps();
         vi.clearAllMocks();
+        localStorage.clear();
     });
 
-    afterEach(() => {
-        vi.restoreAllMocks();
+    it('renders action controls for snippet and AI workflows', () => {
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByText('projectDashboard.editor.insertSnippet')).toBeInTheDocument();
+        expect(screen.getByText('projectDashboard.editor.saveSnippet')).toBeInTheDocument();
+        expect(screen.getByText('AI Review')).toBeInTheDocument();
+        expect(screen.getByText('AI Bug Scan')).toBeInTheDocument();
+        expect(screen.getByText('AI Perf')).toBeInTheDocument();
     });
 
-    describe('Rendering', () => {
-        it('should render empty state when no tab is active', () => {
-            render(<WorkspaceEditor {...mockProps} />);
-            expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-        });
+    it('saves the current file as a snippet from the action controls', () => {
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-        it('should render code editor when code tab is active', () => {
-            const tab = createMockTab({ type: 'code' });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
-        });
+        fireEvent.click(screen.getByText('projectDashboard.editor.saveSnippet'));
 
-        it('should render image preview when image tab is active', () => {
-            const tab = createMockTab({
-                type: 'image',
-                content: 'data:image/png;base64,test',
-                name: 'image.png',
-            });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByRole('img')).toBeInTheDocument();
-        });
-
-        it('should pass correct language to code editor', () => {
-            const tab = createMockTab({ name: 'test.ts' });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toHaveAttribute('data-language', 'typescript');
-        });
-
-        it('should pass initial line to code editor', () => {
-            const tab = createMockTab({ initialLine: 42 });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toHaveAttribute('data-initial-line', '42');
-        });
+        expect(mockSaveProjectSnippets).toHaveBeenCalledTimes(1);
+        expect(mockSaveProjectSnippets).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'file.ts',
+                    content: 'const x = 1;',
+                    language: 'typescript',
+                    projectKey: 'test-project',
+                }),
+            ])
+        );
+        expect(screen.getByText('projectDashboard.editor.snippetSaved')).toBeInTheDocument();
     });
 
-    describe('Content Updates', () => {
-        it('should call updateTabContent when content changes', async () => {
-            const updateTabContent = vi.fn();
-            const tab = createMockTab();
-            const props = createMockProps({ activeTab: tab, updateTabContent });
+    it('inserts the selected snippet into the active tab', () => {
+        const updateTabContent = vi.fn();
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab(), updateTabContent })} />);
 
-            render(<WorkspaceEditor {...props} />);
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'snippet-1' } });
+        fireEvent.click(screen.getByText('projectDashboard.editor.insertSnippet'));
 
-            const textarea = screen.getByTestId('code-editor-input');
-            fireEvent.change(textarea, { target: { value: 'const y = 2;' } });
-
-            expect(updateTabContent).toHaveBeenCalledWith('const y = 2;');
-        });
-
-        it('should not call updateTabContent when no tab is active', async () => {
-            const updateTabContent = vi.fn();
-            const props = createMockProps({ activeTab: null, updateTabContent });
-
-            render(<WorkspaceEditor {...props} />);
-
-            // Editor should be hidden and pointer-events-none
-            expect(screen.getByTestId('code-editor').parentElement).toHaveClass('opacity-0');
-            expect(updateTabContent).not.toHaveBeenCalled();
-        });
+        expect(updateTabContent).toHaveBeenCalledWith('const x = 1;\nconst snippet = true;');
+        expect(screen.getByText('projectDashboard.editor.snippetInserted')).toBeInTheDocument();
     });
 
-    describe('Unsaved Changes Warning', () => {
-        it('should add beforeunload listener when there are unsaved changes', () => {
-            const tab = createMockTab({
-                content: 'modified content',
-                savedContent: 'original content',
-            });
-            const props = createMockProps({ activeTab: tab });
+    it('renders the code editor in the main area and forwards changes', () => {
+        const updateTabContent = vi.fn();
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab(), updateTabContent })} />);
 
-            const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+        const editor = screen.getByTestId('code-editor');
+        expect(editor).toHaveAttribute('data-language', 'typescript');
 
-            render(<WorkspaceEditor {...props} />);
-
-            expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+        fireEvent.change(screen.getByTestId('code-editor-input'), {
+            target: { value: 'const y = 2;' },
         });
 
-        it('should not add beforeunload listener when no unsaved changes', () => {
-            const tab = createMockTab({
-                content: 'same content',
-                savedContent: 'same content',
-            });
-            const props = createMockProps({ activeTab: tab });
-
-            const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
-
-            render(<WorkspaceEditor {...props} />);
-
-            expect(addEventListenerSpy).not.toHaveBeenCalledWith('beforeunload', expect.any(Function));
-        });
-
-        it('should remove beforeunload listener on unmount', () => {
-            const tab = createMockTab({
-                content: 'modified content',
-                savedContent: 'original content',
-            });
-            const props = createMockProps({ activeTab: tab });
-
-            const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
-
-            const { unmount } = render(<WorkspaceEditor {...props} />);
-            unmount();
-
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
-        });
-
-        it('should prevent default on beforeunload when unsaved changes', () => {
-            const tab = createMockTab({
-                content: 'modified content',
-                savedContent: 'original content',
-            });
-            const props = createMockProps({ activeTab: tab });
-
-            render(<WorkspaceEditor {...props} />);
-
-            const event = new Event('beforeunload') as BeforeUnloadEvent;
-            const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
-
-            window.dispatchEvent(event);
-
-            // The event should be handled
-            expect(preventDefaultSpy).toHaveBeenCalled();
-        });
+        expect(updateTabContent).toHaveBeenCalledWith('const y = 2;');
     });
 
-    describe('Image Preview', () => {
-        it('should display image with correct src', () => {
-            const imageData = 'data:image/png;base64,test';
-            const tab = createMockTab({
-                type: 'image',
-                content: imageData,
-                name: 'test-image.png',
-            });
-            const props = createMockProps({ activeTab: tab });
+    it('renders the image preview in the main area for image tabs', () => {
+        render(
+            <WorkspaceEditor
+                {...createMockProps({
+                    activeTab: createMockTab({
+                        type: 'image',
+                        name: 'preview.png',
+                        content: 'data:image/png;base64,image',
+                    }),
+                })}
+            />
+        );
 
-            render(<WorkspaceEditor {...props} />);
-
-            const img = screen.getByRole('img');
-            expect(img).toHaveAttribute('src', imageData);
-        });
-
-        it('should display image with correct alt text', () => {
-            const tab = createMockTab({
-                type: 'image',
-                content: 'data:image/png;base64,test',
-                name: 'my-image.png',
-            });
-            const props = createMockProps({ activeTab: tab });
-
-            render(<WorkspaceEditor {...props} />);
-
-            const img = screen.getByRole('img');
-            expect(img).toHaveAttribute('alt', 'my-image.png');
-        });
+        const image = screen.getByRole('img');
+        expect(image).toHaveAttribute('src', 'data:image/png;base64,image');
+        expect(image).toHaveAttribute('alt', 'preview.png');
     });
 
-    describe('Edge Cases', () => {
-        it('should handle null activeTab gracefully', () => {
-            const props = createMockProps({ activeTab: null });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('empty-state')).toBeInTheDocument();
-        });
+    it('renders the empty state when there is no active tab', () => {
+        render(<WorkspaceEditor {...createMockProps()} />);
 
-        it('should handle undefined initialLine', () => {
-            const tab = createMockTab({ initialLine: undefined });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
-        });
-
-        it('should handle empty content', () => {
-            const tab = createMockTab({ content: '' });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor-input')).toHaveValue('');
-        });
-
-        it('should handle various file extensions', () => {
-            const extensions = [
-                { name: 'file.ts', expected: 'typescript' },
-                { name: 'file.js', expected: 'javascript' },
-                { name: 'file.json', expected: 'json' },
-                { name: 'file.md', expected: 'markdown' },
-                { name: 'file.css', expected: 'css' },
-                { name: 'file.html', expected: 'html' },
-                { name: 'file.unknown', expected: 'plaintext' },
-            ];
-
-            for (const { name, expected } of extensions) {
-                const tab = createMockTab({ name });
-                const props = createMockProps({ activeTab: tab });
-                const { unmount } = render(<WorkspaceEditor {...props} />);
-
-                expect(screen.getByTestId('code-editor')).toHaveAttribute('data-language', expected);
-                unmount();
-            }
-        });
-
-        it('should handle very long content', () => {
-            const longContent = 'x'.repeat(100000);
-            const tab = createMockTab({ content: longContent });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor-input')).toHaveValue(longContent);
-        });
-
-        it('should handle special characters in content', () => {
-            const specialContent = '<script>alert("XSS")</script>\n\t"\'`';
-            const tab = createMockTab({ content: specialContent });
-            const props = createMockProps({ activeTab: tab });
-            render(<WorkspaceEditor {...props} />);
-            expect((screen.getByTestId('code-editor-input') as HTMLTextAreaElement).value).toBe(tab.content);
-        });
+        expect(screen.getByTestId('empty-state')).toBeInTheDocument();
     });
 
-    describe('Accessibility', () => {
-        it('should have accessible image element', () => {
-            const tab = createMockTab({
-                type: 'image',
-                content: 'data:image/png;base64,test',
-                name: 'accessible-image.png',
+    it('registers and cleans up the beforeunload guard for unsaved changes', () => {
+        const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+        const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+
+        const { unmount } = render(
+            <WorkspaceEditor
+                {...createMockProps({
+                    activeTab: createMockTab({
+                        content: 'const changed = true;',
+                        savedContent: 'const x = 1;',
+                    }),
+                })}
+            />
+        );
+
+        expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+
+        unmount();
+
+        expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    });
+
+    it('renders bug scan output in the report panel', () => {
+        render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+        fireEvent.click(screen.getByText('AI Bug Scan'));
+
+        expect(mockRunBugDetectionAnalysis).toHaveBeenCalledWith('const x = 1;');
+        expect(screen.getByText(/classification: safe/)).toBeInTheDocument();
+        expect(screen.getByText(/confidence: 0.75/)).toBeInTheDocument();
+    });
+
+    // REF-005: Clipboard-backed snippet import/export tests
+    describe('clipboard snippet flows', () => {
+        const mockWriteText = vi.fn().mockResolvedValue(undefined);
+        const mockReadText = vi.fn().mockResolvedValue({ success: true, text: '' });
+
+        beforeEach(() => {
+            Object.defineProperty(window, 'electron', {
+                value: {
+                    clipboard: {
+                        writeText: mockWriteText,
+                        readText: mockReadText,
+                    },
+                    runCommand: vi.fn(),
+                    files: { writeFile: vi.fn() },
+                },
+                configurable: true,
+                writable: true,
             });
-            const props = createMockProps({ activeTab: tab });
-
-            render(<WorkspaceEditor {...props} />);
-
-            const img = screen.getByRole('img');
-            expect(img).toBeInTheDocument();
         });
 
-        it('should have accessible textarea', () => {
-            const tab = createMockTab();
-            const props = createMockProps({ activeTab: tab });
+        it('exports snippets to clipboard as JSON', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            render(<WorkspaceEditor {...props} />);
+            fireEvent.click(screen.getByText('projectDashboard.editor.exportSnippets'));
 
-            const textarea = screen.getByTestId('code-editor-input');
-            expect(textarea).toBeInTheDocument();
+            await vi.waitFor(() => {
+                expect(mockWriteText).toHaveBeenCalledWith(
+                    expect.stringContaining('"name"')
+                );
+                expect(screen.getByText('projectDashboard.editor.snippetExported')).toBeInTheDocument();
+            });
+        });
+
+        it('imports snippets from clipboard JSON and persists them', async () => {
+            const importedSnippet = [{
+                id: 'imported-1',
+                name: 'Imported',
+                language: 'javascript',
+                projectKey: 'other',
+                content: 'const imported = true;',
+                createdAt: 1,
+            }];
+            mockReadText.mockResolvedValueOnce({ success: true, text: JSON.stringify(importedSnippet) });
+
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+
+            await vi.waitFor(() => {
+                expect(mockSaveProjectSnippets).toHaveBeenCalled();
+            });
+            expect(screen.getByText('projectDashboard.editor.snippetImported')).toBeInTheDocument();
+        });
+
+        it('shows error when importing invalid clipboard content', async () => {
+            mockReadText.mockResolvedValueOnce({ success: true, text: 'not-json' });
+
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+
+            await vi.waitFor(() => {
+                expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
+            });
+        });
+
+        it('shows error when clipboard read fails on import', async () => {
+            mockReadText.mockResolvedValueOnce({ success: false, text: '' });
+
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.importSnippets'));
+
+            await vi.waitFor(() => {
+                expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
+            });
+        });
+
+        it('shares selected snippet as share code to clipboard', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            // Select the snippet first
+            fireEvent.change(screen.getByRole('combobox'), { target: { value: 'snippet-1' } });
+            fireEvent.click(screen.getByText('projectDashboard.editor.shareSnippet'));
+
+            await vi.waitFor(() => {
+                expect(mockCreateShareCode).toHaveBeenCalled();
+                expect(mockWriteText).toHaveBeenCalledWith('share-code');
+                expect(screen.getByText('projectDashboard.editor.snippetShareCodeCopied')).toBeInTheDocument();
+            });
+        });
+
+        it('imports a snippet from share code on clipboard', async () => {
+            const parsedSnippet = {
+                id: 'parsed-1',
+                name: 'Shared',
+                language: 'typescript',
+                projectKey: 'global',
+                content: 'shared code',
+                createdAt: Date.now(),
+            };
+            mockReadText.mockResolvedValueOnce({ success: true, text: 'valid-share-code' });
+            mockParseShareCode.mockReturnValueOnce(parsedSnippet);
+
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.importShareCode'));
+
+            await vi.waitFor(() => {
+                expect(mockParseShareCode).toHaveBeenCalledWith('valid-share-code');
+                expect(mockSaveProjectSnippets).toHaveBeenCalled();
+            });
+            expect(screen.getByText('projectDashboard.editor.snippetImported')).toBeInTheDocument();
+        });
+
+        it('shows error when share code is invalid', async () => {
+            mockReadText.mockResolvedValueOnce({ success: true, text: 'invalid-code' });
+            mockParseShareCode.mockReturnValueOnce(null);
+
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.importShareCode'));
+
+            await vi.waitFor(() => {
+                expect(screen.getByText('projectDashboard.editor.snippetImportFailed')).toBeInTheDocument();
+            });
         });
     });
 
-    describe('Performance', () => {
-        it('should not re-render unnecessarily', () => {
-            const tab = createMockTab();
-            const props = createMockProps({ activeTab: tab });
+    // REF-006: Scratchpad command and file-save tests
+    describe('scratchpad actions', () => {
+        const mockRunCommand = vi.fn().mockResolvedValue({ stdout: 'output', stderr: '' });
+        const mockWriteFile = vi.fn().mockResolvedValue(undefined);
 
-            const { rerender } = render(<WorkspaceEditor {...props} />);
-            rerender(<WorkspaceEditor {...props} />);
-
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
-        });
-
-        it('should handle rapid content changes', async () => {
-            const updateTabContent = vi.fn();
-            const tab = createMockTab();
-            const props = createMockProps({ activeTab: tab, updateTabContent });
-
-            render(<WorkspaceEditor {...props} />);
-
-            const textarea = screen.getByTestId('code-editor-input');
-
-            // Simulate rapid typing
-            for (let i = 0; i < 10; i++) {
-                fireEvent.change(textarea, { target: { value: `content ${i}` } });
-            }
-
-            expect(updateTabContent).toHaveBeenCalledTimes(10);
-        });
-    });
-
-    describe('Tab Switching', () => {
-        it('should switch from code to image tab', () => {
-            const codeTab = createMockTab({ type: 'code', id: 'code-tab' });
-            const props = createMockProps({ activeTab: codeTab });
-
-            const { rerender } = render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
-
-            const imageTab = createMockTab({
-                type: 'image',
-                id: 'image-tab',
-                content: 'data:image/png;base64,test',
+        beforeEach(() => {
+            Object.defineProperty(window, 'electron', {
+                value: {
+                    clipboard: {
+                        writeText: vi.fn(),
+                        readText: vi.fn().mockResolvedValue({ success: false, text: '' }),
+                    },
+                    runCommand: mockRunCommand,
+                    files: { writeFile: mockWriteFile },
+                },
+                configurable: true,
+                writable: true,
             });
-            rerender(<WorkspaceEditor {...createMockProps({ activeTab: imageTab })} />);
-
-            expect(screen.getByRole('img')).toBeInTheDocument();
         });
 
-        it('should switch from image to code tab', () => {
-            const imageTab = createMockTab({
-                type: 'image',
-                id: 'image-tab',
-                content: 'data:image/png;base64,test',
+        it('runs a scratchpad command and displays output', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            const textareas = screen.getAllByRole('textbox');
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            expect(scratchTextarea).toBeDefined();
+            fireEvent.change(scratchTextarea!, { target: { value: 'echo hello' } });
+            fireEvent.click(screen.getByText('projectDashboard.editor.runScratch'));
+
+            await vi.waitFor(() => {
+                expect(mockRunCommand).toHaveBeenCalledWith('echo', ['hello'], 'C:\\workspace');
             });
-            const props = createMockProps({ activeTab: imageTab });
-
-            const { rerender } = render(<WorkspaceEditor {...props} />);
-            expect(screen.getByRole('img')).toBeInTheDocument();
-
-            const codeTab = createMockTab({ type: 'code', id: 'code-tab' });
-            rerender(<WorkspaceEditor {...createMockProps({ activeTab: codeTab })} />);
-
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
         });
 
-        it('should switch to empty state when tab is closed', () => {
-            const codeTab = createMockTab();
-            const props = createMockProps({ activeTab: codeTab });
+        it('saves scratchpad content as a doc file', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
 
-            const { rerender } = render(<WorkspaceEditor {...props} />);
-            expect(screen.getByTestId('code-editor')).toBeInTheDocument();
+            const textareas = screen.getAllByRole('textbox');
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            fireEvent.change(scratchTextarea!, { target: { value: 'My documentation notes' } });
+            fireEvent.click(screen.getByText('projectDashboard.editor.saveScratchDoc'));
 
-            rerender(<WorkspaceEditor {...createMockProps({ activeTab: null })} />);
+            await vi.waitFor(() => {
+                expect(mockWriteFile).toHaveBeenCalledWith(
+                    expect.stringContaining('docs'),
+                    'My documentation notes'
+                );
+            });
+        });
 
-            expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+        it('saves scratchpad content as a task file', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            const textareas = screen.getAllByRole('textbox');
+            const scratchTextarea = textareas.find(el => el.tagName === 'TEXTAREA' && el.classList.contains('min-h-[70px]'));
+            fireEvent.change(scratchTextarea!, { target: { value: 'Task description' } });
+            fireEvent.click(screen.getByText('projectDashboard.editor.saveScratchTask'));
+
+            await vi.waitFor(() => {
+                expect(mockWriteFile).toHaveBeenCalledWith(
+                    expect.stringContaining('tasks'),
+                    'Task description'
+                );
+            });
+        });
+
+        it('does not run scratch command when scratchpad is empty', async () => {
+            render(<WorkspaceEditor {...createMockProps({ activeTab: createMockTab() })} />);
+
+            fireEvent.click(screen.getByText('projectDashboard.editor.runScratch'));
+
+            await vi.waitFor(() => {
+                expect(mockRunCommand).not.toHaveBeenCalled();
+            });
         });
     });
 });

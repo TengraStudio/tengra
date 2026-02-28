@@ -85,11 +85,14 @@ export const ChatInput: React.FC<ChatInputProps> = memo(
             ctrl.setInput(newValue);
 
             const lastWord = newValue.split(' ').pop() ?? '';
-            if (lastWord.startsWith('/')) {
-                ctrl.setShowCommandMenu(true);
+            const isSlash = lastWord.startsWith('/');
+            if (isSlash) {
+                if (!ctrl.showCommandMenu) {
+                    ctrl.setShowCommandMenu(true);
+                    ctrl.setSelectedIndex(0);
+                }
                 ctrl.setCommandQuery(lastWord.slice(1));
-                ctrl.setSelectedIndex(0);
-            } else {
+            } else if (ctrl.showCommandMenu) {
                 ctrl.setShowCommandMenu(false);
             }
         };
