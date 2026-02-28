@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### Renderer Performance Optimizations (PERF-006 through PERF-022)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Applied React.memo, useMemo, and lazy loading across multiple renderer components to reduce unnecessary re-renders and improve UI responsiveness.
+
+- **SlashMenu**: Wrapped in React.memo with useMemo for filtered commands.
+- **MessageActions**: All exported sub-components wrapped in React.memo.
+- **ToolDisplay**: Wrapped in React.memo to prevent parent-driven re-renders.
+- **TerminalView**: Wrapped in React.memo with memoized preview computation.
+- **DockerDashboard ContainerItem**: Wrapped in React.memo.
+- **VoiceOverlay**: Changed from eager import to React.lazy() in App.tsx.
+- **PanelLayout**: Memoized inline style objects in Sidebar and BottomPanelView.
+- **QuickActionBar**: Memoized position style object.
+- **useAppInitialization**: Added cleanup for window.TengraSpeak on unmount.
+- **AUDIT-REPO-001**: Removed 8 stale .tmp.js files from i18n, added *.tmp.js/*.tmp.ts to .gitignore.
+
 ### Strict Type Safety: Resolution of Any and Unknown Type Casts
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **Renderer Type Safety**: Added mandatory `// SAFETY:` justifications and strict type boundaries for all remaining `unknown` cast instances in the renderer, including `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client`, and `voice.store`.
 - **Main Process Safety**: Verified that the `src/main` directory contains zero type errors and zero unsafe `any`/`unknown` ESLint violations.
 - **Code Quality**: Enforced NASA Power of Ten and strict TypeScript compilation checks, allowing the application to successfully pass `npm run type-check` and `npm run build` without any warnings or type mismatches.
+
+### FEAT-05: User Behavior Learning & Personalized Interaction
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implemented a local-first user behavior learning system that tracks application interactions to provide personalized defaults, frequent feature recommendations, and model selection optimization.
+
+- **UserBehaviorService**: Launched a new service to track local interactions including feature usage, model selection, and shortcut patterns.
+- **Validated IPC**: Implemented strict, Zod-validated IPC handlers for the renderer to access behavior-based recommendations and activity summaries.
+- **Schema Parity**: Defined shared Zod schemas in `src/shared/schemas/` to ensure full type safety between the main and renderer processes for behavior data.
+- **Resource Lifecycle**: Implemented proper disposal patterns for event listeners to prevent memory leaks during service shutdown.
+- **Stability**: Resolved critical build-blocking type mismatches in IPC handlers and service dependency chains.
 
 ## [2026-02-27]
 

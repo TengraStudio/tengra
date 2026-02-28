@@ -1,5 +1,5 @@
 import { Copy, Globe, LucideIcon, Sparkles, X } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Language, useTranslation } from '@/i18n';
 import { AnimatePresence, motion } from '@/lib/framer-motion-compat';
@@ -150,6 +150,14 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
         };
     }, [handleCopy, handleExplain, handleTranslate, selectionState.isVisible]);
 
+    const positionStyle = useMemo(() => ({
+        position: 'fixed' as const,
+        left: selectionState.position.x,
+        top: selectionState.position.y,
+        transform: 'translate(-50%, -100%)',
+        zIndex: 1000
+    }), [selectionState.position.x, selectionState.position.y]);
+
     if (!selectionState.isVisible) { return null; }
 
     return (
@@ -159,13 +167,7 @@ export function QuickActionBar({ onExplain, onTranslate, language }: QuickAction
                 initial={{ opacity: 0, y: 10, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                style={{
-                    position: 'fixed',
-                    left: selectionState.position.x,
-                    top: selectionState.position.y,
-                    transform: 'translate(-50%, -100%)',
-                    zIndex: 1000
-                }}
+                style={positionStyle}
                 className="flex items-center gap-1 p-1 bg-card/95 border border-border rounded-xl shadow-2xl backdrop-blur-xl"
                 onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
                 role="toolbar"

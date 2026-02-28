@@ -1,4 +1,31 @@
 {
+  "2026-02-28-renderer-performance-batch": {
+    "title": "Renderer Performans İyileştirmeleri (PERF-006 - PERF-022)",
+    "summary": "Gereksiz yeniden render işlemlerini azaltmak ve arayüz yanıt hızını artırmak için birden fazla renderer bileşenine React.memo, useMemo ve lazy loading uygulandı.",
+    "items": [
+      "- **SlashMenu**: Filtrelenen komutlar için React.memo ve useMemo ile sarmalandı.",
+      "- **MessageActions**: Tüm dışa aktarılan alt bileşenler React.memo ile sarmalandı.",
+      "- **ToolDisplay**: Üst bileşen kaynaklı yeniden render işlemlerini önlemek için React.memo ile sarmalandı.",
+      "- **TerminalView**: Önizleme hesaplaması memo'lanarak React.memo ile sarmalandı.",
+      "- **DockerDashboard ContainerItem**: React.memo ile sarmalandı.",
+      "- **VoiceOverlay**: App.tsx'te eager import'tan React.lazy()'ye değiştirildi.",
+      "- **PanelLayout**: Sidebar ve BottomPanelView'da inline stil nesneleri memo'landı.",
+      "- **QuickActionBar**: Konum stil nesnesi memo'landı.",
+      "- **useAppInitialization**: Unmount sırasında window.TengraSpeak temizliği eklendi.",
+      "- **AUDIT-REPO-001**: i18n'den 8 eski .tmp.js dosyası silindi, *.tmp.js/*.tmp.ts .gitignore'a eklendi."
+    ]
+  },
+  "2026-02-28-user-behavior-learning-system": {
+    "title": "FEAT-05: Kullanıcı Davranışı Öğrenme ve Kişiselleştirilmiş Etkileşim",
+    "summary": "Kişiselleştirilmiş varsayılanlar, sık kullanılan özellik önerileri ve model seçimi optimizasyonu sağlamak için uygulama etkileşimlerini izleyen yerel öncelikli bir kullanıcı davranışı öğrenme sistemi uygulandı.",
+    "items": [
+      "- **UserBehaviorService**: Özellik kullanımı, model seçimi ve kısayol kalıpları dahil olmak üzere yerel etkileşimleri izlemek için yeni bir servis başlatıldı.",
+      "- **Doğrulanmış IPC**: İşleyicinin davranış tabanlı önerilere ve etkinlik özetlerine erişmesi için katı, Zod tarafından doğrulanan IPC işleyicileri uygulandı.",
+      "- **Şema Uyumu**: Davranış verileri için ana ve işleyici süreçler arasında tam tip güvenliği sağlamak üzere `src/shared/schemas/` içinde paylaşılan Zod şemaları tanımlandı.",
+      "- **Kaynak Yaşam Döngüsü**: Servis kapanışı sırasında bellek sızıntılarını önlemek için olay dinleyicileri için uygun imha kalıpları uygulandı.",
+      "- **Kararlılık**: IPC işleyicileri ve servis bağımlılık zincirlerindeki kritik derleme engelleyici tip uyuşmazlıkları çözüldü."
+    ]
+  },
   "2026-02-28-type-safety-lint-resolution": {
     "title": "Sıkı Tip Güvenliği: Any ve Unknown Tip Dönüşümlerinin Çözümü",
     "summary": "Tengra'nın katı tip kurallarını uygulayarak işleyici ve ana süreçler genelindeki güvensiz 'any' ve 'unknown' tip dönüşümlerini ortadan kaldırarak bekleyen tip güvenliği ihlallerini çözüme kavuşturdu.",
@@ -3914,6 +3941,23 @@
       "- Servis başına T-kodları, açıklamalar ve mevcut azaltma önlemleri ile 30+ tehdit vektörü belgelendi",
       "- Prompt enjeksiyonu, kaynak tüketimi, komut enjeksiyonu, yol geçişi ve kimlik bilgisi hırsızlığını kapsayan 24+ kötüye kullanım senaryosu belirlendi",
       "- Özet risk matrisi ve 6 uygulanabilir güvenlik önerisi eklendi"
+    ]
+  },
+  "2026-02-28-audit-tooling-repo-wide-lint-operational": {
+    "title": "AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü",
+    "summary": "Bekleyen tip güvenliği ihlalleri çözüldü, derleme hatalarına neden olan kullanılmayan değişkenler ortadan kaldırıldı ve depo çapındaki komutlarının tam işlevselliği geri yüklendi.",
+    "items": [
+      "- **Tip Güvenliği**: Çoklu anahtar sağlayıcı yapılandırmalarındaki eksik apiKeys özellikleri düzeltildi.",
+      "- **Derleme Sistemi**: Kesin TypeScript ESLint kuralı hatalarına neden olan eski varsayılan URL'ler kaldırıldı.",
+      "- **Bileşen Temizliği**: Kullanılmayan yerel değişkenler ve içe aktarmalar temizlendi.",
+      "- **Derleme Bütünlüğü**: Sıfır kalan tip uyuşmazlığı doğrulandı."
+    ]
+  },
+  "2026-02-28-project-hygiene-component-promotion": {
+    "title": "Project Hygiene: Root Cleanup and Component Promotion",
+    "summary": "Translation required.",
+    "items": [
+      "- Pending"
     ]
   }
 }

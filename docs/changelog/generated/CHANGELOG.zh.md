@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### 渲染器性能优化（PERF-006 至 PERF-022）
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 在多个渲染器组件中应用了 React.memo、useMemo 和懒加载，以减少不必要的重新渲染并提高 UI 响应速度。
+
+- **SlashMenu**: 使用 React.memo 包裹，并通过 useMemo 优化过滤命令。
+- **MessageActions**: 所有导出的子组件均使用 React.memo 包裹。
+- **ToolDisplay**: 使用 React.memo 包裹，以防止父组件引起的不必要重新渲染。
+- **TerminalView**: 使用 React.memo 包裹，并将预览计算进行了记忆化。
+- **DockerDashboard ContainerItem**: 使用 React.memo 包裹。
+- **VoiceOverlay**: 在 App.tsx 中从即时导入改为 React.lazy()。
+- **PanelLayout**: 对 Sidebar 和 BottomPanelView 中的内联样式对象进行了记忆化。
+- **QuickActionBar**: 对位置样式对象进行了记忆化。
+- **useAppInitialization**: 添加了卸载时 window.TengraSpeak 的清理逻辑。
+- **AUDIT-REPO-001**: 从 i18n 中删除了 8 个过期的 .tmp.js 文件，并将 *.tmp.js/*.tmp.ts 添加到 .gitignore。
+
 ### 严格类型安全：解决任何未知类型转换
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **渲染器类型安全**：为渲染器中所有剩余的 `unknown` 强制转换实例添加了强制 `// SAFETY:` 理由和严格的类型边界，包括 `useAgentHandlers`、`SessionSetup`、`useVoice`、`TerminalConnectionSelector`、`ipc-client` 和 `voice.store`。
 - **主进程安全**：已验证 `src/main` 目录包含零个类型错误和零个不安全 `any`/`unknown` ESLint 违规。
 - **代码质量**：强制执行 NASA 的十次幂和严格的 TypeScript 编译检查，允许应用程序成功通过 `npm run type-check` 和 `npm run build`，而不会出现任何警告或类型不匹配。
+
+### FEAT-05: 用户行为学习系统
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: 实现了一个本地优先的用户行为学习系统，追踪应用交互。
+
+- UserBehaviorService: 追踪本地交互的新服务。
+- 已验证的IPC: 严格的 Zod 验证 IPC 处理器。
+- 架构一致性: 定义了共享模式。
+- 资源管理: 优化了监听器销毁。
+- 稳定性: 解决类型不匹配。
 
 ## [2026-02-27]
 

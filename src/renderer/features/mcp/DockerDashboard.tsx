@@ -22,7 +22,7 @@ const ContainerItem: React.FC<{
     onAction: (a: 'start' | 'stop' | 'rm', id: string) => void;
     onOpenTerminal?: (n: string, c: string) => void;
     t: (k: string) => string;
-}> = ({ container, selected, onSelect, onAction, onOpenTerminal, t }) => {
+}> = React.memo(({ container, selected, onSelect, onAction, onOpenTerminal, t }) => {
     const getStateColor = (s: string) => {
         switch (s) {
             case 'running': {
@@ -120,7 +120,7 @@ const ContainerItem: React.FC<{
             </div>
         </div>
     );
-};
+});
 
 interface DockerStats {
     ID: string;

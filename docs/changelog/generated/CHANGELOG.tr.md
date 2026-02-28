@@ -2,6 +2,42 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Bekleyen tip güvenliği ihlalleri çözüldü, derleme hatalarına neden olan kullanılmayan değişkenler ortadan kaldırıldı ve depo çapındaki komutlarının tam işlevselliği geri yüklendi.
+
+- **Tip Güvenliği**: Çoklu anahtar sağlayıcı yapılandırmalarındaki eksik apiKeys özellikleri düzeltildi.
+- **Derleme Sistemi**: Kesin TypeScript ESLint kuralı hatalarına neden olan eski varsayılan URL'ler kaldırıldı.
+- **Bileşen Temizliği**: Kullanılmayan yerel değişkenler ve içe aktarmalar temizlendi.
+- **Derleme Bütünlüğü**: Sıfır kalan tip uyuşmazlığı doğrulandı.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Translation required.
+
+- Pending
+
+### Renderer Performans İyileştirmeleri (PERF-006 - PERF-022)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Gereksiz yeniden render işlemlerini azaltmak ve arayüz yanıt hızını artırmak için birden fazla renderer bileşenine React.memo, useMemo ve lazy loading uygulandı.
+
+- **SlashMenu**: Filtrelenen komutlar için React.memo ve useMemo ile sarmalandı.
+- **MessageActions**: Tüm dışa aktarılan alt bileşenler React.memo ile sarmalandı.
+- **ToolDisplay**: Üst bileşen kaynaklı yeniden render işlemlerini önlemek için React.memo ile sarmalandı.
+- **TerminalView**: Önizleme hesaplaması memo'lanarak React.memo ile sarmalandı.
+- **DockerDashboard ContainerItem**: React.memo ile sarmalandı.
+- **VoiceOverlay**: App.tsx'te eager import'tan React.lazy()'ye değiştirildi.
+- **PanelLayout**: Sidebar ve BottomPanelView'da inline stil nesneleri memo'landı.
+- **QuickActionBar**: Konum stil nesnesi memo'landı.
+- **useAppInitialization**: Unmount sırasında window.TengraSpeak temizliği eklendi.
+- **AUDIT-REPO-001**: i18n'den 8 eski .tmp.js dosyası silindi, *.tmp.js/*.tmp.ts .gitignore'a eklendi.
+
 ### Sıkı Tip Güvenliği: Any ve Unknown Tip Dönüşümlerinin Çözümü
 
 - **Type**: fix
@@ -11,6 +47,18 @@
 - **İşleyici Tip Güvenliği**: İşleticinde, `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` ve `voice.store` dahil olmak üzere kalan tüm `unknown` dönüşümleri için zorunlu `// SAFETY:` gerekçeleri ve katı tip sınırları eklendi.
 - **Ana Süreç Güvenliği**: `src/main` dizininin sıfır tip hatası ve sıfır güvensiz `any`/`unknown` ESLint ihlali içerdiği doğrulandı.
 - **Kod Kalitesi**: NASA Power of Ten ve sıkı TypeScript derleme kontrolleri uygulanarak, uygulamanın hiçbir uyarı veya tip uyuşmazlığı olmadan `npm run type-check` ve `npm run build` süreçlerini başarıyla tamamlaması sağlandı.
+
+### FEAT-05: Kullanıcı Davranışı Öğrenme ve Kişiselleştirilmiş Etkileşim
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Kişiselleştirilmiş varsayılanlar, sık kullanılan özellik önerileri ve model seçimi optimizasyonu sağlamak için uygulama etkileşimlerini izleyen yerel öncelikli bir kullanıcı davranışı öğrenme sistemi uygulandı.
+
+- **UserBehaviorService**: Özellik kullanımı, model seçimi ve kısayol kalıpları dahil olmak üzere yerel etkileşimleri izlemek için yeni bir servis başlatıldı.
+- **Doğrulanmış IPC**: İşleyicinin davranış tabanlı önerilere ve etkinlik özetlerine erişmesi için katı, Zod tarafından doğrulanan IPC işleyicileri uygulandı.
+- **Şema Uyumu**: Davranış verileri için ana ve işleyici süreçler arasında tam tip güvenliği sağlamak üzere `src/shared/schemas/` içinde paylaşılan Zod şemaları tanımlandı.
+- **Kaynak Yaşam Döngüsü**: Servis kapanışı sırasında bellek sızıntılarını önlemek için olay dinleyicileri için uygun imha kalıpları uygulandı.
+- **Kararlılık**: IPC işleyicileri ve servis bağımlılık zincirlerindeki kritik derleme engelleyici tip uyuşmazlıkları çözüldü.
 
 ## [2026-02-27]
 

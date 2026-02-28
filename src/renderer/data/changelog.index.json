@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T04:31:03.126Z",
+  "generatedAt": "2026-02-28T15:09:04.722Z",
   "locales": [
     "en",
     "tr",
@@ -12,6 +12,356 @@
     "ar"
   ],
   "entries": [
+    {
+      "id": "2026-02-28-audit-tooling-repo-wide-lint-operational",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "fix",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Lint",
+        "TypeScript",
+        "Build System"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "tr": {
+          "title": "AUDIT-TOOLING-001: Operasyonel Depo Çapında Lint ve Tip Kontrolü",
+          "summary": "Bekleyen tip güvenliği ihlalleri çözüldü, derleme hatalarına neden olan kullanılmayan değişkenler ortadan kaldırıldı ve depo çapındaki komutlarının tam işlevselliği geri yüklendi.",
+          "items": [
+            "- **Tip Güvenliği**: Çoklu anahtar sağlayıcı yapılandırmalarındaki eksik apiKeys özellikleri düzeltildi.",
+            "- **Derleme Sistemi**: Kesin TypeScript ESLint kuralı hatalarına neden olan eski varsayılan URL'ler kaldırıldı.",
+            "- **Bileşen Temizliği**: Kullanılmayan yerel değişkenler ve içe aktarmalar temizlendi.",
+            "- **Derleme Bütünlüğü**: Sıfır kalan tip uyuşmazlığı doğrulandı."
+          ]
+        },
+        "de": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "fr": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "es": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "ja": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "zh": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        },
+        "ar": {
+          "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+          "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+          "items": [
+            "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+            "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+            "- **Component Clean-up**: Eliminated unused local variables and imports.",
+            "- **Build Integrity**: Verified zero lingering type mismatches."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-project-hygiene-component-promotion",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "refactor",
+      "status": "completed",
+      "audience": [
+        "developer"
+      ],
+      "components": [
+        "Renderer UI",
+        "Project Management",
+        "Build System"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "tr": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Translation required.",
+          "items": [
+            "- Pending"
+          ]
+        },
+        "de": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "fr": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "es": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "ja": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "zh": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        },
+        "ar": {
+          "title": "Project Hygiene: Root Cleanup and Component Promotion",
+          "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+          "items": [
+            "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+            "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+            "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+            "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+            "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-renderer-performance-batch",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "perf",
+      "status": "completed",
+      "audience": [
+        "end-user"
+      ],
+      "components": [
+        "Renderer",
+        "Chat",
+        "Layout",
+        "MCP"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "Renderer Performance Optimizations (PERF-006 through PERF-022)",
+          "summary": "Applied React.memo, useMemo, and lazy loading across multiple renderer components to reduce unnecessary re-renders and improve UI responsiveness.",
+          "items": [
+            "- **SlashMenu**: Wrapped in React.memo with useMemo for filtered commands.",
+            "- **MessageActions**: All exported sub-components wrapped in React.memo.",
+            "- **ToolDisplay**: Wrapped in React.memo to prevent parent-driven re-renders.",
+            "- **TerminalView**: Wrapped in React.memo with memoized preview computation.",
+            "- **DockerDashboard ContainerItem**: Wrapped in React.memo.",
+            "- **VoiceOverlay**: Changed from eager import to React.lazy() in App.tsx.",
+            "- **PanelLayout**: Memoized inline style objects in Sidebar and BottomPanelView.",
+            "- **QuickActionBar**: Memoized position style object.",
+            "- **useAppInitialization**: Added cleanup for window.TengraSpeak on unmount.",
+            "- **AUDIT-REPO-001**: Removed 8 stale .tmp.js files from i18n, added *.tmp.js/*.tmp.ts to .gitignore."
+          ]
+        },
+        "tr": {
+          "title": "Renderer Performans İyileştirmeleri (PERF-006 - PERF-022)",
+          "summary": "Gereksiz yeniden render işlemlerini azaltmak ve arayüz yanıt hızını artırmak için birden fazla renderer bileşenine React.memo, useMemo ve lazy loading uygulandı.",
+          "items": [
+            "- **SlashMenu**: Filtrelenen komutlar için React.memo ve useMemo ile sarmalandı.",
+            "- **MessageActions**: Tüm dışa aktarılan alt bileşenler React.memo ile sarmalandı.",
+            "- **ToolDisplay**: Üst bileşen kaynaklı yeniden render işlemlerini önlemek için React.memo ile sarmalandı.",
+            "- **TerminalView**: Önizleme hesaplaması memo'lanarak React.memo ile sarmalandı.",
+            "- **DockerDashboard ContainerItem**: React.memo ile sarmalandı.",
+            "- **VoiceOverlay**: App.tsx'te eager import'tan React.lazy()'ye değiştirildi.",
+            "- **PanelLayout**: Sidebar ve BottomPanelView'da inline stil nesneleri memo'landı.",
+            "- **QuickActionBar**: Konum stil nesnesi memo'landı.",
+            "- **useAppInitialization**: Unmount sırasında window.TengraSpeak temizliği eklendi.",
+            "- **AUDIT-REPO-001**: i18n'den 8 eski .tmp.js dosyası silindi, *.tmp.js/*.tmp.ts .gitignore'a eklendi."
+          ]
+        },
+        "de": {
+          "title": "Renderer-Performanz-Optimierungen (PERF-006 bis PERF-022)",
+          "summary": "Anwendung von React.memo, useMemo und Lazy Loading auf mehrere Renderer-Komponenten zur Reduzierung unnötiger Re-Renders und Verbesserung der UI-Reaktionsfähigkeit.",
+          "items": [
+            "- **SlashMenu**: Mit React.memo und useMemo für gefilterte Befehle umschlossen.",
+            "- **MessageActions**: Alle exportierten Unterkomponenten mit React.memo umschlossen.",
+            "- **ToolDisplay**: Mit React.memo umschlossen, um durch übergeordnete Komponenten verursachte Re-Renders zu verhindern.",
+            "- **TerminalView**: Mit React.memo umschlossen und Vorschauberechnung memoisiert.",
+            "- **DockerDashboard ContainerItem**: Mit React.memo umschlossen.",
+            "- **VoiceOverlay**: In App.tsx von Eager-Import auf React.lazy() umgestellt.",
+            "- **PanelLayout**: Inline-Stil-Objekte in Sidebar und BottomPanelView memoisiert.",
+            "- **QuickActionBar**: Positions-Stil-Objekt memoisiert.",
+            "- **useAppInitialization**: Bereinigung von window.TengraSpeak beim Unmount hinzugefügt.",
+            "- **AUDIT-REPO-001**: 8 veraltete .tmp.js-Dateien aus i18n entfernt, *.tmp.js/*.tmp.ts zu .gitignore hinzugefügt."
+          ]
+        },
+        "fr": {
+          "title": "Optimisations de performance du renderer (PERF-006 à PERF-022)",
+          "summary": "Application de React.memo, useMemo et du chargement différé sur plusieurs composants du renderer pour réduire les re-rendus inutiles et améliorer la réactivité de l'interface.",
+          "items": [
+            "- **SlashMenu**: Enveloppé dans React.memo avec useMemo pour les commandes filtrées.",
+            "- **MessageActions**: Tous les sous-composants exportés enveloppés dans React.memo.",
+            "- **ToolDisplay**: Enveloppé dans React.memo pour éviter les re-rendus déclenchés par le parent.",
+            "- **TerminalView**: Enveloppé dans React.memo avec calcul d'aperçu mémoïsé.",
+            "- **DockerDashboard ContainerItem**: Enveloppé dans React.memo.",
+            "- **VoiceOverlay**: Passage d'un import eager à React.lazy() dans App.tsx.",
+            "- **PanelLayout**: Objets de style inline mémoïsés dans Sidebar et BottomPanelView.",
+            "- **QuickActionBar**: Objet de style de position mémoïsé.",
+            "- **useAppInitialization**: Ajout du nettoyage de window.TengraSpeak lors du démontage.",
+            "- **AUDIT-REPO-001**: Suppression de 8 fichiers .tmp.js obsolètes de i18n, ajout de *.tmp.js/*.tmp.ts au .gitignore."
+          ]
+        },
+        "es": {
+          "title": "Optimizaciones de rendimiento del renderer (PERF-006 a PERF-022)",
+          "summary": "Aplicación de React.memo, useMemo y carga diferida en múltiples componentes del renderer para reducir re-renderizados innecesarios y mejorar la capacidad de respuesta de la interfaz.",
+          "items": [
+            "- **SlashMenu**: Envuelto en React.memo con useMemo para comandos filtrados.",
+            "- **MessageActions**: Todos los subcomponentes exportados envueltos en React.memo.",
+            "- **ToolDisplay**: Envuelto en React.memo para evitar re-renderizados provocados por el componente padre.",
+            "- **TerminalView**: Envuelto en React.memo con cálculo de vista previa memorizado.",
+            "- **DockerDashboard ContainerItem**: Envuelto en React.memo.",
+            "- **VoiceOverlay**: Cambiado de importación eager a React.lazy() en App.tsx.",
+            "- **PanelLayout**: Objetos de estilo inline memorizados en Sidebar y BottomPanelView.",
+            "- **QuickActionBar**: Objeto de estilo de posición memorizado.",
+            "- **useAppInitialization**: Añadida limpieza de window.TengraSpeak al desmontar.",
+            "- **AUDIT-REPO-001**: Eliminados 8 archivos .tmp.js obsoletos de i18n, añadidos *.tmp.js/*.tmp.ts al .gitignore."
+          ]
+        },
+        "ja": {
+          "title": "レンダラー パフォーマンス最適化（PERF-006 〜 PERF-022）",
+          "summary": "複数のレンダラーコンポーネントに React.memo、useMemo、遅延ロードを適用し、不要な再レンダリングを削減して UI の応答性を向上させました。",
+          "items": [
+            "- **SlashMenu**: フィルターされたコマンド用の useMemo と共に React.memo でラップしました。",
+            "- **MessageActions**: エクスポートされたすべてのサブコンポーネントを React.memo でラップしました。",
+            "- **ToolDisplay**: 親コンポーネントによる不要な再レンダリングを防ぐため React.memo でラップしました。",
+            "- **TerminalView**: プレビュー計算をメモ化し、React.memo でラップしました。",
+            "- **DockerDashboard ContainerItem**: React.memo でラップしました。",
+            "- **VoiceOverlay**: App.tsx で即時インポートから React.lazy() に変更しました。",
+            "- **PanelLayout**: Sidebar と BottomPanelView のインラインスタイルオブジェクトをメモ化しました。",
+            "- **QuickActionBar**: 位置スタイルオブジェクトをメモ化しました。",
+            "- **useAppInitialization**: アンマウント時の window.TengraSpeak クリーンアップを追加しました。",
+            "- **AUDIT-REPO-001**: i18n から古い .tmp.js ファイルを 8 件削除し、*.tmp.js/*.tmp.ts を .gitignore に追加しました。"
+          ]
+        },
+        "zh": {
+          "title": "渲染器性能优化（PERF-006 至 PERF-022）",
+          "summary": "在多个渲染器组件中应用了 React.memo、useMemo 和懒加载，以减少不必要的重新渲染并提高 UI 响应速度。",
+          "items": [
+            "- **SlashMenu**: 使用 React.memo 包裹，并通过 useMemo 优化过滤命令。",
+            "- **MessageActions**: 所有导出的子组件均使用 React.memo 包裹。",
+            "- **ToolDisplay**: 使用 React.memo 包裹，以防止父组件引起的不必要重新渲染。",
+            "- **TerminalView**: 使用 React.memo 包裹，并将预览计算进行了记忆化。",
+            "- **DockerDashboard ContainerItem**: 使用 React.memo 包裹。",
+            "- **VoiceOverlay**: 在 App.tsx 中从即时导入改为 React.lazy()。",
+            "- **PanelLayout**: 对 Sidebar 和 BottomPanelView 中的内联样式对象进行了记忆化。",
+            "- **QuickActionBar**: 对位置样式对象进行了记忆化。",
+            "- **useAppInitialization**: 添加了卸载时 window.TengraSpeak 的清理逻辑。",
+            "- **AUDIT-REPO-001**: 从 i18n 中删除了 8 个过期的 .tmp.js 文件，并将 *.tmp.js/*.tmp.ts 添加到 .gitignore。"
+          ]
+        },
+        "ar": {
+          "title": "تحسينات أداء العارض (PERF-006 إلى PERF-022)",
+          "summary": "تم تطبيق React.memo وuseMemo والتحميل البطيء عبر مكونات العارض المتعددة لتقليل عمليات إعادة العرض غير الضرورية وتحسين استجابة واجهة المستخدم.",
+          "items": [
+            "- **SlashMenu**: تم تغليفه بـ React.memo مع useMemo للأوامر المفلترة.",
+            "- **MessageActions**: تم تغليف جميع المكونات الفرعية المُصدَّرة بـ React.memo.",
+            "- **ToolDisplay**: تم تغليفه بـ React.memo لمنع إعادة العرض الناتجة عن المكون الأب.",
+            "- **TerminalView**: تم تغليفه بـ React.memo مع حفظ حساب المعاينة في الذاكرة.",
+            "- **DockerDashboard ContainerItem**: تم تغليفه بـ React.memo.",
+            "- **VoiceOverlay**: تم التحويل من الاستيراد الفوري إلى React.lazy() في App.tsx.",
+            "- **PanelLayout**: تم حفظ كائنات الأنماط المضمنة في Sidebar وBottomPanelView في الذاكرة.",
+            "- **QuickActionBar**: تم حفظ كائن نمط الموضع في الذاكرة.",
+            "- **useAppInitialization**: تمت إضافة تنظيف window.TengraSpeak عند إلغاء التثبيت.",
+            "- **AUDIT-REPO-001**: تم حذف 8 ملفات .tmp.js قديمة من i18n، وإضافة *.tmp.js/*.tmp.ts إلى .gitignore."
+          ]
+        }
+      }
+    },
     {
       "id": "2026-02-28-type-safety-lint-resolution",
       "date": "2026-02-28",
@@ -99,6 +449,115 @@
             "- **أمان نوع العارض**: تمت إضافة مبررات `// SAFETY:` الإلزامية وحدود النوع الصارمة لجميع مثيلات `unknown` المتبقية في العارض، بما في ذلك `useAgentHandlers`، `SessionSetup`، `useVoice`، `TerminalConnectionSelector`، `ipc-client`، و __رمز الرمز_7__.",
             "- **سلامة العملية الرئيسية**: تم التحقق من أن الدليل `src/main` لا يحتوي على أخطاء في النوع ولا يحتوي على أي انتهاكات غير آمنة `any`/`unknown` ESLint.",
             "- **جودة الكود**: فحوصات تجميع TypeScript الصارمة التي فرضتها NASA Power of Ten، مما يسمح للتطبيق باجتياز `npm run type-check` و`npm run build` بنجاح دون أي تحذيرات أو عدم تطابق في الكتابة."
+          ]
+        }
+      }
+    },
+    {
+      "id": "2026-02-28-user-behavior-learning-system",
+      "date": "2026-02-28",
+      "channel": "stable",
+      "type": "feature",
+      "status": "completed",
+      "audience": [
+        "end-user",
+        "developer"
+      ],
+      "components": [
+        "UserBehaviorService",
+        "IPC",
+        "Database",
+        "Zod Schemas"
+      ],
+      "breaking": false,
+      "security": false,
+      "contentByLocale": {
+        "en": {
+          "title": "FEAT-05: User Behavior Learning & Personalized Interaction",
+          "summary": "Implemented a local-first user behavior learning system that tracks application interactions to provide personalized defaults, frequent feature recommendations, and model selection optimization.",
+          "items": [
+            "- **UserBehaviorService**: Launched a new service to track local interactions including feature usage, model selection, and shortcut patterns.",
+            "- **Validated IPC**: Implemented strict, Zod-validated IPC handlers for the renderer to access behavior-based recommendations and activity summaries.",
+            "- **Schema Parity**: Defined shared Zod schemas in `src/shared/schemas/` to ensure full type safety between the main and renderer processes for behavior data.",
+            "- **Resource Lifecycle**: Implemented proper disposal patterns for event listeners to prevent memory leaks during service shutdown.",
+            "- **Stability**: Resolved critical build-blocking type mismatches in IPC handlers and service dependency chains."
+          ]
+        },
+        "tr": {
+          "title": "FEAT-05: Kullanıcı Davranışı Öğrenme ve Kişiselleştirilmiş Etkileşim",
+          "summary": "Kişiselleştirilmiş varsayılanlar, sık kullanılan özellik önerileri ve model seçimi optimizasyonu sağlamak için uygulama etkileşimlerini izleyen yerel öncelikli bir kullanıcı davranışı öğrenme sistemi uygulandı.",
+          "items": [
+            "- **UserBehaviorService**: Özellik kullanımı, model seçimi ve kısayol kalıpları dahil olmak üzere yerel etkileşimleri izlemek için yeni bir servis başlatıldı.",
+            "- **Doğrulanmış IPC**: İşleyicinin davranış tabanlı önerilere ve etkinlik özetlerine erişmesi için katı, Zod tarafından doğrulanan IPC işleyicileri uygulandı.",
+            "- **Şema Uyumu**: Davranış verileri için ana ve işleyici süreçler arasında tam tip güvenliği sağlamak üzere `src/shared/schemas/` içinde paylaşılan Zod şemaları tanımlandı.",
+            "- **Kaynak Yaşam Döngüsü**: Servis kapanışı sırasında bellek sızıntılarını önlemek için olay dinleyicileri için uygun imha kalıpları uygulandı.",
+            "- **Kararlılık**: IPC işleyicileri ve servis bağımlılık zincirlerindeki kritik derleme engelleyici tip uyuşmazlıkları çözüldü."
+          ]
+        },
+        "de": {
+          "title": "FEAT-05: Benutzerverhaltenslernen & Personalisierte Interaktion",
+          "summary": "Implementierung eines lokalen Systems zum Lernen des Benutzerverhaltens, das Anwendungsinteraktionen verfolgt.",
+          "items": [
+            "- UserBehaviorService: Neuer Dienst zur Verfolgung lokaler Interaktionen.",
+            "- Validiertes IPC: Strikte, Zod-validierte IPC-Handler.",
+            "- Schema-Parität: Gemeinsame Zod-Schemas für Typsicherheit.",
+            "- Ressourcen-Lebenszyklus: Ordnungsgemäße Bereinigung von Event-Listenern.",
+            "- Stabilität: Behebung kritischer Typ-Mismatches."
+          ]
+        },
+        "fr": {
+          "title": "FEAT-05 : Apprentissage du comportement utilisateur",
+          "summary": "Mise en œuvre d'un système d'apprentissage du comportement utilisateur local.",
+          "items": [
+            "- UserBehaviorService : Nouveau service pour suivre les interactions locales.",
+            "- IPC validé : Gestionnaires IPC validés par Zod.",
+            "- Parité de schéma : Schémas Zod partagés.",
+            "- Cycle de vie : Gestion correcte des écouteurs d'événements.",
+            "- Stabilität : Résolution des erreurs de type."
+          ]
+        },
+        "es": {
+          "title": "FEAT-05: Aprendizaje del comportamiento del usuario",
+          "summary": "Implementación de un sistema local de aprendizaje del comportamiento.",
+          "items": [
+            "- UserBehaviorService: Nuevo servicio para rastrear interacciones locales.",
+            "- IPC validado: Manejadores IPC validados con Zod.",
+            "- Paridad de esquemas: Esquemas Zod compartidos.",
+            "- Limpieza de recursos: Eliminación de escuchas de eventos.",
+            "- Estabilidad: Resolución de conflictos de tipos."
+          ]
+        },
+        "ja": {
+          "title": "FEAT-05: ユーザー行動学習システム",
+          "summary": "アプリケーションの操作を追跡し、パーソナライズされた設定を提供するシステムを実装。",
+          "items": [
+            "- UserBehaviorService: 行動追跡の新サービス。",
+            "- 検証済みIPC: Zodによる厳格な検証。",
+            "- スキーマ共通化: メインとレンダラー間の型安全。",
+            "- ライフサイクル: イベントリスナーの適切なクリーンアップ。",
+            "- 安定性: 型不一致の解消。"
+          ]
+        },
+        "zh": {
+          "title": "FEAT-05: 用户行为学习系统",
+          "summary": "实现了一个本地优先的用户行为学习系统，追踪应用交互。",
+          "items": [
+            "- UserBehaviorService: 追踪本地交互的新服务。",
+            "- 已验证的IPC: 严格的 Zod 验证 IPC 处理器。",
+            "- 架构一致性: 定义了共享模式。",
+            "- 资源管理: 优化了监听器销毁。",
+            "- 稳定性: 解决类型不匹配。"
+          ]
+        },
+        "ar": {
+          "title": "FEAT-05: تعلم سلوك المستخدم",
+          "summary": "تنفيذ نظام محلي لتتبع تفاعلات المستخدم وتوفير تجربة مخصصة.",
+          "items": [
+            "- UserBehaviorService: خدمة تتبع التفاعلات.",
+            "- IPC المصدق: معالجات مصدقة بـ Zod.",
+            "- توافق المخطط: مخططات مشتركة.",
+            "- إدارة الموارد: تنظيف المستمعين.",
+            "- الاستقرار: حل تعارض الأنواع."
           ]
         }
       }

@@ -4,7 +4,7 @@
  */
 
 import { ChevronDown, ChevronRight, Maximize2, X } from 'lucide-react';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -409,17 +409,18 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ group, size, onResize, direction }) => {
+    const sizeStyle = useMemo(() => ({ width: size }), [size]);
     if (group.panels.length === 0 || group.collapsed) { return null; }
     
     return direction === 'left' ? (
         <>
-            <PanelGroupView group={group} style={{ width: size }} className="flex-shrink-0" />
+            <PanelGroupView group={group} style={sizeStyle} className="flex-shrink-0" />
             <Resizer direction="horizontal" onResize={onResize} />
         </>
     ) : (
         <>
             <Resizer direction="horizontal" onResize={onResize} />
-            <PanelGroupView group={group} style={{ width: size }} className="flex-shrink-0" />
+            <PanelGroupView group={group} style={sizeStyle} className="flex-shrink-0" />
         </>
     );
 };
@@ -431,12 +432,13 @@ interface BottomPanelViewProps {
 }
 
 const BottomPanelView: React.FC<BottomPanelViewProps> = ({ group, size, onResize }) => {
+    const sizeStyle = useMemo(() => ({ height: size }), [size]);
     if (group.panels.length === 0 || group.collapsed) { return null; }
     
     return (
         <>
             <Resizer direction="vertical" onResize={onResize} />
-            <PanelGroupView group={group} style={{ height: size }} className="flex-shrink-0" />
+            <PanelGroupView group={group} style={sizeStyle} className="flex-shrink-0" />
         </>
     );
 };

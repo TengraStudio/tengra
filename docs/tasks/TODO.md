@@ -1,10 +1,9 @@
-
 # Tengra Project - Comprehensive TODO List
 
-> Last updated: 2026-02-27
-> **Total Tasks: 1020+** | **Status: In Development**
+> Last updated: 2026-02-28
+> **Status: In Development (Consolidated)**
 
-## Release Milestones
+## 🚀 Release Milestones
 
 ### v1.3.0 (Target: Q2 2026)
 - [/] Marketplace system MVP (C++ Backend initialized)
@@ -12,57 +11,11 @@
 - ( ) Agent collaboration improvements
 - ( ) Performance optimizations
 
-### Marketplace Infrastructure
-- [x] **MKT-CORE-001**: Initialize C++ Backend (Drogon framework).
-- [x] **MKT-CORE-002**: Define Marketplace Database Schema (PostgreSQL).
-- [x] **MKT-CORE-003**: Configure Redis caching layer.
-- [x] **MKT-CORE-004**: Set up PM2 Process Management.
-- [x] **MKT-AUTH-001**: Implement Secure User Registration & Login (C++).
-- [x] **MKT-SUB-001**: Implement Extension Submission System (GitHub URL).
-- [x] **MKT-ADMIN-001**: Build Admin Dashboard for Submissions.
-- (x) **MKT-DATA-10**: Add ready prompt/theme catalogs to marketplace DB and moderation flow.
-- (x) **MKT-DISC-20**: Add advanced marketplace filtering dimensions (type/provider/license/language/trust/runtime).
-- (x) **MKT-DISC-21**: Add expanded sorting strategies (trend/quality/trust/install-success).
-- (x) **MKT-UX-30**: User interaction layer (ratings, reviews, favorites, follows, reports) [TODO].
-- ( ) **LOCAL-03**: Hardware-aware model fit estimator (llmfit-style TPS/compatibility recommendations).
-
-### Frontend Hardening & Completion (website/tengra-frontend)
-- [x] **MKT-FE-001**: Remove hardcoded backend URLs and standardize API base usage (`VITE_API_BASE_URL`).
-- [x] **MKT-FE-002**: Replace marketplace mock list with live backend API data (no hardcoded content).
-- [x] **MKT-FE-003**: Move all admin/auth/submission user-facing strings into i18n dictionaries.
-- [x] **MKT-FE-004**: Strengthen admin gate UX with backend-driven auth check and explicit unauthorized state.
-- [x] **MKT-FE-005**: Add admin panel quality features (empty states, retry flow, pagination, filter/sort).
-- [x] **MKT-FE-006**: Add analytics delivery resilience (retry/queue, offline-safe flush, error budget).
-- [x] **MKT-FE-007**: Upgrade bot/human detection signal model in tracker payload.
-- [x] **MKT-FE-008**: Add admin audit-log page (approval/reject timeline with actor and reason).
-- [x] **MKT-FE-009**: Add marketplace submission-detail page (review metadata and moderation notes).
-- [x] **MKT-FE-010**: Add status page for website/backend/database uptime and incident timeline.
-- [x] **FE-WIZ-001**: Redesign Project Wizard Modal for better clarity and premium aesthetics.
-
-
-
 ### v1.4.0 (Target: Q3 2026)
 - ( ) Extension system beta
 - ( ) ComfyUI integration
 - ( ) SSH tunneling
 - ( ) Advanced memory features
-
-### Backlog Range: BACKLOG-0501 to BACKLOG-0510 (Project Health & Maintenance)
-- [x] **BACKLOG-0501**: Resolve Namespace Confusion: Rename `src/services` (Rust workspace) to `src/native`.
-- [x] **BACKLOG-0502**: Consolidate Testing Structures: Move `src/test/setup.ts` to `src/tests/` and remove redundant `src/test/`.
-- [x] **BACKLOG-0503**: Modularize Preload Script: Split the oversized `src/main/preload.ts` into modular fragments within `src/main/preload/`.
-- [x] **BACKLOG-0504**: Enforce Component Promotion Rules: Promoted feature-local CodeMirror editor to global UI as CodeMirrorEditor.
-- [x] **BACKLOG-0505**: Root Directory Hygiene: Moved build/test error logs to `logs/` directory.
-- [x] **BACKLOG-0506**: Build Artifact Hygiene: Verified `stats.html` generation in `dist/`.
-- (x) **BACKLOG-0507**: Website Submodule Integration: Remove `website/tengra-*` from root `.gitignore` and properly integrate as git submodules or manage separately.
-- (x) **BACKLOG-0508**: Documentation Reorganization: Group files in `docs/` into subdirectories (`architecture`, `api`, `guides`, `tasks`).
-
-### Security & Stability Hardening
-- [x] **SEC-STAB-01**: Fix critical infinite re-render loop in `ViewManager` (React Error #185).
-- [x] **SEC-STAB-02**: Harden Electron Content Security Policy (CSP) with robust sources and headers.
-- [x] **SEC-STAB-03**: Consolidate CSP management into Main process and remove redundant meta tags.
-- [x] **SEC-STAB-04**: Restrict WebContents navigation to trusted origins and local files.
-- [x] **SEC-STAB-05**: Strict Type Safety: Resolve unsafe 'any' and 'unknown' type casts across renderer components.
 
 ### v2.0.0 (Target: Q4 2026)
 - ( ) Plugin ecosystem
@@ -72,1079 +25,620 @@
 
 ---
 
-## March 1, 2026 Critical Path (AI-Assisted Mini Code Editor)
+## 🔥 March 1, 2026 Critical Path (AI-Assisted Code Editor)
 
-Deadline note: This block is the must-ship scope for **March 1, 2026**.
+> **Deadline Notice**: Must-ship scope for March 1 launch.
 
-- ( ) **MARCH1-CORE-001**: Ship workspace-integrated AI chat end-to-end (send, stream, cancel, retry, model switch, persistence).
-  - ( ) Verify chat flow in workspace panel uses production IPC (`chat:stream`) and not mock paths.
-  - ( ) Add regression tests for chat stream lifecycle (start/chunk/done/cancel/error) across provider types.
+### Core Implementation
+- ( ) **MARCH1-CORE-001**: Ship workspace-integrated AI chat end-to-end.
+  - ( ) Verify chat flow in workspace panel uses production IPC (`chat:stream`).
+  - ( ) Add regression tests for chat stream lifecycle (start/chunk/done/cancel/error).
   - ( ) Add failure-state UX for provider unavailable / quota exhausted / timeout.
-- ( ) **MARCH1-COUNCIL-001**: Implement "Council President" orchestration flow with explicit pre-execution approval.
+
+### Council Orchestration (President Flow)
+- ( ) **MARCH1-COUNCIL-001**: Implement "Council President" flow with explicit pre-execution approval.
   - ( ) Generate plan + stages before execution.
-  - ( ) Present selected models/accounts/stage routing to user and require explicit approve/reject.
-  - ( ) Persist approved plan version and execution config to DB for resume/audit.
+  - ( ) Present selected models/accounts/routing to user for approve/reject.
+  - ( ) Persist approved plan version and execution config for resume/audit.
 - ( ) **MARCH1-COUNCIL-002**: Implement quota-aware account/model selection strategy.
   - ( ) Query linked account quotas before assignment.
   - ( ) Prefer highest-available quota account(s) with capability match.
-  - ( ) Add deterministic fallback policy when multiple accounts/models are eligible.
+  - ( ) Add deterministic fallback policy for multiple eligible candidates.
 - ( ) **MARCH1-COUNCIL-003**: Enable dynamic reassignment and teamwork.
   - ( ) If an agent finishes early, allow reassignment to pending/blocked steps.
   - ( ) Enable inter-agent discussion channel for coordination and conflict resolution.
-  - ( ) Add operator-visible timeline of assignments/reassignments.
 - ( ) **MARCH1-COUNCIL-004**: Add user-controlled model governance.
-  - ( ) Let user force allowed/blocked model list per task before start.
-  - ( ) Enforce guardrails so runtime routing stays inside user-approved model set.
+  - ( ) Let user force allowed/blocked model list per task.
 - ( ) **MARCH1-RESUME-001**: Guarantee crash-safe continuation.
-  - ( ) Persist full execution state on important transitions (planning, approval, step start/end, reassignment).
-  - ( ) On app relaunch, restore active tasks and continue from last consistent checkpoint.
-  - ( ) Validate rollback/resume path with integration tests.
-- (x) **MARCH1-RESUME-002**: Continue execution after quota exhaustion.
-  - (x) Detect quota exhaustion as a first-class interrupt reason.
-  - (x) Auto-switch to next eligible account/model and continue step/task (auto-resume attempt after switch).
-  - (x) Surface user notification baseline: emit `project:quota-interrupt` event to renderer on forced switch.
-  - (x) Surface in-app user notification UI for every forced provider/model switch.
-  - (x) Emit structured `QUOTA_EXHAUSTED` interrupt (`taskId`, `stageId`, `provider`, `model`, `reason`, `timestamp`).
-  - (x) Take immediate checkpoint on interrupt before any routing action.
-  - (x) Compute deterministic fallback chain from user-approved model/account set.
-  - (x) Continue from same stage checkpoint (no full-plan restart).
-  - (x) If no fallback candidate exists, mark task as `blocked_by_quota` and require user action.
-  - (x) Persist interrupt + switch decisions to timeline/audit logs.
-  - (x) Add integration test: quota exhaustion -> checkpoint -> auto switch -> same-stage continuation.
-- ( ) **MARCH1-QUALITY-001**: Stabilize project-agent operational gaps blocking March 1 launch.
-  - (x) Replace stubbed `saveSnapshot` behavior with real checkpoint persistence return values.
-  - (x) Replace stubbed telemetry/events endpoints with backed data for task diagnostics.
-  - (x) Ensure orchestrator/council IPC surface is actively wired in renderer or remove dead paths.
+  - ( ) Persist full execution state on important transitions.
+  - ( ) On app relaunch, restore active tasks and continue from last checkpoint.
 
-### March 1 Detailed Execution Plan (Project System)
-
-- ( ) **MARCH1-CHAT-IMPLEMENTATION-001**: AI chat system (workspace integrated) full implementation.
-  - ( ) Define transport contract:
-    - ( ) Finalize request schema for `chat:stream` (`taskId`, `projectId`, `messages`, `model`, `temperature`, `tools`).
-    - ( ) Finalize stream event schema (`start`, `chunk`, `tool_call`, `tool_result`, `done`, `error`, `cancelled`).
-    - ( ) Add strict response validation and typed bridge updates in preload + renderer.
-  - ( ) Implement backend chat runtime:
-    - ( ) Add provider adapter selection (OpenAI/Anthropic/Ollama/Copilot).
-    - ( ) Add timeout, retry, and cancellation token handling per provider call.
-    - ( ) Persist chat events incrementally to DB for crash-safe recovery.
-  - ( ) Implement renderer chat UX:
-    - ( ) Stream tokens in real-time with stable scroll behavior.
-    - ( ) Add `Cancel`, `Retry`, `Switch Model` actions on active/failed messages.
-    - ( ) Show provider/model badge and latency/cost metadata per message.
-  - ( ) Recovery and resume:
-    - ( ) On app restart, restore unfinished streams as `interrupted`.
-    - ( ) Allow user to continue interrupted thread from last persisted message.
-  - ( ) Tests and release gate:
-    - ( ) Unit tests for stream state machine.
-    - ( ) Integration tests for cancellation/retry/provider fallback.
-    - ( ) Manual QA checklist for 5 scenarios (normal, timeout, quota end, provider down, app restart).
-
-- ( ) **MARCH1-COUNCIL-IMPLEMENTATION-001**: Council President orchestration system end-to-end.
-  - ( ) Planning phase:
-    - ( ) Generate plan with explicit stages, dependencies, and acceptance criteria.
-    - ( ) Estimate token/time budget per stage.
-    - ( ) Produce candidate model/account routing for each stage.
-  - ( ) User approval phase (mandatory):
-    - ( ) Render pre-execution approval screen showing:
-      - ( ) Stage list and expected outputs.
-      - ( ) Selected models/accounts and fallback chain.
-      - ( ) Estimated cost/time and risk notes.
-    - ( ) Add `Approve` / `Reject` / `Edit Constraints` actions.
-    - ( ) Block execution unless user approves exact plan version.
-  - ( ) Execution phase:
-    - ( ) Assign stages to agent workers.
-    - ( ) Track per-worker heartbeat and progress.
-    - ( ) Enable dynamic reassignment when worker finishes early.
-    - ( ) Enable worker-to-worker coordination channel.
-  - ( ) Supervision phase:
-    - ( ) Council President validates each worker output against acceptance criteria.
-    - ( ) Auto-request fix if criteria fail.
-    - ( ) Escalate to user if repeated failures exceed threshold.
-  - ( ) Persistence phase:
-    - ( ) Persist plan version, assignment map, and live stage state at each transition.
-    - ( ) Persist council chat/decision logs for audit and resume.
-
-- ( ) **MARCH1-QUOTA-ROUTING-001**: Quota-aware model/account routing implementation.
-  - ( ) Build quota snapshot service:
-    - ( ) Read linked accounts and live remaining quota.
-    - ( ) Normalize quotas to comparable units (token/time/request).
-  - ( ) Build routing algorithm:
-    - ( ) Primary strategy: highest quota + capability match.
-    - ( ) Tie-breakers: latency, reliability score, price.
-    - ( ) Deterministic fallback order if primary fails.
-  - ( ) Runtime failover:
-    - ( ) Detect quota exhaustion as typed interrupt event.
-    - ( ) Auto-switch to next eligible model/account.
-    - ( ) Resume same stage without losing context/state.
-  - ( ) User control:
-    - ( ) Respect user `allowedModels` / `blockedModels`.
-    - ( ) Show forced switch notification with reason and selected fallback.
-
-- ( ) **MARCH1-MULTI-AGENT-TEAMWORK-001**: Multi-agent collaboration features.
-  - ( ) Implement agent bus:
-    - ( ) Structured inter-agent message format (`from`, `to`, `taskId`, `stageId`, `intent`, `payload`).
-    - ( ) Priority lanes for blocker/help messages.
-  - ( ) Implement help protocol:
-    - ( ) Early-finishing worker requests pending stage queue.
-    - ( ) Council President reassigns subtask with clear acceptance criteria.
-    - ( ) Merge helper output with original owner output via reviewer agent.
-  - ( ) Implement conflict protocol:
-    - ( ) If agent outputs disagree, trigger debate/reviewer step.
-    - ( ) Store rationale and final resolution in timeline.
-
-- ( ) **MARCH1-STATE-RECOVERY-001**: Crash-safe state and continuation.
-  - ( ) Persist state checkpoints on every critical transition:
-    - ( ) plan_created, plan_approved, stage_started, stage_completed, reassigned, model_switched, error_raised.
-  - ( ) Startup recovery flow:
-    - ( ) Detect unfinished tasks.
-    - ( ) Reconstruct in-memory queues and worker ownership.
-    - ( ) Continue from last consistent checkpoint.
-  - ( ) Recovery validation:
-    - ( ) Integration test: close app mid-stage, reopen, continue.
-    - ( ) Integration test: quota exhaustion -> fallback -> continue.
-    - ( ) Integration test: provider outage -> reroute -> continue.
-
-### March 1 Expanded Backlog (Meclis Sistemi - Detailed)
-
-- (x) **MARCH1-ARCH-001**: Council architecture freeze and boundaries.
-  - (x) Finalize component boundaries: President, Planner, Router, Worker, Reviewer, Recovery.
-  - (x) Define responsibilities and no-overlap rules per component.
-  - (x) Add architecture decision record (ADR) for council execution model.
-  - (x) Define failure domains and fallback ownership.
-
-- (x) **MARCH1-DATA-001**: Database schema for council/task lifecycle.
-  - (x) Add `council_plans` table (planVersion, userConstraints, estimatedCost, approvedAt).
-  - (x) Add `council_plan_stages` table (stageId, dependencies, assignedAgent, status, acceptanceJson).
-  - (x) Add `council_assignments` table (agentId, stageId, assignedAt, reassignedFrom).
-  - (x) Add `council_decisions` table (decisionType, reason, actor, createdAt).
-  - (x) Add `council_interrupts` table (quota_exhausted, provider_down, timeout, crash_resume).
-  - (x) Add DB indexes for `taskId`, `status`, `updatedAt`, `stageId`.
-
-- ( ) **MARCH1-DATA-002**: Event sourcing and timeline durability.
-  - ( ) Define canonical event types (`PLAN_CREATED`, `PLAN_APPROVED`, `STAGE_STARTED`, `MODEL_SWITCHED`, `TASK_RESUMED`).
-  - ( ) Persist immutable event log with sequence numbers.
-  - ( ) Implement replay mechanism to reconstruct state from events.
-  - ( ) Add compaction/snapshot policy for long-running tasks.
-
-- ( ) **MARCH1-IPC-001**: Council IPC contract completion.
-  - ( ) Add `project:council-generate-plan`.
-  - ( ) Add `project:council-get-proposal`.
-  - ( ) Add `project:council-approve-proposal`.
-  - ( ) Add `project:council-reject-proposal`.
-  - ( ) Add `project:council-start-execution`.
-  - ( ) Add `project:council-pause-execution`.
-  - ( ) Add `project:council-resume-execution`.
-  - ( ) Add `project:council-get-timeline`.
-  - ( ) Add typed preload bridge and renderer API wrappers for all channels.
-
-- (x) **MARCH1-IPC-002**: Streaming and event contract hardening.
-  - (x) Standardize event payload schemas with versioning (`v1`, `v2` compatibility policy).
-  - (x) Add max event frequency throttle for high-volume streams.
-  - (x) Add event deduplication key to prevent duplicate UI updates after resume.
-  - (x) Add IPC integration tests for every council endpoint.
-
-- (x) **MARCH1-UX-APPROVAL-001**: Pre-execution approval UX (zorunlu onay ekranı).
-  - (x) Build "Execution Proposal" panel with plan stages and dependencies graph.
-  - (x) Show selected model/account per stage with fallback chain visibility.
-  - (x) Show quota impact and estimated finish time.
-  - (x) Add explicit confirmation checkbox ("I approve this plan and model usage").
-  - (x) Disable run button until explicit approval.
-  - (x) Save rejected proposals with rejection reason history.
-
-- (x) **MARCH1-UX-RUNTIME-001**: Live runtime monitoring UX.
-  - (x) Build live assignment board (which agent is working on which stage).
-  - (x) Build agent health panel (heartbeat, last output time, failure count).
-  - (x) Add "forced reroute" notification center entries.
-  - (x) Add timeline filters (stage, agent, model, interrupt type).
-  - (x) Add "manual intervention" action button per blocked stage.
-
-- ( ) **MARCH1-AGENT-PROTOCOL-001**: Agent-to-agent communication protocol.
-  - (x) Define intents (`REQUEST_HELP`, `SHARE_CONTEXT`, `PROPOSE_CHANGE`, `BLOCKER_REPORT`).
-  - (x) Define message priority and expiry policy.
-  - (x) Implement routed private channel (agent-to-agent) and group channel (all workers).
-  - (x) Add transcript tracking + moderation baseline rules (in-memory channel log, payload size/length limits).
-  - (x) Add anti-loop rule: repeated same request > N times triggers President intervention.
-  - (x) Persist collaboration transcript to DB and restore on restart.
-
-- (x) **MARCH1-ASSIST-001**: Early-finish helper flow.
-  - (x) Detect idle/finished workers and register availability.
-  - (x) Implement helper assignment scoring (skill match + context readiness).
-  - (x) Implement helper handoff package generator (context summary + acceptance criteria + constraints).
-  - (x) Implement merge-review gate before helper contribution is accepted.
-
-- ( ) **MARCH1-QUOTA-ENGINE-002**: Real quota engine and account governance.
-  - ( ) Pull quota status from all linked accounts at planning and runtime checkpoints.
-  - ( ) Add quota freshness timeout; stale quota must trigger refresh before routing.
-  - ( ) Implement account lock when provider reports hard-limit reached.
-  - ( ) Implement account cooldown for transient rate limits.
-  - ( ) Add user-facing policy toggle: "Prefer cheapest" vs "Prefer highest quota" vs "Prefer fastest".
-
-- ( ) **MARCH1-MODEL-GOV-001**: User model governance (kullanıcı model seçimi).
-  - ( ) Add per-task model allowlist UI.
-  - ( ) Add per-task model denylist UI.
-  - ( ) Add provider-level hard disable switches.
-  - ( ) Enforce governance on planner + router + runtime fallback layers.
-  - ( ) Emit audit log when governance blocks a candidate model.
-
-- ( ) **MARCH1-VALIDATION-001**: Worker output verification and enforcement.
-  - ( ) Add stage-level acceptance validator templates.
-  - ( ) Add reviewer retry policy (`maxRetriesPerStage`).
-  - ( ) Add structured fail report format (`failureType`, `evidence`, `suggestedFix`).
-  - ( ) Add escalation threshold to President/user after repeated reviewer failures.
-
-- ( ) **MARCH1-RECOVERY-OPS-001**: Recovery orchestration on app crash/close.
-  - ( ) Persist in-flight context every N seconds and on every major transition.
-  - ( ) On startup, run recovery scanner for unfinished tasks.
-  - ( ) Reconcile DB state vs in-memory cache; choose authoritative source by sequence id.
-  - ( ) Resume execution with deterministic ordering of pending stages.
-  - ( ) Show "Recovered Session" banner with summary of resumed actions.
-
-- ( ) **MARCH1-RECOVERY-OPS-002**: Quota exhaustion continuation path.
-  - ( ) Trigger `QUOTA_EXHAUSTED` interrupt with structured metadata.
-  - ( ) Persist interrupted stage context snapshot immediately.
-  - ( ) Route to next eligible account/model from deterministic fallback chain.
-  - ( ) Continue same stage and tag timeline with `forced_model_switch`.
-  - ( ) Notify user with before/after model-account details.
-
-- ( ) **MARCH1-SECURITY-001**: Security and guardrails for multi-agent execution.
-  - ( ) Validate tool-call allowlist per stage and per model.
-  - ( ) Prevent agent cross-task data leakage (task isolation checks).
-  - ( ) Redact secrets from inter-agent and user-visible transcripts.
-  - ( ) Add prompt injection detection for external tool/web content.
-  - ( ) Add security audit log for privileged actions.
-
-- ( ) **MARCH1-OBS-001**: Observability and operational metrics.
-  - ( ) Add metrics: stage duration, reassignment count, fallback count, success/failure rates.
-  - ( ) Add per-model reliability dashboard data feed.
-  - ( ) Add cost telemetry per task and per stage.
-  - ( ) Add alert thresholds for repeated fallback and repeated reviewer failures.
-  - ( ) Add "time-to-first-plan" and "time-to-first-output" KPIs.
-
-- ( ) **MARCH1-TEST-001**: Scenario-based E2E testing matrix.
-  - ( ) Happy path: plan -> approval -> execution -> completion.
-  - ( ) Reject flow: proposal rejected -> regenerate -> approve.
-  - ( ) Quota-end flow: model switch and continuation.
-  - ( ) Provider-down flow: reroute and continuation.
-  - ( ) Crash flow: close app mid-stage and resume.
-  - ( ) Multi-agent help flow: helper joins and merge accepted.
-  - ( ) Governance flow: blocked model rejected and alternate chosen.
-
-- ( ) **MARCH1-RELEASE-001**: Release readiness and fallback plan for March 1.
-  - ( ) Define minimum shippable feature set (must-have vs can-slip).
-  - ( ) Add feature flags for council modules (planning, routing, teamwork, recovery).
-  - ( ) Add kill-switch for unstable providers/models.
-  - ( ) Prepare rollback procedure and on-call playbook.
-  - ( ) Final go/no-go checklist with owners and deadlines.
-
-### Prompt Templates (Directly Usable)
-
-- (x) **MARCH1-PROMPTS-001**: Add production prompt pack for council architecture.
-  - (x) Council President (System Prompt):
-```text
-You are the Council President for a multi-agent coding system.
-Goal: deliver the user's requested outcome with minimum risk and approved cost.
-Rules:
-1) Before execution, create a stage-by-stage plan with acceptance criteria per stage.
-2) Select model/account per stage using quota + capability + user constraints.
-3) Present plan, routing, fallbacks, and estimated cost/time to user.
-4) Do not execute until explicit approval is received.
-5) During execution, supervise workers, validate outputs, and reassign idle workers.
-6) If quota/provider fails, switch to next eligible option and continue from checkpoint.
-7) Persist every major transition for crash-safe recovery.
-Output format (JSON):
-{
-  "planVersion": "string",
-  "stages": [{ "id": "S1", "goal": "...", "acceptance": ["..."], "dependsOn": [] }],
-  "routing": [{ "stageId": "S1", "model": "...", "account": "...", "fallback": ["...", "..."] }],
-  "estimates": { "tokens": 0, "costUsd": 0, "durationMin": 0 },
-  "requiresUserApproval": true
-}
-```
-  - (x) Planner Agent (System Prompt):
-```text
-You are the Planner Agent.
-Convert user request into atomic executable stages.
-For each stage provide:
-- objective
-- inputs
-- output contract
-- acceptance checks
-- risk notes
-Hard constraints:
-- no hidden assumptions
-- explicit dependencies
-- each stage must be independently testable
-Output strict JSON only.
-```
-  - (x) Quota Router Agent (System Prompt):
-```text
-You are the Quota Router Agent.
-Given stage requirements and account/model quota snapshot:
-1) pick best model/account by capability + remaining quota + reliability.
-2) produce deterministic fallback chain.
-3) explain why rejected candidates were not selected.
-Respect user allow/deny model list strictly.
-Output strict JSON:
-{ "selected": {...}, "fallbacks": [...], "rejections": [...] }
-```
-  - (x) Worker Agent (System Prompt):
-```text
-You are a Worker Agent.
-Execute assigned stage only.
-Do not change scope without asking Council President.
-Return:
-1) result
-2) files changed
-3) tests run
-4) known limitations
-If blocked, emit BLOCKED report with exact reason and requested help.
-```
-  - (x) Reviewer Agent (System Prompt):
-```text
-You are a Reviewer Agent.
-Validate worker output against stage acceptance criteria.
-Return verdict:
-- PASS
-- FAIL_WITH_FIXES
-- ESCALATE_TO_USER
-Include concrete evidence and minimal fix list.
-```
-  - (x) Helper Agent (System Prompt):
-```text
-You are a Helper Agent.
-You assist a primary worker when reassigned.
-Do not override ownership; produce merge-ready sub-results with clear boundaries.
-Return exact handoff notes for the primary worker.
-```
-  - (x) Recovery Agent (System Prompt):
-```text
-You are a Recovery Agent.
-Given checkpoint state after crash/interruption:
-1) detect last consistent transition
-2) rebuild pending queue and active ownership
-3) produce safe resume plan
-Never repeat completed irreversible actions.
-Output strict JSON with resume steps.
-```
-
-- (x) **MARCH1-PROMPTS-002**: Add operator prompts (user-facing control actions).
-  - (x) Approve plan prompt text.
-  - (x) Reject plan prompt text with required reason.
-  - (x) Manual model override prompt text.
-  - (x) Continue after fallback confirmation prompt text.
+### Reliability & Stabilization
+- ( ) **MARCH1-QUALITY-001**: Stabilize project-agent operational gaps.
+  - ( ) Replace stubbed telemetry/events endpoints with real data.
+  - ( ) Ensure orchestrator/council IPC surface is actively wired in renderer.
+- [ ] **REF-003**: Implement re-render performance monitoring for `ProjectWorkspace` sub-sections.
+- [ ] **REF-005**: Add renderer tests for `WorkspaceEditor` clipboard-backed snippet import/export flows.
+- [ ] **REF-006**: Add renderer tests for `WorkspaceEditor` scratchpad command and file-save actions.
 
 ---
 
-## Quick Wins (Fast-Makeable)
+## 🛡️ Core Infrastructure & Security
 
-Selected small/contained tasks that are realistic to ship quickly:
+### Security Hardening
+- ( ) **SEC-H-001**: Verify WebContents navigation restriction to trusted origins.
+- ( ) **SEC-H-002**: Audit all IPC handlers for `responseSchema` validation (Zod).
+- ( ) **SEC-H-003**: Implement periodic security scan for `node_modules` vulnerabilities.
 
-### Pending Quick Wins
-  - [x] `src/main/ipc/mcp-marketplace.ts` (`registerMcpMarketplaceHandlers`)
-  - [/] `src/renderer/features/projects/components/ProjectWorkspace.tsx`
-  - [x] `src/renderer/features/settings/components/ImageSettingsTab.tsx`
-  - ( ) Applied targeted lint override to unblock quality gate; follow-up refactor remains.
-- [x] **AUD-2026-02-20-08**: Refactor oversized legacy functions in marketplace/workspace/image settings to remove file-specific lint override and improve maintainability.
-  - [x] `src/renderer/features/extensions/hooks/useExtensions.ts`
-  - [x] `src/renderer/features/projects/hooks/useAgentHandlers.ts`
-  - [x] `src/renderer/features/projects/hooks/useWorkspaceManager.ts`
-  - [x] `src/shared/utils/extension.util.ts`
-- (x) **AUD-2026-02-20-06**: Resolve npm audit backlog (39 vulnerabilities: 35 high / 4 moderate) via phased dependency upgrades (`electron-builder`, `eslint`, `@electron/rebuild`, `typescript-eslint`).
-- (x) **AUD-2026-02-20-07**: Investigate `npm run build` timeout in CI/dev shell and document stable timeout/memory settings for local and GitHub Actions.
----
+### Audit Follow-Up (2026-02-28)
+- (x) **AUDIT-IPC-001**: Replace raw `ipcMain.handle` registrations in service-owned channels with validated wrappers and sender checks.
+  - (x) Migrate `ExtensionService` IPC handlers to centralized validated registration.
+  - (x) Migrate `VoiceService` IPC handlers to centralized validated registration.
+  - (x) Migrate `UpdateService` IPC handlers to centralized validated registration.
+- ( ) **AUDIT-PROXY-001**: Split embedded proxy API key and remote-management secret into separate credentials.
+  - (x) Stop reusing the same `proxyKey` for `api-keys` and `remote-management.secret-key`.
+  - (x) Reduce or eliminate plaintext secret material written to proxy YAML on disk.
+  - ( ) Add independent rotation and regeneration flow for both secrets.
+- ( ) **AUDIT-OAUTH-001**: Stop trusting unsigned JWT payload claims in local OAuth flows.
+  - ( ) Verify `id_token` signature / issuer / audience / nonce before consuming claims.
+  - ( ) Fallback to provider `userinfo` or profile endpoint when verification is unavailable.
+- ( ) **AUDIT-PERF-001**: Remove eager shell-level imports of large generated changelog data from always-mounted layout components.
+  - ( ) Lazy-load changelog search/index data only when the changelog UI opens.
+  - ( ) Define a bundle-size budget for shell/layout components.
+- (x) **AUDIT-TOOLING-001**: Make repo-wide lint operational again.
+  - (x) Exclude generated or oversized artifacts from lint scope.
+  - (x) Prevent Node heap OOM during `npm run lint`.
+  - (x) Add CI-friendly lint partitioning or staged lint commands.
+- ( ) **AUDIT-MAIN-IO-001**: Reduce synchronous filesystem I/O on Electron main thread.
+  - ( ) Replace startup-path `existsSync` / `readFileSync` / `writeFileSync` in security-critical services first.
+  - ( ) Audit extension, proxy, terminal, and logging services for sync I/O hot paths.
+- ( ) **AUDIT-TYPES-001**: Eliminate remaining production `as unknown as` / unsafe cast debt in IPC and shared runtime code.
+  - ( ) Replace double-casts in DB IPC with explicit serializers.
+  - ( ) Remove translation casting shortcuts by normalizing locale shape at build time.
+- (x) **AUDIT-REPO-001**: Enforce source-tree hygiene for temporary/generated artifacts.
+  - (x) Remove stray temp files such as `*.tmp.*` from `src/`.
+  - (x) Add repo checks that block accidental temp artifact commits.
+- ( ) **AUDIT-LOG-001**: Review console redirection strategy to avoid double logging and excess IPC/log volume from renderer/main console overrides.
+  - ( ) Measure impact of forwarding all renderer `console.*` to main logger.
+  - ( ) Restrict noisy non-error logs in production builds.
 
-## High Priority
+### Main Process & Preload
+- ( ) **PRE-001**: Continue modularization of remaining legacy IPC bridges.
+- ( ) **MAIN-001**: Optimize startup time by lazy-loading non-critical services.
+- (x) **AUTH-KEY-001**: Add multi-key API credential support across provider settings and model routing.
+  - (x) Support multiple API keys per provider while keeping `apiKey` backward-compatible for legacy readers.
+  - (x) Sync multi-key credentials through encrypted auth storage instead of persisting plaintext provider keys to settings.
+  - (x) Add multi-key API key inputs for Codex, Claude, Groq, NVIDIA, Hugging Face, and Gemini in the Accounts settings tab.
+- ( ) **AUTH-ROUTE-001**: Finalize hybrid OAuth vs API routing rules for supported providers.
+  - ( ) Keep `antigravity` OAuth/session-only and do not add API key mode.
+  - ( ) Enforce `auto` precedence as `oauth with quota -> api key -> oauth without api fallback`.
+  - (x) Route `codex` and `claude` proxy auth through `AuthAPIService` with quota-aware `auto` selection and disabled-account gating.
+  - (x) Expose provider-level credential mode controls in the settings UI.
+- ( ) **PROVIDER-API-001**: Complete direct API provider coverage for Gemini and remaining API-key providers.
+  - ( ) Finish Gemini API support as a standalone provider (separate from Antigravity).
+  - (x) Route Gemini chat models through the embedded proxy path so API-key auth can be enabled without touching Antigravity.
+  - ( ) Expand image-capable model handling for direct API providers (OpenAI/Gemini) so non-chat image models route correctly.
+  - ( ) Verify Hugging Face, Groq, and NVIDIA direct API model lists match runtime capabilities.
+- ( ) **PROVIDER-RESEARCH-001**: Research and integrate additional API providers.
+  - ( ) Research Minimax API surface and compatibility path.
+  - ( ) Research GLM API surface and compatibility path.
+  - ( ) Research Kimi API surface and compatibility path.
 
-Owner tags:
-- [owner:platform-ipc] IPC + contract safety tasks
-- [owner:marketplace-core] Marketplace backend/services tasks
-- [owner:renderer-experience] Marketplace UI/UX tasks
-- [owner:quality-automation] Test and quality gate tasks
-
-### Marketplace System (VSCode-style Extensions)
-
-#### Core Infrastructure & Centralization
-- ( ) **MKT-INFRA-09**: Implement Centralized Marketplace Indexer Service (VPS-side).
-  - ( ) Migrate HF/Ollama scraping from client-side to VPS for improved privacy and performance.
-  - ( ) Build automated metadata crawler for extensions, prompts, and model presets.
-  - ( ) Create secure REST API for model discovery and searching.
-  - ( ) Implement caching layer for fast search results across all clients.
-
-#### UI Components
-  - Location: `src/renderer/features/marketplace/`
-  - ( ) Create responsive grid layout
-  - ( ) Add category navigation sidebar
-  - ( ) Implement featured extensions carousel
-  - ( ) Add trending extensions section
-  - ( ) Create recently updated section
-  - ( ) Add personalized recommendations
-  - ( ) Implement search with filters
-
-  - ( ) Display rating, download count, description
-  - ( ) Add install/uninstall button states
-  - ( ) Show compatibility indicators
-  - ( ) Add screenshot preview gallery
-  - ( ) Implement hover preview
-  - ( ) Add quick actions menu
-  - ( ) Show update available badge
-
-  - ( ) Full-text search across extensions
-  - ( ) Filter by categories and tags
-  - ( ) Sort by popularity, rating, recent updates
-  - ( ) Save search preferences
-  - ( ) Add search suggestions
-  - ( ) Implement search history
-  - ( ) Add advanced search syntax
-
-  - ( ) README rendering with markdown support
-  - ( ) Reviews and ratings section
-  - ( ) Version history and changelog
-  - ( ) Related extensions suggestions
-  - ( ) Add dependency tree view
-  - ( ) Show permission requirements
-  - ( ) Add installation statistics
-
-  - ( ) List all installed extensions
-  - ( ) Update all / update individual
-  - ( ) Configure extension settings
-  - ( ) View extension logs
-  - ( ) Add extension diagnostics
-  - ( ) Show extension resource usage
-  - ( ) Implement extension profiles
-
-  - ( ) Show installation progress
-  - ( ) Display permission requests
-  - ( ) Add configuration steps
-  - ( ) Show installation summary
-
-  - ( ) Add star rating component
-  - ( ) Create review form
-  - ( ) Show rating distribution
-  - ( ) Add helpful vote system
-
-  - ( ) Side-by-side comparison
-  - ( ) Feature matrix
-  - ( ) Rating comparison
-  - ( ) Download statistics
-
-#### Extension Types
-  - ( ) Allow custom MCP server implementations
-  - ( ) Provide SDK for MCP server development
-  - ( ) Add MCP server configuration UI
-  - ( ) Create MCP server templates
-  - ( ) Add MCP server debugging
-  - ( ) Implement MCP server testing
-  - ( ) Add MCP server documentation generator
-
-  - ( ) Custom color schemes and UI themes
-  - ( ) Icon packs and font options
-  - ( ) Syntax highlighting themes
-  - ( ) Add theme preview
-  - ( ) Implement theme mixing
-  - ( ) Add theme import/export
-  - ( ) Create theme editor
-
-  - ( ) Custom slash commands for chat
-  - ( ) Keyboard shortcut bindings
-  - ( ) Command palette integration
-  - ( ) Add command autocomplete
-  - ( ) Implement command chaining
-  - ( ) Add command history
-  - ( ) Create command builder UI
-
-  - ( ) Language server protocol support
-  - ( ) Custom syntax highlighting
-  - ( ) Code formatter integration
-  - ( ) Add language detection
-  - ( ) Implement multi-language support
-  - ( ) Add language-specific tools
-  - ( ) Create language configuration
-
-  - ( ) Pre-configured agent personas
-  - ( ) Custom tool configurations
-  - ( ) Agent behavior modifiers
-  - ( ) Add template marketplace
-  - ( ) Implement template sharing
-  - ( ) Add template versioning
-  - ( ) Create template builder
-
-  - ( ) Custom dashboard widgets
-  - ( ) Sidebar panels
-  - ( ) Status bar items
-  - ( ) Add widget configuration
-  - ( ) Implement widget communication
-  - ( ) Add widget theming
-  - ( ) Create widget gallery
-
-  - ( ) External service integrations
-  - ( ) Webhook handlers
-  - ( ) API connectors
-  - ( ) Add OAuth flow support
-  - ( ) Implement credential management
-  - ( ) Add integration testing
-  - ( ) Create integration templates
-
-#### Security
-  - ( ) Implement code signing for extensions
-  - ( ) Verify signatures before installation
-  - ( ) Add trusted publisher system
-  - ( ) Create signing key management
-  - ( ) Add signature revocation
-  - ( ) Implement certificate pinning
-  - ( ) Add signature timestamping
-
-  - ( ) Isolate extension code from main process
-  - ( ) Resource usage limits (CPU, memory, time)
-  - ( ) Network request filtering
-  - ( ) Add sandbox escape detection
-  - ( ) Implement sandbox logging
-  - ( ) Add sandbox configuration
-  - ( ) Create sandbox testing tools
-
-  - ( ) Automated security scanning
-  - ( ) Manual review process for new extensions
-  - ( ) Report malicious extension
-  - ( ) Add vulnerability database
-  - ( ) Implement dependency scanning
-  - ( ) Add security score
-  - ( ) Create security advisory system
-
-  - ( ) Verified purchase/download reviews
-  - ( ) Rating aggregation and display
-  - ( ) Review moderation
-  - ( ) Add review helpfulness voting
-  - ( ) Implement review spam detection
-  - ( ) Add review response system
-  - ( ) Create review analytics
-
-  - ( ) Optional usage analytics
-  - ( ) Automatic crash report submission
-  - ( ) Performance metrics collection
-  - ( ) Add telemetry opt-out
-  - ( ) Implement data anonymization
-  - ( ) Add telemetry dashboard
-  - ( ) Create compliance reporting
-
-#### Developer Experience
-  - ( ) Add development server with hot reload
-  - ( ) Create extension testing framework
-  - ( ) Add extension debugging tools
-  - ( ) Implement extension profiling
-  - ( ) Add extension documentation generator
-
-- ( ) **MKT-DEV-02**: Extension developer documentation
-  - ( ) Getting started guide
-  - ( ) API reference
-  - ( ) Best practices
-  - ( ) Example extensions
-  - ( ) Add video tutorials
-  - ( ) Create API playground
-  - ( ) Add interactive examples
-
-- [x] **MKT-DEV-03**: Local extension development mode
-  - [x] Hot reload for local extensions
-  - [x] Debug logging and inspection
-  - [x] Extension DevTools panel
-  - ( ) Add extension reload shortcut
-  - ( ) Implement extension state inspection
-  - ( ) Add performance profiling
-  - ( ) Create memory debugging
-
-- ( ) **MKT-DEV-04**: Extension publishing workflow
-  - ( ) CLI publish command
-  - ( ) Version validation
-  - ( ) Automated testing before publish
-  - ( ) Add publishing checklist
-  - ( ) Implement release notes generation
-  - ( ) Add publishing preview
-  - ( ) Create rollback capability
-
-- ( ) **MKT-DEV-05**: Extension analytics dashboard
-  - ( ) Download statistics
-  - ( ) User engagement metrics
-  - ( ) Error rate tracking
-  - ( ) Add revenue tracking
-  - ( ) Implement A/B testing
-  - ( ) Add user demographics
-  - ( ) Create custom reports
+### New Systems From Audit
+- ( ) **SYS-SEC-001**: Build a Security Posture dashboard for IPC exposure, secret storage, stale tokens, and trust-boundary warnings.
+- ( ) **SYS-PERF-001**: Build a Performance Budget dashboard for startup time, bundle size, main-thread blocking I/O, and renderer cold-start metrics.
+- ( ) **SYS-SCHEMA-001**: Build a Schema Drift Auditor that scans IPC handlers and flags channels missing shared schemas or using unsafe casts.
+- ( ) **SYS-ASSET-001**: Build a Generated Asset Registry to track large generated files, lazy-load policy, and lint/test exclusions.
+- ( ) **SYS-AUTH-001**: Build a Runtime Capability Gate that can automatically downgrade dual-login providers to single-login when auth capabilities overlap safely.
 
 ---
 
-## Medium Priority
+## 📦 Marketplace & Extension Ecosystem
 
-### Image Generation
+### Infrastructure
+- (x) **MKT-INFRA-09**: Implement Centralized Marketplace Indexer Service (VPS-side).
+  - (x) Build automated metadata crawler for extensions, prompts, and model presets.
+  - (x) Create secure REST API for model discovery and searching.
+  - (x) Implement caching layer for fast search results.
 
-  - Location: `src/main/services/llm/local-image.service.ts:407`
-  - ( ) Add WebSocket connection to ComfyUI
-  - ( ) Implement workflow execution
-  - ( ) Handle workflow templates
-  - ( ) Add workflow editor
-  - ( ) Implement workflow sharing
-  - ( ) Add workflow testing
-  - ( ) Create workflow documentation
+### UI & UX
+- (x) **MKT-UI-01**: Create responsive grid layout for marketplace browser.
+- (x) **MKT-UI-02**: Add featured extensions carousel and trending section.
+- (x) **MKT-UI-03**: Implement full-text search with multi-dimensional filters.
+- (x) **MKT-UI-04**: Create detailed extension pages with README rendering and version history.
+- (x) **MKT-UI-05**: Implement rating and text review system with moderation flow.
 
-  - ( ) Store generated images with metadata
-  - ( ) Allow regeneration with same parameters
-  - ( ) Image comparison view
-  - ( ) Add image search
-  - ( ) Implement image export
-  - ( ) Add image analytics
-  - ( ) Create image testing
-
-  - ( ) Inpainting/outpainting support
-  - ( ) Image-to-image transformation
-  - ( ) Style transfer
-  - ( ) Add editing presets
-  - ( ) Implement editing history
-  - ( ) Add editing analytics
-  - ( ) Create editing testing
-
-  - Location: `src/renderer/features/chat/components/GalleryView.tsx`
-  - ( ) Masonry layout
-  - ( ) Image zoom and pan
-  - ( ) Batch download
-  - ( ) Add gallery search
-  - ( ) Implement gallery filtering
-  - ( ) Add gallery analytics
-  - ( ) Create gallery testing
-
-  - Location: `src/main/ipc/sd-cpp.ts`
-  - ( ) Memory optimization for large models
-  - ( ) Batch generation
-  - ( ) Model switching without restart
-  - ( ) Add performance monitoring
-  - ( ) Implement model caching
-  - ( ) Add generation queue
-  - ( ) Create generation testing
-
-  - ( ) Style presets
-  - ( ) Size presets
-  - ( ) Quality presets
-  - ( ) Add preset sharing
-  - ( ) Implement preset validation
-  - ( ) Add preset analytics
-  - ( ) Create preset testing
-
-  - ( ) Queue management
-  - ( ) Priority scheduling
-  - ( ) Resource allocation
-  - ( ) Add scheduling UI
-  - ( ) Implement scheduling analytics
-  - ( ) Add scheduling alerts
-  - ( ) Create scheduling testing
-
-  - ( ) Side-by-side comparison
-  - ( ) Parameter comparison
-  - ( ) Quality metrics
-  - ( ) Add comparison export
-  - ( ) Implement comparison sharing
-  - ( ) Add comparison analytics
-  - ( ) Create comparison testing
-
-### SSH & Remote Development
-
-  - SSH/remote development backlog items completed and removed.
+### Developer Experience
+- (x) **MKT-DEV-04**: Extension publishing workflow (CLI publish, version validation).
+- (x) **MKT-DEV-05**: Extension analytics dashboard for developers.
 
 ---
 
-## Low Priority / Future Enhancements
+## 🧠 AI Systems & Studio
 
-### Internationalization
+### No-Code AI Studio (AI-SYS)
+- ( ) **AI-SYS-01**: Build a no-code "Create Your Own AI" Studio (local-first).
+  - ( ) Create guided wizard: Goal -> Data -> Train -> Evaluate -> Deploy.
+- ( ) **AI-SYS-02**: Add dataset onboarding and preparation pipeline.
+  - ( ) Dataset quality score and versioning/rollback.
+- ( ) **AI-SYS-03**: Add no-code training/fine-tuning workflows (RAG/LoRA).
+- ( ) **AI-SYS-04**: Create evaluation and benchmark dashboard for custom AIs.
+- ( ) **AI-SYS-07**: Add conversational AI builder assistant.
+- ( ) **AI-SYS-11**: Add autonomous "AI Architect" mode for project scaffolding.
+- ( ) **AI-SYS-12**: Build local "AI Red Team" simulator for jailbreak testing.
+- ( ) **AI-SYS-13**: Refactor `AgentTaskExecutor.ts` (2410 lines) into domain services (Git, HIL, Planning).
+- ( ) **AI-SYS-14**: Refactor `AgentCollaborationService.ts` (1774 lines) to extract Debate and Voting.
+- ( ) **AI-SYS-15**: Implement semantic/robust consensus logic in `AgentCollaborationService` (replace Jaccard).
 
-  - ( ) Audit missing keys in all language files
-  - ( ) Add context comments for translators
-  - ( ) Implement translation memory
+### Voice & Speech AI
+- ( ) **VOICE-01**: Implement local wake-word model (Porcupine/precise).
+- ( ) **VOICE-02**: Add Real-time voice processing with voice cloning.
+- ( ) **VOICE-03**: Automatic transcription and meeting notes assistant.
 
+### Local AI Enhancements
+- ( ) **LOCAL-01**: Model fine-tuning interface with progress monitoring.
+- ( ) **LOCAL-02**: Domain-specific embedding training and visualization.
+- ( ) **LOCAL-03**: Integrated hardware-aware model fit estimator (TPS/VRAM estimates).
 
 ---
 
-## Technical Debt
+## 🎨 Renderer & UX Excellence
+
+### Workspace Improvements
+- (x) **UI-W-01**: Add "split view" support for the CodeMirror editor.
+- ( ) **UI-W-02**: Implement "minimap" for faster file navigation.
+- (x) **UI-W-03**: Enhance breadcrumb navigation with symbol search.
+- [x] **REF-004**: Standardize internal sub-component documentation pattern across renderer.
+
+---
+
+## 🔒 Security Audit (March 2026)
+
+> Full project security audit — 45 issues identified across critical, high, medium, and low severity.
+
+### 🔴 Critical
+
+- ( ) **SECURITY-001**: Hardcoded JWT Secret — `website/tengra-backend/controllers/AuthTokenUtil.h:28` — JWT secret hardcoded in source code, allows token forgery.
+- ( ) **SECURITY-002**: Hardcoded Database Password — `website/tengra-backend/config.json:17` — Plaintext DB password in committed config file.
+- ( ) **SECURITY-003**: Hardcoded Legacy Salt — `website/tengra-backend/controllers/AuthController.cpp:463` — Password salt hardcoded, enables offline brute-force.
+- ( ) **SECURITY-004**: CORS Wildcard Origin — `website/tengra-backend/main.cpp:57` — `Access-Control-Allow-Origin: *` allows CSRF-style attacks.
+- (x) **SECURITY-005**: SQL Injection in Migration Rollback — `src/main/services/data/database.service.ts:731` — String interpolation instead of parameterized queries.
+- ( ) **SECURITY-006**: JWT Decoded Without Signature Verification — `src/main/utils/local-auth-server.util.ts:441-452` — No signature verification on JWT decode.
+- (x) **SECURITY-007**: Path Traversal in Export Handler — `src/main/ipc/export.ts:9-23` — No path traversal check on filePath parameter.
+- (x) **SECURITY-008**: Path Traversal in Backup/Restore — `src/main/ipc/backup.ts:50-68` — No traversal prevention on backup paths.
+- ( ) **SECURITY-009**: Code Sandbox Escape via vm.Script — `src/main/ipc/code-sandbox.ts:323-359` — Node.js `vm` module doesn't provide true isolation.
+- ( ) **SECURITY-010**: Shell Code Injection via Spawn — `src/main/ipc/code-sandbox.ts:421` — User code passed as CLI argument to shell interpreters.
+
+### 🟠 High
+
+- ( ) **SECURITY-011**: Command Injection in CommandService — `src/main/services/system/command.service.ts:98-101` — Raw command strings through PowerShell shell.
+- ( ) **SECURITY-012**: Command Injection in Spawn-with-Shell — `src/main/services/system/command.service.ts:186-188` — Empty args array passes command to shell.
+- ( ) **SECURITY-013**: Unvalidated stdout in Command Chain — `src/main/services/analysis/monitoring.service.ts:227-229` — Command injection via crafted battery device names.
+- (x) **SECURITY-014**: Gallery Path Traversal — `src/main/ipc/gallery.ts:225-249` — targetDirectory not validated against safe root.
+- (x) **SECURITY-015**: HuggingFace URL Hostname Bypass — `src/main/ipc/huggingface.ts:62-68` — `.includes('huggingface.co')` bypassed by subdomains.
+- (x) **SECURITY-016**: HuggingFace Path Traversal — `src/main/ipc/huggingface.ts:210-220` — No traversal check on path parameter.
+- (x) **SECURITY-017**: Prototype Pollution in sanitizeObject — `src/shared/utils/sanitize.util.ts:189-222` — No `__proto__`/`constructor` key filtering.
+- ( ) **SECURITY-018**: Unvalidated WebSocket Messages — `src/main/api/api-server.service.ts:824-845` — No schema validation on WS messages.
+- (x) **SECURITY-019**: z.any() Validation Bypass — `src/shared/schemas/agent-checkpoint.schema.ts:65-70` — 6 fields using z.any().
+- ( ) **SECURITY-020**: Empty Redis Password — `website/tengra-backend/config.json:28` — Unauthenticated Redis access.
+- ( ) **SECURITY-021**: Prompt Injection via RAG Context — `src/main/ipc/chat.ts:158` — RAG context injected without escaping.
+- (x) **SECURITY-022**: Terminal Export Path Traversal — `src/main/ipc/terminal.ts:564-572` — exportPath has no path sanitization.
+- (x) **SECURITY-023**: Insufficient Key Masking — `src/main/ipc/key-rotation.ts:105` — Short keys mostly exposed in logs.
+
+### 🟡 Medium
+
+- ( ) **SECURITY-024**: HTTP-Only Listener — `website/tengra-backend/config.json:6` — Backend on HTTP with no TLS.
+- (x) **SECURITY-025**: MCP Service Name Injection — `src/main/ipc/mcp.ts:18-41` — Names validated for length only.
+- (x) **SECURITY-026**: Regex DoS in Terminal Search — `src/main/ipc/terminal.ts:55-57` — No regex complexity limits.
+- ( ) **SECURITY-027**: Weak SQL Injection Guard — `website/tengra-backend/controllers/SqliGuardUtil.h:16-31` — Trivially bypassed string matching.
+- (x) **SECURITY-028**: Missing Recursion Depth Limit — `src/shared/utils/sanitize.util.ts:189-222` — `sanitizeObject()` recurses without depth tracking.
+- (x) **SECURITY-029**: Model Name Not Sanitized — `src/main/ipc/ollama.ts:41-50` — Model names may contain shell metacharacters.
+- ( ) **SECURITY-030**: Unvalidated Tool Arguments — `src/main/api/api-server.service.ts:18` — z.unknown() in tool args.
+- ( ) **SECURITY-031**: Insufficient Content Filtering — `src/main/services/llm/llm.service.ts:161-181` — Only 3 hardcoded patterns.
+- ( ) **SECURITY-032**: No CSRF Tokens on State-Changing Endpoints — `src/main/api/api-server.service.ts` — POST endpoints lack CSRF tokens.
+- ( ) **SECURITY-033**: Session Disabled in Backend — `website/tengra-backend/config.json:36` — No session revocation capability.
+- ( ) **SECURITY-034**: Client-Side JWT Without Verification — `website/tengra-frontend/lib/token.ts` — Role from unverified claims.
+- ( ) **SECURITY-035**: localStorage Token Storage — `website/tengra-frontend/lib/auth-api.ts` — Tokens accessible to XSS.
+- ( ) **SECURITY-036**: Inconsistent IPC Sender Validation — `src/main/ipc/index.ts:58-212` — Not all handlers validate sender.
+- ( ) **SECURITY-037**: Missing Auth on Memory Handlers — `src/main/ipc/memory.ts:100-192` — No authorization checks.
+- ( ) **SECURITY-038**: Unvalidated JSON Parse in API — `src/main/api/api-server.service.ts:569` — No post-parse sanitization.
+
+### 🟢 Low
+
+- ( ) **SECURITY-039**: Weak sanitizeSqlInput Function — `src/shared/utils/sanitize.util.ts:231-261` — Creates false sense of security.
+- ( ) **SECURITY-040**: Max Body Size 100MB — `website/tengra-backend/config.json:42` — Memory exhaustion DoS vector.
+- (x) **SECURITY-041**: Process Env Leaked to PTY — `src/main/services/system/process.service.ts:66` — Full env passed to spawned processes.
+- ( ) **SECURITY-042**: Max Connections Per IP Unlimited — `website/tengra-backend/config.json:41` — No per-IP connection limit.
+- ( ) **SECURITY-043**: Server Header Fingerprinting — `website/tengra-backend/config.json:38` — Reveals server technology.
+- ( ) **SECURITY-044**: Marketplace Security in localStorage — `website/tengra-frontend/lib/marketplace-security.ts` — Trusted lists modifiable by XSS.
+- ( ) **SECURITY-045**: Missing Workflow Authorization — `src/main/ipc/workflow.ts:23-55` — No auth checks on workflow CRUD.
+
+---
+
+## ⚡ Performance Audit (March 2026)
+
+> Full project performance audit — 67 issues across renderer, main process, and website.
+
+### Renderer (27 issues)
+
+- ( ) **PERF-001**: MessageBubble mega-component 2136 lines — `src/renderer/features/chat/components/MessageBubble.tsx` — 14x limit, inline DOMPurify, must split into 10+ components.
+- ( ) **PERF-002**: ChatInput oversized 472 lines — `src/renderer/features/chat/components/ChatInput.tsx` — `.split(' ').pop()` every keystroke, ResizeObserver churn.
+- ( ) **PERF-003**: MultiModelCollaboration oversized 470 lines — `src/renderer/features/chat/components/MultiModelCollaboration.tsx` — 13 useState, no useMemo.
+- ( ) **PERF-004**: TitleBar oversized 572 lines — `src/renderer/components/layout/TitleBar.tsx` — Inline changelog modal, object creation per render.
+- ( ) **PERF-005**: PanelLayout oversized 494 lines — `src/renderer/components/layout/PanelLayout.tsx` — Sub-components not wrapped in React.memo.
+- (x) **PERF-006**: SlashMenu missing React.memo + useMemo — `src/renderer/features/chat/components/SlashMenu.tsx` — .filter() runs every render.
+- (x) **PERF-007**: MessageActions missing React.memo — `src/renderer/features/chat/components/MessageActions.tsx` — Re-renders on every parent render.
+- (x) **PERF-008**: ToolDisplay missing React.memo — `src/renderer/features/chat/components/ToolDisplay.tsx` — Inline sub-component definitions.
+- (x) **PERF-009**: TerminalView missing React.memo — `src/renderer/features/chat/components/TerminalView.tsx` — .split().slice().join() in render.
+- (x) **PERF-010**: DockerDashboard ContainerItem not memoized — `src/renderer/features/mcp/DockerDashboard.tsx` — All items re-render on any change.
+- ( ) **PERF-011**: ChatContext stale closure on bulkDeleteChats — `src/renderer/context/ChatContext.tsx` — Missing from useMemo deps.
+- (x) **PERF-012**: ThemeContext incomplete useCallback deps — `src/renderer/context/ThemeContext.tsx` — Missing `theme` dependency. *(Verified: deps already correct.)*
+- (x) **PERF-013**: useAppInitialization missing cleanup — `src/renderer/hooks/useAppInitialization.ts` — window.TengraSpeak never removed.
+- (x) **PERF-014**: notification-center.store dismissTimers leak — `src/renderer/store/notification-center.store.ts` — Maps persist without cleanup. *(Verified: timers already cleaned up properly.)*
+- (x) **PERF-015**: VoiceOverlay eagerly imported — `src/renderer/App.tsx` — Should use React.lazy().
+- ( ) **PERF-016**: Settings tabs not lazy-loaded — `src/renderer/features/settings/SettingsPage.tsx` — All panels loaded upfront.
+- ( ) **PERF-017**: LoggingDashboard missing virtualization — `src/renderer/components/ui/LoggingDashboard.tsx` — 500+ entries rendered.
+- ( ) **PERF-018**: GalleryView missing virtualization — `src/renderer/components/shared/GalleryView.tsx` — 100+ images in DOM.
+- ( ) **PERF-019**: MarkdownRenderer DOMPurify in render path — `src/renderer/features/chat/components/MarkdownRenderer.tsx` — No memoization.
+- ( ) **PERF-020**: MCPStore ToolCard not memoized — `src/renderer/features/mcp/MCPStore.tsx` — 24+ cards re-render.
+- (x) **PERF-021**: PanelLayout inline style objects — `src/renderer/components/layout/PanelLayout.tsx` — New object refs per render.
+- (x) **PERF-022**: QuickActionBar inline position styles — `src/renderer/components/layout/QuickActionBar.tsx` — 5-property object every render.
+- ( ) **PERF-023**: Health stores nested spread anti-pattern — `src/renderer/store/*-health.store.ts` — 4+ levels of spread per event.
+- ( ) **PERF-024**: loading-analytics.store full array scan — `src/renderer/store/loading-analytics.store.ts` — Filters 300 items on every completion.
+- ( ) **PERF-025**: voice.store direct array mutation — `src/renderer/store/voice.store.ts` — .push()/.splice() breaks change detection.
+- ( ) **PERF-026**: ChatInput slash detection every keystroke — `src/renderer/features/chat/components/ChatInput.tsx` — No debounce.
+- ( ) **PERF-027**: ProjectsPage grid view not virtualized — `src/renderer/features/projects/ProjectsPage.tsx` — Only list view virtualized.
+
+### Main Process (25 issues)
+
+- (x) **PERF-101**: Unbounded queryCounts Map — `src/main/services/llm/advanced-memory.service.ts:1684` — No eviction policy.
+- ( ) **PERF-102**: Incomplete SSH disconnect() cleanup — `src/main/services/project/ssh.service.ts:857` — 6+ Maps not cleaned.
+- ( ) **PERF-103**: No cleanup in MultiLLMOrchestratorService — `src/main/services/llm/multi-llm-orchestrator.service.ts` — 5 Maps grow indefinitely.
+- (x) **PERF-104**: Unbounded Maps in monitoring — `src/main/services/analysis/monitoring.service.ts:91-93` — No size limit or TTL.
+- ( ) **PERF-105**: Unbounded Maps in agent collaboration — `src/main/services/project/agent/agent-collaboration.service.ts:232` — No auto-pruning.
+- (x) **PERF-106**: Recursive sync directory traversal — `src/main/services/mcp/mcp-plugin.service.ts:171-186` — readdirSync+statSync blocking.
+- (x) **PERF-107**: Sync mkdirSync on every plugin action — `src/main/services/mcp/mcp-plugin.service.ts:44` — Redundant sync I/O.
+- ( ) **PERF-108**: execSync in terminal backend discovery — `kitty.backend.ts`, `warp.backend.ts`, `alacritty.backend.ts`, `ghostty.backend.ts` — Blocking main thread.
+- (x) **PERF-109**: writeFileSync in image generation — `src/main/services/llm/local-image.service.ts:2398` — Blocks main thread. *(Verified: already uses async fs.promises.writeFile.)*
+- (x) **PERF-110**: Sync file reads in security service — `src/main/services/security/security.service.ts:49,96` — Blocks event loop. *(Verified: already uses async fs.promises.)*
+- ( ) **PERF-111**: Recursive sync dir scan in proxy rebuild — `src/main/services/proxy/proxy-process.service.ts:384-421` — All synchronous.
+- (x) **PERF-112**: O(n²) model selection loop — `src/main/services/llm/huggingface.service.ts:411-420` — .find() inside loop.
+- (x) **PERF-113**: O(n×m) history lookup — `src/main/services/llm/local-image.service.ts:1809` — .map+.find instead of Map lookup.
+- ( ) **PERF-114**: Array.from().filter() in hot scheduling path — `src/main/services/llm/multi-llm-orchestrator.service.ts:193` — Full array scan per cycle.
+- (x) **PERF-115**: JSON.parse(JSON.stringify()) for deep clone — Multiple files — Use structuredClone() instead.
+- ( ) **PERF-116**: readFileSync on every extension manifest — `src/main/services/extension/extension.service.ts:558` — No caching.
+- ( ) **PERF-117**: readFileSync for port file discovery — `src/main/services/data/database-client.service.ts:206` — Repeated blocking I/O.
+- ( ) **PERF-118**: N+1 query on file change — `src/main/ipc/project.ts:136-140` — Fetches ALL projects then linear scan.
+- (x) **PERF-119**: Sequential git subprocess calls — `src/main/ipc/git.ts:196-218` — 3 git processes that could be parallelized. *(Skipped: calls are sequential dependencies; marked done.)*
+- ( ) **PERF-120**: No pagination on code intelligence results — `src/main/ipc/code-intelligence.ts` — Unbounded result arrays.
+- (x) **PERF-121**: Duplicate parseStatus closure per call — `src/main/ipc/git.ts:421-443` — Should be module-level.
+- ( ) **PERF-122**: Model registry no caching — `src/main/ipc/model-registry.ts:16-35` — Recomputes on every call.
+- ( ) **PERF-123**: Code intelligence search not debounced — `src/main/ipc/code-intelligence.ts:27-38` — Fires every keystroke.
+- (x) **PERF-124**: Sequential awaits for independent git calls — `src/main/ipc/git.ts:463-465` — Should use Promise.all.
+- (x) **PERF-125**: Sequential awaits in getDetailedStatus — `src/main/ipc/git.ts:417-419` — Should use Promise.all.
+
+### Website (15 issues)
+
+- ( ) **PERF-201**: No route-level code splitting — `website/tengra-frontend/src/App.tsx` — All routes eagerly imported.
+- ( ) **PERF-202**: All i18n locales bundled eagerly — `website/tengra-frontend/src/i18n/index.tsx` — 10 locales, only 1 active.
+- ( ) **PERF-203**: Render-blocking Google Fonts — `website/tengra-frontend/src/index.css:2` — @import in CSS.
+- ( ) **PERF-204**: No preconnect/preload hints — `website/tengra-frontend/index.html` — Missing resource hints.
+- ( ) **PERF-205**: framer-motion in 12 components — Multiple files — 130KB for simple animations.
+- ( ) **PERF-206**: Heavy library imports for admin pages — `AdminPanel.tsx`, `StatusPage.tsx` — Shipped to all visitors.
+- ( ) **PERF-207**: Logo missing loading/decoding attributes — `website/tengra-frontend/src/components/Navbar.tsx:205` — No lazy loading.
+- ( ) **PERF-208**: Unused App.css still imported — `website/tengra-frontend/src/App.css` — Vite boilerplate dead code.
+- ( ) **PERF-209**: Excessive backdrop-blur usage — 11+ places — Forces GPU compositing layers.
+- ( ) **PERF-210**: AnalyticsTracker sync bot detection every route change — `AnalyticsTracker.tsx:155-205` — Should use requestIdleCallback.
+- ( ) **PERF-211**: Footer re-computes token role every render — `website/tengra-frontend/src/App.tsx:43-44` — Not memoized.
+- ( ) **PERF-212**: Large monolithic components not split — Marketplace (46KB), MarketplaceDetail (38KB), AdminPanel (30KB).
+- ( ) **PERF-213**: No compression/build optimization — `website/tengra-frontend/vite.config.ts` — No gzip/brotli.
+- ( ) **PERF-214**: CSS animations running continuously — `website/tengra-frontend/src/index.css:204-258` — No prefers-reduced-motion.
+- ( ) **PERF-215**: next-themes in Vite SPA — `website/tengra-frontend/package.json` — Unnecessary SSR dependency.
+
+---
+
+## 🧹 Code Quality Audit (March 2026)
+
+> Full project code quality audit — 60 issues covering dead code, error handling, oversized files, and convention violations.
+
+### Critical: Console & Lint Suppressions
+
+- (x) **QUALITY-001**: console.error in preload — `src/main/preload/domains/files.preload.ts:69` — Should use appLogger. *(Done: console.error is correct for preload context, not a real issue.)*
+- (x) **QUALITY-002**: console.log in scaffold templates — `src/main/services/project/project-scaffold.service.ts` — 8 instances in template strings. *(Done: console.log is in generated template strings, intentional.)*
+- (x) **QUALITY-003**: eslint-disable full-file in logger — `src/main/logging/logger.ts:1` — Blocks all lint checks.
+- (x) **QUALITY-004**: eslint-disable scattered in renderer logging — `src/renderer/logging.ts:16-44` — 6 separate disables.
+
+### Critical: Silent Error Swallowing
+
+- (x) **QUALITY-005**: Silent audit log failure — `src/main/mcp/server-utils.ts:94-96` — Security audit errors swallowed.
+- (x) **QUALITY-006**: Silent audit log failure (dup) — `src/main/mcp/server-utils.ts:118-120` — Error path also swallowed.
+- (x) **QUALITY-007**: Silent file cleanup — `src/main/services/data/file.service.ts:202` — Partial file not cleaned up.
+- (x) **QUALITY-008**: Silent fs.rm failure — `src/main/services/llm/local-image.service.ts:2014` — Temp dir cleanup silent.
+- (x) **QUALITY-009**: Silent unlink — `src/main/services/llm/local-image.service.ts:2300,2308` — Temp files not cleaned.
+- (x) **QUALITY-010**: Silent telemetry failure — `src/renderer/components/ui/CodeEditor.tsx:422` — Errors invisible.
+- (x) **QUALITY-011**: Silent clipboard failure — `src/renderer/features/chat/components/MultiModelCollaboration.tsx:429` — No user feedback.
+- (x) **QUALITY-012**: Silent settings update — `src/renderer/features/onboarding/OnboardingFlow.tsx:51-52` — May not persist.
+
+### Critical: Oversized Files
+
+- ( ) **QUALITY-013**: TerminalPanel.tsx 2564 lines — `src/renderer/features/terminal/components/TerminalPanel.tsx` — 17x over limit.
+- ( ) **QUALITY-014**: local-image.service.ts 2412 lines — `src/main/services/llm/local-image.service.ts` — Needs splitting.
+- ( ) **QUALITY-015**: llm.service.ts 1447 lines — `src/main/services/llm/llm.service.ts` — God-class, split per provider.
+- ( ) **QUALITY-016**: code-intelligence.service.ts 1238 lines — `src/main/services/project/code-intelligence.service.ts` — Extract scanners.
+- ( ) **QUALITY-017**: copilot.service.ts 1009 lines — `src/main/services/llm/copilot.service.ts` — Multiple responsibilities.
+
+### High: Duplicate Logic
+
+- (x) **QUALITY-018**: delay() duplicated 8 times — Multiple services — Extract to shared utility.
+- (x) **QUALITY-019**: Ollama URL duplicated 5 times — Multiple files — Use shared constant.
+- ( ) **QUALITY-020**: Ollama connectivity check duplicated — `advanced-memory.service.ts`, `agent-provider-rotation.service.ts` — Extract to health service.
+- (x) **QUALITY-021**: Error message extraction pattern — Multiple services — Use getErrorMessage() utility.
+
+### High: eslint-disable Suppressions
+
+- (x) **QUALITY-022**: eslint-disable exhaustive-deps — `src/renderer/components/ui/CodeMirrorEditor.tsx:181` — Stale closure risk.
+- (x) **QUALITY-023**: eslint-disable exhaustive-deps — `src/renderer/utils/accessibility.tsx:436` — Stale handler risk.
+- (x) **QUALITY-024**: eslint-disable exhaustive-deps — `src/renderer/features/chat/hooks/useChatManager.ts:134` — May miss deps.
+- ( ) **QUALITY-025**: eslint-disable max-lines-per-function — `src/renderer/features/terminal/components/TerminalPanel.tsx:1` — Full-file suppression.
+- (x) **QUALITY-026**: eslint-disable no-misused-promises — `src/main/startup/lifecycle.ts:37` — Incomplete shutdown risk.
+- (x) **QUALITY-027**: eslint-disable no-require-imports — `src/main/services/terminal/backends/node-pty.backend.ts:31` — Use dynamic import.
+- (x) **QUALITY-028**: eslint-disable no-non-null-assertion — `src/main/utils/stream-parser.util.ts:150` — Safety bypass.
+
+### High: Magic Numbers & Hardcoded Values
+
+- (x) **QUALITY-029**: Hardcoded circuit breaker config — `src/main/services/llm/llm.service.ts:138-141` — Extract to constants.
+- (x) **QUALITY-030**: Hardcoded LLM parameters — `src/main/services/llm/copilot.service.ts:787-788` — Should be configurable.
+- (x) **QUALITY-031**: Hardcoded default settings URLs — `src/main/services/system/settings.service.ts:12,29,30` — Use shared URL constants.
+- (x) **QUALITY-032**: Market research throttle delays — `src/main/services/external/market-research.service.ts:41+` — Use named constants.
+- (x) **QUALITY-033**: GROQ API URL hardcoded — `src/main/services/llm/llm.service.ts:29` — Should be in config.
+- (x) **QUALITY-034**: GitHub Copilot API URLs hardcoded — `src/main/services/llm/copilot.service.ts:187-272` — Centralize endpoints.
+- (x) **QUALITY-035**: HuggingFace model URL hardcoded — `src/main/services/llm/local-image.service.ts:48` — Should be configurable.
+
+### High: React Hook Issues
+
+- (x) **QUALITY-036**: Missing timer cleanup — `src/renderer/features/chat/components/MonacoBlock.tsx` — Memory leak on unmount.
+- ( ) **QUALITY-037**: Large component state — `src/renderer/features/projects/components/workspace/WorkspaceEditor.tsx` — 18+ useState.
+- ( ) **QUALITY-038**: Tooltip event listener churn — `src/renderer/components/ui/tooltip.tsx:100-113` — addEventListener/removeEventListener cycle.
+- (x) **QUALITY-039**: Missing AbortController — `src/renderer/components/ui/CodeEditor.tsx:110-140` — Stale requests on unmount.
+- (x) **QUALITY-040**: useMemo with Date.now() — `src/renderer/features/chat/components/MultiModelCollaboration.tsx:159` — Empty deps with time value. *(Verified: already uses useRef, not useMemo.)*
+
+### High: Type Safety
+
+- ( ) **QUALITY-042**: Widespread any in test files — `src/tests/main/ipc/*.integration.test.ts` — 100+ instances, use typed mocks.
+- ( ) **QUALITY-061**: Add regression coverage for typed chat preload stream payloads — `src/main/preload/domains/chat.preload.ts` and renderer bridge should stay schema-aligned.
+
+### Medium: Test Coverage Gaps
+
+- ( ) **QUALITY-043**: 0% renderer hook test coverage — `src/renderer/hooks/*.ts` — 10 critical hooks untested.
+- ( ) **QUALITY-044**: ~80% service test gap — `src/main/services/` — 121 services, only ~25 with tests.
+- ( ) **QUALITY-045**: Feature test gap — `src/renderer/features/` — chat, extensions, ideas, mcp, onboarding, voice, workflows untested.
+
+### Medium: Naming Convention Violations
+
+- (x) **QUALITY-046**: Exported constants not SCREAMING_SNAKE_CASE — `src/main/utils/cache.util.ts:70` — modelCache, quotaCache.
+- (x) **QUALITY-047**: Exported constant camelCase — `src/main/utils/ipc-telemetry.util.ts` — ipcMetricsStore.
+- (x) **QUALITY-048**: Exported constant camelCase — `src/main/utils/theme-store.util.ts` — themeStore.
+- (x) **QUALITY-049**: Exported constant camelCase — `src/main/utils/request-queue.util.ts` — globalQueue.
+
+### Medium: Missing JSDoc
+
+- (x) **QUALITY-050**: Missing class-level JSDoc — `src/main/services/llm/llm.service.ts:94` — LLMService undocumented.
+- (x) **QUALITY-051**: Missing class-level JSDoc — `src/main/services/llm/embedding.service.ts:72` — EmbeddingService undocumented.
+- (x) **QUALITY-052**: Missing method JSDoc — `src/main/services/ui/notification.service.ts:4` — showNotification() lacks JSDoc.
+- (x) **QUALITY-053**: Missing method JSDoc — `src/main/services/ui/screenshot.service.ts:14-26` — Public methods undocumented.
+
+### Medium: Stale Architecture
+
+- (x) **QUALITY-054**: Stale constructor comment — `src/main/services/llm/llm.service.ts:131-133` — Leftover refactoring note.
+- ( ) **QUALITY-055**: eslint-disable max-lines-per-function in tests — `src/tests/main/services/project/council-scenarios.test.ts:8` — Should split.
+
+### Low: Website Frontend
+
+- ( ) **QUALITY-056**: Missing response.ok check — `website/tengra-frontend/src/components/AuthModal.tsx:51` — Unchecked response.
+- ( ) **QUALITY-057**: Magic number hash constants — `website/tengra-frontend/src/lib/marketplace-telemetry.ts:54-64` — Undocumented FNV-1a.
+- ( ) **QUALITY-058**: Score multiplier magic numbers — `website/tengra-frontend/src/components/AnalyticsTracker.tsx:80-100` — No named constants.
+- ( ) **QUALITY-059**: Large marketplace component — `website/tengra-frontend/src/components/Marketplace.tsx` — 1000+ lines.
+- ( ) **QUALITY-060**: Hardcoded API paths — `website/tengra-frontend/src/components/Marketplace.tsx:210` — Should use API constants.
+
+---
+
+## 💡 Architecture, Features & Ideas (March 2026)
+
+> Full project audit for missing features, architecture improvements, and new ideas — 110 items.
+
+### Accessibility (a11y)
+
+- ( ) **IDEA-001**: ConfirmationModal missing dialog semantics — No role="dialog", aria-modal, focus trap.
+- ( ) **IDEA-002**: SlashMenu missing menu ARIA roles — No role="menu"/menuitem, no aria-selected.
+- ( ) **IDEA-003**: Icon buttons missing accessible names — Dozens of icon-only buttons lack aria-label.
+- ( ) **IDEA-004**: Skip navigation link not wired — SkipLink exists but not placed in App.tsx.
+- ( ) **IDEA-005**: Color contrast audit needed — text-muted-foreground may fail WCAG AA 4.5:1.
+- ( ) **IDEA-006**: Focus indicator missing on custom components — No visible :focus-visible outlines.
+- ( ) **IDEA-007**: Live region for chat streaming — No aria-live for streaming AI responses.
+- ( ) **IDEA-008**: Keyboard navigation for model cards — Model grid needs roving tabindex.
+
+### I18n Completeness
+
+- ( ) **IDEA-009**: 90+ hardcoded aria-labels — All need t() wrapping.
+- ( ) **IDEA-010**: 50+ hardcoded placeholders — Plain English in form inputs.
+- ( ) **IDEA-011**: Git UI untranslated strings — "Use Ours", "Use Theirs", "Mark Resolved" etc.
+- ( ) **IDEA-012**: Model feature labels untranslated — "Local", "Cloud", "Reasoning", "Free" etc.
+- ( ) **IDEA-013**: RTL CSS support missing — No [dir=rtl] rules, Tailwind ml/mr don't flip.
+- ( ) **IDEA-014**: RTL flexbox layout handling — Sidebar, breadcrumbs need flex-row-reverse for RTL.
+- ( ) **IDEA-015**: Translation memory export tool — No export/reporting UI for translators.
+- ( ) **IDEA-016**: Pluralization rules incomplete — Arabic has 6 plural forms, verify all 8 languages.
+- ( ) **IDEA-017**: Date/number formatting locale-aware — Use Intl.DateTimeFormat/NumberFormat.
+
+### Testing Infrastructure
+
+- ( ) **IDEA-018**: System services untested — command, event-bus, job-scheduler, network, process, update — zero tests.
+- ( ) **IDEA-019**: LLM core services untested — copilot, cost-estimation, inline-suggestion, memory, multi-llm-orchestrator.
+- ( ) **IDEA-020**: Extension service no tests — Entire extension service folder has no coverage.
+- ( ) **IDEA-021**: Project services partially untested — code-intelligence, docker, git, orchestrator, scaffold, terminal-smart.
+- ( ) **IDEA-022**: E2E test coverage expansion — Only 4 specs, need 15+ covering all features.
+- ( ) **IDEA-023**: Performance budget CI checks — 9 perf test files but no regression detection in CI.
+- ( ) **IDEA-024**: Security fuzzing tests — No fuzzing for IPC, input validation, prompt injection.
+- ( ) **IDEA-025**: Contract testing for IPC bridge — No consumer-driven contract tests for IPC.
+- ( ) **IDEA-026**: Visual regression expansion — Single spec, need per-component snapshot comparison.
+- ( ) **IDEA-027**: MCP plugin integration tests — Missing plugin subprocess communication tests.
+- ( ) **IDEA-028**: Database migration tests — Only 1 migration test, each migration needs forward/backward validation.
+- ( ) **IDEA-029**: Load testing for proxy service — No stress tests for LLM traffic proxy.
 
 ### Architecture
 
-- ( ) **DEBT-01**: Migrate to React Server Components
-  - ( ) Evaluate feasibility for Electron
-  - ( ) Identify components for migration
-  - ( ) Performance benchmarking
+- ( ) **IDEA-030**: Circuit breaker not integrated — Defined but rarely used in actual services.
+- ( ) **IDEA-031**: Global uncaught exception handler — No process.on('unhandledRejection').
+- ( ) **IDEA-032**: Renderer global error handler — No window.onerror or onunhandledrejection.
+- ( ) **IDEA-033**: Service dependency graph — No visualization or validation of dependency tree.
+- ( ) **IDEA-034**: Event bus type safety — Event names string-based, needs typed event map.
+- ( ) **IDEA-035**: Shared retry utility inconsistently used — @retryable exists but most services use manual try/catch.
+- ( ) **IDEA-036**: IPC channel inventory — 60+ IPC files, no centralized registry/documentation.
+- ( ) **IDEA-037**: Repository pattern incomplete — Only 2 repositories, all DB access should go through repos.
+- ( ) **IDEA-038**: Service health dashboard — Only checks DB + internet, missing LLM, proxy, MCP, terminal.
+- ( ) **IDEA-039**: Configuration service centralization — Hardcoded values scattered across services.
+- ( ) **IDEA-040**: Graceful shutdown orchestration — Verify dispose() called in reverse dependency order.
 
-## Feature Requests
+### Documentation
 
-### User-Requested Features
+- ( ) **IDEA-041**: IPC API reference auto-generation — 60+ handlers, no auto-generated docs.
+- ( ) **IDEA-042**: Service runbook per domain — Missing per-service runbooks for failover/recovery.
+- ( ) **IDEA-043**: Architecture decision records — Check ADR folder for key decisions (PGlite, MCP, multi-LLM).
+- ( ) **IDEA-044**: Component Storybook — 30+ components lack visual documentation.
+- ( ) **IDEA-045**: Plugin developer guide — No MCP plugin authoring tutorial with examples.
+- ( ) **IDEA-046**: Data model documentation — No ER diagram for PGlite tables/schemas.
+- ( ) **IDEA-047**: Keyboard shortcut reference — shortcutBindings.ts defines shortcuts but no user-facing docs.
+- ( ) **IDEA-048**: Offline capability documentation — No guide on what works offline vs online.
 
-  - ( ) Speech-to-text integration
-  - ( ) Voice commands
-  - ( ) Multi-language support
-  - Progress: Speech-to-text and voice output foundations are implemented (`useSpeechRecognition`/`useVoiceInput`, `useTextToSpeech`, chat input/audio overlay wiring, and localized voice UI strings); explicit voice-command intent layer is still pending.
+### UI/UX
 
-- ( ) **FEAT-02**: Add collaborative editing
-  - ( ) Real-time collaboration
-  - ( ) Presence indicators
-  - ( ) Conflict resolution
+- ( ) **IDEA-049**: Empty state components — No reusable EmptyState, each feature implements its own.
+- ( ) **IDEA-050**: Loading skeleton coverage — Check coverage for projects, settings, SSH, models pages.
+- ( ) **IDEA-051**: Error state component — No standardized inline ErrorState component.
+- ( ) **IDEA-052**: Chat message reactions — No thumbs up/down for AI responses.
+- ( ) **IDEA-053**: Chat message bookmarking — No way to pin important messages.
+- ( ) **IDEA-054**: Chat search within conversation — No Ctrl+F style search in chat.
+- ( ) **IDEA-055**: Undo/redo for settings changes — Accidental changes are permanent.
+- ( ) **IDEA-056**: Toast notification queue — Verify stacking, auto-dismiss, max visible count.
+- ( ) **IDEA-057**: Breadcrumb navigation — No breadcrumb for deep navigation paths.
+- ( ) **IDEA-058**: Progress indicator for long operations — No global progress for downloads, backups, exports.
+- ( ) **IDEA-059**: Command palette enhancement — Add recent commands, fuzzy search, categories.
+- ( ) **IDEA-060**: Notification center filtering — Add type filtering and read/unread status.
 
-  - ( ) Safe code execution
-  - ( ) Multiple language support
-  - ( ) Output visualization 
+### Observability
 
-### New Ideas & Systems
+- ( ) **IDEA-061**: Structured logging format — Verify logs are structured JSON for aggregation.
+- ( ) **IDEA-062**: Request tracing / correlation IDs — No trace ID propagation through service calls.
+- ( ) **IDEA-063**: IPC call metrics — No timing/count metrics for IPC handlers.
+- ( ) **IDEA-064**: LLM token usage dashboard — cost-estimation exists but no UI dashboard.
+- ( ) **IDEA-065**: Error rate monitoring — Verify error rate alerting thresholds configured.
+- ( ) **IDEA-066**: Performance marks for critical paths — Verify marks on app startup, chat send, model switch.
 
-- ( ) **AI-SYS-01**: Build a no-code "Create Your Own AI" Studio (local-first)
-  - ( ) Create guided wizard: Goal -> Data -> Train -> Evaluate -> Deploy
-  - ( ) Allow users to build assistants without writing code
-  - ( ) Include template presets (Support bot, Research bot, Sales bot, Coding bot)
-  - ( ) Add one-click local runtime setup (Ollama/llama.cpp profiles)
-  - ( ) Save and version each user-created AI configuration
+### Resilience
 
-- ( ) **AI-SYS-02**: Add dataset onboarding and preparation pipeline
-  - ( ) Upload files/folders/URLs and auto-ingest into a project dataset
-  - ( ) Auto-cleaning and chunking pipeline with preview
-  - ( ) PII/sensitive-data detection and redaction suggestions
-  - ( ) Dataset quality score (coverage, duplicates, noise)
-  - ( ) Dataset versioning and rollback
+- ( ) **IDEA-067**: LLM provider failover UI indicator — No UI when fallback model is used.
+- ( ) **IDEA-068**: Retry UI feedback — No "Retrying..." indicator for failed requests.
+- ( ) **IDEA-069**: Database connection pool recovery — Verify PGlite reconnection strategy.
+- ( ) **IDEA-070**: Proxy auto-restart — Verify automatic restart with backoff on crash.
+- ( ) **IDEA-071**: MCP plugin crash recovery — Add auto-restart with circuit breaker.
+- ( ) **IDEA-072**: Stale cache invalidation — Verify TTL, max size, eviction strategy.
 
-- ( ) **AI-SYS-03**: Add no-code training/fine-tuning workflows
-  - ( ) Training mode selector (RAG, prompt-tuning, LoRA/fine-tune)
-  - ( ) Hardware-aware profile picker (CPU/GPU/VRAM budget)
-  - ( ) Estimated time/cost/resources before run
-  - ( ) Start/pause/resume/cancel training jobs
-  - ( ) Training artifacts registry and reproducibility metadata
+### Configuration
 
-- ( ) **AI-SYS-04**: Create evaluation and benchmark dashboard for custom AIs
-  - ( ) Golden test set builder for user-defined tasks
-  - ( ) Side-by-side model output comparison
-  - ( ) Metrics: quality, latency, hallucination rate, cost
-  - ( ) Regression alerts when performance drops
-  - ( ) Exportable evaluation reports
+- ( ) **IDEA-073**: console.log in project-scaffold.service — 8 console.log calls, should use appLogger.
+- ( ) **IDEA-074**: @ts-ignore/@eslint-disable cleanup — 14+ files, fix root causes.
+- (x) **IDEA-075**: Temp .js files in i18n — 7 .tmp.js files, should be gitignored or removed.
+- ( ) **IDEA-076**: Configurable context window sizes — Hardcoded, should auto-update from registry.
+- ( ) **IDEA-077**: Configurable rate limits — Hardcoded in rate-limit.service.ts.
 
-- ( ) **AI-SYS-05**: Add AI deployment and packaging flow
-  - ( ) Deploy custom AI as local app profile, API endpoint, or extension helper
-  - ( ) Package/share AI bundles with dependencies and manifest
-  - ( ) Environment checks before deployment (models, storage, permissions)
-  - ( ) Rollback to previous deployed version
-  - ( ) Health monitoring for deployed AIs
+### Plugin System (MCP)
 
-- ( ) **AI-SYS-06**: Build "AI Marketplace for User-Created AIs"
-  - ( ) Publish private/public AI blueprints
-  - ( ) Import community templates with compatibility checks
-  - ( ) Rating/review and usage telemetry opt-in
-  - ( ) Semantic search and category browsing
-  - ( ) Trust/safety badges for verified templates
+- ( ) **IDEA-078**: MCP plugin hot-reloading — Plugins require app restart.
+- ( ) **IDEA-079**: MCP plugin versioning system — No version tracking or dependency resolution.
+- ( ) **IDEA-080**: MCP plugin true sandboxing — Only process-level isolation, consider V8 isolates.
+- ( ) **IDEA-081**: MCP inter-plugin communication — Plugins can't communicate with each other.
+- ( ) **IDEA-082**: MCP plugin action discovery — getActions() returns empty for external plugins.
+- ( ) **IDEA-083**: MCP plugin configuration UI — No per-plugin settings panel.
+- ( ) **IDEA-084**: MCP plugin marketplace ratings — Add user ratings, reviews, download counts.
 
-- ( ) **AI-SYS-07**: Add conversational AI builder assistant
-  - ( ) User describes desired AI in plain language
-  - ( ) Assistant generates full AI config + workflow automatically
-  - ( ) Interactive refinement loop ("make it more strict/faster/cheaper")
-  - ( ) Auto-generate starter evaluation suite and guardrails
-  - ( ) Explainability panel: why each config choice was made
+### AI Features
 
-- ( ) **AI-SYS-08**: Add observability and feedback loop for created AIs
-  - ( ) Session traces for prompts, retrieved context, and responses
-  - ( ) Failure clustering (timeouts, low quality, unsafe responses)
-  - ( ) User feedback capture ("good/bad answer") into retraining queue
-  - ( ) Suggested fixes generated from telemetry
-  - ( ) Continuous improvement cycle per AI version
+- ( ) **IDEA-085**: Prompt template library UI — Service exists but no user-facing browser/editor.
+- ( ) **IDEA-086**: Context window visualization — No UI showing context window usage per conversation.
+- ( ) **IDEA-087**: Multi-modal input support — No drag-and-drop image into chat.
+- ( ) **IDEA-088**: Chat branching / forking — No ability to branch at a specific message.
+- ( ) **IDEA-089**: Prompt optimization suggestions — No automated suggestions to improve prompts.
+- ( ) **IDEA-090**: Model A/B testing UI — Service exists, add side-by-side comparison UI.
+- ( ) **IDEA-091**: Conversation templates — No starter templates (Code Review, Debug Session, etc.).
+- ( ) **IDEA-092**: AI response streaming cancel — Verify clean cancellation with resource cleanup.
 
-- ( ) **AI-SYS-09**: Add safety and governance layer for user-created AIs
-  - ( ) Prompt-injection and jailbreak protection presets
-  - ( ) Content policy filters and blocked-topic controls
-  - ( ) Permission scopes per AI (file/network/tool access)
-  - ( ) Audit log for training/deployment/config changes
-  - ( ) Compliance export for enterprise users
+### Data Management
 
-- ( ) **AI-SYS-10**: Add onboarding flow for non-technical users
-  - ( ) "Build your first AI in 10 minutes" interactive tutorial
-  - ( ) Plain-language explanations for all technical options
-  - ( ) Automatic recommended defaults by goal
-  - ( ) Built-in troubleshooting assistant for failed setup/training
-  - ( ) Success checklist with next-step recommendations
+- ( ) **IDEA-093**: Scheduled automatic backups — Add scheduled auto-backup with configurable frequency.
+- ( ) **IDEA-094**: Chat export to multiple formats — Verify Markdown, PDF, JSON, HTML export.
+- ( ) **IDEA-095**: Data import from other AI tools — No import from ChatGPT, Claude exports.
+- ( ) **IDEA-096**: Database size dashboard — No UI showing DB size, chat count, storage usage.
 
-- ( ) **AI-SYS-11**: Add autonomous "AI Architect" mode
-  - ( ) User describes business/problem in plain language
-  - ( ) System proposes end-to-end AI architecture (data, model, infra, eval)
-  - ( ) Generates phased implementation plan with estimated effort
-  - ( ) Creates one-click starter project scaffold + runbook
-  - ( ) Provides tradeoff matrix (cost/latency/quality/privacy)
+### Collaboration
 
-- ( ) **AI-SYS-12**: Build local "AI Red Team" simulator
-  - ( ) Run jailbreak/prompt-injection/adversarial tests on created AIs
-  - ( ) Generate exploit report with reproducible attack traces
-  - ( ) Auto-suggest guardrail patches and policy updates
-  - ( ) Track security score per AI version
-  - ( ) Integrate pass/fail gate before deployment
+- ( ) **IDEA-097**: Shared prompt library — Add team-shared prompt templates via sync.
+- ( ) **IDEA-098**: Chat export link sharing — No shareable link generation for conversations.
 
-- ( ) **AI-SYS-13**: Add continuous AI retraining autopilot
-  - ( ) Collect low-rated conversations into retraining candidates
-  - ( ) Periodic retrain jobs with canary evaluation
-  - ( ) Automatic rollback if quality/security regress
-  - ( ) Human approval checkpoints for high-impact updates
-  - ( ) Drift monitoring and proactive retrain recommendations
+### Responsive / Offline
+
+- ( ) **IDEA-099**: Offline mode indicator — Add persistent offline banner in UI.
+- ( ) **IDEA-100**: Offline prompt queue — Queue prompts when offline, send on reconnect.
+
+### Website
+
+- ( ) **IDEA-101**: Website SEO infrastructure — No sitemap.xml, robots.txt, meta tags, structured data.
+- ( ) **IDEA-102**: Blog/documentation CMS — No blog routes, no markdown processor.
+- ( ) **IDEA-103**: Pricing page — No /pricing route for monetization.
+- ( ) **IDEA-104**: Changelog public page — Changelog data exists but not on website.
+- ( ) **IDEA-105**: Contact/support page — No /contact or /support routes.
+
+### Code Quality
+
+- ( ) **IDEA-106**: Remove stale TODO/FIXME comments — 20+ across codebase.
+- ( ) **IDEA-107**: Cross-import violations — Verify no new violations via find_cross_imports.js.
+- ( ) **IDEA-108**: Consistent error types — Create shared error hierarchy across service domains.
+- ( ) **IDEA-109**: Store health pattern duplication — 15+ health stores, extract createHealthStore() factory.
+- ( ) **IDEA-110**: Missing JSDoc on public APIs — Many exported service methods lack JSDoc.
+
+### Component Promotion
+- ( ) **UI-P-01**: Promote `ProjectWizardModal` sub-steps to shared components if reusable.
+- (x) **UI-P-02**: Standardize `ActionControls` pattern across all feature editors.
 
 ---
 
-## Extended AI Systems (New Ideas Added 2026-02-17)
+## ⚙️ Service Backlog (BACKLOG-0400+)
 
-### Voice & Speech AI
+- [x] **BACKLOG-0401**: Add comprehensive unit tests for `RateLimitService`.
+- [x] **BACKLOG-0411**: Add comprehensive unit tests for `ProxyService`.
+- [x] **BACKLOG-0421**: Add comprehensive unit tests for `QuotaService`.
+- [x] **BACKLOG-0431**: Add comprehensive unit tests for `WorkflowService`.
+- [x] **BACKLOG-0441**: Add comprehensive unit tests for `FeatureFlagService`.
+- [x] **BACKLOG-0451**: Add comprehensive unit tests for `MonitoringService`.
+- [x] **BACKLOG-0461**: Add comprehensive unit tests for `TelemetryService`.
+- [x] **BACKLOG-0471**: Add comprehensive unit tests for `ThemeService`.
+- [x] **BACKLOG-0481**: Add comprehensive unit tests for `DataService`.
+- [x] **BACKLOG-0491**: Add comprehensive unit tests for `DatabaseService`.
 
-  - ( ) Implement local wake-word model (Porcupine/precise)
-  - ( ) Background listening when app minimized
-  - ( ) Custom wake-word training option
-  - ( ) Add voice command quick actions
-  - ( ) Implement voice activity detection
-  - ( ) Add continuous voice mode for extended conversation
-  - ( ) Create voice settings calibration UI
-  - ( ) Add multi-language wake-word support
+---
 
-  - ( ) Low-latency voice input processing
-  - ( ) Real-time voice synthesis with voice cloning
-  - ( ) Conversation turn-taking detection
-  - ( ) Add interrupt handling during speech
-  - ( ) Implement voice emotion detection
-  - ( ) Add custom voice profile selection
-  - ( ) Create voice quality settings
-  - ( ) Add ambient noise cancellation
+## 🛠️ Technical Debt & Feature Requests
 
-  - ( ) Automatic transcription of voice memos
-  - ( ) Key point extraction from recordings
-  - ( ) Meeting notes AI assistant
-  - ( ) Add speaker diarization
-  - ( ) Implement timestamped highlights
-  - ( ) Create voice memo search
-  - ( ) Add automatic follow-up task creation
+### Technical Debt
+- ( ) **DEBT-01**: Migrate to React Server Components (Feasibility Study).
+- [x] **DEBT-02**: Refactor `useAgentHandlers.ts` to reduce hook complexity.
+- [x] **DEBT-03**: Implement centralized error handling for all IPC channels.
+- [x] **DEBT-04**: Audit and remove all forbidden `console.log` usages in `src/renderer`.
+- [x] **DEBT-05**: Standardize `dispose()` pattern and ensure cleanup in all core services.
+- [x] **DEBT-06**: Resolve remaining `TODO`/`FIXME` critical stubs in `src/main/services/project/agent/`.
 
-### Advanced Agent Capabilities
+### Long-term Feature Requests
+- ( ) **FEAT-02**: Collaborative editing (Real-time presence/CRDT).
+- (/) **FEAT-03**: Integrated Code Sandbox (Safe execution/visualization). 
+- [x] **FEAT-05**: User behavior learning (Personalized defaults/responses).
 
-  - Advanced agent capability backlog items completed and removed.
-
-### Development Tools AI
-
-
-### Cloud & Infrastructure
-
-
-### Collaboration Features
-
-
-- ( ) **COLLAB-02**: Implement team knowledge base
-  - ( ) AI-powered documentation search
-  - ( ) Auto-generated summaries
-  - ( ) Knowledge graph creation
-  - ( ) Add Q&A from documentation
-  - ( ) Implement team learning system
-  - ( ) Create knowledge suggestions
-  - ( ) Add content recommendations
-  - ( ) Version-controlled wiki
-
-### UI/UX Enhancements
-
-
-### Data & Analytics
-
-- ( ) **DATA-01**: Add AI-powered analytics dashboard
-  - ( ) Usage pattern learning
-  - ( ) Predictive resource allocation
-  - ( ) Anomaly detection
-  - ( ) Add trend visualization
-  - ( ) Implement forecasting
-  - ( ) Create custom metrics
-  - ( ) Add alert automation
-  - ( ) Export capabilities
-
-- ( ) **DATA-02**: Implement user behavior learning
-  - ( ) Learn from repeated actions
-  - ( ) Predict next actions
-  - ( ) Personalize AI responses
-  - ( ) Add preference inference
-  - ( ) Implement adaptive UI
-  - ( ) Create smart defaults
-  - ( ) Add learning transparency
-  - ( ) Privacy controls
-
-### Local AI Enhancements
-
-- ( ) **LOCAL-01**: Add model fine-tuning interface
-  - ( ) Upload training data
-  - ( ) Configure training parameters
-  - ( ) Progress monitoring
-  - ( ) Add model evaluation
-  - ( ) Implement model versioning
-  - ( ) Create fine-tuned model registry
-  - ( ) Add inference testing
-  - ( ) Export fine-tuned models
-
-- ( ) **LOCAL-02**: Implement custom embedding training
-  - ( ) Domain-specific embeddings
-  - ( ) Training data selection
-  - ( ) Similarity search optimization
-  - ( ) Add embedding comparison
-  - ( ) Implement dimension reduction
-  - ( ) Create embedding visualization
-  - ( ) Add batch processing
-  - ( ) Performance benchmarking
-
-## Massive Backlog Expansion (500 Realistic TODOs)
-
-Generated from current repository modules (`src/main`, `src/renderer`, `src/shared`) to capture realistic ideas for new systems, potential bugs, and missing implementations.
-
-### Backlog Range: BACKLOG-0001 to BACKLOG-0050
-
-
-### Backlog Range: BACKLOG-0051 to BACKLOG-0100
-
-
-### Backlog Range: BACKLOG-0151 to BACKLOG-0200
-
-
-### Backlog Range: BACKLOG-0201 to BACKLOG-0250
-
-
-### Backlog Range: BACKLOG-0251 to BACKLOG-0300
-
-
-### Backlog Range: BACKLOG-0301 to BACKLOG-0350
-- ( ) **BACKLOG-0335**: Add telemetry events and health dashboards for AgentCollaborationService.
-- ( ) **BACKLOG-0336**: Profile performance and define regression budgets for AgentCollaborationService.
-- ( ) **BACKLOG-0337**: Improve loading, empty, and failure-state UX tied to AgentCollaborationService.
-- ( ) **BACKLOG-0339**: Write an operational runbook and troubleshooting guide for AgentCollaborationService.
-- (x) **BACKLOG-0340**: Complete threat-model and abuse-case review for AgentCollaborationService.
-- ( ) **BACKLOG-0345**: Add telemetry events and health dashboards for AgentCheckpointService.
-- ( ) **BACKLOG-0346**: Profile performance and define regression budgets for AgentCheckpointService.
-- ( ) **BACKLOG-0347**: Improve loading, empty, and failure-state UX tied to AgentCheckpointService.
-- ( ) **BACKLOG-0349**: Write an operational runbook and troubleshooting guide for AgentCheckpointService.
-- (x) **BACKLOG-0350**: Complete threat-model and abuse-case review for AgentCheckpointService.
-
-
-### Backlog Range: BACKLOG-0351 to BACKLOG-0400
-
-
-### Backlog Range: BACKLOG-0401 to BACKLOG-0450
-- ( ) **BACKLOG-0401**: Add comprehensive unit tests for edge cases in RateLimitService.
-- ( ) **BACKLOG-0402**: Add integration and regression coverage for critical flows in RateLimitService.
-- ( ) **BACKLOG-0403**: Harden input validation and schema guards in RateLimitService.
-- ( ) **BACKLOG-0404**: Standardize error codes, retry policy, and fallback behavior in RateLimitService.
-- ( ) **BACKLOG-0405**: Add telemetry events and health dashboards for RateLimitService.
-- ( ) **BACKLOG-0406**: Profile performance and define regression budgets for RateLimitService.
-- ( ) **BACKLOG-0407**: Improve loading, empty, and failure-state UX tied to RateLimitService.
-- ( ) **BACKLOG-0408**: Add full i18n key coverage for user-facing strings surfaced by RateLimitService.
-- ( ) **BACKLOG-0409**: Write an operational runbook and troubleshooting guide for RateLimitService.
-- (x) **BACKLOG-0410**: Complete threat-model and abuse-case review for RateLimitService.
-- ( ) **BACKLOG-0411**: Add comprehensive unit tests for edge cases in ProxyService.
-- ( ) **BACKLOG-0412**: Add integration and regression coverage for critical flows in ProxyService.
-- ( ) **BACKLOG-0413**: Harden input validation and schema guards in ProxyService.
-- ( ) **BACKLOG-0414**: Standardize error codes, retry policy, and fallback behavior in ProxyService.
-- ( ) **BACKLOG-0415**: Add telemetry events and health dashboards for ProxyService.
-- ( ) **BACKLOG-0416**: Profile performance and define regression budgets for ProxyService.
-- ( ) **BACKLOG-0417**: Improve loading, empty, and failure-state UX tied to ProxyService.
-- ( ) **BACKLOG-0418**: Add full i18n key coverage for user-facing strings surfaced by ProxyService.
-- ( ) **BACKLOG-0419**: Write an operational runbook and troubleshooting guide for ProxyService.
-- (x) **BACKLOG-0420**: Complete threat-model and abuse-case review for ProxyService.
-- ( ) **BACKLOG-0421**: Add comprehensive unit tests for edge cases in QuotaService.
-- ( ) **BACKLOG-0422**: Add integration and regression coverage for critical flows in QuotaService.
-- ( ) **BACKLOG-0423**: Harden input validation and schema guards in QuotaService.
-- ( ) **BACKLOG-0424**: Standardize error codes, retry policy, and fallback behavior in QuotaService.
-- ( ) **BACKLOG-0425**: Add telemetry events and health dashboards for QuotaService.
-- ( ) **BACKLOG-0426**: Profile performance and define regression budgets for QuotaService.
-- ( ) **BACKLOG-0427**: Improve loading, empty, and failure-state UX tied to QuotaService.
-- ( ) **BACKLOG-0428**: Add full i18n key coverage for user-facing strings surfaced by QuotaService.
-- ( ) **BACKLOG-0429**: Write an operational runbook and troubleshooting guide for QuotaService.
-- (x) **BACKLOG-0430**: Complete threat-model and abuse-case review for QuotaService.
-- ( ) **BACKLOG-0431**: Add comprehensive unit tests for edge cases in WorkflowService.
-- ( ) **BACKLOG-0432**: Add integration and regression coverage for critical flows in WorkflowService.
-- ( ) **BACKLOG-0433**: Harden input validation and schema guards in WorkflowService.
-- ( ) **BACKLOG-0434**: Standardize error codes, retry policy, and fallback behavior in WorkflowService.
-- ( ) **BACKLOG-0435**: Add telemetry events and health dashboards for WorkflowService.
-- ( ) **BACKLOG-0436**: Profile performance and define regression budgets for WorkflowService.
-- ( ) **BACKLOG-0437**: Improve loading, empty, and failure-state UX tied to WorkflowService.
-- ( ) **BACKLOG-0438**: Add full i18n key coverage for user-facing strings surfaced by WorkflowService.
-- ( ) **BACKLOG-0439**: Write an operational runbook and troubleshooting guide for WorkflowService.
-- (x) **BACKLOG-0440**: Complete threat-model and abuse-case review for WorkflowService.
-- ( ) **BACKLOG-0441**: Add comprehensive unit tests for edge cases in FeatureFlagService.
-- ( ) **BACKLOG-0442**: Add integration and regression coverage for critical flows in FeatureFlagService.
-- ( ) **BACKLOG-0443**: Harden input validation and schema guards in FeatureFlagService.
-- ( ) **BACKLOG-0444**: Standardize error codes, retry policy, and fallback behavior in FeatureFlagService.
-- ( ) **BACKLOG-0445**: Add telemetry events and health dashboards for FeatureFlagService.
-- ( ) **BACKLOG-0446**: Profile performance and define regression budgets for FeatureFlagService.
-- ( ) **BACKLOG-0447**: Improve loading, empty, and failure-state UX tied to FeatureFlagService.
-- ( ) **BACKLOG-0448**: Add full i18n key coverage for user-facing strings surfaced by FeatureFlagService.
-- ( ) **BACKLOG-0449**: Write an operational runbook and troubleshooting guide for FeatureFlagService.
-- (x) **BACKLOG-0450**: Complete threat-model and abuse-case review for FeatureFlagService.
-
-
-### Backlog Range: BACKLOG-0451 to BACKLOG-0500
-- ( ) **BACKLOG-0451**: Add comprehensive unit tests for edge cases in MonitoringService.
-- ( ) **BACKLOG-0452**: Add integration and regression coverage for critical flows in MonitoringService.
-- ( ) **BACKLOG-0453**: Harden input validation and schema guards in MonitoringService.
-- ( ) **BACKLOG-0454**: Standardize error codes, retry policy, and fallback behavior in MonitoringService.
-- ( ) **BACKLOG-0455**: Add telemetry events and health dashboards for MonitoringService.
-- ( ) **BACKLOG-0456**: Profile performance and define regression budgets for MonitoringService.
-- ( ) **BACKLOG-0457**: Improve loading, empty, and failure-state UX tied to MonitoringService.
-- ( ) **BACKLOG-0458**: Add full i18n key coverage for user-facing strings surfaced by MonitoringService.
-- ( ) **BACKLOG-0459**: Write an operational runbook and troubleshooting guide for MonitoringService.
-- (x) **BACKLOG-0460**: Complete threat-model and abuse-case review for MonitoringService.
-- ( ) **BACKLOG-0461**: Add comprehensive unit tests for edge cases in TelemetryService.
-- ( ) **BACKLOG-0462**: Add integration and regression coverage for critical flows in TelemetryService.
-- ( ) **BACKLOG-0463**: Harden input validation and schema guards in TelemetryService.
-- ( ) **BACKLOG-0464**: Standardize error codes, retry policy, and fallback behavior in TelemetryService.
-- ( ) **BACKLOG-0465**: Add telemetry events and health dashboards for TelemetryService.
-- ( ) **BACKLOG-0466**: Profile performance and define regression budgets for TelemetryService.
-- ( ) **BACKLOG-0467**: Improve loading, empty, and failure-state UX tied to TelemetryService.
-- ( ) **BACKLOG-0468**: Add full i18n key coverage for user-facing strings surfaced by TelemetryService.
-- ( ) **BACKLOG-0469**: Write an operational runbook and troubleshooting guide for TelemetryService.
-- (x) **BACKLOG-0470**: Complete threat-model and abuse-case review for TelemetryService.
-- ( ) **BACKLOG-0471**: Add comprehensive unit tests for edge cases in ThemeService.
-- ( ) **BACKLOG-0472**: Add integration and regression coverage for critical flows in ThemeService.
-- ( ) **BACKLOG-0473**: Harden input validation and schema guards in ThemeService.
-- ( ) **BACKLOG-0474**: Standardize error codes, retry policy, and fallback behavior in ThemeService.
-- ( ) **BACKLOG-0475**: Add telemetry events and health dashboards for ThemeService.
-- ( ) **BACKLOG-0476**: Profile performance and define regression budgets for ThemeService.
-- ( ) **BACKLOG-0477**: Improve loading, empty, and failure-state UX tied to ThemeService.
-- ( ) **BACKLOG-0478**: Add full i18n key coverage for user-facing strings surfaced by ThemeService.
-- ( ) **BACKLOG-0479**: Write an operational runbook and troubleshooting guide for ThemeService.
-- (x) **BACKLOG-0480**: Complete threat-model and abuse-case review for ThemeService.
-- ( ) **BACKLOG-0481**: Add comprehensive unit tests for edge cases in DataService.
-- ( ) **BACKLOG-0482**: Add integration and regression coverage for critical flows in DataService.
-- ( ) **BACKLOG-0483**: Harden input validation and schema guards in DataService.
-- ( ) **BACKLOG-0484**: Standardize error codes, retry policy, and fallback behavior in DataService.
-- ( ) **BACKLOG-0485**: Add telemetry events and health dashboards for DataService.
-- ( ) **BACKLOG-0486**: Profile performance and define regression budgets for DataService.
-- ( ) **BACKLOG-0487**: Improve loading, empty, and failure-state UX tied to DataService.
-- ( ) **BACKLOG-0488**: Add full i18n key coverage for user-facing strings surfaced by DataService.
-- ( ) **BACKLOG-0489**: Write an operational runbook and troubleshooting guide for DataService.
-- (x) **BACKLOG-0490**: Complete threat-model and abuse-case review for DataService.
-- ( ) **BACKLOG-0491**: Add comprehensive unit tests for edge cases in DatabaseService.
-- ( ) **BACKLOG-0492**: Add integration and regression coverage for critical flows in DatabaseService.
-- ( ) **BACKLOG-0493**: Harden input validation and schema guards in DatabaseService.
-- ( ) **BACKLOG-0494**: Standardize error codes, retry policy, and fallback behavior in DatabaseService.
-- ( ) **BACKLOG-0495**: Add telemetry events and health dashboards for DatabaseService.
-- ( ) **BACKLOG-0496**: Profile performance and define regression budgets for DatabaseService.
-- ( ) **BACKLOG-0497**: Improve loading, empty, and failure-state UX tied to DatabaseService.
-- ( ) **BACKLOG-0498**: Add full i18n key coverage for user-facing strings surfaced by DatabaseService.
-- ( ) **BACKLOG-0499**: Write an operational runbook and troubleshooting guide for DatabaseService.
-- (x) **BACKLOG-0500**: Complete threat-model and abuse-case review for DatabaseService.
-
-### Website Backend Security Hardening (Execution Order)
-- (x) **WEBSEC-P0-001**: Replace legacy password hashing with PBKDF2/Argon2-compatible secure format and legacy-hash migration on login.
-- (x) **WEBSEC-P0-002**: Replace custom auth token with standards-based JWT (exp/iat/nbf/iss/aud) and refresh token rotation.
-- (x) **WEBSEC-P0-003**: Move auth rate-limits and admin abuse-protection from in-memory to Redis-backed distributed throttling.
-- (x) **WEBSEC-P0-004**: Enforce production HTTPS end-to-end (proxy trust, forwarded proto validation, strict redirect policy, secure cookies).
-- (x) **WEBSEC-P0-005**: Add backend integration tests for auth/admin/analytics security-critical paths (authorization bypass, malformed payloads, replay).
-- (x) **WEBSEC-P1-001**: Add centralized request schema validation and standardized error code model for all website backend endpoints.
-- (x) **WEBSEC-P1-002**: Add audit trail for admin actions and security events with trace id propagation.
-- (x) **WEBSEC-P1-003**: Add Redis queue + batch ingestion for analytics events with retry/dead-letter handling.
-- (x) **WEBSEC-P1-004**: Add bot/AI traffic confidence scoring (UA + behavior + ASN/reverse DNS) with risk labels.
-- (x) **WEBSEC-P2-001**: Add Linux CI parity pipeline (build + lint + smoke test) and release artifact checks.
-- (x) **WEBSEC-P2-002**: Add retention/deletion policy tooling for analytics data (privacy controls and compliance workflows).
-
-### Security Audit Findings (2026-02-27)
-- [x] **AUD-2026-02-27-01**: Remove access-token exposure from auth IPC response (`auth:poll-token` returns raw token).
-  - [x] Return account metadata only; never return `access_token` to renderer.
-  - [x] Add regression test to assert token is not present in IPC payload.
-  - [x] Verify Copilot/GitHub link flow still works after response contract change.
-- [x] **AUD-2026-02-27-02**: Harden local API token handling in `ApiServerService`.
-  - [x] Remove query-string token fallback (`?token=`) to prevent token leakage in logs/history.
-  - [x] Deprecate or gate `/api/auth/token` behind explicit one-time consent/nonce handshake.
-  - [x] Add tests covering denied query token and local-only endpoint abuse attempts.
-- [x] **AUD-2026-02-27-03**: Restrict `shell:runCommand` IPC surface with allowlist + policy layer.
-  - [x] Enforce executable allowlist and per-command argument schema.
-  - [x] Add blocked-command audit logs and rate limiting for execution attempts.
-  - [x] Add security tests for path traversal and arbitrary executable invocation.
-
-
+---
+"Code like it's a satellite. You can't reach out and fix it once it's launched."

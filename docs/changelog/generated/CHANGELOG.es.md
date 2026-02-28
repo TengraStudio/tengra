@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### Optimizaciones de rendimiento del renderer (PERF-006 a PERF-022)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Aplicación de React.memo, useMemo y carga diferida en múltiples componentes del renderer para reducir re-renderizados innecesarios y mejorar la capacidad de respuesta de la interfaz.
+
+- **SlashMenu**: Envuelto en React.memo con useMemo para comandos filtrados.
+- **MessageActions**: Todos los subcomponentes exportados envueltos en React.memo.
+- **ToolDisplay**: Envuelto en React.memo para evitar re-renderizados provocados por el componente padre.
+- **TerminalView**: Envuelto en React.memo con cálculo de vista previa memorizado.
+- **DockerDashboard ContainerItem**: Envuelto en React.memo.
+- **VoiceOverlay**: Cambiado de importación eager a React.lazy() en App.tsx.
+- **PanelLayout**: Objetos de estilo inline memorizados en Sidebar y BottomPanelView.
+- **QuickActionBar**: Objeto de estilo de posición memorizado.
+- **useAppInitialization**: Añadida limpieza de window.TengraSpeak al desmontar.
+- **AUDIT-REPO-001**: Eliminados 8 archivos .tmp.js obsoletos de i18n, añadidos *.tmp.js/*.tmp.ts al .gitignore.
+
 ### Seguridad de tipos estricta: resolución de conversiones de tipos desconocidos y de cualquier tipo
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **Seguridad del tipo de renderizador**: se agregaron justificaciones `// SAFETY:` obligatorias y límites de tipo estrictos para todas las instancias de conversión `unknown` restantes en el renderizador, incluidas `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` y `voice.store`.
 - **Seguridad del proceso principal**: Verificado que el directorio `src/main` no contiene errores de tipo ni violaciones inseguras de ESLint `any`/`unknown`.
 - **Calidad del código**: Fuerza de diez de la NASA aplicada y controles estrictos de compilación TypeScript, lo que permite que la aplicación pase con éxito `npm run type-check` y `npm run build` sin advertencias ni discrepancias de tipos.
+
+### FEAT-05: Aprendizaje del comportamiento del usuario
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implementación de un sistema local de aprendizaje del comportamiento.
+
+- UserBehaviorService: Nuevo servicio para rastrear interacciones locales.
+- IPC validado: Manejadores IPC validados con Zod.
+- Paridad de esquemas: Esquemas Zod compartidos.
+- Limpieza de recursos: Eliminación de escuchas de eventos.
+- Estabilidad: Resolución de conflictos de tipos.
 
 ## [2026-02-27]
 

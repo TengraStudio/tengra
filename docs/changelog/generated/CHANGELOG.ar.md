@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### تحسينات أداء العارض (PERF-006 إلى PERF-022)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: تم تطبيق React.memo وuseMemo والتحميل البطيء عبر مكونات العارض المتعددة لتقليل عمليات إعادة العرض غير الضرورية وتحسين استجابة واجهة المستخدم.
+
+- **SlashMenu**: تم تغليفه بـ React.memo مع useMemo للأوامر المفلترة.
+- **MessageActions**: تم تغليف جميع المكونات الفرعية المُصدَّرة بـ React.memo.
+- **ToolDisplay**: تم تغليفه بـ React.memo لمنع إعادة العرض الناتجة عن المكون الأب.
+- **TerminalView**: تم تغليفه بـ React.memo مع حفظ حساب المعاينة في الذاكرة.
+- **DockerDashboard ContainerItem**: تم تغليفه بـ React.memo.
+- **VoiceOverlay**: تم التحويل من الاستيراد الفوري إلى React.lazy() في App.tsx.
+- **PanelLayout**: تم حفظ كائنات الأنماط المضمنة في Sidebar وBottomPanelView في الذاكرة.
+- **QuickActionBar**: تم حفظ كائن نمط الموضع في الذاكرة.
+- **useAppInitialization**: تمت إضافة تنظيف window.TengraSpeak عند إلغاء التثبيت.
+- **AUDIT-REPO-001**: تم حذف 8 ملفات .tmp.js قديمة من i18n، وإضافة *.tmp.js/*.tmp.ts إلى .gitignore.
+
 ### السلامة الصارمة للنوع: حل أي قوالب من النوع غير المعروف
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **أمان نوع العارض**: تمت إضافة مبررات `// SAFETY:` الإلزامية وحدود النوع الصارمة لجميع مثيلات `unknown` المتبقية في العارض، بما في ذلك `useAgentHandlers`، `SessionSetup`، `useVoice`، `TerminalConnectionSelector`، `ipc-client`، و __رمز الرمز_7__.
 - **سلامة العملية الرئيسية**: تم التحقق من أن الدليل `src/main` لا يحتوي على أخطاء في النوع ولا يحتوي على أي انتهاكات غير آمنة `any`/`unknown` ESLint.
 - **جودة الكود**: فحوصات تجميع TypeScript الصارمة التي فرضتها NASA Power of Ten، مما يسمح للتطبيق باجتياز `npm run type-check` و`npm run build` بنجاح دون أي تحذيرات أو عدم تطابق في الكتابة.
+
+### FEAT-05: تعلم سلوك المستخدم
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: تنفيذ نظام محلي لتتبع تفاعلات المستخدم وتوفير تجربة مخصصة.
+
+- UserBehaviorService: خدمة تتبع التفاعلات.
+- IPC المصدق: معالجات مصدقة بـ Zod.
+- توافق المخطط: مخططات مشتركة.
+- إدارة الموارد: تنظيف المستمعين.
+- الاستقرار: حل تعارض الأنواع.
 
 ## [2026-02-27]
 

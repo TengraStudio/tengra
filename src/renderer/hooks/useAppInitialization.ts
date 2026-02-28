@@ -16,6 +16,9 @@ export function useAppInitialization() {
 
     useEffect(() => {
         window.TengraSpeak = handleSpeak;
+        return () => {
+            delete (window as Partial<typeof window>).TengraSpeak;
+        };
     }, [handleSpeak]);
 
     useEffect(() => {

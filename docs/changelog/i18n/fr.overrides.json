@@ -1,4 +1,20 @@
 {
+  "2026-02-28-renderer-performance-batch": {
+    "title": "Optimisations de performance du renderer (PERF-006 à PERF-022)",
+    "summary": "Application de React.memo, useMemo et du chargement différé sur plusieurs composants du renderer pour réduire les re-rendus inutiles et améliorer la réactivité de l'interface.",
+    "items": [
+      "- **SlashMenu**: Enveloppé dans React.memo avec useMemo pour les commandes filtrées.",
+      "- **MessageActions**: Tous les sous-composants exportés enveloppés dans React.memo.",
+      "- **ToolDisplay**: Enveloppé dans React.memo pour éviter les re-rendus déclenchés par le parent.",
+      "- **TerminalView**: Enveloppé dans React.memo avec calcul d'aperçu mémoïsé.",
+      "- **DockerDashboard ContainerItem**: Enveloppé dans React.memo.",
+      "- **VoiceOverlay**: Passage d'un import eager à React.lazy() dans App.tsx.",
+      "- **PanelLayout**: Objets de style inline mémoïsés dans Sidebar et BottomPanelView.",
+      "- **QuickActionBar**: Objet de style de position mémoïsé.",
+      "- **useAppInitialization**: Ajout du nettoyage de window.TengraSpeak lors du démontage.",
+      "- **AUDIT-REPO-001**: Suppression de 8 fichiers .tmp.js obsolètes de i18n, ajout de *.tmp.js/*.tmp.ts au .gitignore."
+    ]
+  },
   "2026-02-27-preload-modularization-refinement": {
     "title": "Affinage de la modularisation du préchargement et révision de la sécurité des types",
     "summary": "Modularisation des scripts de préchargement Electron terminée, résolution des incohérences de types critiques dans les ponts d'agents et suppression des types 'any' interdits.",
@@ -3961,6 +3977,38 @@
       "- **Sécurité du type de moteur de rendu**: ajout de justifications obligatoires `// SAFETY:` et de limites de type strictes pour toutes les instances de diffusion `unknown` restantes dans le moteur de rendu, y compris `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` et `voice.store`.",
       "- **Sécurité du processus principal**: vérification que le répertoire `src/main` ne contient aucune erreur de type et aucune violation ESLint dangereuse `any`/`unknown`.",
       "- **Qualité du code**: application de la puissance dix de la NASA et contrôles stricts de la compilation TypeScript, permettant à l'application de passer avec succès `npm run type-check` et `npm run build` sans aucun avertissement ni incompatibilité de type."
+    ]
+  },
+  "2026-02-28-audit-tooling-repo-wide-lint-operational": {
+    "title": "AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking",
+    "summary": "Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.",
+    "items": [
+      "- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.",
+      "- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.",
+      "- **Component Clean-up**: Eliminated unused local variables and imports.",
+      "- **Build Integrity**: Verified zero lingering type mismatches."
+    ]
+  },
+  "2026-02-28-project-hygiene-component-promotion": {
+    "title": "Project Hygiene: Root Cleanup and Component Promotion",
+    "summary": "Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.",
+    "items": [
+      "- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.",
+      "- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.",
+      "- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.",
+      "- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.",
+      "- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion."
+    ]
+  },
+  "2026-02-28-user-behavior-learning-system": {
+    "title": "FEAT-05 : Apprentissage du comportement utilisateur",
+    "summary": "Mise en œuvre d'un système d'apprentissage du comportement utilisateur local.",
+    "items": [
+      "- UserBehaviorService : Nouveau service pour suivre les interactions locales.",
+      "- IPC validé : Gestionnaires IPC validés par Zod.",
+      "- Parité de schéma : Schémas Zod partagés.",
+      "- Cycle de vie : Gestion correcte des écouteurs d'événements.",
+      "- Stabilität : Résolution des erreurs de type."
     ]
   }
 }

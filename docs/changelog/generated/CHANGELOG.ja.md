@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### レンダラー パフォーマンス最適化（PERF-006 〜 PERF-022）
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: 複数のレンダラーコンポーネントに React.memo、useMemo、遅延ロードを適用し、不要な再レンダリングを削減して UI の応答性を向上させました。
+
+- **SlashMenu**: フィルターされたコマンド用の useMemo と共に React.memo でラップしました。
+- **MessageActions**: エクスポートされたすべてのサブコンポーネントを React.memo でラップしました。
+- **ToolDisplay**: 親コンポーネントによる不要な再レンダリングを防ぐため React.memo でラップしました。
+- **TerminalView**: プレビュー計算をメモ化し、React.memo でラップしました。
+- **DockerDashboard ContainerItem**: React.memo でラップしました。
+- **VoiceOverlay**: App.tsx で即時インポートから React.lazy() に変更しました。
+- **PanelLayout**: Sidebar と BottomPanelView のインラインスタイルオブジェクトをメモ化しました。
+- **QuickActionBar**: 位置スタイルオブジェクトをメモ化しました。
+- **useAppInitialization**: アンマウント時の window.TengraSpeak クリーンアップを追加しました。
+- **AUDIT-REPO-001**: i18n から古い .tmp.js ファイルを 8 件削除し、*.tmp.js/*.tmp.ts を .gitignore に追加しました。
+
 ### 厳密な型安全性: あらゆる未知の型キャストの解決
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **レンダラーのタイプ セーフティ**: `useAgentHandlers`、`SessionSetup`、`useVoice`、`TerminalConnectionSelector`、`ipc-client`、`voice.store` など、レンダラー内の残りのすべての `unknown` キャスト インスタンスに必須の `// SAFETY:` 位置揃えと厳密な型境界が追加されました。
 - **メイン プロセスの安全性**: `src/main` ディレクトリにタイプ エラーと安全でない `any`/`unknown` ESLint 違反が含まれていないことを確認しました。
 - **コード品質**: NASA の 10 乗および厳密な TypeScript コンパイル チェックを強制し、アプリケーションが警告や型の不一致なしに `npm run type-check` および `npm run build` を正常に通過できるようにします。
+
+### FEAT-05: ユーザー行動学習システム
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: アプリケーションの操作を追跡し、パーソナライズされた設定を提供するシステムを実装。
+
+- UserBehaviorService: 行動追跡の新サービス。
+- 検証済みIPC: Zodによる厳格な検証。
+- スキーマ共通化: メインとレンダラー間の型安全。
+- ライフサイクル: イベントリスナーの適切なクリーンアップ。
+- 安定性: 型不一致の解消。
 
 ## [2026-02-27]
 

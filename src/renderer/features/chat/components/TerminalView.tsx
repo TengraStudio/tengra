@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -281,14 +281,14 @@ const TerminalBody: React.FC<TerminalBodyProps> = ({
     </div>
 );
 
-export function TerminalView({
+export const TerminalView = React.memo(({
     toolCallId,
     command,
     result,
     isExecuting,
     expanded,
     onToggleExpand,
-}: TerminalViewProps) {
+}: TerminalViewProps) => {
     const { t } = useTranslation();
     const [showMarkdown, setShowMarkdown] = useState(false);
 
@@ -312,7 +312,7 @@ export function TerminalView({
     const { stdout, stderr, error } = resultData ?? {};
 
     const outputText = [stdout, stderr, error].filter(Boolean).join('\n');
-    const preview = outputText ? outputText.split('\n').slice(0, 6).join('\n') : '';
+    const preview = useMemo(() => outputText ? outputText.split('\n').slice(0, 6).join('\n') : '', [outputText]);
     const hasOutput = Boolean(outputText);
     const hasError = Boolean(error ?? stderr);
 
@@ -361,4 +361,4 @@ export function TerminalView({
             )}
         </div>
     );
-}
+});

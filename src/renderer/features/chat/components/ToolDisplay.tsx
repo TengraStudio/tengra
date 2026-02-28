@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -115,7 +115,7 @@ function useAutoExpandCommand(
     }, [toolName, isExecuting, execError, execStderr, setExpanded]);
 }
 
-export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) {
+export const ToolDisplay = React.memo(({ toolCall, result, isExecuting, language = 'en' }: ToolDisplayProps) => {
     const { t } = useTranslation(language);
     const hasError = !!result?.error;
     const resultData = result?.result as CommandExecutionResult | undefined;
@@ -155,7 +155,7 @@ export function ToolDisplay({ toolCall, result, isExecuting, language = 'en' }: 
             {userExpanded && <ExpandedToolContent toolName={toolCall.name} args={toolCall.arguments} result={result} t={t} />}
         </div>
     );
-}
+});
 
 function ToolArguments({ name, args, t }: { name: string; args: JsonObject; t: (key: string) => string }) {
     if (name === 'read_file' || name === 'write_file') {

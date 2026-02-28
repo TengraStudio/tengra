@@ -48,7 +48,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
     </button>
 );
 
-export const CopyButton = ({ text }: { text: string }) => {
+export const CopyButton = React.memo(({ text }: { text: string }) => {
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
@@ -65,9 +65,9 @@ export const CopyButton = ({ text }: { text: string }) => {
             )}
         </ActionButton>
     );
-};
+});
 
-export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: () => void }) => {
+export const BookmarkButton = React.memo(({ active, onClick }: { active: boolean; onClick: () => void }) => {
     const { t } = useTranslation();
     return (
         <ActionButton
@@ -79,9 +79,9 @@ export const BookmarkButton = ({ active, onClick }: { active: boolean; onClick: 
             <Bookmark className={cn('w-3.5 h-3.5', active && 'fill-current')} aria-hidden="true" />
         </ActionButton>
     );
-};
+});
 
-export const RatingButtons = ({
+export const RatingButtons = React.memo(({
     rating,
     onRate,
 }: {
@@ -133,9 +133,9 @@ export const RatingButtons = ({
             </button>
         </div>
     );
-};
+});
 
-export const CopyMarkdownButton = ({ text, role }: { text: string; role: string }) => {
+export const CopyMarkdownButton = React.memo(({ text, role }: { text: string; role: string }) => {
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
@@ -154,7 +154,7 @@ export const CopyMarkdownButton = ({ text, role }: { text: string; role: string 
             )}
         </ActionButton>
     );
-};
+});
 
 interface MessageActionsGroupProps {
     displayContent: string;
@@ -178,7 +178,7 @@ const EMOJI_REACTIONS = [
     { emoji: '\u{1F680}', label: 'Rocket' },
 ];
 
-export const MessageActionsGroup = ({
+export const MessageActionsGroup = React.memo(({
     displayContent,
     role,
     isBookmarked,
@@ -257,5 +257,5 @@ export const MessageActionsGroup = ({
             {onRate && <RatingButtons rating={rating} onRate={onRate} />}
         </div>
     );
-};
+});
 

@@ -2,6 +2,46 @@
 
 ## [2026-02-28]
 
+### AUDIT-TOOLING-001: Operational Repo-Wide Lint and Type Checking
+
+- **Type**: fix
+- **Status**: completed
+- **Summary**: Resolved outstanding type safety violations, eliminated unused variables causing compilation errors, and restored full operational status to the repository-wide npm run build and npm run lint commands.
+
+- **Type Safety**: Fixed missing apiKeys properties in src/shared/types/settings.ts configurations.
+- **Build System**: Removed obsolete default URLs causing strict TypeScript ESLint rule failures.
+- **Component Clean-up**: Eliminated unused local variables and imports.
+- **Build Integrity**: Verified zero lingering type mismatches.
+
+### Project Hygiene: Root Cleanup and Component Promotion
+
+- **Type**: refactor
+- **Status**: completed
+- **Summary**: Improved project organization by cleaning up build/test clutter from the root directory and promoting feature-local components to global UI scope.
+
+- **Root Hygiene**: Moved accumulated build/test error logs (`lint-errors.txt`, `vitest-errors.txt`, etc.) to the `logs/` directory to maintain a clean workspace.
+- **Component Promotion**: Promoted the CodeMirror-based `CodeEditor` from the projects feature to common UI components as `CodeMirrorEditor` to resolve name shadowing with the Monaco editor and improve reusability.
+- **Modularized Validation**: Relocated `code-editor-validation.ts` to `src/renderer/components/ui/` to keep component logic encapsulated.
+- **Usage Updates**: Refactored `WorkspaceEditor`, `ProjectFilesTab`, and `FilesTab` to use the new global `CodeMirrorEditor`.
+- **Bug Fix**: Resolved a critical name shadowing issue in `WorkspaceEditor` where the Monaco editor was incorrectly imported but unused, preventing future developer confusion.
+
+### Renderer-Performanz-Optimierungen (PERF-006 bis PERF-022)
+
+- **Type**: perf
+- **Status**: completed
+- **Summary**: Anwendung von React.memo, useMemo und Lazy Loading auf mehrere Renderer-Komponenten zur Reduzierung unnötiger Re-Renders und Verbesserung der UI-Reaktionsfähigkeit.
+
+- **SlashMenu**: Mit React.memo und useMemo für gefilterte Befehle umschlossen.
+- **MessageActions**: Alle exportierten Unterkomponenten mit React.memo umschlossen.
+- **ToolDisplay**: Mit React.memo umschlossen, um durch übergeordnete Komponenten verursachte Re-Renders zu verhindern.
+- **TerminalView**: Mit React.memo umschlossen und Vorschauberechnung memoisiert.
+- **DockerDashboard ContainerItem**: Mit React.memo umschlossen.
+- **VoiceOverlay**: In App.tsx von Eager-Import auf React.lazy() umgestellt.
+- **PanelLayout**: Inline-Stil-Objekte in Sidebar und BottomPanelView memoisiert.
+- **QuickActionBar**: Positions-Stil-Objekt memoisiert.
+- **useAppInitialization**: Bereinigung von window.TengraSpeak beim Unmount hinzugefügt.
+- **AUDIT-REPO-001**: 8 veraltete .tmp.js-Dateien aus i18n entfernt, *.tmp.js/*.tmp.ts zu .gitignore hinzugefügt.
+
 ### Strenge Typsicherheit: Auflösung beliebiger und unbekannter Typumwandlungen
 
 - **Type**: fix
@@ -11,6 +51,18 @@
 - **Renderer-Typsicherheit**: Für alle verbleibenden `unknown`-Cast-Instanzen im Renderer wurden obligatorische `// SAFETY:`-Begründungen und strenge Typgrenzen hinzugefügt, einschließlich `useAgentHandlers`, `SessionSetup`, `useVoice`, `TerminalConnectionSelector`, `ipc-client` und `voice.store`.
 - **Hauptprozesssicherheit**: Es wurde überprüft, dass das Verzeichnis `src/main` keine Typfehler und keine unsicheren `any`/`unknown` ESLint-Verstöße enthält.
 - **Codequalität**: Erzwungene NASA-Zehnerpotenz und strenge TypeScript-Kompilierungsprüfungen, sodass die Anwendung `npm run type-check` und `npm run build` ohne Warnungen oder Typkonflikte erfolgreich bestehen kann.
+
+### FEAT-05: Benutzerverhaltenslernen & Personalisierte Interaktion
+
+- **Type**: feature
+- **Status**: completed
+- **Summary**: Implementierung eines lokalen Systems zum Lernen des Benutzerverhaltens, das Anwendungsinteraktionen verfolgt.
+
+- UserBehaviorService: Neuer Dienst zur Verfolgung lokaler Interaktionen.
+- Validiertes IPC: Strikte, Zod-validierte IPC-Handler.
+- Schema-Parität: Gemeinsame Zod-Schemas für Typsicherheit.
+- Ressourcen-Lebenszyklus: Ordnungsgemäße Bereinigung von Event-Listenern.
+- Stabilität: Behebung kritischer Typ-Mismatches.
 
 ## [2026-02-27]
 

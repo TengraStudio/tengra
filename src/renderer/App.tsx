@@ -14,7 +14,6 @@ import { useVoiceInput } from '@renderer/features/chat/hooks/useVoiceInput';
 import { ChatTemplate } from '@renderer/features/chat/types';
 import { SettingsCategory } from '@renderer/features/settings/types';
 import { DetachedTerminalWindow } from '@renderer/features/terminal/components/DetachedTerminalWindow';
-import { VoiceOverlay } from '@renderer/features/voice/components/VoiceOverlay';
 import { useVoiceActions } from '@renderer/features/voice/hooks/useVoiceActions';
 import { useAppInitialization } from '@renderer/hooks/useAppInitialization';
 import { AppView, useAppState } from '@renderer/hooks/useAppState';
@@ -39,6 +38,7 @@ const CommandPalette = lazy(() => import('@renderer/components/layout/CommandPal
 const UpdateNotification = lazy(() => import('@renderer/components/layout/UpdateNotification').then(m => ({ default: m.UpdateNotification })));
 const QuickActionBar = lazy(() => import('@renderer/components/layout/QuickActionBar').then(m => ({ default: m.QuickActionBar })));
 const ExtensionDevTools = lazy(() => import('@renderer/features/extensions/components/ExtensionDevTools').then(m => ({ default: m.ExtensionDevTools })));
+const VoiceOverlay = lazy(() => import('@renderer/features/voice/components/VoiceOverlay').then(m => ({ default: m.VoiceOverlay })));
 
 const getChatTemplates = (t: (key: string) => string): ChatTemplate[] => [
     {
@@ -479,7 +479,9 @@ function MainApp() {
                     canUseBiometric={sessionTimeout.canUseBiometric}
                     onUnlock={sessionTimeout.unlock}
                 />
-                <VoiceOverlay />
+                <Suspense fallback={null}>
+                    <VoiceOverlay />
+                </Suspense>
             </div>
         </ErrorBoundary>
     );

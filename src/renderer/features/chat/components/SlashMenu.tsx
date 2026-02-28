@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { motion } from '@/lib/framer-motion-compat';
 import { cn } from '@/lib/utils';
@@ -20,14 +20,17 @@ interface SlashMenuProps {
     t: (key: string) => string
 }
 
-export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: SlashMenuProps) {
+export const SlashMenu = React.memo(({ isOpen, onClose, query, onSelect, commands, t }: SlashMenuProps) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     // Filter commands based on query (after the slash)
-    const filteredCommands = commands.filter(c =>
-        (c.label.toLowerCase() || '').includes(query.toLowerCase() || '') ||
-        (c.description.toLowerCase() || '').includes(query.toLowerCase() || '')
-    );
+    const filteredCommands = useMemo(() => {
+        const lowerQuery = query.toLowerCase();
+        return commands.filter(c =>
+            c.label.toLowerCase().includes(lowerQuery) ||
+            c.description.toLowerCase().includes(lowerQuery)
+        );
+    }, [commands, query]);
 
     const [prevQuery, setPrevQuery] = useState(query);
 
@@ -102,4 +105,4 @@ export function SlashMenu({ isOpen, onClose, query, onSelect, commands, t }: Sla
             </div>
         </motion.div>
     );
-}
+});
