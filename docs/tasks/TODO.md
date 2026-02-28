@@ -239,9 +239,9 @@
 - ( ) **SECURITY-033**: Session Disabled in Backend — `website/tengra-backend/config.json:36` — No session revocation capability.
 - ( ) **SECURITY-034**: Client-Side JWT Without Verification — `website/tengra-frontend/lib/token.ts` — Role from unverified claims.
 - ( ) **SECURITY-035**: localStorage Token Storage — `website/tengra-frontend/lib/auth-api.ts` — Tokens accessible to XSS.
-- ( ) **SECURITY-036**: Inconsistent IPC Sender Validation — `src/main/ipc/index.ts:58-212` — Not all handlers validate sender.
+- (x) **SECURITY-036**: Inconsistent IPC Sender Validation — Added `validateSender` to all git IPC handlers.
 - ( ) **SECURITY-037**: Missing Auth on Memory Handlers — `src/main/ipc/memory.ts:100-192` — No authorization checks.
-- ( ) **SECURITY-038**: Unvalidated JSON Parse in API — `src/main/api/api-server.service.ts:569` — No post-parse sanitization.
+- (x) **SECURITY-038**: Unvalidated JSON Parse in API — Added recursive prototype key stripping after parse.
 
 ### 🟢 Low
 

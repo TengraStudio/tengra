@@ -3,12 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { SenderValidator } from '@main/ipc/sender-validator';
 import { appLogger } from '@main/logging/logger';
 import { GitService } from '@main/services/project/git.service';
 import { createValidatedIpcHandler } from '@main/utils/ipc-wrapper.util';
 import { withRateLimit } from '@main/utils/rate-limiter.util';
 import { getErrorMessage } from '@shared/utils/error.util';
-import { SenderValidator } from '@main/ipc/sender-validator';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
 
